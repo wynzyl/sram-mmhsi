@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: srams_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: srams_user
+      POSTGRES_PASSWORD: srams_dev_password
+      POSTGRES_DB: srams_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - srams_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U srams_user -d srams_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: srams_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@srams.local
+      PGADMIN_DEFAULT_PASSWORD: srams_admin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - srams_pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  srams_pgdata:
+  srams_pgadmin_data:
