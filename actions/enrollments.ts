@@ -10,8 +10,12 @@ import {
   sections,
   registrations,
   auditLogs,
+  assessments,
+  assessmentItems,
+  feeSchedules,
+  feeScheduleItems,
 } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, ne } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -83,23 +87,43 @@ export async function createEnrollmentAction(
     return { errors: { studentId: ["Student not found or inactive."] } };
   }
 
+  // Only students with an APPROVED registration may be enrolled
+  const approvedReg = await db.query.registrations.findFirst({
+    where: and(
+      eq(registrations.studentId, studentId),
+      eq(registrations.status, "approved")
+    ),
+    columns: { id: true },
+  });
+  if (!approvedReg) {
+    return {
+      errors: {
+        studentId: [
+          "This student does not have an approved registration and cannot be enrolled. " +
+          "Please approve the student's registration first.",
+        ],
+      },
+    };
+  }
+
   // Check for duplicate active enrollment in same school year
-  const existing = await db
+  const existingActive = await db
     .select({ id: enrollments.id, status: enrollments.status })
     .from(enrollments)
     .where(
       and(
         eq(enrollments.studentId, studentId),
-        eq(enrollments.schoolYearId, schoolYearId)
+        eq(enrollments.schoolYearId, schoolYearId),
+        ne(enrollments.status, "cancelled")
       )
     )
     .limit(1);
 
-  if (existing.length > 0 && existing[0].status !== "cancelled") {
+  if (existingActive.length > 0) {
     return {
       errors: {
         _form: [
-          `Student already has an active enrollment for this school year (status: ${existing[0].status}).`,
+          `Student already has an active enrollment for this school year (status: ${existingActive[0].status}).`,
         ],
       },
     };
@@ -180,7 +204,7 @@ export async function updateEnrollmentStatusAction(
   // Fetch current enrollment
   const enrollment = await db.query.enrollments.findFirst({
     where: eq(enrollments.id, enrollmentId),
-    columns: { id: true, status: true, studentId: true },
+    columns: { id: true, status: true, studentId: true, schoolYearId: true, gradeLevelId: true },
   });
 
   if (!enrollment) {
@@ -198,6 +222,37 @@ export async function updateEnrollmentStatusAction(
     return {
       message: `Cannot ${action} an enrollment with status "${enrollment.status}".`,
     };
+  }
+
+  let assessmentTotalAmount = 0;
+  let scheduleItems: any[] = [];
+  
+  if (action === "assess") {
+    const schedule = await db.query.feeSchedules.findFirst({
+      where: and(
+        eq(feeSchedules.schoolYearId, enrollment.schoolYearId),
+        eq(feeSchedules.gradeLevelId, enrollment.gradeLevelId),
+        eq(feeSchedules.isActive, true)
+      ),
+    });
+
+    if (!schedule) {
+      return { message: "No active fee schedule found for this grade level. Please configure it in Finance first." };
+    }
+
+    scheduleItems = await db
+      .select()
+      .from(feeScheduleItems)
+      .where(eq(feeScheduleItems.feeScheduleId, schedule.id));
+
+    if (scheduleItems.length === 0) {
+      return { message: "The fee schedule has no items configured. Please add items before assessing." };
+    }
+
+    assessmentTotalAmount = scheduleItems.reduce(
+      (acc, item) => acc + (item.isDiscount ? -Number(item.amount) : Number(item.amount)),
+      0
+    );
   }
 
   const statusMap = { assess: "assessed", enroll: "enrolled", cancel: "cancelled" } as const;
@@ -220,10 +275,40 @@ export async function updateEnrollmentStatusAction(
   }
 
   try {
-    await db
-      .update(enrollments)
-      .set(updateValues as Parameters<typeof db.update>[0] extends any ? any : never)
-      .where(eq(enrollments.id, enrollmentId));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(enrollments)
+        .set(updateValues as Parameters<typeof db.update>[0] extends any ? any : never)
+        .where(eq(enrollments.id, enrollmentId));
+
+      if (action === "assess") {
+        const [newAssessment] = await tx
+          .insert(assessments)
+          .values({
+            enrollmentId,
+            studentId: enrollment.studentId,
+            schoolYearId: enrollment.schoolYearId,
+            totalAmount: String(assessmentTotalAmount),
+            totalPaid: "0",
+            balance: String(assessmentTotalAmount),
+            createdBy: session.userId,
+            updatedBy: session.userId,
+          })
+          .returning({ id: assessments.id });
+
+        if (scheduleItems.length > 0) {
+          const itemsToInsert = scheduleItems.map((item) => ({
+            assessmentId: newAssessment.id,
+            description: item.description,
+            amount: String(item.amount),
+            isDiscount: item.isDiscount,
+            createdBy: session.userId,
+            updatedBy: session.userId,
+          }));
+          await tx.insert(assessmentItems).values(itemsToInsert);
+        }
+      }
+    });
 
     await audit(
       session.userId,

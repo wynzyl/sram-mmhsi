@@ -10,7 +10,7 @@ import {
   schoolYears,
   gradeLevels,
 } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 
@@ -85,6 +85,9 @@ export default async function StudentProfilePage({ params }: PageProps) {
     .where(eq(registrations.studentId, id))
     .orderBy(desc(registrations.createdAt));
 
+  // Determine if the student has at least one approved registration (required to enroll)
+  const hasApprovedReg = regRows.some((r) => r.status === "approved");
+
   const fullName = [student.firstName, student.middleName, student.lastName, student.suffix]
     .filter(Boolean)
     .join(" ");
@@ -116,7 +119,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
           </span>
         </div>
         <div className="profile-actions">
-          {hasPermission(session.role, "enrollments:create") && (
+          {hasPermission(session.role, "enrollments:create") && hasApprovedReg && (
             <Link
               href={`/admin/enrollments/new?studentId=${id}`}
               className="btn-secondary"
@@ -124,6 +127,15 @@ export default async function StudentProfilePage({ params }: PageProps) {
             >
               Enroll Student
             </Link>
+          )}
+          {hasPermission(session.role, "enrollments:create") && !hasApprovedReg && (
+            <span
+              className="btn-secondary btn-disabled"
+              title="Student must have an approved registration before enrolling"
+              aria-disabled="true"
+            >
+              Enroll Student
+            </span>
           )}
           {hasPermission(session.role, "students:update") && (
             <Link

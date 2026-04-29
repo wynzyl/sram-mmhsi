@@ -12,8 +12,8 @@ import {
 import { eq, ilike, or, and, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { CreateStudentSchema, ReviewRegistrationSchema } from "@/lib/validators/student";
-import type { CreateStudentFormState, ReviewFormState } from "@/lib/validators/student";
+import { CreateStudentSchema, ReviewRegistrationSchema, UpdateStudentSchema } from "@/lib/validators/student";
+import type { CreateStudentFormState, ReviewFormState, UpdateStudentFormState } from "@/lib/validators/student";
 import { generateStudentRef } from "@/lib/utils/reference";
 import { logger } from "@/lib/observability/logger";
 
@@ -251,6 +251,148 @@ export async function reviewRegistrationAction(
     return { success: true, message: `Registration ${newStatus} successfully.` };
   } catch (err) {
     logger.error("[registrations] Failed to review", { error: String(err) });
+    return { message: "An unexpected error occurred. Please try again." };
+  }
+}
+
+// ─── Update Student Action ────────────────────────────────────────────────────
+
+export async function updateStudentAction(
+  _prevState: UpdateStudentFormState,
+  formData: FormData
+): Promise<UpdateStudentFormState> {
+  // 1. Auth check
+  const session = await requireSession();
+  if (!hasPermission(session.role, "students:update")) {
+    return { message: "You do not have permission to update students." };
+  }
+
+  // 2. Parse raw form data — guardians come in as JSON string from the client
+  const guardiansRaw = formData.get("guardians");
+  let guardiansParsed: unknown[] = [];
+  try {
+    guardiansParsed = JSON.parse(guardiansRaw as string);
+  } catch {
+    return { errors: { guardians: ["Guardian data is malformed."] } };
+  }
+
+  const isActiveRaw = formData.get("isActive");
+
+  // 3. Validate
+  const parsed = UpdateStudentSchema.safeParse({
+    studentId: formData.get("studentId"),
+    firstName: formData.get("firstName"),
+    middleName: formData.get("middleName") || undefined,
+    lastName: formData.get("lastName"),
+    suffix: formData.get("suffix") || undefined,
+    dateOfBirth: formData.get("dateOfBirth") || undefined,
+    gender: formData.get("gender") || undefined,
+    address: formData.get("address") || undefined,
+    isActive: isActiveRaw === "on" || isActiveRaw === "true",
+    guardians: guardiansParsed,
+  });
+
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors as UpdateStudentFormState["errors"] };
+  }
+
+  const { studentId, guardians, isActive, ...studentData } = parsed.data;
+
+  // 4. Check if student exists
+  const existingStudent = await db.query.students.findFirst({
+    where: eq(students.id, studentId),
+  });
+
+  if (!existingStudent) {
+    return { message: "Student not found." };
+  }
+
+  // 5. Duplicate detection — same full name + DOB (excluding current student)
+  if (studentData.dateOfBirth) {
+    const existing = await db
+      .select({ id: students.id })
+      .from(students)
+      .where(
+        and(
+          ilike(students.firstName, studentData.firstName),
+          ilike(students.lastName, studentData.lastName),
+          eq(students.dateOfBirth, studentData.dateOfBirth),
+          sql`${students.id} != ${studentId}`
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      return {
+        errors: {
+          _form: [
+            `Another student named ${studentData.firstName} ${studentData.lastName} with this date of birth already exists (ID: ${existing[0].id}).`,
+          ],
+        },
+      };
+    }
+  }
+
+  try {
+    // 6. Update student
+    await db
+      .update(students)
+      .set({
+        ...studentData,
+        isActive: isActive !== undefined ? isActive : existingStudent.isActive,
+        updatedBy: session.userId,
+        updatedAt: new Date(),
+      })
+      .where(eq(students.id, studentId));
+
+    // 7. Update guardians: Delete existing links and recreate
+    // We only delete links; we don't delete guardians to avoid orphaned data errors,
+    // though in a real system we might clean them up if they have no other links.
+    await db.delete(studentGuardianLinks).where(eq(studentGuardianLinks.studentId, studentId));
+
+    for (const guardian of guardians) {
+      const [newGuardian] = await db
+        .insert(parentsGuardians)
+        .values({
+          firstName: guardian.firstName,
+          middleName: guardian.middleName,
+          lastName: guardian.lastName,
+          relationship: guardian.relationship,
+          contactNumber: guardian.contactNumber,
+          email: guardian.email || undefined,
+          createdBy: session.userId,
+          updatedBy: session.userId,
+        })
+        .returning({ id: parentsGuardians.id });
+
+      await db.insert(studentGuardianLinks).values({
+        studentId,
+        guardianId: newGuardian.id,
+        isPrimary: guardian.isPrimary ?? false,
+      });
+    }
+
+    // 8. Audit log
+    await audit(
+      session.userId,
+      session.role,
+      "student_updated",
+      "students",
+      studentId,
+      { firstName: studentData.firstName, lastName: studentData.lastName, isActive }
+    );
+
+    logger.info("[students] Student updated", {
+      studentId,
+      actorId: session.userId,
+    });
+
+    revalidatePath("/admin/students");
+    revalidatePath(`/admin/students/${studentId}`);
+
+    return { success: true };
+  } catch (err) {
+    logger.error("[students] Failed to update student", { error: String(err) });
     return { message: "An unexpected error occurred. Please try again." };
   }
 }

@@ -10,6 +10,7 @@ import {
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -259,10 +260,41 @@ export const enrollments = pgTable(
     updatedBy: uuid("updated_by").references(() => users.id),
   },
   (t) => [
-    uniqueIndex("enrollment_unique_sy_idx").on(t.studentId, t.schoolYearId),
+    uniqueIndex("enrollment_unique_sy_idx")
+      .on(t.studentId, t.schoolYearId)
+      .where(sql`status != 'cancelled'`),
     index("enrollment_status_idx").on(t.status),
   ]
 );
+
+// ─── Fee Schedules ────────────────────────────────────────────────────────────
+
+export const feeSchedules = pgTable("fee_schedules", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+  gradeLevelId: uuid("grade_level_id").notNull().references(() => gradeLevels.id),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: uuid("updated_by").references(() => users.id),
+}, (t) => [
+  uniqueIndex("fee_schedule_unique_idx").on(t.schoolYearId, t.gradeLevelId)
+]);
+
+export const feeScheduleItems = pgTable("fee_schedule_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  feeScheduleId: uuid("fee_schedule_id").notNull().references(() => feeSchedules.id, { onDelete: "cascade" }),
+  description: text("description").notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  isDiscount: boolean("is_discount").notNull().default(false),
+  order: integer("order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: uuid("updated_by").references(() => users.id),
+});
 
 // ─── Assessments (Billing) ────────────────────────────────────────────────────
 

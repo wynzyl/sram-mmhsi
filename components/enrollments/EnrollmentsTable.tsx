@@ -209,12 +209,23 @@ export default function EnrollmentsTable({
                 {(canManage || canCancel) && (
                   <td>
                     {en.status === "cancelled" || en.status === "enrolled" ? (
-                      <Link
-                        href={`/admin/students/${en.studentId}`}
-                        className="table-action-link"
-                      >
-                        View Student
-                      </Link>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <Link
+                          href={`/admin/students/${en.studentId}`}
+                          className="table-action-link"
+                        >
+                          View Student
+                        </Link>
+                        {en.status === "cancelled" && canManage && (
+                          <Link
+                            href={`/admin/enrollments/new?studentId=${en.studentId}`}
+                            className="table-action-link"
+                            style={{ color: "var(--color-primary)" }}
+                          >
+                            Re-enroll
+                          </Link>
+                        )}
+                      </div>
                     ) : (
                       <EnrollmentActionRow
                         enrollment={en}
