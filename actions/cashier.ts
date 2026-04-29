@@ -6,6 +6,7 @@ import {
   receiptBooklets,
   payments,
   assessments,
+  enrollments,
   auditLogs,
 } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -205,7 +206,37 @@ export async function postPaymentAction(
         })
         .where(eq(assessments.id, assessmentId));
 
-      // 6. Audit Log
+      // 6. Check and Update Enrollment Status
+      if (assessment.enrollmentId) {
+        const enrollmentRows = await tx.execute(
+          sql`SELECT "status" FROM "enrollments" WHERE "id" = ${assessment.enrollmentId} FOR UPDATE`
+        );
+        if (Array.isArray(enrollmentRows) && enrollmentRows.length > 0) {
+          const enrollment = enrollmentRows[0] as any;
+          if (enrollment.status === "assessed") {
+            await tx
+              .update(enrollments)
+              .set({
+                status: "enrolled",
+                enrolledAt: new Date(),
+                updatedBy: session.userId,
+                updatedAt: new Date(),
+              })
+              .where(eq(enrollments.id, assessment.enrollmentId));
+            
+            await tx.insert(auditLogs).values({
+              actor: session.userId,
+              actorRole: session.role,
+              action: "enrollment_enrolled_via_payment",
+              targetEntity: "enrollments",
+              targetId: assessment.enrollmentId,
+              context: `Payment posted: OR ${orNumberToAssign}`,
+            });
+          }
+        }
+      }
+
+      // 7. Audit Log
       await tx.insert(auditLogs).values({
         actor: session.userId,
         actorRole: session.role,

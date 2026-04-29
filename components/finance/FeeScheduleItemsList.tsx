@@ -10,7 +10,7 @@ import type { FeeScheduleItemFormState } from "@/lib/validators/finance";
 interface FeeScheduleItem {
   id: string;
   description: string;
-  amount: number;
+  amount: string;
   isDiscount: boolean;
   order: number;
 }

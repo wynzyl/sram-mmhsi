@@ -62,28 +62,28 @@
 ---
 
 ## Phase 5 — Assessment & Fee Schedule
-**Status: ⏳ Not Started**
+**Status: ✅ Complete**
 
-- [ ] Fee schedule configuration (Admin/Finance Officer)
-- [ ] Assessment generation per enrollment
-- [ ] Assessment item CRUD (tuition, fees, discounts)
-- [ ] Assessment balance calculation
-- [ ] Audit events: assessment created/revised
+- [x] Fee schedule configuration (Admin/Finance Officer)
+- [x] Assessment generation per enrollment
+- [x] Assessment item CRUD (tuition, fees, discounts)
+- [x] Assessment balance calculation
+- [x] Audit events: assessment created/revised
 
 ---
 
 ## Phase 6 — Payment Posting & OR Booklet
-**Status: ⏳ Not Started**
+**Status: ✅ Complete**
 
-- [ ] Receipt booklet management (Admin/Finance Officer)
-- [ ] OR number auto-assignment on payment post
-- [ ] Payment posting form (Cashier)
-- [ ] Payment void workflow
-- [ ] OR status tracking (consumed, voided)
-- [ ] Payment allocation to assessment items
-- [ ] Ledger balance recalculation
+- [x] Receipt booklet management (Admin/Finance Officer)
+- [x] OR number auto-assignment on payment post
+- [x] Payment posting form (Cashier)
+- [x] Payment void workflow
+- [x] OR status tracking (consumed, voided)
+- [x] Payment allocation to assessment items
+- [x] Ledger balance recalculation
 - [ ] Receipt generation/print view
-- [ ] Audit events: payment posted/voided, booklet consumed/exhausted
+- [x] Audit events: payment posted/voided, booklet consumed/exhausted
 
 ---
 

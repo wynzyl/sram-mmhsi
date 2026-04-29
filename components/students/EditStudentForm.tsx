@@ -12,7 +12,7 @@ interface StudentData {
   middleName: string | null;
   lastName: string;
   suffix: string | null;
-  dateOfBirth: string | null;
+  dateOfBirth: Date | null;
   gender: string | null;
   address: string | null;
   isActive: boolean;

@@ -130,31 +130,93 @@ export async function createEnrollmentAction(
   }
 
   try {
-    const [newEnrollment] = await db
-      .insert(enrollments)
-      .values({
-        studentId,
-        schoolYearId,
-        gradeLevelId,
-        sectionId: sectionId ?? null,
-        registrationId: registrationId ?? null,
-        status: "pending",
-        createdBy: session.userId,
-        updatedBy: session.userId,
-      })
-      .returning({ id: enrollments.id });
+    // Check for active fee schedule first
+    const schedule = await db.query.feeSchedules.findFirst({
+      where: and(
+        eq(feeSchedules.schoolYearId, schoolYearId),
+        eq(feeSchedules.gradeLevelId, gradeLevelId),
+        eq(feeSchedules.isActive, true)
+      ),
+    });
 
-    await audit(
-      session.userId,
-      session.role,
-      "enrollment_created",
-      "enrollments",
-      newEnrollment.id,
-      { studentId, schoolYearId, gradeLevelId, status: "pending" }
+    if (!schedule) {
+      return { message: "Cannot enroll student: No active fee schedule found for this grade level. Please configure it in Finance first." };
+    }
+
+    const scheduleItems = await db
+      .select()
+      .from(feeScheduleItems)
+      .where(eq(feeScheduleItems.feeScheduleId, schedule.id));
+
+    if (scheduleItems.length === 0) {
+      return { message: "Cannot enroll student: The fee schedule has no items configured." };
+    }
+
+    const assessmentTotalAmount = scheduleItems.reduce(
+      (acc, item) => acc + (item.isDiscount ? -Number(item.amount) : Number(item.amount)),
+      0
     );
 
-    logger.info("[enrollments] Enrollment created", {
-      enrollmentId: newEnrollment.id,
+    let newEnrollmentId: string | undefined;
+
+    await db.transaction(async (tx) => {
+      // 1. Create Enrollment as 'assessed'
+      const [newEnrollment] = await tx
+        .insert(enrollments)
+        .values({
+          studentId,
+          schoolYearId,
+          gradeLevelId,
+          sectionId: sectionId ?? null,
+          registrationId: registrationId ?? null,
+          status: "assessed",
+          createdBy: session.userId,
+          updatedBy: session.userId,
+        })
+        .returning({ id: enrollments.id });
+      
+      newEnrollmentId = newEnrollment.id;
+
+      // 2. Create Assessment
+      const [newAssessment] = await tx
+        .insert(assessments)
+        .values({
+          enrollmentId: newEnrollment.id,
+          studentId,
+          schoolYearId,
+          totalAmount: String(assessmentTotalAmount),
+          totalPaid: "0.00",
+          balance: String(assessmentTotalAmount),
+          createdBy: session.userId,
+          updatedBy: session.userId,
+        })
+        .returning({ id: assessments.id });
+
+      // 3. Create Assessment Items
+      const itemsToInsert = scheduleItems.map((item) => ({
+        assessmentId: newAssessment.id,
+        description: item.description,
+        amount: item.amount,
+        isDiscount: item.isDiscount,
+        createdBy: session.userId,
+        updatedBy: session.userId,
+      }));
+
+      await tx.insert(assessmentItems).values(itemsToInsert);
+
+      // 4. Audit Log
+      await tx.insert(auditLogs).values({
+        actor: session.userId,
+        actorRole: session.role,
+        action: "enrollment_created_and_assessed",
+        targetEntity: "enrollments",
+        targetId: newEnrollment.id,
+        newState: JSON.stringify({ studentId, schoolYearId, gradeLevelId, status: "assessed" }),
+      });
+    });
+
+    logger.info("[enrollments] Enrollment created and auto-assessed", {
+      enrollmentId: newEnrollmentId,
       studentId,
       actorId: session.userId,
     });
@@ -162,7 +224,7 @@ export async function createEnrollmentAction(
     revalidatePath("/admin/enrollments");
     revalidatePath(`/admin/students/${studentId}`);
 
-    return { success: true, enrollmentId: newEnrollment.id };
+    return { success: true, enrollmentId: newEnrollmentId };
   } catch (err) {
     logger.error("[enrollments] Failed to create enrollment", { error: String(err) });
     return { message: "An unexpected error occurred. Please try again." };

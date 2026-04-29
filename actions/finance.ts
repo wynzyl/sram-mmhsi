@@ -195,7 +195,11 @@ export async function addFeeScheduleItemAction(
     const [newItem] = await db
       .insert(feeScheduleItems)
       .values({
-        ...parsed.data,
+        feeScheduleId: parsed.data.feeScheduleId,
+        description: parsed.data.description,
+        amount: String(parsed.data.amount),
+        isDiscount: parsed.data.isDiscount,
+        order: parsed.data.order,
         createdBy: session.userId,
         updatedBy: session.userId,
       })
