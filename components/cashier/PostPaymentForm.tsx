@@ -7,13 +7,19 @@ import { FormField } from "@/components/forms/FormField";
 import { FormActions } from "@/components/forms/FormActions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
+import { formatStoredOrNumber } from "@/lib/utils/or-number";
 
 interface PostPaymentFormProps {
   studentId: string;
   assessmentId: string;
   balance: number;
-  activeBooklets: { id: string; series: string; nextNumber: number }[];
+  activeBooklets: {
+    id: string;
+    series: string;
+    prefix: string;
+    nextNumber: number;
+    endNumber: number;
+  }[];
   onCancel?: () => void;
 }
 
@@ -82,8 +88,8 @@ export default function PostPaymentForm({
           >
             {activeBooklets.map((b) => (
               <option key={b.id} value={b.id}>
-                Series {b.series} (Next OR: {b.series}-
-                {String(b.nextNumber).padStart(6, "0")})
+                {b.series} — Next OR:{" "}
+                {formatStoredOrNumber(b.prefix, b.nextNumber, b.endNumber)}
               </option>
             ))}
           </select>
@@ -95,11 +101,7 @@ export default function PostPaymentForm({
           label="Amount to Pay"
           required
           error={state.errors?.amount}
-          hint={
-            <>
-              Max: <CurrencyDisplay amount={balance} />
-            </>
-          }
+          hint={`Max: ₱${balance.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
         >
           <Input
             type="number"

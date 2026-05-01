@@ -50,7 +50,8 @@ export default async function RegistrationsPage() {
         <div>
           <h1 className="page-title">Registrations</h1>
           <p className="page-subtitle">
-            All student registrations. Students are automatically registered upon creation.
+            Separate applicant/registrar pipeline. New master students are created under Students;
+            this list only shows rows created through the registrations workflow.
           </p>
         </div>
         {hasPermission(session.role, "students:create") && (

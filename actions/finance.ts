@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { feeSchedules, feeScheduleItems, auditLogs } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -15,6 +15,26 @@ import type {
   FeeScheduleItemFormState,
 } from "@/lib/validators/finance";
 import { logger } from "@/lib/observability/logger";
+
+function isGradeLevelIdNotNullDbError(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth < 6 && current != null; depth++) {
+    if (
+      typeof current === "object" &&
+      "code" in current &&
+      "column_name" in current &&
+      (current as { code?: string }).code === "23502" &&
+      (current as { column_name?: string }).column_name === "grade_level_id"
+    ) {
+      return true;
+    }
+    current =
+      typeof current === "object" && current !== null && "cause" in current
+        ? (current as { cause: unknown }).cause
+        : undefined;
+  }
+  return false;
+}
 
 // ─── Fee Schedules ────────────────────────────────────────────────────────────
 
@@ -29,7 +49,6 @@ export async function createFeeScheduleAction(
 
   const parsed = FeeScheduleSchema.safeParse({
     schoolYearId: formData.get("schoolYearId"),
-    gradeLevelId: formData.get("gradeLevelId"),
     description: formData.get("description"),
     isActive: formData.get("isActive") === "on",
   });
@@ -38,20 +57,16 @@ export async function createFeeScheduleAction(
     return { errors: parsed.error.flatten().fieldErrors as FeeScheduleFormState["errors"] };
   }
 
-  const { schoolYearId, gradeLevelId, description, isActive } = parsed.data;
+  const { schoolYearId, description, isActive } = parsed.data;
 
-  // Check for duplicates
   const existing = await db.query.feeSchedules.findFirst({
-    where: and(
-      eq(feeSchedules.schoolYearId, schoolYearId),
-      eq(feeSchedules.gradeLevelId, gradeLevelId)
-    ),
+    where: eq(feeSchedules.schoolYearId, schoolYearId),
   });
 
   if (existing) {
     return {
       errors: {
-        _form: ["A fee schedule already exists for this grade level in the selected school year."],
+        _form: ["A fee schedule already exists for this school year."],
       },
     };
   }
@@ -61,7 +76,7 @@ export async function createFeeScheduleAction(
       .insert(feeSchedules)
       .values({
         schoolYearId,
-        gradeLevelId,
+        gradeLevelId: null,
         description,
         isActive,
         createdBy: session.userId,
@@ -82,6 +97,12 @@ export async function createFeeScheduleAction(
     return { success: true, message: "Fee schedule created successfully." };
   } catch (error) {
     logger.error("[finance] Failed to create fee schedule", { error });
+    if (isGradeLevelIdNotNullDbError(error)) {
+      return {
+        message:
+          'Database is missing the latest migration: grade_level_id must allow NULL for school-wide schedules. From the project root run: npm run db:migrate — or apply drizzle/0006_standard_fee_catalog_one_per_school_year_and_assessment_fee_item_link.sql manually.',
+      };
+    }
     return { message: "An unexpected error occurred. Please try again." };
   }
 }
@@ -101,7 +122,6 @@ export async function updateFeeScheduleAction(
   const parsed = FeeScheduleSchema.safeParse({
     id,
     schoolYearId: formData.get("schoolYearId"),
-    gradeLevelId: formData.get("gradeLevelId"),
     description: formData.get("description"),
     isActive: formData.get("isActive") === "on",
   });
@@ -110,20 +130,16 @@ export async function updateFeeScheduleAction(
     return { errors: parsed.error.flatten().fieldErrors as FeeScheduleFormState["errors"] };
   }
 
-  const { schoolYearId, gradeLevelId, description, isActive } = parsed.data;
+  const { schoolYearId, description, isActive } = parsed.data;
 
-  // Check duplicates
   const existing = await db.query.feeSchedules.findFirst({
-    where: and(
-      eq(feeSchedules.schoolYearId, schoolYearId),
-      eq(feeSchedules.gradeLevelId, gradeLevelId)
-    ),
+    where: eq(feeSchedules.schoolYearId, schoolYearId),
   });
 
   if (existing && existing.id !== id) {
     return {
       errors: {
-        _form: ["A fee schedule already exists for this grade level in the selected school year."],
+        _form: ["A fee schedule already exists for this school year."],
       },
     };
   }
@@ -141,7 +157,7 @@ export async function updateFeeScheduleAction(
       .update(feeSchedules)
       .set({
         schoolYearId,
-        gradeLevelId,
+        gradeLevelId: null,
         description,
         isActive,
         updatedBy: session.userId,

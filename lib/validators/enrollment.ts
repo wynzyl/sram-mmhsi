@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export const enrollmentStudentTypeEnumSchema = z.enum([
+  "new_student",
+  "transferee",
+  "old_student",
+]);
+
 // ─── New Enrollment Schema ────────────────────────────────────────────────────
 
 export const CreateEnrollmentSchema = z.object({
@@ -8,6 +14,7 @@ export const CreateEnrollmentSchema = z.object({
   gradeLevelId: z.string().uuid("Grade level is required."),
   sectionId: z.string().uuid().optional(),
   registrationId: z.string().uuid().optional(),
+  studentType: enrollmentStudentTypeEnumSchema.default("new_student"),
 });
 
 export type CreateEnrollmentInput = z.infer<typeof CreateEnrollmentSchema>;
@@ -21,9 +28,10 @@ export type EnrollmentFormState = {
 
 // ─── Update Enrollment Status Schema ─────────────────────────────────────────
 
+/** Registrar: cancel only. Admin: cancel + bypass payment to Enrolled after Assessed. */
 export const UpdateEnrollmentStatusSchema = z.object({
   enrollmentId: z.string().uuid(),
-  action: z.enum(["assess", "enroll", "cancel"]),
+  action: z.enum(["cancel", "override_enroll"]),
   sectionId: z.string().uuid().optional(),
   cancelRemarks: z.string().trim().optional(),
 });

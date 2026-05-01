@@ -23,6 +23,8 @@ import type {
   VoidPaymentFormState,
 } from "@/lib/validators/cashier";
 import { logger } from "@/lib/observability/logger";
+import { formatStoredOrNumber } from "@/lib/utils/or-number";
+import { assertEnrollmentAllowsPayment } from "@/lib/utils/enrollment-payment";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -37,6 +39,7 @@ export async function createBookletAction(
 
   const parsed = CreateBookletSchema.safeParse({
     series: formData.get("series"),
+    prefix: formData.get("prefix"),
     startNumber: formData.get("startNumber"),
     endNumber: formData.get("endNumber"),
   });
@@ -45,20 +48,36 @@ export async function createBookletAction(
     return { errors: parsed.error.flatten().fieldErrors as BookletFormState["errors"] };
   }
 
-  const { series, startNumber, endNumber } = parsed.data;
+  const { series, prefix, startNumber, endNumber } = parsed.data;
 
-  // Check for duplicate active booklet with same series (optional logic, but good practice)
-  const existingActive = await db.query.receiptBooklets.findFirst({
+  const existingSeries = await db.query.receiptBooklets.findFirst({
     where: and(
       eq(receiptBooklets.series, series),
       eq(receiptBooklets.status, "active")
     ),
   });
 
-  if (existingActive) {
+  if (existingSeries) {
     return {
       errors: {
         _form: [`An active booklet for series '${series}' already exists. Please exhaust or void it first.`],
+      },
+    };
+  }
+
+  const existingPrefix = await db.query.receiptBooklets.findFirst({
+    where: and(
+      eq(receiptBooklets.prefix, prefix),
+      eq(receiptBooklets.status, "active")
+    ),
+  });
+
+  if (existingPrefix) {
+    return {
+      errors: {
+        _form: [
+          `An active booklet with OR prefix '${prefix}' already exists. Use another prefix or exhaust the current booklet first.`,
+        ],
       },
     };
   }
@@ -68,6 +87,7 @@ export async function createBookletAction(
       .insert(receiptBooklets)
       .values({
         series,
+        prefix,
         startNumber,
         endNumber,
         nextNumber: startNumber,
@@ -139,6 +159,20 @@ export async function postPaymentAction(
         throw new Error("Payment amount exceeds the current balance.");
       }
 
+      const enrollmentForPayment =
+        assessment.enrollmentId != null
+          ? await tx.query.enrollments.findFirst({
+              where: eq(enrollments.id, assessment.enrollmentId),
+              columns: { id: true, status: true },
+            })
+          : null;
+
+      assertEnrollmentAllowsPayment(
+        enrollmentForPayment?.status,
+        enrollmentForPayment?.id ?? assessment.enrollmentId ?? null,
+        assessment.enrollmentId ?? null
+      );
+
       // 2. Fetch Selected Active Booklet (locking it for update to prevent race conditions on OR number)
       // Note: Drizzle ORM does not support row-level locking natively in `query` builder yet without raw SQL,
       // but for V1 we do a basic select/update. 
@@ -151,16 +185,23 @@ export async function postPaymentAction(
         throw new Error("The selected receipt booklet is either invalid or no longer active. Please refresh and select another.");
       }
 
-      const activeBooklet = activeBookletRows[0] as any;
+      const activeBooklet = activeBookletRows[0] as {
+        id: string;
+        prefix: string;
+        series: string;
+        next_number: number;
+        end_number: number;
+      };
       bookletIdToAssign = activeBooklet.id;
-      const currentNext = activeBooklet.next_number;
-      
-      // Format OR number (e.g., A-000001)
-      orNumberToAssign = `${activeBooklet.series}-${String(currentNext).padStart(6, "0")}`;
+      const currentNext = Number(activeBooklet.next_number);
+      const endNum = Number(activeBooklet.end_number);
+      const bookletPrefix = String(activeBooklet.prefix ?? "").trim() || String(activeBooklet.series ?? "").trim();
+
+      orNumberToAssign = formatStoredOrNumber(bookletPrefix, currentNext, endNum);
 
       // 3. Update Booklet Next Number / Status
       const nextNum = currentNext + 1;
-      const newStatus = nextNum > activeBooklet.end_number ? "exhausted" : "active";
+      const newStatus = nextNum > endNum ? "exhausted" : "active";
 
       await tx
         .update(receiptBooklets)

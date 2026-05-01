@@ -29,6 +29,27 @@
       "when": 1777601236656,
       "tag": "0003_add_student_guardian_contact_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777607828611,
+      "tag": "0004_receipt_booklets_prefix_column",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777618494861,
+      "tag": "0005_enrollment_student_type_transferee_profile_cancelled_by_unique_assessment_per_enrollment",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777621491767,
+      "tag": "0006_standard_fee_catalog_one_per_school_year_and_assessment_fee_item_link",
+      "breakpoints": true
     }
   ]
 }

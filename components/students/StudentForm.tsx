@@ -7,23 +7,6 @@ import type { CreateStudentFormState } from "@/lib/validators/student";
 import type { GuardianInput } from "@/lib/validators/student";
 import GuardianForm from "./GuardianForm";
 
-interface SchoolYear {
-  id: string;
-  label: string;
-  isActive: boolean;
-}
-
-interface GradeLevel {
-  id: string;
-  name: string;
-  order: number;
-}
-
-interface StudentFormProps {
-  schoolYears: SchoolYear[];
-  gradeLevels: GradeLevel[];
-}
-
 const emptyGuardian = (): GuardianInput => ({
   firstName: "",
   middleName: "",
@@ -38,7 +21,7 @@ const emptyGuardian = (): GuardianInput => ({
 
 const initialState: CreateStudentFormState = {};
 
-export default function StudentForm({ schoolYears, gradeLevels }: StudentFormProps) {
+export default function StudentForm() {
   const router = useRouter();
   const [state, action, pending] = useActionState(createStudentAction, initialState);
   const [guardians, setGuardians] = useState<GuardianInput[]>([
@@ -54,7 +37,6 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
   const handleGuardianChange = (index: number, guardian: GuardianInput) => {
     setGuardians((prev) => {
       const next = [...prev];
-      // If this guardian is being set as primary, unset others
       if (guardian.isPrimary) {
         next.forEach((g, i) => {
           if (i !== index) next[i] = { ...g, isPrimary: false };
@@ -68,7 +50,6 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
   const handleGuardianRemove = (index: number) => {
     setGuardians((prev) => {
       const next = prev.filter((_, i) => i !== index);
-      // Ensure first guardian is primary if removing the primary
       if (next.length > 0 && !next.some((g) => g.isPrimary)) {
         next[0] = { ...next[0], isPrimary: true };
       }
@@ -80,18 +61,10 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
     setGuardians((prev) => [...prev, emptyGuardian()]);
   };
 
-  const activeYear = schoolYears.find((sy) => sy.isActive);
-
   return (
     <form action={action} className="student-form" noValidate>
-      {/* Hidden: serialize guardians as JSON */}
-      <input
-        type="hidden"
-        name="guardians"
-        value={JSON.stringify(guardians)}
-      />
+      <input type="hidden" name="guardians" value={JSON.stringify(guardians)} />
 
-      {/* Global error */}
       {state.message && (
         <div className="alert alert-error" role="alert">
           {state.message}
@@ -103,7 +76,6 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
         </div>
       )}
 
-      {/* ─── Student Information ──────────────────────────────────────── */}
       <section className="form-section">
         <h3 className="form-section-title">Student Information</h3>
         <div className="form-grid form-grid-3">
@@ -172,12 +144,7 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
             <label className="form-label" htmlFor="dateOfBirth">
               Date of Birth
             </label>
-            <input
-              id="dateOfBirth"
-              name="dateOfBirth"
-              type="date"
-              className="form-control"
-            />
+            <input id="dateOfBirth" name="dateOfBirth" type="date" className="form-control" />
           </div>
 
           <div className="form-group">
@@ -198,16 +165,10 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
           <label className="form-label" htmlFor="address">
             Address
           </label>
-          <textarea
-            id="address"
-            name="address"
-            className="form-control"
-            rows={2}
-          />
+          <textarea id="address" name="address" className="form-control" rows={2} />
         </div>
       </section>
 
-      {/* ─── Contact & Additional Information ─────────────────────── */}
       <section className="form-section">
         <h3 className="form-section-title">Contact & Additional Information</h3>
         <div className="form-grid form-grid-3">
@@ -222,12 +183,8 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
               className={`form-control ${state.errors?.lrn ? "form-control-error" : ""}`}
               placeholder="12-digit DepEd LRN"
               maxLength={12}
-              pattern="[0-9]{12}"
             />
-            {state.errors?.lrn && (
-              <p className="form-error">{state.errors.lrn[0]}</p>
-            )}
-            {/* <p className="form-hint">Optional. DepEd-issued 12-digit identifier.</p> */}
+            {state.errors?.lrn && <p className="form-error">{state.errors.lrn[0]}</p>}
           </div>
 
           <div className="form-group">
@@ -259,22 +216,14 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
               autoComplete="email"
               placeholder="student@example.com"
             />
-            {state.errors?.email && (
-              <p className="form-error">{state.errors.email[0]}</p>
-            )}
+            {state.errors?.email && <p className="form-error">{state.errors.email[0]}</p>}
           </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="nationality">
               Nationality
             </label>
-            <input
-              id="nationality"
-              name="nationality"
-              type="text"
-              className="form-control"
-              placeholder="Filipino"
-            />
+            <input id="nationality" name="nationality" className="form-control" placeholder="Filipino" />
           </div>
 
           <div className="form-group">
@@ -298,77 +247,52 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
             <label className="form-label" htmlFor="religion">
               Religion
             </label>
-            <input
-              id="religion"
-              name="religion"
-              type="text"
-              className="form-control"
-              placeholder="Roman Catholic"
-            />
+            <input id="religion" name="religion" className="form-control" placeholder="Roman Catholic" />
           </div>
         </div>
       </section>
 
-      {/* ─── Registration Details ─────────────────────────────────────── */}
       <section className="form-section">
-        <h3 className="form-section-title">Registration Details</h3>
-        <div className="form-grid form-grid-2">
-          <div className="form-group">
-            <label className="form-label" htmlFor="schoolYearId">
-              School Year <span className="required">*</span>
-            </label>
-            <select
-              id="schoolYearId"
-              name="schoolYearId"
-              className={`form-control ${state.errors?.schoolYearId ? "form-control-error" : ""}`}
-              defaultValue={activeYear?.id ?? ""}
-              required
-            >
-              <option value="">Select school year</option>
-              {schoolYears.map((sy) => (
-                <option key={sy.id} value={sy.id}>
-                  {sy.label} {sy.isActive ? "(Current)" : ""}
-                </option>
-              ))}
-            </select>
-            {state.errors?.schoolYearId && (
-              <p className="form-error">{state.errors.schoolYearId[0]}</p>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="gradeLevelId">
-              Grade Level <span className="required">*</span>
-            </label>
-            <select
-              id="gradeLevelId"
-              name="gradeLevelId"
-              className={`form-control ${state.errors?.gradeLevelId ? "form-control-error" : ""}`}
-              required
-            >
-              <option value="">Select grade level</option>
-              {gradeLevels.map((gl) => (
-                <option key={gl.id} value={gl.id}>
-                  {gl.name}
-                </option>
-              ))}
-            </select>
-            {state.errors?.gradeLevelId && (
-              <p className="form-error">{state.errors.gradeLevelId[0]}</p>
-            )}
-          </div>
+        <h3 className="form-section-title">Registration / transfer notes</h3>
+        <p className="text-muted" style={{ marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+          School year and grade are chosen when you create an enrollment, not here. For transferees,
+          record the previous school so finance can validate before assessment.
+        </p>
+        <div className="form-group">
+          <label className="form-label" htmlFor="previousSchool">
+            Previous school (transferees)
+          </label>
+          <input
+            id="previousSchool"
+            name="previousSchool"
+            className={`form-control ${state.errors?.previousSchool ? "form-control-error" : ""}`}
+            placeholder="Name of last school attended"
+          />
+          {state.errors?.previousSchool && (
+            <p className="form-error">{state.errors.previousSchool[0]}</p>
+          )}
+        </div>
+        <div className="form-group">
+          <label className="form-label" htmlFor="submittedDocumentsNotes">
+            Submitted documents (notes)
+          </label>
+          <textarea
+            id="submittedDocumentsNotes"
+            name="submittedDocumentsNotes"
+            className={`form-control ${state.errors?.submittedDocumentsNotes ? "form-control-error" : ""}`}
+            rows={3}
+            placeholder="e.g. Birth certificate on file, Form 137 pending"
+          />
+          {state.errors?.submittedDocumentsNotes && (
+            <p className="form-error">{state.errors.submittedDocumentsNotes[0]}</p>
+          )}
         </div>
       </section>
 
-      {/* ─── Guardians ───────────────────────────────────────────────── */}
       <section className="form-section">
         <div className="form-section-header">
           <h3 className="form-section-title">Parents / Guardians</h3>
-          <button
-            type="button"
-            className="btn-secondary btn-sm"
-            onClick={addGuardian}
-          >
+          <button type="button" className="btn-secondary btn-sm" onClick={addGuardian}>
             + Add Guardian
           </button>
         </div>
@@ -391,22 +315,11 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
         </div>
       </section>
 
-      {/* ─── Submit ───────────────────────────────────────────────────── */}
       <div className="form-actions">
-        <button
-          type="button"
-          className="btn-ghost"
-          onClick={() => router.back()}
-          disabled={pending}
-        >
+        <button type="button" className="btn-ghost" onClick={() => router.back()} disabled={pending}>
           Cancel
         </button>
-        <button
-          type="submit"
-          className="btn-primary"
-          id="submit-student"
-          disabled={pending}
-        >
+        <button type="submit" className="btn-primary" id="submit-student" disabled={pending}>
           {pending ? (
             <>
               <span className="spinner" aria-hidden="true" />

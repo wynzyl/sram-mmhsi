@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { students, parentsGuardians, studentGuardianLinks } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { students, parentsGuardians, studentGuardianLinks, enrollments } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import EditStudentForm from "@/components/students/EditStudentForm";
@@ -48,6 +48,8 @@ export default async function EditStudentPage({ params }: PageProps) {
       nationality: true,
       bloodType: true,
       religion: true,
+      previousSchool: true,
+      submittedDocumentsNotes: true,
 
       isActive: true,
     },
@@ -84,6 +86,11 @@ export default async function EditStudentPage({ params }: PageProps) {
     isPrimary: g.isPrimary ?? false,
   }));
 
+  const hasEnrolledEnrollment = await db.query.enrollments.findFirst({
+    where: and(eq(enrollments.studentId, id), eq(enrollments.status, "enrolled")),
+    columns: { id: true },
+  });
+
   return (
     <div className="page-container page-container-narrow">
       <div className="page-header">
@@ -98,6 +105,7 @@ export default async function EditStudentPage({ params }: PageProps) {
       <EditStudentForm
         student={student}
         initialGuardians={initialGuardians}
+        isActiveLocked={Boolean(hasEnrolledEnrollment)}
       />
     </div>
   );

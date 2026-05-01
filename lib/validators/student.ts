@@ -21,7 +21,7 @@ export type GuardianInput = z.infer<typeof GuardianSchema>;
 export const CreateStudentSchema = z.object({
   firstName: z.string().min(1, "First name is required.").trim(),
   middleName: z.string().trim().optional(),
-  lastName: z.string().min(1, "Last name is required.").trim(),
+  lastName: z.string().min(1, "Last name is required.").trim().toUpperCase(),
   suffix: z.string().trim().optional(),
   dateOfBirth: z
     .string()
@@ -53,10 +53,9 @@ export const CreateStudentSchema = z.object({
     })
     .optional(),
   religion: z.string().trim().max(100, "Religion too long.").optional(),
+  previousSchool: z.string().trim().max(500, "Too long.").optional(),
+  submittedDocumentsNotes: z.string().trim().max(2000, "Too long.").optional(),
 
-  // Registration fields
-  schoolYearId: z.string().uuid("School year is required."),
-  gradeLevelId: z.string().uuid("Grade level is required."),
   // Guardians
   guardians: z.array(GuardianSchema).min(1, "At least one guardian is required."),
 });
@@ -77,7 +76,7 @@ export const UpdateStudentSchema = z.object({
   studentId: z.string().uuid(),
   firstName: z.string().min(1, "First name is required.").trim(),
   middleName: z.string().trim().optional(),
-  lastName: z.string().min(1, "Last name is required.").trim(),
+  lastName: z.string().min(1, "Last name is required.").trim().toUpperCase(),
   suffix: z.string().trim().optional(),
   dateOfBirth: z
     .string()
@@ -109,6 +108,8 @@ export const UpdateStudentSchema = z.object({
     })
     .optional(),
   religion: z.string().trim().max(100, "Religion too long.").optional(),
+  previousSchool: z.string().trim().max(500, "Too long.").optional(),
+  submittedDocumentsNotes: z.string().trim().max(2000, "Too long.").optional(),
 
   isActive: z.boolean().optional(),
   // Guardians

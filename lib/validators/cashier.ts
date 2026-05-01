@@ -3,7 +3,12 @@ import { z } from "zod";
 // ─── Receipt Booklet Validators ───────────────────────────────────────────────
 
 export const CreateBookletSchema = z.object({
-  series: z.string().trim().min(1, "Series is required (e.g., 'A', 'AP')"),
+  series: z.string().trim().min(1, "Series is required (e.g., batch label or booklet code)"),
+  prefix: z
+    .string()
+    .trim()
+    .min(1, "Prefix is required (printed before the OR number, e.g. AP)")
+    .max(32, "Prefix must be at most 32 characters"),
   startNumber: z.coerce.number().int().min(1, "Start number must be at least 1"),
   endNumber: z.coerce.number().int().min(1, "End number must be at least 1"),
 }).refine((data) => data.endNumber > data.startNumber, {

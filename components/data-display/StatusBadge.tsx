@@ -1,7 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 
 type PaymentStatus = "paid" | "partial" | "unpaid";
-type EnrollmentStatus = "pending" | "enrolled" | "withdrawn";
+type EnrollmentStatus =
+  | "pending"
+  | "assessed"
+  | "enrolled"
+  | "cancelled"
+  | "withdrawn";
 type ORStatus = "issued" | "cancelled" | "not_issued";
 
 interface StatusBadgeProps {
@@ -17,7 +22,9 @@ const statusConfig = {
   },
   enrollment: {
     pending: { variant: "warning" as const, label: "Pending" },
+    assessed: { variant: "secondary" as const, label: "Assessed" },
     enrolled: { variant: "success" as const, label: "Enrolled" },
+    cancelled: { variant: "danger" as const, label: "Cancelled" },
     withdrawn: { variant: "secondary" as const, label: "Withdrawn" },
   },
   or: {
@@ -32,12 +39,16 @@ const statusConfig = {
  * Ensures consistent status display across the application
  */
 export function StatusBadge({ status, type = "payment" }: StatusBadgeProps) {
+  type BadgeConfig = {
+    variant: "secondary" | "success" | "warning" | "danger" | "info";
+    label: string;
+  };
+
   const normalizedStatus = status.toLowerCase();
-  const config =
-    statusConfig[type]?.[
-      normalizedStatus as keyof (typeof statusConfig)[typeof type]
-    ] || {
-      variant: "secondary" as const,
+  const table = statusConfig[type] as Record<string, BadgeConfig> | undefined;
+  const config: BadgeConfig =
+    table?.[normalizedStatus] ?? {
+      variant: "secondary",
       label: status.charAt(0).toUpperCase() + status.slice(1),
     };
 

@@ -6,11 +6,12 @@ import {
   students,
   parentsGuardians,
   studentGuardianLinks,
-  registrations,
+  enrollments,
   schoolYears,
   gradeLevels,
+  sections,
 } from "@/lib/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 
@@ -33,7 +34,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
   const session = await requireSession();
   if (!hasPermission(session.role, "students:read")) redirect("/admin/dashboard");
 
-  // Fetch student with guardians and registration history
+  // Fetch student with guardians and enrollment history
   const student = await db.query.students.findFirst({
     where: eq(students.id, id),
     columns: {
@@ -54,6 +55,8 @@ export default async function StudentProfilePage({ params }: PageProps) {
       nationality: true,
       bloodType: true,
       religion: true,
+      previousSchool: true,
+      submittedDocumentsNotes: true,
 
       isActive: true,
       createdAt: true,
@@ -65,13 +68,13 @@ export default async function StudentProfilePage({ params }: PageProps) {
   // Fetch guardians
   const guardianLinks = await db
     .select({
+      id: parentsGuardians.id,
       isPrimary: studentGuardianLinks.isPrimary,
       firstName: parentsGuardians.firstName,
       middleName: parentsGuardians.middleName,
       lastName: parentsGuardians.lastName,
       relationship: parentsGuardians.relationship,
       address: parentsGuardians.address,
-      occupation: parentsGuardians.occupation,
       contactNumber: parentsGuardians.contactNumber,
       email: parentsGuardians.email,
     })
@@ -79,19 +82,23 @@ export default async function StudentProfilePage({ params }: PageProps) {
     .innerJoin(parentsGuardians, eq(studentGuardianLinks.guardianId, parentsGuardians.id))
     .where(eq(studentGuardianLinks.studentId, id));
 
-  // Fetch registrations
-  const regRows = await db
+  const enrollmentRows = await db
     .select({
-      id: registrations.id,
-      createdAt: registrations.createdAt,
+      id: enrollments.id,
+      createdAt: enrollments.createdAt,
+      enrolledAt: enrollments.enrolledAt,
+      status: enrollments.status,
+      studentType: enrollments.studentType,
       schoolYear: schoolYears.label,
       gradeLevel: gradeLevels.name,
+      sectionName: sections.name,
     })
-    .from(registrations)
-    .innerJoin(schoolYears, eq(registrations.schoolYearId, schoolYears.id))
-    .innerJoin(gradeLevels, eq(registrations.gradeLevelId, gradeLevels.id))
-    .where(eq(registrations.studentId, id))
-    .orderBy(desc(registrations.createdAt));
+    .from(enrollments)
+    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+    .leftJoin(sections, eq(enrollments.sectionId, sections.id))
+    .where(eq(enrollments.studentId, id))
+    .orderBy(desc(enrollments.createdAt));
 
   const fullName = [student.firstName, student.middleName, student.lastName, student.suffix]
     .filter(Boolean)
@@ -198,6 +205,14 @@ export default async function StudentProfilePage({ params }: PageProps) {
               <dt>Religion</dt>
               <dd>{student.religion ?? "—"}</dd>
             </div>
+            <div className="profile-dl-row">
+              <dt>Previous school</dt>
+              <dd>{student.previousSchool ?? "—"}</dd>
+            </div>
+            <div className="profile-dl-row">
+              <dt>Documents (notes)</dt>
+              <dd className="whitespace-pre-wrap">{student.submittedDocumentsNotes ?? "—"}</dd>
+            </div>
 
             <div className="profile-dl-row">
               <dt>Registered On</dt>
@@ -219,49 +234,100 @@ export default async function StudentProfilePage({ params }: PageProps) {
             <p className="text-muted">No guardians on file.</p>
           ) : (
             <ul className="guardian-list-profile">
-              {guardianLinks.map((g, i) => (
-                <li key={i} className="guardian-item">
+              {guardianLinks.map((g) => (
+                <li key={g.id} className="guardian-item">
                   <div className="guardian-item-name">
                     {g.firstName} {g.middleName} {g.lastName}
                     {g.isPrimary && (
                       <span className="guardian-badge-primary">Primary</span>
                     )}
                   </div>
-                  <div className="guardian-item-meta">
-                    <span>{g.relationship}</span>
-                    {g.contactNumber && <span>📞 {g.contactNumber}</span>}
-                    {g.email && <span>✉ {g.email}</span>}
-                  </div>
+                  <dl className="profile-dl guardian-profile-dl mt-2">
+                    <div className="profile-dl-row">
+                      <dt>Relationship</dt>
+                      <dd>{g.relationship}</dd>
+                    </div>
+                    <div className="profile-dl-row">
+                      <dt>Address</dt>
+                      <dd>{g.address?.trim() ? g.address : "—"}</dd>
+                    </div>
+                    <div className="profile-dl-row">
+                      <dt>Contact Number</dt>
+                      <dd>{g.contactNumber?.trim() ? g.contactNumber : "—"}</dd>
+                    </div>
+                    <div className="profile-dl-row">
+                      <dt>Email address</dt>
+                      <dd>
+                        {g.email?.trim() ? (
+                          <a href={`mailto:${g.email}`} className="text-[var(--color-primary)] hover:underline">
+                            {g.email}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        {/* ─── Registration History ─────────────────────────────── */}
+        {/* ─── Enrollment History (newest first) ───────────────── */}
         <section className="profile-card profile-card-wide">
-          <h2 className="profile-card-title">Registration History</h2>
-          {regRows.length === 0 ? (
-            <p className="text-muted">No registration records found.</p>
+          <h2 className="profile-card-title">Enrollment History</h2>
+          {enrollmentRows.length === 0 ? (
+            <p className="text-muted">No enrollment records found.</p>
           ) : (
-            <table className="data-table" id="registration-history-table">
+            <table className="data-table" id="enrollment-history-table">
               <thead>
                 <tr>
                   <th>School Year</th>
-                  <th>Grade Level</th>
-                  <th>Registered On</th>
+                  <th>Grade</th>
+                  <th>Section</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Enrolled</th>
+                  <th>Created</th>
                 </tr>
               </thead>
               <tbody>
-                {regRows.map((reg) => (
-                  <tr key={reg.id}>
-                    <td>{reg.schoolYear}</td>
-                    <td>{reg.gradeLevel}</td>
-                    <td className="text-muted">
-                      {new Date(reg.createdAt).toLocaleDateString("en-PH")}
-                    </td>
-                  </tr>
-                ))}
+                {enrollmentRows.map((row) => {
+                  const typeLabel =
+                    row.studentType === "new_student"
+                      ? "New"
+                      : row.studentType === "transferee"
+                        ? "Transferee"
+                        : "Returning";
+                  return (
+                    <tr key={row.id}>
+                      <td>{row.schoolYear}</td>
+                      <td>{row.gradeLevel}</td>
+                      <td className="text-muted">{row.sectionName ?? "—"}</td>
+                      <td>{typeLabel}</td>
+                      <td>
+                        <span className="text-capitalize">{row.status}</span>
+                      </td>
+                      <td className="text-muted">
+                        {row.enrolledAt
+                          ? new Date(row.enrolledAt).toLocaleDateString("en-PH", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "—"}
+                      </td>
+                      <td className="text-muted">
+                        {new Date(row.createdAt).toLocaleDateString("en-PH", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

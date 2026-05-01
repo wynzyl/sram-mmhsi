@@ -67,13 +67,21 @@ export default async function AssessmentLedgerPage({ params }: PageProps) {
   const canPost = hasPermission(session.role, "payments:post");
   const canVoid = hasPermission(session.role, "payments:void");
 
-  let activeBooklets: { id: string; series: string; nextNumber: number }[] = [];
+  let activeBooklets: {
+    id: string;
+    series: string;
+    prefix: string;
+    nextNumber: number;
+    endNumber: number;
+  }[] = [];
   if (canPost) {
     activeBooklets = await db
       .select({
         id: receiptBooklets.id,
         series: receiptBooklets.series,
+        prefix: receiptBooklets.prefix,
         nextNumber: receiptBooklets.nextNumber,
+        endNumber: receiptBooklets.endNumber,
       })
       .from(receiptBooklets)
       .where(eq(receiptBooklets.status, "active"))

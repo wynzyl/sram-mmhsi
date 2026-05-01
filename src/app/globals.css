@@ -9,7 +9,7 @@
 
 :root {
   /* Font Families */
-  --font-sans: var(--font-instrument-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: var(--font-instrument-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
   --font-mono: var(--font-jetbrains-mono), 'Courier New', Consolas, Monaco, monospace;
 
   /* Font Sizes - optimized for data density */
@@ -260,7 +260,7 @@ h5 { font-size: 0.875rem; font-weight: 600; }
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.15rem 0.5rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 99px;
   font-size: 0.7rem;
   font-weight: 600;
@@ -276,7 +276,7 @@ h5 { font-size: 0.875rem; font-weight: 600; }
 .search-bar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 .search-input-wrapper {
   position: relative;
@@ -614,6 +614,9 @@ textarea.form-control { resize: vertical; }
   color: var(--color-text-muted);
   margin-top: 0.25rem;
   flex-wrap: wrap;
+}
+.guardian-profile-dl .profile-dl-row dt {
+  width: 9.5rem;
 }
 
 /* ─── Modal ───────────────────────────────────────────────────────────────── */

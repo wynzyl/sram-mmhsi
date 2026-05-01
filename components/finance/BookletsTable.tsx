@@ -1,8 +1,11 @@
 "use client";
 
+import { formatStoredOrNumber, orNumberPadWidth } from "@/lib/utils/or-number";
+
 interface ReceiptBooklet {
   id: string;
   series: string;
+  prefix: string;
   startNumber: number;
   endNumber: number;
   nextNumber: number;
@@ -34,9 +37,10 @@ export default function BookletsTable({ booklets }: BookletsTableProps) {
         <thead>
           <tr>
             <th>Series</th>
+            <th>OR prefix</th>
             <th>Start Number</th>
             <th>End Number</th>
-            <th>Next Available</th>
+            <th>Next OR</th>
             <th>Status</th>
             <th>Created At</th>
           </tr>
@@ -44,19 +48,26 @@ export default function BookletsTable({ booklets }: BookletsTableProps) {
         <tbody>
           {booklets.length === 0 ? (
             <tr>
-              <td colSpan={6} className="table-empty">
+              <td colSpan={7} className="table-empty">
                 No receipt booklets found.
               </td>
             </tr>
           ) : (
-            booklets.map((booklet) => (
+            booklets.map((booklet) => {
+              const w = orNumberPadWidth(booklet.endNumber);
+              return (
               <tr key={booklet.id} className="table-row-hover">
                 <td style={{ fontWeight: 600 }}>{booklet.series}</td>
-                <td>{String(booklet.startNumber).padStart(6, "0")}</td>
-                <td>{String(booklet.endNumber).padStart(6, "0")}</td>
-                <td style={{ color: booklet.status === "active" ? "var(--color-primary)" : "inherit" }}>
-                  {booklet.status === "active" 
-                    ? String(booklet.nextNumber).padStart(6, "0") 
+                <td style={{ fontWeight: 600 }}>{booklet.prefix}</td>
+                <td style={{ fontFamily: "var(--font-mono, ui-monospace)" }}>
+                  {String(booklet.startNumber).padStart(w, "0")}
+                </td>
+                <td style={{ fontFamily: "var(--font-mono, ui-monospace)" }}>
+                  {String(booklet.endNumber).padStart(w, "0")}
+                </td>
+                <td style={{ color: booklet.status === "active" ? "var(--color-primary)" : "inherit", fontFamily: "var(--font-mono, ui-monospace)" }}>
+                  {booklet.status === "active"
+                    ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber, booklet.endNumber)
                     : "—"}
                 </td>
                 <td>
@@ -68,7 +79,8 @@ export default function BookletsTable({ booklets }: BookletsTableProps) {
                   {booklet.createdAt.toLocaleDateString()}
                 </td>
               </tr>
-            ))
+              );
+            })
           )}
         </tbody>
       </table>

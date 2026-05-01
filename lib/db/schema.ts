@@ -37,6 +37,12 @@ export const enrollmentStatusEnum = pgEnum("enrollment_status", [
   "cancelled",
 ]);
 
+export const enrollmentStudentTypeEnum = pgEnum("enrollment_student_type", [
+  "new_student",
+  "transferee",
+  "old_student",
+]);
+
 export const paymentStatusEnum = pgEnum("payment_status", [
   "pending_confirmation",
   "posted",
@@ -188,6 +194,10 @@ export const students = pgTable(
     nationality: text("nationality"),
     bloodType: text("blood_type"),
     religion: text("religion"),
+    /** Prior school name; required workflow-wise for transferees per enrollment skill. */
+    previousSchool: text("previous_school"),
+    /** Free-text notes on submitted documents (reports, certs, etc.). */
+    submittedDocumentsNotes: text("submitted_documents_notes"),
     userId: uuid("user_id").references(() => users.id),   // linked portal account
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -269,9 +279,12 @@ export const enrollments = pgTable(
     gradeLevelId: uuid("grade_level_id").notNull().references(() => gradeLevels.id),
     sectionId: uuid("section_id").references(() => sections.id),
     registrationId: uuid("registration_id").references(() => registrations.id),
+    /** NEW_STUDENT | TRANSFEREE | OLD_STUDENT workflow classification. */
+    studentType: enrollmentStudentTypeEnum("student_type").notNull().default("new_student"),
     status: enrollmentStatusEnum("status").notNull().default("pending"),
     enrolledAt: timestamp("enrolled_at"),
     cancelledAt: timestamp("cancelled_at"),
+    cancelledBy: uuid("cancelled_by").references(() => users.id),
     cancelRemarks: text("cancel_remarks"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
@@ -291,16 +304,15 @@ export const enrollments = pgTable(
 export const feeSchedules = pgTable("fee_schedules", {
   id: uuid("id").primaryKey().defaultRandom(),
   schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
-  gradeLevelId: uuid("grade_level_id").notNull().references(() => gradeLevels.id),
+  /** Optional legacy column; assessments use one standard schedule per school year (schoolYearId-only). */
+  gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
   description: text("description"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   createdBy: uuid("created_by").references(() => users.id),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: uuid("updated_by").references(() => users.id),
-}, (t) => [
-  uniqueIndex("fee_schedule_unique_idx").on(t.schoolYearId, t.gradeLevelId)
-]);
+}, (t) => [uniqueIndex("fee_schedule_school_year_uidx").on(t.schoolYearId)]);
 
 export const feeScheduleItems = pgTable("fee_schedule_items", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -333,12 +345,16 @@ export const assessments = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     updatedBy: uuid("updated_by").references(() => users.id),
   },
-  (t) => [index("assessment_student_sy_idx").on(t.studentId, t.schoolYearId)]
+  (t) => [
+    index("assessment_student_sy_idx").on(t.studentId, t.schoolYearId),
+    uniqueIndex("assessments_enrollment_id_uidx").on(t.enrollmentId),
+  ]
 );
 
 export const assessmentItems = pgTable("assessment_items", {
   id: uuid("id").primaryKey().defaultRandom(),
   assessmentId: uuid("assessment_id").notNull().references(() => assessments.id, { onDelete: "cascade" }),
+  feeScheduleItemId: uuid("fee_schedule_item_id").references(() => feeScheduleItems.id),
   description: text("description").notNull(),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
   isDiscount: boolean("is_discount").notNull().default(false),
@@ -354,7 +370,9 @@ export const receiptBooklets = pgTable(
   "receipt_booklets",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    series: text("series").notNull(),               // e.g. "AP"
+    series: text("series").notNull(),
+    /** Printed/stored before sequence: stored OR = `${prefix} ${paddedNo}` (e.g. AP 00050). */
+    prefix: text("prefix").notNull(),
     startNumber: integer("start_number").notNull(),
     endNumber: integer("end_number").notNull(),
     nextNumber: integer("next_number").notNull(),

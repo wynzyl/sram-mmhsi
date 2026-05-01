@@ -2,20 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import {
-  enrollments,
-  students,
-  schoolYears,
-  gradeLevels,
-  sections,
-  registrations,
-  auditLogs,
-  assessments,
-  assessmentItems,
-  feeSchedules,
-  feeScheduleItems,
-} from "@/lib/db/schema";
-import { eq, and, sql, ne } from "drizzle-orm";
+import { enrollments, students, auditLogs } from "@/lib/db/schema";
+import { eq, and, ne } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -23,6 +11,7 @@ import {
   UpdateEnrollmentStatusSchema,
 } from "@/lib/validators/enrollment";
 import type {
+  CreateEnrollmentInput,
   EnrollmentFormState,
   UpdateEnrollmentFormState,
 } from "@/lib/validators/enrollment";
@@ -64,30 +53,51 @@ export async function createEnrollmentAction(
     return { message: "You do not have permission to create enrollments." };
   }
 
+  const studentTypeRaw = formData.get("studentType");
+
   const parsed = CreateEnrollmentSchema.safeParse({
     studentId: formData.get("studentId"),
     schoolYearId: formData.get("schoolYearId"),
     gradeLevelId: formData.get("gradeLevelId"),
     sectionId: formData.get("sectionId") || undefined,
     registrationId: formData.get("registrationId") || undefined,
+    studentType:
+      typeof studentTypeRaw === "string" && studentTypeRaw.length > 0
+        ? studentTypeRaw
+        : "new_student",
   });
 
   if (!parsed.success) {
     return { errors: parsed.error.flatten().fieldErrors as EnrollmentFormState["errors"] };
   }
 
-  const { studentId, schoolYearId, gradeLevelId, sectionId, registrationId } = parsed.data;
+  const { studentId, schoolYearId, gradeLevelId, sectionId, registrationId, studentType } =
+    parsed.data;
 
-  // Check student exists
   const student = await db.query.students.findFirst({
     where: and(eq(students.id, studentId), eq(students.isActive, true)),
-    columns: { id: true, firstName: true, lastName: true, referenceNumber: true },
+    columns: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      referenceNumber: true,
+      previousSchool: true,
+    },
   });
   if (!student) {
     return { errors: { studentId: ["Student not found or inactive."] } };
   }
 
-  // Check for duplicate active enrollment in same school year
+  if (studentType === "transferee") {
+    const ps = student.previousSchool?.trim();
+    if (!ps) {
+      return {
+        message:
+          "Transferee enrollments require “Previous school” on the student profile. Edit the student first.",
+      };
+    }
+  }
+
   const existingActive = await db
     .select({ id: enrollments.id, status: enrollments.status })
     .from(enrollments)
@@ -110,93 +120,42 @@ export async function createEnrollmentAction(
     };
   }
 
+  let newEnrollmentId: string | undefined;
+
   try {
-    // Check for active fee schedule first
-    const schedule = await db.query.feeSchedules.findFirst({
-      where: and(
-        eq(feeSchedules.schoolYearId, schoolYearId),
-        eq(feeSchedules.gradeLevelId, gradeLevelId),
-        eq(feeSchedules.isActive, true)
-      ),
-    });
-
-    if (!schedule) {
-      return { message: "Cannot enroll student: No active fee schedule found for this grade level. Please configure it in Finance first." };
-    }
-
-    const scheduleItems = await db
-      .select()
-      .from(feeScheduleItems)
-      .where(eq(feeScheduleItems.feeScheduleId, schedule.id));
-
-    if (scheduleItems.length === 0) {
-      return { message: "Cannot enroll student: The fee schedule has no items configured." };
-    }
-
-    const assessmentTotalAmount = scheduleItems.reduce(
-      (acc, item) => acc + (item.isDiscount ? -Number(item.amount) : Number(item.amount)),
-      0
-    );
-
-    let newEnrollmentId: string | undefined;
-
-    await db.transaction(async (tx) => {
-      // 1. Create Enrollment as 'assessed'
-      const [newEnrollment] = await tx
-        .insert(enrollments)
-        .values({
-          studentId,
-          schoolYearId,
-          gradeLevelId,
-          sectionId: sectionId ?? null,
-          registrationId: registrationId ?? null,
-          status: "assessed",
-          createdBy: session.userId,
-          updatedBy: session.userId,
-        })
-        .returning({ id: enrollments.id });
-      
-      newEnrollmentId = newEnrollment.id;
-
-      // 2. Create Assessment
-      const [newAssessment] = await tx
-        .insert(assessments)
-        .values({
-          enrollmentId: newEnrollment.id,
-          studentId,
-          schoolYearId,
-          totalAmount: String(assessmentTotalAmount),
-          totalPaid: "0.00",
-          balance: String(assessmentTotalAmount),
-          createdBy: session.userId,
-          updatedBy: session.userId,
-        })
-        .returning({ id: assessments.id });
-
-      // 3. Create Assessment Items
-      const itemsToInsert = scheduleItems.map((item) => ({
-        assessmentId: newAssessment.id,
-        description: item.description,
-        amount: item.amount,
-        isDiscount: item.isDiscount,
+    const [created] = await db
+      .insert(enrollments)
+      .values({
+        studentId,
+        schoolYearId,
+        gradeLevelId,
+        sectionId: sectionId ?? null,
+        registrationId: registrationId ?? null,
+        studentType: studentType satisfies CreateEnrollmentInput["studentType"],
+        status: "pending",
         createdBy: session.userId,
         updatedBy: session.userId,
-      }));
+      })
+      .returning({ id: enrollments.id });
 
-      await tx.insert(assessmentItems).values(itemsToInsert);
+    newEnrollmentId = created.id;
 
-      // 4. Audit Log
-      await tx.insert(auditLogs).values({
-        actor: session.userId,
-        actorRole: session.role,
-        action: "enrollment_created_and_assessed",
-        targetEntity: "enrollments",
-        targetId: newEnrollment.id,
-        newState: JSON.stringify({ studentId, schoolYearId, gradeLevelId, status: "assessed" }),
-      });
+    await db.insert(auditLogs).values({
+      actor: session.userId,
+      actorRole: session.role,
+      action: "enrollment_created_pending",
+      targetEntity: "enrollments",
+      targetId: created.id,
+      newState: JSON.stringify({
+        studentId,
+        schoolYearId,
+        gradeLevelId,
+        studentType,
+        status: "pending",
+      }),
     });
 
-    logger.info("[enrollments] Enrollment created and auto-assessed", {
+    logger.info("[enrollments] Enrollment created (pending)", {
       enrollmentId: newEnrollmentId,
       studentId,
       actorId: session.userId,
@@ -212,7 +171,7 @@ export async function createEnrollmentAction(
   }
 }
 
-// ─── Update Enrollment Status Action ─────────────────────────────────────────
+// ─── Update Enrollment Status (cancel / admin override enrolled) ────────────
 
 export async function updateEnrollmentStatusAction(
   _prevState: UpdateEnrollmentFormState,
@@ -233,146 +192,79 @@ export async function updateEnrollmentStatusAction(
 
   const { enrollmentId, action, sectionId, cancelRemarks } = parsed.data;
 
-  // Permission check per action
   const permissionMap = {
-    assess: "enrollments:create",
-    enroll: "enrollments:create",
     cancel: "enrollments:cancel",
+    override_enroll: "enrollments:override_enroll",
   } as const;
 
   if (!hasPermission(session.role, permissionMap[action])) {
-    return { message: `You do not have permission to ${action} enrollments.` };
+    return { message: `You do not have permission to perform this enrollment action.` };
   }
 
-  // Fetch current enrollment
   const enrollment = await db.query.enrollments.findFirst({
     where: eq(enrollments.id, enrollmentId),
-    columns: { id: true, status: true, studentId: true, schoolYearId: true, gradeLevelId: true },
+    columns: {
+      id: true,
+      status: true,
+      studentId: true,
+      schoolYearId: true,
+      gradeLevelId: true,
+    },
   });
 
   if (!enrollment) {
     return { message: "Enrollment not found." };
   }
 
-  // Validate status transition
-  const validTransitions: Record<string, string[]> = {
-    assess: ["pending"],
-    enroll: ["assessed"],
-    cancel: ["pending", "assessed"],
+  const validTransitions: Record<typeof action, readonly string[]> = {
+    cancel: ["pending", "assessed", "enrolled"],
+    override_enroll: ["assessed"],
   };
 
-  if (!validTransitions[action]?.includes(enrollment.status)) {
+  if (!validTransitions[action].includes(enrollment.status)) {
     return {
-      message: `Cannot ${action} an enrollment with status "${enrollment.status}".`,
+      message: `This action cannot be applied when enrollment status is "${enrollment.status}".`,
     };
   }
 
-  let assessmentTotalAmount = 0;
-  let scheduleItems: any[] = [];
-  
-  if (action === "assess") {
-    const schedule = await db.query.feeSchedules.findFirst({
-      where: and(
-        eq(feeSchedules.schoolYearId, enrollment.schoolYearId),
-        eq(feeSchedules.gradeLevelId, enrollment.gradeLevelId),
-        eq(feeSchedules.isActive, true)
-      ),
-    });
-
-    if (!schedule) {
-      return { message: "No active fee schedule found for this grade level. Please configure it in Finance first." };
-    }
-
-    scheduleItems = await db
-      .select()
-      .from(feeScheduleItems)
-      .where(eq(feeScheduleItems.feeScheduleId, schedule.id));
-
-    if (scheduleItems.length === 0) {
-      return { message: "The fee schedule has no items configured. Please add items before assessing." };
-    }
-
-    assessmentTotalAmount = scheduleItems.reduce(
-      (acc, item) => acc + (item.isDiscount ? -Number(item.amount) : Number(item.amount)),
-      0
-    );
-  }
-
-  const statusMap = { assess: "assessed", enroll: "enrolled", cancel: "cancelled" } as const;
-  const newStatus = statusMap[action];
-
-  const updateValues: Record<string, unknown> = {
-    status: newStatus,
+  const updateValues = {
+    status: action === "cancel" ? ("cancelled" as const) : ("enrolled" as const),
     updatedBy: session.userId,
     updatedAt: new Date(),
+    ...(action === "override_enroll" && {
+      enrolledAt: new Date(),
+      ...(sectionId ? { sectionId } : {}),
+    }),
+    ...(action === "cancel" && {
+      cancelledAt: new Date(),
+      cancelledBy: session.userId,
+      cancelRemarks: cancelRemarks ?? null,
+    }),
   };
 
-  if (action === "enroll") {
-    updateValues.enrolledAt = new Date();
-    if (sectionId) updateValues.sectionId = sectionId;
-  }
-
-  if (action === "cancel") {
-    updateValues.cancelledAt = new Date();
-    updateValues.cancelRemarks = cancelRemarks ?? null;
-  }
-
   try {
-    await db.transaction(async (tx) => {
-      await tx
-        .update(enrollments)
-        .set(updateValues as Parameters<typeof db.update>[0] extends any ? any : never)
-        .where(eq(enrollments.id, enrollmentId));
+    await db.update(enrollments).set(updateValues).where(eq(enrollments.id, enrollmentId));
 
-      if (action === "assess") {
-        const [newAssessment] = await tx
-          .insert(assessments)
-          .values({
-            enrollmentId,
-            studentId: enrollment.studentId,
-            schoolYearId: enrollment.schoolYearId,
-            totalAmount: String(assessmentTotalAmount),
-            totalPaid: "0",
-            balance: String(assessmentTotalAmount),
-            createdBy: session.userId,
-            updatedBy: session.userId,
-          })
-          .returning({ id: assessments.id });
-
-        if (scheduleItems.length > 0) {
-          const itemsToInsert = scheduleItems.map((item) => ({
-            assessmentId: newAssessment.id,
-            description: item.description,
-            amount: String(item.amount),
-            isDiscount: item.isDiscount,
-            createdBy: session.userId,
-            updatedBy: session.userId,
-          }));
-          await tx.insert(assessmentItems).values(itemsToInsert);
-        }
-      }
-    });
-
-    await audit(
-      session.userId,
-      session.role,
-      `enrollment_${action}d`,
-      "enrollments",
-      enrollmentId,
-      { newStatus, sectionId }
-    );
+    const verb = action === "cancel" ? "cancelled" : "override_marked_enrolled";
+    await audit(session.userId, session.role, verb, "enrollments", enrollmentId, updateValues);
 
     logger.info("[enrollments] Status updated", {
       enrollmentId,
       action,
-      newStatus,
       actorId: session.userId,
     });
 
     revalidatePath("/admin/enrollments");
+    revalidatePath("/admin/assessments");
     revalidatePath(`/admin/students/${enrollment.studentId}`);
 
-    return { success: true, message: `Enrollment ${action}ed successfully.` };
+    return {
+      success: true,
+      message:
+        action === "cancel"
+          ? "Enrollment cancelled."
+          : "Enrollment marked enrolled (manual override — no payment recorded).",
+    };
   } catch (err) {
     logger.error("[enrollments] Failed to update status", { error: String(err) });
     return { message: "An unexpected error occurred. Please try again." };

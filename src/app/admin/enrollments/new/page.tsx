@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { students, schoolYears, gradeLevels, registrations } from "@/lib/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { students, schoolYears, gradeLevels, enrollments } from "@/lib/db/schema";
+import { eq, asc, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import NewEnrollmentForm from "@/components/enrollments/NewEnrollmentForm";
@@ -19,7 +19,6 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
 
   const { studentId } = await searchParams;
 
-  // Fetch all active students for the select
   const allStudents = await db
     .select({
       id: students.id,
@@ -42,9 +41,7 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
       .orderBy(asc(gradeLevels.order)),
   ]);
 
-  // Pre-select student if provided via query param + fetch their latest approved registration
-  let prefillStudent: typeof allStudents[0] | null = null;
-  let prefillRegistrationId: string | null = null;
+  let prefillStudent: (typeof allStudents)[0] | null = null;
   let prefillSchoolYearId: string | null = null;
   let prefillGradeLevelId: string | null = null;
 
@@ -52,22 +49,19 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
     prefillStudent = allStudents.find((s) => s.id === studentId) ?? null;
 
     if (prefillStudent) {
-      // Find latest registration for pre-filling (all registrations are now auto-approved)
-      const latestReg = await db
+      const latestEn = await db
         .select({
-          id: registrations.id,
-          schoolYearId: registrations.schoolYearId,
-          gradeLevelId: registrations.gradeLevelId,
+          schoolYearId: enrollments.schoolYearId,
+          gradeLevelId: enrollments.gradeLevelId,
         })
-        .from(registrations)
-        .where(eq(registrations.studentId, studentId))
-        .orderBy(asc(registrations.createdAt))
+        .from(enrollments)
+        .where(eq(enrollments.studentId, studentId))
+        .orderBy(desc(enrollments.createdAt))
         .limit(1);
 
-      if (latestReg.length > 0) {
-        prefillRegistrationId = latestReg[0].id;
-        prefillSchoolYearId = latestReg[0].schoolYearId;
-        prefillGradeLevelId = latestReg[0].gradeLevelId;
+      if (latestEn.length > 0) {
+        prefillSchoolYearId = latestEn[0].schoolYearId;
+        prefillGradeLevelId = latestEn[0].gradeLevelId;
       }
     }
   }
@@ -78,7 +72,8 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
         <div>
           <h1 className="page-title">Enroll Student</h1>
           <p className="page-subtitle">
-            Create a new enrollment record for a registered student.
+            Place the student into a school year and grade at <strong>Pending</strong> until fees are
+            assessed.
           </p>
         </div>
       </div>
@@ -88,7 +83,6 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
         schoolYears={syRows}
         gradeLevels={glRows}
         prefillStudentId={prefillStudent?.id ?? null}
-        prefillRegistrationId={prefillRegistrationId}
         prefillSchoolYearId={prefillSchoolYearId}
         prefillGradeLevelId={prefillGradeLevelId}
       />

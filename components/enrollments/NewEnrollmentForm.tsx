@@ -19,7 +19,6 @@ interface NewEnrollmentFormProps {
   schoolYears: SchoolYear[];
   gradeLevels: GradeLevel[];
   prefillStudentId: string | null;
-  prefillRegistrationId: string | null;
   prefillSchoolYearId: string | null;
   prefillGradeLevelId: string | null;
 }
@@ -31,7 +30,6 @@ export default function NewEnrollmentForm({
   schoolYears,
   gradeLevels,
   prefillStudentId,
-  prefillRegistrationId,
   prefillSchoolYearId,
   prefillGradeLevelId,
 }: NewEnrollmentFormProps) {
@@ -131,14 +129,33 @@ export default function NewEnrollmentForm({
           </div>
         </div>
 
-        {/* Hidden: pre-fill registration if available */}
-        {prefillRegistrationId && (
-          <input type="hidden" name="registrationId" value={prefillRegistrationId} />
-        )}
+        <div className="form-group">
+          <label className="form-label" htmlFor="studentType">
+            Enrollment student type <span className="required">*</span>
+          </label>
+          <select
+            id="studentType"
+            name="studentType"
+            className={`form-control ${state.errors?.studentType ? "form-control-error" : ""}`}
+            defaultValue="new_student"
+            required
+          >
+            <option value="new_student">New student</option>
+            <option value="transferee">Transferee</option>
+            <option value="old_student">Returning (old student)</option>
+          </select>
+          {state.errors?.studentType && (
+            <p className="form-error">{state.errors.studentType[0]}</p>
+          )}
+          <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+            Transferee enrollments require “Previous school” on the student profile.
+          </p>
+        </div>
 
         <div className="alert alert-info">
-          <strong>Note:</strong> The enrollment will start in <strong>Pending</strong> status.
-          Use the Enrollments list to advance it through <em>Assessed → Enrolled</em>.
+          The enrollment starts as <strong>Pending</strong>. Use{" "}
+          <strong>Assessments → Awaiting assessment</strong> to build fees, then the cashier marks{" "}
+          <strong>Enrolled</strong> after payment (or admin override).
         </div>
       </section>
 

@@ -77,7 +77,7 @@ export function DataTable<TData>({
                     <th
                       key={header.id}
                       className={cn(
-                        "px-4 py-3 text-left text-sm font-semibold text-[var(--color-text-2)] uppercase tracking-wider",
+                        "px-5 py-3.5 text-left text-xs font-semibold text-[var(--color-text-2)] uppercase tracking-wider",
                         header.column.getCanSort() &&
                           "cursor-pointer select-none hover:bg-[var(--color-surface-3)] transition-colors"
                       )}
@@ -121,7 +121,7 @@ export function DataTable<TData>({
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="px-4 py-3 text-sm text-[var(--color-text)]"
+                        className="px-5 py-4 text-sm text-[var(--color-text)]"
                       >
                         {flexRender(
                           cell.column.columnDef.cell,

@@ -7,13 +7,9 @@ import type { FeeScheduleFormState } from "@/lib/validators/finance";
 
 interface FeeScheduleFormProps {
   schoolYears: { id: string; label: string; isActive: boolean }[];
-  gradeLevels: { id: string; name: string }[];
 }
 
-export default function FeeScheduleForm({
-  schoolYears,
-  gradeLevels,
-}: FeeScheduleFormProps) {
+export default function FeeScheduleForm({ schoolYears }: FeeScheduleFormProps) {
   const router = useRouter();
   const initialState: FeeScheduleFormState = {};
   const [state, action, pending] = useActionState(createFeeScheduleAction, initialState);
@@ -37,6 +33,11 @@ export default function FeeScheduleForm({
         <div className="alert alert-error mb-4">{state.message}</div>
       )}
 
+      <p className="text-muted mb-4" style={{ fontSize: "0.92rem" }}>
+        One fee catalog applies to all grade levels per school year. Add individual fee lines after
+        you create this schedule.
+      </p>
+
       <div className="form-grid">
         <div className="form-group">
           <label className="form-label" htmlFor="schoolYearId">
@@ -59,28 +60,6 @@ export default function FeeScheduleForm({
             <p className="form-error">{state.errors.schoolYearId[0]}</p>
           )}
         </div>
-
-        <div className="form-group">
-          <label className="form-label" htmlFor="gradeLevelId">
-            Grade Level <span className="required">*</span>
-          </label>
-          <select
-            id="gradeLevelId"
-            name="gradeLevelId"
-            className={`form-control ${state.errors?.gradeLevelId ? "form-control-error" : ""}`}
-            required
-          >
-            <option value="">Select grade level</option>
-            {gradeLevels.map((gl) => (
-              <option key={gl.id} value={gl.id}>
-                {gl.name}
-              </option>
-            ))}
-          </select>
-          {state.errors?.gradeLevelId && (
-            <p className="form-error">{state.errors.gradeLevelId[0]}</p>
-          )}
-        </div>
       </div>
 
       <div className="form-group mt-4">
@@ -92,7 +71,7 @@ export default function FeeScheduleForm({
           id="description"
           name="description"
           className={`form-control ${state.errors?.description ? "form-control-error" : ""}`}
-          placeholder="e.g., Standard Grade 7 Fees"
+          placeholder="e.g. SY 2026–2027 standard fees (all grades)"
         />
         {state.errors?.description && (
           <p className="form-error">{state.errors.description[0]}</p>
@@ -101,12 +80,8 @@ export default function FeeScheduleForm({
 
       <div className="form-group mt-4">
         <label className="checkbox-label" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <input
-            type="checkbox"
-            name="isActive"
-            defaultChecked={true}
-          />
-          <span>Active (Available for assessment generation)</span>
+          <input type="checkbox" name="isActive" defaultChecked={true} />
+          <span>Active (available for assessments)</span>
         </label>
       </div>
 

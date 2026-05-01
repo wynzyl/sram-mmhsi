@@ -3,7 +3,6 @@
 import { useState, useActionState } from "react";
 import Link from "next/link";
 import { updateEnrollmentStatusAction } from "@/actions/enrollments";
-import type { UpdateEnrollmentFormState } from "@/lib/validators/enrollment";
 
 interface Enrollment {
   id: string;
@@ -16,6 +15,7 @@ interface Enrollment {
   section: string | null;
   enrolledAt: Date | null;
   createdAt: Date;
+  assessmentId: string | null;
 }
 
 interface Section {
@@ -28,6 +28,7 @@ interface EnrollmentsTableProps {
   sections: Section[];
   canManage: boolean;
   canCancel: boolean;
+  canOverrideEnrolled: boolean;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -37,29 +38,9 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: "badge-danger",
 };
 
-const NEXT_ACTION: Record<string, { label: string; action: string; btnClass: string }> = {
-  pending: { label: "Mark Assessed", action: "assess", btnClass: "btn-secondary btn-sm" },
-  assessed: { label: "Enroll", action: "enroll", btnClass: "btn-primary btn-sm" },
-};
-
-// ─── Inline Status Update Row ─────────────────────────────────────────────────
-
-function EnrollmentActionRow({
-  enrollment,
-  sections,
-  canCancel,
-  onDone,
-}: {
-  enrollment: Enrollment;
-  sections: Section[];
-  canCancel: boolean;
-  onDone: () => void;
-}) {
-  const initialState: UpdateEnrollmentFormState = {};
-  const [state, action, pending] = useActionState(updateEnrollmentStatusAction, initialState);
-  const [showCancel, setShowCancel] = useState(false);
-  const [showSectionPick, setShowSectionPick] = useState(false);
-  const nextAction = NEXT_ACTION[enrollment.status];
+function CancelInline({ enrollmentId }: { enrollmentId: string }) {
+  const [state, action, pending] = useActionState(updateEnrollmentStatusAction, {});
+  const [show, setShow] = useState(false);
 
   if (state.success) {
     return (
@@ -70,95 +51,211 @@ function EnrollmentActionRow({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-      {state.message && (
-        <p style={{ fontSize: "0.72rem", color: "var(--color-error)" }}>{state.message}</p>
-      )}
-
-      <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
-        {/* Primary next-step action */}
-        {nextAction && (
-          <form action={action}>
-            <input type="hidden" name="enrollmentId" value={enrollment.id} />
-            <input type="hidden" name="action" value={nextAction.action} />
-            {nextAction.action === "enroll" && showSectionPick ? (
-              <div style={{ display: "flex", gap: "0.25rem", alignItems: "center" }}>
-                <select name="sectionId" className="form-control" style={{ padding: "0.2rem 0.4rem", fontSize: "0.75rem" }}>
-                  <option value="">No section</option>
-                  {sections.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-                <button type="submit" className="btn-primary btn-sm" disabled={pending}>
-                  {pending ? "..." : "Confirm"}
-                </button>
-                <button type="button" className="btn-ghost btn-sm" onClick={() => setShowSectionPick(false)}>
-                  ✕
-                </button>
-              </div>
-            ) : (
-              <button
-                type={nextAction.action === "enroll" ? "button" : "submit"}
-                className={nextAction.btnClass}
-                disabled={pending}
-                onClick={nextAction.action === "enroll" ? () => setShowSectionPick(true) : undefined}
-              >
-                {pending ? "..." : nextAction.label}
-              </button>
-            )}
-          </form>
-        )}
-
-        {/* View Student */}
-        <Link
-          href={`/admin/students/${enrollment.studentId}`}
+    <div style={{ marginTop: "0.125rem" }}>
+      {!show ? (
+        <button
+          type="button"
           className="btn-ghost btn-sm"
+          style={{ color: "var(--color-error)" }}
+          onClick={() => setShow(true)}
         >
-          View
-        </Link>
-
-        {/* Cancel */}
-        {canCancel && enrollment.status !== "enrolled" && enrollment.status !== "cancelled" && (
-          showCancel ? (
-            <form action={action} style={{ display: "flex", gap: "0.25rem" }}>
-              <input type="hidden" name="enrollmentId" value={enrollment.id} />
-              <input type="hidden" name="action" value="cancel" />
-              <input
-                type="text"
-                name="cancelRemarks"
-                className="form-control"
-                placeholder="Reason..."
-                style={{ padding: "0.2rem 0.4rem", fontSize: "0.75rem", width: "120px" }}
-              />
-              <button type="submit" className="btn-danger btn-sm" disabled={pending}>
-                {pending ? "..." : "Confirm"}
-              </button>
-              <button type="button" className="btn-ghost btn-sm" onClick={() => setShowCancel(false)}>✕</button>
-            </form>
-          ) : (
-            <button
-              type="button"
-              className="btn-ghost btn-sm"
-              style={{ color: "var(--color-error)" }}
-              onClick={() => setShowCancel(true)}
-            >
-              Cancel
-            </button>
-          )
-        )}
-      </div>
+          Cancel enrollment
+        </button>
+      ) : (
+        <form
+          action={action}
+          style={{ display: "flex", gap: "0.25rem", alignItems: "center", flexWrap: "wrap" }}
+        >
+          <input type="hidden" name="enrollmentId" value={enrollmentId} />
+          <input type="hidden" name="action" value="cancel" />
+          <input
+            type="text"
+            name="cancelRemarks"
+            className="form-control"
+            placeholder="Reason…"
+            style={{ padding: "0.2rem 0.4rem", fontSize: "0.75rem", width: "140px" }}
+          />
+          <button type="submit" className="btn-danger btn-sm" disabled={pending}>
+            {pending ? "…" : "Confirm"}
+          </button>
+          <button type="button" className="btn-ghost btn-sm" onClick={() => setShow(false)}>
+            ✕
+          </button>
+        </form>
+      )}
+      {state.message && !state.success && (
+        <p style={{ fontSize: "0.72rem", color: "var(--color-error)", marginTop: "0.2rem" }}>
+          {state.message}
+        </p>
+      )}
     </div>
   );
 }
 
-// ─── Main Table ───────────────────────────────────────────────────────────────
+function OverrideEnrollBlock({ enrollmentId, sections }: { enrollmentId: string; sections: Section[] }) {
+  const [state, action, pending] = useActionState(updateEnrollmentStatusAction, {});
+  const [showPick, setShowPick] = useState(false);
+
+  if (state.success) {
+    return (
+      <span className="text-muted" style={{ fontSize: "0.72rem" }}>
+        ✓ {state.message}
+      </span>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+      {state.message && !state.success && (
+        <p style={{ fontSize: "0.72rem", color: "var(--color-error)" }}>{state.message}</p>
+      )}
+      {!showPick ? (
+        <button type="button" className="btn-secondary btn-sm" onClick={() => setShowPick(true)}>
+          Override: mark enrolled (no payment)
+        </button>
+      ) : (
+        <form
+          action={action}
+          style={{ display: "flex", gap: "0.25rem", alignItems: "center", flexWrap: "wrap" }}
+        >
+          <input type="hidden" name="enrollmentId" value={enrollmentId} />
+          <input type="hidden" name="action" value="override_enroll" />
+          <select
+            name="sectionId"
+            className="form-control"
+            style={{ padding: "0.2rem 0.4rem", fontSize: "0.72rem" }}
+          >
+            <option value="">Section…</option>
+            {sections.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <button type="submit" className="btn-primary btn-sm" disabled={pending} title="Admin only">
+            Confirm
+          </button>
+          <button type="button" className="btn-ghost btn-sm" onClick={() => setShowPick(false)}>
+            ✕
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function EnrolledActions({
+  studentId,
+  enrollmentId,
+  canCancel,
+}: {
+  studentId: string;
+  enrollmentId: string;
+  canCancel: boolean;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+      <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", alignItems: "center" }}>
+        <Link href={`/admin/students/${studentId}`} className="btn-ghost btn-sm">
+          Student
+        </Link>
+        <Link href="/admin/assessments?view=ledgers" className="btn-ghost btn-sm">
+          Ledgers
+        </Link>
+      </div>
+      {canCancel && <CancelInline enrollmentId={enrollmentId} />}
+    </div>
+  );
+}
+
+function EnrollmentActionsCell({
+  en,
+  sections,
+  canManage,
+  canCancel,
+  canOverrideEnrolled,
+}: {
+  en: Enrollment;
+  sections: Section[];
+  canManage: boolean;
+  canCancel: boolean;
+  canOverrideEnrolled: boolean;
+}) {
+  const viewStudent = (
+    <Link href={`/admin/students/${en.studentId}`} className="btn-ghost btn-sm">
+      Student
+    </Link>
+  );
+
+  if (en.status === "cancelled") {
+    return (
+      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+        {viewStudent}
+        {canManage && (
+          <Link href={`/admin/enrollments/new?studentId=${en.studentId}`} className="table-action-link">
+            Re-enroll
+          </Link>
+        )}
+      </div>
+    );
+  }
+
+  if (en.status === "enrolled") {
+    return (
+      <EnrolledActions studentId={en.studentId} enrollmentId={en.id} canCancel={canCancel} />
+    );
+  }
+
+  if (en.status === "pending") {
+    if (!canManage) {
+      return <div style={{ display: "flex", gap: "0.35rem" }}>{viewStudent}</div>;
+    }
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+        <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+          <Link href={`/admin/assessments/new/${en.id}`} className="btn-secondary btn-sm">
+            Build assessment
+          </Link>
+          {viewStudent}
+        </div>
+        {canCancel && <CancelInline enrollmentId={en.id} />}
+      </div>
+    );
+  }
+
+  if (en.status === "assessed") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+        <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", alignItems: "center" }}>
+          {en.assessmentId ? (
+            <Link href={`/admin/assessments/${en.assessmentId}`} className="btn-primary btn-sm">
+              Ledger / pay
+            </Link>
+          ) : (
+            <span className="text-muted" style={{ fontSize: "0.72rem" }}>
+              Missing ledger row
+            </span>
+          )}
+          {viewStudent}
+        </div>
+        {canOverrideEnrolled && <OverrideEnrollBlock enrollmentId={en.id} sections={sections} />}
+        {canCancel && <CancelInline enrollmentId={en.id} />}
+      </div>
+    );
+  }
+
+  return <div style={{ display: "flex", gap: "0.35rem" }}>{viewStudent}</div>;
+}
 
 export default function EnrollmentsTable({
   enrollments,
   sections,
   canManage,
   canCancel,
+  canOverrideEnrolled,
 }: EnrollmentsTableProps) {
+  const showActions = canManage || canCancel || canOverrideEnrolled;
+
   return (
     <div className="table-wrapper">
       <table className="data-table" id="enrollments-table">
@@ -170,13 +267,13 @@ export default function EnrollmentsTable({
             <th>Grade / Section</th>
             <th>Status</th>
             <th>Enrolled On</th>
-            {(canManage || canCancel) && <th>Actions</th>}
+            {showActions && <th>Actions</th>}
           </tr>
         </thead>
         <tbody>
           {enrollments.length === 0 ? (
             <tr>
-              <td colSpan={canManage || canCancel ? 7 : 6} className="table-empty">
+              <td colSpan={showActions ? 7 : 6} className="table-empty">
                 No enrollment records found.
               </td>
             </tr>
@@ -190,9 +287,7 @@ export default function EnrollmentsTable({
                 <td>{en.schoolYear}</td>
                 <td>
                   {en.gradeLevel}
-                  {en.section && (
-                    <span className="text-muted"> — {en.section}</span>
-                  )}
+                  {en.section && <span className="text-muted"> — {en.section}</span>}
                 </td>
                 <td>
                   <span className={`badge ${STATUS_BADGE[en.status] ?? "badge-secondary"}`}>
@@ -202,38 +297,21 @@ export default function EnrollmentsTable({
                 <td className="text-muted">
                   {en.enrolledAt
                     ? new Date(en.enrolledAt).toLocaleDateString("en-PH", {
-                        year: "numeric", month: "short", day: "numeric",
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
                       })
                     : "—"}
                 </td>
-                {(canManage || canCancel) && (
+                {showActions && (
                   <td>
-                    {en.status === "cancelled" || en.status === "enrolled" ? (
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
-                        <Link
-                          href={`/admin/students/${en.studentId}`}
-                          className="table-action-link"
-                        >
-                          View Student
-                        </Link>
-                        {en.status === "cancelled" && canManage && (
-                          <Link
-                            href={`/admin/enrollments/new?studentId=${en.studentId}`}
-                            className="table-action-link"
-                            style={{ color: "var(--color-primary)" }}
-                          >
-                            Re-enroll
-                          </Link>
-                        )}
-                      </div>
-                    ) : (
-                      <EnrollmentActionRow
-                        enrollment={en}
-                        sections={sections}
-                        canCancel={canCancel}
-                        onDone={() => {}}
-                      />
-                    )}
+                    <EnrollmentActionsCell
+                      en={en}
+                      sections={sections}
+                      canManage={canManage}
+                      canCancel={canCancel}
+                      canOverrideEnrolled={canOverrideEnrolled}
+                    />
                   </td>
                 )}
               </tr>

@@ -53,12 +53,20 @@ export async function createSubjectAction(
     return { errors: { code: ["Subject code already exists."] } };
   }
 
+  const fallbackCurriculum = await db.query.curriculums.findFirst({
+    columns: { id: true },
+  });
+  if (!fallbackCurriculum) {
+    return { message: "No curriculum configured. Create a curriculum before adding subjects." };
+  }
+
   try {
     const [newSubject] = await db
       .insert(subjects)
       .values({
         name: data.name,
         code: data.code,
+        curriculumId: fallbackCurriculum.id,
         gradeLevelId: data.gradeLevelId,
         createdBy: session.userId,
       })

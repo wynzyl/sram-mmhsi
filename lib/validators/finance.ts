@@ -5,7 +5,6 @@ import { z } from "zod";
 export const FeeScheduleSchema = z.object({
   id: z.string().uuid().optional(),
   schoolYearId: z.string().uuid("School year is required"),
-  gradeLevelId: z.string().uuid("Grade level is required"),
   description: z.string().trim().min(3, "Description must be at least 3 characters"),
   isActive: z.boolean().default(true),
 });

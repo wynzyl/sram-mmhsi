@@ -10,13 +10,12 @@ import FeeSchedulesTable from "@/components/finance/FeeSchedulesTable";
 
 export const metadata: Metadata = {
   title: "Fee Schedules",
-  description: "Manage standard billing structures for each grade level.",
+  description: "Manage standard billing catalogs per school year.",
 };
 
 export default async function FeeSchedulesPage() {
   const session = await requireSession();
-  
-  // Finance officers and admins can manage fee schedules
+
   if (!hasPermission(session.role, "fee_schedules:manage")) {
     redirect("/admin/dashboard");
   }
@@ -27,15 +26,14 @@ export default async function FeeSchedulesPage() {
       description: feeSchedules.description,
       isActive: feeSchedules.isActive,
       schoolYear: schoolYears.label,
-      gradeLevel: gradeLevels.name,
+      gradeLevelName: gradeLevels.name,
       createdAt: feeSchedules.createdAt,
     })
     .from(feeSchedules)
     .innerJoin(schoolYears, eq(feeSchedules.schoolYearId, schoolYears.id))
-    .innerJoin(gradeLevels, eq(feeSchedules.gradeLevelId, gradeLevels.id))
+    .leftJoin(gradeLevels, eq(feeSchedules.gradeLevelId, gradeLevels.id))
     .orderBy(desc(feeSchedules.createdAt));
 
-  // Get item counts and totals
   const itemsSummary = await db
     .select({
       feeScheduleId: feeScheduleItems.feeScheduleId,
@@ -52,7 +50,7 @@ export default async function FeeSchedulesPage() {
   const tableData = rows.map((r) => ({
     id: r.id,
     schoolYear: r.schoolYear,
-    gradeLevel: r.gradeLevel,
+    scopeLabel: r.gradeLevelName ?? "All grade levels",
     description: r.description,
     isActive: r.isActive,
     itemCount: Number(summaryMap[r.id]?.count || 0),
@@ -65,7 +63,8 @@ export default async function FeeSchedulesPage() {
         <div>
           <h1 className="page-title">Fee Schedules</h1>
           <p className="page-subtitle">
-            Configure standard charges per grade level.
+            One standard catalog per school year, shared by all grade levels. Edit line items on the
+            detail page.
           </p>
         </div>
         <Link href="/admin/finance/fee-schedules/new" className="btn-primary">
@@ -73,7 +72,7 @@ export default async function FeeSchedulesPage() {
         </Link>
       </div>
 
-      <FeeSchedulesTable schedules={tableData} canManage={true} />
+      <FeeSchedulesTable schedules={tableData} />
     </div>
   );
 }

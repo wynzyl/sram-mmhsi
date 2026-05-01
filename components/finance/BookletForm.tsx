@@ -38,11 +38,39 @@ export default function BookletForm() {
           id="series"
           name="series"
           className={`form-control ${state.errors?.series ? "form-control-error" : ""}`}
-          placeholder="e.g., A, AP, B"
+          placeholder="Internal booklet label / batch (e.g., AP-2026-001)"
           required
         />
+        <p className="form-hint text-muted text-xs mt-1">
+          Used for bookkeeping; does not have to match the printed OR prefix.
+        </p>
         {state.errors?.series && (
           <p className="form-error">{state.errors.series[0]}</p>
+        )}
+      </div>
+
+      <div className="form-group mt-4">
+        <label className="form-label" htmlFor="prefix">
+          OR prefix <span className="required">*</span>
+        </label>
+        <input
+          type="text"
+          id="prefix"
+          name="prefix"
+          className={`form-control ${state.errors?.prefix ? "form-control-error" : ""}`}
+          placeholder="e.g., AP"
+          maxLength={32}
+          required
+        />
+        <p className="form-hint text-muted text-xs mt-1">
+          Printed and saved with each payment:{" "}
+          <strong>
+            prefix + number
+          </strong>{" "}
+          (example: AP 00050). Only one active booklet may use the same prefix.
+        </p>
+        {state.errors?.prefix && (
+          <p className="form-error">{state.errors.prefix[0]}</p>
         )}
       </div>
 

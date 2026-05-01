@@ -12,7 +12,7 @@ export default function NewBookletPage() {
         <div>
           <h1 className="page-title">Register OR Booklet</h1>
           <p className="page-subtitle">
-            Add a new Official Receipt booklet series for cashiering.
+            Define booklet range, internal series label, and the printed OR prefix (e.g. AP 00050).
           </p>
         </div>
       </div>

@@ -6,8 +6,8 @@ import {
   students,
   parentsGuardians,
   studentGuardianLinks,
-  registrations,
   auditLogs,
+  enrollments,
 } from "@/lib/db/schema";
 import { eq, ilike, and, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
@@ -89,9 +89,9 @@ export async function createStudentAction(
     nationality: formData.get("nationality") || undefined,
     bloodType: formData.get("bloodType") || undefined,
     religion: formData.get("religion") || undefined,
+    previousSchool: formData.get("previousSchool") || undefined,
+    submittedDocumentsNotes: formData.get("submittedDocumentsNotes") || undefined,
 
-    schoolYearId: formData.get("schoolYearId"),
-    gradeLevelId: formData.get("gradeLevelId"),
     guardians: guardiansParsed,
   });
 
@@ -99,7 +99,7 @@ export async function createStudentAction(
     return { errors: parsed.error.flatten().fieldErrors as CreateStudentFormState["errors"] };
   }
 
-  const { guardians, schoolYearId, gradeLevelId, ...studentData } = parsed.data;
+  const { guardians, ...studentData } = parsed.data;
 
   // 4. Duplicate detection — always runs.
   // Base match: same first + last name on an active record.
@@ -177,19 +177,7 @@ export async function createStudentAction(
       });
     }
 
-    // 8. Create approved registration (direct registration — no approval step)
-    await db.insert(registrations).values({
-      studentId: newStudent.id,
-      schoolYearId,
-      gradeLevelId,
-      status: "approved",
-      reviewedBy: session.userId,
-      reviewedAt: new Date(),
-      createdBy: session.userId,
-      updatedBy: session.userId,
-    });
-
-    // 9. Audit log
+    // 8. Audit log
     await audit(
       session.userId,
       session.role,
@@ -256,6 +244,8 @@ export async function updateStudentAction(
     nationality: formData.get("nationality") || undefined,
     bloodType: formData.get("bloodType") || undefined,
     religion: formData.get("religion") || undefined,
+    previousSchool: formData.get("previousSchool") || undefined,
+    submittedDocumentsNotes: formData.get("submittedDocumentsNotes") || undefined,
 
     isActive: isActiveRaw === "on" || isActiveRaw === "true",
     guardians: guardiansParsed,
@@ -274,6 +264,24 @@ export async function updateStudentAction(
 
   if (!existingStudent) {
     return { message: "Student not found." };
+  }
+
+  const hasEnrolledEnrollment = await db.query.enrollments.findFirst({
+    where: and(
+      eq(enrollments.studentId, studentId),
+      eq(enrollments.status, "enrolled")
+    ),
+    columns: { id: true },
+  });
+
+  if (hasEnrolledEnrollment && isActive !== existingStudent.isActive) {
+    return {
+      errors: {
+        isActive: [
+          "Active status cannot be changed while this student has an enrollment in Enrolled status.",
+        ],
+      },
+    };
   }
 
   // 5. Duplicate detection — always runs, excluding the current student.

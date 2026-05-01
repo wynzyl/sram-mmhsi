@@ -5,7 +5,7 @@ import Link from "next/link";
 interface FeeSchedule {
   id: string;
   schoolYear: string;
-  gradeLevel: string;
+  scopeLabel: string;
   description: string | null;
   isActive: boolean;
   itemCount: number;
@@ -14,20 +14,16 @@ interface FeeSchedule {
 
 interface FeeSchedulesTableProps {
   schedules: FeeSchedule[];
-  canManage: boolean;
 }
 
-export default function FeeSchedulesTable({
-  schedules,
-  canManage,
-}: FeeSchedulesTableProps) {
+export default function FeeSchedulesTable({ schedules }: FeeSchedulesTableProps) {
   return (
     <div className="table-wrapper">
       <table className="data-table">
         <thead>
           <tr>
             <th>School Year</th>
-            <th>Grade Level</th>
+            <th>Scope</th>
             <th>Description</th>
             <th>Items</th>
             <th>Total Amount</th>
@@ -46,7 +42,7 @@ export default function FeeSchedulesTable({
             schedules.map((schedule) => (
               <tr key={schedule.id} className="table-row-hover">
                 <td>{schedule.schoolYear}</td>
-                <td>{schedule.gradeLevel}</td>
+                <td>{schedule.scopeLabel}</td>
                 <td>{schedule.description || "—"}</td>
                 <td>{schedule.itemCount}</td>
                 <td style={{ fontWeight: 500 }}>

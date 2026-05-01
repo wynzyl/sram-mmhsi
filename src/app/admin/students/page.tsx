@@ -91,7 +91,7 @@ export default async function StudentsPage({ searchParams }: PageProps) {
           <Link
             href="/admin/students/new"
             id="register-student-btn"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-[var(--color-primary)] text-[var(--color-primary)] text-sm font-semibold hover:bg-[var(--color-primary)] hover:text-white transition-colors duration-150"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--color-primary)] text-white text-sm font-semibold hover:opacity-90 active:opacity-80 transition-opacity shadow-sm"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
               <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
@@ -104,7 +104,7 @@ export default async function StudentsPage({ searchParams }: PageProps) {
       {/* ── Row 2: full-width search bar ── */}
       <form method="GET" role="search" className="flex items-stretch mb-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-[var(--color-primary)] focus-within:ring-offset-1 transition-shadow">
         {/* Magnifier icon */}
-        <span className="flex items-center pl-4 pr-2 text-[var(--color-text-muted)] pointer-events-none">
+        <span className="flex items-center pl-4 pr-2.5 text-[var(--color-text-muted)] pointer-events-none">
           <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
             <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
           </svg>
@@ -115,7 +115,7 @@ export default async function StudentsPage({ searchParams }: PageProps) {
           id="student-search"
           type="search"
           name="q"
-          className="flex-1 min-w-0 bg-transparent py-2.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none"
+          className="flex-1 min-w-0 bg-transparent py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none"
           placeholder="Search students by name, or reference number..."
           defaultValue={q}
           autoComplete="off"
@@ -134,7 +134,7 @@ export default async function StudentsPage({ searchParams }: PageProps) {
         {/* Search submit */}
         <button
           type="submit"
-          className="px-5 py-2.5 bg-[var(--color-primary)] text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+          className="px-6 py-3 bg-[var(--color-primary)] text-white text-sm font-semibold hover:opacity-90 active:opacity-80 transition-opacity"
         >
           Search
         </button>

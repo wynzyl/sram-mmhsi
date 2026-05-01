@@ -8,6 +8,7 @@ import {
   schoolYears,
   gradeLevels,
   sections,
+  assessments,
 } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
@@ -39,6 +40,7 @@ export default async function EnrollmentsPage({ searchParams }: PageProps) {
   const filterStatus = validStatuses.includes(status) ? status : "all";
   const canCreate = hasPermission(session.role, "enrollments:create");
   const canCancel = hasPermission(session.role, "enrollments:cancel");
+  const canOverrideEnrolled = hasPermission(session.role, "enrollments:override_enroll");
 
   // Build where clause
   const statusFilter =
@@ -63,12 +65,14 @@ export default async function EnrollmentsPage({ searchParams }: PageProps) {
       schoolYear: schoolYears.label,
       gradeLevel: gradeLevels.name,
       section: sections.name,
+      assessmentId: assessments.id,
     })
     .from(enrollments)
     .innerJoin(students, eq(enrollments.studentId, students.id))
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .leftJoin(sections, eq(enrollments.sectionId, sections.id))
+    .leftJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
     .where(statusFilter)
     .orderBy(desc(enrollments.createdAt))
     .limit(100);
@@ -93,6 +97,7 @@ export default async function EnrollmentsPage({ searchParams }: PageProps) {
     section: r.section ?? null,
     enrolledAt: r.enrolledAt,
     createdAt: r.createdAt,
+    assessmentId: r.assessmentId ?? null,
   }));
 
   const allSections = await db
@@ -150,6 +155,7 @@ export default async function EnrollmentsPage({ searchParams }: PageProps) {
         sections={allSections}
         canManage={canCreate}
         canCancel={canCancel}
+        canOverrideEnrolled={canOverrideEnrolled}
       />
     </div>
   );

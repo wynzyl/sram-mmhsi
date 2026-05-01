@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import { RootProviders } from "@/components/providers/RootProviders";
 import "./globals.css";
 
-const instrumentSans = Instrument_Sans({
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
-  variable: "--font-instrument-sans",
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
 });
+
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -45,7 +45,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${instrumentSans.variable} ${jetbrainsMono.variable}`}>
+      <body className={`${ibmPlexSans.variable} ${jetbrainsMono.variable}`}>
         <RootProviders>{children}</RootProviders>
       </body>
     </html>

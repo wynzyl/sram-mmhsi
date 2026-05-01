@@ -29,16 +29,18 @@ export default async function FeeScheduleDetailsPage({ params }: PageProps) {
       description: feeSchedules.description,
       isActive: feeSchedules.isActive,
       schoolYear: schoolYears.label,
-      gradeLevel: gradeLevels.name,
+      gradeLevelName: gradeLevels.name,
     })
     .from(feeSchedules)
     .innerJoin(schoolYears, eq(feeSchedules.schoolYearId, schoolYears.id))
-    .innerJoin(gradeLevels, eq(feeSchedules.gradeLevelId, gradeLevels.id))
+    .leftJoin(gradeLevels, eq(feeSchedules.gradeLevelId, gradeLevels.id))
     .where(eq(feeSchedules.id, id))
     .limit(1)
     .then((res) => res[0]);
 
   if (!schedule) notFound();
+
+  const scopeLabel = schedule.gradeLevelName ?? "All grade levels";
 
   const items = await db
     .select()
@@ -51,7 +53,7 @@ export default async function FeeScheduleDetailsPage({ params }: PageProps) {
       <div className="page-header">
         <div>
           <h1 className="page-title">
-            {schedule.gradeLevel} - {schedule.schoolYear}
+            Standard fees · {schedule.schoolYear}
           </h1>
           <p className="page-subtitle">
             {schedule.description || "No description provided."}
@@ -67,7 +69,7 @@ export default async function FeeScheduleDetailsPage({ params }: PageProps) {
             </div>
             <div className="card-body">
               <p><strong>School Year:</strong> {schedule.schoolYear}</p>
-              <p><strong>Grade Level:</strong> {schedule.gradeLevel}</p>
+              <p><strong>Scope:</strong> {scopeLabel}</p>
               <p>
                 <strong>Status:</strong>{" "}
                 <span className={`badge ${schedule.isActive ? "badge-success" : "badge-secondary"}`}>

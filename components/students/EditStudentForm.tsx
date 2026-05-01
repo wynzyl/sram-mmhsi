@@ -24,12 +24,17 @@ interface StudentData {
   bloodType: string | null;
   religion: string | null;
 
+  previousSchool: string | null;
+  submittedDocumentsNotes: string | null;
+
   isActive: boolean;
 }
 
 interface EditStudentFormProps {
   student: StudentData;
   initialGuardians: GuardianInput[];
+  /** When true, Active cannot be toggled (enforced server-side too). */
+  isActiveLocked?: boolean;
 }
 
 const emptyGuardian = (): GuardianInput => ({
@@ -46,7 +51,11 @@ const emptyGuardian = (): GuardianInput => ({
 
 const initialState: UpdateStudentFormState = {};
 
-export default function EditStudentForm({ student, initialGuardians }: EditStudentFormProps) {
+export default function EditStudentForm({
+  student,
+  initialGuardians,
+  isActiveLocked = false,
+}: EditStudentFormProps) {
   const router = useRouter();
   const [state, action, pending] = useActionState(updateStudentAction, initialState);
   const [guardians, setGuardians] = useState<GuardianInput[]>(
@@ -232,7 +241,7 @@ export default function EditStudentForm({ student, initialGuardians }: EditStude
             {state.errors?.lrn && (
               <p className="form-error">{state.errors.lrn[0]}</p>
             )}
-            <p className="form-hint">Optional. DepEd-issued 12-digit identifier.</p>
+            {/* <p className="form-hint">Optional. DepEd-issued 12-digit identifier.</p> */}
           </div>
 
           <div className="form-group">
@@ -323,20 +332,71 @@ export default function EditStudentForm({ student, initialGuardians }: EditStude
         </div>
       </section>
 
+      <section className="form-section">
+        <h3 className="form-section-title">Registration / transfer notes</h3>
+        <div className="form-group">
+          <label className="form-label" htmlFor="previousSchool">
+            Previous school
+          </label>
+          <input
+            id="previousSchool"
+            name="previousSchool"
+            type="text"
+            className="form-control"
+            defaultValue={student.previousSchool || ""}
+            placeholder="For transferee enrollments, record prior school before assessment"
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label" htmlFor="submittedDocumentsNotes">
+            Submitted documents (notes)
+          </label>
+          <textarea
+            id="submittedDocumentsNotes"
+            name="submittedDocumentsNotes"
+            className="form-control"
+            rows={3}
+            defaultValue={student.submittedDocumentsNotes || ""}
+          />
+        </div>
+      </section>
+
       {/* ─── Status ─────────────────────────────────────────────────── */}
       <section className="form-section">
-        <div className="form-group" style={{ flexDirection: "row", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem" }}>
+        <div
+          className="form-group"
+          style={{ flexDirection: "row", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem" }}
+        >
+          {isActiveLocked && (
+            <input
+              type="hidden"
+              name="isActive"
+              value={student.isActive ? "true" : "false"}
+            />
+          )}
           <input
             id="isActive"
-            name="isActive"
+            name={isActiveLocked ? undefined : "isActive"}
             type="checkbox"
             defaultChecked={student.isActive}
-            style={{ width: "16px", height: "16px", cursor: "pointer" }}
+            disabled={isActiveLocked}
+            style={{ width: "16px", height: "16px", cursor: isActiveLocked ? "not-allowed" : "pointer" }}
           />
           <label className="form-label" htmlFor="isActive" style={{ cursor: "pointer", margin: 0 }}>
             Active Student
           </label>
         </div>
+        {isActiveLocked && (
+          <p className="text-muted" style={{ fontSize: "0.875rem", marginTop: "0.35rem" }}>
+            Active cannot be changed while this student has an enrollment in <strong>Enrolled</strong>{" "}
+            status.
+          </p>
+        )}
+        {state.errors?.isActive?.[0] && (
+          <p className="form-error" role="alert">
+            {state.errors.isActive[0]}
+          </p>
+        )}
       </section>
 
       {/* ─── Guardians ───────────────────────────────────────────────── */}

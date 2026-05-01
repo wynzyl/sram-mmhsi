@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { hash } from "bcryptjs";
-import { users, subjects, sections, schoolYears, teacherAssignments, gradeLevels, students, enrollments } from "../lib/db/schema";
+import { users, subjects, sections, schoolYears, teacherAssignments, gradeLevels, students, enrollments, curriculums } from "../lib/db/schema";
 import { loadEnvConfig } from "@next/env";
 import { eq } from "drizzle-orm";
 
@@ -47,10 +47,16 @@ async function seed() {
       schoolYearId: sy.id,
     }).returning();
 
+    let [curr] = await db.insert(curriculums).values({
+      name: "Seed Curriculum",
+      effectiveSchoolYearId: sy.id,
+    }).returning();
+
     // 4. Create Subject
     let [sub] = await db.insert(subjects).values({
       name: "Mathematics",
       code: "MATH7",
+      curriculumId: curr.id,
       gradeLevelId: gl.id,
     }).returning();
 

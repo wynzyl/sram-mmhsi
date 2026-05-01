@@ -19,6 +19,8 @@ export type Permission =
   | "enrollments:read"
   | "enrollments:create"
   | "enrollments:cancel"
+  /** Mark enrolled without cashier payment — admin-only. */
+  | "enrollments:override_enroll"
   // Assessments
   | "assessments:read"
   | "assessments:create"
@@ -51,7 +53,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   admin: [
     "students:read", "students:create", "students:update", "students:delete",
     "registrations:read", "registrations:create", "registrations:review",
-    "enrollments:read", "enrollments:create", "enrollments:cancel",
+    "enrollments:read", "enrollments:create", "enrollments:cancel", "enrollments:override_enroll",
     "assessments:read", "assessments:create", "assessments:update",
     "payments:read", "payments:post", "payments:void",
     "invoices:read", "invoices:send",
