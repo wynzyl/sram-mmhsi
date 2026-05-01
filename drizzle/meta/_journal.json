@@ -6,7 +6,28 @@
       "idx": 0,
       "version": "7",
       "when": 1777358198732,
-      "tag": "0000_overrated_nehzno",
+      "tag": "0000_initial_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777443039055,
+      "tag": "0001_add_fee_schedules_and_soft_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777449455913,
+      "tag": "0002_add_curriculums",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777601236656,
+      "tag": "0003_add_student_guardian_contact_fields",
       "breakpoints": true
     }
   ]

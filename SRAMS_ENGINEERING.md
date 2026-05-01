@@ -178,7 +178,7 @@ project-root/
 │   └── adr/
 ├── PROJECT_STATUS.md
 ├── PROJECT_ROADMAP.md
-└── ENGINEERING_SKELETON.md
+└── SRAMS_MVP.md
 ```
 
 ### Rules

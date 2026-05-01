@@ -1,8 +1,15 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useMemo } from "react";
 import { voidPaymentAction } from "@/actions/cashier";
 import type { VoidPaymentFormState } from "@/lib/validators/cashier";
+import { DataTable } from "@/components/data-display/DataTable";
+import { ReferenceCode } from "@/components/data-display/ReferenceCode";
+import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { ColumnDef } from "@tanstack/react-table";
 
 interface Payment {
   id: string;
@@ -26,93 +33,142 @@ export default function PaymentsHistoryTable({
   const [voidId, setVoidId] = useState<string | null>(null);
 
   const initialState: VoidPaymentFormState = {};
-  const [state, action, pending] = useActionState(voidPaymentAction, initialState);
+  const [state, action, pending] = useActionState(
+    voidPaymentAction,
+    initialState
+  );
 
-  // Automatically reset voidId on success, handled loosely here
-  // Next.js revalidation handles the UI refresh
+  const columns = useMemo<ColumnDef<Payment>[]>(() => {
+    const baseColumns: ColumnDef<Payment>[] = [
+      {
+        header: "Date",
+        accessorKey: "paymentDate",
+        cell: ({ row }) => row.original.paymentDate.toLocaleDateString(),
+      },
+      {
+        header: "OR Number",
+        accessorKey: "orNumber",
+        cell: ({ row }) =>
+          row.original.orNumber ? (
+            <ReferenceCode code={row.original.orNumber} />
+          ) : (
+            <span className="text-[var(--color-text-muted)]">—</span>
+          ),
+      },
+      {
+        header: "Method",
+        accessorKey: "paymentMethod",
+        cell: ({ row }) => (
+          <span className="capitalize">
+            {row.original.paymentMethod.replace("_", " ")}
+          </span>
+        ),
+      },
+      {
+        header: "Ref #",
+        accessorKey: "referenceNumber",
+        cell: ({ row }) =>
+          row.original.referenceNumber ? (
+            <code className="text-xs font-[family-name:var(--font-mono)]">
+              {row.original.referenceNumber}
+            </code>
+          ) : (
+            <span className="text-[var(--color-text-muted)]">—</span>
+          ),
+      },
+      {
+        header: "Amount",
+        accessorKey: "amount",
+        cell: ({ row }) => (
+          <CurrencyDisplay
+            amount={Number(row.original.amount)}
+            className="font-medium"
+          />
+        ),
+      },
+      {
+        header: "Status",
+        accessorKey: "status",
+        cell: ({ row }) => (
+          <Badge
+            variant={
+              row.original.status === "voided" ? "danger" : "success"
+            }
+          >
+            {row.original.status.toUpperCase()}
+          </Badge>
+        ),
+      },
+    ];
+
+    if (canVoid) {
+      baseColumns.push({
+        header: "Actions",
+        id: "actions",
+        cell: ({ row }) => {
+          const payment = row.original;
+
+          if (payment.status === "voided" || voidId !== payment.id) {
+            return payment.status !== "voided" ? (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setVoidId(payment.id)}
+              >
+                Void
+              </Button>
+            ) : null;
+          }
+
+          return (
+            <form action={action} className="flex gap-2">
+              <input type="hidden" name="paymentId" value={payment.id} />
+              <Input
+                type="text"
+                name="voidReason"
+                placeholder="Reason"
+                required
+                className="w-32 h-8 text-xs"
+              />
+              <Button
+                type="submit"
+                variant="danger"
+                size="sm"
+                loading={pending}
+              >
+                Confirm
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setVoidId(null)}
+              >
+                Cancel
+              </Button>
+            </form>
+          );
+        },
+      });
+    }
+
+    return baseColumns;
+  }, [canVoid, voidId, action, pending]);
 
   return (
-    <div className="table-wrapper mt-6">
+    <div className="mt-6">
       {state.message && !state.success && (
-        <div className="alert alert-error mb-4">{state.message}</div>
+        <div className="bg-red-100 text-red-700 border border-red-200 rounded-md p-4 mb-4 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+          {state.message}
+        </div>
       )}
 
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>OR Number</th>
-            <th>Method</th>
-            <th>Ref #</th>
-            <th>Amount</th>
-            <th>Status</th>
-            {canVoid && <th>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {payments.length === 0 ? (
-            <tr>
-              <td colSpan={canVoid ? 7 : 6} className="table-empty">
-                No payments recorded yet.
-              </td>
-            </tr>
-          ) : (
-            payments.map((payment) => (
-              <tr key={payment.id} className={payment.status === "voided" ? "table-row-dimmed" : ""}>
-                <td>{payment.paymentDate.toLocaleDateString()}</td>
-                <td style={{ fontWeight: "bold" }}>{payment.orNumber || "—"}</td>
-                <td style={{ textTransform: "capitalize" }}>{payment.paymentMethod.replace("_", " ")}</td>
-                <td>{payment.referenceNumber || "—"}</td>
-                <td style={{ fontWeight: 500 }}>
-                  ₱{Number(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </td>
-                <td>
-                  <span
-                    className={`badge ${
-                      payment.status === "voided"
-                        ? "badge-danger"
-                        : "badge-success"
-                    }`}
-                  >
-                    {payment.status.toUpperCase()}
-                  </span>
-                </td>
-                {canVoid && (
-                  <td>
-                    {payment.status !== "voided" && voidId !== payment.id && (
-                      <button
-                        className="btn-danger btn-sm"
-                        onClick={() => setVoidId(payment.id)}
-                      >
-                        Void
-                      </button>
-                    )}
-                    {voidId === payment.id && (
-                      <form action={action} style={{ display: "flex", gap: "0.5rem" }}>
-                        <input type="hidden" name="paymentId" value={payment.id} />
-                        <input
-                          type="text"
-                          name="voidReason"
-                          placeholder="Reason"
-                          required
-                          className="form-control"
-                          style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem", width: "120px" }}
-                        />
-                        <button type="submit" className="btn-danger btn-sm" disabled={pending}>
-                          {pending ? "..." : "Confirm"}
-                        </button>
-                        <button type="button" className="btn-ghost btn-sm" onClick={() => setVoidId(null)}>
-                          Cancel
-                        </button>
-                      </form>
-                    )}
-                  </td>
-                )}
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      <DataTable
+        columns={columns}
+        data={payments}
+        searchable={false}
+        pageSize={10}
+      />
     </div>
   );
 }

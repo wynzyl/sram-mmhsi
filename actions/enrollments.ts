@@ -87,25 +87,6 @@ export async function createEnrollmentAction(
     return { errors: { studentId: ["Student not found or inactive."] } };
   }
 
-  // Only students with an APPROVED registration may be enrolled
-  const approvedReg = await db.query.registrations.findFirst({
-    where: and(
-      eq(registrations.studentId, studentId),
-      eq(registrations.status, "approved")
-    ),
-    columns: { id: true },
-  });
-  if (!approvedReg) {
-    return {
-      errors: {
-        studentId: [
-          "This student does not have an approved registration and cannot be enrolled. " +
-          "Please approve the student's registration first.",
-        ],
-      },
-    };
-  }
-
   // Check for duplicate active enrollment in same school year
   const existingActive = await db
     .select({ id: enrollments.id, status: enrollments.status })

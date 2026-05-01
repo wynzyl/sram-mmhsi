@@ -1,0 +1,99 @@
+/* Color Design Tokens - Extended Palette */
+@layer tokens {
+  :root {
+    /* Deep Red Primary - School Authority */
+    --color-primary-50: #fef2f2;
+    --color-primary-100: #fee2e2;
+    --color-primary-200: #fecaca;
+    --color-primary-300: #fca5a5;
+    --color-primary-400: #f87171;
+    --color-primary-500: #ef4444;
+    --color-primary-600: #dc2626;
+    --color-primary-700: #b91c1c;
+    --color-primary-800: #991b1b;
+    --color-primary-900: #7f1d1d;
+    --color-primary: #9b1c1c; /* Brand primary */
+
+    /* Green Accent - Success & Positive States */
+    --color-accent-50: #f0fdf4;
+    --color-accent-100: #dcfce7;
+    --color-accent-200: #bbf7d0;
+    --color-accent-300: #86efac;
+    --color-accent-400: #4ade80;
+    --color-accent-500: #22c55e;
+    --color-accent-600: #16a34a;
+    --color-accent-700: #15803d;
+    --color-accent-800: #166534;
+    --color-accent-900: #14532d;
+    --color-accent: #16a34a; /* Brand accent */
+
+    /* Amber - Pending & Warning States */
+    --color-warning-50: #fffbeb;
+    --color-warning-100: #fef3c7;
+    --color-warning-200: #fde68a;
+    --color-warning-300: #fcd34d;
+    --color-warning-400: #fbbf24;
+    --color-warning-500: #f59e0b;
+    --color-warning-600: #d97706;
+    --color-warning-700: #b45309;
+    --color-warning-800: #92400e;
+    --color-warning-900: #78350f;
+    --color-warning: #f59e0b;
+
+    /* Semantic Colors */
+    --color-error: #dc2626;
+    --color-success: #16a34a;
+    --color-info: #3b82f6;
+
+    /* Surface Colors - Light Mode */
+    --color-surface: #ffffff;
+    --color-surface-2: #f9fafb;
+    --color-surface-3: #f3f4f6;
+
+    /* Text Colors - Light Mode */
+    --color-text: #111827;
+    --color-text-2: #374151;
+    --color-text-muted: #6b7280;
+    --color-text-subtle: #9ca3af;
+
+    /* Border Colors - Light Mode */
+    --color-border: #e5e7eb;
+    --color-border-2: #d1d5db;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* Border Radius */
+    --radius-sm: 0.25rem;
+    --radius: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+  }
+
+  /* Dark Mode Colors */
+  .dark {
+    /* Surface Colors - Dark Mode */
+    --color-surface: #111827;
+    --color-surface-2: #1f2937;
+    --color-surface-3: #374151;
+
+    /* Text Colors - Dark Mode */
+    --color-text: #f9fafb;
+    --color-text-2: #e5e7eb;
+    --color-text-muted: #9ca3af;
+    --color-text-subtle: #6b7280;
+
+    /* Border Colors - Dark Mode */
+    --color-border: #374151;
+    --color-border-2: #4b5563;
+
+    /* Adjusted shadows for dark mode */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  }
+}

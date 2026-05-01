@@ -206,6 +206,7 @@ export async function requireSession(): Promise<SessionPayload> {
   if (!session) {
     const { redirect } = await import("next/navigation");
     redirect("/login");
+    throw new Error("Redirecting...");
   }
   return session;
 }

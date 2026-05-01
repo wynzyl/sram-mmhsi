@@ -7,8 +7,10 @@ export const GuardianSchema = z.object({
   middleName: z.string().trim().optional(),
   lastName: z.string().min(1, "Last name is required.").trim(),
   relationship: z.string().min(1, "Relationship is required.").trim(),
-  contactNumber: z.string().trim().optional(),
-  email: z.string().trim().email("Invalid email address.").optional().or(z.literal("")),
+  address: z.string().min(1, "Address is required.").trim(),
+  occupation: z.string().trim().optional(),
+  contactNumber: z.string().min(1, "Contact number is required.").trim(),
+  email: z.string().trim().email("Invalid email address.").min(1, "Email is required."),
   isPrimary: z.boolean().default(false),
 });
 
@@ -27,6 +29,31 @@ export const CreateStudentSchema = z.object({
     .transform((v) => (v ? new Date(v) : undefined)),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
   address: z.string().trim().optional(),
+
+  // NEW FIELDS - Contact & Additional Information
+  lrn: z
+    .string()
+    .trim()
+    .optional()
+    .refine((val) => !val || /^[0-9]{12}$/.test(val), {
+      message: "LRN must be exactly 12 digits if provided.",
+    }),
+  mobileNumber: z
+    .string()
+    .trim()
+    .optional()
+    .refine((val) => !val || /^(09|\+639)\d{9}$/.test(val), {
+      message: "Mobile number must be a valid Philippine number (e.g., 09171234567).",
+    }),
+  email: z.string().trim().email("Invalid email address.").optional().or(z.literal("")),
+  nationality: z.string().trim().max(100, "Nationality too long.").optional(),
+  bloodType: z
+    .enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], {
+      message: "Invalid blood type.",
+    })
+    .optional(),
+  religion: z.string().trim().max(100, "Religion too long.").optional(),
+
   // Registration fields
   schoolYearId: z.string().uuid("School year is required."),
   gradeLevelId: z.string().uuid("Grade level is required."),
@@ -43,21 +70,6 @@ export type CreateStudentFormState = {
   studentId?: string;
 };
 
-// ─── Review Registration Schema ───────────────────────────────────────────────
-
-export const ReviewRegistrationSchema = z.object({
-  registrationId: z.string().uuid(),
-  action: z.enum(["approve", "reject"]),
-  remarks: z.string().trim().optional(),
-});
-
-export type ReviewRegistrationInput = z.infer<typeof ReviewRegistrationSchema>;
-
-export type ReviewFormState = {
-  errors?: Partial<Record<string, string[]>>;
-  message?: string;
-  success?: boolean;
-};
 
 // ─── Update Student Schema ───────────────────────────────────────────────────
 
@@ -73,6 +85,31 @@ export const UpdateStudentSchema = z.object({
     .transform((v) => (v ? new Date(v) : undefined)),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
   address: z.string().trim().optional(),
+
+  // NEW FIELDS - Contact & Additional Information
+  lrn: z
+    .string()
+    .trim()
+    .optional()
+    .refine((val) => !val || /^[0-9]{12}$/.test(val), {
+      message: "LRN must be exactly 12 digits if provided.",
+    }),
+  mobileNumber: z
+    .string()
+    .trim()
+    .optional()
+    .refine((val) => !val || /^(09|\+639)\d{9}$/.test(val), {
+      message: "Mobile number must be a valid Philippine number.",
+    }),
+  email: z.string().trim().email("Invalid email address.").optional().or(z.literal("")),
+  nationality: z.string().trim().max(100, "Nationality too long.").optional(),
+  bloodType: z
+    .enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], {
+      message: "Invalid blood type.",
+    })
+    .optional(),
+  religion: z.string().trim().max(100, "Religion too long.").optional(),
+
   isActive: z.boolean().optional(),
   // Guardians
   guardians: z.array(GuardianSchema).min(1, "At least one guardian is required."),

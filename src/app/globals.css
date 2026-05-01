@@ -2,12 +2,49 @@
 
 /* ─── SRAMS Design System Tokens ──────────────────────────────────────────────
    Visual Direction: Professional academic admin panel
-   Primary: Deep Red | Accent: Green | Theme: Light/Dark toggle
-   Per SRAMS Engineering spec §5
+   Light = tweakcn "Elegant Luxury" preset
+   Dark  = tweakcn user theme "MMHSI" (cmol2um5l000004k135aygvzt)
+   Primary: Deep Red | Accent (semantic): Green | Secondary: Warm cream/amber
 ──────────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Primary – Deep Red */
+  /* Font Families */
+  --font-sans: var(--font-instrument-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-jetbrains-mono), 'Courier New', Consolas, Monaco, monospace;
+
+  /* Font Sizes - optimized for data density */
+  --text-xs: 0.6875rem;    /* 11px */
+  --text-sm: 0.8125rem;    /* 13px */
+  --text-base: 0.875rem;   /* 14px */
+  --text-lg: 1rem;         /* 16px */
+  --text-xl: 1.125rem;     /* 18px */
+  --text-2xl: 1.375rem;    /* 22px */
+
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.45;
+  --leading-relaxed: 1.6;
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Motion Tokens */
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+
+
+  /* ─── Light Palette: Elegant Luxury ──────────────────────────────────────
+     Source: tweakcn preset "elegant-luxury"
+  ────────────────────────────────────────────────────────────────────────── */
+
+  /* Primary – Deep Red (preset primary #9b2c2c) */
   --color-primary-50:  #fef2f2;
   --color-primary-100: #fee2e2;
   --color-primary-200: #fecaca;
@@ -18,9 +55,9 @@
   --color-primary-700: #b91c1c;
   --color-primary-800: #991b1b;
   --color-primary-900: #7f1d1d;
-  --color-primary:     #9b1c1c;  /* SRAMS deep red */
+  --color-primary:     #9b2c2c;
 
-  /* Accent – Green */
+  /* Accent – Green (operational success — kept from SRAMS semantic) */
   --color-accent-50:  #f0fdf4;
   --color-accent-100: #dcfce7;
   --color-accent-400: #4ade80;
@@ -29,19 +66,25 @@
   --color-accent-700: #15803d;
   --color-accent:     #16a34a;
 
-  /* Neutral */
-  --color-surface:     #ffffff;
-  --color-surface-2:   #f9fafb;
-  --color-surface-3:   #f3f4f6;
-  --color-border:      #e5e7eb;
-  --color-border-2:    #d1d5db;
-  --color-text:        #111827;
-  --color-text-2:      #374151;
-  --color-text-muted:  #6b7280;
-  --color-text-subtle: #9ca3af;
+  /* Secondary – Warm cream / amber (preset secondary + accent) */
+  --color-secondary:         #fdf2d6;
+  --color-secondary-fg:      #805500;
+  --color-secondary-soft:    #fef3c7;
+  --color-secondary-soft-fg: #7f1d1d;
+
+  /* Neutral – Warm off-white surfaces */
+  --color-surface:     #faf7f5;
+  --color-surface-2:   #f0ebe8;
+  --color-surface-3:   #ebe5e0;
+  --color-border:      #f5e8d2;
+  --color-border-2:    #e7d4ad;
+  --color-text:        #1a1a1a;
+  --color-text-2:      #44403c;
+  --color-text-muted:  #57534e;
+  --color-text-subtle: #78716c;
 
   /* Semantic */
-  --color-error:       #dc2626;
+  --color-error:       #991b1b;
   --color-warning:     #d97706;
   --color-success:     #16a34a;
   --color-info:        #2563eb;
@@ -52,24 +95,50 @@
   --radius-lg: 8px;
   --radius-xl: 12px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow:    0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  /* Shadows – warm-tinted (preset shadow-color hsl(0 63% 18%)) */
+  --shadow-sm: 1px 1px 16px -2px hsl(0 63% 18% / 0.06);
+  --shadow:    1px 1px 16px -2px hsl(0 63% 18% / 0.12), 1px 1px 2px -3px hsl(0 63% 18% / 0.12);
+  --shadow-md: 1px 1px 16px -2px hsl(0 63% 18% / 0.12), 1px 2px 4px -3px hsl(0 63% 18% / 0.12);
+  --shadow-lg: 1px 1px 16px -2px hsl(0 63% 18% / 0.12), 1px 4px 6px -3px hsl(0 63% 18% / 0.12);
 }
 
-/* ─── Dark Theme ──────────────────────────────────────────────────────────────── */
+/* ─── Dark Palette: MMHSI ─────────────────────────────────────────────────────
+   Source: tweakcn user theme "MMHSI" (cmol2um5l000004k135aygvzt)
+   Warm-neutral OKLCH dark surfaces with vivid red brand
+──────────────────────────────────────────────────────────────────────────────── */
 .dark {
-  --color-surface:     #111827;
-  --color-surface-2:   #1f2937;
-  --color-surface-3:   #374151;
-  --color-border:      #374151;
-  --color-border-2:    #4b5563;
-  --color-text:        #f9fafb;
-  --color-text-2:      #e5e7eb;
-  --color-text-muted:  #9ca3af;
-  --color-text-subtle: #6b7280;
+  /* Neutral surfaces (background → muted → card, lightening) */
+  --color-surface:     oklch(0.2161 0.0061 56.0434);
+  --color-surface-2:   oklch(0.2291 0.0060 56.0708);
+  --color-surface-3:   oklch(0.2685 0.0063 34.2976);
+
+  /* Borders */
+  --color-border:      oklch(0.3741 0.0087 67.5582);
+  --color-border-2:    oklch(0.4500 0.0090 67.0000);
+
+  /* Text */
+  --color-text:        oklch(0.9699 0.0013 106.4238);
+  --color-text-2:      oklch(0.9200 0.0020 80.0000);
+  --color-text-muted:  oklch(0.8687 0.0043 56.3660);
+  --color-text-subtle: oklch(0.6500 0.0080 70.0000);
+
+  /* Primary brightens in dark (preset shifts to vivid red) */
+  --color-primary:     oklch(0.5054 0.1905 27.5181);
+
+  /* Secondary – warm amber tones from preset */
+  --color-secondary:         oklch(0.4732 0.1247 46.2007);
+  --color-secondary-fg:      oklch(0.9619 0.0580 95.6174);
+  --color-secondary-soft:    oklch(0.5553 0.1455 48.9975);
+  --color-secondary-soft-fg: oklch(0.9619 0.0580 95.6174);
+
+  /* Semantic — destructive shifts brighter for dark contrast */
+  --color-error:       oklch(0.6368 0.2078 25.3313);
+
+  /* Shadows – same warm-tint recipe, deeper */
+  --shadow-sm: 1px 1px 16px -2px hsl(0 63% 6% / 0.40);
+  --shadow:    1px 1px 16px -2px hsl(0 63% 6% / 0.50), 1px 1px 2px -3px hsl(0 63% 6% / 0.50);
+  --shadow-md: 1px 1px 16px -2px hsl(0 63% 6% / 0.50), 1px 2px 4px -3px hsl(0 63% 6% / 0.50);
+  --shadow-lg: 1px 1px 16px -2px hsl(0 63% 6% / 0.50), 1px 4px 6px -3px hsl(0 63% 6% / 0.50);
 }
 
 /* ─── Base ────────────────────────────────────────────────────────────────────── */
@@ -82,16 +151,17 @@
 }
 
 html {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  color: var(--color-text);
+  -moz-osx-font-smoothing: grayscale;
   background-color: var(--color-surface-2);
 }
 
 body {
   min-height: 100vh;
+  font-family: var(--font-sans);
+  color: var(--color-text);
 }
 
 /* ─── Typography ──────────────────────────────────────────────────────────────── */
@@ -293,7 +363,7 @@ h5 { font-size: 0.875rem; font-weight: 600; }
 }
 .table-action-link:hover { color: var(--color-primary-700); text-decoration: underline; }
 .reference-code {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   background: var(--color-surface-3);
   padding: 0.1rem 0.35rem;
@@ -612,3 +682,115 @@ textarea.form-control { resize: vertical; }
   font-size: 0.75rem;
 }
 
+
+/* ─── Visual Polish & Micro-Interactions ────────────────────────────────────── */
+
+/* Background texture for light mode */
+body {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23f9fafb'/%3E%3Cpath d='M0 0h1v1H0zM2 2h1v1H2z' fill='%23e5e7eb' opacity='0.15'/%3E%3C/svg%3E");
+}
+
+/* Background texture for dark mode */
+.dark body {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%231f2937'/%3E%3Cpath d='M0 0h1v1H0zM2 2h1v1H2z' fill='%23374151' opacity='0.3'/%3E%3C/svg%3E");
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better selection color */
+::selection {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.dark ::selection {
+  background-color: var(--color-primary-400);
+  color: var(--color-text);
+}
+
+/* Updated scrollbars for dark mode */
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-2);
+}
+
+/* Utility classes for motion */
+.hover-lift {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.hover-lift:hover {
+  transform: translateY(-1px);
+}
+
+.hover-scale {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.transition-smooth {
+  transition: all var(--duration-normal) var(--ease-in-out);
+}
+
+.transition-colors {
+  transition: background-color var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+
+/* Loading skeleton animation */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeleton {
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background: var(--color-surface-3);
+  border-radius: var(--radius);
+}
+
+/* Fade-in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fade-in var(--duration-normal) var(--ease-out);
+}
+
+/* Stagger children animation */
+.stagger-children > * {
+  animation: fade-in var(--duration-normal) var(--ease-out);
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+    background-image: none;
+  }
+  nav, .no-print {
+    display: none !important;
+  }
+}

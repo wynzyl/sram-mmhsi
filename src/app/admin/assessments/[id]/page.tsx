@@ -14,6 +14,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import PostPaymentForm from "@/components/cashier/PostPaymentForm";
 import PaymentsHistoryTable from "@/components/cashier/PaymentsHistoryTable";
+import GenerateInvoiceButton from "@/components/finance/invoices/GenerateInvoiceButton";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -151,6 +152,11 @@ export default async function AssessmentLedgerPage({ params }: PageProps) {
                 <span style={{ fontWeight: "bold", color: Number(assessment.balance) > 0 ? "var(--color-error)" : "inherit" }}>
                   ₱{Number(assessment.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
+              </div>
+              
+              <hr style={{ margin: "1rem 0" }} />
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <GenerateInvoiceButton assessmentId={assessment.id} />
               </div>
             </div>
           </div>

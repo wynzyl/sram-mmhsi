@@ -114,8 +114,33 @@ export default function GuardianForm({
           </select>
         </div>
         <div className="form-group">
+          <label className="form-label" htmlFor={`guardian-${index}-address`}>
+            Address <span className="required">*</span>
+          </label>
+          <textarea
+            id={`guardian-${index}-address`}
+            className="form-control"
+            rows={2}
+            value={guardian.address ?? ""}
+            onChange={(e) => update("address", e.target.value)}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label" htmlFor={`guardian-${index}-occupation`}>
+            Occupation
+          </label>
+          <input
+            id={`guardian-${index}-occupation`}
+            type="text"
+            className="form-control"
+            value={guardian.occupation ?? ""}
+            onChange={(e) => update("occupation", e.target.value)}
+          />
+        </div>
+        <div className="form-group">
           <label className="form-label" htmlFor={`guardian-${index}-contactNumber`}>
-            Contact Number
+            Contact Number <span className="required">*</span>
           </label>
           <input
             id={`guardian-${index}-contactNumber`}
@@ -123,11 +148,12 @@ export default function GuardianForm({
             className="form-control"
             value={guardian.contactNumber ?? ""}
             onChange={(e) => update("contactNumber", e.target.value)}
+            required
           />
         </div>
         <div className="form-group">
           <label className="form-label" htmlFor={`guardian-${index}-email`}>
-            Email Address
+            Email Address <span className="required">*</span>
           </label>
           <input
             id={`guardian-${index}-email`}
@@ -135,6 +161,7 @@ export default function GuardianForm({
             className="form-control"
             value={guardian.email ?? ""}
             onChange={(e) => update("email", e.target.value)}
+            required
           />
         </div>
       </div>

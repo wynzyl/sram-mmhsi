@@ -88,24 +88,24 @@
 ---
 
 ## Phase 7 — Invoice Management
-**Status: ⏳ Not Started**
+**Status: ✅ Complete**
 
-- [ ] Invoice generation from assessment
-- [ ] Invoice send via Gmail integration
-- [ ] Invoice status tracking (draft → sent → viewed → settled)
-- [ ] Invoice list view (Finance Officer)
-- [ ] Audit events: invoice sent
+- [x] Invoice generation from assessment
+- [x] Invoice send via Gmail integration
+- [x] Invoice status tracking (draft → sent → viewed → settled)
+- [x] Invoice list view (Finance Officer)
+- [x] Audit events: invoice sent
 
 ---
 
 ## Phase 8 — Grade Encoding
-**Status: ⏳ Not Started**
+**Status: ✅ Complete**
 
-- [ ] Teacher assignment management (Admin)
-- [ ] Grade entry per assigned class/subject/period (Teacher)
-- [ ] Grade submission and lock workflow
-- [ ] Grade period locking (Admin)
-- [ ] Audit events: grade saved/submitted/locked
+- [x] Teacher assignment management (Admin)
+- [x] Grade entry per assigned class/subject/period (Teacher)
+- [x] Grade submission and lock workflow
+- [x] Grade period locking (Admin)
+- [x] Audit events: grade saved/submitted/locked
 
 ---
 

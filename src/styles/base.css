@@ -1,0 +1,150 @@
+/* Base Styles & Visual Polish */
+@layer base {
+  body {
+    @apply bg-[var(--color-surface-2)] font-[family-name:var(--font-sans)] text-[var(--color-text)];
+
+    /* Subtle texture pattern for light mode */
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='4' height='4' fill='%23f9fafb'/><path d='M0 0h1v1H0zM2 2h1v1H2z' fill='%23e5e7eb' opacity='0.15'/></svg>");
+  }
+
+  .dark body {
+    /* Subtle texture pattern for dark mode */
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='4' height='4' fill='%231f2937'/><path d='M0 0h1v1H0zM2 2h1v1H2z' fill='%23374151' opacity='0.3'/></svg>");
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus indicators */
+  *:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* Selection color */
+  ::selection {
+    background-color: var(--color-primary);
+    color: white;
+  }
+
+  .dark ::selection {
+    background-color: var(--color-primary-400);
+    color: var(--color-text);
+  }
+
+  /* Prevent FOUC (Flash of Unstyled Content) */
+  html:not(.hydrated) {
+    visibility: hidden;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-2);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-2);
+  }
+
+  /* Print styles */
+  @media print {
+    body {
+      background: white;
+      background-image: none;
+    }
+
+    /* Hide non-essential elements when printing */
+    nav,
+    .no-print {
+      display: none !important;
+    }
+  }
+}
+
+/* Component-specific polish */
+@layer components {
+  /* Card hover effect for interactive cards */
+  .card-interactive {
+    transition: transform var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out);
+  }
+
+  .card-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Loading skeleton animation */
+  @keyframes skeleton-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .skeleton {
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    background: var(--color-surface-3);
+    border-radius: var(--radius);
+  }
+
+  /* Fade-in animation for page loads */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fade-in {
+    animation: fade-in var(--duration-normal) var(--ease-out);
+  }
+
+  /* Stagger children animation */
+  .stagger-children > * {
+    animation: fade-in var(--duration-normal) var(--ease-out);
+  }
+
+  .stagger-children > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .stagger-children > *:nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .stagger-children > *:nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .stagger-children > *:nth-child(4) {
+    animation-delay: 150ms;
+  }
+  .stagger-children > *:nth-child(5) {
+    animation-delay: 200ms;
+  }
+}

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { students, schoolYears, gradeLevels, registrations } from "@/lib/db/schema";
-import { eq, asc, and } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import NewEnrollmentForm from "@/components/enrollments/NewEnrollmentForm";
@@ -52,7 +52,7 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
     prefillStudent = allStudents.find((s) => s.id === studentId) ?? null;
 
     if (prefillStudent) {
-      // Find latest approved registration for pre-filling
+      // Find latest registration for pre-filling (all registrations are now auto-approved)
       const latestReg = await db
         .select({
           id: registrations.id,
@@ -60,12 +60,7 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
           gradeLevelId: registrations.gradeLevelId,
         })
         .from(registrations)
-        .where(
-          and(
-            eq(registrations.studentId, studentId),
-            eq(registrations.status, "approved")
-          )
-        )
+        .where(eq(registrations.studentId, studentId))
         .orderBy(asc(registrations.createdAt))
         .limit(1);
 

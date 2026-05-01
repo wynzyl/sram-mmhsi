@@ -29,6 +29,8 @@ const emptyGuardian = (): GuardianInput => ({
   middleName: "",
   lastName: "",
   relationship: "",
+  address: "",
+  occupation: "",
   contactNumber: "",
   email: "",
   isPrimary: false,
@@ -202,6 +204,108 @@ export default function StudentForm({ schoolYears, gradeLevels }: StudentFormPro
             className="form-control"
             rows={2}
           />
+        </div>
+      </section>
+
+      {/* ─── Contact & Additional Information ─────────────────────── */}
+      <section className="form-section">
+        <h3 className="form-section-title">Contact & Additional Information</h3>
+        <div className="form-grid form-grid-3">
+          <div className="form-group">
+            <label className="form-label" htmlFor="lrn">
+              Learner Reference Number (LRN)
+            </label>
+            <input
+              id="lrn"
+              name="lrn"
+              type="text"
+              className={`form-control ${state.errors?.lrn ? "form-control-error" : ""}`}
+              placeholder="12-digit DepEd LRN"
+              maxLength={12}
+              pattern="[0-9]{12}"
+            />
+            {state.errors?.lrn && (
+              <p className="form-error">{state.errors.lrn[0]}</p>
+            )}
+            {/* <p className="form-hint">Optional. DepEd-issued 12-digit identifier.</p> */}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="mobileNumber">
+              Mobile Number
+            </label>
+            <input
+              id="mobileNumber"
+              name="mobileNumber"
+              type="tel"
+              className={`form-control ${state.errors?.mobileNumber ? "form-control-error" : ""}`}
+              placeholder="09171234567"
+              autoComplete="tel"
+            />
+            {state.errors?.mobileNumber && (
+              <p className="form-error">{state.errors.mobileNumber[0]}</p>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="email">
+              Email Address
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              className={`form-control ${state.errors?.email ? "form-control-error" : ""}`}
+              autoComplete="email"
+              placeholder="student@example.com"
+            />
+            {state.errors?.email && (
+              <p className="form-error">{state.errors.email[0]}</p>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="nationality">
+              Nationality
+            </label>
+            <input
+              id="nationality"
+              name="nationality"
+              type="text"
+              className="form-control"
+              placeholder="Filipino"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="bloodType">
+              Blood Type
+            </label>
+            <select id="bloodType" name="bloodType" className="form-control">
+              <option value="">Unknown</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="religion">
+              Religion
+            </label>
+            <input
+              id="religion"
+              name="religion"
+              type="text"
+              className="form-control"
+              placeholder="Roman Catholic"
+            />
+          </div>
         </div>
       </section>
 

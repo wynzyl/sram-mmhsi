@@ -124,6 +124,8 @@ export const schoolYears = pgTable("school_years", {
   createdBy: uuid("created_by").references(() => users.id),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: uuid("updated_by").references(() => users.id),
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: uuid("deleted_by").references(() => users.id),
 });
 
 export const gradeLevels = pgTable("grade_levels", {
@@ -148,10 +150,19 @@ export const sections = pgTable(
   ]
 );
 
+export const curriculums = pgTable("curriculums", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  effectiveSchoolYearId: uuid("effective_school_year_id").references(() => schoolYears.id).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+});
+
 export const subjects = pgTable("subjects", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   code: text("code").notNull(),
+  curriculumId: uuid("curriculum_id").references(() => curriculums.id).notNull(),
   gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   createdBy: uuid("created_by").references(() => users.id),
@@ -164,6 +175,7 @@ export const students = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     referenceNumber: text("reference_number").notNull(),
+    lrn: text("lrn").unique(),
     firstName: text("first_name").notNull(),
     middleName: text("middle_name"),
     lastName: text("last_name").notNull(),
@@ -171,6 +183,11 @@ export const students = pgTable(
     dateOfBirth: timestamp("date_of_birth"),
     gender: text("gender"),
     address: text("address"),
+    mobileNumber: text("mobile_number"),
+    email: text("email"),
+    nationality: text("nationality"),
+    bloodType: text("blood_type"),
+    religion: text("religion"),
     userId: uuid("user_id").references(() => users.id),   // linked portal account
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -194,8 +211,10 @@ export const parentsGuardians = pgTable(
     middleName: text("middle_name"),
     lastName: text("last_name").notNull(),
     relationship: text("relationship").notNull(),
-    contactNumber: text("contact_number"),
-    email: text("email"),
+    address: text("address").notNull(),
+    occupation: text("occupation"),
+    contactNumber: text("contact_number").notNull(),
+    email: text("email").notNull(),
     userId: uuid("user_id").references(() => users.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),

@@ -9,11 +9,11 @@ import {
   registrations,
   auditLogs,
 } from "@/lib/db/schema";
-import { eq, ilike, or, and, sql } from "drizzle-orm";
+import { eq, ilike, and, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { CreateStudentSchema, ReviewRegistrationSchema, UpdateStudentSchema } from "@/lib/validators/student";
-import type { CreateStudentFormState, ReviewFormState, UpdateStudentFormState } from "@/lib/validators/student";
+import { CreateStudentSchema, UpdateStudentSchema } from "@/lib/validators/student";
+import type { CreateStudentFormState, UpdateStudentFormState } from "@/lib/validators/student";
 import { generateStudentRef } from "@/lib/utils/reference";
 import { logger } from "@/lib/observability/logger";
 
@@ -81,6 +81,15 @@ export async function createStudentAction(
     dateOfBirth: formData.get("dateOfBirth") || undefined,
     gender: formData.get("gender") || undefined,
     address: formData.get("address") || undefined,
+
+    // NEW FIELDS:
+    lrn: formData.get("lrn") || undefined,
+    mobileNumber: formData.get("mobileNumber") || undefined,
+    email: formData.get("email") || undefined,
+    nationality: formData.get("nationality") || undefined,
+    bloodType: formData.get("bloodType") || undefined,
+    religion: formData.get("religion") || undefined,
+
     schoolYearId: formData.get("schoolYearId"),
     gradeLevelId: formData.get("gradeLevelId"),
     guardians: guardiansParsed,
@@ -92,29 +101,38 @@ export async function createStudentAction(
 
   const { guardians, schoolYearId, gradeLevelId, ...studentData } = parsed.data;
 
-  // 4. Duplicate detection — same full name + DOB
-  if (studentData.dateOfBirth) {
+  // 4. Duplicate detection — always runs.
+  // Base match: same first + last name on an active record.
+  // Tightened by middleName when provided, and by dateOfBirth when provided.
+  {
+    const conditions = [
+      ilike(students.firstName, studentData.firstName),
+      ilike(students.lastName, studentData.lastName),
+      eq(students.isActive, true),
+    ];
+    if (studentData.middleName) {
+      conditions.push(ilike(students.middleName, studentData.middleName));
+    }
+    if (studentData.dateOfBirth) {
+      conditions.push(eq(students.dateOfBirth, studentData.dateOfBirth));
+    }
+
     const existing = await db
-      .select({ id: students.id })
+      .select({
+        id: students.id,
+        referenceNumber: students.referenceNumber,
+      })
       .from(students)
-      .where(
-        and(
-          ilike(students.firstName, studentData.firstName),
-          ilike(students.lastName, studentData.lastName),
-          eq(students.dateOfBirth, studentData.dateOfBirth),
-          eq(students.isActive, true)
-        )
-      )
+      .where(and(...conditions))
       .limit(1);
 
     if (existing.length > 0) {
-      return {
-        errors: {
-          _form: [
-            `A student named ${studentData.firstName} ${studentData.lastName} with this date of birth already exists (ID: ${existing[0].id}).`,
-          ],
-        },
-      };
+      const fullName = `${studentData.firstName} ${studentData.lastName}`;
+      const ref = existing[0].referenceNumber;
+      const message = studentData.dateOfBirth
+        ? `A student named ${fullName} with this date of birth already exists (Ref: ${ref}).`
+        : `A student named ${fullName} already exists (Ref: ${ref}). Provide a date of birth to disambiguate, or update the existing record instead.`;
+      return { errors: { _form: [message] } };
     }
   }
 
@@ -143,8 +161,10 @@ export async function createStudentAction(
           middleName: guardian.middleName,
           lastName: guardian.lastName,
           relationship: guardian.relationship,
+          address: guardian.address,
+          occupation: guardian.occupation,
           contactNumber: guardian.contactNumber,
-          email: guardian.email || undefined,
+          email: guardian.email,
           createdBy: session.userId,
           updatedBy: session.userId,
         })
@@ -157,12 +177,14 @@ export async function createStudentAction(
       });
     }
 
-    // 8. Create pending registration
+    // 8. Create approved registration (direct registration — no approval step)
     await db.insert(registrations).values({
       studentId: newStudent.id,
       schoolYearId,
       gradeLevelId,
-      status: "pending",
+      status: "approved",
+      reviewedBy: session.userId,
+      reviewedAt: new Date(),
       createdBy: session.userId,
       updatedBy: session.userId,
     });
@@ -189,68 +211,6 @@ export async function createStudentAction(
     return { success: true, studentId: newStudent.id };
   } catch (err) {
     logger.error("[students] Failed to create student", { error: String(err) });
-    return { message: "An unexpected error occurred. Please try again." };
-  }
-}
-
-// ─── Review Registration Action ───────────────────────────────────────────────
-
-export async function reviewRegistrationAction(
-  _prevState: ReviewFormState,
-  formData: FormData
-): Promise<ReviewFormState> {
-  const session = await requireSession();
-  if (!hasPermission(session.role, "registrations:review")) {
-    return { message: "You do not have permission to review registrations." };
-  }
-
-  const parsed = ReviewRegistrationSchema.safeParse({
-    registrationId: formData.get("registrationId"),
-    action: formData.get("action"),
-    remarks: formData.get("remarks") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
-  }
-
-  const { registrationId, action, remarks } = parsed.data;
-  const newStatus = action === "approve" ? "approved" : "rejected";
-
-  try {
-    await db
-      .update(registrations)
-      .set({
-        status: newStatus,
-        remarks: remarks ?? null,
-        reviewedBy: session.userId,
-        reviewedAt: new Date(),
-        updatedBy: session.userId,
-        updatedAt: new Date(),
-      })
-      .where(eq(registrations.id, registrationId));
-
-    await audit(
-      session.userId,
-      session.role,
-      `registration_${newStatus}`,
-      "registrations",
-      registrationId,
-      { status: newStatus, remarks }
-    );
-
-    logger.info("[registrations] Registration reviewed", {
-      registrationId,
-      newStatus,
-      actorId: session.userId,
-    });
-
-    revalidatePath("/admin/registrations");
-    revalidatePath("/admin/students");
-
-    return { success: true, message: `Registration ${newStatus} successfully.` };
-  } catch (err) {
-    logger.error("[registrations] Failed to review", { error: String(err) });
     return { message: "An unexpected error occurred. Please try again." };
   }
 }
@@ -288,6 +248,15 @@ export async function updateStudentAction(
     dateOfBirth: formData.get("dateOfBirth") || undefined,
     gender: formData.get("gender") || undefined,
     address: formData.get("address") || undefined,
+
+    // NEW FIELDS:
+    lrn: formData.get("lrn") || undefined,
+    mobileNumber: formData.get("mobileNumber") || undefined,
+    email: formData.get("email") || undefined,
+    nationality: formData.get("nationality") || undefined,
+    bloodType: formData.get("bloodType") || undefined,
+    religion: formData.get("religion") || undefined,
+
     isActive: isActiveRaw === "on" || isActiveRaw === "true",
     guardians: guardiansParsed,
   });
@@ -307,29 +276,39 @@ export async function updateStudentAction(
     return { message: "Student not found." };
   }
 
-  // 5. Duplicate detection — same full name + DOB (excluding current student)
-  if (studentData.dateOfBirth) {
+  // 5. Duplicate detection — always runs, excluding the current student.
+  // Base match: same first + last name on an active record (other than self).
+  // Tightened by middleName when provided, and by dateOfBirth when provided.
+  {
+    const conditions = [
+      ilike(students.firstName, studentData.firstName),
+      ilike(students.lastName, studentData.lastName),
+      eq(students.isActive, true),
+      sql`${students.id} != ${studentId}`,
+    ];
+    if (studentData.middleName) {
+      conditions.push(ilike(students.middleName, studentData.middleName));
+    }
+    if (studentData.dateOfBirth) {
+      conditions.push(eq(students.dateOfBirth, studentData.dateOfBirth));
+    }
+
     const existing = await db
-      .select({ id: students.id })
+      .select({
+        id: students.id,
+        referenceNumber: students.referenceNumber,
+      })
       .from(students)
-      .where(
-        and(
-          ilike(students.firstName, studentData.firstName),
-          ilike(students.lastName, studentData.lastName),
-          eq(students.dateOfBirth, studentData.dateOfBirth),
-          sql`${students.id} != ${studentId}`
-        )
-      )
+      .where(and(...conditions))
       .limit(1);
 
     if (existing.length > 0) {
-      return {
-        errors: {
-          _form: [
-            `Another student named ${studentData.firstName} ${studentData.lastName} with this date of birth already exists (ID: ${existing[0].id}).`,
-          ],
-        },
-      };
+      const fullName = `${studentData.firstName} ${studentData.lastName}`;
+      const ref = existing[0].referenceNumber;
+      const message = studentData.dateOfBirth
+        ? `Another student named ${fullName} with this date of birth already exists (Ref: ${ref}).`
+        : `Another student named ${fullName} already exists (Ref: ${ref}). Provide a date of birth to disambiguate.`;
+      return { errors: { _form: [message] } };
     }
   }
 
@@ -358,8 +337,10 @@ export async function updateStudentAction(
           middleName: guardian.middleName,
           lastName: guardian.lastName,
           relationship: guardian.relationship,
+          address: guardian.address,
+          occupation: guardian.occupation,
           contactNumber: guardian.contactNumber,
-          email: guardian.email || undefined,
+          email: guardian.email,
           createdBy: session.userId,
           updatedBy: session.userId,
         })

@@ -3,6 +3,11 @@
 import { useActionState } from "react";
 import { postPaymentAction } from "@/actions/cashier";
 import type { PaymentFormState } from "@/lib/validators/cashier";
+import { FormField } from "@/components/forms/FormField";
+import { FormActions } from "@/components/forms/FormActions";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
 
 interface PostPaymentFormProps {
   studentId: string;
@@ -20,73 +25,83 @@ export default function PostPaymentForm({
   onCancel,
 }: PostPaymentFormProps) {
   const initialState: PaymentFormState = {};
-  const [state, action, pending] = useActionState(postPaymentAction, initialState);
-
-  // Normally we would close modal on success, or show a success message
-  // and hide the form. We'll render a simple state.
+  const [state, action, pending] = useActionState(
+    postPaymentAction,
+    initialState
+  );
 
   if (state.success) {
     return (
-      <div className="alert alert-success">
+      <div className="bg-green-100 text-green-700 border border-green-200 rounded-md p-4 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
         <p>{state.message}</p>
         {onCancel && (
-          <button className="btn-secondary mt-4" onClick={onCancel}>
+          <Button variant="secondary" className="mt-4" onClick={onCancel}>
             Close
-          </button>
+          </Button>
         )}
       </div>
     );
   }
 
   return (
-    <form action={action} className="form-card" style={{ padding: "1.5rem" }}>
+    <form action={action} className="space-y-4">
       {state.errors?._form && (
-        <div className="alert alert-error mb-4">
+        <div className="bg-red-100 text-red-700 border border-red-200 rounded-md p-4 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
           {state.errors._form.map((err, i) => (
             <p key={i}>{err}</p>
           ))}
         </div>
       )}
       {state.message && !state.success && (
-        <div className="alert alert-error mb-4">{state.message}</div>
+        <div className="bg-red-100 text-red-700 border border-red-200 rounded-md p-4 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+          {state.message}
+        </div>
       )}
 
       <input type="hidden" name="studentId" value={studentId} />
       <input type="hidden" name="assessmentId" value={assessmentId} />
 
-      <div className="form-group mb-4">
-        <label className="form-label" htmlFor="bookletId">
-          OR Booklet to Use <span className="required">*</span>
-        </label>
+      <FormField
+        label="OR Booklet to Use"
+        required
+        error={state.errors?.bookletId}
+      >
         {activeBooklets.length === 0 ? (
-          <div className="alert alert-error">
-            <p>No active receipt booklets available. Please contact Finance to register a new booklet before posting payments.</p>
+          <div className="bg-red-100 text-red-700 border border-red-200 rounded-md p-4 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+            <p>
+              No active receipt booklets available. Please contact Finance to
+              register a new booklet before posting payments.
+            </p>
           </div>
         ) : (
           <select
             id="bookletId"
             name="bookletId"
-            className={`form-control ${state.errors?.bookletId ? "form-control-error" : ""}`}
+            className="w-full px-3 py-2 border rounded-md text-sm transition-colors duration-150 bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border-2)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none"
             required
           >
             {activeBooklets.map((b) => (
               <option key={b.id} value={b.id}>
-                Series {b.series} (Next OR: {b.series}-{String(b.nextNumber).padStart(6, "0")})
+                Series {b.series} (Next OR: {b.series}-
+                {String(b.nextNumber).padStart(6, "0")})
               </option>
             ))}
           </select>
         )}
-        {state.errors?.bookletId && (
-          <p className="form-error">{state.errors.bookletId[0]}</p>
-        )}
-      </div>
+      </FormField>
 
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="form-label" htmlFor="amount">
-            Amount to Pay (₱) <span className="required">*</span>
-          </label>
-          <input
+      <div className="grid gap-4 md:grid-cols-2">
+        <FormField
+          label="Amount to Pay"
+          required
+          error={state.errors?.amount}
+          hint={
+            <>
+              Max: <CurrencyDisplay amount={balance} />
+            </>
+          }
+        >
+          <Input
             type="number"
             id="amount"
             name="amount"
@@ -94,23 +109,20 @@ export default function PostPaymentForm({
             min="0.01"
             max={balance}
             defaultValue={balance}
-            className={`form-control ${state.errors?.amount ? "form-control-error" : ""}`}
+            error={!!state.errors?.amount}
             required
           />
-          <small className="text-muted">Max: ₱{balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</small>
-          {state.errors?.amount && (
-            <p className="form-error">{state.errors.amount[0]}</p>
-          )}
-        </div>
+        </FormField>
 
-        <div className="form-group">
-          <label className="form-label" htmlFor="paymentMethod">
-            Payment Method <span className="required">*</span>
-          </label>
+        <FormField
+          label="Payment Method"
+          required
+          error={state.errors?.paymentMethod}
+        >
           <select
             id="paymentMethod"
             name="paymentMethod"
-            className={`form-control ${state.errors?.paymentMethod ? "form-control-error" : ""}`}
+            className="w-full px-3 py-2 border rounded-md text-sm transition-colors duration-150 bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border-2)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none"
             required
           >
             <option value="cash">Cash</option>
@@ -119,47 +131,28 @@ export default function PostPaymentForm({
             <option value="gcash">GCash</option>
             <option value="other">Other</option>
           </select>
-          {state.errors?.paymentMethod && (
-            <p className="form-error">{state.errors.paymentMethod[0]}</p>
-          )}
-        </div>
+        </FormField>
       </div>
 
-      <div className="form-group mt-4">
-        <label className="form-label" htmlFor="referenceNumber">
-          Reference Number (Optional)
-        </label>
-        <input
+      <FormField label="Reference Number" hint="e.g. Check No., GCash Ref No.">
+        <Input
           type="text"
           id="referenceNumber"
           name="referenceNumber"
-          className="form-control"
           placeholder="e.g. Check No., GCash Ref No."
         />
-      </div>
+      </FormField>
 
-      <div className="form-group mt-4">
-        <label className="form-label" htmlFor="remarks">
-          Remarks (Optional)
-        </label>
-        <input
-          type="text"
-          id="remarks"
-          name="remarks"
-          className="form-control"
-        />
-      </div>
+      <FormField label="Remarks">
+        <Input type="text" id="remarks" name="remarks" />
+      </FormField>
 
-      <div className="form-actions mt-6" style={{ display: "flex", gap: "1rem" }}>
-        {onCancel && (
-          <button type="button" className="btn-ghost" onClick={onCancel}>
-            Cancel
-          </button>
-        )}
-        <button type="submit" className="btn-primary" disabled={pending || balance <= 0 || activeBooklets.length === 0}>
-          {pending ? "Posting..." : "Post Payment"}
-        </button>
-      </div>
+      <FormActions
+        submitLabel={pending ? "Posting..." : "Post Payment"}
+        cancelLabel="Cancel"
+        onCancel={onCancel}
+        loading={pending}
+      />
     </form>
   );
 }

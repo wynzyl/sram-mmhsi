@@ -170,7 +170,7 @@ export async function postPaymentAction(
           updatedBy: session.userId,
           updatedAt: new Date(),
         })
-        .where(eq(receiptBooklets.id, bookletIdToAssign));
+        .where(eq(receiptBooklets.id, bookletIdToAssign as string));
 
       // 4. Create Payment Record
       const [newPayment] = await tx

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx drizzle-kit generate:*)",
+      "Bash(npx drizzle-kit migrate:*)",
+      "Bash(dir:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run build:*)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pkill:*)",
+      "Bash(npm run dev:*)",
+      "Bash(git diff:*)",
+      "Bash(npm run db:generate:*)",
+      "Bash(npm run db:migrate:*)",
+      "Bash(node -e:*)",
+      "Bash(node check-db.js:*)",
+      "Bash(node apply-migration.js:*)",
+      "Bash(node check-parents-columns.js:*)",
+      "Bash(node:*)"
+    ]
+  }
+}

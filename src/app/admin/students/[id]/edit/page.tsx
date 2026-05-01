@@ -40,6 +40,15 @@ export default async function EditStudentPage({ params }: PageProps) {
       dateOfBirth: true,
       gender: true,
       address: true,
+
+      // NEW FIELDS:
+      lrn: true,
+      mobileNumber: true,
+      email: true,
+      nationality: true,
+      bloodType: true,
+      religion: true,
+
       isActive: true,
     },
   });
@@ -53,6 +62,8 @@ export default async function EditStudentPage({ params }: PageProps) {
       middleName: parentsGuardians.middleName,
       lastName: parentsGuardians.lastName,
       relationship: parentsGuardians.relationship,
+      address: parentsGuardians.address,
+      occupation: parentsGuardians.occupation,
       contactNumber: parentsGuardians.contactNumber,
       email: parentsGuardians.email,
     })
@@ -66,8 +77,10 @@ export default async function EditStudentPage({ params }: PageProps) {
     middleName: g.middleName || "",
     lastName: g.lastName,
     relationship: g.relationship,
-    contactNumber: g.contactNumber || "",
-    email: g.email || "",
+    address: g.address,
+    occupation: g.occupation || "",
+    contactNumber: g.contactNumber,
+    email: g.email,
     isPrimary: g.isPrimary ?? false,
   }));
 

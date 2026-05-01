@@ -27,7 +27,7 @@ export const PostPaymentSchema = z.object({
   bookletId: z.string().uuid("Booklet selection is required"),
   amount: z.coerce.number().min(0.01, "Amount must be greater than 0"),
   paymentMethod: z.enum(["cash", "check", "bank_transfer", "gcash", "other"], {
-    errorMap: () => ({ message: "Invalid payment method" }),
+    message: "Invalid payment method",
   }),
   referenceNumber: z.string().trim().optional(),
   remarks: z.string().trim().optional(),

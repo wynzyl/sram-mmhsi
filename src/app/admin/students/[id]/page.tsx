@@ -46,6 +46,15 @@ export default async function StudentProfilePage({ params }: PageProps) {
       dateOfBirth: true,
       gender: true,
       address: true,
+
+      // NEW FIELDS:
+      lrn: true,
+      mobileNumber: true,
+      email: true,
+      nationality: true,
+      bloodType: true,
+      religion: true,
+
       isActive: true,
       createdAt: true,
     },
@@ -61,6 +70,8 @@ export default async function StudentProfilePage({ params }: PageProps) {
       middleName: parentsGuardians.middleName,
       lastName: parentsGuardians.lastName,
       relationship: parentsGuardians.relationship,
+      address: parentsGuardians.address,
+      occupation: parentsGuardians.occupation,
       contactNumber: parentsGuardians.contactNumber,
       email: parentsGuardians.email,
     })
@@ -72,9 +83,6 @@ export default async function StudentProfilePage({ params }: PageProps) {
   const regRows = await db
     .select({
       id: registrations.id,
-      status: registrations.status,
-      remarks: registrations.remarks,
-      reviewedAt: registrations.reviewedAt,
       createdAt: registrations.createdAt,
       schoolYear: schoolYears.label,
       gradeLevel: gradeLevels.name,
@@ -85,18 +93,9 @@ export default async function StudentProfilePage({ params }: PageProps) {
     .where(eq(registrations.studentId, id))
     .orderBy(desc(registrations.createdAt));
 
-  // Determine if the student has at least one approved registration (required to enroll)
-  const hasApprovedReg = regRows.some((r) => r.status === "approved");
-
   const fullName = [student.firstName, student.middleName, student.lastName, student.suffix]
     .filter(Boolean)
     .join(" ");
-
-  const statusColors: Record<string, string> = {
-    pending: "badge-warning",
-    approved: "badge-success",
-    rejected: "badge-danger",
-  };
 
   return (
     <div className="page-container">
@@ -119,7 +118,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
           </span>
         </div>
         <div className="profile-actions">
-          {hasPermission(session.role, "enrollments:create") && hasApprovedReg && (
+          {hasPermission(session.role, "enrollments:create") && (
             <Link
               href={`/admin/enrollments/new?studentId=${id}`}
               className="btn-secondary"
@@ -127,15 +126,6 @@ export default async function StudentProfilePage({ params }: PageProps) {
             >
               Enroll Student
             </Link>
-          )}
-          {hasPermission(session.role, "enrollments:create") && !hasApprovedReg && (
-            <span
-              className="btn-secondary btn-disabled"
-              title="Student must have an approved registration before enrolling"
-              aria-disabled="true"
-            >
-              Enroll Student
-            </span>
           )}
           {hasPermission(session.role, "students:update") && (
             <Link
@@ -174,6 +164,41 @@ export default async function StudentProfilePage({ params }: PageProps) {
               <dt>Address</dt>
               <dd>{student.address ?? "—"}</dd>
             </div>
+
+            {/* NEW FIELDS */}
+            <div className="profile-dl-row">
+              <dt>LRN</dt>
+              <dd className="font-[family-name:var(--font-mono)] text-sm">
+                {student.lrn ?? "—"}
+              </dd>
+            </div>
+            <div className="profile-dl-row">
+              <dt>Mobile Number</dt>
+              <dd>{student.mobileNumber ?? "—"}</dd>
+            </div>
+            <div className="profile-dl-row">
+              <dt>Email</dt>
+              <dd>{student.email ?? "—"}</dd>
+            </div>
+            <div className="profile-dl-row">
+              <dt>Nationality</dt>
+              <dd>{student.nationality ?? "—"}</dd>
+            </div>
+            <div className="profile-dl-row">
+              <dt>Blood Type</dt>
+              <dd>
+                {student.bloodType ? (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-xs font-medium">
+                    {student.bloodType}
+                  </span>
+                ) : "—"}
+              </dd>
+            </div>
+            <div className="profile-dl-row">
+              <dt>Religion</dt>
+              <dd>{student.religion ?? "—"}</dd>
+            </div>
+
             <div className="profile-dl-row">
               <dt>Registered On</dt>
               <dd>
@@ -224,10 +249,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
                 <tr>
                   <th>School Year</th>
                   <th>Grade Level</th>
-                  <th>Status</th>
-                  <th>Remarks</th>
-                  <th>Reviewed On</th>
-                  <th>Submitted</th>
+                  <th>Registered On</th>
                 </tr>
               </thead>
               <tbody>
@@ -235,17 +257,6 @@ export default async function StudentProfilePage({ params }: PageProps) {
                   <tr key={reg.id}>
                     <td>{reg.schoolYear}</td>
                     <td>{reg.gradeLevel}</td>
-                    <td>
-                      <span className={`badge ${statusColors[reg.status] ?? "badge-secondary"}`}>
-                        {reg.status.charAt(0).toUpperCase() + reg.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="text-muted">{reg.remarks ?? "—"}</td>
-                    <td className="text-muted">
-                      {reg.reviewedAt
-                        ? new Date(reg.reviewedAt).toLocaleDateString("en-PH")
-                        : "—"}
-                    </td>
                     <td className="text-muted">
                       {new Date(reg.createdAt).toLocaleDateString("en-PH")}
                     </td>

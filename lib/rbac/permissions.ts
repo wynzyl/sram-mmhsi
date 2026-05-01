@@ -44,7 +44,8 @@ export type Permission =
   | "users:manage"
   | "school_years:manage"
   | "sections:manage"
-  | "fee_schedules:manage";
+  | "fee_schedules:manage"
+  | "assignments:manage";
 
 const PERMISSIONS: Record<Role, Permission[]> = {
   admin: [
@@ -58,6 +59,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "booklets:manage",
     "reports:finance", "reports:academic",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
+    "assignments:manage",
   ],
   registrar: [
     "students:read", "students:create", "students:update",
@@ -66,7 +68,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "assessments:read", "assessments:create",
     "grades:read",
     "reports:academic",
-    "sections:manage",
+    "sections:manage", "school_years:manage",
   ],
   finance_officer: [
     "students:read",
