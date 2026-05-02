@@ -1,20 +1,74 @@
 import { z } from "zod";
+import { OR_SEQUENCE_PAD } from "@/lib/utils/or-number";
+
+const BOOKLET_RECEIPT_COUNT = 50;
+const OR_SEQUENCE_MAX = 99_999;
+
+/** Printed OR prefix: exactly two letters (e.g. AK). */
+const BOOKLET_PREFIX_REGEX = /^[A-Za-z]{2}$/;
+
+/** Canonical booklet series line: `AK 00051-00100` (prefix + space + 5-digit start–end). */
+export function formatBookletSeriesCanonical(
+  prefix: string,
+  startNumber: number,
+  endNumber: number
+): string {
+  const p = prefix.trim().toUpperCase();
+  const a = String(Math.floor(startNumber)).padStart(OR_SEQUENCE_PAD, "0");
+  const b = String(Math.floor(endNumber)).padStart(OR_SEQUENCE_PAD, "0");
+  return `${p} ${a}-${b}`;
+}
+
+export function normalizeBookletSeriesInput(series: string): string {
+  return series
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/\s*-\s*/, "-")
+    .toUpperCase();
+}
 
 // ─── Receipt Booklet Validators ───────────────────────────────────────────────
 
-export const CreateBookletSchema = z.object({
-  series: z.string().trim().min(1, "Series is required (e.g., batch label or booklet code)"),
-  prefix: z
-    .string()
-    .trim()
-    .min(1, "Prefix is required (printed before the OR number, e.g. AP)")
-    .max(32, "Prefix must be at most 32 characters"),
-  startNumber: z.coerce.number().int().min(1, "Start number must be at least 1"),
-  endNumber: z.coerce.number().int().min(1, "End number must be at least 1"),
-}).refine((data) => data.endNumber > data.startNumber, {
-  message: "End number must be greater than start number",
-  path: ["endNumber"],
-});
+export const CreateBookletSchema = z
+  .object({
+    series: z
+      .string()
+      .trim()
+      .min(1, 'Series is required in the form PREFIX 00051-00100 (e.g. "AK 00051-00100").'),
+    prefix: z
+      .string()
+      .trim()
+      .regex(BOOKLET_PREFIX_REGEX, "Prefix must be exactly 2 letters (e.g. AK)"),
+    startNumber: z.coerce
+      .number()
+      .int("Start number must be a whole number")
+      .min(1, "Start number must be at least 1")
+      .max(OR_SEQUENCE_MAX, `Start number must be at most ${OR_SEQUENCE_MAX} (5-digit OR)`),
+    endNumber: z.coerce
+      .number()
+      .int("End number must be a whole number")
+      .min(1, "End number must be at least 1")
+      .max(OR_SEQUENCE_MAX, `End number must be at most ${OR_SEQUENCE_MAX} (5-digit OR)`),
+  })
+  .refine((data) => data.endNumber >= data.startNumber, {
+    message: "End number must be greater than or equal to start number",
+    path: ["endNumber"],
+  })
+  .refine((data) => data.endNumber - data.startNumber + 1 === BOOKLET_RECEIPT_COUNT, {
+    message: `Booklet must contain exactly ${BOOKLET_RECEIPT_COUNT} OR numbers (inclusive range).`,
+    path: ["endNumber"],
+  })
+  .superRefine((data, ctx) => {
+    const normalized = normalizeBookletSeriesInput(data.series);
+    const canonical = formatBookletSeriesCanonical(data.prefix, data.startNumber, data.endNumber);
+    if (normalized !== canonical) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["series"],
+        message: `Series must exactly match start, end, and prefix: "${canonical}".`,
+      });
+    }
+  });
 
 export type CreateBookletInput = z.infer<typeof CreateBookletSchema>;
 
@@ -41,10 +95,24 @@ export const PostPaymentSchema = z
       const n = Number(v);
       return Number.isFinite(n) ? n : undefined;
     }, z.number().optional()),
-    referenceNumber: z.string().trim().optional(),
+    referenceNumber: z.preprocess((v) => {
+      if (v === "" || v === null || v === undefined) return undefined;
+      const s = String(v).trim();
+      return s === "" ? undefined : s;
+    }, z.string().optional()),
     remarks: z.string().trim().optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.paymentMethod === "gcash" || data.paymentMethod === "bank_transfer") {
+      if (!data.referenceNumber) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["referenceNumber"],
+          message: "Reference number is required for GCash and bank transfer payments.",
+        });
+      }
+    }
+
     if (data.paymentMethod !== "cash") return;
     const tendered = data.amountTendered;
     if (tendered === undefined || Number.isNaN(tendered)) {

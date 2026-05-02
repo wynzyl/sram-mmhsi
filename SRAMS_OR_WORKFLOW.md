@@ -38,3 +38,7 @@ The Cashier interface must remain "dense" and "low-friction" 7\.
 * **Finance Officer/Admin:** Responsible for the **setup of booklets** and the initial entry of OR ranges into the system 9\.  
 * **Security:** To prevent fraud, the "Action Guard Layer" must ensure that a Cashier cannot manually skip or alter the OR sequence unless they have specific override permissions 10\.
 
+### Enrollment cancellation and refunds
+
+SRAMS does not model refunds as separate negative payments. After tuition has been posted, reversing money on the ledger is done by **voiding** the posted payment(s) from the assessment ledger (OR remains non-reusable per void rules above). **Cancelling** an enrollment closes that enrollment’s assessment ledger for **new** cashier posts and should normally happen only after posted amounts are voided when that matches finance policy. Registrar roles must void first when the ledger still shows collections; administrators holding `enrollments:cancel_with_balance` may cancel with a mandatory long audit remark—this is an exception trail, not a substitute for proper voiding where accounting requires it.
+

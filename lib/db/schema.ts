@@ -340,6 +340,9 @@ export const assessments = pgTable(
     totalPaid: numeric("total_paid", { precision: 12, scale: 2 }).notNull().default("0"),
     balance: numeric("balance", { precision: 12, scale: 2 }).notNull(),
     remarks: text("remarks"),
+    /** Set when the linked enrollment is cancelled — blocks new payments on this ledger. */
+    cancelledAt: timestamp("cancelled_at"),
+    cancelledBy: uuid("cancelled_by").references(() => users.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -410,6 +413,9 @@ export const payments = pgTable(
   },
   (t) => [
     uniqueIndex("payments_or_number_idx").on(t.orNumber),
+    uniqueIndex("payments_reference_number_unique_idx")
+      .on(t.referenceNumber)
+      .where(sql`${t.referenceNumber} is not null`),
     index("payments_student_idx").on(t.studentId),
     index("payments_status_idx").on(t.status),
     index("payments_date_idx").on(t.paymentDate),

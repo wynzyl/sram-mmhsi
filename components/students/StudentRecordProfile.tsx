@@ -95,7 +95,8 @@ function computeAge(dob: Date): number {
 function enrollmentTypeLabel(studentType: string): string {
   if (studentType === "new_student") return "New";
   if (studentType === "transferee") return "Transferee";
-  return "Returning";
+  if (studentType === "old_student") return "Old";
+  return studentType.replace(/_/g, " ");
 }
 
 function invoiceStatusVariant(

@@ -123,7 +123,7 @@ Middleware enforces role checks at route level.
 **Registration → Enrollment Flow:**
 1. `registrations` (status: pending → approved/rejected)
 2. `enrollments` (status: pending → assessed → enrolled)
-3. `feeSchedules` + `feeScheduleItems` (per grade level + school year)
+3. `feeSchedules` + `feeScheduleItems` (One flat schedule for all school year)
 4. `assessments` + `assessmentItems` (copied from fee schedule on enrollment)
 
 **Payment & OR Tracking (Critical):**
@@ -132,6 +132,7 @@ Middleware enforces role checks at route level.
 3. `paymentAllocations` — Payment distribution across assessment items
 4. OR lifecycle: available → consumed (or voided if payment voided)
 5. Booklet status transitions: active → exhausted (when `nextNumber > endNumber`)
+6. GCASH and Bank transfer always require Referrence Number (Not Optional)
 
 **Invoices:**
 - `invoices` (status: draft → sent → viewed → settled/overdue)
@@ -160,6 +161,9 @@ Middleware enforces role checks at route level.
    - OR must be within booklet range
    - OR cannot be reused even if payment is voided
    - Voided payments mark OR as `voided` but do not return to pool
+   - OR number must be 5 digit number
+   - Each booklet should range 51pcs only ex: AK 00050-00100
+   - Prefix is 2 digit Letter Only ex: AK
 
 4. **Audit Trail:**
    - Every payment post, void, or booklet status change triggers audit log

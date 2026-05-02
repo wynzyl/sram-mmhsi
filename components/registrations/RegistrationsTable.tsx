@@ -1,7 +1,10 @@
 "use client";
 
-interface RegistrationRow {
+import { StudentRowActionsMenu } from "@/components/students/StudentRowActionsMenu";
+
+export interface RegistrationRow {
   id: string;
+  studentId: string;
   studentName: string;
   referenceNumber: string;
   schoolYear: string;
@@ -11,26 +14,33 @@ interface RegistrationRow {
 
 interface RegistrationsTableProps {
   registrations: RegistrationRow[];
+  emptyMessage?: string;
 }
 
-export default function RegistrationsTable({ registrations }: RegistrationsTableProps) {
+export default function RegistrationsTable({
+  registrations,
+  emptyMessage = "No registrations found.",
+}: RegistrationsTableProps) {
+  const colSpan = 6;
+
   return (
     <div className="table-wrapper">
       <table className="data-table" id="registrations-table">
         <thead>
           <tr>
             <th>Reference No.</th>
-            <th>Student Name</th>
+            <th>Name</th>
             <th>School Year</th>
             <th>Grade Level</th>
-            <th>Registered On</th>
+            <th>Registered</th>
+            <th className="text-right w-px" aria-label="Actions" />
           </tr>
         </thead>
         <tbody>
           {registrations.length === 0 ? (
             <tr>
-              <td colSpan={5} className="table-empty">
-                No registrations found.
+              <td colSpan={colSpan} className="table-empty">
+                {emptyMessage}
               </td>
             </tr>
           ) : (
@@ -48,6 +58,9 @@ export default function RegistrationsTable({ registrations }: RegistrationsTable
                     month: "short",
                     day: "numeric",
                   })}
+                </td>
+                <td className="text-right align-middle">
+                  <StudentRowActionsMenu studentId={reg.studentId} />
                 </td>
               </tr>
             ))

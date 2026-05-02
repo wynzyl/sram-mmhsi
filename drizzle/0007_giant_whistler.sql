@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "payments_reference_number_unique_idx" ON "payments" USING btree ("reference_number") WHERE "payments"."reference_number" is not null;

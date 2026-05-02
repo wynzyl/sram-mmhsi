@@ -9,11 +9,12 @@ import {
   enrollments,
   auditLogs,
 } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, lte, gte, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   CreateBookletSchema,
+  formatBookletSeriesCanonical,
   PostPaymentSchema,
   VoidPaymentSchema,
 } from "@/lib/validators/cashier";
@@ -48,35 +49,38 @@ export async function createBookletAction(
     return { errors: parsed.error.flatten().fieldErrors as BookletFormState["errors"] };
   }
 
-  const { series, prefix, startNumber, endNumber } = parsed.data;
+  const { startNumber, endNumber } = parsed.data;
+  const prefix = parsed.data.prefix.toUpperCase();
+  const seriesCanonical = formatBookletSeriesCanonical(prefix, startNumber, endNumber);
 
-  const existingSeries = await db.query.receiptBooklets.findFirst({
-    where: and(
-      eq(receiptBooklets.series, series),
-      eq(receiptBooklets.status, "active")
-    ),
-  });
+  /** Closed-interval overlap: [s1,e1] ∩ [s2,e2] ≠ ∅ */
+  const overlapping = await db
+    .select({
+      series: receiptBooklets.series,
+      startNumber: receiptBooklets.startNumber,
+      endNumber: receiptBooklets.endNumber,
+    })
+    .from(receiptBooklets)
+    .where(
+      and(
+        eq(receiptBooklets.prefix, prefix),
+        lte(receiptBooklets.startNumber, endNumber),
+        gte(receiptBooklets.endNumber, startNumber)
+      )
+    )
+    .limit(8);
 
-  if (existingSeries) {
-    return {
-      errors: {
-        _form: [`An active booklet for series '${series}' already exists. Please exhaust or void it first.`],
-      },
-    };
-  }
-
-  const existingPrefix = await db.query.receiptBooklets.findFirst({
-    where: and(
-      eq(receiptBooklets.prefix, prefix),
-      eq(receiptBooklets.status, "active")
-    ),
-  });
-
-  if (existingPrefix) {
+  if (overlapping.length > 0) {
+    const detail = overlapping
+      .map(
+        (row) =>
+          `${row.series} (${row.startNumber}–${row.endNumber})`
+      )
+      .join("; ");
     return {
       errors: {
         _form: [
-          `An active booklet with OR prefix '${prefix}' already exists. Use another prefix or exhaust the current booklet first.`,
+          `This OR number range overlaps another ${prefix} booklet: ${detail}. Ranges for the same prefix must not overlap.`,
         ],
       },
     };
@@ -86,7 +90,7 @@ export async function createBookletAction(
     const [newBooklet] = await db
       .insert(receiptBooklets)
       .values({
-        series,
+        series: seriesCanonical,
         prefix,
         startNumber,
         endNumber,
@@ -103,7 +107,11 @@ export async function createBookletAction(
       action: "booklet_created",
       targetEntity: "receipt_booklets",
       targetId: newBooklet.id,
-      newState: JSON.stringify(parsed.data),
+      newState: JSON.stringify({
+        ...parsed.data,
+        prefix,
+        series: seriesCanonical,
+      }),
     });
 
     revalidatePath("/admin/finance/booklets");
@@ -132,7 +140,7 @@ export async function postPaymentAction(
     amount: formData.get("amount"),
     paymentMethod: formData.get("paymentMethod"),
     amountTendered: formData.get("amountTendered"),
-    referenceNumber: formData.get("referenceNumber") || undefined,
+    referenceNumber: formData.get("referenceNumber"),
     remarks: formData.get("remarks") || undefined,
   });
 
@@ -156,6 +164,11 @@ export async function postPaymentAction(
       });
 
       if (!assessment) throw new Error("Assessment not found.");
+      if (assessment.cancelledAt != null) {
+        throw new Error(
+          "This ledger is closed because the enrollment was cancelled. You cannot post new payments here. Use Void payment on existing rows if reversing posted tuition."
+        );
+      }
       if (Number(assessment.balance) < amount) {
         throw new Error("Payment amount exceeds the current balance.");
       }
@@ -173,6 +186,18 @@ export async function postPaymentAction(
         enrollmentForPayment?.id ?? assessment.enrollmentId ?? null,
         assessment.enrollmentId ?? null
       );
+
+      if (referenceNumber) {
+        const existingRef = await tx.query.payments.findFirst({
+          where: eq(payments.referenceNumber, referenceNumber),
+          columns: { id: true },
+        });
+        if (existingRef) {
+          throw new Error(
+            "REF_DUPLICATE: This reference number is already recorded on another payment. Each payment reference must be unique."
+          );
+        }
+      }
 
       // 2. Fetch Selected Active Booklet (locking it for update to prevent race conditions on OR number)
       // Note: Drizzle ORM does not support row-level locking natively in `query` builder yet without raw SQL,
@@ -198,7 +223,7 @@ export async function postPaymentAction(
       const endNum = Number(activeBooklet.end_number);
       const bookletPrefix = String(activeBooklet.prefix ?? "").trim() || String(activeBooklet.series ?? "").trim();
 
-      orNumberToAssign = formatStoredOrNumber(bookletPrefix, currentNext, endNum);
+      orNumberToAssign = formatStoredOrNumber(bookletPrefix, currentNext);
 
       // 3. Update Booklet Next Number / Status
       const nextNum = currentNext + 1;
@@ -291,9 +316,37 @@ export async function postPaymentAction(
 
     revalidatePath(`/admin/assessments/${assessmentId}`);
     return { success: true, message: `Payment posted successfully. OR Number: ${orNumberToAssign}` };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[cashier] Failed to post payment", { error: String(error) });
-    return { message: error.message || "An unexpected error occurred. Please try again." };
+
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.startsWith("REF_DUPLICATE:")) {
+      return {
+        errors: {
+          referenceNumber: ["This reference number is already used by another payment."],
+        },
+      };
+    }
+
+    const combined =
+      msg +
+      (typeof error === "object" && error !== null && "detail" in error
+        ? String((error as { detail?: unknown }).detail ?? "")
+        : "");
+    if (
+      combined.includes("reference_number") &&
+      (combined.includes("already exists") ||
+        combined.includes("duplicate key") ||
+        combined.includes("unique constraint"))
+    ) {
+      return {
+        errors: {
+          referenceNumber: ["This reference number is already used by another payment."],
+        },
+      };
+    }
+
+    return { message: msg || "An unexpected error occurred. Please try again." };
   }
 }
 

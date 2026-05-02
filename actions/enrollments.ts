@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { enrollments, students, auditLogs } from "@/lib/db/schema";
-import { eq, and, ne } from "drizzle-orm";
+import { enrollments, students, auditLogs, schoolYears, gradeLevels, assessments } from "@/lib/db/schema";
+import { eq, and, ne, isNull, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -16,6 +16,14 @@ import type {
   UpdateEnrollmentFormState,
 } from "@/lib/validators/enrollment";
 import { logger } from "@/lib/observability/logger";
+import { validateGradeProgression } from "@/lib/utils/enrollment-grade";
+
+const OUTSTANDING_PAYMENT_EPSILON = 0.009;
+const MIN_CANCEL_REMARKS_WITH_BALANCE = 15;
+
+function formatPhp(amount: number): string {
+  return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amount);
+}
 
 // ─── Audit Helper ─────────────────────────────────────────────────────────────
 
@@ -40,6 +48,16 @@ async function audit(
   } catch (err) {
     logger.error("[audit] Failed to write", { error: String(err) });
   }
+}
+
+/** Enrollments may only be created for the single active (current) school year. */
+async function getActiveSchoolYearId(): Promise<string | null> {
+  const rows = await db
+    .select({ id: schoolYears.id })
+    .from(schoolYears)
+    .where(and(eq(schoolYears.isActive, true), isNull(schoolYears.deletedAt)))
+    .limit(1);
+  return rows[0]?.id ?? null;
 }
 
 // ─── Create Enrollment Action ─────────────────────────────────────────────────
@@ -73,6 +91,23 @@ export async function createEnrollmentAction(
 
   const { studentId, schoolYearId, gradeLevelId, sectionId, registrationId, studentType } =
     parsed.data;
+
+  const activeSchoolYearId = await getActiveSchoolYearId();
+  if (!activeSchoolYearId) {
+    return {
+      message:
+        "No active school year is configured. Set the current school year under School Years before enrolling.",
+    };
+  }
+  if (schoolYearId !== activeSchoolYearId) {
+    return {
+      errors: {
+        schoolYearId: [
+          "Enrollments are only allowed for the current (active) school year. You cannot enroll for a past year.",
+        ],
+      },
+    };
+  }
 
   const student = await db.query.students.findFirst({
     where: and(eq(students.id, studentId), eq(students.isActive, true)),
@@ -118,6 +153,69 @@ export async function createEnrollmentAction(
         ],
       },
     };
+  }
+
+  const [maxGradeRow] = await db
+    .select({ maxOrder: gradeLevels.order })
+    .from(gradeLevels)
+    .orderBy(desc(gradeLevels.order))
+    .limit(1);
+  const maxCatalogOrder = maxGradeRow?.maxOrder ?? 0;
+
+  const [newGradeRow] = await db
+    .select({ order: gradeLevels.order })
+    .from(gradeLevels)
+    .where(eq(gradeLevels.id, gradeLevelId))
+    .limit(1);
+  if (!newGradeRow) {
+    return { errors: { gradeLevelId: ["Invalid grade level."] } };
+  }
+
+  const [priorEnrollmentRow] = await db
+    .select({ gradeOrder: gradeLevels.order })
+    .from(enrollments)
+    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+    .where(
+      and(
+        eq(enrollments.studentId, studentId),
+        ne(enrollments.status, "cancelled"),
+        ne(enrollments.schoolYearId, schoolYearId)
+      )
+    )
+    .orderBy(desc(schoolYears.startDate))
+    .limit(1);
+
+  const priorGradeOrder = priorEnrollmentRow?.gradeOrder ?? null;
+  const hasPriorEnrollmentElsewhere = priorEnrollmentRow != null;
+
+  if (hasPriorEnrollmentElsewhere && studentType !== "old_student") {
+    return {
+      errors: {
+        studentType: [
+          "This student has a prior enrollment in SRAMS. Enrollment type must be Old (returning).",
+        ],
+      },
+    };
+  }
+
+  if (!hasPriorEnrollmentElsewhere && studentType === "old_student") {
+    return {
+      errors: {
+        studentType: [
+          "Old (returning) applies only when the student has a prior enrollment in another school year.",
+        ],
+      },
+    };
+  }
+
+  const progression = validateGradeProgression({
+    priorGradeOrder,
+    newGradeOrder: newGradeRow.order,
+    maxCatalogOrder,
+  });
+  if (!progression.ok) {
+    return { errors: { gradeLevelId: [progression.message] } };
   }
 
   let newEnrollmentId: string | undefined;
@@ -227,6 +325,45 @@ export async function updateEnrollmentStatusAction(
     };
   }
 
+  let assessmentForCancel: { id: string; totalPaid: string } | null = null;
+  if (
+    action === "cancel" &&
+    (enrollment.status === "assessed" || enrollment.status === "enrolled")
+  ) {
+    assessmentForCancel =
+      (await db.query.assessments.findFirst({
+        where: eq(assessments.enrollmentId, enrollmentId),
+        columns: { id: true, totalPaid: true },
+      })) ?? null;
+  }
+
+  if (action === "cancel") {
+    const paid =
+      assessmentForCancel != null ? Number(assessmentForCancel.totalPaid) : 0;
+    const hasOutstandingPayments = paid > OUTSTANDING_PAYMENT_EPSILON;
+
+    if (
+      hasOutstandingPayments &&
+      (enrollment.status === "assessed" || enrollment.status === "enrolled")
+    ) {
+      if (!hasPermission(session.role, "enrollments:cancel_with_balance")) {
+        return {
+          message: `This enrollment has collected ${formatPhp(paid)} on the assessment ledger. Void posted payments on the ledger first (Cashier), then cancel. If you must cancel without voiding in the system, ask an administrator.`,
+        };
+      }
+      const remarks = (cancelRemarks ?? "").trim();
+      if (remarks.length < MIN_CANCEL_REMARKS_WITH_BALANCE) {
+        return {
+          errors: {
+            cancelRemarks: [
+              `Cancelling with outstanding payments requires a detailed audit reason (at least ${MIN_CANCEL_REMARKS_WITH_BALANCE} characters).`,
+            ],
+          },
+        };
+      }
+    }
+  }
+
   const updateValues = {
     status: action === "cancel" ? ("cancelled" as const) : ("enrolled" as const),
     updatedBy: session.userId,
@@ -243,10 +380,29 @@ export async function updateEnrollmentStatusAction(
   };
 
   try {
-    await db.update(enrollments).set(updateValues).where(eq(enrollments.id, enrollmentId));
+    await db.transaction(async (tx) => {
+      await tx.update(enrollments).set(updateValues).where(eq(enrollments.id, enrollmentId));
+
+      if (action === "cancel" && assessmentForCancel) {
+        await tx
+          .update(assessments)
+          .set({
+            cancelledAt: new Date(),
+            cancelledBy: session.userId,
+            updatedAt: new Date(),
+            updatedBy: session.userId,
+          })
+          .where(eq(assessments.id, assessmentForCancel.id));
+      }
+    });
 
     const verb = action === "cancel" ? "cancelled" : "override_marked_enrolled";
-    await audit(session.userId, session.role, verb, "enrollments", enrollmentId, updateValues);
+    await audit(session.userId, session.role, verb, "enrollments", enrollmentId, {
+      ...updateValues,
+      ...(assessmentForCancel && action === "cancel"
+        ? { assessmentId: assessmentForCancel.id }
+        : {}),
+    });
 
     logger.info("[enrollments] Status updated", {
       enrollmentId,

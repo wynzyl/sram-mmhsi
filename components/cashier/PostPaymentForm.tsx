@@ -119,7 +119,7 @@ export default function PostPaymentForm({
             {activeBooklets.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.series} — Next OR:{" "}
-                {formatStoredOrNumber(b.prefix, b.nextNumber, b.endNumber)}
+                {formatStoredOrNumber(b.prefix, b.nextNumber)}
               </option>
             ))}
           </select>
@@ -202,12 +202,27 @@ export default function PostPaymentForm({
         </div>
       )}
 
-      <FormField label="Reference no." hint="Check no., transfer ref, GCash ref, etc.">
+      <FormField
+        label="Reference no."
+        required={paymentMethod === "gcash" || paymentMethod === "bank_transfer"}
+        error={state.errors?.referenceNumber}
+        hint={
+          paymentMethod === "gcash" || paymentMethod === "bank_transfer"
+            ? "GCash / bank transfer reference is required and must be unique — not used on any other payment."
+            : "Required for GCash and bank transfer. If you enter a reference for other methods, it must still be unique across all payments."
+        }
+      >
         <Input
           type="text"
           id="referenceNumber"
           name="referenceNumber"
-          placeholder="Optional"
+          placeholder={
+            paymentMethod === "gcash" || paymentMethod === "bank_transfer"
+              ? "Transaction reference"
+              : "Check no., ref no., etc."
+          }
+          required={paymentMethod === "gcash" || paymentMethod === "bank_transfer"}
+          error={!!state.errors?.referenceNumber}
           className="font-mono text-sm"
         />
       </FormField>

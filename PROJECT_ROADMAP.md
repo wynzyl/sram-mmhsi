@@ -15,49 +15,49 @@
 - [x] Environment validation (§8.1)
 - [x] Structured logger (§14)
 - [x] Login page UI
-- [ ] Auth session implementation (login action, session cookies)
-- [ ] Route middleware with role redirect
-- [ ] First DB migration applied
-- [ ] `npm run dev` running cleanly
+- [x] Auth session implementation (JWT `jose`, httpOnly cookie, `actions/auth.ts`)
+- [x] Route protection (`proxy.ts` — staff vs portal vs admin; Next.js 16 proxy convention)
+- [x] DB migrations applied (`drizzle/0000` … `0008`+ as generated)
+- [x] `npm run dev` baseline
 
 ---
 
 ## Phase 2 — Authentication & Session Layer
-**Status: ✅ Complete**
+**Status: 🟡 Mostly complete**
 
-- [ ] Login action: credential validation, bcrypt compare, session creation
-- [ ] Session validation helper for server actions
-- [ ] Audit logging: user login / logout / failed login
-- [ ] Rate limiting middleware on `/api/auth/*`
-- [ ] Force-password-change flow
-- [ ] Role-based dashboard redirect after login
-- [ ] Protected route layout per role group (staff vs portal)
-- [ ] Logout endpoint
+- [x] Login action: credential validation, bcrypt compare, session creation
+- [x] Session validation helper for server actions (`requireSession`, `lib/auth/session.ts`)
+- [x] Audit logging: user login success / failed login
+- [ ] Rate limiting middleware on `/api/auth/*` — `lib/security/rateLimit.ts` exists; not wired to login yet
+- [ ] Force-password-change flow — field + admin reset exist; no post-login gate enforcing change
+- [x] Role-based landing redirect after login (`auth.ts` + `proxy.ts`)
+- [x] Protected route behavior per role group (staff vs portal vs admin-only)
+- [x] Logout action (`logoutAction`)
 
 ---
 
 ## Phase 3 — Student Registration Module
-**Status: ✅ Complete**
+**Status: 🟡 Mostly complete**
 
-- [ ] Student creation form (Registrar)
-- [ ] Parent/Guardian linking
-- [ ] Registration submission
+- [x] Student creation form (Registrar / permitted roles) — `admin/students/new`
+- [x] Parent/Guardian linking — `createStudentAction` / `updateStudentAction`
+- [ ] Registration submission — `registrations` table + list UI exist; no create/review server actions yet
 - [ ] Registration review (approve/reject) workflow
-- [ ] Duplicate student detection
-- [ ] Audit events: registration approved/rejected
-- [ ] Student list/search table (TanStack Table)
-- [ ] Student profile view page
+- [x] Duplicate student detection (name / optional DOB / LRN)
+- [x] Audit events: student created / updated
+- [x] Student list/search table (TanStack Table)
+- [x] Student profile + edit pages
 
 ---
 
 ## Phase 4 — Enrollment Module
-**Status: 🟡 In Progress**
+**Status: ✅ Complete**
 
-- [ ] New enrollment workflow (pending → assessed → enrolled)
-- [ ] Re-enrollment from existing student record
-- [ ] Grade level and section assignment
-- [ ] Enrollment status management
-- [ ] Audit events: enrollment created/cancelled
+- [x] Enrollment workflow (pending → assessed → enrolled, plus cancellation rules)
+- [x] Re-enrollment from existing student record (new enrollment for active school year)
+- [x] Grade level and section assignment
+- [x] Enrollment status management (`actions/enrollments.ts`)
+- [x] Audit events: enrollment created / status changes / cancellation
 
 ---
 
@@ -68,21 +68,21 @@
 - [x] Assessment generation per enrollment
 - [x] Assessment item CRUD (tuition, fees, discounts)
 - [x] Assessment balance calculation
-- [x] Audit events: assessment created/revised
+- [x] Audit events: assessment created/revised; cancellation metadata (migration `0008`)
 
 ---
 
 ## Phase 6 — Payment Posting & OR Booklet
-**Status: ✅ Complete**
+**Status: 🟡 Mostly complete**
 
 - [x] Receipt booklet management (Admin/Finance Officer)
 - [x] OR number auto-assignment on payment post
-- [x] Payment posting form (Cashier)
+- [x] Payment posting UI (Cashier) — embedded on assessment ledger (`AssessmentLedgerRegister` / `PostPaymentForm`)
 - [x] Payment void workflow
 - [x] OR status tracking (consumed, voided)
 - [x] Payment allocation to assessment items
 - [x] Ledger balance recalculation
-- [ ] Receipt generation/print view
+- [ ] Dedicated receipt generation/print view (button label references print; formal OR receipt layout TBD)
 - [x] Audit events: payment posted/voided, booklet consumed/exhausted
 
 ---
@@ -102,7 +102,7 @@
 **Status: ✅ Complete**
 
 - [x] Teacher assignment management (Admin)
-- [x] Grade entry per assigned class/subject/period (Teacher)
+- [x] Grade entry per assigned class/subject/period (Teacher) — `/staff/grades`
 - [x] Grade submission and lock workflow
 - [x] Grade period locking (Admin)
 - [x] Audit events: grade saved/submitted/locked
@@ -112,7 +112,7 @@
 ## Phase 9 — Student/Parent Portal
 **Status: ⏳ Not Started**
 
-- [ ] Portal login (student/parent accounts)
+- [ ] Portal routes (`/portal/*` guarded in `proxy.ts`; pages not implemented)
 - [ ] Balance and payment history view
 - [ ] Invoice view
 - [ ] Grade view (per student)
@@ -123,7 +123,7 @@
 ## Phase 10 — Reporting & Management Dashboard
 **Status: ⏳ Not Started**
 
-- [ ] Admin/Finance dashboard (collection summary, AR aging)
+- [ ] Admin/Finance dashboard (collection summary, AR aging) — admin dashboard shell exists with placeholder metrics
 - [ ] Enrollment summary report (per school year)
 - [ ] Grade summary report (per section/school year)
 - [ ] Payment collection report
@@ -132,11 +132,11 @@
 ---
 
 ## Phase 11 — Testing & Hardening
-**Status: ⏳ Not Started**
+**Status: 🟡 In progress**
 
-- [ ] Unit tests: validators, RBAC, balance calculations
+- [x] Unit tests: validators (`assessment.test.ts`), enrollment helpers (`enrollment-grade.test.ts`, `enrollment-payment.test.ts`)
 - [ ] Integration tests: registration flow, payment posting, grade submission
-- [ ] E2E tests: login, registration-to-enrollment, cashier flow, grade encoding
+- [ ] E2E tests — Playwright dependency present; suite/config not yet in repo
 - [ ] Security tests: route protection, action-level permission, session expiry
 - [ ] Performance tests: student search, ledger queries
 

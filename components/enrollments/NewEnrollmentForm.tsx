@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createEnrollmentAction } from "@/actions/enrollments";
 import type { EnrollmentFormState } from "@/lib/validators/enrollment";
@@ -11,30 +11,68 @@ interface Student {
   lastName: string;
   referenceNumber: string;
 }
-interface SchoolYear { id: string; label: string; isActive: boolean; }
-interface GradeLevel { id: string; name: string; order: number; }
+interface SchoolYear {
+  id: string;
+  label: string;
+}
+interface GradeLevel {
+  id: string;
+  name: string;
+  order: number;
+}
+
+type PromotionHint = {
+  lastGradeLevelId: string;
+  lastGradeName: string;
+  nextGradeLevelId: string;
+  hasNextGradeLevel: boolean;
+};
 
 interface NewEnrollmentFormProps {
   students: Student[];
-  schoolYears: SchoolYear[];
+  currentSchoolYear: SchoolYear | null;
   gradeLevels: GradeLevel[];
+  promotionByStudentId: Record<string, PromotionHint>;
   prefillStudentId: string | null;
-  prefillSchoolYearId: string | null;
-  prefillGradeLevelId: string | null;
 }
 
 const initialState: EnrollmentFormState = {};
 
+function promotedGradeIdForStudent(
+  sid: string,
+  promotionByStudentId: Record<string, PromotionHint>
+): string {
+  if (!sid) return "";
+  const hint = promotionByStudentId[sid];
+  if (!hint) return "";
+  return hint.hasNextGradeLevel ? hint.nextGradeLevelId : hint.lastGradeLevelId;
+}
+
+function studentTypeForSelection(
+  sid: string,
+  promotionByStudentId: Record<string, PromotionHint>
+): "new_student" | "transferee" | "old_student" {
+  return sid && promotionByStudentId[sid] ? "old_student" : "new_student";
+}
+
 export default function NewEnrollmentForm({
   students,
-  schoolYears,
+  currentSchoolYear,
   gradeLevels,
+  promotionByStudentId,
   prefillStudentId,
-  prefillSchoolYearId,
-  prefillGradeLevelId,
 }: NewEnrollmentFormProps) {
   const router = useRouter();
   const [state, action, pending] = useActionState(createEnrollmentAction, initialState);
+
+  const initialStudentId = prefillStudentId ?? "";
+  const [studentId, setStudentId] = useState(initialStudentId);
+  const [studentType, setStudentType] = useState<
+    "new_student" | "transferee" | "old_student"
+  >(() => studentTypeForSelection(initialStudentId, promotionByStudentId));
+  const [gradeLevelId, setGradeLevelId] = useState(() =>
+    promotedGradeIdForStudent(initialStudentId, promotionByStudentId)
+  );
 
   useEffect(() => {
     if (state.success && state.enrollmentId) {
@@ -42,12 +80,15 @@ export default function NewEnrollmentForm({
     }
   }, [state.success, state.enrollmentId, router]);
 
-  const activeYear = schoolYears.find((sy) => sy.isActive);
+  const disableSubmit = !currentSchoolYear || pending;
+  const promotionHint = studentId ? promotionByStudentId[studentId] : undefined;
 
   return (
     <form action={action} className="student-form" noValidate>
       {state.message && (
-        <div className="alert alert-error" role="alert">{state.message}</div>
+        <div className="alert alert-error" role="alert">
+          {state.message}
+        </div>
       )}
       {state.errors?._form && (
         <div className="alert alert-error" role="alert">
@@ -55,8 +96,19 @@ export default function NewEnrollmentForm({
         </div>
       )}
 
+      {!currentSchoolYear && (
+        <div className="alert alert-error" role="alert">
+          No <strong>active</strong> school year is configured. Add or activate the current school year
+          under School Years before enrolling students.
+        </div>
+      )}
+
       <section className="form-section">
         <h3 className="form-section-title">Enrollment Details</h3>
+
+        {currentSchoolYear && (
+          <input type="hidden" name="schoolYearId" value={currentSchoolYear.id} />
+        )}
 
         <div className="form-group">
           <label className="form-label" htmlFor="studentId">
@@ -66,7 +118,13 @@ export default function NewEnrollmentForm({
             id="studentId"
             name="studentId"
             className={`form-control ${state.errors?.studentId ? "form-control-error" : ""}`}
-            defaultValue={prefillStudentId ?? ""}
+            value={studentId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setStudentId(id);
+              setGradeLevelId(promotedGradeIdForStudent(id, promotionByStudentId));
+              setStudentType(studentTypeForSelection(id, promotionByStudentId));
+            }}
             required
           >
             <option value="">— Select a student —</option>
@@ -83,26 +141,29 @@ export default function NewEnrollmentForm({
 
         <div className="form-grid form-grid-2">
           <div className="form-group">
-            <label className="form-label" htmlFor="schoolYearId">
+            <span className="form-label">
               School Year <span className="required">*</span>
-            </label>
-            <select
-              id="schoolYearId"
-              name="schoolYearId"
+            </span>
+            <div
               className={`form-control ${state.errors?.schoolYearId ? "form-control-error" : ""}`}
-              defaultValue={prefillSchoolYearId ?? activeYear?.id ?? ""}
-              required
+              style={{ background: "var(--color-surface-2)" }}
+              aria-live="polite"
             >
-              <option value="">Select school year</option>
-              {schoolYears.map((sy) => (
-                <option key={sy.id} value={sy.id}>
-                  {sy.label} {sy.isActive ? "(Current)" : ""}
-                </option>
-              ))}
-            </select>
+              {currentSchoolYear ? (
+                <>
+                  <strong>{currentSchoolYear.label}</strong>
+                  <span className="text-muted ml-2">(current year only)</span>
+                </>
+              ) : (
+                <span className="text-muted">—</span>
+              )}
+            </div>
             {state.errors?.schoolYearId && (
               <p className="form-error">{state.errors.schoolYearId[0]}</p>
             )}
+            <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+              Past school years cannot be selected for new enrollments.
+            </p>
           </div>
 
           <div className="form-group">
@@ -113,7 +174,8 @@ export default function NewEnrollmentForm({
               id="gradeLevelId"
               name="gradeLevelId"
               className={`form-control ${state.errors?.gradeLevelId ? "form-control-error" : ""}`}
-              defaultValue={prefillGradeLevelId ?? ""}
+              value={gradeLevelId}
+              onChange={(e) => setGradeLevelId(e.target.value)}
               required
             >
               <option value="">Select grade level</option>
@@ -126,30 +188,59 @@ export default function NewEnrollmentForm({
             {state.errors?.gradeLevelId && (
               <p className="form-error">{state.errors.gradeLevelId[0]}</p>
             )}
+            {promotionHint && (
+              <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+                {promotionHint.hasNextGradeLevel
+                  ? `Prior enrollment (${promotionHint.lastGradeName}). Default grade is the next level — change only when appropriate.`
+                  : `${promotionHint.lastGradeName} matches the highest grade in the catalog. Confirm with admin before enrolling again.`}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="form-group">
-          <label className="form-label" htmlFor="studentType">
-            Enrollment student type <span className="required">*</span>
-          </label>
-          <select
-            id="studentType"
-            name="studentType"
-            className={`form-control ${state.errors?.studentType ? "form-control-error" : ""}`}
-            defaultValue="new_student"
-            required
-          >
-            <option value="new_student">New student</option>
-            <option value="transferee">Transferee</option>
-            <option value="old_student">Returning (old student)</option>
-          </select>
+          <span className="form-label">
+            Enrollment type <span className="required">*</span>
+          </span>
+          {promotionHint ? (
+            <>
+              <input type="hidden" name="studentType" value="old_student" />
+              <div
+                id="enrollment-type-display"
+                className={`form-control ${state.errors?.studentType ? "form-control-error" : ""}`}
+                style={{ background: "var(--color-surface-2)" }}
+                aria-live="polite"
+              >
+                <strong>Old</strong>
+                <span className="text-muted ml-2">(returning — prior enrollment on file)</span>
+              </div>
+              <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+                Enrollment type is fixed for learners who already have a record in a previous school year.
+              </p>
+            </>
+          ) : (
+            <>
+              <select
+                id="studentType"
+                name="studentType"
+                className={`form-control ${state.errors?.studentType ? "form-control-error" : ""}`}
+                value={studentType}
+                onChange={(e) => {
+                  setStudentType(e.target.value as typeof studentType);
+                }}
+                required
+              >
+                <option value="new_student">New</option>
+                <option value="transferee">Transferee</option>
+              </select>
+              <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+                Transferee enrollments require “Previous school” on the student profile.
+              </p>
+            </>
+          )}
           {state.errors?.studentType && (
             <p className="form-error">{state.errors.studentType[0]}</p>
           )}
-          <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
-            Transferee enrollments require “Previous school” on the student profile.
-          </p>
         </div>
 
         <div className="alert alert-info">
@@ -172,10 +263,12 @@ export default function NewEnrollmentForm({
           type="submit"
           className="btn-primary"
           id="submit-enrollment"
-          disabled={pending}
+          disabled={disableSubmit}
         >
           {pending ? (
-            <><span className="spinner" aria-hidden="true" /> Creating...</>
+            <>
+              <span className="spinner" aria-hidden="true" /> Creating...
+            </>
           ) : (
             "Create Enrollment"
           )}

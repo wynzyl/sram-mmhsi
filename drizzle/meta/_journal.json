@@ -50,6 +50,20 @@
       "when": 1777621491767,
       "tag": "0006_standard_fee_catalog_one_per_school_year_and_assessment_fee_item_link",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777703288285,
+      "tag": "0007_giant_whistler",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777710074627,
+      "tag": "0008_workable_the_renegades",
+      "breakpoints": true
     }
   ]
 }
