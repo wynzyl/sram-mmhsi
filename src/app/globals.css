@@ -95,6 +95,11 @@
   --radius-lg: 8px;
   --radius-xl: 12px;
 
+  /* Badges — one size & shape (rounded rectangle) app-wide */
+  --badge-height: 1.5rem;
+  --badge-padding-x: 0.625rem;
+  --badge-font-size: 0.75rem;
+
   /* Shadows – warm-tinted (preset shadow-color hsl(0 63% 18%)) */
   --shadow-sm: 1px 1px 16px -2px hsl(0 63% 18% / 0.06);
   --shadow:    1px 1px 16px -2px hsl(0 63% 18% / 0.12), 1px 1px 2px -3px hsl(0 63% 18% / 0.12);
@@ -260,16 +265,43 @@ h5 { font-size: 0.875rem; font-weight: 600; }
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 99px;
-  font-size: 0.7rem;
+  justify-content: center;
+  box-sizing: border-box;
+  height: var(--badge-height);
+  min-height: var(--badge-height);
+  padding: 0 var(--badge-padding-x);
+  border-radius: var(--radius);
+  font-size: var(--badge-font-size);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1;
+  white-space: nowrap;
 }
 .badge-success { background: var(--color-accent-100); color: var(--color-accent-700); }
 .badge-danger  { background: #fee2e2; color: #991b1b; }
 .badge-warning { background: #fef3c7; color: #92400e; }
 .badge-secondary { background: var(--color-surface-3); color: var(--color-text-muted); }
+.badge-primary {
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-2));
+  color: var(--color-primary);
+}
+.badge-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.badge-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.dark .badge-info {
+  background: color-mix(in srgb, #3b82f6 20%, var(--color-surface-2));
+  color: #93c5fd;
+}
+
+.dark .badge-primary {
+  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface-2));
+  color: color-mix(in srgb, white 88%, var(--color-primary));
+}
 .ml-2 { margin-left: 0.5rem; }
 
 /* ─── Search Bar ──────────────────────────────────────────────────────────── */
@@ -524,12 +556,19 @@ textarea.form-control { resize: vertical; }
 }
 .guardian-card-actions { display: flex; gap: 0.375rem; }
 .guardian-badge-primary {
-  font-size: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: var(--badge-height);
+  min-height: var(--badge-height);
+  padding: 0 var(--badge-padding-x);
+  border-radius: var(--radius);
+  font-size: var(--badge-font-size);
   font-weight: 700;
+  line-height: 1;
   background: var(--color-accent-100);
   color: var(--color-accent-700);
-  padding: 0.1rem 0.375rem;
-  border-radius: 99px;
 }
 
 /* ─── Profile Page ────────────────────────────────────────────────────────── */
@@ -681,8 +720,16 @@ textarea.form-control { resize: vertical; }
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.25rem 0.625rem;
-  font-size: 0.75rem;
+}
+.status-chip.badge {
+  height: var(--badge-height);
+  min-height: var(--badge-height);
+  padding: 0 var(--badge-padding-x);
+  border-radius: var(--radius);
+  font-size: var(--badge-font-size);
+  font-weight: 600;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 
@@ -786,6 +833,970 @@ html {
 .stagger-children > *:nth-child(3) { animation-delay: 100ms; }
 .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
 .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+
+/* ─── Student record (admin profile) ───────────────────────────────────────── */
+.student-record-root {
+  --student-display: var(--font-student-display), "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+}
+
+.student-record-page {
+  max-width: min(1320px, 100%);
+}
+
+.student-record-back {
+  display: inline-block;
+  margin-bottom: 1.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.student-record-back:hover {
+  color: var(--color-primary);
+}
+
+.student-record-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-surface) 92%, var(--color-primary) 4%) 0%,
+      var(--color-surface) 48%,
+      color-mix(in srgb, var(--color-surface-2) 85%, transparent) 100%
+    );
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.35rem 1.5rem 1.5rem;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--color-border) 40%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+}
+
+:root.dark .student-record-hero {
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--color-border) 50%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 4%, transparent);
+}
+
+.student-record-hero-rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary) 0%,
+    color-mix(in srgb, var(--color-primary) 40%, var(--color-success)) 50%,
+    color-mix(in srgb, var(--color-primary) 20%, transparent) 100%
+  );
+  opacity: 0.9;
+}
+
+/* Merged hero: name, enrollment, at-a-glance meta, actions */
+.student-record-hero-unified {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem 1.5rem;
+}
+
+.student-record-hero-primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem 1.25rem;
+  min-width: min(100%, 280px);
+  flex: 1 1 320px;
+}
+
+.student-record-hero-copy-block {
+  min-width: min(100%, 240px);
+  flex: 1 1 260px;
+}
+
+.student-record-hero-meta {
+  margin-top: 1.125rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.75rem 1.25rem;
+}
+
+.student-record-meta-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.student-record-meta-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.student-record-meta-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .student-record-hero-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .student-record-hero-unified {
+    flex-direction: column;
+  }
+}
+
+.student-record-seal {
+  width: 4.25rem;
+  height: 4.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+  color: white;
+  background: var(--color-primary);
+  border: 3px solid color-mix(in srgb, var(--color-surface) 30%, transparent);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  text-transform: uppercase;
+}
+
+.student-record-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--color-text-muted);
+  margin: 0 0 0.35rem;
+}
+
+.student-record-name {
+  font-family: var(--student-display);
+  font-size: clamp(1.5rem, 3vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-text);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.student-record-placement {
+  margin: 0.65rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  align-items: baseline;
+  font-size: 0.875rem;
+}
+
+.student-record-placement-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.student-record-placement-value {
+  font-weight: 600;
+  color: var(--color-text-2);
+}
+
+.student-record-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.student-record-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+
+.student-record-btn-primary {
+  background: var(--color-primary);
+  color: white;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+.student-record-btn-primary:hover {
+  opacity: 0.92;
+}
+
+.student-record-btn-secondary {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.student-record-btn-secondary:hover {
+  background: var(--color-surface-3);
+}
+
+/* Tabbed record body */
+.student-record-tabs-root {
+  margin-top: 1.5rem;
+}
+
+.student-record-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  margin: 0 0 1rem;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface-2) 75%, var(--color-surface));
+  border: 1px solid var(--color-border);
+}
+
+.student-record-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-2);
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius);
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.student-record-tab:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-surface) 65%, transparent);
+}
+
+.student-record-tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.student-record-tab-active {
+  color: var(--color-primary);
+  background: var(--color-surface);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--color-border) 40%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--color-border) 55%, transparent);
+}
+
+.student-record-tabpanel {
+  outline: none;
+}
+
+.student-record-tabpanel-inner {
+  min-height: 14rem;
+}
+
+.student-record-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.35rem;
+}
+
+.student-record-card-spacious .student-record-dl {
+  gap: 0.85rem;
+}
+
+.student-record-card-spacious .student-record-dl-row {
+  font-size: 0.875rem;
+}
+
+.student-record-card-spacious-bleed .student-record-table th:first-child,
+.student-record-card-spacious-bleed .student-record-table td:first-child {
+  padding-left: 1.75rem;
+}
+
+.student-record-card-spacious-bleed .student-record-table th:last-child,
+.student-record-card-spacious-bleed .student-record-table td:last-child {
+  padding-right: 1.75rem;
+}
+
+.student-record-card-flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.student-record-card-pad {
+  padding: 1.25rem 1.35rem;
+}
+
+.student-record-dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.student-record-dl-row {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.825rem;
+}
+
+.student-record-dl-row dt {
+  width: 8.5rem;
+  flex-shrink: 0;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.student-record-dl-row dd {
+  margin: 0;
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+}
+
+.student-record-dl-guardian .student-record-dl-row dt {
+  width: 9.5rem;
+}
+
+.student-record-muted {
+  color: var(--color-text-muted);
+}
+
+.student-record-text-sm {
+  font-size: 0.72rem;
+}
+
+.student-record-mono {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+.student-record-blood {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.student-record-inline-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  transition: border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+.student-record-inline-link:hover {
+  border-bottom-color: var(--color-primary);
+}
+
+.student-record-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: var(--badge-height);
+  min-height: var(--badge-height);
+  padding: 0 var(--badge-padding-x);
+  border-radius: var(--radius);
+  font-size: var(--badge-font-size);
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.student-record-pill-success {
+  background: color-mix(in srgb, var(--color-success) 18%, transparent);
+  color: var(--color-success);
+}
+
+.student-record-pill-muted {
+  background: var(--color-surface-3);
+  color: var(--color-text-muted);
+}
+
+.student-record-guardian-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.student-record-guardian-item {
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface-2) 70%, var(--color-surface));
+}
+
+.student-record-guardian-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.student-record-primary-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: var(--badge-height);
+  min-height: var(--badge-height);
+  padding: 0 var(--badge-padding-x);
+  border-radius: var(--radius);
+  font-size: var(--badge-font-size);
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  color: var(--color-success);
+}
+
+.student-record-table-wrap {
+  overflow-x: auto;
+}
+
+.student-record-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.student-record-table th,
+.student-record-table td {
+  text-align: left;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.student-record-table th {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-surface-2) 80%, transparent);
+}
+
+.student-record-table tbody tr:hover {
+  background: color-mix(in srgb, var(--color-surface-2) 45%, transparent);
+}
+
+.student-record-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ─── Assessment ledger / cashier POS ──────────────────────────────────────── */
+.ledger-register {
+  max-width: min(900px, 100%);
+}
+
+.ledger-register-top {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+  padding: 1.25rem 1.35rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--color-surface) 88%, var(--color-primary) 6%) 0%,
+    var(--color-surface) 55%,
+    var(--color-surface-2) 100%
+  );
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-border) 45%, transparent);
+}
+
+.ledger-register-eyebrow {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.ledger-register-title {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+.ledger-register-meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.ledger-register-meta-sep {
+  color: var(--color-text-muted);
+}
+
+.ledger-register-student-link {
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.ledger-register-student-link:hover {
+  border-bottom-color: var(--color-primary);
+}
+
+.ledger-register-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.ledger-register-tile {
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.ledger-register-tile-paid {
+  border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
+  background: color-mix(in srgb, var(--color-success) 8%, var(--color-surface));
+}
+
+.ledger-register-tile-balance {
+  border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+
+.ledger-register-tile-owe {
+  border-color: color-mix(in srgb, var(--color-danger) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger) 7%, var(--color-surface));
+}
+
+.ledger-register-tile-label {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.ledger-register-tile-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.ledger-register-tile-balance-num {
+  font-size: 1.2rem;
+}
+
+.ledger-register-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.ledger-register-btn-primary {
+  appearance: none;
+  cursor: pointer;
+  border: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: white;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.ledger-register-btn-primary:hover {
+  opacity: 0.92;
+}
+
+.ledger-register-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.ledger-register-section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.ledger-register-section-head {
+  padding: 0.85rem 1.1rem;
+  background: color-mix(in srgb, var(--color-surface-2) 75%, var(--color-surface));
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ledger-register-section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.ledger-register-table-wrap {
+  overflow-x: auto;
+}
+
+.ledger-register-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.ledger-register-table th,
+.ledger-register-table td {
+  padding: 0.65rem 1.1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.ledger-register-table thead th {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-surface-2) 50%, transparent);
+}
+
+.ledger-register-th-num,
+.ledger-register-td-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ledger-register-discount {
+  color: var(--color-danger);
+}
+
+.ledger-register-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 2rem 1rem !important;
+}
+
+.ledger-register-foot-row th,
+.ledger-register-foot-row td {
+  border-bottom: none;
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--color-surface-2) 55%, var(--color-surface));
+}
+
+.ledger-register-foot-value {
+  font-size: 1rem;
+}
+
+.ledger-register-foot-sub td {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  padding-top: 0;
+  padding-bottom: 0.85rem;
+  border-bottom: none;
+}
+
+.ledger-register-payments-body {
+  padding: 0 0.35rem 0.5rem;
+}
+
+.ledger-register-payments-footer {
+  padding: 0.85rem 1.1rem 1rem;
+  border-top: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface-2) 40%, var(--color-surface));
+}
+
+.ledger-register-foot-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 700;
+}
+
+.ledger-register-foot-inline-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.ledger-register-foot-inline-value {
+  font-size: 1.05rem;
+}
+
+.ledger-register-foot-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Cashier payment modal */
+.cashier-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: min(4vh, 2rem) 1rem;
+  overflow-y: auto;
+  background: color-mix(in srgb, #0a0a0c 55%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.cashier-modal-dialog {
+  width: min(32rem, 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow:
+    0 20px 50px color-mix(in srgb, black 35%, transparent),
+    0 0 0 1px color-mix(in srgb, white 6%, transparent);
+}
+
+.cashier-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.1rem 0.85rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-surface-2) 90%, var(--color-primary) 5%) 0%,
+    var(--color-surface) 100%
+  );
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.cashier-modal-kicker {
+  margin: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.cashier-modal-title {
+  margin: 0.35rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+.cashier-modal-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-2);
+}
+
+.cashier-modal-close {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 0 0.15rem;
+  border-radius: var(--radius);
+  transition: color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+
+.cashier-modal-close:hover {
+  color: var(--color-text);
+  background: var(--color-surface-3);
+}
+
+.cashier-modal-body {
+  padding: 1.1rem 1.2rem 1.25rem;
+}
+
+.cashier-pay-form {
+  max-width: 100%;
+}
+
+.cashier-pay-alert {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+}
+
+.cashier-pay-alert-error {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+
+.cashier-pay-balance-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+}
+
+.cashier-pay-balance-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-2);
+}
+
+.cashier-pay-balance-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+.cashier-pay-grid-2 {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 520px) {
+  .cashier-pay-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cashier-pay-select {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-2);
+}
+
+.cashier-pay-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+.cashier-pay-input-lg {
+  font-size: 1.05rem !important;
+  padding: 0.55rem 0.65rem !important;
+}
+
+.cashier-pay-cash-panel {
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-surface-2) 65%, var(--color-surface));
+  border: 1px solid var(--color-border);
+}
+
+.cashier-pay-change-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  padding: 0.35rem 0 0.25rem;
+}
+
+.cashier-pay-change-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.cashier-pay-change-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-success);
+  line-height: 1.2;
+}
+
+.cashier-pay-success {
+  text-align: center;
+  padding: 1.25rem 0.5rem;
+}
+
+.cashier-pay-success-title {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--color-success);
+}
+
+.cashier-pay-success-msg {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--color-text-2);
+}
 
 /* Print styles */
 @media print {

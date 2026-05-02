@@ -9,7 +9,7 @@ import {
   auditLogs,
   enrollments,
 } from "@/lib/db/schema";
-import { eq, ilike, and, sql } from "drizzle-orm";
+import { eq, ne, ilike, and, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { CreateStudentSchema, UpdateStudentSchema } from "@/lib/validators/student";
@@ -40,6 +40,18 @@ async function audit(
   } catch (err) {
     logger.error("[audit] Failed to write", { error: String(err) });
   }
+}
+
+function pgUniqueConstraint(err: unknown): string | undefined {
+  let e: unknown = err;
+  const seen = new Set<unknown>();
+  while (e && typeof e === "object" && !seen.has(e)) {
+    seen.add(e);
+    const o = e as { code?: string; constraint?: string; cause?: unknown };
+    if (o.code === "23505" && typeof o.constraint === "string") return o.constraint;
+    e = o.cause;
+  }
+  return undefined;
 }
 
 // ─── Get next student sequence number ────────────────────────────────────────
@@ -136,6 +148,21 @@ export async function createStudentAction(
     }
   }
 
+  if (studentData.lrn) {
+    const lrnDup = await db
+      .select({ referenceNumber: students.referenceNumber })
+      .from(students)
+      .where(eq(students.lrn, studentData.lrn))
+      .limit(1);
+    if (lrnDup.length > 0) {
+      return {
+        errors: {
+          lrn: [`This LRN is already assigned to student ${lrnDup[0].referenceNumber}.`],
+        },
+      };
+    }
+  }
+
   try {
     // 5. Generate reference number
     const seq = await getNextStudentSequence();
@@ -199,6 +226,9 @@ export async function createStudentAction(
     return { success: true, studentId: newStudent.id };
   } catch (err) {
     logger.error("[students] Failed to create student", { error: String(err) });
+    if (pgUniqueConstraint(err) === "students_lrn_unique") {
+      return { errors: { lrn: ["This LRN is already assigned to another student."] } };
+    }
     return { message: "An unexpected error occurred. Please try again." };
   }
 }
@@ -320,6 +350,21 @@ export async function updateStudentAction(
     }
   }
 
+  if (studentData.lrn) {
+    const lrnDup = await db
+      .select({ referenceNumber: students.referenceNumber })
+      .from(students)
+      .where(and(eq(students.lrn, studentData.lrn), ne(students.id, studentId)))
+      .limit(1);
+    if (lrnDup.length > 0) {
+      return {
+        errors: {
+          lrn: [`This LRN is already assigned to student ${lrnDup[0].referenceNumber}.`],
+        },
+      };
+    }
+  }
+
   try {
     // 6. Update student
     await db
@@ -382,6 +427,9 @@ export async function updateStudentAction(
     return { success: true };
   } catch (err) {
     logger.error("[students] Failed to update student", { error: String(err) });
+    if (pgUniqueConstraint(err) === "students_lrn_unique") {
+      return { errors: { lrn: ["This LRN is already assigned to another student."] } };
+    }
     return { message: "An unexpected error occurred. Please try again." };
   }
 }

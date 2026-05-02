@@ -4,14 +4,13 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
   enrollments,
-  students,
   assessments,
   assessmentItems,
   auditLogs,
   feeSchedules,
   feeScheduleItems,
 } from "@/lib/db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -94,41 +93,52 @@ export async function createAssessmentFromEnrollmentAction(
     };
   }
 
-  const catalogItems = await db.query.feeScheduleItems.findMany({
-    where: eq(feeScheduleItems.feeScheduleId, scheduleRow.id),
-    orderBy: [asc(feeScheduleItems.order), asc(feeScheduleItems.createdAt)],
-  });
+  const catalogCountRow = await db
+    .select({ n: feeScheduleItems.id })
+    .from(feeScheduleItems)
+    .where(eq(feeScheduleItems.feeScheduleId, scheduleRow.id))
+    .limit(1);
 
-  if (catalogItems.length === 0) {
+  if (catalogCountRow.length === 0) {
     return {
       message:
-        "The fee schedule has no line items. Add catalog lines under Finance before assessing.",
+        "The fee catalog has no line items yet. Add fee types under Finance → Fee schedules for this school year first.",
     };
   }
 
   const submittedById = new Map(items.map((row) => [row.feeScheduleItemId, row.amount]));
   if (submittedById.size !== items.length) {
-    return { message: "Duplicate fee lines are not allowed." };
+    return { message: "Each catalog fee may only appear once." };
   }
-  if (submittedById.size !== catalogItems.length) {
+
+  const submittedIds = [...submittedById.keys()];
+  const catalogMatches = await db.query.feeScheduleItems.findMany({
+    where: and(
+      eq(feeScheduleItems.feeScheduleId, scheduleRow.id),
+      inArray(feeScheduleItems.id, submittedIds)
+    ),
+  });
+
+  if (catalogMatches.length !== submittedIds.length) {
     return {
-      message: "Fee lines must match the school year fee schedule exactly (one amount per catalog line).",
+      message:
+        "One or more selected fees are not in the school year catalog. Refresh the page and try again.",
     };
   }
 
-  const resolvedLines: { description: string; amount: number; isDiscount: boolean; feeScheduleItemId: string }[] = [];
-  for (const catalog of catalogItems) {
-    const amt = submittedById.get(catalog.id);
-    if (amt === undefined) {
-      return {
-        message:
-          "Submitted lines do not match the current fee schedule. Refresh the page and try again.",
-      };
-    }
+  const catalogMap = new Map(catalogMatches.map((c) => [c.id, c]));
+  const resolvedLines: {
+    description: string;
+    amount: number;
+    isDiscount: boolean;
+    feeScheduleItemId: string;
+  }[] = [];
+  for (const line of items) {
+    const catalog = catalogMap.get(line.feeScheduleItemId)!;
     resolvedLines.push({
       feeScheduleItemId: catalog.id,
       description: catalog.description,
-      amount: amt,
+      amount: line.amount,
       isDiscount: catalog.isDiscount,
     });
   }
@@ -151,17 +161,14 @@ export async function createAssessmentFromEnrollmentAction(
         throw new Error("FEE_SCHEDULE_CHANGED");
       }
 
-      const latestCatalog = await tx.query.feeScheduleItems.findMany({
-        where: eq(feeScheduleItems.feeScheduleId, scheduleRow.id),
-        orderBy: [asc(feeScheduleItems.order), asc(feeScheduleItems.createdAt)],
+      const latestMatches = await tx.query.feeScheduleItems.findMany({
+        where: and(
+          eq(feeScheduleItems.feeScheduleId, scheduleRow.id),
+          inArray(feeScheduleItems.id, submittedIds)
+        ),
       });
-      if (latestCatalog.length !== catalogItems.length) {
+      if (latestMatches.length !== submittedIds.length) {
         throw new Error("FEE_SCHEDULE_CHANGED");
-      }
-      for (let i = 0; i < catalogItems.length; i++) {
-        if (latestCatalog[i]?.id !== catalogItems[i]?.id) {
-          throw new Error("FEE_SCHEDULE_CHANGED");
-        }
       }
 
       const [newAssessment] = await tx

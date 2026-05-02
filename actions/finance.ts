@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { feeSchedules, feeScheduleItems, auditLogs } from "@/lib/db/schema";
+import {
+  feeSchedules,
+  feeScheduleItems,
+  assessmentItems,
+  auditLogs,
+} from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -258,6 +263,22 @@ export async function removeFeeScheduleItemAction(
 
     if (!existing) return { message: "Item not found." };
 
+    if (existing.feeScheduleId !== feeScheduleId) {
+      return { message: "This fee item does not belong to the requested schedule." };
+    }
+
+    const usedOnAssessment = await db.query.assessmentItems.findFirst({
+      where: eq(assessmentItems.feeScheduleItemId, id),
+      columns: { id: true },
+    });
+
+    if (usedOnAssessment) {
+      return {
+        message:
+          "This catalog fee appears on student assessment line items and cannot be deleted—those records must keep referencing the historical fee.",
+      };
+    }
+
     await db.delete(feeScheduleItems).where(eq(feeScheduleItems.id, id));
 
     await db.insert(auditLogs).values({
@@ -272,6 +293,21 @@ export async function removeFeeScheduleItemAction(
     revalidatePath(`/admin/finance/fee-schedules/${feeScheduleId}`);
     return { success: true, message: "Fee item removed successfully." };
   } catch (error) {
+    const cause =
+      error &&
+      typeof error === "object" &&
+      "cause" in error &&
+      error.cause &&
+      typeof error.cause === "object" &&
+      "code" in error.cause
+        ? (error.cause as { code?: string }).code
+        : undefined;
+    if (cause === "23503") {
+      return {
+        message:
+          "Cannot remove this fee because it is still referenced by assessments or billing records.",
+      };
+    }
     logger.error("[finance] Failed to remove fee schedule item", { error });
     return { message: "An unexpected error occurred. Please try again." };
   }

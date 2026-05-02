@@ -48,7 +48,7 @@ function GenderBadge({ gender }: { gender: string | null }) {
   return (
     <Badge
       variant={entry.variant}
-      className="w-7 h-7 rounded-full flex items-center justify-center p-0 text-xs font-bold"
+      className="h-6 min-h-6 w-6 min-w-6 shrink-0 p-0 text-xs font-bold"
       title={gender.replace(/_/g, " ")}
     >
       {entry.label}

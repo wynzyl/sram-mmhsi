@@ -131,6 +131,7 @@ export async function postPaymentAction(
     bookletId: formData.get("bookletId"),
     amount: formData.get("amount"),
     paymentMethod: formData.get("paymentMethod"),
+    amountTendered: formData.get("amountTendered"),
     referenceNumber: formData.get("referenceNumber") || undefined,
     remarks: formData.get("remarks") || undefined,
   });

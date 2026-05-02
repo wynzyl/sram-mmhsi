@@ -60,7 +60,7 @@ export default async function NewAssessmentForEnrollmentPage({ params }: PagePro
     columns: { id: true, isActive: true },
   });
 
-  let scheduleLines: {
+  let feeCatalog: {
     feeScheduleItemId: string;
     description: string;
     defaultAmount: string;
@@ -74,7 +74,7 @@ export default async function NewAssessmentForEnrollmentPage({ params }: PagePro
       .where(eq(feeScheduleItems.feeScheduleId, schedule.id))
       .orderBy(asc(feeScheduleItems.order), asc(feeScheduleItems.createdAt));
 
-    scheduleLines = items.map((item) => ({
+    feeCatalog = items.map((item) => ({
       feeScheduleItemId: item.id,
       description: item.description,
       defaultAmount: String(item.amount),
@@ -86,8 +86,8 @@ export default async function NewAssessmentForEnrollmentPage({ params }: PagePro
     ? "No fee schedule exists for this school year. Create one under Finance → Fee schedules with line items."
     : !schedule.isActive
       ? "The fee schedule for this school year is inactive. Activate it in Finance before assessing."
-      : scheduleLines.length === 0
-        ? "Add at least one fee line on the fee schedule before creating an assessment."
+      : feeCatalog.length === 0
+        ? "Add at least one fee to the school-year catalog (Finance → Fee schedules) before assessing."
         : null;
 
   return (
@@ -96,8 +96,8 @@ export default async function NewAssessmentForEnrollmentPage({ params }: PagePro
         <div>
           <h1 className="page-title">Create assessment</h1>
           <p className="page-subtitle">
-            Adjust amounts per student from the standard school-year fee catalog. Saving sets the
-            enrollment to Assessed.
+            Pick fee lines from the school-year catalog (one at a time), adjust amounts for this student,
+            then save. Enrollment becomes Assessed.
           </p>
         </div>
       </div>
@@ -107,7 +107,7 @@ export default async function NewAssessmentForEnrollmentPage({ params }: PagePro
         studentLabel={`${e.lastName}, ${e.firstName} (${e.referenceNumber})`}
         schoolYearLabel={e.syLabel}
         gradeLabel={e.gradeName}
-        scheduleLines={scheduleLines}
+        feeCatalog={feeCatalog}
         submitBlockedReason={submitBlockedReason}
       />
     </div>
