@@ -263,12 +263,13 @@ export default function AssessmentDraftForm({
                           min="0"
                           step="0.01"
                           inputMode="decimal"
-                          disabled={blocked}
+                          disabled={blocked || pending}
                           aria-label={`Line ${index + 1} amount (${row.description})`}
                           value={row.amount}
-                          onChange={(e) =>
-                            setRowAmount(row.rowKey, e.target.value)
-                          }
+                          onChange={(e) => {
+                            if (pending) return;
+                            setRowAmount(row.rowKey, e.target.value);
+                          }}
                         />
                       </td>
                       <td style={{ textAlign: "center" }}>
