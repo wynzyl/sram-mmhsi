@@ -1,12 +1,12 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-05-02
+> Last updated: 2026-05-05
 
 ## Current phase
 
-**Core school operations (Phases 1–8)** are implemented in code: auth, student records, enrollments, assessments, fees, cashier/OR posting, invoices, and teacher grade encoding.
+**Core school operations (Phases 1–8)** are implemented in code: auth, student records, registrations listing + creation through student onboarding, enrollments, assessments, fees, cashier/OR posting, invoices, and teacher grade encoding.
 
-**Active gaps:** registration **entity** workflow (`registrations` create/review actions), student/parent **portal** (`/portal/*`), executive/reporting dashboards, formal OR **receipt** print view, **E2E** tests, and wiring **rate limit** + mandatory **password-change** gate.
+**Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, executive/reporting dashboards, formal OR **receipt** print view, **E2E** tests, and wiring **rate limit** + mandatory **password-change** gate.
 
 ---
 
@@ -48,13 +48,16 @@
 ### Phase 2–8 — Operational modules (high level)
 
 - [x] **Students** — create/update with guardians, duplicate checks, list/profile/edit (`actions/students.ts`, `admin/students/*`)
-- [x] **Registrations list** — read-only listing when data exists (`admin/registrations`) — *creation/review of `registrations` rows still pending*
+- [x] **Registrations list + intake visibility** — paginated approved-registration queues for `admin` and `staff` (`admin/registrations`, `staff/registrations`)
+- [x] **Registration creation on student onboarding** — student creation now inserts an approved `registrations` row in the same transaction (`actions/students.ts`)
 - [x] **Enrollments** — create, status transitions, cancellation (`actions/enrollments.ts`, `admin/enrollments/*`)
 - [x] **Fee schedules & assessments** — schedules, per-enrollment assessments, items, balances (`actions/finance.ts`, `actions/assessments.ts`, `admin/finance/*`, `admin/assessments/*`)
 - [x] **Cashier & OR** — booklet setup, post/void payment, allocations (`actions/cashier.ts`, booklet pages, payment UI on **assessment** ledger — not a separate `/staff/payments` page)
 - [x] **Invoices** — generate, send (Nodemailer/Gmail), status (`actions/invoices.ts`, `admin/finance/invoices/*`)
 - [x] **Academics & grades** — subjects, assignments, teacher grade encoding and lock (`actions/academics.ts`, `actions/teacher.ts`, `/staff/grades/*`, admin assignment pages)
 - [x] **Users** — admin user CRUD, password reset / `forcePasswordChange` field (`actions/users.ts`)
+- [x] **Staff route coverage** — staff aliases/pages exist for key operational flows (`/staff/students`, `/staff/enrollments`, `/staff/payments`, `/staff/registrations`, `/staff/finance`, `/staff/grades`)
+- [x] **Portal shell** — authenticated `/portal/dashboard` page with role-aware links
 
 ### Phase 11 — Tests (initial)
 
@@ -65,12 +68,11 @@
 
 ## In progress / known gaps
 
-- [ ] **`registrations` workflow** — DB + list UI; missing server actions to insert rows and approve/reject against `registration_status`
+- [ ] **`registrations` workflow** — creation is now integrated during student onboarding; dedicated registration intake + approve/reject actions are still missing
 - [ ] **Login hardening** — connect `rateLimit` to login; optional dedicated `/api/auth/*` usage
 - [ ] **First-login password change** — enforce redirect when `forcePasswordChange` until password updated
-- [ ] **Staff landing URLs** — `ROLE_LANDING` and dashboard quick links point at `/staff/students`, `/staff/payments`, etc.; most CRUD lives under **`/admin/*`** — align links or add staff route aliases
 - [ ] **OR receipt** — formal printable OR layout (beyond success message / browser print hooks)
-- [ ] **Portal** — `/portal/dashboard` referenced in auth maps; no `src/app/portal` pages yet
+- [ ] **Portal expansion** — `/portal/dashboard` exists, but `/portal/assessments`, `/portal/payments`, and `/portal/grades` pages are not implemented yet
 - [ ] **Dashboards & exports** — Phase 10 metrics are placeholders; no PDF/Excel export pipeline
 - [ ] **E2E** — add Playwright config + smoke tests (login, enrollment, payment, grades)
 
@@ -78,7 +80,6 @@
 
 ## Not started (see roadmap)
 
-- Phase 9 — Student/parent portal (full feature set)
 - Phase 10 — Reporting & management dashboard (real data)
 - Phase 12 — Production deployment hardening
 

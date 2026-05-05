@@ -41,12 +41,14 @@
 
 - [x] Student creation form (Registrar / permitted roles) — `admin/students/new`
 - [x] Parent/Guardian linking — `createStudentAction` / `updateStudentAction`
-- [ ] Registration submission — `registrations` table + list UI exist; no create/review server actions yet
+- [x] Registration submission during student onboarding — `createStudentAction` inserts approved `registrations` rows in same transaction
+- [ ] Dedicated registration intake action (separate from student-create flow)
 - [ ] Registration review (approve/reject) workflow
 - [x] Duplicate student detection (name / optional DOB / LRN)
 - [x] Audit events: student created / updated
 - [x] Student list/search table (TanStack Table)
 - [x] Student profile + edit pages
+- [x] Registration queue pages for admin/staff (`/admin/registrations`, `/staff/registrations`) with school-year filtering + pagination
 
 ---
 
@@ -110,9 +112,10 @@
 ---
 
 ## Phase 9 — Student/Parent Portal
-**Status: ⏳ Not Started**
+**Status: 🟡 In progress**
 
-- [ ] Portal routes (`/portal/*` guarded in `proxy.ts`; pages not implemented)
+- [x] Portal route guard and role landing to `/portal/dashboard`
+- [x] Portal dashboard page scaffold (`/portal/dashboard`)
 - [ ] Balance and payment history view
 - [ ] Invoice view
 - [ ] Grade view (per student)

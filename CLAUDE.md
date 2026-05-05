@@ -10,12 +10,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Critical Business Feature:** Official Receipt (OR) booklet management is a first-class accounting control feature — every payment must consume a serialized OR number from an active booklet.
 
+### Current Delivery Snapshot (2026-05-05)
+
+- Core operations (auth, students, registrations queue, enrollments, assessments, payments/OR, invoices, grades) are implemented.
+- Registration creation is integrated in student onboarding; dedicated intake/review actions are still pending.
+- Portal currently has `/portal/dashboard`; portal detail pages (`/portal/assessments`, `/portal/payments`, `/portal/grades`) are pending.
+- Authentication hardening still pending: login rate-limit integration and forced password-change gate.
+- E2E Playwright test suite is not yet committed.
+
 ## Important Documentation References
 
 - **AGENTS.md** — AI role definitions and system expectations
 - **SRAMS_MVP.md** — System requirements and feature specifications
 - **SRAMS_OR_WORKFLOW.md** — OR tracking workflow (MUST READ before modifying OR features)
 - **PROJECT_ROADMAP.md** — Development roadmap and phases
+- **PROJECT_STATUS.md** — Current implementation status and active gaps
 
 ## Commands
 
@@ -32,6 +41,7 @@ npm run db:studio        # Launch Drizzle Studio
 # Seeding
 npm run db:seed          # Seed with sample data
 npm run db:seed-config   # Seed system configuration only
+npm run db:seed-teacher  # Seed teacher grade-encoding demo data
 
 # Testing
 npm run test             # Run unit tests (Vitest)
@@ -81,7 +91,8 @@ Route structure (App Router):
 
 - `/login` — Public login page
 - `/admin/*` — Admin portal (full access)
-- `/staff/*` — Teacher portal (grade encoding only)
+- `/staff/*` — Internal operations portal for registrar/finance/cashier/teacher role flows
+- `/portal/*` — Student/parent portal (dashboard scaffold currently implemented)
 
 Authentication is JWT-based using `jose` library (NOT NextAuth). Session management in `lib/auth/session.ts`:
 
@@ -121,9 +132,9 @@ Middleware enforces role checks at route level.
 - `gradeRecords` (student + assignment + grading period: Q1–Q4)
 
 **Registration → Enrollment Flow:**
-1. `registrations` (status: approved)
+1. `registrations` (approved records currently created during student onboarding; dedicated review actions pending)
 2. `enrollments` (status: pending → assessed → enrolled)
-3. `feeSchedules` + `feeScheduleItems` (One flat schedule for all school year)
+3. `feeSchedules` + `feeScheduleItems` (schedule for every group level - (Casa, Lower Elem, Higher Elem, JHS, SHS))
 4. `assessments` + `assessmentItems` (copied from fee schedule on enrollment)
 
 **Payment & OR Tracking (Critical):**
@@ -132,7 +143,7 @@ Middleware enforces role checks at route level.
 3. `paymentAllocations` — Payment distribution across assessment items
 4. OR lifecycle: available → consumed (or voided if payment voided)
 5. Booklet status transitions: active → exhausted (when `nextNumber > endNumber`)
-6. GCASH and Bank transfer always require Referrence Number (Not Optional)
+6. GCash and bank transfer always require a reference number (not optional)
 
 **Invoices:**
 - `invoices` (status: draft → sent → viewed → settled/overdue)
@@ -331,7 +342,7 @@ new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(15
 
 **Unit Tests:** Use Vitest for utility functions and schema validation.
 
-**E2E Tests:** Use Playwright for critical workflows (login, payment posting, grade encoding).
+**E2E Tests:** Playwright is configured as target tooling, but the committed end-to-end suite is still pending.
 
 **Test Commands:**
 - `npm run test` — Run all unit tests
