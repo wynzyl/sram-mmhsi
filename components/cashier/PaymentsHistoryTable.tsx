@@ -16,19 +16,23 @@ interface Payment {
   orNumber: string | null;
   amount: string;
   paymentMethod: string;
-  paymentDate: Date;
+  paymentDate: Date | string;
   status: string;
   referenceNumber: string | null;
+  processedBy: string | null;
 }
 
 interface PaymentsHistoryTableProps {
   payments: Payment[];
   canVoid: boolean;
+  /** Lay flush inside ledger (no extra top margin). */
+  embedded?: boolean;
 }
 
 export default function PaymentsHistoryTable({
   payments,
   canVoid,
+  embedded = false,
 }: PaymentsHistoryTableProps) {
   const [voidId, setVoidId] = useState<string | null>(null);
 
@@ -43,7 +47,11 @@ export default function PaymentsHistoryTable({
       {
         header: "Date",
         accessorKey: "paymentDate",
-        cell: ({ row }) => row.original.paymentDate.toLocaleDateString(),
+        cell: ({ row }) => {
+          const d = row.original.paymentDate;
+          const date = d instanceof Date ? d : new Date(d);
+          return Number.isFinite(date.getTime()) ? date.toLocaleDateString("en-PH") : "—";
+        },
       },
       {
         header: "OR Number",
@@ -63,6 +71,16 @@ export default function PaymentsHistoryTable({
             {row.original.paymentMethod.replace("_", " ")}
           </span>
         ),
+      },
+      {
+        header: "Processed by",
+        accessorKey: "processedBy",
+        cell: ({ row }) =>
+          row.original.processedBy ? (
+            <span className="text-sm">{row.original.processedBy}</span>
+          ) : (
+            <span className="text-[var(--color-text-muted)]">—</span>
+          ),
       },
       {
         header: "Ref #",
@@ -156,7 +174,7 @@ export default function PaymentsHistoryTable({
   }, [canVoid, voidId, action, pending]);
 
   return (
-    <div className="mt-6">
+    <div className={embedded ? undefined : "mt-6"}>
       {state.message && !state.success && (
         <div className="bg-red-100 text-red-700 border border-red-200 rounded-md p-4 mb-4 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
           {state.message}

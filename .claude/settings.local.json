@@ -18,7 +18,10 @@
       "Bash(node check-db.js:*)",
       "Bash(node apply-migration.js:*)",
       "Bash(node check-parents-columns.js:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(Get-ChildItem -Path \"e:\\\\Projects\\\\SRAMS\\\\SRAMS-MMHSI\\\\src\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(grep -E \"^\\\\./|:$\")"
     ]
   }
 }

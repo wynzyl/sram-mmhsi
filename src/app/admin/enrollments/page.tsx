@@ -40,6 +40,7 @@ export default async function EnrollmentsPage({ searchParams }: PageProps) {
   const filterStatus = validStatuses.includes(status) ? status : "all";
   const canCreate = hasPermission(session.role, "enrollments:create");
   const canCancel = hasPermission(session.role, "enrollments:cancel");
+  const canCancelWithBalance = hasPermission(session.role, "enrollments:cancel_with_balance");
   const canOverrideEnrolled = hasPermission(session.role, "enrollments:override_enroll");
 
   // Build where clause
@@ -66,6 +67,7 @@ export default async function EnrollmentsPage({ searchParams }: PageProps) {
       gradeLevel: gradeLevels.name,
       section: sections.name,
       assessmentId: assessments.id,
+      assessmentTotalPaid: assessments.totalPaid,
     })
     .from(enrollments)
     .innerJoin(students, eq(enrollments.studentId, students.id))
@@ -98,6 +100,10 @@ export default async function EnrollmentsPage({ searchParams }: PageProps) {
     enrolledAt: r.enrolledAt,
     createdAt: r.createdAt,
     assessmentId: r.assessmentId ?? null,
+    assessmentTotalPaid:
+      r.assessmentTotalPaid != null && r.assessmentTotalPaid !== ""
+        ? Number(r.assessmentTotalPaid)
+        : null,
   }));
 
   const allSections = await db
@@ -155,6 +161,7 @@ export default async function EnrollmentsPage({ searchParams }: PageProps) {
         sections={allSections}
         canManage={canCreate}
         canCancel={canCancel}
+        canCancelWithBalance={canCancelWithBalance}
         canOverrideEnrolled={canOverrideEnrolled}
       />
     </div>

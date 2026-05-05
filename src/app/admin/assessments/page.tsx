@@ -66,6 +66,7 @@ export default async function AssessmentsListPage({ searchParams }: PageProps) {
       totalAmount: assessments.totalAmount,
       totalPaid: assessments.totalPaid,
       balance: assessments.balance,
+      billingStatus: assessments.billingStatus,
       studentLastName: students.lastName,
       studentFirstName: students.firstName,
       schoolYear: schoolYears.label,
@@ -82,6 +83,7 @@ export default async function AssessmentsListPage({ searchParams }: PageProps) {
     totalAmount: Number(r.totalAmount),
     totalPaid: Number(r.totalPaid),
     balance: Number(r.balance),
+    billingStatus: r.billingStatus,
   }));
 
   return (

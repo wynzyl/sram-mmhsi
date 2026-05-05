@@ -12,7 +12,7 @@ export default function NewBookletPage() {
         <div>
           <h1 className="page-title">Register OR Booklet</h1>
           <p className="page-subtitle">
-            Define booklet range, internal series label, and the printed OR prefix (e.g. AP 00050).
+            Series line must match the printed range (e.g. AK 00051-00100), prefix, and exactly 50 OR numbers.
           </p>
         </div>
       </div>

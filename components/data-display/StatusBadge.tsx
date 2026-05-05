@@ -8,10 +8,11 @@ type EnrollmentStatus =
   | "cancelled"
   | "withdrawn";
 type ORStatus = "issued" | "cancelled" | "not_issued";
+type BillingStatus = "fully_paid" | "outstanding" | "cancelled";
 
 interface StatusBadgeProps {
-  status: PaymentStatus | EnrollmentStatus | ORStatus | string;
-  type?: "payment" | "enrollment" | "or";
+  status: PaymentStatus | EnrollmentStatus | ORStatus | BillingStatus | string;
+  type?: "payment" | "enrollment" | "or" | "billing";
 }
 
 const statusConfig = {
@@ -31,6 +32,11 @@ const statusConfig = {
     issued: { variant: "success" as const, label: "Issued" },
     cancelled: { variant: "danger" as const, label: "Cancelled" },
     not_issued: { variant: "warning" as const, label: "Not Issued" },
+  },
+  billing: {
+    fully_paid: { variant: "success" as const, label: "Fully Paid" },
+    outstanding: { variant: "warning" as const, label: "Outstanding" },
+    cancelled: { variant: "danger" as const, label: "Cancelled" },
   },
 };
 

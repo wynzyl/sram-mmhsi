@@ -4,6 +4,7 @@ import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createFeeScheduleAction } from "@/actions/finance";
 import type { FeeScheduleFormState } from "@/lib/validators/finance";
+import { FEE_ASSESSMENT_BANDS, FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
 
 interface FeeScheduleFormProps {
   schoolYears: { id: string; label: string; isActive: boolean }[];
@@ -34,8 +35,8 @@ export default function FeeScheduleForm({ schoolYears }: FeeScheduleFormProps) {
       )}
 
       <p className="text-muted mb-4" style={{ fontSize: "0.92rem" }}>
-        One fee catalog applies to all grade levels per school year. Add individual fee lines after
-        you create this schedule.
+        This catalog applies only to the assessment band you choose (matched from the student’s grade
+        level). Add fee lines on the next screen after you create the schedule.
       </p>
 
       <div className="form-grid">
@@ -58,6 +59,28 @@ export default function FeeScheduleForm({ schoolYears }: FeeScheduleFormProps) {
           </select>
           {state.errors?.schoolYearId && (
             <p className="form-error">{state.errors.schoolYearId[0]}</p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label className="form-label" htmlFor="assessmentBand">
+            Assessment band <span className="required">*</span>
+          </label>
+          <select
+            id="assessmentBand"
+            name="assessmentBand"
+            className={`form-control ${state.errors?.assessmentBand ? "form-control-error" : ""}`}
+            required
+          >
+            <option value="">Select band</option>
+            {FEE_ASSESSMENT_BANDS.map((band) => (
+              <option key={band} value={band}>
+                {FEE_ASSESSMENT_BAND_LABELS[band]}
+              </option>
+            ))}
+          </select>
+          {state.errors?.assessmentBand && (
+            <p className="form-error">{state.errors.assessmentBand[0]}</p>
           )}
         </div>
       </div>

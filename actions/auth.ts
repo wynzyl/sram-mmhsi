@@ -15,7 +15,7 @@ import { STAFF_ROLES } from "@/lib/constants/roles";
 
 const ROLE_LANDING: Record<Role, string> = {
   admin: "/admin/dashboard",
-  registrar: "/staff/students",
+  registrar: "/staff/dashboard",
   finance_officer: "/staff/finance",
   cashier: "/staff/payments",
   teacher: "/staff/grades",

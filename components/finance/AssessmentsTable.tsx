@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { StatusBadge } from "@/components/data-display/StatusBadge";
 
 interface Assessment {
   id: string;
@@ -9,6 +10,7 @@ interface Assessment {
   totalAmount: number;
   totalPaid: number;
   balance: number;
+  billingStatus: string;
 }
 
 interface AssessmentsTableProps {
@@ -26,13 +28,14 @@ export default function AssessmentsTable({ assessments }: AssessmentsTableProps)
             <th style={{ textAlign: "right" }}>Total Assessed</th>
             <th style={{ textAlign: "right" }}>Total Paid</th>
             <th style={{ textAlign: "right" }}>Balance</th>
+            <th>Status</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {assessments.length === 0 ? (
             <tr>
-              <td colSpan={6} className="table-empty">
+              <td colSpan={7} className="table-empty">
                 No assessments found.
               </td>
             </tr>
@@ -49,6 +52,9 @@ export default function AssessmentsTable({ assessments }: AssessmentsTableProps)
                 </td>
                 <td style={{ textAlign: "right", fontWeight: "bold", color: assessment.balance > 0 ? "var(--color-error)" : "inherit" }}>
                   ₱{assessment.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </td>
+                <td>
+                  <StatusBadge type="billing" status={assessment.billingStatus} />
                 </td>
                 <td>
                   <Link

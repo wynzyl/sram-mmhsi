@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import {
@@ -10,10 +9,23 @@ import {
   schoolYears,
   gradeLevels,
   sections,
+  assessments,
+  invoices,
 } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import {
+  StudentRecordProfile,
+  type StudentRecordStudent,
+  type GuardianRow,
+  type EnrollmentRecordRow,
+  type AssessmentSummaryRow,
+  type InvoiceSummaryRow,
+  type CurrentPlacement,
+  type StudentRecordFlags,
+} from "@/components/students/StudentRecordProfile";
+import { getStudentRequirementsSnapshots } from "@/lib/queries/student-requirements-snapshots";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -34,8 +46,13 @@ export default async function StudentProfilePage({ params }: PageProps) {
   const session = await requireSession();
   if (!hasPermission(session.role, "students:read")) redirect("/admin/dashboard");
 
-  // Fetch student with guardians and enrollment history
-  const student = await db.query.students.findFirst({
+  const canReadAssessments = hasPermission(session.role, "assessments:read");
+  const canCreateAssessment = hasPermission(session.role, "assessments:create");
+  const canReadInvoices = hasPermission(session.role, "invoices:read");
+  const canEnroll = hasPermission(session.role, "enrollments:create");
+  const canEditStudent = hasPermission(session.role, "students:update");
+
+  const studentRow = await db.query.students.findFirst({
     where: eq(students.id, id),
     columns: {
       id: true,
@@ -47,8 +64,6 @@ export default async function StudentProfilePage({ params }: PageProps) {
       dateOfBirth: true,
       gender: true,
       address: true,
-
-      // NEW FIELDS:
       lrn: true,
       mobileNumber: true,
       email: true,
@@ -57,15 +72,19 @@ export default async function StudentProfilePage({ params }: PageProps) {
       religion: true,
       previousSchool: true,
       submittedDocumentsNotes: true,
-
       isActive: true,
       createdAt: true,
     },
   });
 
-  if (!student) notFound();
+  if (!studentRow) notFound();
 
-  // Fetch guardians
+  const student: StudentRecordStudent = {
+    ...studentRow,
+    dateOfBirth: studentRow.dateOfBirth ? new Date(studentRow.dateOfBirth) : null,
+    createdAt: new Date(studentRow.createdAt),
+  };
+
   const guardianLinks = await db
     .select({
       id: parentsGuardians.id,
@@ -82,7 +101,9 @@ export default async function StudentProfilePage({ params }: PageProps) {
     .innerJoin(parentsGuardians, eq(studentGuardianLinks.guardianId, parentsGuardians.id))
     .where(eq(studentGuardianLinks.studentId, id));
 
-  const enrollmentRows = await db
+  const guardians: GuardianRow[] = guardianLinks;
+
+  const enrollmentQueryRows = await db
     .select({
       id: enrollments.id,
       createdAt: enrollments.createdAt,
@@ -90,249 +111,123 @@ export default async function StudentProfilePage({ params }: PageProps) {
       status: enrollments.status,
       studentType: enrollments.studentType,
       schoolYear: schoolYears.label,
+      schoolYearIsActive: schoolYears.isActive,
       gradeLevel: gradeLevels.name,
       sectionName: sections.name,
+      assessmentId: assessments.id,
     })
     .from(enrollments)
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .leftJoin(sections, eq(enrollments.sectionId, sections.id))
+    .leftJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
     .where(eq(enrollments.studentId, id))
     .orderBy(desc(enrollments.createdAt));
 
-  const fullName = [student.firstName, student.middleName, student.lastName, student.suffix]
-    .filter(Boolean)
-    .join(" ");
+  const enrollmentRows: EnrollmentRecordRow[] = enrollmentQueryRows.map((row) => ({
+    id: row.id,
+    createdAt: new Date(row.createdAt),
+    enrolledAt: row.enrolledAt ? new Date(row.enrolledAt) : null,
+    status: row.status,
+    studentType: row.studentType,
+    schoolYear: row.schoolYear,
+    schoolYearIsActive: row.schoolYearIsActive,
+    gradeLevel: row.gradeLevel,
+    sectionName: row.sectionName,
+    assessmentId: row.assessmentId,
+  }));
+
+  let placement: CurrentPlacement = null;
+  for (const row of enrollmentQueryRows) {
+    if (row.status === "enrolled" && row.schoolYearIsActive) {
+      placement = {
+        schoolYear: row.schoolYear,
+        gradeLevel: row.gradeLevel,
+        sectionName: row.sectionName,
+      };
+      break;
+    }
+  }
+
+  const [assessmentSummariesRaw, invoicesRaw, requirementsSnapshots] = await Promise.all([
+    canReadAssessments
+      ? db
+          .select({
+            id: assessments.id,
+            schoolYear: schoolYears.label,
+            totalAmount: assessments.totalAmount,
+            totalPaid: assessments.totalPaid,
+            balance: assessments.balance,
+            billingStatus: assessments.billingStatus,
+          })
+          .from(assessments)
+          .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
+          .where(eq(assessments.studentId, id))
+          .orderBy(desc(assessments.createdAt))
+      : Promise.resolve(
+          [] as {
+            id: string;
+            schoolYear: string;
+            totalAmount: string;
+            totalPaid: string;
+            balance: string;
+            billingStatus: string;
+          }[]
+        ),
+    canReadInvoices
+      ? db
+          .select({
+            id: invoices.id,
+            invoiceNumber: invoices.invoiceNumber,
+            amountDue: invoices.amountDue,
+            status: invoices.status,
+            dueDate: invoices.dueDate,
+            createdAt: invoices.createdAt,
+          })
+          .from(invoices)
+          .where(eq(invoices.studentId, id))
+          .orderBy(desc(invoices.createdAt))
+      : Promise.resolve(
+          [] as {
+            id: string;
+            invoiceNumber: string;
+            amountDue: string;
+            status: string;
+            dueDate: Date | null;
+            createdAt: Date;
+          }[]
+        ),
+    getStudentRequirementsSnapshots(id),
+  ]);
+
+  const assessmentSummaries: AssessmentSummaryRow[] = assessmentSummariesRaw;
+  const invoiceRows: InvoiceSummaryRow[] = invoicesRaw.map((inv) => ({
+    id: inv.id,
+    invoiceNumber: inv.invoiceNumber,
+    amountDue: inv.amountDue,
+    status: inv.status,
+    dueDate: inv.dueDate ? new Date(inv.dueDate) : null,
+    createdAt: new Date(inv.createdAt),
+  }));
+
+  const flags: StudentRecordFlags = {
+    canReadAssessments,
+    canCreateAssessment,
+    canReadInvoices,
+    canEnroll,
+    canEditStudent,
+  };
 
   return (
-    <div className="page-container">
-      {/* Back */}
-      <Link href="/admin/students" className="back-link">
-        ← Back to Students
-      </Link>
-
-      {/* Header */}
-      <div className="profile-header">
-        <div className="profile-avatar">
-          {student.firstName[0]}
-          {student.lastName[0]}
-        </div>
-        <div className="profile-meta">
-          <h1 className="profile-name">{fullName}</h1>
-          <p className="profile-ref">{student.referenceNumber}</p>
-          <span className={`badge ${student.isActive ? "badge-success" : "badge-danger"}`}>
-            {student.isActive ? "Active" : "Inactive"}
-          </span>
-        </div>
-        <div className="profile-actions">
-          {hasPermission(session.role, "enrollments:create") && (
-            <Link
-              href={`/admin/enrollments/new?studentId=${id}`}
-              className="btn-secondary"
-              id="enroll-student-btn"
-            >
-              Enroll Student
-            </Link>
-          )}
-          {hasPermission(session.role, "students:update") && (
-            <Link
-              href={`/admin/students/${id}/edit`}
-              className="btn-secondary"
-              id="edit-student-btn"
-            >
-              Edit Student
-            </Link>
-          )}
-        </div>
-      </div>
-
-      <div className="profile-grid">
-        {/* ─── Personal Information ─────────────────────────────── */}
-        <section className="profile-card">
-          <h2 className="profile-card-title">Personal Information</h2>
-          <dl className="profile-dl">
-            <div className="profile-dl-row">
-              <dt>Date of Birth</dt>
-              <dd>
-                {student.dateOfBirth
-                  ? new Date(student.dateOfBirth).toLocaleDateString("en-PH", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
-                  : "—"}
-              </dd>
-            </div>
-            <div className="profile-dl-row">
-              <dt>Gender</dt>
-              <dd className="text-capitalize">{student.gender ?? "—"}</dd>
-            </div>
-            <div className="profile-dl-row">
-              <dt>Address</dt>
-              <dd>{student.address ?? "—"}</dd>
-            </div>
-
-            {/* NEW FIELDS */}
-            <div className="profile-dl-row">
-              <dt>LRN</dt>
-              <dd className="font-[family-name:var(--font-mono)] text-sm">
-                {student.lrn ?? "—"}
-              </dd>
-            </div>
-            <div className="profile-dl-row">
-              <dt>Mobile Number</dt>
-              <dd>{student.mobileNumber ?? "—"}</dd>
-            </div>
-            <div className="profile-dl-row">
-              <dt>Email</dt>
-              <dd>{student.email ?? "—"}</dd>
-            </div>
-            <div className="profile-dl-row">
-              <dt>Nationality</dt>
-              <dd>{student.nationality ?? "—"}</dd>
-            </div>
-            <div className="profile-dl-row">
-              <dt>Blood Type</dt>
-              <dd>
-                {student.bloodType ? (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-xs font-medium">
-                    {student.bloodType}
-                  </span>
-                ) : "—"}
-              </dd>
-            </div>
-            <div className="profile-dl-row">
-              <dt>Religion</dt>
-              <dd>{student.religion ?? "—"}</dd>
-            </div>
-            <div className="profile-dl-row">
-              <dt>Previous school</dt>
-              <dd>{student.previousSchool ?? "—"}</dd>
-            </div>
-            <div className="profile-dl-row">
-              <dt>Documents (notes)</dt>
-              <dd className="whitespace-pre-wrap">{student.submittedDocumentsNotes ?? "—"}</dd>
-            </div>
-
-            <div className="profile-dl-row">
-              <dt>Registered On</dt>
-              <dd>
-                {new Date(student.createdAt).toLocaleDateString("en-PH", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </dd>
-            </div>
-          </dl>
-        </section>
-
-        {/* ─── Guardians ────────────────────────────────────────── */}
-        <section className="profile-card">
-          <h2 className="profile-card-title">Parents / Guardians</h2>
-          {guardianLinks.length === 0 ? (
-            <p className="text-muted">No guardians on file.</p>
-          ) : (
-            <ul className="guardian-list-profile">
-              {guardianLinks.map((g) => (
-                <li key={g.id} className="guardian-item">
-                  <div className="guardian-item-name">
-                    {g.firstName} {g.middleName} {g.lastName}
-                    {g.isPrimary && (
-                      <span className="guardian-badge-primary">Primary</span>
-                    )}
-                  </div>
-                  <dl className="profile-dl guardian-profile-dl mt-2">
-                    <div className="profile-dl-row">
-                      <dt>Relationship</dt>
-                      <dd>{g.relationship}</dd>
-                    </div>
-                    <div className="profile-dl-row">
-                      <dt>Address</dt>
-                      <dd>{g.address?.trim() ? g.address : "—"}</dd>
-                    </div>
-                    <div className="profile-dl-row">
-                      <dt>Contact Number</dt>
-                      <dd>{g.contactNumber?.trim() ? g.contactNumber : "—"}</dd>
-                    </div>
-                    <div className="profile-dl-row">
-                      <dt>Email address</dt>
-                      <dd>
-                        {g.email?.trim() ? (
-                          <a href={`mailto:${g.email}`} className="text-[var(--color-primary)] hover:underline">
-                            {g.email}
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {/* ─── Enrollment History (newest first) ───────────────── */}
-        <section className="profile-card profile-card-wide">
-          <h2 className="profile-card-title">Enrollment History</h2>
-          {enrollmentRows.length === 0 ? (
-            <p className="text-muted">No enrollment records found.</p>
-          ) : (
-            <table className="data-table" id="enrollment-history-table">
-              <thead>
-                <tr>
-                  <th>School Year</th>
-                  <th>Grade</th>
-                  <th>Section</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Enrolled</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {enrollmentRows.map((row) => {
-                  const typeLabel =
-                    row.studentType === "new_student"
-                      ? "New"
-                      : row.studentType === "transferee"
-                        ? "Transferee"
-                        : "Returning";
-                  return (
-                    <tr key={row.id}>
-                      <td>{row.schoolYear}</td>
-                      <td>{row.gradeLevel}</td>
-                      <td className="text-muted">{row.sectionName ?? "—"}</td>
-                      <td>{typeLabel}</td>
-                      <td>
-                        <span className="text-capitalize">{row.status}</span>
-                      </td>
-                      <td className="text-muted">
-                        {row.enrolledAt
-                          ? new Date(row.enrolledAt).toLocaleDateString("en-PH", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "—"}
-                      </td>
-                      <td className="text-muted">
-                        {new Date(row.createdAt).toLocaleDateString("en-PH", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </section>
-      </div>
-    </div>
+    <StudentRecordProfile
+      student={student}
+      guardians={guardians}
+      enrollments={enrollmentRows}
+      requirementsSnapshots={requirementsSnapshots}
+      placement={placement}
+      assessmentSummaries={assessmentSummaries}
+      invoices={invoiceRows}
+      flags={flags}
+    />
   );
 }

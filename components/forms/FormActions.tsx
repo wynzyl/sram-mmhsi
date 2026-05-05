@@ -6,6 +6,7 @@ interface FormActionsProps extends React.HTMLAttributes<HTMLDivElement> {
   cancelLabel?: string;
   onCancel?: () => void;
   loading?: boolean;
+  submitDisabled?: boolean;
 }
 
 export function FormActions({
@@ -13,12 +14,13 @@ export function FormActions({
   cancelLabel = "Cancel",
   onCancel,
   loading,
+  submitDisabled,
   className,
   ...props
 }: FormActionsProps) {
   return (
     <div className={cn("flex items-center gap-3 pt-4", className)} {...props}>
-      <Button type="submit" loading={loading}>
+      <Button type="submit" loading={loading} disabled={submitDisabled}>
         {submitLabel}
       </Button>
       {onCancel && (

@@ -108,6 +108,8 @@ Expected Deliverables:
 13. MVP-first development phases
 14. Risks, edge cases, and bad assumptions to avoid
 
+Enrollment cancellation and refunds (SRAMS): Operational refunds are represented by **voiding posted payments** on the student’s assessment ledger (OR stays consumed/voided, never reused). Cancelling an enrollment closes the ledger for new payments; registrars cannot finalize cancellation while collections remain on the ledger until those payments are voided unless an admin uses the audited override path documented with OR workflow.
+
 Important:
 - Think like a real architect and builder, not just a UI generator
 - Make concrete decisions
