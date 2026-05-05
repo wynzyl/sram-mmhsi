@@ -38,11 +38,12 @@ export default function BookletForm() {
           id="series"
           name="series"
           className={`form-control ${state.errors?.series ? "form-control-error" : ""}`}
-          placeholder="Internal booklet label / batch (e.g., AP-2026-001)"
+          placeholder="e.g., AK 00051-00100"
           required
         />
         <p className="form-hint text-muted text-xs mt-1">
-          Used for bookkeeping; does not have to match the printed OR prefix.
+          Must match OR prefix and padded range exactly (same as printed booklet face):{" "}
+          <strong>PREFIX 00051-00100</strong>. Spaces around the hyphen are OK.
         </p>
         {state.errors?.series && (
           <p className="form-error">{state.errors.series[0]}</p>
@@ -58,16 +59,16 @@ export default function BookletForm() {
           id="prefix"
           name="prefix"
           className={`form-control ${state.errors?.prefix ? "form-control-error" : ""}`}
-          placeholder="e.g., AP"
-          maxLength={32}
+          placeholder="e.g., AK"
+          maxLength={2}
+          pattern="[A-Za-z]{2}"
+          title="Two letters only"
           required
         />
         <p className="form-hint text-muted text-xs mt-1">
-          Printed and saved with each payment:{" "}
-          <strong>
-            prefix + number
-          </strong>{" "}
-          (example: AP 00050). Only one active booklet may use the same prefix.
+          Exactly two letters (e.g. AK). Stored OR format:{" "}
+          <strong>PREFIX 00001</strong> (sequence is always 5 digits). You may reuse a prefix on another booklet
+          if its start–end range does not overlap any existing booklet with that prefix.
         </p>
         {state.errors?.prefix && (
           <p className="form-error">{state.errors.prefix[0]}</p>
@@ -85,6 +86,7 @@ export default function BookletForm() {
             name="startNumber"
             className={`form-control ${state.errors?.startNumber ? "form-control-error" : ""}`}
             min="1"
+            max="99999"
             required
           />
           {state.errors?.startNumber && (
@@ -102,6 +104,7 @@ export default function BookletForm() {
             name="endNumber"
             className={`form-control ${state.errors?.endNumber ? "form-control-error" : ""}`}
             min="1"
+            max="99999"
             required
           />
           {state.errors?.endNumber && (
@@ -109,6 +112,12 @@ export default function BookletForm() {
           )}
         </div>
       </div>
+
+      <p className="form-hint text-muted text-xs mt-2">
+        Exactly <strong>50</strong> official receipts per booklet (inclusive range). Example: series{" "}
+        <strong className="font-mono">AK 00051-00100</strong> with start <strong>51</strong>, end{" "}
+        <strong>100</strong>.
+      </p>
 
       <div className="form-actions mt-6" style={{ display: "flex", gap: "1rem" }}>
         <button type="button" className="btn-secondary" onClick={() => router.back()}>

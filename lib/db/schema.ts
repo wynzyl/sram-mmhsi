@@ -9,8 +9,10 @@ import {
   uuid,
   uniqueIndex,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { FEE_ASSESSMENT_BANDS } from "@/lib/fee-schedule/bands";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +77,16 @@ export const orStatusEnum = pgEnum("or_status", [
   "voided",
 ]);
 
+/** Assessment ledger: balance-driven, or cancelled when enrollment is cancelled. */
+export const assessmentBillingStatusEnum = pgEnum("assessment_billing_status", [
+  "outstanding",
+  "fully_paid",
+  "cancelled",
+]);
+
+/** Groups grade levels for fee catalogs: Casa, elem, JHS, SHS (one schedule per band per school year). */
+export const feeAssessmentBandEnum = pgEnum("fee_assessment_band", FEE_ASSESSMENT_BANDS);
+
 // ─── Users & Sessions ─────────────────────────────────────────────────────────
 
 export const users = pgTable(
@@ -136,8 +148,9 @@ export const schoolYears = pgTable("school_years", {
 
 export const gradeLevels = pgTable("grade_levels", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),             // e.g. "Grade 7", "Kinder 2"
+  name: text("name").notNull(),             // e.g. "Grade 7", "Casa Junior"
   order: integer("order").notNull(),
+  assessmentBand: feeAssessmentBandEnum("assessment_band").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -248,6 +261,15 @@ export const studentGuardianLinks = pgTable(
 
 // ─── Registration & Enrollment ────────────────────────────────────────────────
 
+/** Intake document checklist captured at registration (new/transferee) and on enrollment. */
+export type EnrollmentIntakeDocuments = {
+  form138: "received" | "not_applicable" | "to_follow";
+  birthCertificatePsa: "received" | "not_applicable" | "to_follow";
+  goodMoralCharacter: "received" | "not_applicable" | "to_follow";
+  qualifiedVoucher: "received" | "not_applicable" | "to_follow";
+  escCertificate: "received" | "not_applicable" | "to_follow";
+};
+
 export const registrations = pgTable(
   "registrations",
   {
@@ -255,6 +277,8 @@ export const registrations = pgTable(
     studentId: uuid("student_id").notNull().references(() => students.id),
     schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
     gradeLevelId: uuid("grade_level_id").notNull().references(() => gradeLevels.id),
+    studentType: enrollmentStudentTypeEnum("student_type").notNull().default("new_student"),
+    intakeDocuments: jsonb("intake_documents").$type<EnrollmentIntakeDocuments | null>(),
     status: registrationStatusEnum("status").notNull().default("pending"),
     remarks: text("remarks"),
     reviewedBy: uuid("reviewed_by").references(() => users.id),
@@ -281,6 +305,8 @@ export const enrollments = pgTable(
     registrationId: uuid("registration_id").references(() => registrations.id),
     /** NEW_STUDENT | TRANSFEREE | OLD_STUDENT workflow classification. */
     studentType: enrollmentStudentTypeEnum("student_type").notNull().default("new_student"),
+    /** Required for new_student / transferee enrollments; null for old_student or legacy rows. */
+    intakeDocuments: jsonb("intake_documents").$type<EnrollmentIntakeDocuments | null>(),
     status: enrollmentStatusEnum("status").notNull().default("pending"),
     enrolledAt: timestamp("enrolled_at"),
     cancelledAt: timestamp("cancelled_at"),
@@ -304,15 +330,24 @@ export const enrollments = pgTable(
 export const feeSchedules = pgTable("fee_schedules", {
   id: uuid("id").primaryKey().defaultRandom(),
   schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
-  /** Optional legacy column; assessments use one standard schedule per school year (schoolYearId-only). */
+  /** Optional legacy column; unused for banded resolution. */
   gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
+  /** Null = legacy school-wide catalog for that school year (fallback when no band-specific schedule exists). */
+  assessmentBand: feeAssessmentBandEnum("assessment_band"),
   description: text("description"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   createdBy: uuid("created_by").references(() => users.id),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: uuid("updated_by").references(() => users.id),
-}, (t) => [uniqueIndex("fee_schedule_school_year_uidx").on(t.schoolYearId)]);
+}, (t) => [
+  uniqueIndex("fee_schedule_sy_band_uidx")
+    .on(t.schoolYearId, t.assessmentBand)
+    .where(sql`${t.assessmentBand} IS NOT NULL`),
+  uniqueIndex("fee_schedule_sy_legacy_uidx")
+    .on(t.schoolYearId)
+    .where(sql`${t.assessmentBand} IS NULL`),
+]);
 
 export const feeScheduleItems = pgTable("fee_schedule_items", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -339,7 +374,13 @@ export const assessments = pgTable(
     totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
     totalPaid: numeric("total_paid", { precision: 12, scale: 2 }).notNull().default("0"),
     balance: numeric("balance", { precision: 12, scale: 2 }).notNull(),
+    billingStatus: assessmentBillingStatusEnum("billing_status")
+      .notNull()
+      .default("outstanding"),
     remarks: text("remarks"),
+    /** Set when the linked enrollment is cancelled — blocks new payments on this ledger. */
+    cancelledAt: timestamp("cancelled_at"),
+    cancelledBy: uuid("cancelled_by").references(() => users.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -410,6 +451,9 @@ export const payments = pgTable(
   },
   (t) => [
     uniqueIndex("payments_or_number_idx").on(t.orNumber),
+    uniqueIndex("payments_reference_number_unique_idx")
+      .on(t.referenceNumber)
+      .where(sql`${t.referenceNumber} is not null`),
     index("payments_student_idx").on(t.studentId),
     index("payments_status_idx").on(t.status),
     index("payments_date_idx").on(t.paymentDate),

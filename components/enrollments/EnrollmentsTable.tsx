@@ -16,6 +16,8 @@ interface Enrollment {
   enrolledAt: Date | null;
   createdAt: Date;
   assessmentId: string | null;
+  /** Assessment row total paid (numeric); null if no assessment joined. */
+  assessmentTotalPaid: number | null;
 }
 
 interface Section {
@@ -28,7 +30,11 @@ interface EnrollmentsTableProps {
   sections: Section[];
   canManage: boolean;
   canCancel: boolean;
+  /** Admin-only: cancel while ledger still shows collected tuition (mandatory long remarks). */
+  canCancelWithBalance: boolean;
   canOverrideEnrolled: boolean;
+  /** Link targets for staff vs admin shell (assessments/students URLs). */
+  portalBase?: "/admin" | "/staff";
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -38,9 +44,40 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: "badge-danger",
 };
 
-function CancelInline({ enrollmentId }: { enrollmentId: string }) {
+const OUTSTANDING_PAYMENT_EPSILON = 0.009;
+
+function formatPhp(amount: number): string {
+  return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amount);
+}
+
+function withPortal(href: string, portalBase: "/admin" | "/staff") {
+  return portalBase === "/staff" ? href.replace(/^\/admin/, "/staff") : href;
+}
+
+function CancelInline({
+  enrollmentId,
+  status,
+  assessmentId,
+  assessmentTotalPaid,
+  canCancelWithBalance,
+  portalBase,
+}: {
+  enrollmentId: string;
+  status: string;
+  assessmentId: string | null;
+  assessmentTotalPaid: number | null;
+  canCancelWithBalance: boolean;
+  portalBase: "/admin" | "/staff";
+}) {
   const [state, action, pending] = useActionState(updateEnrollmentStatusAction, {});
   const [show, setShow] = useState(false);
+
+  const paid = assessmentTotalPaid ?? 0;
+  const financeStatuses = status === "assessed" || status === "enrolled";
+  const hasCollected = financeStatuses && paid > OUTSTANDING_PAYMENT_EPSILON;
+  const cancelBlockedByPayments = hasCollected && !canCancelWithBalance;
+
+  const remarksError = state.errors?.cancelRemarks?.[0];
 
   if (state.success) {
     return (
@@ -51,7 +88,7 @@ function CancelInline({ enrollmentId }: { enrollmentId: string }) {
   }
 
   return (
-    <div style={{ marginTop: "0.125rem" }}>
+    <div style={{ marginTop: "0.125rem", maxWidth: "min(100%, 22rem)" }}>
       {!show ? (
         <button
           type="button"
@@ -64,24 +101,71 @@ function CancelInline({ enrollmentId }: { enrollmentId: string }) {
       ) : (
         <form
           action={action}
-          style={{ display: "flex", gap: "0.25rem", alignItems: "center", flexWrap: "wrap" }}
+          style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}
         >
           <input type="hidden" name="enrollmentId" value={enrollmentId} />
           <input type="hidden" name="action" value="cancel" />
-          <input
-            type="text"
+          {financeStatuses && assessmentId && (
+            <Link
+              href={withPortal(`/admin/assessments/${assessmentId}`, portalBase)}
+              className="btn-ghost btn-sm"
+              style={{ alignSelf: "flex-start", fontSize: "0.72rem" }}
+            >
+              Open assessment ledger
+            </Link>
+          )}
+          {hasCollected && (
+            <p
+              style={{
+                fontSize: "0.72rem",
+                margin: 0,
+                color: cancelBlockedByPayments ? "var(--color-error)" : "var(--color-warning, #b45309)",
+              }}
+            >
+              {cancelBlockedByPayments ? (
+                <>
+                  Ledger shows {formatPhp(paid)} collected. Void posted payments (Cashier) first,
+                  then cancel. Ask an admin only if policy requires cancelling without voiding in the
+                  system.
+                </>
+              ) : (
+                <>
+                  Ledger shows {formatPhp(paid)} collected. Prefer voiding payments before cancel.
+                  As admin you may proceed with a detailed audit reason (≥15 characters); this does
+                  not replace proper voiding for accounting.
+                </>
+              )}
+            </p>
+          )}
+          <textarea
             name="cancelRemarks"
             className="form-control"
-            placeholder="Reason…"
-            style={{ padding: "0.2rem 0.4rem", fontSize: "0.75rem", width: "140px" }}
+            rows={hasCollected && canCancelWithBalance ? 4 : 2}
+            placeholder={
+              hasCollected && canCancelWithBalance
+                ? "Detailed audit reason (required, ≥15 characters)…"
+                : "Reason for cancellation…"
+            }
+            style={{ padding: "0.35rem 0.45rem", fontSize: "0.75rem", width: "100%" }}
           />
-          <button type="submit" className="btn-danger btn-sm" disabled={pending}>
-            {pending ? "…" : "Confirm"}
-          </button>
-          <button type="button" className="btn-ghost btn-sm" onClick={() => setShow(false)}>
-            ✕
-          </button>
+          <div style={{ display: "flex", gap: "0.25rem", alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              type="submit"
+              className="btn-danger btn-sm"
+              disabled={pending || cancelBlockedByPayments}
+            >
+              {pending ? "…" : "Confirm"}
+            </button>
+            <button type="button" className="btn-ghost btn-sm" onClick={() => setShow(false)}>
+              ✕
+            </button>
+          </div>
         </form>
+      )}
+      {remarksError && (
+        <p style={{ fontSize: "0.72rem", color: "var(--color-error)", marginTop: "0.2rem" }}>
+          {remarksError}
+        </p>
       )}
       {state.message && !state.success && (
         <p style={{ fontSize: "0.72rem", color: "var(--color-error)", marginTop: "0.2rem" }}>
@@ -145,25 +229,36 @@ function OverrideEnrollBlock({ enrollmentId, sections }: { enrollmentId: string;
 }
 
 function EnrolledActions({
-  studentId,
-  enrollmentId,
+  en,
   canCancel,
+  canCancelWithBalance,
+  portalBase,
 }: {
-  studentId: string;
-  enrollmentId: string;
+  en: Enrollment;
   canCancel: boolean;
+  canCancelWithBalance: boolean;
+  portalBase: "/admin" | "/staff";
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
       <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", alignItems: "center" }}>
-        <Link href={`/admin/students/${studentId}`} className="btn-ghost btn-sm">
+        <Link href={withPortal(`/admin/students/${en.studentId}`, portalBase)} className="btn-ghost btn-sm">
           Student
         </Link>
-        <Link href="/admin/assessments?view=ledgers" className="btn-ghost btn-sm">
+        <Link href={withPortal("/admin/assessments?view=ledgers", portalBase)} className="btn-ghost btn-sm">
           Ledgers
         </Link>
       </div>
-      {canCancel && <CancelInline enrollmentId={enrollmentId} />}
+      {canCancel && (
+        <CancelInline
+          enrollmentId={en.id}
+          status={en.status}
+          assessmentId={en.assessmentId}
+          assessmentTotalPaid={en.assessmentTotalPaid}
+          canCancelWithBalance={canCancelWithBalance}
+          portalBase={portalBase}
+        />
+      )}
     </div>
   );
 }
@@ -173,16 +268,20 @@ function EnrollmentActionsCell({
   sections,
   canManage,
   canCancel,
+  canCancelWithBalance,
   canOverrideEnrolled,
+  portalBase,
 }: {
   en: Enrollment;
   sections: Section[];
   canManage: boolean;
   canCancel: boolean;
+  canCancelWithBalance: boolean;
   canOverrideEnrolled: boolean;
+  portalBase: "/admin" | "/staff";
 }) {
   const viewStudent = (
-    <Link href={`/admin/students/${en.studentId}`} className="btn-ghost btn-sm">
+    <Link href={withPortal(`/admin/students/${en.studentId}`, portalBase)} className="btn-ghost btn-sm">
       Student
     </Link>
   );
@@ -192,7 +291,10 @@ function EnrollmentActionsCell({
       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
         {viewStudent}
         {canManage && (
-          <Link href={`/admin/enrollments/new?studentId=${en.studentId}`} className="table-action-link">
+          <Link
+            href={`${withPortal("/admin/enrollments/new", portalBase)}?studentId=${en.studentId}`}
+            className="table-action-link"
+          >
             Re-enroll
           </Link>
         )}
@@ -202,7 +304,12 @@ function EnrollmentActionsCell({
 
   if (en.status === "enrolled") {
     return (
-      <EnrolledActions studentId={en.studentId} enrollmentId={en.id} canCancel={canCancel} />
+      <EnrolledActions
+        en={en}
+        canCancel={canCancel}
+        canCancelWithBalance={canCancelWithBalance}
+        portalBase={portalBase}
+      />
     );
   }
 
@@ -213,12 +320,21 @@ function EnrollmentActionsCell({
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
         <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-          <Link href={`/admin/assessments/new/${en.id}`} className="btn-secondary btn-sm">
+          <Link href={withPortal(`/admin/assessments/new/${en.id}`, portalBase)} className="btn-secondary btn-sm">
             Build assessment
           </Link>
           {viewStudent}
         </div>
-        {canCancel && <CancelInline enrollmentId={en.id} />}
+        {canCancel && (
+          <CancelInline
+            enrollmentId={en.id}
+            status={en.status}
+            assessmentId={en.assessmentId}
+            assessmentTotalPaid={en.assessmentTotalPaid}
+            canCancelWithBalance={canCancelWithBalance}
+            portalBase={portalBase}
+          />
+        )}
       </div>
     );
   }
@@ -228,7 +344,7 @@ function EnrollmentActionsCell({
       <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
         <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", alignItems: "center" }}>
           {en.assessmentId ? (
-            <Link href={`/admin/assessments/${en.assessmentId}`} className="btn-primary btn-sm">
+            <Link href={withPortal(`/admin/assessments/${en.assessmentId}`, portalBase)} className="btn-primary btn-sm">
               Ledger / pay
             </Link>
           ) : (
@@ -239,7 +355,16 @@ function EnrollmentActionsCell({
           {viewStudent}
         </div>
         {canOverrideEnrolled && <OverrideEnrollBlock enrollmentId={en.id} sections={sections} />}
-        {canCancel && <CancelInline enrollmentId={en.id} />}
+        {canCancel && (
+          <CancelInline
+            enrollmentId={en.id}
+            status={en.status}
+            assessmentId={en.assessmentId}
+            assessmentTotalPaid={en.assessmentTotalPaid}
+            canCancelWithBalance={canCancelWithBalance}
+            portalBase={portalBase}
+          />
+        )}
       </div>
     );
   }
@@ -252,7 +377,9 @@ export default function EnrollmentsTable({
   sections,
   canManage,
   canCancel,
+  canCancelWithBalance,
   canOverrideEnrolled,
+  portalBase = "/admin",
 }: EnrollmentsTableProps) {
   const showActions = canManage || canCancel || canOverrideEnrolled;
 
@@ -310,7 +437,9 @@ export default function EnrollmentsTable({
                       sections={sections}
                       canManage={canManage}
                       canCancel={canCancel}
+                      canCancelWithBalance={canCancelWithBalance}
                       canOverrideEnrolled={canOverrideEnrolled}
+                      portalBase={portalBase}
                     />
                   </td>
                 )}

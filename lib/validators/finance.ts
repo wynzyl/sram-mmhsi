@@ -1,10 +1,15 @@
 import { z } from "zod";
+import { FEE_ASSESSMENT_BANDS } from "@/lib/fee-schedule/bands";
 
 // ─── Fee Schedule Validators ──────────────────────────────────────────────────
+
+export const feeAssessmentBandSchema = z.enum(FEE_ASSESSMENT_BANDS);
 
 export const FeeScheduleSchema = z.object({
   id: z.string().uuid().optional(),
   schoolYearId: z.string().uuid("School year is required"),
+  /** Required when creating a schedule; omitted on update (band is immutable). */
+  assessmentBand: feeAssessmentBandSchema.optional(),
   description: z.string().trim().min(3, "Description must be at least 3 characters"),
   isActive: z.boolean().default(true),
 });

@@ -1,5 +1,5 @@
 {
-  "id": "6311b6d0-c0e4-49df-8ccb-b9303a0b3ccf",
+  "id": "526b6ea5-38ed-4475-a86a-536d6d55842d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -20,6 +20,12 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "fee_schedule_item_id": {
+          "name": "fee_schedule_item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         },
         "description": {
           "name": "description",
@@ -80,6 +86,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "assessment_items_fee_schedule_item_id_fee_schedule_items_id_fk": {
+          "name": "assessment_items_fee_schedule_item_id_fee_schedule_items_id_fk",
+          "tableFrom": "assessment_items",
+          "tableTo": "fee_schedule_items",
+          "columnsFrom": [
+            "fee_schedule_item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         },
         "assessment_items_created_by_users_id_fk": {
@@ -163,9 +182,29 @@
           "primaryKey": false,
           "notNull": true
         },
+        "billing_status": {
+          "name": "billing_status",
+          "type": "assessment_billing_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'outstanding'"
+        },
         "remarks": {
           "name": "remarks",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cancelled_at": {
+          "name": "cancelled_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cancelled_by": {
+          "name": "cancelled_by",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -217,6 +256,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "assessments_enrollment_id_uidx": {
+          "name": "assessments_enrollment_id_uidx",
+          "columns": [
+            {
+              "expression": "enrollment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -252,6 +306,19 @@
           "tableTo": "school_years",
           "columnsFrom": [
             "school_year_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "assessments_cancelled_by_users_id_fk": {
+          "name": "assessments_cancelled_by_users_id_fk",
+          "tableFrom": "assessments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "cancelled_by"
           ],
           "columnsTo": [
             "id"
@@ -445,6 +512,78 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.curriculums": {
+      "name": "curriculums",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_school_year_id": {
+          "name": "effective_school_year_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "curriculums_effective_school_year_id_school_years_id_fk": {
+          "name": "curriculums_effective_school_year_id_school_years_id_fk",
+          "tableFrom": "curriculums",
+          "tableTo": "school_years",
+          "columnsFrom": [
+            "effective_school_year_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "curriculums_created_by_users_id_fk": {
+          "name": "curriculums_created_by_users_id_fk",
+          "tableFrom": "curriculums",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.enrollments": {
       "name": "enrollments",
       "schema": "",
@@ -486,6 +625,20 @@
           "primaryKey": false,
           "notNull": false
         },
+        "student_type": {
+          "name": "student_type",
+          "type": "enrollment_student_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'new_student'"
+        },
+        "intake_documents": {
+          "name": "intake_documents",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "status": {
           "name": "status",
           "type": "enrollment_status",
@@ -503,6 +656,12 @@
         "cancelled_at": {
           "name": "cancelled_at",
           "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cancelled_by": {
+          "name": "cancelled_by",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -557,6 +716,7 @@
             }
           ],
           "isUnique": true,
+          "where": "status != 'cancelled'",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -643,6 +803,19 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
+        "enrollments_cancelled_by_users_id_fk": {
+          "name": "enrollments_cancelled_by_users_id_fk",
+          "tableFrom": "enrollments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "cancelled_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "enrollments_created_by_users_id_fk": {
           "name": "enrollments_created_by_users_id_fk",
           "tableFrom": "enrollments",
@@ -659,6 +832,294 @@
         "enrollments_updated_by_users_id_fk": {
           "name": "enrollments_updated_by_users_id_fk",
           "tableFrom": "enrollments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.fee_schedule_items": {
+      "name": "fee_schedule_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "fee_schedule_id": {
+          "name": "fee_schedule_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_discount": {
+          "name": "is_discount",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fee_schedule_items_fee_schedule_id_fee_schedules_id_fk": {
+          "name": "fee_schedule_items_fee_schedule_id_fee_schedules_id_fk",
+          "tableFrom": "fee_schedule_items",
+          "tableTo": "fee_schedules",
+          "columnsFrom": [
+            "fee_schedule_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fee_schedule_items_created_by_users_id_fk": {
+          "name": "fee_schedule_items_created_by_users_id_fk",
+          "tableFrom": "fee_schedule_items",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fee_schedule_items_updated_by_users_id_fk": {
+          "name": "fee_schedule_items_updated_by_users_id_fk",
+          "tableFrom": "fee_schedule_items",
+          "tableTo": "users",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.fee_schedules": {
+      "name": "fee_schedules",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "school_year_id": {
+          "name": "school_year_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade_level_id": {
+          "name": "grade_level_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assessment_band": {
+          "name": "assessment_band",
+          "type": "fee_assessment_band",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "fee_schedule_sy_band_uidx": {
+          "name": "fee_schedule_sy_band_uidx",
+          "columns": [
+            {
+              "expression": "school_year_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "assessment_band",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"fee_schedules\".\"assessment_band\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "fee_schedule_sy_legacy_uidx": {
+          "name": "fee_schedule_sy_legacy_uidx",
+          "columns": [
+            {
+              "expression": "school_year_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"fee_schedules\".\"assessment_band\" IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fee_schedules_school_year_id_school_years_id_fk": {
+          "name": "fee_schedules_school_year_id_school_years_id_fk",
+          "tableFrom": "fee_schedules",
+          "tableTo": "school_years",
+          "columnsFrom": [
+            "school_year_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fee_schedules_grade_level_id_grade_levels_id_fk": {
+          "name": "fee_schedules_grade_level_id_grade_levels_id_fk",
+          "tableFrom": "fee_schedules",
+          "tableTo": "grade_levels",
+          "columnsFrom": [
+            "grade_level_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fee_schedules_created_by_users_id_fk": {
+          "name": "fee_schedules_created_by_users_id_fk",
+          "tableFrom": "fee_schedules",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fee_schedules_updated_by_users_id_fk": {
+          "name": "fee_schedules_updated_by_users_id_fk",
+          "tableFrom": "fee_schedules",
           "tableTo": "users",
           "columnsFrom": [
             "updated_by"
@@ -696,6 +1157,13 @@
         "order": {
           "name": "order",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assessment_band": {
+          "name": "assessment_band",
+          "type": "fee_assessment_band",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -1228,17 +1696,29 @@
           "primaryKey": false,
           "notNull": true
         },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occupation": {
+          "name": "occupation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "contact_number": {
           "name": "contact_number",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "email": {
           "name": "email",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "user_id": {
           "name": "user_id",
@@ -1557,6 +2037,22 @@
           "method": "btree",
           "with": {}
         },
+        "payments_reference_number_unique_idx": {
+          "name": "payments_reference_number_unique_idx",
+          "columns": [
+            {
+              "expression": "reference_number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"payments\".\"reference_number\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "payments_student_idx": {
           "name": "payments_student_idx",
           "columns": [
@@ -1706,6 +2202,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "prefix": {
+          "name": "prefix",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "start_number": {
           "name": "start_number",
           "type": "integer",
@@ -1838,6 +2340,20 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "student_type": {
+          "name": "student_type",
+          "type": "enrollment_student_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'new_student'"
+        },
+        "intake_documents": {
+          "name": "intake_documents",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         },
         "status": {
           "name": "status",
@@ -2077,6 +2593,18 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_by": {
+          "name": "deleted_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -2100,6 +2628,19 @@
           "tableTo": "users",
           "columnsFrom": [
             "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "school_years_deleted_by_users_id_fk": {
+          "name": "school_years_deleted_by_users_id_fk",
+          "tableFrom": "school_years",
+          "tableTo": "users",
+          "columnsFrom": [
+            "deleted_by"
           ],
           "columnsTo": [
             "id"
@@ -2435,6 +2976,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "lrn": {
+          "name": "lrn",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "first_name": {
           "name": "first_name",
           "type": "text",
@@ -2473,6 +3020,48 @@
         },
         "address": {
           "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mobile_number": {
+          "name": "mobile_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nationality": {
+          "name": "nationality",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "blood_type": {
+          "name": "blood_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "religion": {
+          "name": "religion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previous_school": {
+          "name": "previous_school",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submitted_documents_notes": {
+          "name": "submitted_documents_notes",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -2622,7 +3211,15 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "students_lrn_unique": {
+          "name": "students_lrn_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "lrn"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2650,6 +3247,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "curriculum_id": {
+          "name": "curriculum_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "grade_level_id": {
           "name": "grade_level_id",
           "type": "uuid",
@@ -2672,6 +3275,19 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "subjects_curriculum_id_curriculums_id_fk": {
+          "name": "subjects_curriculum_id_curriculums_id_fk",
+          "tableFrom": "subjects",
+          "tableTo": "curriculums",
+          "columnsFrom": [
+            "curriculum_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "subjects_grade_level_id_grade_levels_id_fk": {
           "name": "subjects_grade_level_id_grade_levels_id_fk",
           "tableFrom": "subjects",
@@ -3022,6 +3638,15 @@
     }
   },
   "enums": {
+    "public.assessment_billing_status": {
+      "name": "assessment_billing_status",
+      "schema": "public",
+      "values": [
+        "outstanding",
+        "fully_paid",
+        "cancelled"
+      ]
+    },
     "public.booklet_status": {
       "name": "booklet_status",
       "schema": "public",
@@ -3039,6 +3664,26 @@
         "assessed",
         "enrolled",
         "cancelled"
+      ]
+    },
+    "public.enrollment_student_type": {
+      "name": "enrollment_student_type",
+      "schema": "public",
+      "values": [
+        "new_student",
+        "transferee",
+        "old_student"
+      ]
+    },
+    "public.fee_assessment_band": {
+      "name": "fee_assessment_band",
+      "schema": "public",
+      "values": [
+        "casa",
+        "lower_elementary",
+        "higher_elementary",
+        "junior_high",
+        "senior_high"
       ]
     },
     "public.grade_status": {

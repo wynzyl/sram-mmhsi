@@ -54,7 +54,7 @@ export default function BookletsTable({ booklets }: BookletsTableProps) {
             </tr>
           ) : (
             booklets.map((booklet) => {
-              const w = orNumberPadWidth(booklet.endNumber);
+              const w = orNumberPadWidth();
               return (
               <tr key={booklet.id} className="table-row-hover">
                 <td style={{ fontWeight: 600 }}>{booklet.series}</td>
@@ -67,7 +67,7 @@ export default function BookletsTable({ booklets }: BookletsTableProps) {
                 </td>
                 <td style={{ color: booklet.status === "active" ? "var(--color-primary)" : "inherit", fontFamily: "var(--font-mono, ui-monospace)" }}>
                   {booklet.status === "active"
-                    ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber, booklet.endNumber)
+                    ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber)
                     : "—"}
                 </td>
                 <td>

@@ -12,11 +12,17 @@ const db = drizzle(client);
 
 async function clear() {
   console.log("Clearing tables for migration...");
-  await db.execute(sql`DELETE FROM grade_records;`);
-  await db.execute(sql`DELETE FROM teacher_assignments;`);
-  await db.execute(sql`DELETE FROM subjects;`);
-  console.log("Tables cleared.");
-  await client.end();
+  try {
+    await db.execute(sql`DELETE FROM grade_records;`);
+    await db.execute(sql`DELETE FROM teacher_assignments;`);
+    await db.execute(sql`DELETE FROM subjects;`);
+    console.log("Tables cleared.");
+  } finally {
+    await client.end();
+  }
 }
 
-clear();
+clear().catch((err) => {
+  console.error("❌ Clear-for-migration failed:", err);
+  process.exit(1);
+});

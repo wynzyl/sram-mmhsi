@@ -20,7 +20,8 @@ export default async function NewFeeSchedulePage() {
         <div>
           <h1 className="page-title">New Fee Schedule</h1>
           <p className="page-subtitle">
-            Create the standard billing catalog for a school year (all grade levels share it).
+            Create a billing catalog for one school year and one assessment band (e.g. Casa, Junior
+            High). Add the other bands separately as needed.
           </p>
         </div>
       </div>

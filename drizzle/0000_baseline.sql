@@ -1,5 +1,8 @@
+CREATE TYPE "public"."assessment_billing_status" AS ENUM('outstanding', 'fully_paid', 'cancelled');--> statement-breakpoint
 CREATE TYPE "public"."booklet_status" AS ENUM('active', 'exhausted', 'voided');--> statement-breakpoint
 CREATE TYPE "public"."enrollment_status" AS ENUM('pending', 'assessed', 'enrolled', 'cancelled');--> statement-breakpoint
+CREATE TYPE "public"."enrollment_student_type" AS ENUM('new_student', 'transferee', 'old_student');--> statement-breakpoint
+CREATE TYPE "public"."fee_assessment_band" AS ENUM('casa', 'lower_elementary', 'higher_elementary', 'junior_high', 'senior_high');--> statement-breakpoint
 CREATE TYPE "public"."grade_status" AS ENUM('draft', 'submitted', 'locked');--> statement-breakpoint
 CREATE TYPE "public"."invoice_status" AS ENUM('draft', 'sent', 'viewed', 'settled', 'overdue');--> statement-breakpoint
 CREATE TYPE "public"."or_status" AS ENUM('available', 'consumed', 'voided');--> statement-breakpoint
@@ -9,6 +12,7 @@ CREATE TYPE "public"."role" AS ENUM('admin', 'registrar', 'finance_officer', 'ca
 CREATE TABLE "assessment_items" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"assessment_id" uuid NOT NULL,
+	"fee_schedule_item_id" uuid,
 	"description" text NOT NULL,
 	"amount" numeric(12, 2) NOT NULL,
 	"is_discount" boolean DEFAULT false NOT NULL,
@@ -26,7 +30,10 @@ CREATE TABLE "assessments" (
 	"total_amount" numeric(12, 2) NOT NULL,
 	"total_paid" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"balance" numeric(12, 2) NOT NULL,
+	"billing_status" "assessment_billing_status" DEFAULT 'outstanding' NOT NULL,
 	"remarks" text,
+	"cancelled_at" timestamp,
+	"cancelled_by" uuid,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"created_by" uuid,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
@@ -48,6 +55,14 @@ CREATE TABLE "audit_logs" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "curriculums" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text NOT NULL,
+	"effective_school_year_id" uuid NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_by" uuid
+);
+--> statement-breakpoint
 CREATE TABLE "enrollments" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"student_id" uuid NOT NULL,
@@ -55,10 +70,39 @@ CREATE TABLE "enrollments" (
 	"grade_level_id" uuid NOT NULL,
 	"section_id" uuid,
 	"registration_id" uuid,
+	"student_type" "enrollment_student_type" DEFAULT 'new_student' NOT NULL,
+	"intake_documents" jsonb,
 	"status" "enrollment_status" DEFAULT 'pending' NOT NULL,
 	"enrolled_at" timestamp,
 	"cancelled_at" timestamp,
+	"cancelled_by" uuid,
 	"cancel_remarks" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_by" uuid,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"updated_by" uuid
+);
+--> statement-breakpoint
+CREATE TABLE "fee_schedule_items" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"fee_schedule_id" uuid NOT NULL,
+	"description" text NOT NULL,
+	"amount" numeric(12, 2) NOT NULL,
+	"is_discount" boolean DEFAULT false NOT NULL,
+	"order" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_by" uuid,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"updated_by" uuid
+);
+--> statement-breakpoint
+CREATE TABLE "fee_schedules" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"school_year_id" uuid NOT NULL,
+	"grade_level_id" uuid,
+	"assessment_band" "fee_assessment_band",
+	"description" text,
+	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"created_by" uuid,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
@@ -69,6 +113,7 @@ CREATE TABLE "grade_levels" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"order" integer NOT NULL,
+	"assessment_band" "fee_assessment_band" NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -114,8 +159,10 @@ CREATE TABLE "parents_guardians" (
 	"middle_name" text,
 	"last_name" text NOT NULL,
 	"relationship" text NOT NULL,
-	"contact_number" text,
-	"email" text,
+	"address" text NOT NULL,
+	"occupation" text,
+	"contact_number" text NOT NULL,
+	"email" text NOT NULL,
 	"user_id" uuid,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"created_by" uuid,
@@ -156,6 +203,7 @@ CREATE TABLE "payments" (
 CREATE TABLE "receipt_booklets" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"series" text NOT NULL,
+	"prefix" text NOT NULL,
 	"start_number" integer NOT NULL,
 	"end_number" integer NOT NULL,
 	"next_number" integer NOT NULL,
@@ -171,6 +219,8 @@ CREATE TABLE "registrations" (
 	"student_id" uuid NOT NULL,
 	"school_year_id" uuid NOT NULL,
 	"grade_level_id" uuid NOT NULL,
+	"student_type" "enrollment_student_type" DEFAULT 'new_student' NOT NULL,
+	"intake_documents" jsonb,
 	"status" "registration_status" DEFAULT 'pending' NOT NULL,
 	"remarks" text,
 	"reviewed_by" uuid,
@@ -190,7 +240,9 @@ CREATE TABLE "school_years" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"created_by" uuid,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"updated_by" uuid
+	"updated_by" uuid,
+	"deleted_at" timestamp,
+	"deleted_by" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "sections" (
@@ -223,6 +275,7 @@ CREATE TABLE "student_guardian_links" (
 CREATE TABLE "students" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"reference_number" text NOT NULL,
+	"lrn" text,
 	"first_name" text NOT NULL,
 	"middle_name" text,
 	"last_name" text NOT NULL,
@@ -230,6 +283,13 @@ CREATE TABLE "students" (
 	"date_of_birth" timestamp,
 	"gender" text,
 	"address" text,
+	"mobile_number" text,
+	"email" text,
+	"nationality" text,
+	"blood_type" text,
+	"religion" text,
+	"previous_school" text,
+	"submitted_documents_notes" text,
 	"user_id" uuid,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -237,13 +297,15 @@ CREATE TABLE "students" (
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	"updated_by" uuid,
 	"deleted_at" timestamp,
-	"deleted_by" uuid
+	"deleted_by" uuid,
+	CONSTRAINT "students_lrn_unique" UNIQUE("lrn")
 );
 --> statement-breakpoint
 CREATE TABLE "subjects" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"code" text NOT NULL,
+	"curriculum_id" uuid NOT NULL,
 	"grade_level_id" uuid,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"created_by" uuid
@@ -276,21 +338,33 @@ CREATE TABLE "users" (
 );
 --> statement-breakpoint
 ALTER TABLE "assessment_items" ADD CONSTRAINT "assessment_items_assessment_id_assessments_id_fk" FOREIGN KEY ("assessment_id") REFERENCES "public"."assessments"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assessment_items" ADD CONSTRAINT "assessment_items_fee_schedule_item_id_fee_schedule_items_id_fk" FOREIGN KEY ("fee_schedule_item_id") REFERENCES "public"."fee_schedule_items"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "assessment_items" ADD CONSTRAINT "assessment_items_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "assessment_items" ADD CONSTRAINT "assessment_items_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "assessments" ADD CONSTRAINT "assessments_enrollment_id_enrollments_id_fk" FOREIGN KEY ("enrollment_id") REFERENCES "public"."enrollments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "assessments" ADD CONSTRAINT "assessments_student_id_students_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "assessments" ADD CONSTRAINT "assessments_school_year_id_school_years_id_fk" FOREIGN KEY ("school_year_id") REFERENCES "public"."school_years"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assessments" ADD CONSTRAINT "assessments_cancelled_by_users_id_fk" FOREIGN KEY ("cancelled_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "assessments" ADD CONSTRAINT "assessments_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "assessments" ADD CONSTRAINT "assessments_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_actor_users_id_fk" FOREIGN KEY ("actor") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "curriculums" ADD CONSTRAINT "curriculums_effective_school_year_id_school_years_id_fk" FOREIGN KEY ("effective_school_year_id") REFERENCES "public"."school_years"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "curriculums" ADD CONSTRAINT "curriculums_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "enrollments" ADD CONSTRAINT "enrollments_student_id_students_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "enrollments" ADD CONSTRAINT "enrollments_school_year_id_school_years_id_fk" FOREIGN KEY ("school_year_id") REFERENCES "public"."school_years"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "enrollments" ADD CONSTRAINT "enrollments_grade_level_id_grade_levels_id_fk" FOREIGN KEY ("grade_level_id") REFERENCES "public"."grade_levels"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "enrollments" ADD CONSTRAINT "enrollments_section_id_sections_id_fk" FOREIGN KEY ("section_id") REFERENCES "public"."sections"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "enrollments" ADD CONSTRAINT "enrollments_registration_id_registrations_id_fk" FOREIGN KEY ("registration_id") REFERENCES "public"."registrations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "enrollments" ADD CONSTRAINT "enrollments_cancelled_by_users_id_fk" FOREIGN KEY ("cancelled_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "enrollments" ADD CONSTRAINT "enrollments_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "enrollments" ADD CONSTRAINT "enrollments_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "fee_schedule_items" ADD CONSTRAINT "fee_schedule_items_fee_schedule_id_fee_schedules_id_fk" FOREIGN KEY ("fee_schedule_id") REFERENCES "public"."fee_schedules"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "fee_schedule_items" ADD CONSTRAINT "fee_schedule_items_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "fee_schedule_items" ADD CONSTRAINT "fee_schedule_items_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "fee_schedules" ADD CONSTRAINT "fee_schedules_school_year_id_school_years_id_fk" FOREIGN KEY ("school_year_id") REFERENCES "public"."school_years"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "fee_schedules" ADD CONSTRAINT "fee_schedules_grade_level_id_grade_levels_id_fk" FOREIGN KEY ("grade_level_id") REFERENCES "public"."grade_levels"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "fee_schedules" ADD CONSTRAINT "fee_schedules_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "fee_schedules" ADD CONSTRAINT "fee_schedules_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "grade_records" ADD CONSTRAINT "grade_records_student_id_students_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "grade_records" ADD CONSTRAINT "grade_records_teacher_assignment_id_teacher_assignments_id_fk" FOREIGN KEY ("teacher_assignment_id") REFERENCES "public"."teacher_assignments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "grade_records" ADD CONSTRAINT "grade_records_school_year_id_school_years_id_fk" FOREIGN KEY ("school_year_id") REFERENCES "public"."school_years"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -324,6 +398,7 @@ ALTER TABLE "registrations" ADD CONSTRAINT "registrations_created_by_users_id_fk
 ALTER TABLE "registrations" ADD CONSTRAINT "registrations_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "school_years" ADD CONSTRAINT "school_years_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "school_years" ADD CONSTRAINT "school_years_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "school_years" ADD CONSTRAINT "school_years_deleted_by_users_id_fk" FOREIGN KEY ("deleted_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sections" ADD CONSTRAINT "sections_grade_level_id_grade_levels_id_fk" FOREIGN KEY ("grade_level_id") REFERENCES "public"."grade_levels"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sections" ADD CONSTRAINT "sections_school_year_id_school_years_id_fk" FOREIGN KEY ("school_year_id") REFERENCES "public"."school_years"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sections" ADD CONSTRAINT "sections_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -334,6 +409,7 @@ ALTER TABLE "students" ADD CONSTRAINT "students_user_id_users_id_fk" FOREIGN KEY
 ALTER TABLE "students" ADD CONSTRAINT "students_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "students" ADD CONSTRAINT "students_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "students" ADD CONSTRAINT "students_deleted_by_users_id_fk" FOREIGN KEY ("deleted_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "subjects" ADD CONSTRAINT "subjects_curriculum_id_curriculums_id_fk" FOREIGN KEY ("curriculum_id") REFERENCES "public"."curriculums"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "subjects" ADD CONSTRAINT "subjects_grade_level_id_grade_levels_id_fk" FOREIGN KEY ("grade_level_id") REFERENCES "public"."grade_levels"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "subjects" ADD CONSTRAINT "subjects_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "teacher_assignments" ADD CONSTRAINT "teacher_assignments_teacher_id_users_id_fk" FOREIGN KEY ("teacher_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -342,11 +418,14 @@ ALTER TABLE "teacher_assignments" ADD CONSTRAINT "teacher_assignments_section_id
 ALTER TABLE "teacher_assignments" ADD CONSTRAINT "teacher_assignments_school_year_id_school_years_id_fk" FOREIGN KEY ("school_year_id") REFERENCES "public"."school_years"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "teacher_assignments" ADD CONSTRAINT "teacher_assignments_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "assessment_student_sy_idx" ON "assessments" USING btree ("student_id","school_year_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "assessments_enrollment_id_uidx" ON "assessments" USING btree ("enrollment_id");--> statement-breakpoint
 CREATE INDEX "audit_actor_idx" ON "audit_logs" USING btree ("actor");--> statement-breakpoint
 CREATE INDEX "audit_entity_idx" ON "audit_logs" USING btree ("target_entity","target_id");--> statement-breakpoint
 CREATE INDEX "audit_created_idx" ON "audit_logs" USING btree ("created_at");--> statement-breakpoint
-CREATE UNIQUE INDEX "enrollment_unique_sy_idx" ON "enrollments" USING btree ("student_id","school_year_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "enrollment_unique_sy_idx" ON "enrollments" USING btree ("student_id","school_year_id") WHERE status != 'cancelled';--> statement-breakpoint
 CREATE INDEX "enrollment_status_idx" ON "enrollments" USING btree ("status");--> statement-breakpoint
+CREATE UNIQUE INDEX "fee_schedule_sy_band_uidx" ON "fee_schedules" USING btree ("school_year_id","assessment_band") WHERE "fee_schedules"."assessment_band" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "fee_schedule_sy_legacy_uidx" ON "fee_schedules" USING btree ("school_year_id") WHERE "fee_schedules"."assessment_band" IS NULL;--> statement-breakpoint
 CREATE UNIQUE INDEX "gr_unique_idx" ON "grade_records" USING btree ("student_id","teacher_assignment_id","grading_period");--> statement-breakpoint
 CREATE INDEX "gr_student_idx" ON "grade_records" USING btree ("student_id");--> statement-breakpoint
 CREATE INDEX "gr_status_idx" ON "grade_records" USING btree ("status");--> statement-breakpoint
@@ -355,6 +434,7 @@ CREATE INDEX "invoices_student_idx" ON "invoices" USING btree ("student_id");-->
 CREATE INDEX "invoices_status_idx" ON "invoices" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "pg_name_idx" ON "parents_guardians" USING btree ("last_name","first_name");--> statement-breakpoint
 CREATE UNIQUE INDEX "payments_or_number_idx" ON "payments" USING btree ("or_number");--> statement-breakpoint
+CREATE UNIQUE INDEX "payments_reference_number_unique_idx" ON "payments" USING btree ("reference_number") WHERE "payments"."reference_number" is not null;--> statement-breakpoint
 CREATE INDEX "payments_student_idx" ON "payments" USING btree ("student_id");--> statement-breakpoint
 CREATE INDEX "payments_status_idx" ON "payments" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "payments_date_idx" ON "payments" USING btree ("payment_date");--> statement-breakpoint

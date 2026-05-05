@@ -27,4 +27,16 @@ describe("CreateAssessmentFromEnrollmentSchema", () => {
     });
     expect(r.success).toBe(true);
   });
+
+  it("rejects duplicate fee schedule item ids", () => {
+    const feeId = "00000000-0000-4000-8000-000000000002";
+    const r = CreateAssessmentFromEnrollmentSchema.safeParse({
+      enrollmentId: "00000000-0000-4000-8000-000000000001",
+      items: [
+        { feeScheduleItemId: feeId, amount: 100 },
+        { feeScheduleItemId: feeId, amount: 200 },
+      ],
+    });
+    expect(r.success).toBe(false);
+  });
 });

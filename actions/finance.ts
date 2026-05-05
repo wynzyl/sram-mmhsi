@@ -2,8 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { feeSchedules, feeScheduleItems, auditLogs } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  feeSchedules,
+  feeScheduleItems,
+  assessmentItems,
+  auditLogs,
+} from "@/lib/db/schema";
+import { and, eq, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -49,6 +54,7 @@ export async function createFeeScheduleAction(
 
   const parsed = FeeScheduleSchema.safeParse({
     schoolYearId: formData.get("schoolYearId"),
+    assessmentBand: formData.get("assessmentBand") || undefined,
     description: formData.get("description"),
     isActive: formData.get("isActive") === "on",
   });
@@ -57,16 +63,25 @@ export async function createFeeScheduleAction(
     return { errors: parsed.error.flatten().fieldErrors as FeeScheduleFormState["errors"] };
   }
 
-  const { schoolYearId, description, isActive } = parsed.data;
+  const { schoolYearId, assessmentBand, description, isActive } = parsed.data;
+
+  if (!assessmentBand) {
+    return {
+      errors: { assessmentBand: ["Assessment band is required."] },
+    };
+  }
 
   const existing = await db.query.feeSchedules.findFirst({
-    where: eq(feeSchedules.schoolYearId, schoolYearId),
+    where: and(
+      eq(feeSchedules.schoolYearId, schoolYearId),
+      eq(feeSchedules.assessmentBand, assessmentBand)
+    ),
   });
 
   if (existing) {
     return {
       errors: {
-        _form: ["A fee schedule already exists for this school year."],
+        _form: ["A fee schedule already exists for this school year and assessment band."],
       },
     };
   }
@@ -77,6 +92,7 @@ export async function createFeeScheduleAction(
       .values({
         schoolYearId,
         gradeLevelId: null,
+        assessmentBand,
         description,
         isActive,
         createdBy: session.userId,
@@ -132,18 +148,6 @@ export async function updateFeeScheduleAction(
 
   const { schoolYearId, description, isActive } = parsed.data;
 
-  const existing = await db.query.feeSchedules.findFirst({
-    where: eq(feeSchedules.schoolYearId, schoolYearId),
-  });
-
-  if (existing && existing.id !== id) {
-    return {
-      errors: {
-        _form: ["A fee schedule already exists for this school year."],
-      },
-    };
-  }
-
   try {
     const existingRecord = await db.query.feeSchedules.findFirst({
       where: eq(feeSchedules.id, id),
@@ -151,6 +155,25 @@ export async function updateFeeScheduleAction(
 
     if (!existingRecord) {
       return { message: "Fee schedule not found." };
+    }
+
+    const bandCondition =
+      existingRecord.assessmentBand === null
+        ? isNull(feeSchedules.assessmentBand)
+        : eq(feeSchedules.assessmentBand, existingRecord.assessmentBand);
+
+    const conflict = await db.query.feeSchedules.findFirst({
+      where: and(eq(feeSchedules.schoolYearId, schoolYearId), bandCondition),
+    });
+
+    if (conflict && conflict.id !== id) {
+      return {
+        errors: {
+          _form: [
+            "Another fee schedule already uses this school year and the same assessment band (or legacy scope).",
+          ],
+        },
+      };
     }
 
     await db
@@ -258,6 +281,22 @@ export async function removeFeeScheduleItemAction(
 
     if (!existing) return { message: "Item not found." };
 
+    if (existing.feeScheduleId !== feeScheduleId) {
+      return { message: "This fee item does not belong to the requested schedule." };
+    }
+
+    const usedOnAssessment = await db.query.assessmentItems.findFirst({
+      where: eq(assessmentItems.feeScheduleItemId, id),
+      columns: { id: true },
+    });
+
+    if (usedOnAssessment) {
+      return {
+        message:
+          "This catalog fee appears on student assessment line items and cannot be deleted—those records must keep referencing the historical fee.",
+      };
+    }
+
     await db.delete(feeScheduleItems).where(eq(feeScheduleItems.id, id));
 
     await db.insert(auditLogs).values({
@@ -272,6 +311,21 @@ export async function removeFeeScheduleItemAction(
     revalidatePath(`/admin/finance/fee-schedules/${feeScheduleId}`);
     return { success: true, message: "Fee item removed successfully." };
   } catch (error) {
+    const cause =
+      error &&
+      typeof error === "object" &&
+      "cause" in error &&
+      error.cause &&
+      typeof error.cause === "object" &&
+      "code" in error.cause
+        ? (error.cause as { code?: string }).code
+        : undefined;
+    if (cause === "23503") {
+      return {
+        message:
+          "Cannot remove this fee because it is still referenced by assessments or billing records.",
+      };
+    }
     logger.error("[finance] Failed to remove fee schedule item", { error });
     return { message: "An unexpected error occurred. Please try again." };
   }

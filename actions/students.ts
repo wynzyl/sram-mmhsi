@@ -8,14 +8,22 @@ import {
   studentGuardianLinks,
   auditLogs,
   enrollments,
+  registrations,
+  schoolYears,
+  gradeLevels,
+  type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
-import { eq, ilike, and, sql } from "drizzle-orm";
+import { eq, ne, ilike, and, sql, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { CreateStudentSchema, UpdateStudentSchema } from "@/lib/validators/student";
+import { CreateStudentWithRegistrationSchema } from "@/lib/validators/registration";
+import { UpdateStudentSchema } from "@/lib/validators/student";
 import type { CreateStudentFormState, UpdateStudentFormState } from "@/lib/validators/student";
 import { generateStudentRef } from "@/lib/utils/reference";
+import { buildCreateStudentFormSnapshot } from "@/lib/utils/student-form-snapshot";
+import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
 import { logger } from "@/lib/observability/logger";
+import type { GuardianInput } from "@/lib/validators/student";
 
 // ─── Audit Helper ─────────────────────────────────────────────────────────────
 
@@ -42,6 +50,18 @@ async function audit(
   }
 }
 
+function pgUniqueConstraint(err: unknown): string | undefined {
+  let e: unknown = err;
+  const seen = new Set<unknown>();
+  while (e && typeof e === "object" && !seen.has(e)) {
+    seen.add(e);
+    const o = e as { code?: string; constraint?: string; cause?: unknown };
+    if (o.code === "23505" && typeof o.constraint === "string") return o.constraint;
+    e = o.cause;
+  }
+  return undefined;
+}
+
 // ─── Get next student sequence number ────────────────────────────────────────
 
 async function getNextStudentSequence(): Promise<number> {
@@ -49,6 +69,15 @@ async function getNextStudentSequence(): Promise<number> {
     .select({ count: sql<number>`count(*)` })
     .from(students);
   return (result[0]?.count ?? 0) + 1;
+}
+
+async function getActiveSchoolYearId(): Promise<string | null> {
+  const rows = await db
+    .select({ id: schoolYears.id })
+    .from(schoolYears)
+    .where(and(eq(schoolYears.isActive, true), isNull(schoolYears.deletedAt)))
+    .limit(1);
+  return rows[0]?.id ?? null;
 }
 
 // ─── Create Student Action ────────────────────────────────────────────────────
@@ -60,7 +89,10 @@ export async function createStudentAction(
   // 1. Auth check
   const session = await requireSession();
   if (!hasPermission(session.role, "students:create")) {
-    return { message: "You do not have permission to create students." };
+    return {
+      message: "You do not have permission to create students.",
+      fieldValues: buildCreateStudentFormSnapshot(formData, []),
+    };
   }
 
   // 2. Parse raw form data — guardians come in as JSON string from the client
@@ -69,11 +101,14 @@ export async function createStudentAction(
   try {
     guardiansParsed = JSON.parse(guardiansRaw as string);
   } catch {
-    return { errors: { guardians: ["Guardian data is malformed."] } };
+    return {
+      errors: { guardians: ["Guardian data is malformed."] },
+      fieldValues: buildCreateStudentFormSnapshot(formData, []),
+    };
   }
 
-  // 3. Validate
-  const parsed = CreateStudentSchema.safeParse({
+  // 3. Validate (student + registration intake)
+  const parsed = CreateStudentWithRegistrationSchema.safeParse({
     firstName: formData.get("firstName"),
     middleName: formData.get("middleName") || undefined,
     lastName: formData.get("lastName"),
@@ -93,28 +128,89 @@ export async function createStudentAction(
     submittedDocumentsNotes: formData.get("submittedDocumentsNotes") || undefined,
 
     guardians: guardiansParsed,
+
+    schoolYearId: formData.get("schoolYearId"),
+    gradeLevelId: formData.get("gradeLevelId"),
+    registrationIntent: formData.get("registrationIntent"),
+    registrationStudentType: formData.get("registrationStudentType"),
+    intakeForm138: formData.get("intakeForm138"),
+    intakeBirthCertificatePsa: formData.get("intakeBirthCertificatePsa"),
+    intakeGoodMoralCharacter: formData.get("intakeGoodMoralCharacter"),
+    intakeQualifiedVoucher: formData.get("intakeQualifiedVoucher"),
+    intakeEscCertificate: formData.get("intakeEscCertificate"),
   });
 
   if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as CreateStudentFormState["errors"] };
+    return {
+      errors: parsed.error.flatten().fieldErrors as CreateStudentFormState["errors"],
+      fieldValues: buildCreateStudentFormSnapshot(formData, guardiansParsed),
+    };
   }
 
-  const { guardians, ...studentData } = parsed.data;
+  const {
+    guardians,
+    schoolYearId,
+    gradeLevelId,
+    registrationStudentType,
+    intakeForm138,
+    intakeBirthCertificatePsa,
+    intakeGoodMoralCharacter,
+    intakeQualifiedVoucher,
+    intakeEscCertificate,
+    ...studentData
+  } = parsed.data;
+
+  const activeSchoolYearId = await getActiveSchoolYearId();
+  if (!activeSchoolYearId) {
+    return {
+      message:
+        "No active school year is configured. Set the current school year under School Years before registering.",
+      fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
+    };
+  }
+  if (schoolYearId !== activeSchoolYearId) {
+    return {
+      errors: {
+        schoolYearId: [
+          "Registration is only allowed for the current (active) school year.",
+        ],
+      },
+      fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
+    };
+  }
+
+  const gradeOk = await db
+    .select({ id: gradeLevels.id })
+    .from(gradeLevels)
+    .where(eq(gradeLevels.id, gradeLevelId))
+    .limit(1);
+  if (gradeOk.length === 0) {
+    return {
+      errors: { gradeLevelId: ["Invalid grade level."] },
+      fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
+    };
+  }
+
+  const intakeDocuments: EnrollmentIntakeDocuments = {
+    form138: intakeForm138,
+    birthCertificatePsa: intakeBirthCertificatePsa,
+    goodMoralCharacter: intakeGoodMoralCharacter,
+    qualifiedVoucher: intakeQualifiedVoucher!,
+    escCertificate: intakeEscCertificate!,
+  };
 
   // 4. Duplicate detection — always runs.
-  // Base match: same first + last name on an active record.
-  // Tightened by middleName when provided, and by dateOfBirth when provided.
+  // Base match: same first + last name + date of birth on an active record.
+  // Tightened by middleName when provided.
   {
     const conditions = [
       ilike(students.firstName, studentData.firstName),
       ilike(students.lastName, studentData.lastName),
       eq(students.isActive, true),
+      eq(students.dateOfBirth, studentData.dateOfBirth),
     ];
     if (studentData.middleName) {
       conditions.push(ilike(students.middleName, studentData.middleName));
-    }
-    if (studentData.dateOfBirth) {
-      conditions.push(eq(students.dateOfBirth, studentData.dateOfBirth));
     }
 
     const existing = await db
@@ -129,77 +225,135 @@ export async function createStudentAction(
     if (existing.length > 0) {
       const fullName = `${studentData.firstName} ${studentData.lastName}`;
       const ref = existing[0].referenceNumber;
-      const message = studentData.dateOfBirth
-        ? `A student named ${fullName} with this date of birth already exists (Ref: ${ref}).`
-        : `A student named ${fullName} already exists (Ref: ${ref}). Provide a date of birth to disambiguate, or update the existing record instead.`;
-      return { errors: { _form: [message] } };
+      const message = `A student named ${fullName} with this date of birth already exists (Ref: ${ref}).`;
+      return {
+        errors: { _form: [message] },
+        fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
+      };
+    }
+  }
+
+  if (studentData.lrn) {
+    const lrnDup = await db
+      .select({ referenceNumber: students.referenceNumber })
+      .from(students)
+      .where(eq(students.lrn, studentData.lrn))
+      .limit(1);
+    if (lrnDup.length > 0) {
+      return {
+        errors: {
+          lrn: [`This LRN is already assigned to student ${lrnDup[0].referenceNumber}.`],
+        },
+        fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
+      };
     }
   }
 
   try {
-    // 5. Generate reference number
+    // 5–8. Generate reference, insert student + guardians + approved registration (single transaction)
     const seq = await getNextStudentSequence();
     const referenceNumber = generateStudentRef(new Date().getFullYear(), seq);
 
-    // 6. Insert student
-    const [newStudent] = await db
-      .insert(students)
-      .values({
-        ...studentData,
-        referenceNumber,
-        createdBy: session.userId,
-        updatedBy: session.userId,
-      })
-      .returning({ id: students.id });
-
-    // 7. Insert guardians and link them
-    for (const guardian of guardians) {
-      const [newGuardian] = await db
-        .insert(parentsGuardians)
+    const newStudent = await db.transaction(async (tx) => {
+      const [insertedStudent] = await tx
+        .insert(students)
         .values({
-          firstName: guardian.firstName,
-          middleName: guardian.middleName,
-          lastName: guardian.lastName,
-          relationship: guardian.relationship,
-          address: guardian.address,
-          occupation: guardian.occupation,
-          contactNumber: guardian.contactNumber,
-          email: guardian.email,
+          ...studentData,
+          referenceNumber,
           createdBy: session.userId,
           updatedBy: session.userId,
         })
-        .returning({ id: parentsGuardians.id });
+        .returning({ id: students.id });
 
-      await db.insert(studentGuardianLinks).values({
-        studentId: newStudent.id,
-        guardianId: newGuardian.id,
-        isPrimary: guardian.isPrimary ?? false,
+      for (const guardian of guardians) {
+        const [newGuardian] = await tx
+          .insert(parentsGuardians)
+          .values({
+            firstName: guardian.firstName,
+            middleName: guardian.middleName,
+            lastName: guardian.lastName,
+            relationship: guardian.relationship,
+            address: guardian.address,
+            occupation: guardian.occupation,
+            contactNumber: guardian.contactNumber,
+            email: guardian.email,
+            createdBy: session.userId,
+            updatedBy: session.userId,
+          })
+          .returning({ id: parentsGuardians.id });
+
+        await tx.insert(studentGuardianLinks).values({
+          studentId: insertedStudent.id,
+          guardianId: newGuardian.id,
+          isPrimary: guardian.isPrimary ?? false,
+        });
+      }
+
+      await tx.insert(registrations).values({
+        studentId: insertedStudent.id,
+        schoolYearId,
+        gradeLevelId,
+        studentType: registrationStudentType,
+        intakeDocuments,
+        status: "approved",
+        reviewedBy: session.userId,
+        reviewedAt: new Date(),
+        createdBy: session.userId,
+        updatedBy: session.userId,
       });
-    }
 
-    // 8. Audit log
+      return insertedStudent;
+    });
+
     await audit(
       session.userId,
       session.role,
       "student_created",
       "students",
       newStudent.id,
-      { referenceNumber, firstName: studentData.firstName, lastName: studentData.lastName }
+      {
+        referenceNumber,
+        firstName: studentData.firstName,
+        lastName: studentData.lastName,
+        schoolYearId,
+        gradeLevelId,
+        registrationStudentType,
+      }
     );
 
-    logger.info("[students] Student created", {
+    logger.info("[students] Student created with registration", {
       studentId: newStudent.id,
       referenceNumber,
       actorId: session.userId,
     });
 
     revalidatePath("/admin/students");
+    revalidatePath("/staff/students");
     revalidatePath("/admin/registrations");
+    revalidatePath("/staff/registrations");
 
     return { success: true, studentId: newStudent.id };
   } catch (err) {
-    logger.error("[students] Failed to create student", { error: String(err) });
-    return { message: "An unexpected error occurred. Please try again." };
+    const detail = collectPgErrorText(err);
+    logger.error("[students] Failed to create student", { error: String(err), detail });
+    const restore = buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]);
+    if (pgUniqueConstraint(err) === "students_lrn_unique") {
+      return {
+        errors: { lrn: ["This LRN is already assigned to another student."] },
+        fieldValues: restore,
+      };
+    }
+    if (isUndefinedColumnError(err)) {
+      return {
+        message:
+          "The database is missing required columns on `registrations` (e.g. student_type, intake_documents). Apply migrations: npm run db:migrate",
+        fieldValues: restore,
+      };
+    }
+    return {
+      message: "An unexpected error occurred. Please try again.",
+      fieldValues: restore,
+    };
   }
 }
 
@@ -297,9 +451,7 @@ export async function updateStudentAction(
     if (studentData.middleName) {
       conditions.push(ilike(students.middleName, studentData.middleName));
     }
-    if (studentData.dateOfBirth) {
-      conditions.push(eq(students.dateOfBirth, studentData.dateOfBirth));
-    }
+    conditions.push(eq(students.dateOfBirth, studentData.dateOfBirth));
 
     const existing = await db
       .select({
@@ -313,10 +465,23 @@ export async function updateStudentAction(
     if (existing.length > 0) {
       const fullName = `${studentData.firstName} ${studentData.lastName}`;
       const ref = existing[0].referenceNumber;
-      const message = studentData.dateOfBirth
-        ? `Another student named ${fullName} with this date of birth already exists (Ref: ${ref}).`
-        : `Another student named ${fullName} already exists (Ref: ${ref}). Provide a date of birth to disambiguate.`;
+      const message = `Another student named ${fullName} with this date of birth already exists (Ref: ${ref}).`;
       return { errors: { _form: [message] } };
+    }
+  }
+
+  if (studentData.lrn) {
+    const lrnDup = await db
+      .select({ referenceNumber: students.referenceNumber })
+      .from(students)
+      .where(and(eq(students.lrn, studentData.lrn), ne(students.id, studentId)))
+      .limit(1);
+    if (lrnDup.length > 0) {
+      return {
+        errors: {
+          lrn: [`This LRN is already assigned to student ${lrnDup[0].referenceNumber}.`],
+        },
+      };
     }
   }
 
@@ -378,10 +543,15 @@ export async function updateStudentAction(
 
     revalidatePath("/admin/students");
     revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/staff/students");
+    revalidatePath(`/staff/students/${studentId}`);
 
     return { success: true };
   } catch (err) {
     logger.error("[students] Failed to update student", { error: String(err) });
+    if (pgUniqueConstraint(err) === "students_lrn_unique") {
+      return { errors: { lrn: ["This LRN is already assigned to another student."] } };
+    }
     return { message: "An unexpected error occurred. Please try again." };
   }
 }
