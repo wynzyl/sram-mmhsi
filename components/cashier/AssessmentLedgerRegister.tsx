@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
+import { StatusBadge } from "@/components/data-display/StatusBadge";
 import GenerateInvoiceButton from "@/components/finance/invoices/GenerateInvoiceButton";
 import PostPaymentForm from "@/components/cashier/PostPaymentForm";
 import PaymentsHistoryTable from "@/components/cashier/PaymentsHistoryTable";
@@ -23,6 +24,8 @@ export type LedgerPaymentRow = {
   paymentDate: string;
   status: string;
   referenceNumber: string | null;
+  /** Cashier / user who posted the payment (`payments.created_by`). */
+  processedBy: string | null;
 };
 
 type ActiveBooklet = {
@@ -43,6 +46,7 @@ export type AssessmentLedgerRegisterProps = {
     totalAmount: string;
     totalPaid: string;
     balance: string;
+    billingStatus: string;
   };
   items: LedgerLineItem[];
   payments: LedgerPaymentRow[];
@@ -69,7 +73,9 @@ export default function AssessmentLedgerRegister({
   const [formNonce, setFormNonce] = useState(0);
 
   const balanceNum = Number(assessment.balance);
-  const canOpenPay = canPost && balanceNum > 0;
+  const isFullyPaid = assessment.billingStatus === "fully_paid";
+  const isCancelledEnrollment = assessment.billingStatus === "cancelled";
+  const canOpenPay = canPost && !isFullyPaid && !isCancelledEnrollment && balanceNum > 0;
 
   const feesRunning = items.reduce((sum, row) => sum + lineSignedAmount(row), 0);
   const paymentsRecorded = payments
@@ -135,11 +141,17 @@ export default function AssessmentLedgerRegister({
             </span>
           </div>
           <div
-            className={`ledger-register-tile ledger-register-tile-balance ${balanceNum > 0 ? "ledger-register-tile-owe" : ""}`}
+            className={`ledger-register-tile ledger-register-tile-balance ${!isFullyPaid && !isCancelledEnrollment && balanceNum > 0 ? "ledger-register-tile-owe" : ""}`}
           >
             <span className="ledger-register-tile-label">Balance due</span>
             <span className="ledger-register-tile-value ledger-register-tile-balance-num">
-              <CurrencyDisplay amount={balanceNum} />
+              {isCancelledEnrollment ? (
+                <StatusBadge type="billing" status="cancelled" />
+              ) : isFullyPaid ? (
+                <StatusBadge type="billing" status="fully_paid" />
+              ) : (
+                <CurrencyDisplay amount={balanceNum} />
+              )}
             </span>
           </div>
         </div>

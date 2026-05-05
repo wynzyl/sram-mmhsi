@@ -35,6 +35,8 @@ interface EditStudentFormProps {
   initialGuardians: GuardianInput[];
   /** When true, Active cannot be toggled (enforced server-side too). */
   isActiveLocked?: boolean;
+  /** Client redirect after successful save (default admin student profile). */
+  afterSaveRedirect?: string;
 }
 
 const emptyGuardian = (): GuardianInput => ({
@@ -55,6 +57,7 @@ export default function EditStudentForm({
   student,
   initialGuardians,
   isActiveLocked = false,
+  afterSaveRedirect,
 }: EditStudentFormProps) {
   const router = useRouter();
   const [state, action, pending] = useActionState(updateStudentAction, initialState);
@@ -64,9 +67,9 @@ export default function EditStudentForm({
 
   useEffect(() => {
     if (state.success) {
-      router.push(`/admin/students/${student.id}`);
+      router.push(afterSaveRedirect ?? `/admin/students/${student.id}`);
     }
-  }, [state.success, student.id, router]);
+  }, [state.success, student.id, router, afterSaveRedirect]);
 
   const handleGuardianChange = (index: number, guardian: GuardianInput) => {
     setGuardians((prev) => {
@@ -181,28 +184,41 @@ export default function EditStudentForm({
 
           <div className="form-group">
             <label className="form-label" htmlFor="dateOfBirth">
-              Date of Birth
+              Date of Birth <span className="required">*</span>
             </label>
             <input
               id="dateOfBirth"
               name="dateOfBirth"
               type="date"
-              className="form-control"
+              className={`form-control ${state.errors?.dateOfBirth ? "form-control-error" : ""}`}
               defaultValue={student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().split("T")[0] : ""}
+              required
             />
+            {state.errors?.dateOfBirth && (
+              <p className="form-error">{state.errors.dateOfBirth[0]}</p>
+            )}
           </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="gender">
-              Gender
+              Gender <span className="required">*</span>
             </label>
-            <select id="gender" name="gender" className="form-control" defaultValue={student.gender || ""}>
-              <option value="">Prefer not to say</option>
+            <select
+              id="gender"
+              name="gender"
+              className={`form-control ${state.errors?.gender ? "form-control-error" : ""}`}
+              defaultValue={student.gender && student.gender !== "" ? student.gender : ""}
+              required
+            >
+              <option value="" disabled>
+                Select gender
+              </option>
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="other">Other</option>
               <option value="prefer_not_to_say">Prefer not to say</option>
             </select>
+            {state.errors?.gender && <p className="form-error">{state.errors.gender[0]}</p>}
           </div>
         </div>
 

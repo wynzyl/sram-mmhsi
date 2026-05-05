@@ -4,7 +4,9 @@ export const LoginSchema = z.object({
   username: z
     .string({ error: "Username or email is required." })
     .min(1, { error: "Username or email is required." })
-    .trim(),
+    .trim()
+    // Must match createUser / DB: usernames and emails are stored lowercased
+    .toLowerCase(),
   password: z
     .string({ error: "Password is required." })
     .min(1, { error: "Password is required." }),

@@ -121,7 +121,7 @@ Middleware enforces role checks at route level.
 - `gradeRecords` (student + assignment + grading period: Q1–Q4)
 
 **Registration → Enrollment Flow:**
-1. `registrations` (status: pending → approved/rejected)
+1. `registrations` (status: approved)
 2. `enrollments` (status: pending → assessed → enrolled)
 3. `feeSchedules` + `feeScheduleItems` (One flat schedule for all school year)
 4. `assessments` + `assessmentItems` (copied from fee schedule on enrollment)
@@ -346,6 +346,9 @@ new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(15
 3. Review generated SQL in `drizzle/*.sql`
 4. Run `npm run db:migrate` — Applies migration to database
 5. Commit both schema changes AND migration files
+
+#Rule
+Always create a migration file readable. No fancy name.
 
 **Important:** Never use `db:push` in production. Always use migrations for traceability.
 

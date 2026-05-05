@@ -64,6 +64,7 @@ export default async function RegistrationsPage({ searchParams }: PageProps) {
       : undefined;
 
   const registrationFilters = [
+    eq(registrations.status, "approved"),
     ...(schoolYearId != null ? [eq(registrations.schoolYearId, schoolYearId)] : []),
     ...(notEnrolledInActiveYear != null ? [notEnrolledInActiveYear] : []),
   ];
@@ -78,6 +79,8 @@ export default async function RegistrationsPage({ searchParams }: PageProps) {
       referenceNumber: students.referenceNumber,
       schoolYear: schoolYears.label,
       gradeLevel: gradeLevels.name,
+      studentType: registrations.studentType,
+      intakeDocuments: registrations.intakeDocuments,
     })
     .from(registrations)
     .innerJoin(students, eq(registrations.studentId, students.id))
@@ -85,25 +88,13 @@ export default async function RegistrationsPage({ searchParams }: PageProps) {
     .innerJoin(gradeLevels, eq(registrations.gradeLevelId, gradeLevels.id))
     .$dynamic();
 
-  let filteredRowsBase = baseRowsQuery;
-  if (registrationFilters.length === 1) {
-    filteredRowsBase = baseRowsQuery.where(registrationFilters[0]);
-  } else if (registrationFilters.length > 1) {
-    filteredRowsBase = baseRowsQuery.where(and(...registrationFilters));
-  }
+  const filteredRowsBase = baseRowsQuery.where(and(...registrationFilters));
 
-  const baseCountQuery = db
+  const countQuery = db
     .select({ count: sql<number>`count(*)` })
     .from(registrations)
     .innerJoin(students, eq(registrations.studentId, students.id))
-    .$dynamic();
-
-  let countQuery = baseCountQuery;
-  if (registrationFilters.length === 1) {
-    countQuery = baseCountQuery.where(registrationFilters[0]);
-  } else if (registrationFilters.length > 1) {
-    countQuery = baseCountQuery.where(and(...registrationFilters));
-  }
+    .where(and(...registrationFilters));
 
   const [schoolYearOptions, rows, countResult] = await Promise.all([
     db
@@ -128,6 +119,8 @@ export default async function RegistrationsPage({ searchParams }: PageProps) {
     referenceNumber: r.referenceNumber,
     schoolYear: r.schoolYear,
     gradeLevel: r.gradeLevel,
+    studentType: r.studentType,
+    intakeDocuments: r.intakeDocuments,
     createdAt: r.createdAt,
   }));
 
@@ -137,17 +130,27 @@ export default async function RegistrationsPage({ searchParams }: PageProps) {
         <div>
           <h1 className="page-title">Registrations</h1>
           <p className="page-subtitle">
-            Separate applicant/registrar pipeline. New master students are created under Students;
-            this list only shows rows created through the registrations workflow. Students already
-            enrolled for the <strong>active</strong> school year are hidden.{" "}
+            <strong>Approved</strong> registrations only. Learners who already have a non-cancelled
+            enrollment for the <strong>active</strong> school year are omitted so you can focus on
+            applicants who still need a current-year enrollment. Optional school-year filter narrows
+            the school year stored on each registration.{" "}
             {totalCount.toLocaleString()} registration{totalCount !== 1 ? "s" : ""}{" "}
             {schoolYearId != null ? "matching the current filters." : "shown."}
           </p>
         </div>
         {hasPermission(session.role, "students:create") && (
-          <Link href="/admin/students/new" className="btn-primary" id="new-registration-btn">
-            + Register Student
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/admin/students/new" className="btn-primary" id="new-registration-btn">
+              + New student
+            </Link>
+            <Link
+              href="/admin/students/new?intent=transferee"
+              className="btn-secondary"
+              id="new-registration-transferee-btn"
+            >
+              + Transferee
+            </Link>
+          </div>
         )}
       </div>
 
@@ -185,8 +188,8 @@ export default async function RegistrationsPage({ searchParams }: PageProps) {
         registrations={tableData}
         emptyMessage={
           schoolYearId != null
-            ? "No registrations found for the selected school year."
-            : "No registrations found."
+            ? "No approved registrations for the selected school year that still need a current-year enrollment."
+            : "No approved registrations pending current-year enrollment."
         }
       />
 

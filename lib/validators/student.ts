@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { IntakeDocumentStatus } from "@/lib/validators/intake-documents";
+import type { CreateStudentWithRegistrationInput } from "./registration";
 
 // ─── Guardian Schema ───────────────────────────────────────────────────────────
 
@@ -16,6 +18,17 @@ export const GuardianSchema = z.object({
 
 export type GuardianInput = z.infer<typeof GuardianSchema>;
 
+const genderEnumSchema = z.enum(["male", "female", "other", "prefer_not_to_say"], {
+  message: "Gender is required.",
+});
+
+const dateOfBirthRequired = z
+  .string()
+  .trim()
+  .min(1, "Date of birth is required.")
+  .transform((v) => new Date(v))
+  .refine((d) => !Number.isNaN(d.getTime()), { message: "Invalid date of birth." });
+
 // ─── Student Creation Schema ───────────────────────────────────────────────────
 
 export const CreateStudentSchema = z.object({
@@ -23,11 +36,11 @@ export const CreateStudentSchema = z.object({
   middleName: z.string().trim().optional(),
   lastName: z.string().min(1, "Last name is required.").trim().toUpperCase(),
   suffix: z.string().trim().optional(),
-  dateOfBirth: z
-    .string()
-    .optional()
-    .transform((v) => (v ? new Date(v) : undefined)),
-  gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
+  dateOfBirth: dateOfBirthRequired,
+  gender: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : v),
+    genderEnumSchema
+  ),
   address: z.string().trim().optional(),
 
   // NEW FIELDS - Contact & Additional Information
@@ -62,8 +75,38 @@ export const CreateStudentSchema = z.object({
 
 export type CreateStudentInput = z.infer<typeof CreateStudentSchema>;
 
+/** Submitted field snapshot returned on validation/business-rule errors so the registration form can restore input. */
+export type CreateStudentFormFieldSnapshot = {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  suffix: string;
+  dateOfBirth: string;
+  gender: string;
+  address: string;
+  lrn: string;
+  mobileNumber: string;
+  email: string;
+  nationality: string;
+  bloodType: string;
+  religion: string;
+  previousSchool: string;
+  submittedDocumentsNotes: string;
+  gradeLevelId: string;
+  intakeForm138: IntakeDocumentStatus | "";
+  intakeBirthCertificatePsa: IntakeDocumentStatus | "";
+  intakeGoodMoralCharacter: IntakeDocumentStatus | "";
+  intakeQualifiedVoucher: IntakeDocumentStatus | "";
+  intakeEscCertificate: IntakeDocumentStatus | "";
+  guardians: GuardianInput[];
+};
+
 export type CreateStudentFormState = {
-  errors?: Partial<Record<keyof CreateStudentInput | "guardians" | "_form", string[]>>;
+  errors?: Partial<
+    Record<keyof CreateStudentWithRegistrationInput | "guardians" | "_form", string[]>
+  >;
+  /** Present when submission failed — rehydrate controlled fields from this object. */
+  fieldValues?: CreateStudentFormFieldSnapshot;
   message?: string;
   success?: boolean;
   studentId?: string;
@@ -78,11 +121,11 @@ export const UpdateStudentSchema = z.object({
   middleName: z.string().trim().optional(),
   lastName: z.string().min(1, "Last name is required.").trim().toUpperCase(),
   suffix: z.string().trim().optional(),
-  dateOfBirth: z
-    .string()
-    .optional()
-    .transform((v) => (v ? new Date(v) : undefined)),
-  gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
+  dateOfBirth: dateOfBirthRequired,
+  gender: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : v),
+    genderEnumSchema
+  ),
   address: z.string().trim().optional(),
 
   // NEW FIELDS - Contact & Additional Information

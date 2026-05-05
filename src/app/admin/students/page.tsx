@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { enrollments, registrations, schoolYears, students } from "@/lib/db/schema";
-import { and, desc, eq, exists, ilike, isNull, ne, or, sql } from "drizzle-orm";
+import { enrollments, gradeLevels, schoolYears, sections, students } from "@/lib/db/schema";
+import { and, asc, desc, eq, ilike, isNull, ne, or, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
@@ -48,45 +48,25 @@ export default async function StudentsPage({ searchParams }: PageProps) {
         )
       : undefined;
 
-  const linkedToSchoolYear =
-    schoolYearId != null
-      ? or(
-          exists(
-            db
-              .select({ id: enrollments.id })
-              .from(enrollments)
-              .where(
-                and(
-                  eq(enrollments.studentId, students.id),
-                  eq(enrollments.schoolYearId, schoolYearId),
-                  ne(enrollments.status, "cancelled")
-                )
-              )
-          ),
-          exists(
-            db
-              .select({ id: registrations.id })
-              .from(registrations)
-              .where(
-                and(
-                  eq(registrations.studentId, students.id),
-                  eq(registrations.schoolYearId, schoolYearId)
-                )
-              )
-          )
-        )
-      : undefined;
+  const enrollmentOnStudent = and(
+    eq(enrollments.studentId, students.id),
+    eq(enrollments.status, "enrolled"),
+    ne(enrollments.status, "cancelled"),
+    isNull(enrollments.cancelledAt),
+    ...(schoolYearId != null ? [eq(enrollments.schoolYearId, schoolYearId)] : [])
+  );
 
-  const listWhere =
-    searchWhere && linkedToSchoolYear
-      ? and(eq(students.isActive, true), searchWhere, linkedToSchoolYear)
-      : searchWhere
-        ? and(eq(students.isActive, true), searchWhere)
-        : linkedToSchoolYear
-          ? and(eq(students.isActive, true), linkedToSchoolYear)
-          : eq(students.isActive, true);
+  const schoolYearJoinOn = and(
+    eq(enrollments.schoolYearId, schoolYears.id),
+    isNull(schoolYears.deletedAt)
+  );
 
-  const [schoolYearOptions, rows, countResult] = await Promise.all([
+  const studentListWhere = and(
+    eq(students.isActive, true),
+    ...(searchWhere ? [searchWhere] : [])
+  );
+
+  const [schoolYearOptions, listRows, countResult] = await Promise.all([
     db
       .select({ id: schoolYears.id, label: schoolYears.label })
       .from(schoolYears)
@@ -94,6 +74,7 @@ export default async function StudentsPage({ searchParams }: PageProps) {
       .orderBy(desc(schoolYears.startDate)),
     db
       .select({
+        enrollmentId: sql<string>`${enrollments.id}`.as("enrollment_id"),
         id: students.id,
         referenceNumber: students.referenceNumber,
         firstName: students.firstName,
@@ -102,40 +83,63 @@ export default async function StudentsPage({ searchParams }: PageProps) {
         gender: students.gender,
         dateOfBirth: students.dateOfBirth,
         isActive: students.isActive,
-        createdAt: students.createdAt,
+        schoolYearLabel: schoolYears.label,
+        gradeLevelName: gradeLevels.name,
+        sectionName: sections.name,
+        enrolledAt: enrollments.enrolledAt,
       })
       .from(students)
-      .where(listWhere)
-      .orderBy(desc(students.createdAt))
+      .innerJoin(enrollments, enrollmentOnStudent)
+      .innerJoin(schoolYears, schoolYearJoinOn)
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .leftJoin(sections, eq(enrollments.sectionId, sections.id))
+      .where(studentListWhere)
+      .orderBy(
+        asc(schoolYears.startDate),
+        asc(students.lastName),
+        asc(students.firstName),
+        asc(gradeLevels.order),
+        asc(enrollments.id)
+      )
       .limit(PAGE_SIZE)
       .offset(offset),
-    db.select({ count: sql<number>`count(*)` }).from(students).where(listWhere),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(students)
+      .innerJoin(enrollments, enrollmentOnStudent)
+      .innerJoin(schoolYears, schoolYearJoinOn)
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .where(studentListWhere),
   ]);
 
   const totalCount = countResult[0]?.count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const canCreate = hasPermission(session.role, "students:create");
 
-  const tableRows: StudentRow[] = rows.map((s) => ({
-    id: s.id,
-    referenceNumber: s.referenceNumber,
-    firstName: s.firstName,
-    middleName: s.middleName,
-    lastName: s.lastName,
-    gender: s.gender,
-    dateOfBirthIso: s.dateOfBirth ? new Date(s.dateOfBirth).toISOString() : null,
-    isActive: s.isActive,
-    createdAtIso: new Date(s.createdAt).toISOString(),
+  const tableRows: StudentRow[] = listRows.map((r) => ({
+    enrollmentId: r.enrollmentId,
+    id: r.id,
+    referenceNumber: r.referenceNumber,
+    firstName: r.firstName,
+    middleName: r.middleName,
+    lastName: r.lastName,
+    gender: r.gender,
+    dateOfBirthIso: r.dateOfBirth ? new Date(r.dateOfBirth).toISOString() : null,
+    isActive: r.isActive,
+    schoolYearLabel: r.schoolYearLabel,
+    gradeLevelName: r.gradeLevelName,
+    sectionName: r.sectionName,
+    dateEnrolledIso: r.enrolledAt ? new Date(r.enrolledAt).toISOString() : null,
   }));
 
   const emptyMessage =
     q.trim() && schoolYearId
-      ? `No students found matching "${q}" for the selected school year.`
+      ? `No enrollments found matching "${q}" for the selected school year.`
       : q.trim()
-        ? `No students found matching "${q}".`
+        ? `No enrollments found matching "${q}".`
         : schoolYearId
-          ? "No students found for the selected school year."
-          : "No students have been registered yet.";
+          ? "No enrollments for the selected school year."
+          : "No matching enrollments.";
 
   const hasFilters = q.trim() !== "" || schoolYearId != null;
   const qParam = q.trim() || undefined;
@@ -146,9 +150,9 @@ export default async function StudentsPage({ searchParams }: PageProps) {
         <div>
           <h1 className="page-title">Students</h1>
           <p className="page-subtitle">
-            Master student records. {totalCount.toLocaleString()} student
+            One row per enrollment (status enrolled). {totalCount.toLocaleString()} enrollment
             {totalCount !== 1 ? "s" : ""}{" "}
-            {hasFilters ? "matching the current filters." : "registered."}
+            {hasFilters ? "matching the current filters." : "on file."}
           </p>
         </div>
         {canCreate && (
@@ -187,7 +191,7 @@ export default async function StudentsPage({ searchParams }: PageProps) {
           aria-label="Filter by school year"
           className="min-w-[12rem] shrink-0 border-l border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3 text-[0.825rem] text-[var(--color-text)] outline-none"
         >
-          <option value="">All school years</option>
+          <option value="">All school years (enrolled)</option>
           {schoolYearOptions.map((y) => (
             <option key={y.id} value={y.id}>
               {y.label}
@@ -215,14 +219,14 @@ export default async function StudentsPage({ searchParams }: PageProps) {
       {totalCount > 0 && (
         <nav
           className="flex items-center justify-between gap-4 px-0.5 py-2"
-          aria-label="Student list pagination"
+          aria-label="Enrollment list pagination"
         >
           <p className="pagination-info">
             Page{" "}
             <span className="font-medium text-[var(--color-text)]">{currentPage}</span> of{" "}
             <span className="font-medium text-[var(--color-text)]">{Math.max(totalPages, 1)}</span>
             <span className="ml-2">
-              — {totalCount.toLocaleString()} student{totalCount !== 1 ? "s" : ""}
+              — {totalCount.toLocaleString()} enrollment{totalCount !== 1 ? "s" : ""}
             </span>
           </p>
 

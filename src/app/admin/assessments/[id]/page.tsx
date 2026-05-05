@@ -8,6 +8,7 @@ import {
   students,
   schoolYears,
   receiptBooklets,
+  users,
 } from "@/lib/db/schema";
 import { eq, desc, asc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
@@ -37,6 +38,7 @@ export default async function AssessmentLedgerPage({ params }: PageProps) {
       totalAmount: assessments.totalAmount,
       totalPaid: assessments.totalPaid,
       balance: assessments.balance,
+      billingStatus: assessments.billingStatus,
       studentName: students.lastName,
       studentFirstName: students.firstName,
       schoolYear: schoolYears.label,
@@ -62,8 +64,18 @@ export default async function AssessmentLedgerPage({ params }: PageProps) {
     .orderBy(desc(assessmentItems.createdAt));
 
   const paymentRecords = await db
-    .select()
+    .select({
+      id: payments.id,
+      orNumber: payments.orNumber,
+      amount: payments.amount,
+      paymentMethod: payments.paymentMethod,
+      paymentDate: payments.paymentDate,
+      status: payments.status,
+      referenceNumber: payments.referenceNumber,
+      processedByUsername: users.username,
+    })
     .from(payments)
+    .leftJoin(users, eq(payments.createdBy, users.id))
     .where(eq(payments.assessmentId, id))
     .orderBy(desc(payments.createdAt));
 
@@ -99,6 +111,7 @@ export default async function AssessmentLedgerPage({ params }: PageProps) {
     paymentDate: p.paymentDate.toISOString(),
     status: p.status,
     referenceNumber: p.referenceNumber,
+    processedBy: p.processedByUsername ?? null,
   }));
 
   return (
@@ -113,6 +126,7 @@ export default async function AssessmentLedgerPage({ params }: PageProps) {
           totalAmount: assessment.totalAmount,
           totalPaid: assessment.totalPaid,
           balance: assessment.balance,
+          billingStatus: assessment.billingStatus,
         }}
         items={items}
         payments={ledgerPayments}

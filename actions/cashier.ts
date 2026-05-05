@@ -26,6 +26,7 @@ import type {
 import { logger } from "@/lib/observability/logger";
 import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { assertEnrollmentAllowsPayment } from "@/lib/utils/enrollment-payment";
+import { assessmentBillingStatusFromState } from "@/lib/utils/assessment-billing";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -268,6 +269,10 @@ export async function postPaymentAction(
         .set({
           totalPaid: String(newTotalPaid),
           balance: String(newBalance),
+          billingStatus: assessmentBillingStatusFromState({
+            balance: newBalance,
+            cancelledAt: assessment.cancelledAt,
+          }),
           updatedBy: session.userId,
           updatedAt: new Date(),
         })
@@ -418,6 +423,10 @@ export async function voidPaymentAction(
             .set({
               totalPaid: String(newTotalPaid),
               balance: String(newBalance),
+              billingStatus: assessmentBillingStatusFromState({
+                balance: newBalance,
+                cancelledAt: assessment.cancelled_at ?? assessment.cancelledAt,
+              }),
               updatedBy: session.userId,
               updatedAt: new Date(),
             })
@@ -436,9 +445,15 @@ export async function voidPaymentAction(
       });
     });
 
-    // Revalidate paths. To know the assessmentId properly, we should fetch it before.
-    // It is handled inside the try block, but we can't easily revalidate outside unless we extract it.
-    // We'll just do a general revalidate for now or return success. 
+    const link = await db.query.payments.findFirst({
+      where: eq(payments.id, paymentId),
+      columns: { assessmentId: true },
+    });
+    if (link?.assessmentId) {
+      revalidatePath(`/admin/assessments/${link.assessmentId}`);
+    }
+    revalidatePath("/admin/assessments");
+
     return { success: true, message: "Payment voided successfully." };
   } catch (error: any) {
     logger.error("[cashier] Failed to void payment", { error: String(error) });

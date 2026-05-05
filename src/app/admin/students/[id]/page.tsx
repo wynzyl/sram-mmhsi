@@ -25,6 +25,7 @@ import {
   type CurrentPlacement,
   type StudentRecordFlags,
 } from "@/components/students/StudentRecordProfile";
+import { getStudentRequirementsSnapshots } from "@/lib/queries/student-requirements-snapshots";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -148,7 +149,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
     }
   }
 
-  const [assessmentSummariesRaw, invoicesRaw] = await Promise.all([
+  const [assessmentSummariesRaw, invoicesRaw, requirementsSnapshots] = await Promise.all([
     canReadAssessments
       ? db
           .select({
@@ -157,6 +158,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
             totalAmount: assessments.totalAmount,
             totalPaid: assessments.totalPaid,
             balance: assessments.balance,
+            billingStatus: assessments.billingStatus,
           })
           .from(assessments)
           .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
@@ -169,6 +171,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
             totalAmount: string;
             totalPaid: string;
             balance: string;
+            billingStatus: string;
           }[]
         ),
     canReadInvoices
@@ -194,6 +197,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
             createdAt: Date;
           }[]
         ),
+    getStudentRequirementsSnapshots(id),
   ]);
 
   const assessmentSummaries: AssessmentSummaryRow[] = assessmentSummariesRaw;
@@ -219,6 +223,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
       student={student}
       guardians={guardians}
       enrollments={enrollmentRows}
+      requirementsSnapshots={requirementsSnapshots}
       placement={placement}
       assessmentSummaries={assessmentSummaries}
       invoices={invoiceRows}

@@ -3,6 +3,13 @@ import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
 import { StatusBadge } from "@/components/data-display/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { StudentRecordTabShell, type StudentRecordTabDef } from "@/components/students/StudentRecordTabShell";
+import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
+import type { StudentRequirementsSnapshot } from "@/lib/queries/student-requirements-snapshots";
+import {
+  intakeFieldStatusDisplay,
+  isIntakeDocumentsComplete,
+  registrationStudentTypeLabel,
+} from "@/lib/utils/intake-documents";
 
 export type StudentRecordStudent = {
   id: string;
@@ -57,6 +64,7 @@ export type AssessmentSummaryRow = {
   totalAmount: string;
   totalPaid: string;
   balance: string;
+  billingStatus: string;
 };
 
 export type InvoiceSummaryRow = {
@@ -116,12 +124,92 @@ function invoiceStatusVariant(
   }
 }
 
+function portalHref(path: string, linkBase: "admin" | "staff") {
+  return linkBase === "staff" ? path.replace(/^\/admin/, "/staff") : path;
+}
+
+const INTAKE_REQUIREMENT_ROWS: {
+  key: keyof EnrollmentIntakeDocuments;
+  label: string;
+}[] = [
+  { key: "form138", label: "FORM 138" },
+  { key: "birthCertificatePsa", label: "Birth Certificate (PSA)" },
+  { key: "goodMoralCharacter", label: "Good Moral Character" },
+  { key: "qualifiedVoucher", label: "Qualified Voucher Certificate (if any)" },
+  { key: "escCertificate", label: "ESC Certificate (if any)" },
+];
+
+function RequirementsRecordCard({ snap }: { snap: StudentRequirementsSnapshot }) {
+  const summaryComplete =
+    snap.intakeDocuments != null && isIntakeDocumentsComplete(snap.intakeDocuments);
+
+  return (
+    <div className="student-record-card student-record-card-spacious">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-base font-semibold m-0">
+            Enrollment{" "}
+            <span className="student-record-muted font-normal text-sm">
+              · {snap.schoolYear} · {snap.gradeLevel}
+            </span>
+          </h3>
+          <p className="student-record-muted text-sm mt-1 m-0">
+            Enrollment type {registrationStudentTypeLabel(snap.studentType)}
+            {" · "}
+            Recorded{" "}
+            {snap.recordedAt.toLocaleDateString("en-PH", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={snap.enrollmentStatus} type="enrollment" />
+          {snap.intakeDocuments ? (
+            summaryComplete ? (
+              <Badge variant="success">Checklist complete</Badge>
+            ) : (
+              <Badge variant="warning">Checklist incomplete</Badge>
+            )
+          ) : (
+            <Badge variant="secondary">No checklist data</Badge>
+          )}
+        </div>
+      </div>
+
+      {!snap.intakeDocuments ? (
+        <p className="student-record-muted text-sm m-0">
+          No intake checklist was stored for this enrollment.
+        </p>
+      ) : (
+        <dl className="student-record-dl m-0">
+          {INTAKE_REQUIREMENT_ROWS.map(({ key, label }) => {
+            const raw = snap.intakeDocuments![key];
+            const { label: statusLabel, variant } = intakeFieldStatusDisplay(raw);
+            return (
+              <div className="student-record-dl-row" key={key}>
+                <dt>{label}</dt>
+                <dd className="m-0">
+                  <Badge variant={variant}>{statusLabel}</Badge>
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+      )}
+    </div>
+  );
+}
+
 function EnrollmentBillingCell({
   row,
   flags,
+  linkBase,
 }: {
   row: EnrollmentRecordRow;
   flags: StudentRecordFlags;
+  linkBase: "admin" | "staff";
 }) {
   if (row.status === "cancelled") {
     return <span className="student-record-muted">—</span>;
@@ -129,7 +217,10 @@ function EnrollmentBillingCell({
 
   if (flags.canReadAssessments && row.assessmentId) {
     return (
-      <Link href={`/admin/assessments/${row.assessmentId}`} className="student-record-inline-link">
+      <Link
+        href={portalHref(`/admin/assessments/${row.assessmentId}`, linkBase)}
+        className="student-record-inline-link"
+      >
         Open ledger
       </Link>
     );
@@ -137,7 +228,10 @@ function EnrollmentBillingCell({
 
   if (row.status === "pending" && flags.canCreateAssessment) {
     return (
-      <Link href={`/admin/assessments/new/${row.id}`} className="student-record-inline-link">
+      <Link
+        href={portalHref(`/admin/assessments/new/${row.id}`, linkBase)}
+        className="student-record-inline-link"
+      >
         Build assessment
       </Link>
     );
@@ -154,18 +248,23 @@ export function StudentRecordProfile({
   student,
   guardians,
   enrollments: enrollmentRows,
+  requirementsSnapshots,
   placement,
   assessmentSummaries,
   invoices,
   flags,
+  linkBase = "admin",
 }: {
   student: StudentRecordStudent;
   guardians: GuardianRow[];
   enrollments: EnrollmentRecordRow[];
+  requirementsSnapshots: StudentRequirementsSnapshot[];
   placement: CurrentPlacement;
   assessmentSummaries: AssessmentSummaryRow[];
   invoices: InvoiceSummaryRow[];
   flags: StudentRecordFlags;
+  /** Use `staff` when rendering under `/staff/students/*` so navigation stays in the staff shell. */
+  linkBase?: "admin" | "staff";
 }) {
   const fullName = [student.firstName, student.middleName, student.lastName, student.suffix]
     .filter(Boolean)
@@ -297,6 +396,24 @@ export function StudentRecordProfile({
     </div>
   );
 
+  const requirementsSection = (
+    <div className="student-record-tabpanel-inner">
+      {requirementsSnapshots.length === 0 ? (
+        <div className="student-record-card student-record-card-spacious">
+          <p className="student-record-muted m-0">
+            No enrollment intake checklists on file for this student.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {requirementsSnapshots.map((snap) => (
+            <RequirementsRecordCard key={snap.enrollmentId} snap={snap} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const enrollmentsSection = (
     <div className="student-record-tabpanel-inner">
       <div className="student-record-card student-record-card-flush student-record-card-spacious-bleed">
@@ -328,7 +445,7 @@ export function StudentRecordProfile({
                       <StatusBadge status={row.status} type="enrollment" />
                     </td>
                     <td>
-                      <EnrollmentBillingCell row={row} flags={flags} />
+                      <EnrollmentBillingCell row={row} flags={flags} linkBase={linkBase} />
                     </td>
                     <td className="student-record-muted">
                       {row.enrolledAt
@@ -372,6 +489,7 @@ export function StudentRecordProfile({
                   <th>Assessed</th>
                   <th>Paid</th>
                   <th>Balance</th>
+                  <th>Status</th>
                   <th />
                 </tr>
               </thead>
@@ -388,8 +506,14 @@ export function StudentRecordProfile({
                     <td>
                       <CurrencyDisplay amount={Number(a.balance)} />
                     </td>
+                    <td>
+                      <StatusBadge type="billing" status={a.billingStatus} />
+                    </td>
                     <td className="text-right">
-                      <Link href={`/admin/assessments/${a.id}`} className="student-record-inline-link">
+                      <Link
+                        href={portalHref(`/admin/assessments/${a.id}`, linkBase)}
+                        className="student-record-inline-link"
+                      >
                         Ledger
                       </Link>
                     </td>
@@ -450,7 +574,10 @@ export function StudentRecordProfile({
                       })}
                     </td>
                     <td className="text-right">
-                      <Link href={`/admin/finance/invoices/${inv.id}`} className="student-record-inline-link">
+                      <Link
+                        href={portalHref(`/admin/finance/invoices/${inv.id}`, linkBase)}
+                        className="student-record-inline-link"
+                      >
                         View
                       </Link>
                     </td>
@@ -467,6 +594,7 @@ export function StudentRecordProfile({
   const tabs: StudentRecordTabDef[] = [
     { id: "personal", label: "Personal & contact", content: personalSection },
     { id: "guardians", label: "Guardians", content: guardiansSection },
+    { id: "requirements", label: "Requirements", content: requirementsSection },
     { id: "enrollments", label: "Enrollments", content: enrollmentsSection },
   ];
 
@@ -479,7 +607,7 @@ export function StudentRecordProfile({
 
   return (
     <div className="student-record-page page-container">
-      <Link href="/admin/students" className="student-record-back">
+      <Link href={portalHref("/admin/students", linkBase)} className="student-record-back">
         ← Back to Students
       </Link>
 
@@ -542,7 +670,7 @@ export function StudentRecordProfile({
           <div className="student-record-hero-actions">
             {flags.canEnroll && (
               <Link
-                href={`/admin/enrollments/new?studentId=${student.id}`}
+                href={`${portalHref("/admin/enrollments/new", linkBase)}?studentId=${student.id}`}
                 className="student-record-btn student-record-btn-primary"
                 id="enroll-student-btn"
               >
@@ -551,7 +679,7 @@ export function StudentRecordProfile({
             )}
             {flags.canEditStudent && (
               <Link
-                href={`/admin/students/${student.id}/edit`}
+                href={portalHref(`/admin/students/${student.id}/edit`, linkBase)}
                 className="student-record-btn student-record-btn-secondary"
                 id="edit-student-btn"
               >

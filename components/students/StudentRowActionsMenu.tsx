@@ -3,8 +3,19 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+type StaffPortalBase = "/admin/students" | "/staff/students";
+
 /** Kebab actions for a student row — used on Students and Registrations lists */
-export function StudentRowActionsMenu({ studentId }: { studentId: string }) {
+export function StudentRowActionsMenu({
+  studentId,
+  studentBasePath = "/admin/students",
+}: {
+  studentId: string;
+  /** Base path without trailing id, e.g. `/admin/students` or `/staff/students`. */
+  studentBasePath?: StaffPortalBase;
+}) {
+  const enrollBase =
+    studentBasePath === "/staff/students" ? "/staff/enrollments/new" : "/admin/enrollments/new";
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -37,7 +48,7 @@ export function StudentRowActionsMenu({ studentId }: { studentId: string }) {
           role="menu"
         >
           <Link
-            href={`/admin/students/${studentId}`}
+            href={`${studentBasePath}/${studentId}`}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 px-4 py-2.5 text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors"
@@ -50,7 +61,7 @@ export function StudentRowActionsMenu({ studentId }: { studentId: string }) {
           </Link>
 
           <Link
-            href={`/admin/students/${studentId}/edit`}
+            href={`${studentBasePath}/${studentId}/edit`}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 px-4 py-2.5 text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors"
@@ -65,7 +76,7 @@ export function StudentRowActionsMenu({ studentId }: { studentId: string }) {
           <div className="my-1 border-t border-[var(--color-border)]" />
 
           <Link
-            href={`/admin/enrollments/new?studentId=${studentId}`}
+            href={`${enrollBase}?studentId=${studentId}`}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 px-4 py-2.5 text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] transition-colors font-medium"

@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { StudentRowActionsMenu } from "@/components/students/StudentRowActionsMenu";
 
 export interface StudentRow {
+  /** Stable row key (one list row per enrollment). */
+  enrollmentId: string;
   id: string;
   referenceNumber: string;
   firstName: string;
@@ -12,7 +14,10 @@ export interface StudentRow {
   gender: string | null;
   dateOfBirthIso: string | null;
   isActive: boolean;
-  createdAtIso: string;
+  schoolYearLabel: string | null;
+  gradeLevelName: string | null;
+  sectionName: string | null;
+  dateEnrolledIso: string | null;
 }
 
 function computeAge(dobIso: string): number {
@@ -51,16 +56,20 @@ function GenderBadge({ gender }: { gender: string | null }) {
   );
 }
 
+type StudentBasePath = "/admin/students" | "/staff/students";
+
 interface StudentsTableProps {
   rows: StudentRow[];
   emptyMessage?: string;
+  studentBasePath?: StudentBasePath;
 }
 
 export function StudentsTable({
   rows,
   emptyMessage = "No students have been registered yet.",
+  studentBasePath = "/admin/students",
 }: StudentsTableProps) {
-  const colSpan = 7;
+  const colSpan = 10;
 
   return (
     <div className="table-wrapper">
@@ -69,9 +78,12 @@ export function StudentsTable({
           <tr>
             <th>Reference No.</th>
             <th>Name</th>
+            <th>School Year</th>
+            <th>Grade Level</th>
+            <th>Section</th>
+            <th>Date Enrolled</th>
             <th>Birthdate</th>
             <th>Sex</th>
-            <th>Registered</th>
             <th>Status</th>
             <th className="text-right w-px" aria-label="Actions" />
           </tr>
@@ -88,11 +100,25 @@ export function StudentsTable({
               const displayName = `${s.lastName}, ${s.firstName}${s.middleName ? ` ${s.middleName[0]}.` : ""}`;
               const dob = s.dateOfBirthIso;
               return (
-                <tr key={s.id} className="table-row-hover">
+                <tr key={s.enrollmentId} className="table-row-hover">
                   <td>
                     <code className="reference-code">{s.referenceNumber}</code>
                   </td>
                   <td className="student-name">{displayName}</td>
+                  <td>{s.schoolYearLabel ?? <span className="text-muted">—</span>}</td>
+                  <td>{s.gradeLevelName ?? <span className="text-muted">—</span>}</td>
+                  <td>{s.sectionName ?? <span className="text-muted">—</span>}</td>
+                  <td>
+                    {!s.dateEnrolledIso ? (
+                      <span className="text-muted">—</span>
+                    ) : (
+                      new Date(s.dateEnrolledIso).toLocaleDateString("en-PH", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    )}
+                  </td>
                   <td>
                     {!dob ? (
                       <span className="text-muted">—</span>
@@ -110,20 +136,13 @@ export function StudentsTable({
                   <td>
                     <GenderBadge gender={s.gender} />
                   </td>
-                  <td className="text-muted">
-                    {new Date(s.createdAtIso).toLocaleDateString("en-PH", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </td>
                   <td>
                     <Badge variant={s.isActive ? "success" : "danger"}>
                       {s.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </td>
                   <td className="text-right align-middle">
-                    <StudentRowActionsMenu studentId={s.id} />
+                    <StudentRowActionsMenu studentId={s.id} studentBasePath={studentBasePath} />
                   </td>
                 </tr>
               );

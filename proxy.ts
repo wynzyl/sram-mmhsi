@@ -19,7 +19,7 @@ const ADMIN_PREFIXES = ["/admin"];
 
 const ROLE_LANDING: Record<Role, string> = {
   admin: "/admin/dashboard",
-  registrar: "/staff/students",
+  registrar: "/staff/dashboard",
   finance_officer: "/staff/finance",
   cashier: "/staff/payments",
   teacher: "/staff/grades",
@@ -64,7 +64,7 @@ export default async function proxy(req: NextRequest) {
 
   // 4. Staff user trying to access portal routes → redirect to staff landing
   if (isAuthenticated && isPortalRoute && role && STAFF_ROLES.includes(role)) {
-    const landing = ROLE_LANDING[role] ?? "/staff/students";
+    const landing = ROLE_LANDING[role] ?? "/staff/dashboard";
     return NextResponse.redirect(new URL(landing, req.nextUrl));
   }
 

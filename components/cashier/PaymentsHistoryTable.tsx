@@ -19,6 +19,7 @@ interface Payment {
   paymentDate: Date | string;
   status: string;
   referenceNumber: string | null;
+  processedBy: string | null;
 }
 
 interface PaymentsHistoryTableProps {
@@ -70,6 +71,16 @@ export default function PaymentsHistoryTable({
             {row.original.paymentMethod.replace("_", " ")}
           </span>
         ),
+      },
+      {
+        header: "Processed by",
+        accessorKey: "processedBy",
+        cell: ({ row }) =>
+          row.original.processedBy ? (
+            <span className="text-sm">{row.original.processedBy}</span>
+          ) : (
+            <span className="text-[var(--color-text-muted)]">—</span>
+          ),
       },
       {
         header: "Ref #",

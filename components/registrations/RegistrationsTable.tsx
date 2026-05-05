@@ -1,6 +1,8 @@
 "use client";
 
 import { StudentRowActionsMenu } from "@/components/students/StudentRowActionsMenu";
+import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
+import { isIntakeDocumentsComplete, registrationStudentTypeLabel } from "@/lib/utils/intake-documents";
 
 export interface RegistrationRow {
   id: string;
@@ -9,19 +11,24 @@ export interface RegistrationRow {
   referenceNumber: string;
   schoolYear: string;
   gradeLevel: string;
+  studentType: string;
+  intakeDocuments: EnrollmentIntakeDocuments | null;
   createdAt: Date;
 }
 
 interface RegistrationsTableProps {
   registrations: RegistrationRow[];
   emptyMessage?: string;
+  /** Defaults to admin portal student URLs. */
+  studentBasePath?: "/admin/students" | "/staff/students";
 }
 
 export default function RegistrationsTable({
   registrations,
   emptyMessage = "No registrations found.",
+  studentBasePath = "/admin/students",
 }: RegistrationsTableProps) {
-  const colSpan = 6;
+  const colSpan = 8;
 
   return (
     <div className="table-wrapper">
@@ -32,6 +39,8 @@ export default function RegistrationsTable({
             <th>Name</th>
             <th>School Year</th>
             <th>Grade Level</th>
+            <th>Enrollment type</th>
+            <th>Requirements</th>
             <th>Registered</th>
             <th className="text-right w-px" aria-label="Actions" />
           </tr>
@@ -52,6 +61,16 @@ export default function RegistrationsTable({
                 <td className="student-name">{reg.studentName}</td>
                 <td>{reg.schoolYear}</td>
                 <td>{reg.gradeLevel}</td>
+                <td>{registrationStudentTypeLabel(reg.studentType)}</td>
+                <td>
+                  {isIntakeDocumentsComplete(reg.intakeDocuments) ? (
+                    <span className="badge badge-success">Complete</span>
+                  ) : reg.intakeDocuments ? (
+                    <span className="badge badge-warning">Incomplete</span>
+                  ) : (
+                    <span className="text-muted">—</span>
+                  )}
+                </td>
                 <td className="text-muted">
                   {new Date(reg.createdAt).toLocaleDateString("en-PH", {
                     year: "numeric",
@@ -60,7 +79,7 @@ export default function RegistrationsTable({
                   })}
                 </td>
                 <td className="text-right align-middle">
-                  <StudentRowActionsMenu studentId={reg.studentId} />
+                  <StudentRowActionsMenu studentId={reg.studentId} studentBasePath={studentBasePath} />
                 </td>
               </tr>
             ))

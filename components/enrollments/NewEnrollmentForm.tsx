@@ -4,12 +4,16 @@ import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createEnrollmentAction } from "@/actions/enrollments";
 import type { EnrollmentFormState } from "@/lib/validators/enrollment";
+import IntakeRequirementsFieldset from "@/components/enrollments/IntakeRequirementsFieldset";
+import type { RegistrationEnrollmentContext } from "@/lib/types/registration-enrollment-context";
+import { enrollmentIntakeDocumentsToPreserved } from "@/lib/utils/intake-documents";
 
 interface Student {
   id: string;
   firstName: string;
   lastName: string;
   referenceNumber: string;
+  previousSchool: string | null;
 }
 interface SchoolYear {
   id: string;
@@ -33,7 +37,10 @@ interface NewEnrollmentFormProps {
   currentSchoolYear: SchoolYear | null;
   gradeLevels: GradeLevel[];
   promotionByStudentId: Record<string, PromotionHint>;
+  registrationContextByStudentId?: Record<string, RegistrationEnrollmentContext>;
   prefillStudentId: string | null;
+  /** Post-success client navigation target (default admin enrollments list). */
+  afterSuccessRedirect?: string;
 }
 
 const initialState: EnrollmentFormState = {};
@@ -48,11 +55,42 @@ function promotedGradeIdForStudent(
   return hint.hasNextGradeLevel ? hint.nextGradeLevelId : hint.lastGradeLevelId;
 }
 
+function gradeLevelIdForStudent(
+  sid: string,
+  promotionByStudentId: Record<string, PromotionHint>,
+  registrationContextByStudentId: Record<string, RegistrationEnrollmentContext>
+): string {
+  if (!sid) return "";
+  if (promotionByStudentId[sid]) {
+    return promotedGradeIdForStudent(sid, promotionByStudentId);
+  }
+  const reg = registrationContextByStudentId[sid];
+  return reg?.gradeLevelId ?? "";
+}
+
 function studentTypeForSelection(
   sid: string,
-  promotionByStudentId: Record<string, PromotionHint>
+  promotionByStudentId: Record<string, PromotionHint>,
+  registrationContextByStudentId: Record<string, RegistrationEnrollmentContext>
 ): "new_student" | "transferee" | "old_student" {
-  return sid && promotionByStudentId[sid] ? "old_student" : "new_student";
+  if (sid && promotionByStudentId[sid]) return "old_student";
+  const reg = sid ? registrationContextByStudentId[sid] : undefined;
+  if (reg?.studentType === "new_student" || reg?.studentType === "transferee") {
+    return reg.studentType;
+  }
+  return "new_student";
+}
+
+function previousSchoolDefaultForStudent(
+  sid: string,
+  studentList: Student[],
+  promotionByStudentId: Record<string, PromotionHint>,
+  registrationContextByStudentId: Record<string, RegistrationEnrollmentContext>
+): string {
+  const st = studentTypeForSelection(sid, promotionByStudentId, registrationContextByStudentId);
+  if (st !== "transferee") return "";
+  const s = studentList.find((x) => x.id === sid);
+  return s?.previousSchool ?? "";
 }
 
 export default function NewEnrollmentForm({
@@ -60,8 +98,12 @@ export default function NewEnrollmentForm({
   currentSchoolYear,
   gradeLevels,
   promotionByStudentId,
+  registrationContextByStudentId: registrationContextByStudentIdProp,
   prefillStudentId,
+  afterSuccessRedirect = "/admin/enrollments",
 }: NewEnrollmentFormProps) {
+  const registrationContextByStudentId = registrationContextByStudentIdProp ?? {};
+
   const router = useRouter();
   const [state, action, pending] = useActionState(createEnrollmentAction, initialState);
 
@@ -69,22 +111,38 @@ export default function NewEnrollmentForm({
   const [studentId, setStudentId] = useState(initialStudentId);
   const [studentType, setStudentType] = useState<
     "new_student" | "transferee" | "old_student"
-  >(() => studentTypeForSelection(initialStudentId, promotionByStudentId));
+  >(() =>
+    studentTypeForSelection(initialStudentId, promotionByStudentId, registrationContextByStudentId)
+  );
   const [gradeLevelId, setGradeLevelId] = useState(() =>
-    promotedGradeIdForStudent(initialStudentId, promotionByStudentId)
+    gradeLevelIdForStudent(initialStudentId, promotionByStudentId, registrationContextByStudentId)
+  );
+  const [previousSchoolInput, setPreviousSchoolInput] = useState(() =>
+    previousSchoolDefaultForStudent(
+      initialStudentId,
+      students,
+      promotionByStudentId,
+      registrationContextByStudentId
+    )
   );
 
   useEffect(() => {
     if (state.success && state.enrollmentId) {
-      router.push(`/admin/enrollments`);
+      router.push(afterSuccessRedirect);
     }
-  }, [state.success, state.enrollmentId, router]);
+  }, [state.success, state.enrollmentId, router, afterSuccessRedirect]);
 
   const disableSubmit = !currentSchoolYear || pending;
   const promotionHint = studentId ? promotionByStudentId[studentId] : undefined;
+  const regCtx = studentId ? registrationContextByStudentId[studentId] : undefined;
+
+  const intakePreserved =
+    regCtx?.intakeDocuments != null
+      ? enrollmentIntakeDocumentsToPreserved(regCtx.intakeDocuments)
+      : undefined;
 
   return (
-    <form action={action} className="student-form" noValidate>
+    <form action={action} className="student-form">
       {state.message && (
         <div className="alert alert-error" role="alert">
           {state.message}
@@ -109,6 +167,7 @@ export default function NewEnrollmentForm({
         {currentSchoolYear && (
           <input type="hidden" name="schoolYearId" value={currentSchoolYear.id} />
         )}
+        {regCtx && <input type="hidden" name="registrationId" value={regCtx.registrationId} />}
 
         <div className="form-group">
           <label className="form-label" htmlFor="studentId">
@@ -122,8 +181,21 @@ export default function NewEnrollmentForm({
             onChange={(e) => {
               const id = e.target.value;
               setStudentId(id);
-              setGradeLevelId(promotedGradeIdForStudent(id, promotionByStudentId));
-              setStudentType(studentTypeForSelection(id, promotionByStudentId));
+              setGradeLevelId(
+                gradeLevelIdForStudent(id, promotionByStudentId, registrationContextByStudentId)
+              );
+              const nextType = studentTypeForSelection(
+                id,
+                promotionByStudentId,
+                registrationContextByStudentId
+              );
+              setStudentType(nextType);
+              if (nextType === "transferee") {
+                const s = students.find((x) => x.id === id);
+                setPreviousSchoolInput(s?.previousSchool ?? "");
+              } else {
+                setPreviousSchoolInput("");
+              }
             }}
             required
           >
@@ -161,6 +233,11 @@ export default function NewEnrollmentForm({
             {state.errors?.schoolYearId && (
               <p className="form-error">{state.errors.schoolYearId[0]}</p>
             )}
+            {regCtx && currentSchoolYear && (
+              <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+                Same school year as the student&apos;s <strong>approved registration</strong>.
+              </p>
+            )}
             <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
               Past school years cannot be selected for new enrollments.
             </p>
@@ -195,6 +272,12 @@ export default function NewEnrollmentForm({
                   : `${promotionHint.lastGradeName} matches the highest grade in the catalog. Confirm with admin before enrolling again.`}
               </p>
             )}
+            {!promotionHint && regCtx && (
+              <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+                Default grade matches the <strong>approved registration</strong>; change if enrollment
+                differs.
+              </p>
+            )}
           </div>
         </div>
 
@@ -226,7 +309,13 @@ export default function NewEnrollmentForm({
                 className={`form-control ${state.errors?.studentType ? "form-control-error" : ""}`}
                 value={studentType}
                 onChange={(e) => {
-                  setStudentType(e.target.value as typeof studentType);
+                  const v = e.target.value as typeof studentType;
+                  setStudentType(v);
+                  if (v === "transferee" && studentId) {
+                    const s = students.find((x) => x.id === studentId);
+                    setPreviousSchoolInput(s?.previousSchool ?? "");
+                  }
+                  if (v === "new_student") setPreviousSchoolInput("");
                 }}
                 required
               >
@@ -234,7 +323,8 @@ export default function NewEnrollmentForm({
                 <option value="transferee">Transferee</option>
               </select>
               <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
-                Transferee enrollments require “Previous school” on the student profile.
+                For <strong>Transferee</strong>, enter the previous school below (saved on the student
+                record).
               </p>
             </>
           )}
@@ -242,6 +332,45 @@ export default function NewEnrollmentForm({
             <p className="form-error">{state.errors.studentType[0]}</p>
           )}
         </div>
+
+        {Boolean(studentId) && !promotionHint && studentType === "transferee" && (
+          <div className="form-group">
+            <label className="form-label" htmlFor="previousSchool">
+              Previous school <span className="required">*</span>
+            </label>
+            <input
+              id="previousSchool"
+              name="previousSchool"
+              className={`form-control ${state.errors?.previousSchool ? "form-control-error" : ""}`}
+              value={previousSchoolInput}
+              onChange={(e) => setPreviousSchoolInput(e.target.value)}
+              required
+              autoComplete="organization"
+              placeholder="Name of school last attended"
+            />
+            {state.errors?.previousSchool && (
+              <p className="form-error">{state.errors.previousSchool[0]}</p>
+            )}
+          </div>
+        )}
+
+        {Boolean(studentId) &&
+          !promotionHint &&
+          (studentType === "new_student" || studentType === "transferee") && (
+            <IntakeRequirementsFieldset
+              key={`intake-${studentId}-${regCtx?.registrationId ?? "none"}`}
+              errors={state.errors}
+              preserved={intakePreserved}
+              description={
+                <>
+                  Values below reflect the <strong>approved registration</strong> intake checklist for this
+                  school year; adjust if documents changed since approval. Qualified Voucher and ESC
+                  certificates are optional per learner; choose <strong>Not applicable</strong> when none
+                  applies.
+                </>
+              }
+            />
+          )}
 
         <div className="alert alert-info">
           The enrollment starts as <strong>Pending</strong>. Use{" "}

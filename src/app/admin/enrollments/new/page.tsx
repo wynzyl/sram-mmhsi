@@ -6,18 +6,19 @@ import { eq, asc, desc, ne, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import NewEnrollmentForm from "@/components/enrollments/NewEnrollmentForm";
+import { getRegistrationContextByStudentIdForSchoolYear } from "@/lib/queries/enrollment-registration-context";
 
 export const metadata: Metadata = { title: "New Enrollment" };
 
 interface PageProps {
-  searchParams: Promise<{ studentId?: string }>;
+  searchParams: Promise<{ studentId?: string; registrationId?: string }>;
 }
 
 export default async function NewEnrollmentPage({ searchParams }: PageProps) {
   const session = await requireSession();
   if (!hasPermission(session.role, "enrollments:create")) redirect("/admin/enrollments");
 
-  const { studentId } = await searchParams;
+  const { studentId, registrationId: registrationIdParam } = await searchParams;
 
   const allStudents = await db
     .select({
@@ -25,6 +26,7 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
       firstName: students.firstName,
       lastName: students.lastName,
       referenceNumber: students.referenceNumber,
+      previousSchool: students.previousSchool,
     })
     .from(students)
     .where(eq(students.isActive, true))
@@ -109,6 +111,14 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
     prefillStudent = allStudents.find((s) => s.id === studentId) ?? null;
   }
 
+  const registrationContextByStudentId =
+    currentSchoolYear != null
+      ? await getRegistrationContextByStudentIdForSchoolYear(currentSchoolYear.id, {
+          preferredRegistrationId: registrationIdParam ?? undefined,
+          preferredStudentId: studentId ?? undefined,
+        })
+      : {};
+
   return (
     <div className="page-container page-container-narrow">
       <div className="page-header">
@@ -126,6 +136,7 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
         currentSchoolYear={currentSchoolYear}
         gradeLevels={glRows}
         promotionByStudentId={promotionByStudentId}
+        registrationContextByStudentId={registrationContextByStudentId}
         prefillStudentId={prefillStudent?.id ?? null}
       />
     </div>

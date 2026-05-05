@@ -9,6 +9,7 @@ import {
   uuid,
   uniqueIndex,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -73,6 +74,13 @@ export const orStatusEnum = pgEnum("or_status", [
   "available",
   "consumed",
   "voided",
+]);
+
+/** Assessment ledger: balance-driven, or cancelled when enrollment is cancelled. */
+export const assessmentBillingStatusEnum = pgEnum("assessment_billing_status", [
+  "outstanding",
+  "fully_paid",
+  "cancelled",
 ]);
 
 // ─── Users & Sessions ─────────────────────────────────────────────────────────
@@ -248,6 +256,15 @@ export const studentGuardianLinks = pgTable(
 
 // ─── Registration & Enrollment ────────────────────────────────────────────────
 
+/** Intake document checklist captured at registration (new/transferee) and on enrollment. */
+export type EnrollmentIntakeDocuments = {
+  form138: "received" | "not_applicable" | "to_follow";
+  birthCertificatePsa: "received" | "not_applicable" | "to_follow";
+  goodMoralCharacter: "received" | "not_applicable" | "to_follow";
+  qualifiedVoucher: "received" | "not_applicable" | "to_follow";
+  escCertificate: "received" | "not_applicable" | "to_follow";
+};
+
 export const registrations = pgTable(
   "registrations",
   {
@@ -255,6 +272,8 @@ export const registrations = pgTable(
     studentId: uuid("student_id").notNull().references(() => students.id),
     schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
     gradeLevelId: uuid("grade_level_id").notNull().references(() => gradeLevels.id),
+    studentType: enrollmentStudentTypeEnum("student_type").notNull().default("new_student"),
+    intakeDocuments: jsonb("intake_documents").$type<EnrollmentIntakeDocuments | null>(),
     status: registrationStatusEnum("status").notNull().default("pending"),
     remarks: text("remarks"),
     reviewedBy: uuid("reviewed_by").references(() => users.id),
@@ -281,6 +300,8 @@ export const enrollments = pgTable(
     registrationId: uuid("registration_id").references(() => registrations.id),
     /** NEW_STUDENT | TRANSFEREE | OLD_STUDENT workflow classification. */
     studentType: enrollmentStudentTypeEnum("student_type").notNull().default("new_student"),
+    /** Required for new_student / transferee enrollments; null for old_student or legacy rows. */
+    intakeDocuments: jsonb("intake_documents").$type<EnrollmentIntakeDocuments | null>(),
     status: enrollmentStatusEnum("status").notNull().default("pending"),
     enrolledAt: timestamp("enrolled_at"),
     cancelledAt: timestamp("cancelled_at"),
@@ -339,6 +360,9 @@ export const assessments = pgTable(
     totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
     totalPaid: numeric("total_paid", { precision: 12, scale: 2 }).notNull().default("0"),
     balance: numeric("balance", { precision: 12, scale: 2 }).notNull(),
+    billingStatus: assessmentBillingStatusEnum("billing_status")
+      .notNull()
+      .default("outstanding"),
     remarks: text("remarks"),
     /** Set when the linked enrollment is cancelled — blocks new payments on this ledger. */
     cancelledAt: timestamp("cancelled_at"),

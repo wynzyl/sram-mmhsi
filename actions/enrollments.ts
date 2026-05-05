@@ -2,7 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { enrollments, students, auditLogs, schoolYears, gradeLevels, assessments } from "@/lib/db/schema";
+import {
+  enrollments,
+  students,
+  auditLogs,
+  schoolYears,
+  gradeLevels,
+  assessments,
+  registrations,
+  type EnrollmentIntakeDocuments,
+} from "@/lib/db/schema";
 import { eq, and, ne, isNull, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -17,9 +26,23 @@ import type {
 } from "@/lib/validators/enrollment";
 import { logger } from "@/lib/observability/logger";
 import { validateGradeProgression } from "@/lib/utils/enrollment-grade";
+import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
+import { parseIntakeDocumentStatus } from "@/lib/validators/intake-documents";
 
 const OUTSTANDING_PAYMENT_EPSILON = 0.009;
 const MIN_CANCEL_REMARKS_WITH_BALANCE = 15;
+
+function pgUniqueConstraintName(err: unknown): string | undefined {
+  let e: unknown = err;
+  const seen = new Set<unknown>();
+  while (e && typeof e === "object" && !seen.has(e)) {
+    seen.add(e);
+    const o = e as { code?: string; constraint?: string; cause?: unknown };
+    if (o.code === "23505" && typeof o.constraint === "string") return o.constraint;
+    e = o.cause;
+  }
+  return undefined;
+}
 
 function formatPhp(amount: number): string {
   return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amount);
@@ -72,6 +95,8 @@ export async function createEnrollmentAction(
   }
 
   const studentTypeRaw = formData.get("studentType");
+  const studentTypeResolved =
+    typeof studentTypeRaw === "string" && studentTypeRaw.length > 0 ? studentTypeRaw : "new_student";
 
   const parsed = CreateEnrollmentSchema.safeParse({
     studentId: formData.get("studentId"),
@@ -79,18 +104,44 @@ export async function createEnrollmentAction(
     gradeLevelId: formData.get("gradeLevelId"),
     sectionId: formData.get("sectionId") || undefined,
     registrationId: formData.get("registrationId") || undefined,
-    studentType:
-      typeof studentTypeRaw === "string" && studentTypeRaw.length > 0
-        ? studentTypeRaw
-        : "new_student",
+    studentType: studentTypeResolved,
+    previousSchool: formData.get("previousSchool"),
+    intakeForm138: parseIntakeDocumentStatus(formData.get("intakeForm138")),
+    intakeBirthCertificatePsa: parseIntakeDocumentStatus(formData.get("intakeBirthCertificatePsa")),
+    intakeGoodMoralCharacter: parseIntakeDocumentStatus(formData.get("intakeGoodMoralCharacter")),
+    intakeQualifiedVoucher: parseIntakeDocumentStatus(formData.get("intakeQualifiedVoucher")),
+    intakeEscCertificate: parseIntakeDocumentStatus(formData.get("intakeEscCertificate")),
   });
 
   if (!parsed.success) {
     return { errors: parsed.error.flatten().fieldErrors as EnrollmentFormState["errors"] };
   }
 
-  const { studentId, schoolYearId, gradeLevelId, sectionId, registrationId, studentType } =
-    parsed.data;
+  const {
+    studentId,
+    schoolYearId,
+    gradeLevelId,
+    sectionId,
+    registrationId,
+    studentType,
+    intakeForm138,
+    intakeBirthCertificatePsa,
+    intakeGoodMoralCharacter,
+    intakeQualifiedVoucher,
+    intakeEscCertificate,
+    previousSchool,
+  } = parsed.data;
+
+  let intakeDocuments: EnrollmentIntakeDocuments | null = null;
+  if (studentType === "new_student" || studentType === "transferee") {
+    intakeDocuments = {
+      form138: intakeForm138!,
+      birthCertificatePsa: intakeBirthCertificatePsa!,
+      goodMoralCharacter: intakeGoodMoralCharacter!,
+      qualifiedVoucher: intakeQualifiedVoucher!,
+      escCertificate: intakeEscCertificate!,
+    };
+  }
 
   const activeSchoolYearId = await getActiveSchoolYearId();
   if (!activeSchoolYearId) {
@@ -116,19 +167,48 @@ export async function createEnrollmentAction(
       firstName: true,
       lastName: true,
       referenceNumber: true,
-      previousSchool: true,
     },
   });
   if (!student) {
     return { errors: { studentId: ["Student not found or inactive."] } };
   }
 
-  if (studentType === "transferee") {
-    const ps = student.previousSchool?.trim();
-    if (!ps) {
+  if (registrationId) {
+    const reg = await db.query.registrations.findFirst({
+      where: eq(registrations.id, registrationId),
+      columns: {
+        id: true,
+        studentId: true,
+        schoolYearId: true,
+        status: true,
+      },
+    });
+    if (!reg) {
       return {
-        message:
-          "Transferee enrollments require “Previous school” on the student profile. Edit the student first.",
+        errors: {
+          _form: [
+            "Linked registration was not found. Refresh the page or clear your browser cache and try again.",
+          ],
+        },
+      };
+    }
+    if (reg.studentId !== studentId) {
+      return {
+        errors: { _form: ["That registration does not belong to the selected student."] },
+      };
+    }
+    if (reg.schoolYearId !== schoolYearId) {
+      return {
+        errors: {
+          _form: ["That registration is not for the current school year; remove the stale link."],
+        },
+      };
+    }
+    if (reg.status !== "approved") {
+      return {
+        errors: {
+          _form: ["Only an approved registration can be linked to a new enrollment."],
+        },
       };
     }
   }
@@ -221,36 +301,51 @@ export async function createEnrollmentAction(
   let newEnrollmentId: string | undefined;
 
   try {
-    const [created] = await db
-      .insert(enrollments)
-      .values({
-        studentId,
-        schoolYearId,
-        gradeLevelId,
-        sectionId: sectionId ?? null,
-        registrationId: registrationId ?? null,
-        studentType: studentType satisfies CreateEnrollmentInput["studentType"],
-        status: "pending",
-        createdBy: session.userId,
-        updatedBy: session.userId,
-      })
-      .returning({ id: enrollments.id });
+    await db.transaction(async (tx) => {
+      if (studentType === "transferee" && previousSchool) {
+        await tx
+          .update(students)
+          .set({
+            previousSchool,
+            updatedAt: new Date(),
+            updatedBy: session.userId,
+          })
+          .where(eq(students.id, studentId));
+      }
 
-    newEnrollmentId = created.id;
+      const [created] = await tx
+        .insert(enrollments)
+        .values({
+          studentId,
+          schoolYearId,
+          gradeLevelId,
+          sectionId: sectionId ?? null,
+          registrationId: registrationId ?? null,
+          studentType: studentType satisfies CreateEnrollmentInput["studentType"],
+          intakeDocuments,
+          status: "pending",
+          createdBy: session.userId,
+          updatedBy: session.userId,
+        })
+        .returning({ id: enrollments.id });
 
-    await db.insert(auditLogs).values({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "enrollment_created_pending",
-      targetEntity: "enrollments",
-      targetId: created.id,
-      newState: JSON.stringify({
-        studentId,
-        schoolYearId,
-        gradeLevelId,
-        studentType,
-        status: "pending",
-      }),
+      newEnrollmentId = created.id;
+
+      await tx.insert(auditLogs).values({
+        actor: session.userId,
+        actorRole: session.role,
+        action: "enrollment_created_pending",
+        targetEntity: "enrollments",
+        targetId: created.id,
+        newState: JSON.stringify({
+          studentId,
+          schoolYearId,
+          gradeLevelId,
+          studentType,
+          status: "pending",
+          intakeDocuments,
+        }),
+      });
     });
 
     logger.info("[enrollments] Enrollment created (pending)", {
@@ -260,11 +355,33 @@ export async function createEnrollmentAction(
     });
 
     revalidatePath("/admin/enrollments");
+    revalidatePath("/staff/enrollments");
     revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath(`/staff/students/${studentId}`);
 
     return { success: true, enrollmentId: newEnrollmentId };
   } catch (err) {
-    logger.error("[enrollments] Failed to create enrollment", { error: String(err) });
+    const detail = collectPgErrorText(err);
+    logger.error("[enrollments] Failed to create enrollment", { error: detail });
+
+    if (isUndefinedColumnError(err)) {
+      return {
+        message:
+          "The database is missing required columns (for example intake checklist storage). Apply pending migrations on this environment (`npm run db:migrate`), then try again.",
+      };
+    }
+
+    const uq = pgUniqueConstraintName(err);
+    if (uq === "enrollment_unique_sy_idx" || detail.includes("enrollment_unique_sy_idx")) {
+      return {
+        errors: {
+          _form: [
+            "This student already has an enrollment for the current school year that is not cancelled. Open Enrollments and cancel or complete the existing record before creating another.",
+          ],
+        },
+      };
+    }
+
     return { message: "An unexpected error occurred. Please try again." };
   }
 }
@@ -389,6 +506,7 @@ export async function updateEnrollmentStatusAction(
           .set({
             cancelledAt: new Date(),
             cancelledBy: session.userId,
+            billingStatus: "cancelled",
             updatedAt: new Date(),
             updatedBy: session.userId,
           })
@@ -411,8 +529,11 @@ export async function updateEnrollmentStatusAction(
     });
 
     revalidatePath("/admin/enrollments");
+    revalidatePath("/staff/enrollments");
     revalidatePath("/admin/assessments");
+    revalidatePath("/staff/assessments");
     revalidatePath(`/admin/students/${enrollment.studentId}`);
+    revalidatePath(`/staff/students/${enrollment.studentId}`);
 
     return {
       success: true,
