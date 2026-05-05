@@ -12,6 +12,7 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { FEE_ASSESSMENT_BANDS } from "@/lib/fee-schedule/bands";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -83,6 +84,9 @@ export const assessmentBillingStatusEnum = pgEnum("assessment_billing_status", [
   "cancelled",
 ]);
 
+/** Groups grade levels for fee catalogs: Casa, elem, JHS, SHS (one schedule per band per school year). */
+export const feeAssessmentBandEnum = pgEnum("fee_assessment_band", FEE_ASSESSMENT_BANDS);
+
 // ─── Users & Sessions ─────────────────────────────────────────────────────────
 
 export const users = pgTable(
@@ -144,8 +148,9 @@ export const schoolYears = pgTable("school_years", {
 
 export const gradeLevels = pgTable("grade_levels", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),             // e.g. "Grade 7", "Kinder 2"
+  name: text("name").notNull(),             // e.g. "Grade 7", "Casa Junior"
   order: integer("order").notNull(),
+  assessmentBand: feeAssessmentBandEnum("assessment_band").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -325,15 +330,24 @@ export const enrollments = pgTable(
 export const feeSchedules = pgTable("fee_schedules", {
   id: uuid("id").primaryKey().defaultRandom(),
   schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
-  /** Optional legacy column; assessments use one standard schedule per school year (schoolYearId-only). */
+  /** Optional legacy column; unused for banded resolution. */
   gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
+  /** Null = legacy school-wide catalog for that school year (fallback when no band-specific schedule exists). */
+  assessmentBand: feeAssessmentBandEnum("assessment_band"),
   description: text("description"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   createdBy: uuid("created_by").references(() => users.id),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: uuid("updated_by").references(() => users.id),
-}, (t) => [uniqueIndex("fee_schedule_school_year_uidx").on(t.schoolYearId)]);
+}, (t) => [
+  uniqueIndex("fee_schedule_sy_band_uidx")
+    .on(t.schoolYearId, t.assessmentBand)
+    .where(sql`${t.assessmentBand} IS NOT NULL`),
+  uniqueIndex("fee_schedule_sy_legacy_uidx")
+    .on(t.schoolYearId)
+    .where(sql`${t.assessmentBand} IS NULL`),
+]);
 
 export const feeScheduleItems = pgTable("fee_schedule_items", {
   id: uuid("id").primaryKey().defaultRandom(),

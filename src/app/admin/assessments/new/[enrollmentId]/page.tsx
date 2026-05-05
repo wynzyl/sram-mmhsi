@@ -6,13 +6,14 @@ import {
   students,
   schoolYears,
   gradeLevels,
-  feeSchedules,
   feeScheduleItems,
 } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentDraftForm from "@/components/assessments/AssessmentDraftForm";
+import { resolveFeeScheduleForAssessment } from "@/lib/fee-schedule/resolve";
+import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
 
 export const metadata: Metadata = { title: "Create Assessment" };
 
@@ -40,6 +41,7 @@ export default async function NewAssessmentForEnrollmentPage({ params }: PagePro
       gradeLevelId: enrollments.gradeLevelId,
       syLabel: schoolYears.label,
       gradeName: gradeLevels.name,
+      assessmentBand: gradeLevels.assessmentBand,
     })
     .from(enrollments)
     .innerJoin(students, eq(enrollments.studentId, students.id))
@@ -55,9 +57,11 @@ export default async function NewAssessmentForEnrollmentPage({ params }: PagePro
     redirect("/admin/assessments");
   }
 
-  const schedule = await db.query.feeSchedules.findFirst({
-    where: eq(feeSchedules.schoolYearId, e.schoolYearId),
-    columns: { id: true, isActive: true },
+  const catalogBandLabel = FEE_ASSESSMENT_BAND_LABELS[e.assessmentBand];
+
+  const schedule = await resolveFeeScheduleForAssessment(db, {
+    schoolYearId: e.schoolYearId,
+    assessmentBand: e.assessmentBand,
   });
 
   let feeCatalog: {
@@ -83,11 +87,11 @@ export default async function NewAssessmentForEnrollmentPage({ params }: PagePro
   }
 
   const submitBlockedReason = !schedule
-    ? "No fee schedule exists for this school year. Create one under Finance → Fee schedules with line items."
+    ? `No fee schedule exists for this school year and fee band (${catalogBandLabel}), or a legacy school-wide catalog. Create one under Finance → Fee schedules with line items.`
     : !schedule.isActive
-      ? "The fee schedule for this school year is inactive. Activate it in Finance before assessing."
+      ? `The fee schedule for this grade band (${catalogBandLabel}) is inactive. Activate it in Finance before assessing.`
       : feeCatalog.length === 0
-        ? "Add at least one fee to the school-year catalog (Finance → Fee schedules) before assessing."
+        ? `Add at least one fee to the catalog for this grade band (${catalogBandLabel}) under Finance → Fee schedules before assessing.`
         : null;
 
   return (
@@ -96,8 +100,8 @@ export default async function NewAssessmentForEnrollmentPage({ params }: PagePro
         <div>
           <h1 className="page-title">Create assessment</h1>
           <p className="page-subtitle">
-            Pick fee lines from the school-year catalog (one at a time), adjust amounts for this student,
-            then save. Enrollment becomes Assessed.
+            Fee lines for <strong>{catalogBandLabel}</strong> are filled from Finance → Fee schedules.
+            Adjust amounts (or remove lines) as needed, then save. Enrollment becomes Assessed.
           </p>
         </div>
       </div>
@@ -107,6 +111,7 @@ export default async function NewAssessmentForEnrollmentPage({ params }: PagePro
         studentLabel={`${e.lastName}, ${e.firstName} (${e.referenceNumber})`}
         schoolYearLabel={e.syLabel}
         gradeLabel={e.gradeName}
+        catalogBandLabel={catalogBandLabel}
         feeCatalog={feeCatalog}
         submitBlockedReason={submitBlockedReason}
       />

@@ -77,7 +77,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
           children: [
             { href: "/staff/students/new", label: "New Student", icon: "students" },
             { href: "/staff/students/new?intent=transferee", label: "Transferee", icon: "students" },
-            { href: "/staff/enrollments/new", label: "Old Student", icon: "enrollments" },
+            // { href: "/staff/enrollments/new", label: "Old Student", icon: "enrollments" },
           ],
         },
         { href: "/staff/registrations", label: "Verify Records", icon: "registrations" },

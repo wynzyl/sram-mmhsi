@@ -27,7 +27,9 @@ interface AssessmentDraftFormProps {
   studentLabel: string;
   schoolYearLabel: string;
   gradeLabel: string;
-  /** Lookup list: fees defined for this enrollment's school year. */
+  /** Human label for the fee assessment band (Casa, JHS, etc.). */
+  catalogBandLabel: string;
+  /** Lookup list: fees defined for this enrollment's school year and band (or legacy catalog). */
   feeCatalog: FeeCatalogEntry[];
   submitBlockedReason?: string | null;
 }
@@ -40,11 +42,22 @@ function newRowKey(): string {
     : `row-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function rowsFromCatalog(catalog: FeeCatalogEntry[]): AssessmentLineRow[] {
+  return catalog.map((entry) => ({
+    rowKey: newRowKey(),
+    feeScheduleItemId: entry.feeScheduleItemId,
+    description: entry.description,
+    amount: String(entry.defaultAmount),
+    isDiscount: entry.isDiscount,
+  }));
+}
+
 export default function AssessmentDraftForm({
   enrollmentId,
   studentLabel,
   schoolYearLabel,
   gradeLabel,
+  catalogBandLabel,
   feeCatalog,
   submitBlockedReason,
 }: AssessmentDraftFormProps) {
@@ -54,7 +67,9 @@ export default function AssessmentDraftForm({
     initialAssessmentState
   );
 
-  const [rows, setRows] = useState<AssessmentLineRow[]>([]);
+  const [rows, setRows] = useState<AssessmentLineRow[]>(() =>
+    submitBlockedReason || feeCatalog.length === 0 ? [] : rowsFromCatalog(feeCatalog)
+  );
 
   const catalogById = useMemo(
     () => new Map(feeCatalog.map((e) => [e.feeScheduleItemId, e])),
@@ -157,14 +172,17 @@ export default function AssessmentDraftForm({
         <h3 className="form-section-title">Enrollment</h3>
         <p className="text-muted" style={{ marginBottom: "0.75rem" }}>
           <strong>{studentLabel}</strong> · {schoolYearLabel} · {gradeLabel}
+          <br />
+          <span style={{ fontSize: "0.9rem" }}>Fee band: {catalogBandLabel}</span>
         </p>
       </section>
 
       <section className="form-section">
         <h3 className="form-section-title">Assessment lines</h3>
         <p className="text-muted" style={{ marginBottom: "0.75rem", fontSize: "0.9rem" }}>
-          Fees are picked from the school-year catalog maintained under Finance → Fee schedules. Add
-          one catalog line at a time; amounts can be adjusted for this student before saving.
+          All fees from the <strong>{catalogBandLabel}</strong> catalog are included below with default
+          amounts. Adjust amounts for this student as needed, or remove a line if it does not apply.
+          Use “Add fee” to bring a removed catalog line back.
         </p>
 
         {!blocked && availableToAdd.length > 0 && (
@@ -199,8 +217,8 @@ export default function AssessmentDraftForm({
         {rows.length === 0 ? (
           <p className="text-muted">
             {blocked
-              ? "Fix the warning above before adding assessment lines."
-              : "Choose a catalog fee above to add your first assessment line."}
+              ? "Fix the warning above before assessment lines can be generated."
+              : "No lines to show. Add fees from the catalog above if you removed every line."}
           </p>
         ) : (
           <div className="table-wrapper" style={{ overflowX: "auto" }}>

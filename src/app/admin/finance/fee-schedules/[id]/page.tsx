@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { feeSchedules, schoolYears, gradeLevels, feeScheduleItems } from "@/lib/db/schema";
+import { feeSchedules, schoolYears, feeScheduleItems } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import FeeScheduleItemsList from "@/components/finance/FeeScheduleItemsList";
+import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -29,18 +30,19 @@ export default async function FeeScheduleDetailsPage({ params }: PageProps) {
       description: feeSchedules.description,
       isActive: feeSchedules.isActive,
       schoolYear: schoolYears.label,
-      gradeLevelName: gradeLevels.name,
+      assessmentBand: feeSchedules.assessmentBand,
     })
     .from(feeSchedules)
     .innerJoin(schoolYears, eq(feeSchedules.schoolYearId, schoolYears.id))
-    .leftJoin(gradeLevels, eq(feeSchedules.gradeLevelId, gradeLevels.id))
     .where(eq(feeSchedules.id, id))
     .limit(1)
     .then((res) => res[0]);
 
   if (!schedule) notFound();
 
-  const scopeLabel = schedule.gradeLevelName ?? "All grade levels";
+  const scopeLabel = schedule.assessmentBand
+    ? FEE_ASSESSMENT_BAND_LABELS[schedule.assessmentBand]
+    : "All grades (legacy catalog)";
 
   const items = await db
     .select()
@@ -53,7 +55,7 @@ export default async function FeeScheduleDetailsPage({ params }: PageProps) {
       <div className="page-header">
         <div>
           <h1 className="page-title">
-            Standard fees · {schedule.schoolYear}
+            Fee catalog · {schedule.schoolYear}
           </h1>
           <p className="page-subtitle">
             {schedule.description || "No description provided."}
@@ -69,7 +71,7 @@ export default async function FeeScheduleDetailsPage({ params }: PageProps) {
             </div>
             <div className="card-body">
               <p><strong>School Year:</strong> {schedule.schoolYear}</p>
-              <p><strong>Scope:</strong> {scopeLabel}</p>
+              <p><strong>Assessment band:</strong> {scopeLabel}</p>
               <p>
                 <strong>Status:</strong>{" "}
                 <span className={`badge ${schedule.isActive ? "badge-success" : "badge-secondary"}`}>

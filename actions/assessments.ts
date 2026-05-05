@@ -7,10 +7,11 @@ import {
   assessments,
   assessmentItems,
   auditLogs,
-  feeSchedules,
   feeScheduleItems,
+  gradeLevels,
 } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
+import { resolveFeeScheduleForAssessment } from "@/lib/fee-schedule/resolve";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -60,6 +61,14 @@ export async function createAssessmentFromEnrollmentAction(
     return { message: "Enrollment not found." };
   }
 
+  const gradeRow = await db.query.gradeLevels.findFirst({
+    where: eq(gradeLevels.id, enrollmentRow.gradeLevelId),
+    columns: { assessmentBand: true },
+  });
+  if (!gradeRow) {
+    return { message: "Grade level not found for this enrollment." };
+  }
+
   if (enrollmentRow.status !== "pending") {
     return {
       message: `Assessment can only be created when enrollment is Pending (current: ${enrollmentRow.status}).`,
@@ -74,22 +83,22 @@ export async function createAssessmentFromEnrollmentAction(
     return { message: "An assessment already exists for this enrollment." };
   }
 
-  const scheduleRow = await db.query.feeSchedules.findFirst({
-    where: eq(feeSchedules.schoolYearId, enrollmentRow.schoolYearId),
-    columns: { id: true, isActive: true },
+  const scheduleRow = await resolveFeeScheduleForAssessment(db, {
+    schoolYearId: enrollmentRow.schoolYearId,
+    assessmentBand: gradeRow.assessmentBand,
   });
 
   if (!scheduleRow) {
     return {
       message:
-        "No fee schedule exists for this school year. Configure Finance → Fee schedules first.",
+        "No fee schedule exists for this school year and grade band (or legacy school-wide catalog). Configure Finance → Fee schedules first.",
     };
   }
 
   if (!scheduleRow.isActive) {
     return {
       message:
-        "The fee schedule for this school year is inactive. Activate it under Finance → Fee schedules.",
+        "The fee schedule for this enrollment’s grade band is inactive. Activate it under Finance → Fee schedules.",
     };
   }
 
@@ -153,9 +162,9 @@ export async function createAssessmentFromEnrollmentAction(
 
   try {
     await db.transaction(async (tx) => {
-      const scheduleCheck = await tx.query.feeSchedules.findFirst({
-        where: eq(feeSchedules.schoolYearId, enrollmentRow.schoolYearId),
-        columns: { id: true, isActive: true },
+      const scheduleCheck = await resolveFeeScheduleForAssessment(tx, {
+        schoolYearId: enrollmentRow.schoolYearId,
+        assessmentBand: gradeRow.assessmentBand,
       });
       if (!scheduleCheck?.isActive || scheduleCheck.id !== scheduleRow.id) {
         throw new Error("FEE_SCHEDULE_CHANGED");
