@@ -358,8 +358,9 @@ new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(15
 4. Run `npm run db:migrate` — Applies migration to database
 5. Commit both schema changes AND migration files
 
-#Rule
-Always create a migration file readable. No fancy name.
+### Rule
+
+Create migration files with clear, human-readable, descriptive filenames; avoid fancy or non-descriptive names.
 
 **Important:** Never use `db:push` in production. Always use migrations for traceability.
 
