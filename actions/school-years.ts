@@ -6,6 +6,7 @@ import { schoolYears, enrollments, registrations, auditLogs } from "@/lib/db/sch
 import { eq, and, ilike, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { logCreateAction, logUpdateAction, logDeleteAction } from "@/lib/utils/audit-logger";
 import {
   CreateSchoolYearSchema,
   UpdateSchoolYearSchema,
@@ -19,33 +20,6 @@ import type {
   DeleteSchoolYearFormState,
 } from "@/lib/validators/school-year";
 import { logger } from "@/lib/observability/logger";
-
-// ─── Audit Helper ─────────────────────────────────────────────────────────────
-
-async function audit(
-  actorId: string,
-  actorRole: string,
-  action: string,
-  targetEntity: string,
-  targetId: string,
-  previousState?: object,
-  newState?: object
-) {
-  try {
-    await db.insert(auditLogs).values({
-      actor: actorId,
-      actorRole,
-      action,
-      targetEntity,
-      targetId,
-      previousState: previousState ? JSON.stringify(previousState) : undefined,
-      newState: newState ? JSON.stringify(newState) : undefined,
-      correlationId: crypto.randomUUID(),
-    });
-  } catch (err) {
-    logger.error("[audit] Failed to write", { error: String(err) });
-  }
-}
 
 // ─── Create School Year Action ────────────────────────────────────────────────
 
@@ -116,15 +90,10 @@ export async function createSchoolYearAction(
       .returning({ id: schoolYears.id });
 
     // 6. Audit log
-    await audit(
-      session.userId,
-      session.role,
-      "school_year_created",
-      "school_years",
-      newSchoolYear.id,
-      undefined,
-      { label: schoolYearData.label, isActive: schoolYearData.isActive }
-    );
+    await logCreateAction(session, "school_years", newSchoolYear.id, {
+      label: schoolYearData.label,
+      isActive: schoolYearData.isActive,
+    });
 
     logger.info("[school_years] School year created", {
       schoolYearId: newSchoolYear.id,
@@ -233,10 +202,8 @@ export async function updateSchoolYearAction(
       .where(eq(schoolYears.id, schoolYearId));
 
     // 7. Audit log
-    await audit(
-      session.userId,
-      session.role,
-      "school_year_updated",
+    await logUpdateAction(
+      session,
       "school_years",
       schoolYearId,
       {
@@ -331,10 +298,8 @@ export async function toggleSchoolYearStatusAction(
       .where(eq(schoolYears.id, schoolYearId));
 
     // 6. Audit log
-    await audit(
-      session.userId,
-      session.role,
-      "school_year_status_changed",
+    await logUpdateAction(
+      session,
       "school_years",
       schoolYearId,
       { isActive: existingSchoolYear.isActive },
@@ -440,14 +405,11 @@ export async function deleteSchoolYearAction(
       .where(eq(schoolYears.id, schoolYearId));
 
     // 7. Audit log
-    await audit(
-      session.userId,
-      session.role,
-      "school_year_deleted",
+    await logDeleteAction(
+      session,
       "school_years",
       schoolYearId,
-      { label: existingSchoolYear.label },
-      undefined
+      `Deleted school year: ${existingSchoolYear.label}`
     );
 
     logger.info("[school_years] School year deleted", {

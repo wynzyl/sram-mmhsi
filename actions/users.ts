@@ -6,6 +6,7 @@ import { users, auditLogs } from "@/lib/db/schema";
 import { eq, and, ilike, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
 import {
   CreateUserSchema,
   UpdateUserSchema,
@@ -20,33 +21,6 @@ import type {
 } from "@/lib/validators/user";
 import { logger } from "@/lib/observability/logger";
 import bcrypt from "bcryptjs";
-
-// ─── Audit Helper ─────────────────────────────────────────────────────────────
-
-async function audit(
-  actorId: string,
-  actorRole: string,
-  action: string,
-  targetEntity: string,
-  targetId: string,
-  previousState?: object,
-  newState?: object
-) {
-  try {
-    await db.insert(auditLogs).values({
-      actor: actorId,
-      actorRole,
-      action,
-      targetEntity,
-      targetId,
-      previousState: previousState ? JSON.stringify(previousState) : undefined,
-      newState: newState ? JSON.stringify(newState) : undefined,
-      correlationId: crypto.randomUUID(),
-    });
-  } catch (err) {
-    logger.error("[audit] Failed to write", { error: String(err) });
-  }
-}
 
 // ─── Create User Action ───────────────────────────────────────────────────────
 
@@ -127,15 +101,11 @@ export async function createUserAction(
       .returning({ id: users.id });
 
     // 6. Audit log
-    await audit(
-      session.userId,
-      session.role,
-      "user_created",
-      "users",
-      newUser.id,
-      undefined,
-      { email: userData.email, username: userData.username, role: userData.role }
-    );
+    await logCreateAction(session, "users", newUser.id, {
+      email: userData.email,
+      username: userData.username,
+      role: userData.role,
+    });
 
     logger.info("[users] User created", {
       userId: newUser.id,
@@ -283,10 +253,8 @@ export async function updateUserAction(
       .where(eq(users.id, userId));
 
     // 8. Audit log
-    await audit(
-      session.userId,
-      session.role,
-      "user_updated",
+    await logUpdateAction(
+      session,
       "users",
       userId,
       {
@@ -368,14 +336,12 @@ export async function resetPasswordAction(
       .where(eq(users.id, userId));
 
     // 6. Audit log
-    await audit(
-      session.userId,
-      session.role,
-      "password_reset",
+    await logUpdateAction(
+      session,
       "users",
       userId,
-      undefined,
-      { forcePasswordChange }
+      {},
+      { passwordReset: true, forcePasswordChange }
     );
 
     logger.info("[users] Password reset", {
@@ -474,10 +440,8 @@ export async function toggleUserStatusAction(
       .where(eq(users.id, userId));
 
     // 7. Audit log
-    await audit(
-      session.userId,
-      session.role,
-      "user_status_changed",
+    await logUpdateAction(
+      session,
       "users",
       userId,
       { isActive: existingUser.isActive },

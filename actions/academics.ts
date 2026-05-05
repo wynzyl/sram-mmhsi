@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { teacherAssignments, gradeRecords, auditLogs } from "@/lib/db/schema";
+import { teacherAssignments, gradeRecords, subjects } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { logCreateAction, logDeleteAction, logAudit } from "@/lib/utils/audit-logger";
 import {
   AssignTeacherSchema,
   RemoveAssignmentSchema,
@@ -19,7 +20,6 @@ import {
   type DeleteSubjectFormState,
 } from "@/lib/validators/academics";
 import { logger } from "@/lib/observability/logger";
-import { subjects } from "@/lib/db/schema";
 
 // ─── Subject Management ─────────────────────────────────────────────────────
 
@@ -72,14 +72,7 @@ export async function createSubjectAction(
       })
       .returning({ id: subjects.id });
 
-    await db.insert(auditLogs).values({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "subject_created",
-      targetEntity: "subjects",
-      targetId: newSubject.id,
-      newState: JSON.stringify(data),
-    });
+    await logCreateAction(session, "subjects", newSubject.id, data);
 
     revalidatePath("/admin/academics/subjects");
     return { success: true, message: "Subject created successfully." };
@@ -109,13 +102,7 @@ export async function deleteSubjectAction(
   try {
     await db.delete(subjects).where(eq(subjects.id, parsed.data.subjectId));
 
-    await db.insert(auditLogs).values({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "subject_deleted",
-      targetEntity: "subjects",
-      targetId: parsed.data.subjectId,
-    });
+    await logDeleteAction(session, "subjects", parsed.data.subjectId);
 
     revalidatePath("/admin/academics/subjects");
     return { success: true, message: "Subject deleted successfully." };
@@ -175,14 +162,7 @@ export async function assignTeacherAction(
       })
       .returning({ id: teacherAssignments.id });
 
-    await db.insert(auditLogs).values({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "teacher_assigned",
-      targetEntity: "teacher_assignments",
-      targetId: newAssignment.id,
-      newState: JSON.stringify(data),
-    });
+    await logCreateAction(session, "teacher_assignments", newAssignment.id, data);
 
     revalidatePath("/admin/academics/assignments");
     return { success: true, message: "Teacher assigned successfully." };
@@ -214,13 +194,7 @@ export async function removeAssignmentAction(
   try {
     await db.delete(teacherAssignments).where(eq(teacherAssignments.id, parsed.data.assignmentId));
 
-    await db.insert(auditLogs).values({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "assignment_removed",
-      targetEntity: "teacher_assignments",
-      targetId: parsed.data.assignmentId,
-    });
+    await logDeleteAction(session, "teacher_assignments", parsed.data.assignmentId);
 
     revalidatePath("/admin/academics/assignments");
     return { success: true, message: "Assignment removed." };
@@ -269,11 +243,12 @@ export async function lockGradesAction(
         )
       );
 
-    await db.insert(auditLogs).values({
+    await logAudit({
       actor: session.userId,
       actorRole: session.role,
-      action: "grades_locked",
+      action: "grade_records:lock",
       targetEntity: "grade_records",
+      targetId: assignmentId,
       context: `Assignment: ${assignmentId}, Period: ${gradingPeriod}`,
     });
 

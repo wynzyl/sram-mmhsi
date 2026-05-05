@@ -6,16 +6,17 @@ import {
   students,
   parentsGuardians,
   studentGuardianLinks,
-  auditLogs,
   enrollments,
   registrations,
-  schoolYears,
   gradeLevels,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
-import { eq, ne, ilike, and, sql, isNull } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { eq, ne, ilike, and, sql } from "drizzle-orm";
+import { requireSession, getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
+import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
+import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
 import { CreateStudentWithRegistrationSchema } from "@/lib/validators/registration";
 import { UpdateStudentSchema } from "@/lib/validators/student";
 import type { CreateStudentFormState, UpdateStudentFormState } from "@/lib/validators/student";
@@ -25,59 +26,13 @@ import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error
 import { logger } from "@/lib/observability/logger";
 import type { GuardianInput } from "@/lib/validators/student";
 
-// ─── Audit Helper ─────────────────────────────────────────────────────────────
-
-async function audit(
-  actorId: string,
-  actorRole: string,
-  action: string,
-  targetEntity: string,
-  targetId: string,
-  newState?: object
-) {
-  try {
-    await db.insert(auditLogs).values({
-      actor: actorId,
-      actorRole,
-      action,
-      targetEntity,
-      targetId,
-      newState: newState ? JSON.stringify(newState) : undefined,
-      correlationId: crypto.randomUUID(),
-    });
-  } catch (err) {
-    logger.error("[audit] Failed to write", { error: String(err) });
-  }
-}
-
-function pgUniqueConstraint(err: unknown): string | undefined {
-  let e: unknown = err;
-  const seen = new Set<unknown>();
-  while (e && typeof e === "object" && !seen.has(e)) {
-    seen.add(e);
-    const o = e as { code?: string; constraint?: string; cause?: unknown };
-    if (o.code === "23505" && typeof o.constraint === "string") return o.constraint;
-    e = o.cause;
-  }
-  return undefined;
-}
-
-// ─── Get next student sequence number ────────────────────────────────────────
+// ─── Helper Functions ─────────────────────────────────────────────────────────
 
 async function getNextStudentSequence(): Promise<number> {
   const result = await db
     .select({ count: sql<number>`count(*)` })
     .from(students);
   return (result[0]?.count ?? 0) + 1;
-}
-
-async function getActiveSchoolYearId(): Promise<string | null> {
-  const rows = await db
-    .select({ id: schoolYears.id })
-    .from(schoolYears)
-    .where(and(eq(schoolYears.isActive, true), isNull(schoolYears.deletedAt)))
-    .limit(1);
-  return rows[0]?.id ?? null;
 }
 
 // ─── Create Student Action ────────────────────────────────────────────────────
@@ -305,21 +260,14 @@ export async function createStudentAction(
       return insertedStudent;
     });
 
-    await audit(
-      session.userId,
-      session.role,
-      "student_created",
-      "students",
-      newStudent.id,
-      {
-        referenceNumber,
-        firstName: studentData.firstName,
-        lastName: studentData.lastName,
-        schoolYearId,
-        gradeLevelId,
-        registrationStudentType,
-      }
-    );
+    await logCreateAction(session, "students", newStudent.id, {
+      referenceNumber,
+      firstName: studentData.firstName,
+      lastName: studentData.lastName,
+      schoolYearId,
+      gradeLevelId,
+      registrationStudentType,
+    });
 
     logger.info("[students] Student created with registration", {
       studentId: newStudent.id,
@@ -337,7 +285,7 @@ export async function createStudentAction(
     const detail = collectPgErrorText(err);
     logger.error("[students] Failed to create student", { error: String(err), detail });
     const restore = buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]);
-    if (pgUniqueConstraint(err) === "students_lrn_unique") {
+    if (extractUniqueConstraint(err) === "students_lrn_unique") {
       return {
         errors: { lrn: ["This LRN is already assigned to another student."] },
         fieldValues: restore,
@@ -527,12 +475,8 @@ export async function updateStudentAction(
     }
 
     // 8. Audit log
-    await audit(
-      session.userId,
-      session.role,
-      "student_updated",
-      "students",
-      studentId,
+    await logUpdateAction(session, "students", studentId,
+      { firstName: existingStudent.firstName, lastName: existingStudent.lastName, isActive: existingStudent.isActive },
       { firstName: studentData.firstName, lastName: studentData.lastName, isActive }
     );
 
@@ -549,7 +493,7 @@ export async function updateStudentAction(
     return { success: true };
   } catch (err) {
     logger.error("[students] Failed to update student", { error: String(err) });
-    if (pgUniqueConstraint(err) === "students_lrn_unique") {
+    if (extractUniqueConstraint(err) === "students_lrn_unique") {
       return { errors: { lrn: ["This LRN is already assigned to another student."] } };
     }
     return { message: "An unexpected error occurred. Please try again." };
