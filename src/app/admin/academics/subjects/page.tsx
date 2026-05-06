@@ -2,7 +2,8 @@ import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { subjects, gradeLevels } from "@/lib/db/schema";
 import { CreateSubjectForm } from "@/components/academics/CreateSubjectForm";
-import { DeleteSubjectButton } from "@/components/academics/DeleteSubjectButton";
+import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
+import { deleteSubjectAction } from "@/actions/academics";
 
 export default async function SubjectManagementPage() {
   const gradeLevelsList = await db.query.gradeLevels.findMany({
@@ -62,7 +63,14 @@ export default async function SubjectManagementPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <DeleteSubjectButton subjectId={subject.id} />
+                    <InlineConfirmButton
+                      action={deleteSubjectAction}
+                      confirmMessage="Are you sure you want to delete this subject?"
+                      hiddenFields={{ subjectId: subject.id }}
+                      label="Delete"
+                      loadingLabel="Deleting..."
+                      variant="danger"
+                    />
                   </td>
                 </tr>
               ))

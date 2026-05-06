@@ -12,7 +12,8 @@ import {
   users
 } from "@/lib/db/schema";
 import { notFound } from "next/navigation";
-import { LockGradesButton } from "@/components/academics/LockGradesButton";
+import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
+import { lockGradesAction } from "@/actions/academics";
 
 export default async function AdminGradeViewPage({
   params,
@@ -93,9 +94,18 @@ export default async function AdminGradeViewPage({
               </div>
               <div className="mt-4">
                 {statuses[q] === "submitted" ? (
-                  <LockGradesButton assignmentId={assignmentId} gradingPeriod={q} isLocked={false} />
+                  <InlineConfirmButton
+                    action={lockGradesAction}
+                    confirmMessage={`Are you sure you want to lock grades for ${q}? This cannot be undone.`}
+                    hiddenFields={{ assignmentId, gradingPeriod: q }}
+                    label="Lock"
+                    loadingLabel="Locking..."
+                    variant="primary"
+                  />
                 ) : statuses[q] === "locked" ? (
-                  <LockGradesButton assignmentId={assignmentId} gradingPeriod={q} isLocked={true} />
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    LOCKED
+                  </span>
                 ) : (
                   <span className="text-xs text-gray-400">Cannot lock yet</span>
                 )}
