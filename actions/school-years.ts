@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { schoolYears, enrollments, registrations, auditLogs } from "@/lib/db/schema";
+import { schoolYears, enrollments, registrations } from "@/lib/db/schema";
 import { eq, and, ilike, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";

@@ -6,7 +6,6 @@ import {
   enrollments,
   assessments,
   assessmentItems,
-  auditLogs,
   feeScheduleItems,
   gradeLevels,
 } from "@/lib/db/schema";
@@ -20,6 +19,7 @@ import {
 } from "@/lib/validators/assessment";
 import type { AssessmentFormState } from "@/lib/validators/assessment";
 import { logger } from "@/lib/observability/logger";
+import { logAudit } from "@/lib/utils/audit-logger";
 
 export async function createAssessmentFromEnrollmentAction(
   _prevState: AssessmentFormState,
@@ -220,19 +220,19 @@ export async function createAssessmentFromEnrollmentAction(
           and(eq(enrollments.id, enrollmentId), eq(enrollments.status, "pending"))
         );
 
-      await tx.insert(auditLogs).values({
+      await logAudit({
         actor: session.userId,
         actorRole: session.role,
         action: "assessment_created_and_enrollment_assessed",
         targetEntity: "assessments",
         targetId: newAssessment.id,
         context: enrollmentId,
-        newState: JSON.stringify({
+        newState: {
           enrollmentId,
           totalAmount: assessmentTotalAmount,
           lineCount: resolvedLines.length,
           feeScheduleId: scheduleRow.id,
-        }),
+        },
       });
     });
 
