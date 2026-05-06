@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { intakeDocumentStatusSchema, preprocessIntakeRadio } from "./intake-documents";
+import type { BaseFormState } from "./common-schemas";
 
 export const enrollmentStudentTypeEnumSchema = z.enum([
   "new_student",
@@ -81,10 +82,7 @@ export const CreateEnrollmentSchema = z
 
 export type CreateEnrollmentInput = z.infer<typeof CreateEnrollmentSchema>;
 
-export type EnrollmentFormState = {
-  errors?: Partial<Record<keyof CreateEnrollmentInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
+export type EnrollmentFormState = BaseFormState<CreateEnrollmentInput> & {
   enrollmentId?: string;
 };
 
@@ -100,8 +98,4 @@ export const UpdateEnrollmentStatusSchema = z.object({
 
 export type UpdateEnrollmentStatusInput = z.infer<typeof UpdateEnrollmentStatusSchema>;
 
-export type UpdateEnrollmentFormState = {
-  errors?: Partial<Record<string, string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type UpdateEnrollmentFormState = BaseFormState<UpdateEnrollmentStatusInput>;
