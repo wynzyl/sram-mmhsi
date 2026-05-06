@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { OR_SEQUENCE_PAD } from "@/lib/utils/or-number";
+import type { BaseFormState } from "./common-schemas";
 
 const BOOKLET_RECEIPT_COUNT = 50;
 const OR_SEQUENCE_MAX = 99_999;
@@ -72,11 +73,7 @@ export const CreateBookletSchema = z
 
 export type CreateBookletInput = z.infer<typeof CreateBookletSchema>;
 
-export type BookletFormState = {
-  errors?: Partial<Record<keyof CreateBookletInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type BookletFormState = BaseFormState<CreateBookletInput>;
 
 // ─── Payment Posting Validators ───────────────────────────────────────────────
 
@@ -134,11 +131,7 @@ export const PostPaymentSchema = z
 
 export type PostPaymentInput = z.infer<typeof PostPaymentSchema>;
 
-export type PaymentFormState = {
-  errors?: Partial<Record<keyof PostPaymentInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type PaymentFormState = BaseFormState<PostPaymentInput>;
 
 // ─── Void Payment Validators ──────────────────────────────────────────────────
 
@@ -149,8 +142,4 @@ export const VoidPaymentSchema = z.object({
 
 export type VoidPaymentInput = z.infer<typeof VoidPaymentSchema>;
 
-export type VoidPaymentFormState = {
-  errors?: Partial<Record<keyof VoidPaymentInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type VoidPaymentFormState = BaseFormState<VoidPaymentInput>;

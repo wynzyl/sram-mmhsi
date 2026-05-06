@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createSubjectAction } from "@/actions/academics";
+import { FormStateAlert } from "@/components/forms/FormStateAlert";
 
 export function CreateSubjectForm({
   gradeLevels,
@@ -14,17 +15,7 @@ export function CreateSubjectForm({
     <form action={formAction} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm mb-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Subject</h3>
 
-      {state.message && (
-        <div className={`p-4 mb-4 rounded-md text-sm ${state.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-          {state.message}
-        </div>
-      )}
-
-      {state.errors?._form && (
-        <div className="p-4 mb-4 bg-red-50 text-red-800 rounded-md text-sm">
-          {state.errors._form.join(", ")}
-        </div>
-      )}
+      <FormStateAlert state={state} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>

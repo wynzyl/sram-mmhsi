@@ -7,7 +7,6 @@ import {
   payments,
   assessments,
   enrollments,
-  auditLogs,
 } from "@/lib/db/schema";
 import { eq, and, lte, gte, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
@@ -24,6 +23,7 @@ import type {
   VoidPaymentFormState,
 } from "@/lib/validators/cashier";
 import { logger } from "@/lib/observability/logger";
+import { logAudit } from "@/lib/utils/audit-logger";
 import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { assertEnrollmentAllowsPayment } from "@/lib/utils/enrollment-payment";
 import { assessmentBillingStatusFromState } from "@/lib/utils/assessment-billing";
@@ -102,18 +102,18 @@ export async function createBookletAction(
       })
       .returning({ id: receiptBooklets.id });
 
-    await db.insert(auditLogs).values({
+    await logAudit({
       actor: session.userId,
       actorRole: session.role,
       action: "booklet_created",
       targetEntity: "receipt_booklets",
       targetId: newBooklet.id,
-      newState: JSON.stringify({
+      newState: {
         ...parsed.data,
         prefix,
         series: seriesCanonical,
-      }),
-    });
+      },
+    }, { throwOnFail: true });
 
     revalidatePath("/admin/finance/booklets");
     return { success: true, message: "Receipt booklet created successfully." };
@@ -296,27 +296,27 @@ export async function postPaymentAction(
               })
               .where(eq(enrollments.id, assessment.enrollmentId));
             
-            await tx.insert(auditLogs).values({
+            await logAudit({
               actor: session.userId,
               actorRole: session.role,
               action: "enrollment_enrolled_via_payment",
               targetEntity: "enrollments",
               targetId: assessment.enrollmentId,
               context: `Payment posted: OR ${orNumberToAssign}`,
-            });
+            }, { throwOnFail: true });
           }
         }
       }
 
       // 7. Audit Log
-      await tx.insert(auditLogs).values({
+      await logAudit({
         actor: session.userId,
         actorRole: session.role,
         action: "payment_posted",
         targetEntity: "payments",
         targetId: newPayment.id,
         context: `OR: ${orNumberToAssign}`,
-      });
+      }, { throwOnFail: true });
     });
 
     revalidatePath(`/admin/assessments/${assessmentId}`);
@@ -435,14 +435,14 @@ export async function voidPaymentAction(
       }
 
       // 4. Audit Log
-      await tx.insert(auditLogs).values({
+      await logAudit({
         actor: session.userId,
         actorRole: session.role,
         action: "payment_voided",
         targetEntity: "payments",
         targetId: paymentId,
         context: `Reason: ${voidReason}`,
-      });
+      }, { throwOnFail: true });
     });
 
     const link = await db.query.payments.findFirst({

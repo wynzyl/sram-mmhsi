@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { users, subjects, sections, schoolYears, teacherAssignments } from "@/lib/db/schema";
 import { AssignTeacherForm } from "@/components/academics/AssignTeacherForm";
-import { RemoveAssignmentButton } from "@/components/academics/RemoveAssignmentButton";
+import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
+import { removeAssignmentAction } from "@/actions/academics";
 
 export default async function TeacherAssignmentsPage() {
   // Fetch required data for the form
@@ -12,6 +13,7 @@ export default async function TeacherAssignmentsPage() {
   });
 
   const subjectsList = await db.query.subjects.findMany({
+    where: isNull(subjects.deletedAt),
     columns: { id: true, name: true, code: true },
   });
 
@@ -46,6 +48,12 @@ export default async function TeacherAssignmentsPage() {
     .leftJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
     .leftJoin(sections, eq(teacherAssignments.sectionId, sections.id))
     .leftJoin(schoolYears, eq(teacherAssignments.schoolYearId, schoolYears.id))
+    .where(
+      and(
+        isNull(teacherAssignments.deletedAt),
+        isNull(subjects.deletedAt)
+      )
+    )
     .orderBy(teacherAssignments.createdAt);
 
   return (
@@ -98,7 +106,14 @@ export default async function TeacherAssignmentsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <a href={`/admin/academics/assignments/${assignment.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">View Grades</a>
-                    <RemoveAssignmentButton assignmentId={assignment.id} />
+                    <InlineConfirmButton
+                      action={removeAssignmentAction}
+                      confirmMessage="Are you sure you want to remove this assignment?"
+                      hiddenFields={{ assignmentId: assignment.id }}
+                      label="Remove"
+                      loadingLabel="Removing..."
+                      variant="danger"
+                    />
                   </td>
                 </tr>
               ))

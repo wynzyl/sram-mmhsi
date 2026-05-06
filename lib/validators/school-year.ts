@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { BaseFormState } from "./common-schemas";
 
 // ─── Create School Year Schema ───────────────────────────────────────────────
 
@@ -29,10 +30,7 @@ export const CreateSchoolYearSchema = z
 
 export type CreateSchoolYearInput = z.infer<typeof CreateSchoolYearSchema>;
 
-export type CreateSchoolYearFormState = {
-  errors?: Partial<Record<keyof CreateSchoolYearInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
+export type CreateSchoolYearFormState = BaseFormState<CreateSchoolYearInput> & {
   schoolYearId?: string;
 };
 
@@ -66,11 +64,7 @@ export const UpdateSchoolYearSchema = z
 
 export type UpdateSchoolYearInput = z.infer<typeof UpdateSchoolYearSchema>;
 
-export type UpdateSchoolYearFormState = {
-  errors?: Partial<Record<keyof UpdateSchoolYearInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type UpdateSchoolYearFormState = BaseFormState<UpdateSchoolYearInput>;
 
 // ─── Toggle School Year Status Schema ────────────────────────────────────────
 
@@ -83,13 +77,7 @@ export type ToggleSchoolYearStatusInput = z.infer<
   typeof ToggleSchoolYearStatusSchema
 >;
 
-export type ToggleSchoolYearStatusFormState = {
-  errors?: Partial<
-    Record<keyof ToggleSchoolYearStatusInput | "_form", string[]>
-  >;
-  message?: string;
-  success?: boolean;
-};
+export type ToggleSchoolYearStatusFormState = BaseFormState<ToggleSchoolYearStatusInput>;
 
 // ─── Delete School Year Schema ───────────────────────────────────────────────
 
@@ -99,8 +87,4 @@ export const DeleteSchoolYearSchema = z.object({
 
 export type DeleteSchoolYearInput = z.infer<typeof DeleteSchoolYearSchema>;
 
-export type DeleteSchoolYearFormState = {
-  errors?: Partial<Record<keyof DeleteSchoolYearInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type DeleteSchoolYearFormState = BaseFormState<DeleteSchoolYearInput>;

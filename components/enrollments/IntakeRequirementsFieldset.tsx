@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import type { IntakePreserved } from "@/lib/utils/intake-documents";
 import type { IntakeDocumentStatus } from "@/lib/validators/intake-documents";
+import { cn } from "@/lib/utils/cn";
 
 export type IntakeRequirementErrorKey =
   | "intakeForm138"
@@ -33,32 +34,71 @@ function TriRadios({
   preserved?: IntakeDocumentStatus | "";
 }) {
   const v = preserved === "" ? undefined : preserved;
+  const optionClass =
+    "flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-sm text-warm-gray transition-colors hover:bg-gray-50";
+  const inputClass =
+    "h-4 w-4 shrink-0 border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]/25";
+
   return (
-    <div className="flex flex-wrap gap-4">
-      <label className="flex items-center gap-2 cursor-pointer">
+    <div className="flex flex-wrap gap-x-6 gap-y-2 pl-0.5">
+      <label className={optionClass}>
         <input
           type="radio"
           name={name}
           value="received"
           required
           defaultChecked={v === "received"}
+          className={inputClass}
         />
-        Received
+        <span>Received</span>
       </label>
-      <label className="flex items-center gap-2 cursor-pointer">
+      <label className={optionClass}>
         <input
           type="radio"
           name={name}
           value="not_applicable"
           defaultChecked={v === "not_applicable"}
+          className={inputClass}
         />
-        Not applicable
+        <span>Not applicable</span>
       </label>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input type="radio" name={name} value="to_follow" defaultChecked={v === "to_follow"} />
-        To follow
+      <label className={optionClass}>
+        <input
+          type="radio"
+          name={name}
+          value="to_follow"
+          defaultChecked={v === "to_follow"}
+          className={inputClass}
+        />
+        <span>To follow</span>
       </label>
     </div>
+  );
+}
+
+function DocumentRequirementRow({
+  title,
+  name,
+  preserved,
+  error,
+}: {
+  title: string;
+  name: IntakeRequirementErrorKey;
+  preserved?: IntakeDocumentStatus | "";
+  error?: string;
+}) {
+  return (
+    <li
+      className={cn(
+        "rounded-r-lg border-b border-l-4 border-b-gray-100 border-l-[var(--color-primary)]/35 bg-white/80 py-4 pl-4 last:border-b-0"
+      )}
+    >
+      <span className="mb-2 block font-display text-base font-semibold leading-snug tracking-tight text-charcoal md:text-lg">
+        {title}
+      </span>
+      <TriRadios name={name} preserved={preserved} />
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+    </li>
   );
 }
 
@@ -68,83 +108,48 @@ export default function IntakeRequirementsFieldset({
   preserved,
   description = (
     <>
-      Set each item to <strong>Received</strong>, <strong>Not applicable</strong>, or{" "}
-      <strong>To follow</strong> if the document is still pending. Qualified Voucher and ESC follow the
-      same rule.
+      Set each item to <strong className="text-charcoal">Received</strong>,{" "}
+      <strong className="text-charcoal">Not applicable</strong>, or{" "}
+      <strong className="text-charcoal">To follow</strong> if the document is still pending. Qualified
+      Voucher and ESC follow the same rule.
     </>
   ),
 }: IntakeRequirementsFieldsetProps) {
   return (
-    <fieldset
-      className="form-section"
-      style={{
-        border: "1px solid var(--color-border)",
-        borderRadius: "var(--radius-md)",
-        padding: "1rem",
-      }}
-    >
-      <legend className="form-section-title" style={{ padding: "0 0.35rem" }}>
-        {legend}
-      </legend>
-      <p className="text-muted" style={{ marginBottom: "0.75rem", fontSize: "0.9rem" }}>
-        {description}
-      </p>
-      <ul className="student-record-muted" style={{ listStyle: "none", padding: 0, margin: 0 }}>
-        <li style={{ marginBottom: "0.65rem" }}>
-          <span className="form-label" style={{ display: "block", marginBottom: "0.25rem" }}>
-            FORM 138
-          </span>
-          <TriRadios name="intakeForm138" preserved={preserved?.intakeForm138} />
-          {errors?.intakeForm138 && (
-            <p className="form-error" style={{ marginTop: "0.25rem" }}>
-              {errors.intakeForm138[0]}
-            </p>
-          )}
-        </li>
-        <li style={{ marginBottom: "0.65rem" }}>
-          <span className="form-label" style={{ display: "block", marginBottom: "0.25rem" }}>
-            Birth Certificate (PSA)
-          </span>
-          <TriRadios name="intakeBirthCertificatePsa" preserved={preserved?.intakeBirthCertificatePsa} />
-          {errors?.intakeBirthCertificatePsa && (
-            <p className="form-error" style={{ marginTop: "0.25rem" }}>
-              {errors.intakeBirthCertificatePsa[0]}
-            </p>
-          )}
-        </li>
-        <li style={{ marginBottom: "0.65rem" }}>
-          <span className="form-label" style={{ display: "block", marginBottom: "0.25rem" }}>
-            Good Moral Character
-          </span>
-          <TriRadios name="intakeGoodMoralCharacter" preserved={preserved?.intakeGoodMoralCharacter} />
-          {errors?.intakeGoodMoralCharacter && (
-            <p className="form-error" style={{ marginTop: "0.25rem" }}>
-              {errors.intakeGoodMoralCharacter[0]}
-            </p>
-          )}
-        </li>
-        <li style={{ marginBottom: "0.65rem" }}>
-          <span className="form-label" style={{ display: "block", marginBottom: "0.25rem" }}>
-            Qualified Voucher Certificate (if any)
-          </span>
-          <TriRadios name="intakeQualifiedVoucher" preserved={preserved?.intakeQualifiedVoucher} />
-          {errors?.intakeQualifiedVoucher && (
-            <p className="form-error" style={{ marginTop: "0.25rem" }}>
-              {errors.intakeQualifiedVoucher[0]}
-            </p>
-          )}
-        </li>
-        <li>
-          <span className="form-label" style={{ display: "block", marginBottom: "0.25rem" }}>
-            ESC Certificate (if any)
-          </span>
-          <TriRadios name="intakeEscCertificate" preserved={preserved?.intakeEscCertificate} />
-          {errors?.intakeEscCertificate && (
-            <p className="form-error" style={{ marginTop: "0.25rem" }}>
-              {errors.intakeEscCertificate[0]}
-            </p>
-          )}
-        </li>
+    <fieldset className="rounded-xl border border-gray-200 bg-light-gray/30 p-5 shadow-[var(--shadow-sm)]">
+      <legend className="font-display text-lg font-bold text-charcoal px-1">{legend}</legend>
+      <p className="mb-5 mt-2 max-w-3xl text-sm leading-relaxed text-warm-gray">{description}</p>
+      <ul className="m-0 list-none space-y-0 rounded-lg border border-gray-100 bg-white p-0 shadow-sm">
+        <DocumentRequirementRow
+          title="FORM 138"
+          name="intakeForm138"
+          preserved={preserved?.intakeForm138}
+          error={errors?.intakeForm138?.[0]}
+        />
+        <DocumentRequirementRow
+          title="Birth Certificate (PSA)"
+          name="intakeBirthCertificatePsa"
+          preserved={preserved?.intakeBirthCertificatePsa}
+          error={errors?.intakeBirthCertificatePsa?.[0]}
+        />
+        <DocumentRequirementRow
+          title="Good Moral Character"
+          name="intakeGoodMoralCharacter"
+          preserved={preserved?.intakeGoodMoralCharacter}
+          error={errors?.intakeGoodMoralCharacter?.[0]}
+        />
+        <DocumentRequirementRow
+          title="Qualified Voucher Certificate (if any)"
+          name="intakeQualifiedVoucher"
+          preserved={preserved?.intakeQualifiedVoucher}
+          error={errors?.intakeQualifiedVoucher?.[0]}
+        />
+        <DocumentRequirementRow
+          title="ESC Certificate (if any)"
+          name="intakeEscCertificate"
+          preserved={preserved?.intakeEscCertificate}
+          error={errors?.intakeEscCertificate?.[0]}
+        />
       </ul>
     </fieldset>
   );

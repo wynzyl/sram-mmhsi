@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { students, schoolYears, gradeLevels, enrollments } from "@/lib/db/schema";
 import { eq, asc, desc, ne, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import NewEnrollmentForm from "@/components/enrollments/NewEnrollmentForm";
+import EnrollmentWizardForm from "@/components/enrollments/EnrollmentWizardForm";
 import { getRegistrationContextByStudentIdForSchoolYear } from "@/lib/queries/enrollment-registration-context";
 
 export const metadata: Metadata = { title: "New Enrollment" };
@@ -106,7 +108,6 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
   }
 
   let prefillStudent: (typeof allStudents)[0] | null = null;
-
   if (studentId) {
     prefillStudent = allStudents.find((s) => s.id === studentId) ?? null;
   }
@@ -120,18 +121,33 @@ export default async function NewEnrollmentPage({ searchParams }: PageProps) {
       : {};
 
   return (
-    <div className="page-container page-container-narrow">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Enroll Student</h1>
-          <p className="page-subtitle">
-            Enrollments use the <strong>current (active) school year</strong> only. Status starts at{" "}
-            <strong>Pending</strong> until fees are assessed.
-          </p>
-        </div>
-      </div>
+    <div className="page-container">
+      <nav
+        aria-label="Breadcrumb"
+        className="mb-4 flex items-center gap-1.5 font-mono text-xs text-warm-gray"
+      >
+        <Link href="/admin/enrollments" className="hover:text-charcoal">
+          Enrollments
+        </Link>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-charcoal">New enrollment</span>
+      </nav>
 
-      <NewEnrollmentForm
+      <header className="mb-8 max-w-3xl">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-primary)]">
+          Enrollment Workflow
+        </p>
+        <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-charcoal">
+          Place a student
+        </h1>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-warm-gray">
+          Enrollments use the <strong className="text-charcoal">current active school year</strong>{" "}
+          only. The record begins as <strong className="text-charcoal">Pending</strong> until the
+          finance officer assesses fees.
+        </p>
+      </header>
+
+      <EnrollmentWizardForm
         students={allStudents}
         currentSchoolYear={currentSchoolYear}
         gradeLevels={glRows}

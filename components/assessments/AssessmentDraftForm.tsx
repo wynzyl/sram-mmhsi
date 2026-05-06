@@ -4,15 +4,23 @@ import { useActionState, useMemo, useState, useEffect, useCallback } from "react
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createAssessmentFromEnrollmentAction } from "@/actions/assessments";
+import { computeAssessmentTotals } from "@/lib/validators/assessment";
 import type { AssessmentFormState } from "@/lib/validators/assessment";
+import type { NewAssessmentFeeCatalogEntry } from "@/lib/queries/new-assessment-context";
+import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { SelectField } from "@/components/forms/SelectField";
+import { TextAreaField } from "@/components/forms/TextInputField";
+import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
+import {
+  DataCard,
+  DataCardHeader,
+  DataCardBody,
+  DataCardFooter,
+} from "@/components/ui/editorial/DataCard";
+import { StatusIndicator } from "@/components/ui/editorial/StatusIndicator";
+import { cn } from "@/lib/utils/cn";
 
-/** Rows in the flat school-year fee catalog (Finance → Fee schedules). */
-export interface FeeCatalogEntry {
-  feeScheduleItemId: string;
-  description: string;
-  defaultAmount: string;
-  isDiscount: boolean;
-}
+export type FeeCatalogEntry = NewAssessmentFeeCatalogEntry;
 
 interface AssessmentLineRow {
   rowKey: string;
@@ -22,16 +30,22 @@ interface AssessmentLineRow {
   isDiscount: boolean;
 }
 
+type EnrollmentStatus = "pending" | "assessed" | "enrolled" | "cancelled";
+
 interface AssessmentDraftFormProps {
   enrollmentId: string;
-  studentLabel: string;
+  studentFirstName: string;
+  studentLastName: string;
+  referenceNumber: string;
   schoolYearLabel: string;
   gradeLabel: string;
-  /** Human label for the fee assessment band (Casa, JHS, etc.). */
   catalogBandLabel: string;
-  /** Lookup list: fees defined for this enrollment's school year and band (or legacy catalog). */
+  enrollmentStatus: EnrollmentStatus;
+  primaryGuardianLabel?: string | null;
   feeCatalog: FeeCatalogEntry[];
   submitBlockedReason?: string | null;
+  /** Base path without trailing slash, e.g. `/admin/assessments` or `/staff/assessments`. */
+  assessmentsBasePath: string;
 }
 
 const initialAssessmentState: AssessmentFormState = {};
@@ -52,14 +66,25 @@ function rowsFromCatalog(catalog: FeeCatalogEntry[]): AssessmentLineRow[] {
   }));
 }
 
+function studentInitials(first: string, last: string): string {
+  const a = first.trim().charAt(0);
+  const b = last.trim().charAt(0);
+  return `${a}${b}`.toUpperCase() || "?";
+}
+
 export default function AssessmentDraftForm({
   enrollmentId,
-  studentLabel,
+  studentFirstName,
+  studentLastName,
+  referenceNumber,
   schoolYearLabel,
   gradeLabel,
   catalogBandLabel,
+  enrollmentStatus,
+  primaryGuardianLabel,
   feeCatalog,
   submitBlockedReason,
+  assessmentsBasePath,
 }: AssessmentDraftFormProps) {
   const router = useRouter();
   const [state, action, pending] = useActionState(
@@ -70,6 +95,9 @@ export default function AssessmentDraftForm({
   const [rows, setRows] = useState<AssessmentLineRow[]>(() =>
     submitBlockedReason || feeCatalog.length === 0 ? [] : rowsFromCatalog(feeCatalog)
   );
+
+  const [remarks, setRemarks] = useState("");
+  const [addSelectValue, setAddSelectValue] = useState("");
 
   const catalogById = useMemo(
     () => new Map(feeCatalog.map((e) => [e.feeScheduleItemId, e])),
@@ -141,194 +169,341 @@ export default function AssessmentDraftForm({
     [rows]
   );
 
+  const { grossCharges, discountSum, netAssessed } = useMemo(() => {
+    const parsed = rows.map((r) => ({
+      amount: Number.parseFloat(r.amount),
+      isDiscount: r.isDiscount,
+    }));
+    const safe = parsed.map((r) => ({
+      amount: Number.isFinite(r.amount) && r.amount >= 0 ? r.amount : 0,
+      isDiscount: r.isDiscount,
+    }));
+    const gross = safe.filter((r) => !r.isDiscount).reduce((a, r) => a + r.amount, 0);
+    const disc = safe.filter((r) => r.isDiscount).reduce((a, r) => a + r.amount, 0);
+    const net = computeAssessmentTotals(safe);
+    return { grossCharges: gross, discountSum: disc, netAssessed: net };
+  }, [rows]);
+
   useEffect(() => {
     if (state.success && state.assessmentId) {
-      router.replace(`/admin/assessments/${state.assessmentId}`);
+      router.replace(`${assessmentsBasePath}/${state.assessmentId}`);
     }
-  }, [state.success, state.assessmentId, router]);
+  }, [state.success, state.assessmentId, router, assessmentsBasePath]);
 
   const blocked = !!submitBlockedReason;
   const availableToAdd = feeCatalog.filter((c) => !usedIds.has(c.feeScheduleItemId));
-  const [addSelectValue, setAddSelectValue] = useState("");
+  const formId = "enrollment-assessment-form";
+
+  const addFeeOptions = useMemo(
+    () =>
+      availableToAdd.map((c) => ({
+        value: c.feeScheduleItemId,
+        label: `${c.description}${c.isDiscount ? " (discount)" : ""}`,
+      })),
+    [availableToAdd]
+  );
 
   return (
-    <form action={action} className="student-form">
-      <input type="hidden" name="enrollmentId" value={enrollmentId} />
-      <input type="hidden" name="items" value={itemsJson} />
+    <div className="space-y-8">
+      <FormStateAlert state={state} />
 
       {submitBlockedReason && (
-        <div className="alert alert-warning" role="alert">
+        <div
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          role="alert"
+        >
           {submitBlockedReason}
         </div>
       )}
 
-      {state.message && (
-        <div className="alert alert-error" role="alert">
-          {state.message}
-        </div>
-      )}
+      <form id={formId} action={action} className="space-y-6">
+        <input type="hidden" name="enrollmentId" value={enrollmentId} />
+        <input type="hidden" name="items" value={itemsJson} />
 
-      <section className="form-section">
-        <h3 className="form-section-title">Enrollment</h3>
-        <p className="text-muted" style={{ marginBottom: "0.75rem" }}>
-          <strong>{studentLabel}</strong> · {schoolYearLabel} · {gradeLabel}
-          <br />
-          <span style={{ fontSize: "0.9rem" }}>Fee band: {catalogBandLabel}</span>
-        </p>
-      </section>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Student context */}
+          <DataCard className="animate-reveal-stagger stagger-delay-1">
+            <DataCardHeader>
+              <h2 className="font-display text-lg font-bold text-charcoal">Student</h2>
+            </DataCardHeader>
+            <DataCardBody className="space-y-4">
+              <div className="flex gap-4">
+                <div
+                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-[var(--color-border)] bg-[var(--color-surface-2)] font-display text-lg font-bold text-charcoal"
+                  aria-hidden
+                >
+                  {studentInitials(studentFirstName, studentLastName)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="truncate font-display text-xl font-bold text-charcoal">
+                      {studentLastName}, {studentFirstName}
+                    </h3>
+                    {enrollmentStatus === "pending" && (
+                      <StatusIndicator status="pending" size="sm" pulse={false} />
+                    )}
+                  </div>
+                  <p className="mt-1 font-mono text-sm text-warm-gray">{referenceNumber}</p>
+                </div>
+              </div>
+              <dl className="grid gap-2 text-sm">
+                <div className="flex justify-between gap-4 border-t border-[var(--color-border)] pt-3">
+                  <dt className="text-warm-gray">Grade</dt>
+                  <dd className="text-right font-medium text-charcoal">{gradeLabel}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-warm-gray">School year</dt>
+                  <dd className="text-right font-medium text-charcoal">{schoolYearLabel}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-warm-gray">Fee band</dt>
+                  <dd className="text-right font-medium text-charcoal">{catalogBandLabel}</dd>
+                </div>
+                {primaryGuardianLabel ? (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-warm-gray">Parent / guardian</dt>
+                    <dd className="text-right font-medium text-charcoal">{primaryGuardianLabel}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </DataCardBody>
+          </DataCard>
 
-      <section className="form-section">
-        <h3 className="form-section-title">Assessment lines</h3>
-        <p className="text-muted" style={{ marginBottom: "0.75rem", fontSize: "0.9rem" }}>
-          All fees from the <strong>{catalogBandLabel}</strong> catalog are included below with default
-          amounts. Adjust amounts for this student as needed, or remove a line if it does not apply.
-          Use “Add fee” to bring a removed catalog line back.
-        </p>
+          {/* Charges */}
+          <DataCard className="animate-reveal-stagger stagger-delay-2">
+            <DataCardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-lg font-bold text-charcoal">Current charges</h2>
+              <span className="rounded-md bg-[var(--color-primary)]/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-primary)]">
+                Draft
+              </span>
+            </DataCardHeader>
+            <DataCardBody className="space-y-4">
+              <p className="text-sm text-warm-gray">
+                Lines come from Finance → Fee schedules for this band. Adjust amounts or remove lines
+                that do not apply.
+              </p>
 
-        {!blocked && availableToAdd.length > 0 && (
-          <div className="form-group" style={{ marginBottom: "1rem", maxWidth: "28rem" }}>
-            <label className="form-label" htmlFor="add-catalog-fee">
-              Add fee from catalog
-            </label>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
-              <select
-                id="add-catalog-fee"
-                className="form-control"
-                value={addSelectValue}
-                disabled={pending}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setAddSelectValue("");
-                  if (v) addLineFromCatalogId(v);
-                }}
+              {!blocked && availableToAdd.length > 0 && (
+                <SelectField
+                  label="Add fee from catalog"
+                  name="addCatalogFee"
+                  variant="editorial"
+                  placeholder="Select a fee…"
+                  value={addSelectValue}
+                  disabled={pending}
+                  onChange={(v) => {
+                    setAddSelectValue("");
+                    if (v) addLineFromCatalogId(v);
+                  }}
+                  options={addFeeOptions}
+                />
+              )}
+
+              {rows.length === 0 ? (
+                <p className="text-sm text-warm-gray">
+                  {blocked
+                    ? "Fix the warning above before lines can be generated."
+                    : "No lines yet. Add fees from the catalog if you removed every line."}
+                </p>
+              ) : (
+                <div className="overflow-x-auto rounded-md border border-[var(--color-border)]">
+                  <table className="w-full min-w-[28rem] text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)] text-left text-xs font-semibold uppercase tracking-wide text-warm-gray">
+                        <th className="px-3 py-2">Description</th>
+                        <th className="px-3 py-2 text-right">Amount (PHP)</th>
+                        <th className="px-3 py-2 text-center">Type</th>
+                        <th className="px-3 py-2" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, index) => {
+                        const selectable = feeCatalog.filter(
+                          (c) =>
+                            c.feeScheduleItemId === row.feeScheduleItemId ||
+                            !usedIds.has(c.feeScheduleItemId)
+                        );
+                        const options = selectable.map((c) => ({
+                          value: c.feeScheduleItemId,
+                          label: `${c.description}${c.isDiscount ? " (discount)" : ""}`,
+                        }));
+                        return (
+                          <tr
+                            key={row.rowKey}
+                            className="border-b border-[var(--color-border)] last:border-b-0"
+                          >
+                            <td className="px-3 py-2 align-top">
+                              <label className="sr-only" htmlFor={`feeLine_${row.rowKey}`}>
+                                Line {index + 1} fee
+                              </label>
+                              <select
+                                id={`feeLine_${row.rowKey}`}
+                                className="input-editorial min-w-[12rem] max-w-full"
+                                disabled={blocked || pending}
+                                value={row.feeScheduleItemId}
+                                onChange={(e) => changeRowFee(row.rowKey, e.target.value)}
+                              >
+                                {options.map((opt) => (
+                                  <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-3 py-2 align-top">
+                              <label className="sr-only" htmlFor={`amountLine_${row.rowKey}`}>
+                                Line {index + 1} amount
+                              </label>
+                              <input
+                                id={`amountLine_${row.rowKey}`}
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                inputMode="decimal"
+                                className="input-editorial w-full text-right tabular-nums"
+                                disabled={blocked || pending}
+                                value={row.amount}
+                                onChange={(e) => {
+                                  if (!pending) setRowAmount(row.rowKey, e.target.value);
+                                }}
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-center align-middle">
+                              <span
+                                className={cn(
+                                  "inline-block rounded px-2 py-0.5 text-xs font-medium",
+                                  row.isDiscount
+                                    ? "bg-blue-50 text-blue-800"
+                                    : "bg-[var(--color-surface-2)] text-charcoal"
+                                )}
+                              >
+                                {row.isDiscount ? "Discount" : "Charge"}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-right align-middle">
+                              <button
+                                type="button"
+                                className="text-sm font-medium text-[var(--color-primary)] hover:underline disabled:opacity-50"
+                                disabled={blocked || pending}
+                                onClick={() => removeRow(row.rowKey)}
+                                aria-label={`Remove line ${index + 1}`}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </DataCardBody>
+            {rows.length > 0 && (
+              <DataCardFooter>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-semibold text-charcoal">Gross charges</span>
+                  <CurrencyDisplay amount={grossCharges} className="font-semibold text-charcoal" />
+                </div>
+              </DataCardFooter>
+            )}
+          </DataCard>
+
+          {/* Adjustments & notes */}
+          <DataCard className="animate-reveal-stagger stagger-delay-3">
+            <DataCardHeader>
+              <h2 className="font-display text-lg font-bold text-charcoal">
+                Adjustments &amp; notes
+              </h2>
+            </DataCardHeader>
+            <DataCardBody className="space-y-3">
+              <p className="text-sm text-warm-gray">
+                Scholarships and fee reductions are modeled as <strong>discount</strong> lines from
+                your fee catalog—not as a separate percent field. Add or edit those lines in{" "}
+                <strong>Current charges</strong>.
+              </p>
+              <TextAreaField
+                label="Registrar remarks (optional)"
+                name="remarks"
+                variant="editorial"
+                rows={4}
+                value={remarks}
+                onChange={setRemarks}
+                disabled={blocked}
+                placeholder="Reason for waivers, ESC context, or other assessment notes…"
+              />
+            </DataCardBody>
+          </DataCard>
+
+          {/* Summary */}
+          <DataCard className="animate-reveal-stagger stagger-delay-4 border-[var(--color-primary)]/20 bg-[var(--color-surface-2)]/80">
+            <DataCardHeader>
+              <h2 className="font-display text-lg font-bold text-charcoal">Assessment summary</h2>
+            </DataCardHeader>
+            <DataCardBody className="space-y-4">
+              <ul className="space-y-2 text-sm">
+                <li className="flex justify-between gap-4">
+                  <span className="text-warm-gray">Gross charges</span>
+                  <CurrencyDisplay amount={grossCharges} />
+                </li>
+                <li className="flex justify-between gap-4">
+                  <span className="text-warm-gray">Discount lines</span>
+                  <CurrencyDisplay
+                    amount={-discountSum}
+                    className={discountSum > 0 ? "text-blue-700" : undefined}
+                  />
+                </li>
+                <li className="flex justify-between gap-4 border-t border-dashed border-[var(--color-border)] pt-3">
+                  <span className="font-display font-bold text-charcoal">Net assessed balance</span>
+                  <CurrencyDisplay
+                    amount={netAssessed}
+                    className="font-display text-lg font-bold text-[var(--color-primary)]"
+                  />
+                </li>
+              </ul>
+              <p className="text-xs text-warm-gray">
+                After saving, open the assessment ledger from this enrollment to post payments. Manage
+                invoices under Finance when your office uses that workflow.
+              </p>
+            </DataCardBody>
+            <DataCardFooter className="flex flex-wrap items-center justify-between gap-3">
+              <Link
+                href={assessmentsBasePath}
+                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-charcoal hover:bg-[var(--color-surface-2)]"
               >
-                <option value="">Select a fee…</option>
-                {availableToAdd.map((c) => (
-                  <option key={c.feeScheduleItemId} value={c.feeScheduleItemId}>
-                    {c.description}
-                    {c.isDiscount ? " (discount)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
-
-        {rows.length === 0 ? (
-          <p className="text-muted">
-            {blocked
-              ? "Fix the warning above before assessment lines can be generated."
-              : "No lines to show. Add fees from the catalog above if you removed every line."}
-          </p>
-        ) : (
-          <div className="table-wrapper" style={{ overflowX: "auto" }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Fee (catalog)</th>
-                  <th style={{ width: "9rem", textAlign: "right" }}>Amount</th>
-                  <th style={{ width: "7rem", textAlign: "center" }}>Discount?</th>
-                  <th style={{ width: "5rem", textAlign: "center" }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, index) => {
-                  const selectable = feeCatalog.filter(
-                    (c) =>
-                      c.feeScheduleItemId === row.feeScheduleItemId ||
-                      !usedIds.has(c.feeScheduleItemId)
-                  );
-                  return (
-                    <tr key={row.rowKey}>
-                      <td>
-                        <select
-                          className="form-control"
-                          aria-label={`Line ${index + 1} fee type`}
-                          disabled={blocked || pending}
-                          value={row.feeScheduleItemId}
-                          onChange={(e) => changeRowFee(row.rowKey, e.target.value)}
-                        >
-                          {selectable.map((c) => (
-                            <option key={c.feeScheduleItemId} value={c.feeScheduleItemId}>
-                              {c.description}
-                              {c.isDiscount ? " (discount)" : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <input
-                          className="form-control"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          inputMode="decimal"
-                          disabled={blocked || pending}
-                          aria-label={`Line ${index + 1} amount (${row.description})`}
-                          value={row.amount}
-                          onChange={(e) => {
-                            if (pending) return;
-                            setRowAmount(row.rowKey, e.target.value);
-                          }}
-                        />
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <input
-                          type="checkbox"
-                          checked={row.isDiscount}
-                          disabled
-                          readOnly
-                          tabIndex={-1}
-                          aria-label={`${row.description} is discount line`}
-                        />
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <button
-                          type="button"
-                          className="btn-ghost btn-sm"
-                          disabled={blocked || pending}
-                          onClick={() => removeRow(row.rowKey)}
-                          aria-label={`Remove ${row.description}`}
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section className="form-section">
-        <div className="form-group">
-          <label className="form-label" htmlFor="remarks">
-            Remarks (optional)
-          </label>
-          <textarea
-            id="remarks"
-            name="remarks"
-            className="form-control"
-            rows={2}
-            disabled={blocked}
-          />
+                Back
+              </Link>
+              <button
+                type="submit"
+                form={formId}
+                className="rounded-md bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
+                disabled={pending || blocked || rows.length === 0}
+              >
+                {pending ? "Saving…" : "Save assessment"}
+              </button>
+            </DataCardFooter>
+          </DataCard>
         </div>
-      </section>
+      </form>
 
-      <div className="form-actions">
-        <Link href="/admin/assessments" className="btn-ghost">
-          Back
-        </Link>
-        <button
-          type="submit"
-          className="btn-primary"
-          disabled={pending || blocked || rows.length === 0}
+      {/* Audit / finalization callout */}
+      <section
+        className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-5"
+        aria-labelledby="assessment-audit-heading"
+      >
+        <h2
+          id="assessment-audit-heading"
+          className="font-display text-sm font-bold uppercase tracking-wider text-warm-gray"
         >
-          {pending ? "Saving…" : "Save assessment"}
-        </button>
-      </div>
-    </form>
+          Assessment audit
+        </h2>
+        <p className="mt-2 text-sm text-charcoal">
+          This screen is the <strong>only</strong> time an assessment is created for this enrollment.
+          When you save, the system records an audit entry (<code className="rounded bg-[var(--color-surface-2)] px-1 font-mono text-xs">assessment_created_and_enrollment_assessed</code>),
+          locks in the line items you confirmed, and sets the enrollment to <strong>Assessed</strong>.
+          Further payment activity is tracked on the ledger, not by re-running this screen.
+        </p>
+      </section>
+    </div>
   );
 }

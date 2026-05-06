@@ -14,11 +14,15 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentsTable from "@/components/finance/AssessmentsTable";
 import PendingAssessmentsQueue from "@/components/assessments/PendingAssessmentsQueue";
+import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
 
 export const metadata: Metadata = {
   title: "Assessments",
   description: "Create assessments for pending enrollments and view billing ledgers.",
 };
+
+const dateQueued = (d: Date) =>
+  d.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" });
 
 interface PageProps {
   searchParams: Promise<{ view?: string }>;
@@ -39,6 +43,7 @@ export default async function AssessmentsListPage({ searchParams }: PageProps) {
   const pendingRows = await db
     .select({
       enrollmentId: enrollments.id,
+      enrollmentCreatedAt: enrollments.createdAt,
       referenceNumber: students.referenceNumber,
       firstName: students.firstName,
       lastName: students.lastName,
@@ -58,6 +63,7 @@ export default async function AssessmentsListPage({ searchParams }: PageProps) {
     studentName: `${r.lastName}, ${r.firstName}`,
     schoolYear: r.schoolYear,
     gradeLevel: r.gradeLevel,
+    queuedAtLabel: dateQueued(r.enrollmentCreatedAt),
   }));
 
   const rows = await db
@@ -87,22 +93,33 @@ export default async function AssessmentsListPage({ searchParams }: PageProps) {
   }));
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Assessments</h1>
-          <p className="page-subtitle">
-            Registrar queue for pending enrollments, plus all billing ledgers.
-          </p>
-        </div>
-      </div>
+    <div className="page-container max-w-7xl">
+      <SectionHeader
+        size="md"
+        accent
+        title="Assessments"
+        subtitle={
+          tab === "pending" ? (
+            <>
+              <strong>Step 1:</strong> pick a student below, then complete the one-time fee assessment.
+              <span className="mt-1 block text-sm text-warm-gray">
+                <strong>Step 2:</strong> on the fee form, confirm catalog lines and save—the enrollment
+                becomes <strong>Assessed</strong>. Use <strong>Assessment ledgers</strong> for payments
+                and balances.
+              </span>
+            </>
+          ) : (
+            "Open a ledger to post payments, view OR history, and track outstanding balances after fee assessment."
+          )
+        }
+      />
 
-      <nav className="tab-nav" aria-label="Assessment views">
+      <nav className="tab-nav mb-6" aria-label="Assessment views">
         <Link
           href="/admin/assessments?view=pending"
           className={`tab-link ${tab === "pending" ? "tab-link-active" : ""}`}
         >
-          Awaiting assessment
+          Fee assessment queue
           {pendingData.length ? ` (${pendingData.length})` : ""}
         </Link>
         <Link
@@ -114,22 +131,13 @@ export default async function AssessmentsListPage({ searchParams }: PageProps) {
       </nav>
 
       {tab === "pending" ? (
-        <>
-          {!canCreate && (
-            <p className="text-muted" style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>
-              You can view pending enrollments. Contact an administrator or registrar to create
-              assessments.
-            </p>
-          )}
-          <PendingAssessmentsQueue rows={pendingData} canCreate={canCreate} />
-        </>
+        <PendingAssessmentsQueue
+          rows={pendingData}
+          canCreate={canCreate}
+          assessmentsBasePath="/admin/assessments"
+        />
       ) : (
-        <>
-          <p className="text-muted" style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>
-            Open a ledger for payment posting and balance history.
-          </p>
-          <AssessmentsTable assessments={tableData} />
-        </>
+        <AssessmentsTable assessments={tableData} assessmentsBasePath="/admin/assessments" />
       )}
     </div>
   );

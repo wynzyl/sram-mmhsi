@@ -88,6 +88,8 @@ export type StudentRecordFlags = {
   canReadInvoices: boolean;
   canEnroll: boolean;
   canEditStudent: boolean;
+  /** Cashier / admin — post payments from assessment ledger. */
+  canPostPayments: boolean;
 };
 
 function computeAge(dob: Date): number {

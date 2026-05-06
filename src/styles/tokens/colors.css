@@ -2,17 +2,17 @@
 @layer tokens {
   :root {
     /* Deep Red Primary - School Authority */
-    --color-primary-50: #fef2f2;
-    --color-primary-100: #fee2e2;
-    --color-primary-200: #fecaca;
-    --color-primary-300: #fca5a5;
-    --color-primary-400: #f87171;
-    --color-primary-500: #ef4444;
-    --color-primary-600: #dc2626;
-    --color-primary-700: #b91c1c;
-    --color-primary-800: #991b1b;
-    --color-primary-900: #7f1d1d;
-    --color-primary: #9b1c1c; /* Brand primary */
+    --color-primary-50: #fff1f3;
+    --color-primary-100: #ffe3e8;
+    --color-primary-200: #ffc9d3;
+    --color-primary-300: #ffa2b5;
+    --color-primary-400: #f86a89;
+    --color-primary-500: #ea3f68;
+    --color-primary-600: #d1214f;
+    --color-primary-700: #ad183f;
+    --color-primary-800: #911739;
+    --color-primary-900: #7a1735;
+    --color-primary: #c81e4f; /* Brand primary */
 
     /* Green Accent - Success & Positive States */
     --color-accent-50: #f0fdf4;
@@ -47,24 +47,39 @@
 
     /* Surface Colors - Light Mode */
     --color-surface: #ffffff;
-    --color-surface-2: #f9fafb;
-    --color-surface-3: #f3f4f6;
+    --color-surface-2: #f5f8ff;
+    --color-surface-3: #ecf1fb;
+    --color-surface-elevated: #ffffff;
+    --color-sidebar: #f0f4ff;
+    --color-sidebar-elevated: #ffffff;
+    --color-ops-shell: #eef3ff;
+    --color-ops-shell-strong: #dbe6ff;
+    --color-ops-panel: #ffffff;
+    --color-ops-panel-muted: #f3f7ff;
+    --color-ops-ink: #101a35;
+    --color-ops-muted: #5f6f96;
+    --color-ops-line: #d5dff2;
+    --color-ops-field: #f7faff;
+    --color-ops-field-text: #1b2b54;
+    --color-ops-positive: #198f5d;
+    --color-ops-warning: #d46b2c;
+    --color-ops-danger: #c53857;
 
     /* Text Colors - Light Mode */
-    --color-text: #111827;
-    --color-text-2: #374151;
-    --color-text-muted: #6b7280;
-    --color-text-subtle: #9ca3af;
+    --color-text: #111b33;
+    --color-text-2: #2b3a62;
+    --color-text-muted: #5f6f96;
+    --color-text-subtle: #8a98bc;
 
     /* Border Colors - Light Mode */
-    --color-border: #e5e7eb;
-    --color-border-2: #d1d5db;
+    --color-border: #d5dff2;
+    --color-border-2: #becbe6;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-sm: 0 2px 6px rgb(20 41 87 / 0.08);
+    --shadow: 0 8px 20px rgb(20 41 87 / 0.1);
+    --shadow-md: 0 14px 28px rgb(20 41 87 / 0.14);
+    --shadow-lg: 0 24px 44px rgb(20 41 87 / 0.2);
 
     /* Border Radius */
     --radius-sm: 0.25rem;
@@ -76,24 +91,39 @@
   /* Dark Mode Colors */
   .dark {
     /* Surface Colors - Dark Mode */
-    --color-surface: #111827;
-    --color-surface-2: #1f2937;
-    --color-surface-3: #374151;
+    --color-surface: #101a35;
+    --color-surface-2: #0a1228;
+    --color-surface-3: #1a274a;
+    --color-surface-elevated: #151f3d;
+    --color-sidebar: #0d1631;
+    --color-sidebar-elevated: #121d3d;
+    --color-ops-shell: #0b1430;
+    --color-ops-shell-strong: #1a2c5b;
+    --color-ops-panel: #151f3d;
+    --color-ops-panel-muted: #171f3a;
+    --color-ops-ink: #edf2ff;
+    --color-ops-muted: #9db0e8;
+    --color-ops-line: #2b365f;
+    --color-ops-field: #091230;
+    --color-ops-field-text: #eff4ff;
+    --color-ops-positive: #76f3bc;
+    --color-ops-warning: #ffcc8a;
+    --color-ops-danger: #ff9ca9;
 
     /* Text Colors - Dark Mode */
-    --color-text: #f9fafb;
-    --color-text-2: #e5e7eb;
-    --color-text-muted: #9ca3af;
-    --color-text-subtle: #6b7280;
+    --color-text: #edf2ff;
+    --color-text-2: #d6dff6;
+    --color-text-muted: #9db0e8;
+    --color-text-subtle: #edf2ff;
 
     /* Border Colors - Dark Mode */
-    --color-border: #374151;
-    --color-border-2: #4b5563;
+    --color-border: #2b365f;
+    --color-border-2: #3a4a7a;
 
     /* Adjusted shadows for dark mode */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --shadow-sm: 0 2px 8px rgb(2 6 19 / 0.35);
+    --shadow: 0 10px 24px rgb(2 6 19 / 0.45);
+    --shadow-md: 0 18px 36px rgb(2 6 19 / 0.5);
+    --shadow-lg: 0 30px 54px rgb(2 6 19 / 0.58);
   }
 }

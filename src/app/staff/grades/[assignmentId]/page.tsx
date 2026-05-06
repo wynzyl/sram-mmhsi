@@ -1,6 +1,6 @@
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { 
   teacherAssignments, 
   subjects, 
@@ -41,7 +41,13 @@ export default async function GradeEncodingPage({
     .leftJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
     .leftJoin(sections, eq(teacherAssignments.sectionId, sections.id))
     .leftJoin(schoolYears, eq(teacherAssignments.schoolYearId, schoolYears.id))
-    .where(eq(teacherAssignments.id, assignmentId));
+    .where(
+      and(
+        eq(teacherAssignments.id, assignmentId),
+        isNull(teacherAssignments.deletedAt),
+        isNull(subjects.deletedAt)
+      )
+    );
 
   if (!assignment) notFound();
   

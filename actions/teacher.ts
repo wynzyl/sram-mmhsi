@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { gradeRecords, auditLogs } from "@/lib/db/schema";
+import { gradeRecords } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -13,6 +13,7 @@ import {
   type SubmitGradesFormState,
 } from "@/lib/validators/academics";
 import { logger } from "@/lib/observability/logger";
+import { logAudit } from "@/lib/utils/audit-logger";
 
 // ─── Save Grades (Draft) ────────────────────────────────────────────────────
 
@@ -96,14 +97,14 @@ export async function saveGradesAction(
         }
       }
 
-      await tx.insert(auditLogs).values({
+      await logAudit({
         actor: session.userId,
         actorRole: session.role,
         action: "grades_saved_draft",
         targetEntity: "teacher_assignments",
         targetId: assignmentId,
         context: `Saved ${grades.length} grades.`,
-      });
+      }, { throwOnFail: true });
     });
 
     revalidatePath(`/staff/grades/${assignmentId}`);
@@ -169,14 +170,14 @@ export async function submitGradesAction(
           )
         );
 
-      await tx.insert(auditLogs).values({
+      await logAudit({
         actor: session.userId,
         actorRole: session.role,
         action: "grades_submitted",
         targetEntity: "teacher_assignments",
         targetId: assignmentId,
         context: `Period: ${gradingPeriod}`,
-      });
+      }, { throwOnFail: true });
     });
 
     revalidatePath(`/staff/grades/${assignmentId}`);
