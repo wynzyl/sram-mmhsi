@@ -18,7 +18,6 @@ import { eq, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
-  StudentRecordProfile,
   type StudentRecordStudent,
   type GuardianRow,
   type EnrollmentRecordRow,
@@ -27,6 +26,7 @@ import {
   type CurrentPlacement,
   type StudentRecordFlags,
 } from "@/components/students/StudentRecordProfile";
+import { RegistrationDetailView } from "@/components/registrations/RegistrationDetailView";
 import { getStudentRequirementsSnapshots } from "@/lib/queries/student-requirements-snapshots";
 
 interface PageProps {
@@ -55,6 +55,7 @@ export default async function StaffStudentProfilePage({ params }: PageProps) {
   const canReadInvoices = hasPermission(session.role, "invoices:read");
   const canEnroll = hasPermission(session.role, "enrollments:create");
   const canEditStudent = hasPermission(session.role, "students:update");
+  const canPostPayments = hasPermission(session.role, "payments:post");
 
   const studentRow = await db.query.students.findFirst({
     where: eq(students.id, id),
@@ -220,10 +221,11 @@ export default async function StaffStudentProfilePage({ params }: PageProps) {
     canReadInvoices,
     canEnroll,
     canEditStudent,
+    canPostPayments,
   };
 
   return (
-    <StudentRecordProfile
+    <RegistrationDetailView
       student={student}
       guardians={guardians}
       enrollments={enrollmentRows}
@@ -233,6 +235,8 @@ export default async function StaffStudentProfilePage({ params }: PageProps) {
       invoices={invoiceRows}
       flags={flags}
       linkBase="staff"
+      backHref="/staff/registrations"
+      backLabel="Back to registrations"
     />
   );
 }

@@ -1,7 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { auditLogs } from "@/lib/db/schema";
-import type { SessionUser, SessionPayload } from "@/lib/auth/session";
 import { logger } from "@/lib/observability/logger";
 
 /**
@@ -18,8 +17,8 @@ type AuditSession = {
  * Parameters for logging an audit event.
  */
 export type AuditParams = {
-  /** User ID performing the action */
-  actor: string;
+  /** User ID performing the action (nullable for system/unknown actor events) */
+  actor?: string | null;
   /** User role at time of action */
   actorRole: string;
   /** Action performed (e.g., "students:create", "payments:post") */
@@ -40,10 +39,20 @@ export type AuditParams = {
   ipAddress?: string;
 };
 
+export type AuditOptions = {
+  /** When true, rethrow write failures so callers can fail-closed. */
+  throwOnFail?: boolean;
+};
+
+export type AuditResult =
+  | { success: true }
+  | { success: false; error: string };
+
 /**
  * Centralized audit logging utility.
  * Writes audit trail records to the audit_logs table.
- * Catches and logs errors to prevent audit failures from breaking operations.
+ * Logs failures and returns explicit success/failure.
+ * Callers can opt into fail-closed behavior via `{ throwOnFail: true }`.
  *
  * @param params - Audit event parameters
  *
@@ -59,10 +68,13 @@ export type AuditParams = {
  * });
  * ```
  */
-export async function logAudit(params: AuditParams): Promise<void> {
+export async function logAudit(
+  params: AuditParams,
+  options: AuditOptions = {}
+): Promise<AuditResult> {
   try {
     await db.insert(auditLogs).values({
-      actor: params.actor,
+      actor: params.actor ?? null,
       actorRole: params.actorRole,
       action: params.action,
       targetEntity: params.targetEntity,
@@ -73,9 +85,14 @@ export async function logAudit(params: AuditParams): Promise<void> {
       correlationId: params.correlationId ?? crypto.randomUUID(),
       ipAddress: params.ipAddress,
     });
+    return { success: true };
   } catch (err) {
-    // Never let audit failure break business operations
-    logger.error("[audit] Failed to write audit log", { error: String(err), params });
+    const errorMessage = String(err);
+    logger.error("[audit] Failed to write audit log", { error: errorMessage, params });
+    if (options.throwOnFail) {
+      throw err;
+    }
+    return { success: false, error: errorMessage };
   }
 }
 

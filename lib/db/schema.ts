@@ -185,6 +185,8 @@ export const subjects = pgTable("subjects", {
   gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   createdBy: uuid("created_by").references(() => users.id),
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: uuid("deleted_by").references(() => users.id),
 });
 
 // ─── Students & Parents ───────────────────────────────────────────────────────
@@ -508,6 +510,8 @@ export const teacherAssignments = pgTable(
     schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
     uniqueIndex("ta_unique_idx").on(t.teacherId, t.subjectId, t.sectionId, t.schoolYearId),

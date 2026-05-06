@@ -107,7 +107,7 @@ export async function createFeeScheduleAction(
       targetEntity: "fee_schedules",
       targetId: newSchedule.id,
       newState: parsed.data,
-    });
+    }, { throwOnFail: true });
 
     revalidatePath("/admin/finance/fee-schedules");
     return { success: true, message: "Fee schedule created successfully." };
@@ -196,7 +196,7 @@ export async function updateFeeScheduleAction(
       targetId: id,
       previousState: existingRecord,
       newState: parsed.data,
-    });
+    }, { throwOnFail: true });
 
     revalidatePath("/admin/finance/fee-schedules");
     revalidatePath(`/admin/finance/fee-schedules/${id}`);
@@ -251,7 +251,7 @@ export async function addFeeScheduleItemAction(
       targetEntity: "fee_schedule_items",
       targetId: newItem.id,
       newState: parsed.data,
-    });
+    }, { throwOnFail: true });
 
     revalidatePath(`/admin/finance/fee-schedules/${parsed.data.feeScheduleId}`);
     return { success: true, message: "Fee item added successfully." };
@@ -306,7 +306,7 @@ export async function removeFeeScheduleItemAction(
       targetEntity: "fee_schedule_items",
       targetId: id,
       previousState: existing,
-    });
+    }, { throwOnFail: true });
 
     revalidatePath(`/admin/finance/fee-schedules/${feeScheduleId}`);
     return { success: true, message: "Fee item removed successfully." };

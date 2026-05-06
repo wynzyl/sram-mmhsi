@@ -104,7 +104,7 @@ export async function saveGradesAction(
         targetEntity: "teacher_assignments",
         targetId: assignmentId,
         context: `Saved ${grades.length} grades.`,
-      });
+      }, { throwOnFail: true });
     });
 
     revalidatePath(`/staff/grades/${assignmentId}`);
@@ -177,7 +177,7 @@ export async function submitGradesAction(
         targetEntity: "teacher_assignments",
         targetId: assignmentId,
         context: `Period: ${gradingPeriod}`,
-      });
+      }, { throwOnFail: true });
     });
 
     revalidatePath(`/staff/grades/${assignmentId}`);

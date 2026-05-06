@@ -4,16 +4,16 @@ import { cn } from "@/lib/utils/cn";
 import { Loader2 } from "lucide-react";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+  "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-2)]",
   {
     variants: {
       variant: {
         primary:
-          "bg-[var(--color-primary)] text-white border border-[var(--color-primary)] hover:bg-[var(--color-primary-700)] focus-visible:ring-[var(--color-primary)]",
+          "border border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-[var(--shadow-sm)] hover:bg-[var(--color-primary-700)] hover:shadow-[var(--shadow)] focus-visible:ring-[var(--color-primary)]",
         secondary:
-          "bg-[var(--color-surface)] border border-[var(--color-border-2)] text-[var(--color-text)] hover:bg-[var(--color-surface-3)] focus-visible:ring-[var(--color-border-2)]",
+          "border border-[var(--color-border-2)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:bg-[var(--color-surface-3)] focus-visible:ring-[var(--color-border-2)]",
         ghost:
-          "bg-transparent border-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text)]",
+          "border border-transparent bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text)]",
         danger:
           "bg-[var(--color-error)] text-white border border-[var(--color-error)] hover:bg-red-700 focus-visible:ring-[var(--color-error)]",
       },
@@ -29,6 +29,10 @@ const buttonVariants = cva(
     },
   }
 );
+
+// Exported for cases where we need link-like buttons (e.g. Next `Link`)
+// without extending the Button API (no `asChild` support in this project).
+export { buttonVariants };
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,

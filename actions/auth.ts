@@ -64,7 +64,7 @@ export async function loginAction(
   if (!user || !isValid || !user.isActive) {
     logger.warn("[auth] Failed login attempt", { username });
     await logAudit({
-      actor: "system",
+      actor: user?.id ?? null,
       actorRole: "system",
       action: "auth:login_failed",
       targetEntity: "users",

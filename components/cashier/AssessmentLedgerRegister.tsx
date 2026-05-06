@@ -37,6 +37,8 @@ type ActiveBooklet = {
 };
 
 export type AssessmentLedgerRegisterProps = {
+  /** Base path for student profile links, e.g. `/admin/students` or `/staff/students`. */
+  studentRecordsBasePath?: string;
   assessment: {
     id: string;
     studentId: string;
@@ -61,6 +63,7 @@ function lineSignedAmount(item: LedgerLineItem): number {
 }
 
 export default function AssessmentLedgerRegister({
+  studentRecordsBasePath = "/admin/students",
   assessment,
   items,
   payments,
@@ -121,7 +124,10 @@ export default function AssessmentLedgerRegister({
             <span className="ledger-register-meta-sep" aria-hidden>
               ·
             </span>
-            <Link href={`/admin/students/${assessment.studentId}`} className="ledger-register-student-link">
+            <Link
+              href={`${studentRecordsBasePath}/${assessment.studentId}`}
+              className="ledger-register-student-link"
+            >
               Open student record
             </Link>
           </p>

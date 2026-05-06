@@ -377,6 +377,13 @@ export async function updateEnrollmentStatusAction(
       studentId: true,
       schoolYearId: true,
       gradeLevelId: true,
+      sectionId: true,
+      enrolledAt: true,
+      updatedBy: true,
+      updatedAt: true,
+      cancelledAt: true,
+      cancelledBy: true,
+      cancelRemarks: true,
     },
   });
 
@@ -467,17 +474,37 @@ export async function updateEnrollmentStatusAction(
       }
     });
 
+    const updatedSnapshot = {
+      ...updateValues,
+      ...(assessmentForCancel && action === "cancel"
+        ? { assessmentId: assessmentForCancel.id }
+        : {}),
+    };
+
+    const previousSnapshot = {
+      status: enrollment.status,
+      updatedBy: enrollment.updatedBy,
+      updatedAt: enrollment.updatedAt,
+      ...(action === "override_enroll" && {
+        enrolledAt: enrollment.enrolledAt,
+        ...(sectionId ? { sectionId: enrollment.sectionId } : {}),
+      }),
+      ...(action === "cancel" && {
+        cancelledAt: enrollment.cancelledAt,
+        cancelledBy: enrollment.cancelledBy,
+        cancelRemarks: enrollment.cancelRemarks,
+      }),
+      ...(assessmentForCancel && action === "cancel"
+        ? { assessmentId: assessmentForCancel.id }
+        : {}),
+    };
+
     await logUpdateAction(
       session,
       "enrollments",
       enrollmentId,
-      { status: enrollment.status },
-      {
-        ...updateValues,
-        ...(assessmentForCancel && action === "cancel"
-          ? { assessmentId: assessmentForCancel.id }
-          : {}),
-      }
+      previousSnapshot,
+      updatedSnapshot
     );
 
     logger.info("[enrollments] Status updated", {

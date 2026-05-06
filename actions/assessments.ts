@@ -233,7 +233,7 @@ export async function createAssessmentFromEnrollmentAction(
           lineCount: resolvedLines.length,
           feeScheduleId: scheduleRow.id,
         },
-      });
+      }, { throwOnFail: true });
     });
 
     logger.info("[assessments] Created assessment from enrollment", {
@@ -245,8 +245,12 @@ export async function createAssessmentFromEnrollmentAction(
     revalidatePath("/admin/assessments");
     revalidatePath("/admin/enrollments");
     revalidatePath(`/admin/students/${enrollmentRow.studentId}`);
+    revalidatePath("/staff/assessments");
+    revalidatePath("/staff/enrollments");
+    revalidatePath(`/staff/students/${enrollmentRow.studentId}`);
     if (newAssessmentId) {
       revalidatePath(`/admin/assessments/${newAssessmentId}`);
+      revalidatePath(`/staff/assessments/${newAssessmentId}`);
     }
 
     return { success: true, assessmentId: newAssessmentId };

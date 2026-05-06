@@ -6,7 +6,8 @@ import { and, eq, desc, ne, notExists, sql, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
-import RegistrationsTable from "@/components/registrations/RegistrationsTable";
+import RegistrationsListView from "@/components/registrations/RegistrationsListView";
+import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
 import { parseUuidSearchParam } from "@/lib/utils/query-params";
 
 export const metadata: Metadata = {
@@ -124,33 +125,39 @@ export default async function StaffRegistrationsPage({ searchParams }: PageProps
   }));
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Registrations</h1>
-          <p className="page-subtitle">
-            <strong>Approved</strong> registrations only. Learners who already have a non-cancelled
-            enrollment for the <strong>active</strong> school year are omitted. Optional school-year
-            filter narrows by the school year stored on each registration.{" "}
-            {totalCount.toLocaleString()} registration{totalCount !== 1 ? "s" : ""}{" "}
-            {schoolYearId != null ? "matching the current filters." : "shown."}
-          </p>
-        </div>
-        {hasPermission(session.role, "students:create") && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href="/staff/students/new" className="btn-primary" id="new-registration-btn">
-              + New student
-            </Link>
-            <Link
-              href="/staff/students/new?intent=transferee"
-              className="btn-secondary"
-              id="new-registration-transferee-btn"
-            >
-              + Transferee
-            </Link>
-          </div>
-        )}
-      </div>
+    <div className="page-container space-y-8">
+      <SectionHeader
+        title="Registrar queue"
+        subtitle={
+          <>
+            <strong>Approved</strong> registrations only. Learners with a non-cancelled enrollment
+            for the <strong>active</strong> school year are omitted. Filter by the school year stored
+            on each registration.
+          </>
+        }
+        size="md"
+        accent
+        actions={
+          hasPermission(session.role, "students:create") ? (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Link
+                href="/staff/students/new"
+                className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                id="new-registration-btn"
+              >
+                + New student
+              </Link>
+              <Link
+                href="/staff/students/new?intent=transferee"
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-charcoal transition-colors hover:bg-light-gray"
+                id="new-registration-transferee-btn"
+              >
+                + Transferee
+              </Link>
+            </div>
+          ) : undefined
+        }
+      />
 
       <form
         method="GET"
@@ -182,8 +189,10 @@ export default async function StaffRegistrationsPage({ searchParams }: PageProps
         )}
       </form>
 
-      <RegistrationsTable
+      <RegistrationsListView
         registrations={tableData}
+        totalCount={totalCount}
+        showQueueHeading={false}
         studentBasePath="/staff/students"
         emptyMessage={
           schoolYearId != null

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { users, subjects, sections, schoolYears, teacherAssignments } from "@/lib/db/schema";
 import { AssignTeacherForm } from "@/components/academics/AssignTeacherForm";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
@@ -13,6 +13,7 @@ export default async function TeacherAssignmentsPage() {
   });
 
   const subjectsList = await db.query.subjects.findMany({
+    where: isNull(subjects.deletedAt),
     columns: { id: true, name: true, code: true },
   });
 
@@ -47,6 +48,12 @@ export default async function TeacherAssignmentsPage() {
     .leftJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
     .leftJoin(sections, eq(teacherAssignments.sectionId, sections.id))
     .leftJoin(schoolYears, eq(teacherAssignments.schoolYearId, schoolYears.id))
+    .where(
+      and(
+        isNull(teacherAssignments.deletedAt),
+        isNull(subjects.deletedAt)
+      )
+    )
     .orderBy(teacherAssignments.createdAt);
 
   return (
