@@ -85,22 +85,31 @@ export default async function UsersPage({ searchParams }: PageProps) {
       </div>
 
       {/* Search and Filter */}
-      <form method="GET" className="search-bar" role="search">
-        <div className="search-input-wrapper">
-          <svg className="search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <form
+        method="GET"
+        role="search"
+        className="flex flex-wrap items-center gap-3 rounded-lg border border-(--color-border) bg-(--color-surface) p-3 shadow-(--shadow-sm)"
+      >
+        <div className="relative min-w-[18rem] flex-1">
+          <svg
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--color-text-muted)"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
             <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
           </svg>
           <input
             id="user-search"
             type="search"
             name="q"
-            className="search-input"
+            className="form-control pl-9"
             placeholder="Search by email or username..."
             defaultValue={q}
             autoComplete="off"
           />
         </div>
-        <select name="role" className="form-control" defaultValue={role} style={{ maxWidth: "200px" }}>
+        <select name="role" className="form-control w-auto min-w-48" defaultValue={role}>
           <option value="">All Roles</option>
           {Object.entries(ROLE_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
@@ -110,7 +119,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
         </select>
         <button type="submit" className="btn-primary">Search</button>
         {(q || role) && (
-          <Link href="/admin/users" className="btn-ghost">
+          <Link href="/admin/users" className="btn-secondary">
             Clear
           </Link>
         )}

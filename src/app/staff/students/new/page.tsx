@@ -42,13 +42,13 @@ export default async function StaffNewStudentPage({ searchParams }: PageProps) {
 
   return (
     <div className="page-container page-container-narrow space-y-8">
-      <header className="space-y-2 border-b border-gray-100 pb-6">
-        <p className="font-mono text-xs uppercase tracking-wider text-warm-gray">New registration</p>
-        <h1 className="font-display text-4xl font-black tracking-tight text-charcoal">
+      <header className="space-y-2 border-b border-[var(--color-border)] pb-6">
+        <p className="font-mono text-xs uppercase tracking-wider text-[var(--color-text-muted)]">New registration</p>
+        <h1 className="font-display text-4xl font-black tracking-tight text-[var(--color-text)]">
           {lockedRegistrationType === "transferee" ? "Register transferee" : "Register new student"}
         </h1>
-        <p className="max-w-2xl text-warm-gray">
-          Create the learner profile and an <strong className="text-charcoal">approved</strong> registration
+        <p className="max-w-2xl text-[var(--color-text-muted)]">
+          Create the learner profile and an <strong className="text-[var(--color-text)]">approved</strong> registration
           for the active school year. Grade, requirements, and enrollment type follow how you opened this page.
         </p>
       </header>
