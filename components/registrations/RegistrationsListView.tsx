@@ -100,7 +100,7 @@ export default function RegistrationsListView({
           accent
         />
       ) : (
-        <p className="font-mono text-sm text-warm-gray">
+        <p className="font-mono text-sm text-(--color-text-muted)">
           {queueTotal.toLocaleString()} in queue
           {searchQuery
             ? ` · showing ${filteredRegistrations.length} on this page after search`
@@ -110,14 +110,14 @@ export default function RegistrationsListView({
 
       {/* Search bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-(--color-text-muted)" />
         <input
           type="text"
           placeholder="Search by name, reference, or grade level..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-white
-                     focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-100
+          className="w-full rounded-lg border border-(--color-border) bg-(--color-surface) py-3 pl-10 pr-4
+                     text-(--color-text) shadow-(--shadow-sm) focus:border-(--color-border-2) focus:outline-none focus:ring-2 focus:ring-(--color-border-2)/40
                      transition-all duration-150"
         />
       </div>
@@ -125,7 +125,7 @@ export default function RegistrationsListView({
       {/* Registration cards grid */}
       {filteredRegistrations.length === 0 ? (
         <DataCard className="p-12 text-center">
-          <p className="text-warm-gray">{emptyMessage}</p>
+          <p className="text-(--color-text-muted)">{emptyMessage}</p>
         </DataCard>
       ) : (
         <div className="grid gap-4">
@@ -144,12 +144,12 @@ export default function RegistrationsListView({
                     {/* Left column: Student info */}
                     <div className="flex-1 min-w-0">
                       {/* Student name (large) */}
-                      <h3 className="font-display font-bold text-2xl text-charcoal mb-2 truncate">
+                      <h3 className="mb-2 truncate font-display text-2xl font-bold text-(--color-text)">
                         {reg.studentName}
                       </h3>
 
                       {/* Metadata row */}
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-warm-gray mb-4">
+                      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-(--color-text-muted)">
                         <code className="rounded bg-(--color-surface-3) px-2 py-0.5 font-mono text-(--color-text)">
                           {reg.referenceNumber}
                         </code>
@@ -165,7 +165,7 @@ export default function RegistrationsListView({
 
                       {/* Document status with inline progress */}
                       <div className="flex items-center gap-3">
-                        <span className="text-sm text-warm-gray">Requirements:</span>
+                        <span className="text-sm text-(--color-text-muted)">Requirements:</span>
                         {docProgress.completed === docProgress.total ? (
                           <StatusIndicator status="complete" size="sm" />
                         ) : docProgress.completed > 0 ? (
@@ -180,7 +180,7 @@ export default function RegistrationsListView({
                       </div>
 
                       {/* Registration date */}
-                      <p className="text-xs text-warm-gray mt-3">
+                      <p className="mt-3 text-xs text-(--color-text-muted)">
                         Registered{" "}
                         {new Date(reg.createdAt).toLocaleDateString("en-PH", {
                           year: "numeric",
@@ -203,8 +203,8 @@ export default function RegistrationsListView({
                     <div className="flex flex-col items-end gap-3 shrink-0">
                       <Link
                         href={`${studentBasePath}/${reg.studentId}`}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium
-                                   text-[var(--color-primary)] hover:bg-red-50 rounded-lg
+                        className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium
+                                   text-(--color-primary) hover:bg-(--color-surface-3)
                                    transition-colors group"
                       >
                         View
@@ -226,7 +226,7 @@ export default function RegistrationsListView({
 
       {/* Results count */}
       {searchQuery && (
-        <p className="text-sm text-warm-gray text-center">
+        <p className="text-center text-sm text-(--color-text-muted)">
           Showing {filteredRegistrations.length} of {registrations.length} registrations
         </p>
       )}

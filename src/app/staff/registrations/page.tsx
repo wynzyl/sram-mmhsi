@@ -142,14 +142,14 @@ export default async function StaffRegistrationsPage({ searchParams }: PageProps
             <div className="flex flex-wrap items-center justify-end gap-2">
               <Link
                 href="/staff/students/new"
-                className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                className="btn-primary h-auto px-4 py-2"
                 id="new-registration-btn"
               >
                 + New student
               </Link>
               <Link
                 href="/staff/students/new?intent=transferee"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-charcoal transition-colors hover:bg-light-gray"
+                className="btn-secondary h-auto px-4 py-2 text-sm font-medium"
                 id="new-registration-transferee-btn"
               >
                 + Transferee

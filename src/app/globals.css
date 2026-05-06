@@ -36,13 +36,18 @@
   body {
     font-family: var(--font-body);
     color: var(--color-on-surface);
-    background: radial-gradient(circle at top, #e8efff 0%, #f5f8ff 36%, #eef3ff 100%);
+    background: radial-gradient(
+      circle at top,
+      var(--color-ops-shell-strong) 0%,
+      var(--color-surface-2) 36%,
+      var(--color-ops-shell) 100%
+    );
     min-height: 100vh;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    color: var(--color-charcoal);
+    color: var(--color-text);
   }
 
   .dark h1,
@@ -55,7 +60,12 @@
   }
 
   .dark body {
-    background: radial-gradient(circle at top, #1a2c5b 0%, #0b1430 46%, #070d22 100%);
+    background: radial-gradient(
+      circle at top,
+      var(--color-ops-shell-strong) 0%,
+      var(--color-ops-shell) 46%,
+      var(--color-surface-2) 100%
+    );
   }
 
   code, pre, kbd, samp {
