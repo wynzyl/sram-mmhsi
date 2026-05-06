@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import {
@@ -10,10 +9,14 @@ import {
   sections,
   assessments,
 } from "@/lib/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import EnrollmentsTable from "@/components/enrollments/EnrollmentsTable";
+import EnrollmentsListView from "@/components/enrollments/EnrollmentsListView";
+import type {
+  EnrollmentCardRow,
+  EnrollmentStatus,
+} from "@/components/enrollments/EnrollmentCard";
 
 export const metadata: Metadata = {
   title: "Enrollments",
@@ -24,20 +27,17 @@ interface PageProps {
   searchParams: Promise<{ status?: string; sy?: string }>;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "badge-warning",
-  assessed: "badge-secondary",
-  enrolled: "badge-success",
-  cancelled: "badge-danger",
-};
+const VALID_STATUSES = ["pending", "assessed", "enrolled", "cancelled", "all"] as const;
 
 export default async function StaffEnrollmentsPage({ searchParams }: PageProps) {
   const session = await requireSession();
   if (!hasPermission(session.role, "enrollments:read")) redirect("/staff/dashboard");
 
   const { status = "all" } = await searchParams;
-  const validStatuses = ["pending", "assessed", "enrolled", "cancelled", "all"];
-  const filterStatus = validStatuses.includes(status) ? status : "all";
+  const filterStatus = (
+    (VALID_STATUSES as readonly string[]).includes(status) ? status : "all"
+  ) as "all" | EnrollmentStatus;
+
   const canCreate = hasPermission(session.role, "enrollments:create");
   const canCancel = hasPermission(session.role, "enrollments:cancel");
   const canCancelWithBalance = hasPermission(session.role, "enrollments:cancel_with_balance");
@@ -45,10 +45,7 @@ export default async function StaffEnrollmentsPage({ searchParams }: PageProps) 
 
   const statusFilter =
     filterStatus !== "all"
-      ? eq(
-          enrollments.status,
-          filterStatus as "pending" | "assessed" | "enrolled" | "cancelled"
-        )
+      ? eq(enrollments.status, filterStatus)
       : undefined;
 
   const rows = await db
@@ -58,6 +55,8 @@ export default async function StaffEnrollmentsPage({ searchParams }: PageProps) 
       enrolledAt: enrollments.enrolledAt,
       cancelledAt: enrollments.cancelledAt,
       createdAt: enrollments.createdAt,
+      studentType: enrollments.studentType,
+      intakeDocuments: enrollments.intakeDocuments,
       studentId: students.id,
       firstName: students.firstName,
       lastName: students.lastName,
@@ -66,6 +65,7 @@ export default async function StaffEnrollmentsPage({ searchParams }: PageProps) 
       gradeLevel: gradeLevels.name,
       section: sections.name,
       assessmentId: assessments.id,
+      assessmentTotalAmount: assessments.totalAmount,
       assessmentTotalPaid: assessments.totalPaid,
     })
     .from(enrollments)
@@ -83,10 +83,11 @@ export default async function StaffEnrollmentsPage({ searchParams }: PageProps) 
     .from(enrollments)
     .groupBy(enrollments.status);
 
-  const countMap = Object.fromEntries(counts.map((c) => [c.status, c.count]));
-  const totalActive = (countMap["pending"] ?? 0) + (countMap["assessed"] ?? 0);
+  const countMap = Object.fromEntries(counts.map((c) => [c.status, Number(c.count)])) as Partial<
+    Record<EnrollmentStatus, number>
+  >;
 
-  const tableData = rows.map((r) => ({
+  const cardRows: EnrollmentCardRow[] = rows.map((r) => ({
     id: r.id,
     status: r.status,
     studentName: `${r.lastName}, ${r.firstName}`,
@@ -95,66 +96,41 @@ export default async function StaffEnrollmentsPage({ searchParams }: PageProps) 
     schoolYear: r.schoolYear,
     gradeLevel: r.gradeLevel,
     section: r.section ?? null,
+    studentType: r.studentType,
     enrolledAt: r.enrolledAt,
     createdAt: r.createdAt,
     assessmentId: r.assessmentId ?? null,
+    assessmentTotalAmount:
+      r.assessmentTotalAmount != null && r.assessmentTotalAmount !== ""
+        ? Number(r.assessmentTotalAmount)
+        : null,
     assessmentTotalPaid:
       r.assessmentTotalPaid != null && r.assessmentTotalPaid !== ""
         ? Number(r.assessmentTotalPaid)
         : null,
+    intakeDocuments: r.intakeDocuments ?? null,
   }));
 
   const allSections = await db
     .select({ id: sections.id, name: sections.name })
     .from(sections);
 
+  const activeSyRows = await db
+    .select({ label: schoolYears.label })
+    .from(schoolYears)
+    .where(and(eq(schoolYears.isActive, true), isNull(schoolYears.deletedAt)))
+    .limit(1);
+  const schoolYearLabel = activeSyRows[0]?.label ?? null;
+
   return (
     <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">
-            Enrollments
-            {totalActive > 0 && (
-              <span className="badge badge-warning ml-2">{totalActive} Active</span>
-            )}
-          </h1>
-          <p className="page-subtitle">
-            {Object.values(countMap).reduce((a, b) => a + b, 0)} total enrollments
-          </p>
-        </div>
-        {canCreate && (
-          <Link href="/staff/enrollments/new" className="btn-primary" id="new-enrollment-btn">
-            + Enroll Student
-          </Link>
-        )}
-      </div>
-
-      <div className="status-chips">
-        {["pending", "assessed", "enrolled", "cancelled"].map((s) => (
-          <div key={s} className={`status-chip badge ${STATUS_COLORS[s]}`}>
-            <span className="text-capitalize">{s}</span>
-            <strong>{countMap[s] ?? 0}</strong>
-          </div>
-        ))}
-      </div>
-
-      <nav className="tab-nav" aria-label="Filter enrollments by status">
-        {["all", "pending", "assessed", "enrolled", "cancelled"].map((s) => (
-          <Link
-            key={s}
-            href={`/staff/enrollments?status=${s}`}
-            className={`tab-link ${filterStatus === s ? "tab-link-active" : ""}`}
-            id={`filter-${s}`}
-          >
-            {s.charAt(0).toUpperCase() + s.slice(1)}
-            {s !== "all" && countMap[s] ? ` (${countMap[s]})` : ""}
-          </Link>
-        ))}
-      </nav>
-
-      <EnrollmentsTable
-        enrollments={tableData}
+      <EnrollmentsListView
+        enrollments={cardRows}
         sections={allSections}
+        countMap={countMap}
+        filterStatus={filterStatus}
+        schoolYearLabel={schoolYearLabel}
+        canCreate={canCreate}
         canManage={canCreate}
         canCancel={canCancel}
         canCancelWithBalance={canCancelWithBalance}

@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { invoices, assessments, auditLogs, students } from "@/lib/db/schema";
+import { invoices, assessments, students } from "@/lib/db/schema";
 import { eq, like } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
 import {
   GenerateInvoiceSchema,
   SendInvoiceSchema,
@@ -87,13 +88,9 @@ export async function generateInvoiceAction(
       })
       .returning({ id: invoices.id });
 
-    await db.insert(auditLogs).values({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "invoice_generated",
-      targetEntity: "invoices",
-      targetId: newInvoice.id,
-      newState: JSON.stringify({ invoiceNumber: invoiceNum, amountDue: assessment.balance }),
+    await logCreateAction(session, "invoices", newInvoice.id, {
+      invoiceNumber: invoiceNum,
+      amountDue: assessment.balance,
     });
 
     revalidatePath("/admin/finance/invoices");
@@ -174,14 +171,7 @@ export async function sendInvoiceAction(
       })
       .where(eq(invoices.id, invoiceId));
 
-    await db.insert(auditLogs).values({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "invoice_sent",
-      targetEntity: "invoices",
-      targetId: invoiceId,
-      context: JSON.stringify({ sentTo: email }),
-    });
+    await logUpdateAction(session, "invoices", invoiceId, {}, { sent: true, sentTo: email });
 
     revalidatePath("/admin/finance/invoices");
     revalidatePath(`/admin/finance/invoices/${invoiceId}`);

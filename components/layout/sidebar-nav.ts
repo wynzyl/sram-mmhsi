@@ -57,6 +57,14 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       ],
     },
     {
+      label: "Cashier",
+      items: [
+        { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
+        { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
+        { href: "/staff/invoices", label: "Invoices", icon: "invoices" },
+      ],
+    },
+    {
       label: "System",
       items: [
         { href: "/admin/users", label: "Users", icon: "users" },
@@ -86,6 +94,13 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/enrollments/cancelled", label: "Cancelled Enrollments", icon: "enrollments" },
       ],
     },
+    {
+      label: "Cashier",
+      items: [
+        { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
+        { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
+      ],
+    },
   ],
 
   finance_officer: [
@@ -107,7 +122,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
   cashier: [
     {
       label: "Overview",
-      items: [{ href: "/staff/payments", label: "Dashboard", icon: "dashboard" }],
+      items: [{ href: "/staff/payments/dashboard", label: "Dashboard", icon: "dashboard" }],
     },
     {
       label: "Cashier",

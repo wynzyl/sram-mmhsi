@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { BaseFormState } from "./common-schemas";
 
 // ─── Admin: Subject Management ──────────────────────────────────────────────
 
@@ -8,21 +9,13 @@ export const CreateSubjectSchema = z.object({
   gradeLevelId: z.string().uuid("Grade level is required."),
 });
 
-export type CreateSubjectFormState = {
-  errors?: Partial<Record<keyof z.infer<typeof CreateSubjectSchema> | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type CreateSubjectFormState = BaseFormState<z.infer<typeof CreateSubjectSchema>>;
 
 export const DeleteSubjectSchema = z.object({
   subjectId: z.string().uuid("Subject ID is required."),
 });
 
-export type DeleteSubjectFormState = {
-  errors?: Partial<Record<keyof z.infer<typeof DeleteSubjectSchema> | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type DeleteSubjectFormState = BaseFormState<z.infer<typeof DeleteSubjectSchema>>;
 
 // ─── Admin: Teacher Assignments ─────────────────────────────────────────────
 
@@ -35,21 +28,13 @@ export const AssignTeacherSchema = z.object({
 
 export type AssignTeacherInput = z.infer<typeof AssignTeacherSchema>;
 
-export type AssignTeacherFormState = {
-  errors?: Partial<Record<keyof AssignTeacherInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type AssignTeacherFormState = BaseFormState<AssignTeacherInput>;
 
 export const RemoveAssignmentSchema = z.object({
   assignmentId: z.string().uuid("Assignment ID is required."),
 });
 
-export type RemoveAssignmentFormState = {
-  errors?: Partial<Record<keyof z.infer<typeof RemoveAssignmentSchema> | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type RemoveAssignmentFormState = BaseFormState<z.infer<typeof RemoveAssignmentSchema>>;
 
 // ─── Teacher: Grade Encoding ────────────────────────────────────────────────
 
@@ -67,22 +52,14 @@ export const SaveGradesSchema = z.object({
 
 export type SaveGradesInput = z.infer<typeof SaveGradesSchema>;
 
-export type SaveGradesFormState = {
-  errors?: Partial<Record<keyof SaveGradesInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type SaveGradesFormState = BaseFormState<SaveGradesInput>;
 
 export const SubmitGradesSchema = z.object({
   assignmentId: z.string().uuid("Assignment ID is required."),
   gradingPeriod: z.enum(["Q1", "Q2", "Q3", "Q4"]),
 });
 
-export type SubmitGradesFormState = {
-  errors?: Partial<Record<keyof z.infer<typeof SubmitGradesSchema> | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type SubmitGradesFormState = BaseFormState<z.infer<typeof SubmitGradesSchema>>;
 
 // ─── Admin: Grade Locking ───────────────────────────────────────────────────
 
@@ -91,8 +68,4 @@ export const LockGradesSchema = z.object({
   gradingPeriod: z.enum(["Q1", "Q2", "Q3", "Q4"]),
 });
 
-export type LockGradesFormState = {
-  errors?: Partial<Record<keyof z.infer<typeof LockGradesSchema> | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type LockGradesFormState = BaseFormState<z.infer<typeof LockGradesSchema>>;

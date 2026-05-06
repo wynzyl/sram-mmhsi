@@ -63,9 +63,9 @@ export default function PostPaymentForm({
 
   if (state.success) {
     return (
-      <div className="cashier-pay-success">
-        <p className="cashier-pay-success-title">Payment posted</p>
-        <p className="cashier-pay-success-msg">{state.message}</p>
+      <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-6 shadow-sm">
+        <p className="font-display text-xl font-extrabold text-charcoal">Payment posted</p>
+        <p className="mt-1 text-sm text-(--color-text-2)">{state.message}</p>
         {onCancel && (
           <Button type="button" variant="secondary" className="mt-4" onClick={onCancel}>
             Close
@@ -76,16 +76,22 @@ export default function PostPaymentForm({
   }
 
   return (
-    <form action={action} className="cashier-pay-form space-y-4">
+    <form action={action} className="space-y-4">
       {state.errors?._form && (
-        <div className="cashier-pay-alert cashier-pay-alert-error" role="alert">
+        <div
+          className="rounded-lg border border-(--color-border) bg-(--color-surface-2) px-4 py-3 text-sm text-(--color-error)"
+          role="alert"
+        >
           {state.errors._form.map((err, i) => (
             <p key={i}>{err}</p>
           ))}
         </div>
       )}
       {state.message && !state.success && (
-        <div className="cashier-pay-alert cashier-pay-alert-error" role="alert">
+        <div
+          className="rounded-lg border border-(--color-border) bg-(--color-surface-2) px-4 py-3 text-sm text-(--color-error)"
+          role="alert"
+        >
           {state.message}
         </div>
       )}
@@ -93,9 +99,9 @@ export default function PostPaymentForm({
       <input type="hidden" name="studentId" value={studentId} />
       <input type="hidden" name="assessmentId" value={assessmentId} />
 
-      <div className="cashier-pay-balance-banner">
-        <span className="cashier-pay-balance-label">Amount due (balance)</span>
-        <span className="cashier-pay-balance-value">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-(--color-border) bg-(--color-surface-2) px-4 py-3">
+        <span className="text-sm font-semibold text-(--color-text-2)">Amount due (balance)</span>
+        <span className="font-display text-lg font-black text-(--color-primary)">
           <CurrencyDisplay amount={balance} />
         </span>
       </div>
@@ -112,7 +118,7 @@ export default function PostPaymentForm({
           <select
             id="bookletId"
             name="bookletId"
-            className="cashier-pay-select"
+            className="form-control"
             required
             disabled={activeBooklets.length === 0}
           >
@@ -126,7 +132,7 @@ export default function PostPaymentForm({
         )}
       </FormField>
 
-      <div className="cashier-pay-grid-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <FormField
           label="Amount to pay"
           required
@@ -144,7 +150,7 @@ export default function PostPaymentForm({
             onChange={(e) => setAmountToPay(e.target.value)}
             error={!!state.errors?.amount}
             required
-            className="cashier-pay-input-lg font-mono"
+            className="font-mono text-base"
           />
         </FormField>
 
@@ -152,7 +158,7 @@ export default function PostPaymentForm({
           <select
             id="paymentMethod"
             name="paymentMethod"
-            className="cashier-pay-select"
+            className="form-control"
             required
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
@@ -167,8 +173,8 @@ export default function PostPaymentForm({
       </div>
 
       {paymentMethod === "cash" && (
-        <div className="cashier-pay-cash-panel">
-          <div className="cashier-pay-grid-2">
+        <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               label="Amount tendered"
               required
@@ -184,17 +190,19 @@ export default function PostPaymentForm({
                 value={amountTendered}
                 onChange={(e) => setAmountTendered(e.target.value)}
                 error={!!state.errors?.amountTendered}
-                className="cashier-pay-input-lg font-mono"
+                className="font-mono text-base"
                 autoComplete="off"
               />
             </FormField>
-            <div className="cashier-pay-change-tile">
-              <span className="cashier-pay-change-label">Change</span>
-              <span className="cashier-pay-change-value font-mono">
+            <div className="rounded-lg border border-(--color-border) bg-(--color-surface-2) px-4 py-3">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-(--color-text-muted)">
+                Change
+              </span>
+              <span className="mt-2 block font-mono text-lg font-semibold text-(--color-text)">
                 {payNum > 0 && tenderNum >= payNum ? (
                   <CurrencyDisplay amount={change} />
                 ) : (
-                  <span className="text-[var(--color-text-muted)]">—</span>
+                  <span className="text-(--color-text-muted)">—</span>
                 )}
               </span>
             </div>

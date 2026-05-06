@@ -6,7 +6,6 @@ import {
   enrollments,
   assessments,
   assessmentItems,
-  auditLogs,
   feeScheduleItems,
   gradeLevels,
 } from "@/lib/db/schema";
@@ -20,6 +19,7 @@ import {
 } from "@/lib/validators/assessment";
 import type { AssessmentFormState } from "@/lib/validators/assessment";
 import { logger } from "@/lib/observability/logger";
+import { logAudit } from "@/lib/utils/audit-logger";
 
 export async function createAssessmentFromEnrollmentAction(
   _prevState: AssessmentFormState,
@@ -220,20 +220,20 @@ export async function createAssessmentFromEnrollmentAction(
           and(eq(enrollments.id, enrollmentId), eq(enrollments.status, "pending"))
         );
 
-      await tx.insert(auditLogs).values({
+      await logAudit({
         actor: session.userId,
         actorRole: session.role,
         action: "assessment_created_and_enrollment_assessed",
         targetEntity: "assessments",
         targetId: newAssessment.id,
         context: enrollmentId,
-        newState: JSON.stringify({
+        newState: {
           enrollmentId,
           totalAmount: assessmentTotalAmount,
           lineCount: resolvedLines.length,
           feeScheduleId: scheduleRow.id,
-        }),
-      });
+        },
+      }, { throwOnFail: true });
     });
 
     logger.info("[assessments] Created assessment from enrollment", {
@@ -245,8 +245,12 @@ export async function createAssessmentFromEnrollmentAction(
     revalidatePath("/admin/assessments");
     revalidatePath("/admin/enrollments");
     revalidatePath(`/admin/students/${enrollmentRow.studentId}`);
+    revalidatePath("/staff/assessments");
+    revalidatePath("/staff/enrollments");
+    revalidatePath(`/staff/students/${enrollmentRow.studentId}`);
     if (newAssessmentId) {
       revalidatePath(`/admin/assessments/${newAssessmentId}`);
+      revalidatePath(`/staff/assessments/${newAssessmentId}`);
     }
 
     return { success: true, assessmentId: newAssessmentId };

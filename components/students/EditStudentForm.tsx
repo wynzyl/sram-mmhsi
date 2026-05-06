@@ -1,13 +1,19 @@
 "use client";
 
 import { useActionState, useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FileText, Home, User, Users } from "lucide-react";
 import { updateStudentAction } from "@/actions/students";
 import type { UpdateStudentFormState, GuardianInput } from "@/lib/validators/student";
+import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { DataCard } from "@/components/ui/editorial/DataCard";
+import { cn } from "@/lib/utils/cn";
 import GuardianForm from "./GuardianForm";
 
 interface StudentData {
   id: string;
+  referenceNumber: string;
   firstName: string;
   middleName: string | null;
   lastName: string;
@@ -16,7 +22,6 @@ interface StudentData {
   gender: string | null;
   address: string | null;
 
-  // NEW FIELDS:
   lrn: string | null;
   mobileNumber: string | null;
   email: string | null;
@@ -37,6 +42,8 @@ interface EditStudentFormProps {
   isActiveLocked?: boolean;
   /** Client redirect after successful save (default admin student profile). */
   afterSaveRedirect?: string;
+  /** Explicit cancel target (profile). */
+  cancelHref: string;
 }
 
 const emptyGuardian = (): GuardianInput => ({
@@ -58,6 +65,7 @@ export default function EditStudentForm({
   initialGuardians,
   isActiveLocked = false,
   afterSaveRedirect,
+  cancelHref,
 }: EditStudentFormProps) {
   const router = useRouter();
   const [state, action, pending] = useActionState(updateStudentAction, initialState);
@@ -99,24 +107,17 @@ export default function EditStudentForm({
   };
 
   return (
-    <form action={action} className="student-form" noValidate>
+    <form action={action} className="space-y-6" noValidate>
       <input type="hidden" name="studentId" value={student.id} />
       <input type="hidden" name="guardians" value={JSON.stringify(guardians)} />
 
-      {state.message && (
-        <div className="alert alert-error" role="alert">
-          {state.message}
-        </div>
-      )}
-      {state.errors?._form && (
-        <div className="alert alert-error" role="alert">
-          {state.errors._form.join(" ")}
-        </div>
-      )}
+      <FormStateAlert state={state} />
 
-      {/* ─── Student Information ──────────────────────────────────────── */}
-      <section className="form-section">
-        <h3 className="form-section-title">Student Information</h3>
+      <DataCard className="p-6">
+        <h2 className="mb-5 flex items-center gap-3 border-b border-[var(--color-border)] pb-4 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
+          <User className="h-5 w-5 shrink-0 text-[var(--color-primary)]" aria-hidden />
+          Student information
+        </h2>
         <div className="form-grid form-grid-3">
           <div className="form-group">
             <label className="form-label" htmlFor="firstName">
@@ -222,7 +223,7 @@ export default function EditStudentForm({
           </div>
         </div>
 
-        <div className="form-group">
+        <div className="form-group mt-4">
           <label className="form-label" htmlFor="address">
             Address
           </label>
@@ -234,11 +235,13 @@ export default function EditStudentForm({
             defaultValue={student.address || ""}
           />
         </div>
-      </section>
+      </DataCard>
 
-      {/* ─── Contact & Additional Information ─────────────────────── */}
-      <section className="form-section">
-        <h3 className="form-section-title">Contact & Additional Information</h3>
+      <DataCard className="p-6">
+        <h2 className="mb-5 flex items-center gap-3 border-b border-[var(--color-border)] pb-4 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
+          <Home className="h-5 w-5 shrink-0 text-[var(--color-primary)]" aria-hidden />
+          Contact &amp; additional information
+        </h2>
         <div className="form-grid form-grid-3">
           <div className="form-group">
             <label className="form-label" htmlFor="lrn">
@@ -257,7 +260,6 @@ export default function EditStudentForm({
             {state.errors?.lrn && (
               <p className="form-error">{state.errors.lrn[0]}</p>
             )}
-            {/* <p className="form-hint">Optional. DepEd-issued 12-digit identifier.</p> */}
           </div>
 
           <div className="form-group">
@@ -346,10 +348,13 @@ export default function EditStudentForm({
             />
           </div>
         </div>
-      </section>
+      </DataCard>
 
-      <section className="form-section">
-        <h3 className="form-section-title">Registration / transfer notes</h3>
+      <DataCard className="p-6">
+        <h2 className="mb-5 flex items-center gap-3 border-b border-[var(--color-border)] pb-4 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
+          <FileText className="h-5 w-5 shrink-0 text-[var(--color-primary)]" aria-hidden />
+          Registration / transfer notes
+        </h2>
         <div className="form-group">
           <label className="form-label" htmlFor="previousSchool">
             Previous school
@@ -375,64 +380,65 @@ export default function EditStudentForm({
             defaultValue={student.submittedDocumentsNotes || ""}
           />
         </div>
-      </section>
+      </DataCard>
 
-      {/* ─── Status ─────────────────────────────────────────────────── */}
-      <section className="form-section">
-        <div
-          className="form-group"
-          style={{ flexDirection: "row", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem" }}
-        >
-          {isActiveLocked && (
+      <DataCard className="p-6">
+        <h2 className="mb-4 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
+          Record status
+        </h2>
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
+          <div className="flex flex-row items-start gap-3">
+            {isActiveLocked && (
+              <input type="hidden" name="isActive" value={student.isActive ? "true" : "false"} />
+            )}
             <input
-              type="hidden"
-              name="isActive"
-              value={student.isActive ? "true" : "false"}
+              id="isActive"
+              name={isActiveLocked ? undefined : "isActive"}
+              type="checkbox"
+              defaultChecked={student.isActive}
+              disabled={isActiveLocked}
+              className="mt-1 h-4 w-4 shrink-0 rounded border-[var(--color-border-2)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]/30 disabled:cursor-not-allowed"
             />
-          )}
-          <input
-            id="isActive"
-            name={isActiveLocked ? undefined : "isActive"}
-            type="checkbox"
-            defaultChecked={student.isActive}
-            disabled={isActiveLocked}
-            style={{ width: "16px", height: "16px", cursor: isActiveLocked ? "not-allowed" : "pointer" }}
-          />
-          <label className="form-label" htmlFor="isActive" style={{ cursor: "pointer", margin: 0 }}>
-            Active Student
-          </label>
+            <div className="min-w-0">
+              <label className="form-label m-0 cursor-pointer" htmlFor="isActive">
+                Active student
+              </label>
+              {isActiveLocked ? (
+                <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                  Active cannot be changed while this student has an enrollment in{" "}
+                  <strong className="text-[var(--color-text)]">Enrolled</strong> status.
+                </p>
+              ) : null}
+              {state.errors?.isActive?.[0] && (
+                <p className="form-error mt-1" role="alert">
+                  {state.errors.isActive[0]}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-        {isActiveLocked && (
-          <p className="text-muted" style={{ fontSize: "0.875rem", marginTop: "0.35rem" }}>
-            Active cannot be changed while this student has an enrollment in <strong>Enrolled</strong>{" "}
-            status.
-          </p>
-        )}
-        {state.errors?.isActive?.[0] && (
-          <p className="form-error" role="alert">
-            {state.errors.isActive[0]}
-          </p>
-        )}
-      </section>
+      </DataCard>
 
-      {/* ─── Guardians ───────────────────────────────────────────────── */}
-      <section className="form-section">
-        <div className="form-section-header">
-          <h3 className="form-section-title">Parents / Guardians</h3>
+      <DataCard className="p-6">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
+          <h2 className="flex items-center gap-3 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
+            <Users className="h-5 w-5 shrink-0 text-[var(--color-primary)]" aria-hidden />
+            Parents / guardians
+          </h2>
           <button
             type="button"
-            className="btn-secondary btn-sm"
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] shadow-sm transition-colors hover:bg-[var(--color-surface-2)]"
             onClick={addGuardian}
           >
-            + Add Guardian
+            + Add guardian
           </button>
         </div>
 
         {state.errors?.guardians && (
-          <p className="form-error">{(state.errors.guardians as string[])[0]}</p>
+          <p className="form-error mb-4">{(state.errors.guardians as string[])[0]}</p>
         )}
 
-        <div className="guardian-list">
+        <div className="guardian-list flex flex-col gap-4">
           {guardians.map((guardian, index) => (
             <GuardianForm
               key={index}
@@ -444,21 +450,21 @@ export default function EditStudentForm({
             />
           ))}
         </div>
-      </section>
+      </DataCard>
 
-      {/* ─── Submit ───────────────────────────────────────────────────── */}
-      <div className="form-actions">
-        <button
-          type="button"
-          className="btn-ghost"
-          onClick={() => router.back()}
-          disabled={pending}
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[var(--color-border)] pt-6">
+        <Link
+          href={cancelHref}
+          className={cn(
+            "inline-flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-2.5 text-sm font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-2)]",
+            pending && "pointer-events-none opacity-50"
+          )}
         >
           Cancel
-        </button>
+        </Link>
         <button
           type="submit"
-          className="btn-primary"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-60"
           id="submit-student"
           disabled={pending}
         >
@@ -468,7 +474,7 @@ export default function EditStudentForm({
               Saving...
             </>
           ) : (
-            "Save Changes"
+            "Save changes"
           )}
         </button>
       </div>

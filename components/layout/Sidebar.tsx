@@ -183,7 +183,7 @@ export function Sidebar({ role, username, email }: SidebarProps) {
           <path d="M14 22 H26" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
         </svg>
         <div>
-          <p className="sidebar-brand-name">SRAMS</p>
+          <p className="sidebar-brand-name">MERRYLAND</p>
           <p className="sidebar-brand-portal">{portalLabel(role)}</p>
         </div>
       </div>
@@ -272,11 +272,12 @@ export function Sidebar({ role, username, email }: SidebarProps) {
         .sidebar {
           width: 220px;
           flex-shrink: 0;
-          background: var(--color-surface);
+          background: linear-gradient(180deg, var(--color-sidebar-elevated) 0%, var(--color-sidebar) 100%);
           border-right: 1px solid var(--color-border);
           display: flex;
           flex-direction: column;
           overflow-y: auto;
+          box-shadow: var(--shadow-md);
         }
         .sidebar-brand {
           display: flex;
@@ -284,6 +285,7 @@ export function Sidebar({ role, username, email }: SidebarProps) {
           gap: 0.625rem;
           padding: 1rem 1rem 0.75rem;
           border-bottom: 1px solid var(--color-border);
+          background: color-mix(in srgb, var(--color-sidebar-elevated) 86%, transparent);
         }
         .sidebar-brand-name {
           font-weight: 800;
@@ -324,17 +326,19 @@ export function Sidebar({ role, username, email }: SidebarProps) {
           font-weight: 500;
           color: var(--color-text-2);
           text-decoration: none;
-          transition: background 0.1s, color 0.1s;
+          border-radius: 0.6rem;
+          margin: 0 0.45rem;
+          transition: background 0.15s, color 0.15s;
         }
         .nav-link:hover {
-          background: var(--color-surface-3);
-          color: var(--color-primary);
+          background: color-mix(in srgb, var(--color-surface-3) 72%, transparent);
+          color: var(--color-text);
         }
         .nav-link.active {
-          background: var(--color-primary-50);
-          color: var(--color-primary);
+          background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+          color: color-mix(in srgb, var(--color-primary) 80%, white);
           font-weight: 600;
-          border-right: 2px solid var(--color-primary);
+          border-left: 2px solid var(--color-primary);
         }
         .nav-item-group {
           display: flex;
@@ -343,8 +347,8 @@ export function Sidebar({ role, username, email }: SidebarProps) {
         .nav-sublinks {
           display: flex;
           flex-direction: column;
-          padding: 0 0 0.2rem 0.25rem;
-          margin-left: 0.5rem;
+          padding: 0 0 0.2rem 0.3rem;
+          margin-left: 0.85rem;
           border-left: 1px solid var(--color-border);
         }
         .nav-sublink {
@@ -355,14 +359,14 @@ export function Sidebar({ role, username, email }: SidebarProps) {
           color: var(--color-text-muted);
           text-decoration: none;
           border-radius: 0 var(--radius) var(--radius) 0;
-          transition: background 0.1s, color 0.1s;
+          transition: background 0.15s, color 0.15s;
         }
         .nav-sublink:hover {
-          background: var(--color-surface-3);
+          background: color-mix(in srgb, var(--color-surface-3) 75%, transparent);
           color: var(--color-primary);
         }
         .nav-sublink.active {
-          background: var(--color-primary-50);
+          background: color-mix(in srgb, var(--color-primary) 14%, transparent);
           color: var(--color-primary);
           font-weight: 600;
         }
@@ -388,7 +392,7 @@ export function Sidebar({ role, username, email }: SidebarProps) {
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          background: var(--color-primary);
+          background: linear-gradient(150deg, var(--color-primary) 0%, var(--color-primary-700) 100%);
           color: white;
           display: flex;
           align-items: center;
@@ -427,7 +431,7 @@ export function Sidebar({ role, username, email }: SidebarProps) {
           justify-content: center;
         }
         .logout-btn:hover {
-          background: var(--color-surface-3);
+          background: color-mix(in srgb, var(--color-surface-3) 75%, transparent);
           color: var(--color-error);
         }
       `}</style>

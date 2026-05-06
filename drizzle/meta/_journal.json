@@ -8,6 +8,20 @@
       "when": 1777962803921,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778044006090,
+      "tag": "0001_purple_meggan",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778046000000,
+      "tag": "0002_soft_delete_academics",
+      "breakpoints": true
     }
   ]
 }

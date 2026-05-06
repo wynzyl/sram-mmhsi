@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import EditStudentForm from "@/components/students/EditStudentForm";
+import { StudentEditHero } from "@/components/students/StudentEditHero";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -33,6 +34,7 @@ export default async function StaffEditStudentPage({ params }: PageProps) {
     where: eq(students.id, id),
     columns: {
       id: true,
+      referenceNumber: true,
       firstName: true,
       middleName: true,
       lastName: true,
@@ -89,20 +91,33 @@ export default async function StaffEditStudentPage({ params }: PageProps) {
     columns: { id: true },
   });
 
+  const profileHref = `/staff/students/${id}`;
+  const fullName = [student.firstName, student.middleName, student.lastName, student.suffix]
+    .filter(Boolean)
+    .join(" ");
+  const initials = [student.firstName?.[0], student.lastName?.[0]]
+    .filter(Boolean)
+    .join("")
+    .toUpperCase();
+
   return (
-    <div className="page-container page-container-narrow">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Edit Student</h1>
-          <p className="page-subtitle">Update personal information and guardian details.</p>
-        </div>
-      </div>
+    <div className="page-container space-y-8">
+      <StudentEditHero
+        backHref={profileHref}
+        backLabel="Back to profile"
+        viewProfileHref={profileHref}
+        fullName={fullName}
+        initials={initials}
+        referenceNumber={student.referenceNumber}
+        isActive={student.isActive}
+      />
 
       <EditStudentForm
         student={student}
         initialGuardians={initialGuardians}
         isActiveLocked={Boolean(hasEnrolledEnrollment)}
-        afterSaveRedirect={`/staff/students/${id}`}
+        afterSaveRedirect={profileHref}
+        cancelHref={profileHref}
       />
     </div>
   );

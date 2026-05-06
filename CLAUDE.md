@@ -10,13 +10,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Critical Business Feature:** Official Receipt (OR) booklet management is a first-class accounting control feature — every payment must consume a serialized OR number from an active booklet.
 
-### Current Delivery Snapshot (2026-05-05)
+### Current Delivery Snapshot (2026-05-06)
 
+**Core Features:**
 - Core operations (auth, students, registrations queue, enrollments, assessments, payments/OR, invoices, grades) are implemented.
 - Registration creation is integrated in student onboarding; dedicated intake/review actions are still pending.
 - Portal currently has `/portal/dashboard`; portal detail pages (`/portal/assessments`, `/portal/payments`, `/portal/grades`) are pending.
 - Authentication hardening still pending: login rate-limit integration and forced password-change gate.
 - E2E Playwright test suite is not yet committed.
+
+**Refactoring Status (2026-05-06):**
+- ✅ **Phase 3.1 Complete:** All 11 action files use centralized `logAudit()` utility
+- ✅ **Phase 3.2 Complete:** All 9 validator files use `BaseFormState` and common schemas
+- ✅ **Phase 3.3 Partial:** 1/16 forms migrated, comprehensive migration guide created (`FORM-MIGRATION-GUIDE.md`)
+- ✅ **Phase 3.4 Complete:** All duplicate button components replaced with `ConfirmActionButton`
+- ✅ **Build & Tests:** TypeScript compiles with no errors, all 13 Vitest tests pass
 
 ## Important Documentation References
 
@@ -208,10 +216,19 @@ Middleware enforces role checks at route level.
 - `CurrencyDisplay` — Formats amounts in PHP locale (en-PH)
 - `ReferenceCode` — Displays student reference numbers
 
-**Forms:**
-- `FormField` — Form field wrapper with error display
+**Forms (Refactored - Phase 3.2/3.3):**
+- `FormStateAlert` — **USE THIS** for all error/success messages (replaces manual alert blocks)
+- `TextInputField` — Controlled text input with error display
+- `SelectField` — Controlled select dropdown with error display
+- `CurrencyInputField` — Currency input with PHP formatting
+- `FormField` — Legacy form field wrapper (migrate to above)
 - `FormSection` — Form section with heading
 - `FormActions` — Form submit/cancel buttons
+
+**Actions (Refactored - Phase 3.4):**
+- `ConfirmActionButton` — **USE THIS** for all confirmation actions (delete, lock, remove, etc.)
+- `InlineConfirmButton` — Inline variant (for table cells)
+- `BlockConfirmButton` — Full-width variant (for modals)
 
 **Layout:**
 - `PageHeader` — Page title + breadcrumb
@@ -221,6 +238,8 @@ Middleware enforces role checks at route level.
 - `Button`, `Input`, `Card`, `Badge`, `Spinner`, `ThemeToggle`
 
 All UI components use CSS custom properties for theming (deep red primary color, green accents).
+
+**📘 See `FORM-MIGRATION-GUIDE.md` for complete form component migration patterns.**
 
 ### Rules (Non-Negotiable)
 
@@ -255,25 +274,37 @@ export default async function StudentsPage() {
 }
 ```
 
-**Server Action Pattern (mutations):**
+**Server Action Pattern (mutations) - REFACTORED:**
 ```typescript
 // actions/students.ts
 "use server";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { logAudit } from "@/lib/utils/audit-logger";  // ✅ Phase 3.1: Use centralized audit
 import { db } from "@/lib/db";
 import { createStudentSchema } from "@/lib/validators/student";
+import type { CreateStudentFormState } from "@/lib/validators/student";  // ✅ Phase 3.2: BaseFormState
 
-export async function createStudent(data: unknown) {
+export async function createStudent(
+  _prevState: CreateStudentFormState,
+  formData: FormData
+): Promise<CreateStudentFormState> {
   const session = await requireSession();
 
   // 1. Permission check
   if (!hasPermission(session.role, "students:create")) {
-    throw new Error("Forbidden");
+    return { message: "You do not have permission to create students." };
   }
 
   // 2. Validate input
-  const parsed = createStudentSchema.parse(data);
+  const parsed = createStudentSchema.safeParse({
+    firstName: formData.get("firstName"),
+    // ... other fields
+  });
+
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors };
+  }
 
   // 3. Business logic + DB write
   const [student] = await db.insert(students).values({
@@ -281,39 +312,94 @@ export async function createStudent(data: unknown) {
     createdBy: session.userId,
   }).returning();
 
-  // 4. Audit log (if needed)
-  await db.insert(auditLogs).values({
+  // 4. Audit log - ✅ Use centralized logger (Phase 3.1)
+  await logAudit({
     actor: session.userId,
+    actorRole: session.role,
     action: "students:create",
     targetEntity: "students",
     targetId: student.id,
+    newState: { studentRef: student.studentRef },
   });
 
-  return { success: true, data: student };
+  return { success: true, studentId: student.id };
 }
 ```
 
-**Client Component Pattern (form submission):**
+**Client Component Pattern (form submission) - REFACTORED:**
 ```typescript
 // components/students/StudentForm.tsx
 "use client";
-import { useForm } from "react-hook-form";
+import { useActionState } from "react";
 import { createStudent } from "@/actions/students";
+import { FormStateAlert } from "@/components/forms/FormStateAlert";  // ✅ Phase 3.3
+import { TextInputField } from "@/components/forms/TextInputField";
 
 export function StudentForm() {
-  const form = useForm();
+  const [state, action, isPending] = useActionState(createStudent, {});
 
-  async function onSubmit(data: unknown) {
-    try {
-      const result = await createStudent(data);
-      // handle success
-    } catch (error) {
-      // handle error
-    }
-  }
+  return (
+    <form action={action}>
+      <FormStateAlert state={state} />  {/* ✅ Replaces manual alert blocks */}
 
-  return <form onSubmit={form.handleSubmit(onSubmit)}>...</form>;
+      <TextInputField
+        label="First Name"
+        name="firstName"
+        required
+        value={firstName}
+        onChange={setFirstName}
+        error={state.errors?.firstName}
+      />
+
+      <button type="submit" disabled={isPending}>
+        {isPending ? "Creating..." : "Create"}
+      </button>
+    </form>
+  );
 }
+```
+
+**Validator Pattern - REFACTORED (Phase 3.2):**
+```typescript
+// lib/validators/student.ts
+import { z } from "zod";
+import {
+  nameSchema,
+  emailSchema,
+  phoneSchema,
+  type BaseFormState,  // ✅ Use shared base type
+} from "./common-schemas";
+
+export const CreateStudentSchema = z.object({
+  firstName: nameSchema,        // ✅ Use common schemas
+  middleName: z.string().trim().optional(),
+  lastName: nameSchema.toUpperCase(),
+  email: emailSchema,           // ✅ Reusable validation
+  mobileNumber: phoneSchema,    // ✅ Reusable validation
+});
+
+export type CreateStudentInput = z.infer<typeof CreateStudentSchema>;
+
+// ✅ Extend BaseFormState instead of redefining
+export type CreateStudentFormState = BaseFormState<CreateStudentInput> & {
+  studentId?: string;  // Additional fields beyond base
+};
+```
+
+**Confirmation Button Pattern - REFACTORED (Phase 3.4):**
+```typescript
+// Instead of creating custom button components, use ConfirmActionButton:
+import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
+import { deleteSubjectAction } from "@/actions/academics";
+
+<InlineConfirmButton
+  action={deleteSubjectAction}
+  confirmMessage="Are you sure you want to delete this subject?"
+  hiddenFields={{ subjectId: subject.id }}
+  label="Delete"
+  loadingLabel="Deleting..."
+  variant="danger"
+/>
 ```
 
 ### Reference Number Generation

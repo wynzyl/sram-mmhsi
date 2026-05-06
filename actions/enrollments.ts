@@ -5,16 +5,20 @@ import { db } from "@/lib/db";
 import {
   enrollments,
   students,
-  auditLogs,
   schoolYears,
   gradeLevels,
   assessments,
   registrations,
+  auditLogs,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
 import { eq, and, ne, isNull, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { logUpdateAction } from "@/lib/utils/audit-logger";
+import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
+import { formatCurrency } from "@/lib/utils/currency";
+import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
 import {
   CreateEnrollmentSchema,
   UpdateEnrollmentStatusSchema,
@@ -31,57 +35,6 @@ import { parseIntakeDocumentStatus } from "@/lib/validators/intake-documents";
 
 const OUTSTANDING_PAYMENT_EPSILON = 0.009;
 const MIN_CANCEL_REMARKS_WITH_BALANCE = 15;
-
-function pgUniqueConstraintName(err: unknown): string | undefined {
-  let e: unknown = err;
-  const seen = new Set<unknown>();
-  while (e && typeof e === "object" && !seen.has(e)) {
-    seen.add(e);
-    const o = e as { code?: string; constraint?: string; cause?: unknown };
-    if (o.code === "23505" && typeof o.constraint === "string") return o.constraint;
-    e = o.cause;
-  }
-  return undefined;
-}
-
-function formatPhp(amount: number): string {
-  return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amount);
-}
-
-// ─── Audit Helper ─────────────────────────────────────────────────────────────
-
-async function audit(
-  actorId: string,
-  actorRole: string,
-  action: string,
-  targetEntity: string,
-  targetId: string,
-  newState?: object
-) {
-  try {
-    await db.insert(auditLogs).values({
-      actor: actorId,
-      actorRole,
-      action,
-      targetEntity,
-      targetId,
-      newState: newState ? JSON.stringify(newState) : undefined,
-      correlationId: crypto.randomUUID(),
-    });
-  } catch (err) {
-    logger.error("[audit] Failed to write", { error: String(err) });
-  }
-}
-
-/** Enrollments may only be created for the single active (current) school year. */
-async function getActiveSchoolYearId(): Promise<string | null> {
-  const rows = await db
-    .select({ id: schoolYears.id })
-    .from(schoolYears)
-    .where(and(eq(schoolYears.isActive, true), isNull(schoolYears.deletedAt)))
-    .limit(1);
-  return rows[0]?.id ?? null;
-}
 
 // ─── Create Enrollment Action ─────────────────────────────────────────────────
 
@@ -371,7 +324,7 @@ export async function createEnrollmentAction(
       };
     }
 
-    const uq = pgUniqueConstraintName(err);
+    const uq = extractUniqueConstraint(err);
     if (uq === "enrollment_unique_sy_idx" || detail.includes("enrollment_unique_sy_idx")) {
       return {
         errors: {
@@ -424,6 +377,13 @@ export async function updateEnrollmentStatusAction(
       studentId: true,
       schoolYearId: true,
       gradeLevelId: true,
+      sectionId: true,
+      enrolledAt: true,
+      updatedBy: true,
+      updatedAt: true,
+      cancelledAt: true,
+      cancelledBy: true,
+      cancelRemarks: true,
     },
   });
 
@@ -465,7 +425,7 @@ export async function updateEnrollmentStatusAction(
     ) {
       if (!hasPermission(session.role, "enrollments:cancel_with_balance")) {
         return {
-          message: `This enrollment has collected ${formatPhp(paid)} on the assessment ledger. Void posted payments on the ledger first (Cashier), then cancel. If you must cancel without voiding in the system, ask an administrator.`,
+          message: `This enrollment has collected ${formatCurrency(paid)} on the assessment ledger. Void posted payments on the ledger first (Cashier), then cancel. If you must cancel without voiding in the system, ask an administrator.`,
         };
       }
       const remarks = (cancelRemarks ?? "").trim();
@@ -514,13 +474,38 @@ export async function updateEnrollmentStatusAction(
       }
     });
 
-    const verb = action === "cancel" ? "cancelled" : "override_marked_enrolled";
-    await audit(session.userId, session.role, verb, "enrollments", enrollmentId, {
+    const updatedSnapshot = {
       ...updateValues,
       ...(assessmentForCancel && action === "cancel"
         ? { assessmentId: assessmentForCancel.id }
         : {}),
-    });
+    };
+
+    const previousSnapshot = {
+      status: enrollment.status,
+      updatedBy: enrollment.updatedBy,
+      updatedAt: enrollment.updatedAt,
+      ...(action === "override_enroll" && {
+        enrolledAt: enrollment.enrolledAt,
+        ...(sectionId ? { sectionId: enrollment.sectionId } : {}),
+      }),
+      ...(action === "cancel" && {
+        cancelledAt: enrollment.cancelledAt,
+        cancelledBy: enrollment.cancelledBy,
+        cancelRemarks: enrollment.cancelRemarks,
+      }),
+      ...(assessmentForCancel && action === "cancel"
+        ? { assessmentId: assessmentForCancel.id }
+        : {}),
+    };
+
+    await logUpdateAction(
+      session,
+      "enrollments",
+      enrollmentId,
+      previousSnapshot,
+      updatedSnapshot
+    );
 
     logger.info("[enrollments] Status updated", {
       enrollmentId,

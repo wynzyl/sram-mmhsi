@@ -1,6 +1,8 @@
 "use client";
 
+import { Download, Pencil, SlidersHorizontal } from "lucide-react";
 import { formatStoredOrNumber, orNumberPadWidth } from "@/lib/utils/or-number";
+import { getReceiptStatusClasses } from "@/lib/utils/receipt-theme";
 
 interface ReceiptBooklet {
   id: string;
@@ -15,75 +17,124 @@ interface ReceiptBooklet {
 
 interface BookletsTableProps {
   booklets: ReceiptBooklet[];
+  variant?: "default" | "dashboard";
 }
 
-export default function BookletsTable({ booklets }: BookletsTableProps) {
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return "badge-success";
-      case "exhausted":
-        return "badge-secondary";
-      case "voided":
-        return "badge-danger";
-      default:
-        return "badge-secondary";
-    }
-  };
-
-  return (
-    <div className="table-wrapper">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Series</th>
-            <th>OR prefix</th>
-            <th>Start Number</th>
-            <th>End Number</th>
-            <th>Next OR</th>
-            <th>Status</th>
-            <th>Created At</th>
-          </tr>
-        </thead>
-        <tbody>
-          {booklets.length === 0 ? (
+export default function BookletsTable({ booklets, variant = "default" }: BookletsTableProps) {
+  if (variant !== "dashboard") {
+    return (
+      <div className="table-wrapper">
+        <table className="data-table">
+          <thead>
             <tr>
-              <td colSpan={7} className="table-empty">
-                No receipt booklets found.
-              </td>
+              <th>Series</th>
+              <th>OR prefix</th>
+              <th>Start Number</th>
+              <th>End Number</th>
+              <th>Next OR</th>
+              <th>Status</th>
+              <th>Created At</th>
             </tr>
-          ) : (
-            booklets.map((booklet) => {
-              const w = orNumberPadWidth();
-              return (
-              <tr key={booklet.id} className="table-row-hover">
-                <td style={{ fontWeight: 600 }}>{booklet.series}</td>
-                <td style={{ fontWeight: 600 }}>{booklet.prefix}</td>
-                <td style={{ fontFamily: "var(--font-mono, ui-monospace)" }}>
-                  {String(booklet.startNumber).padStart(w, "0")}
-                </td>
-                <td style={{ fontFamily: "var(--font-mono, ui-monospace)" }}>
-                  {String(booklet.endNumber).padStart(w, "0")}
-                </td>
-                <td style={{ color: booklet.status === "active" ? "var(--color-primary)" : "inherit", fontFamily: "var(--font-mono, ui-monospace)" }}>
-                  {booklet.status === "active"
-                    ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber)
-                    : "—"}
-                </td>
-                <td>
-                  <span className={`badge ${getStatusBadge(booklet.status)}`}>
-                    {booklet.status.charAt(0).toUpperCase() + booklet.status.slice(1)}
-                  </span>
-                </td>
-                <td className="text-muted">
-                  {booklet.createdAt.toLocaleDateString()}
+          </thead>
+          <tbody>
+            {booklets.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="table-empty">
+                  No receipt booklets found.
                 </td>
               </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+            ) : (
+              booklets.map((booklet) => {
+                const w = orNumberPadWidth();
+                return (
+                  <tr key={booklet.id} className="table-row-hover">
+                    <td className="font-semibold">{booklet.series}</td>
+                    <td className="font-semibold">{booklet.prefix}</td>
+                    <td className="font-mono">{String(booklet.startNumber).padStart(w, "0")}</td>
+                    <td className="font-mono">{String(booklet.endNumber).padStart(w, "0")}</td>
+                    <td className="font-mono" style={{ color: booklet.status === "active" ? "var(--color-primary)" : "inherit" }}>
+                      {booklet.status === "active" ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber) : "—"}
+                    </td>
+                    <td>
+                      <span className={`badge capitalize ${getReceiptStatusClasses(booklet.status)}`}>{booklet.status}</span>
+                    </td>
+                    <td className="text-muted">{booklet.createdAt.toLocaleDateString()}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  const w = orNumberPadWidth();
+
+  return (
+    <div className="ops-panel p-0">
+      <div className="flex items-center justify-between border-b border-(--color-ops-line) px-5 py-4">
+        <h2 className="font-display text-3xl text-(--color-ops-ink)">Active Booklets</h2>
+        <div className="flex items-center gap-2">
+          <button type="button" className="ops-icon-btn" aria-label="Filter">
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
+          <button type="button" className="ops-icon-btn" aria-label="Download">
+            <Download className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px]">
+          <thead>
+            <tr className="ops-table-head">
+              <th className="px-4 py-3 font-medium">Booklet ID</th>
+              <th className="px-4 py-3 font-medium">Range</th>
+              <th className="px-4 py-3 font-medium">Current</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 text-right font-medium">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {booklets.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-12 text-center text-sm text-(--color-ops-muted)">
+                  No receipt booklets found.
+                </td>
+              </tr>
+            ) : (
+              booklets.map((booklet) => (
+                <tr key={booklet.id} className="ops-table-row">
+                  <td className="ops-table-cell">
+                    <p className="font-semibold tracking-wide text-(--color-ops-ink)">{booklet.prefix}</p>
+                    <p className="mt-1 font-mono text-[13px] text-(--color-ops-muted)">{booklet.series}</p>
+                  </td>
+                  <td className="ops-table-cell font-mono text-(--color-ops-ink)">
+                    <p>{String(booklet.startNumber).padStart(w, "0")}</p>
+                    <p className="text-(--color-ops-muted)">to {String(booklet.endNumber).padStart(w, "0")}</p>
+                  </td>
+                  <td className="ops-table-cell">
+                    <span className="inline-flex min-w-[92px] items-center justify-center border border-(--color-ops-line) bg-(--color-ops-field) px-2 py-1 font-mono text-[13px] text-(--color-ops-field-text)">
+                      {booklet.status === "active" ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber) : "--"}
+                    </span>
+                  </td>
+                  <td className="ops-table-cell">
+                    <span className={`inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium capitalize ${getReceiptStatusClasses(booklet.status)}`}>
+                      {booklet.status}
+                    </span>
+                  </td>
+                  <td className="ops-table-cell text-right">
+                    <button type="button" className="ops-icon-btn">
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

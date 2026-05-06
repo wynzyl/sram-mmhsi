@@ -15,9 +15,14 @@ interface Assessment {
 
 interface AssessmentsTableProps {
   assessments: Assessment[];
+  /** Base path without trailing slash for ledger links. */
+  assessmentsBasePath?: string;
 }
 
-export default function AssessmentsTable({ assessments }: AssessmentsTableProps) {
+export default function AssessmentsTable({
+  assessments,
+  assessmentsBasePath = "/admin/assessments",
+}: AssessmentsTableProps) {
   return (
     <div className="table-wrapper">
       <table className="data-table">
@@ -58,7 +63,7 @@ export default function AssessmentsTable({ assessments }: AssessmentsTableProps)
                 </td>
                 <td>
                   <Link
-                    href={`/admin/assessments/${assessment.id}`}
+                    href={`${assessmentsBasePath}/${assessment.id}`}
                     className="btn-primary btn-sm"
                   >
                     View Ledger

@@ -3,10 +3,11 @@
 import { redirect } from "next/navigation";
 import { compare } from "bcryptjs";
 import { db } from "@/lib/db";
-import { users, auditLogs } from "@/lib/db/schema";
+import { users } from "@/lib/db/schema";
 import { eq, or } from "drizzle-orm";
 import { LoginSchema, type LoginFormState } from "@/lib/validators/auth";
 import { createSession, deleteSession } from "@/lib/auth/session";
+import { logAudit } from "@/lib/utils/audit-logger";
 import { logger } from "@/lib/observability/logger";
 import type { Role } from "@/lib/constants/roles";
 import { STAFF_ROLES } from "@/lib/constants/roles";
@@ -22,30 +23,6 @@ const ROLE_LANDING: Record<Role, string> = {
   student: "/portal/dashboard",
   parent_guardian: "/portal/dashboard",
 };
-
-// ─── Audit helper ─────────────────────────────────────────────────────────────
-
-async function writeAuditLog(
-  action: string,
-  targetId: string | null,
-  actorId: string | null,
-  actorRole: string | null,
-  context?: string
-) {
-  try {
-    await db.insert(auditLogs).values({
-      actor: actorId ?? undefined,
-      actorRole: actorRole ?? undefined,
-      action,
-      targetEntity: "users",
-      targetId: targetId ?? undefined,
-      context: context ?? undefined,
-      correlationId: crypto.randomUUID(),
-    });
-  } catch (err) {
-    logger.error("[audit] Failed to write audit log", { action, error: String(err) });
-  }
-}
 
 // ─── Login Action ─────────────────────────────────────────────────────────────
 
@@ -86,7 +63,14 @@ export async function loginAction(
 
   if (!user || !isValid || !user.isActive) {
     logger.warn("[auth] Failed login attempt", { username });
-    await writeAuditLog("login_failed", null, null, null, `username=${username}`);
+    await logAudit({
+      actor: user?.id ?? null,
+      actorRole: "system",
+      action: "auth:login_failed",
+      targetEntity: "users",
+      targetId: "unknown",
+      context: `username=${username}`,
+    });
     // Generic message — do not leak whether user exists
     return { message: "Invalid credentials. Please try again." };
   }
@@ -96,7 +80,13 @@ export async function loginAction(
 
   // 5. Audit: successful login
   logger.info("[auth] User logged in", { userId: user.id, role: user.role });
-  await writeAuditLog("login_success", user.id, user.id, user.role);
+  await logAudit({
+    actor: user.id,
+    actorRole: user.role,
+    action: "auth:login_success",
+    targetEntity: "users",
+    targetId: user.id,
+  });
 
   // 6. Redirect to role landing page
   // redirect() throws internally — must be called outside try/catch

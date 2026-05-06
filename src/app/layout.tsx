@@ -1,18 +1,25 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
+import { Crimson_Pro, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { RootProviders } from "@/components/providers/RootProviders";
 import "./globals.css";
+
+const crimsonPro = Crimson_Pro({
+  variable: "--font-crimson",
+  subsets: ["latin"],
+  weight: ["600", "700", "900"],
+  display: "swap",
+});
 
 const ibmPlexSans = IBM_Plex_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
-
-const jetbrainsMono = JetBrains_Mono({
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-mono",
   subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
   weight: ["400", "500", "600"],
   display: "swap",
 });
@@ -36,16 +43,15 @@ export default function RootLayout({
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        {/* Apply theme class BEFORE the body paints, to prevent a light/white
-            flash on first load and during hard navigations in dark mode.
-            Mirrors the logic in ThemeProvider so the React state and DOM agree. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var s=localStorage.getItem('theme');var r=s;if(!s||s==='system'){r=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.classList.remove('light','dark');document.documentElement.classList.add(r);document.documentElement.style.colorScheme=r;}catch(_){}})();`,
           }}
         />
       </head>
-      <body className={`${ibmPlexSans.variable} ${jetbrainsMono.variable}`}>
+      <body
+        className={`${crimsonPro.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
+      >
         <RootProviders>{children}</RootProviders>
       </body>
     </html>

@@ -6,7 +6,6 @@ import {
   feeSchedules,
   feeScheduleItems,
   assessmentItems,
-  auditLogs,
 } from "@/lib/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
@@ -20,6 +19,7 @@ import type {
   FeeScheduleItemFormState,
 } from "@/lib/validators/finance";
 import { logger } from "@/lib/observability/logger";
+import { logAudit } from "@/lib/utils/audit-logger";
 
 function isGradeLevelIdNotNullDbError(error: unknown): boolean {
   let current: unknown = error;
@@ -100,14 +100,14 @@ export async function createFeeScheduleAction(
       })
       .returning({ id: feeSchedules.id });
 
-    await db.insert(auditLogs).values({
+    await logAudit({
       actor: session.userId,
       actorRole: session.role,
       action: "fee_schedule_created",
       targetEntity: "fee_schedules",
       targetId: newSchedule.id,
-      newState: JSON.stringify(parsed.data),
-    });
+      newState: parsed.data,
+    }, { throwOnFail: true });
 
     revalidatePath("/admin/finance/fee-schedules");
     return { success: true, message: "Fee schedule created successfully." };
@@ -188,15 +188,15 @@ export async function updateFeeScheduleAction(
       })
       .where(eq(feeSchedules.id, id));
 
-    await db.insert(auditLogs).values({
+    await logAudit({
       actor: session.userId,
       actorRole: session.role,
       action: "fee_schedule_updated",
       targetEntity: "fee_schedules",
       targetId: id,
-      previousState: JSON.stringify(existingRecord),
-      newState: JSON.stringify(parsed.data),
-    });
+      previousState: existingRecord,
+      newState: parsed.data,
+    }, { throwOnFail: true });
 
     revalidatePath("/admin/finance/fee-schedules");
     revalidatePath(`/admin/finance/fee-schedules/${id}`);
@@ -244,14 +244,14 @@ export async function addFeeScheduleItemAction(
       })
       .returning({ id: feeScheduleItems.id });
 
-    await db.insert(auditLogs).values({
+    await logAudit({
       actor: session.userId,
       actorRole: session.role,
       action: "fee_schedule_item_added",
       targetEntity: "fee_schedule_items",
       targetId: newItem.id,
-      newState: JSON.stringify(parsed.data),
-    });
+      newState: parsed.data,
+    }, { throwOnFail: true });
 
     revalidatePath(`/admin/finance/fee-schedules/${parsed.data.feeScheduleId}`);
     return { success: true, message: "Fee item added successfully." };
@@ -299,14 +299,14 @@ export async function removeFeeScheduleItemAction(
 
     await db.delete(feeScheduleItems).where(eq(feeScheduleItems.id, id));
 
-    await db.insert(auditLogs).values({
+    await logAudit({
       actor: session.userId,
       actorRole: session.role,
       action: "fee_schedule_item_removed",
       targetEntity: "fee_schedule_items",
       targetId: id,
-      previousState: JSON.stringify(existing),
-    });
+      previousState: existing,
+    }, { throwOnFail: true });
 
     revalidatePath(`/admin/finance/fee-schedules/${feeScheduleId}`);
     return { success: true, message: "Fee item removed successfully." };
