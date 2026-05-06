@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FEE_ASSESSMENT_BANDS } from "@/lib/fee-schedule/bands";
+import type { BaseFormState } from "./common-schemas";
 
 // ─── Fee Schedule Validators ──────────────────────────────────────────────────
 
@@ -16,11 +17,7 @@ export const FeeScheduleSchema = z.object({
 
 export type FeeScheduleInput = z.infer<typeof FeeScheduleSchema>;
 
-export type FeeScheduleFormState = {
-  errors?: Partial<Record<keyof FeeScheduleInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type FeeScheduleFormState = BaseFormState<FeeScheduleInput>;
 
 // ─── Fee Schedule Item Validators ─────────────────────────────────────────────
 
@@ -35,11 +32,7 @@ export const FeeScheduleItemSchema = z.object({
 
 export type FeeScheduleItemInput = z.infer<typeof FeeScheduleItemSchema>;
 
-export type FeeScheduleItemFormState = {
-  errors?: Partial<Record<keyof FeeScheduleItemInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type FeeScheduleItemFormState = BaseFormState<FeeScheduleItemInput>;
 
 // ─── Assessment Item Validators (Manual Adjustments) ──────────────────────────
 
@@ -52,8 +45,4 @@ export const AssessmentItemSchema = z.object({
 
 export type AssessmentItemInput = z.infer<typeof AssessmentItemSchema>;
 
-export type AssessmentItemFormState = {
-  errors?: Partial<Record<keyof AssessmentItemInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type AssessmentItemFormState = BaseFormState<AssessmentItemInput>;

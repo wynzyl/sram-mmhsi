@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { BaseFormState } from "./common-schemas";
 
 export const LoginSchema = z.object({
   username: z
@@ -14,12 +15,4 @@ export const LoginSchema = z.object({
 
 export type LoginInput = z.infer<typeof LoginSchema>;
 
-export type LoginFormState =
-  | {
-      errors?: {
-        username?: string[];
-        password?: string[];
-      };
-      message?: string;
-    }
-  | undefined;
+export type LoginFormState = BaseFormState<LoginInput> | undefined;

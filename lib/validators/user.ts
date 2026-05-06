@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ROLES } from "@/lib/constants/roles";
+import type { BaseFormState } from "./common-schemas";
 
 // ─── Helper Schemas ──────────────────────────────────────────────────────────
 
@@ -47,10 +48,7 @@ export const CreateUserSchema = z.object({
 
 export type CreateUserInput = z.infer<typeof CreateUserSchema>;
 
-export type CreateUserFormState = {
-  errors?: Partial<Record<keyof CreateUserInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
+export type CreateUserFormState = BaseFormState<CreateUserInput> & {
   userId?: string;
 };
 
@@ -91,11 +89,7 @@ export const UpdateUserSchema = z.object({
 
 export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
 
-export type UpdateUserFormState = {
-  errors?: Partial<Record<keyof UpdateUserInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type UpdateUserFormState = BaseFormState<UpdateUserInput>;
 
 // ─── Reset Password Schema ───────────────────────────────────────────────────
 
@@ -107,11 +101,7 @@ export const ResetPasswordSchema = z.object({
 
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
 
-export type ResetPasswordFormState = {
-  errors?: Partial<Record<keyof ResetPasswordInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type ResetPasswordFormState = BaseFormState<ResetPasswordInput>;
 
 // ─── Toggle User Status Schema ───────────────────────────────────────────────
 
@@ -122,8 +112,4 @@ export const ToggleUserStatusSchema = z.object({
 
 export type ToggleUserStatusInput = z.infer<typeof ToggleUserStatusSchema>;
 
-export type ToggleUserStatusFormState = {
-  errors?: Partial<Record<keyof ToggleUserStatusInput | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type ToggleUserStatusFormState = BaseFormState<ToggleUserStatusInput>;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { BaseFormState } from "./common-schemas";
 
 export const AssessmentScheduleLineSubmissionSchema = z.object({
   feeScheduleItemId: z.string().uuid(),
@@ -33,10 +34,7 @@ export type CreateAssessmentFromEnrollmentInput = z.infer<
   typeof CreateAssessmentFromEnrollmentSchema
 >;
 
-export type AssessmentFormState = {
-  errors?: Record<string, string[]>;
-  message?: string;
-  success?: boolean;
+export type AssessmentFormState = BaseFormState<CreateAssessmentFromEnrollmentInput> & {
   assessmentId?: string;
 };
 

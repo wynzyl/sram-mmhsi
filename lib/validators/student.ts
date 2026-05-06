@@ -1,27 +1,36 @@
 import { z } from "zod";
 import type { IntakeDocumentStatus } from "@/lib/validators/intake-documents";
 import type { CreateStudentWithRegistrationInput } from "./registration";
+import {
+  nameSchema,
+  emailSchema,
+  emailRequiredSchema,
+  phoneSchema,
+  lrnSchema,
+  bloodTypeSchema,
+  genderSchema,
+  genderOptionalSchema,
+  type BaseFormState,
+  type FormStateWithExtras,
+} from "./common-schemas";
 
 // ─── Guardian Schema ───────────────────────────────────────────────────────────
 
 export const GuardianSchema = z.object({
-  firstName: z.string().min(1, "First name is required.").trim(),
+  firstName: nameSchema,
   middleName: z.string().trim().optional(),
-  lastName: z.string().min(1, "Last name is required.").trim(),
+  lastName: nameSchema,
   relationship: z.string().min(1, "Relationship is required.").trim(),
   address: z.string().min(1, "Address is required.").trim(),
   occupation: z.string().trim().optional(),
   contactNumber: z.string().min(1, "Contact number is required.").trim(),
-  email: z.string().trim().email("Invalid email address.").min(1, "Email is required."),
+  email: emailRequiredSchema,
   isPrimary: z.boolean().default(false),
 });
 
 export type GuardianInput = z.infer<typeof GuardianSchema>;
 
-const genderEnumSchema = z.enum(["male", "female", "other", "prefer_not_to_say"], {
-  message: "Gender is required.",
-});
-
+// Date of birth validator (required)
 const dateOfBirthRequired = z
   .string()
   .trim()
@@ -32,39 +41,20 @@ const dateOfBirthRequired = z
 // ─── Student Creation Schema ───────────────────────────────────────────────────
 
 export const CreateStudentSchema = z.object({
-  firstName: z.string().min(1, "First name is required.").trim(),
+  firstName: nameSchema,
   middleName: z.string().trim().optional(),
-  lastName: z.string().min(1, "Last name is required.").trim().toUpperCase(),
+  lastName: nameSchema.toUpperCase(),
   suffix: z.string().trim().optional(),
   dateOfBirth: dateOfBirthRequired,
-  gender: z.preprocess(
-    (v) => (v === "" || v === null || v === undefined ? undefined : v),
-    genderEnumSchema
-  ),
+  gender: genderOptionalSchema,
   address: z.string().trim().optional(),
 
   // NEW FIELDS - Contact & Additional Information
-  lrn: z
-    .string()
-    .trim()
-    .optional()
-    .refine((val) => !val || /^[0-9]{12}$/.test(val), {
-      message: "LRN must be exactly 12 digits if provided.",
-    }),
-  mobileNumber: z
-    .string()
-    .trim()
-    .optional()
-    .refine((val) => !val || /^(09|\+639)\d{9}$/.test(val), {
-      message: "Mobile number must be a valid Philippine number (e.g., 09171234567).",
-    }),
-  email: z.string().trim().email("Invalid email address.").optional().or(z.literal("")),
+  lrn: lrnSchema,
+  mobileNumber: phoneSchema,
+  email: emailSchema,
   nationality: z.string().trim().max(100, "Nationality too long.").optional(),
-  bloodType: z
-    .enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], {
-      message: "Invalid blood type.",
-    })
-    .optional(),
+  bloodType: bloodTypeSchema,
   religion: z.string().trim().max(100, "Religion too long.").optional(),
   previousSchool: z.string().trim().max(500, "Too long.").optional(),
   submittedDocumentsNotes: z.string().trim().max(2000, "Too long.").optional(),
@@ -101,14 +91,9 @@ export type CreateStudentFormFieldSnapshot = {
   guardians: GuardianInput[];
 };
 
-export type CreateStudentFormState = {
-  errors?: Partial<
-    Record<keyof CreateStudentWithRegistrationInput | "guardians" | "_form", string[]>
-  >;
+export type CreateStudentFormState = BaseFormState<CreateStudentWithRegistrationInput> & {
   /** Present when submission failed — rehydrate controlled fields from this object. */
   fieldValues?: CreateStudentFormFieldSnapshot;
-  message?: string;
-  success?: boolean;
   studentId?: string;
 };
 
@@ -117,39 +102,20 @@ export type CreateStudentFormState = {
 
 export const UpdateStudentSchema = z.object({
   studentId: z.string().uuid(),
-  firstName: z.string().min(1, "First name is required.").trim(),
+  firstName: nameSchema,
   middleName: z.string().trim().optional(),
-  lastName: z.string().min(1, "Last name is required.").trim().toUpperCase(),
+  lastName: nameSchema.toUpperCase(),
   suffix: z.string().trim().optional(),
   dateOfBirth: dateOfBirthRequired,
-  gender: z.preprocess(
-    (v) => (v === "" || v === null || v === undefined ? undefined : v),
-    genderEnumSchema
-  ),
+  gender: genderOptionalSchema,
   address: z.string().trim().optional(),
 
   // NEW FIELDS - Contact & Additional Information
-  lrn: z
-    .string()
-    .trim()
-    .optional()
-    .refine((val) => !val || /^[0-9]{12}$/.test(val), {
-      message: "LRN must be exactly 12 digits if provided.",
-    }),
-  mobileNumber: z
-    .string()
-    .trim()
-    .optional()
-    .refine((val) => !val || /^(09|\+639)\d{9}$/.test(val), {
-      message: "Mobile number must be a valid Philippine number.",
-    }),
-  email: z.string().trim().email("Invalid email address.").optional().or(z.literal("")),
+  lrn: lrnSchema,
+  mobileNumber: phoneSchema,
+  email: emailSchema,
   nationality: z.string().trim().max(100, "Nationality too long.").optional(),
-  bloodType: z
-    .enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], {
-      message: "Invalid blood type.",
-    })
-    .optional(),
+  bloodType: bloodTypeSchema,
   religion: z.string().trim().max(100, "Religion too long.").optional(),
   previousSchool: z.string().trim().max(500, "Too long.").optional(),
   submittedDocumentsNotes: z.string().trim().max(2000, "Too long.").optional(),
@@ -161,8 +127,4 @@ export const UpdateStudentSchema = z.object({
 
 export type UpdateStudentInput = z.infer<typeof UpdateStudentSchema>;
 
-export type UpdateStudentFormState = {
-  errors?: Partial<Record<keyof UpdateStudentInput | "guardians" | "_form", string[]>>;
-  message?: string;
-  success?: boolean;
-};
+export type UpdateStudentFormState = BaseFormState<UpdateStudentInput>;
