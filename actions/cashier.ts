@@ -113,7 +113,7 @@ export async function createBookletAction(
         prefix,
         series: seriesCanonical,
       },
-    });
+    }, { throwOnFail: true });
 
     revalidatePath("/admin/finance/booklets");
     return { success: true, message: "Receipt booklet created successfully." };
@@ -303,7 +303,7 @@ export async function postPaymentAction(
               targetEntity: "enrollments",
               targetId: assessment.enrollmentId,
               context: `Payment posted: OR ${orNumberToAssign}`,
-            });
+            }, { throwOnFail: true });
           }
         }
       }
@@ -316,7 +316,7 @@ export async function postPaymentAction(
         targetEntity: "payments",
         targetId: newPayment.id,
         context: `OR: ${orNumberToAssign}`,
-      });
+      }, { throwOnFail: true });
     });
 
     revalidatePath(`/admin/assessments/${assessmentId}`);
@@ -442,7 +442,7 @@ export async function voidPaymentAction(
         targetEntity: "payments",
         targetId: paymentId,
         context: `Reason: ${voidReason}`,
-      });
+      }, { throwOnFail: true });
     });
 
     const link = await db.query.payments.findFirst({

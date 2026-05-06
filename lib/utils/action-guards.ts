@@ -1,30 +1,35 @@
 import "server-only";
 import { redirect } from "next/navigation";
-import { requireSession, getCurrentUser, type SessionUser } from "@/lib/auth/session";
+import { getCurrentUser, type SessionUser } from "@/lib/auth/session";
 import { hasPermission, type Permission } from "@/lib/rbac/permissions";
 
 /**
  * Requires authentication and a specific permission.
- * Throws redirect if unauthenticated, returns user session if authorized.
- * Returns early error for server actions if unauthorized.
+ * Redirects if unauthenticated, returns user session if authorized.
+ * Returns a forbidden discriminated-union value for server actions when unauthorized.
  *
  * @param permission - The required permission to check
- * @returns Session user object if authorized
+ * @returns Session user object if authorized, or `{ error: "forbidden", message }` if unauthorized
  * @throws Redirects to /login if not authenticated
  *
  * @example
  * ```typescript
- * // BEFORE (30+ duplicate instances):
- * const session = await requireSession();
- * if (!hasPermission(session.role, "students:create")) {
- *   return { message: "You do not have permission..." };
+ * const auth = await requirePermission("students:create");
+ * if ("error" in auth) {
+ *   return { message: auth.message };
  * }
  *
- * // AFTER:
- * const session = await requirePermission("students:create");
+ * const session = auth;
  * ```
  */
-export async function requirePermission(permission: Permission): Promise<SessionUser> {
+export type ForbiddenResult = {
+  error: "forbidden";
+  message: string;
+};
+
+export async function requirePermission(
+  permission: Permission
+): Promise<SessionUser | ForbiddenResult> {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -32,7 +37,10 @@ export async function requirePermission(permission: Permission): Promise<Session
   }
 
   if (!hasPermission(user.role, permission)) {
-    throw new Error(`Forbidden: Missing permission '${permission}'`);
+    return {
+      error: "forbidden",
+      message: "You do not have permission to perform this action.",
+    };
   }
 
   return user;

@@ -1,4 +1,7 @@
 import type { ChangeEvent } from "react";
+import { cn } from "@/lib/utils/cn";
+import { editorialFieldClass } from "@/lib/utils/editorial-styles";
+import type { FormFieldVariant } from "@/components/forms/TextInputField";
 
 export type SelectOption = {
   value: string;
@@ -26,6 +29,7 @@ export type SelectFieldProps = {
   disabled?: boolean;
   /** Additional CSS classes for select */
   className?: string;
+  variant?: FormFieldVariant;
 };
 
 /**
@@ -59,18 +63,27 @@ export function SelectField({
   placeholder,
   disabled = false,
   className,
+  variant = "default",
 }: SelectFieldProps) {
   const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
     onChange(e.target.value);
   };
 
-  const selectClassName = `form-control ${error ? "form-control-error" : ""} ${className ?? ""}`.trim();
+  const isEditorial = variant === "editorial";
+  const selectClassName = isEditorial
+    ? editorialFieldClass({ invalid: Boolean(error?.length), className })
+    : `form-control ${error ? "form-control-error" : ""} ${className ?? ""}`.trim();
 
   return (
-    <div className="form-group">
-      <label className="form-label" htmlFor={name}>
+    <div className={cn(!isEditorial && "form-group")}>
+      <label
+        className={isEditorial ? "mb-1.5 block text-sm font-medium text-charcoal" : "form-label"}
+        htmlFor={name}
+      >
         {label}
-        {required && <span className="required">*</span>}
+        {required && (
+          <span className={isEditorial ? "text-red-600" : "required"}>*</span>
+        )}
       </label>
       <select
         id={name}
@@ -80,6 +93,7 @@ export function SelectField({
         disabled={disabled}
         value={value}
         onChange={handleChange}
+        aria-invalid={Boolean(error?.length)}
       >
         {placeholder && (
           <option value="" disabled>
@@ -92,7 +106,9 @@ export function SelectField({
           </option>
         ))}
       </select>
-      {error && <p className="form-error">{error[0]}</p>}
+      {error && (
+        <p className={isEditorial ? "mt-1 text-sm text-red-600" : "form-error"}>{error[0]}</p>
+      )}
     </div>
   );
 }
@@ -139,6 +155,7 @@ export function SelectFieldGrouped({
   placeholder,
   disabled = false,
   className,
+  variant = "default",
 }: Omit<SelectFieldProps, "options"> & {
   optionGroups: Array<{ label: string; options: SelectOption[] }>;
 }) {
@@ -146,13 +163,21 @@ export function SelectFieldGrouped({
     onChange(e.target.value);
   };
 
-  const selectClassName = `form-control ${error ? "form-control-error" : ""} ${className ?? ""}`.trim();
+  const isEditorial = variant === "editorial";
+  const selectClassName = isEditorial
+    ? editorialFieldClass({ invalid: Boolean(error?.length), className })
+    : `form-control ${error ? "form-control-error" : ""} ${className ?? ""}`.trim();
 
   return (
-    <div className="form-group">
-      <label className="form-label" htmlFor={name}>
+    <div className={cn(!isEditorial && "form-group")}>
+      <label
+        className={isEditorial ? "mb-1.5 block text-sm font-medium text-charcoal" : "form-label"}
+        htmlFor={name}
+      >
         {label}
-        {required && <span className="required">*</span>}
+        {required && (
+          <span className={isEditorial ? "text-red-600" : "required"}>*</span>
+        )}
       </label>
       <select
         id={name}
@@ -162,6 +187,7 @@ export function SelectFieldGrouped({
         disabled={disabled}
         value={value}
         onChange={handleChange}
+        aria-invalid={Boolean(error?.length)}
       >
         {placeholder && (
           <option value="" disabled>
@@ -178,7 +204,9 @@ export function SelectFieldGrouped({
           </optgroup>
         ))}
       </select>
-      {error && <p className="form-error">{error[0]}</p>}
+      {error && (
+        <p className={isEditorial ? "mt-1 text-sm text-red-600" : "form-error"}>{error[0]}</p>
+      )}
     </div>
   );
 }

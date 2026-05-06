@@ -5,7 +5,7 @@ import { schoolYears, gradeLevels } from "@/lib/db/schema";
 import { eq, asc, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import StudentForm from "@/components/students/StudentForm";
+import StudentRegistrationForm from "@/components/registrations/StudentRegistrationForm";
 import { staffHomePathForRole } from "@/lib/utils/staff-home";
 import type { Role } from "@/lib/constants/roles";
 
@@ -41,20 +41,19 @@ export default async function StaffNewStudentPage({ searchParams }: PageProps) {
   const currentSchoolYear = activeSyRows[0] ?? null;
 
   return (
-    <div className="page-container page-container-narrow">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">
-            {lockedRegistrationType === "transferee" ? "Register Transferee" : "Register New Student"}
-          </h1>
-          <p className="page-subtitle">
-            Create the learner profile and an <strong>approved</strong> registration for the active school year
-            (grade, requirements, and enrollment type fixed by how you opened this page).
-          </p>
-        </div>
-      </div>
+    <div className="page-container page-container-narrow space-y-8">
+      <header className="space-y-2 border-b border-gray-100 pb-6">
+        <p className="font-mono text-xs uppercase tracking-wider text-warm-gray">New registration</p>
+        <h1 className="font-display text-4xl font-black tracking-tight text-charcoal">
+          {lockedRegistrationType === "transferee" ? "Register transferee" : "Register new student"}
+        </h1>
+        <p className="max-w-2xl text-warm-gray">
+          Create the learner profile and an <strong className="text-charcoal">approved</strong> registration
+          for the active school year. Grade, requirements, and enrollment type follow how you opened this page.
+        </p>
+      </header>
 
-      <StudentForm
+      <StudentRegistrationForm
         afterCreateStudentBasePath="/staff/students"
         currentSchoolYear={currentSchoolYear}
         gradeLevels={glRows}

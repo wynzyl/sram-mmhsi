@@ -1,4 +1,9 @@
 import type { ChangeEvent } from "react";
+import { cn } from "@/lib/utils/cn";
+import { editorialFieldClass } from "@/lib/utils/editorial-styles";
+
+/** `editorial` matches the registrar wizard (see `frontend-design/Integration-Guide.md`). */
+export type FormFieldVariant = "default" | "editorial";
 
 export type TextInputFieldProps = {
   /** Field label (displayed above input) */
@@ -23,6 +28,8 @@ export type TextInputFieldProps = {
   disabled?: boolean;
   /** Additional CSS classes for input */
   className?: string;
+  /** Visual preset; default keeps legacy `form-control` styling. */
+  variant?: FormFieldVariant;
 };
 
 /**
@@ -57,18 +64,27 @@ export function TextInputField({
   placeholder,
   disabled = false,
   className,
+  variant = "default",
 }: TextInputFieldProps) {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
   };
 
-  const inputClassName = `form-control ${error ? "form-control-error" : ""} ${className ?? ""}`.trim();
+  const isEditorial = variant === "editorial";
+  const inputClassName = isEditorial
+    ? editorialFieldClass({ invalid: Boolean(error?.length), className })
+    : `form-control ${error ? "form-control-error" : ""} ${className ?? ""}`.trim();
 
   return (
-    <div className="form-group">
-      <label className="form-label" htmlFor={name}>
+    <div className={cn(!isEditorial && "form-group")}>
+      <label
+        className={isEditorial ? "mb-1.5 block text-sm font-medium text-charcoal" : "form-label"}
+        htmlFor={name}
+      >
         {label}
-        {required && <span className="required">*</span>}
+        {required && (
+          <span className={isEditorial ? "text-red-600" : "required"}>*</span>
+        )}
       </label>
       <input
         id={name}
@@ -81,8 +97,11 @@ export function TextInputField({
         disabled={disabled}
         value={value}
         onChange={handleChange}
+        aria-invalid={Boolean(error?.length)}
       />
-      {error && <p className="form-error">{error[0]}</p>}
+      {error && (
+        <p className={isEditorial ? "mt-1 text-sm text-red-600" : "form-error"}>{error[0]}</p>
+      )}
     </div>
   );
 }
@@ -113,18 +132,27 @@ export function TextAreaField({
   disabled = false,
   rows = 3,
   className,
+  variant = "default",
 }: Omit<TextInputFieldProps, "type" | "autoComplete"> & { rows?: number }) {
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);
   };
 
-  const textareaClassName = `form-control ${error ? "form-control-error" : ""} ${className ?? ""}`.trim();
+  const isEditorial = variant === "editorial";
+  const textareaClassName = isEditorial
+    ? editorialFieldClass({ invalid: Boolean(error?.length), className })
+    : `form-control ${error ? "form-control-error" : ""} ${className ?? ""}`.trim();
 
   return (
-    <div className="form-group">
-      <label className="form-label" htmlFor={name}>
+    <div className={cn(!isEditorial && "form-group")}>
+      <label
+        className={isEditorial ? "mb-1.5 block text-sm font-medium text-charcoal" : "form-label"}
+        htmlFor={name}
+      >
         {label}
-        {required && <span className="required">*</span>}
+        {required && (
+          <span className={isEditorial ? "text-red-600" : "required"}>*</span>
+        )}
       </label>
       <textarea
         id={name}
@@ -136,8 +164,11 @@ export function TextAreaField({
         rows={rows}
         value={value}
         onChange={handleChange}
+        aria-invalid={Boolean(error?.length)}
       />
-      {error && <p className="form-error">{error[0]}</p>}
+      {error && (
+        <p className={isEditorial ? "mt-1 text-sm text-red-600" : "form-error"}>{error[0]}</p>
+      )}
     </div>
   );
 }

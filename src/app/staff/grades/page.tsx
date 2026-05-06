@@ -1,6 +1,6 @@
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { teacherAssignments, schoolYears, subjects, sections } from "@/lib/db/schema";
 import Link from "next/link";
 
@@ -36,7 +36,9 @@ export default async function TeacherDashboardPage() {
     .where(
       and(
         eq(teacherAssignments.teacherId, session.userId),
-        eq(teacherAssignments.schoolYearId, activeSY.id)
+        eq(teacherAssignments.schoolYearId, activeSY.id),
+        isNull(teacherAssignments.deletedAt),
+        isNull(subjects.deletedAt)
       )
     );
 

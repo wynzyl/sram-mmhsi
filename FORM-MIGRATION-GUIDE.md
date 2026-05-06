@@ -96,6 +96,8 @@ import { TextInputField } from "@/components/forms/TextInputField";
 />
 ```
 
+Use **`variant="editorial"`** on `TextInputField`, `TextAreaField`, `SelectField`, or `SelectFieldGrouped` to match the registration wizard styling (shared with `editorialFieldClass` in `lib/utils/editorial-styles.ts`). See `frontend-design/Integration-Guide.md` § Editorial forms.
+
 **Props:**
 - `label` (string, required) - Field label
 - `name` (string, required) - HTML name attribute

@@ -74,6 +74,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "registrations:read", "registrations:create", "registrations:review",
     "enrollments:read", "enrollments:create", "enrollments:cancel",
     "assessments:read", "assessments:create",
+    "payments:read", "payments:post", "payments:void",
     "grades:read",
     "reports:academic",
     "sections:manage", "school_years:manage",

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { subjects, gradeLevels } from "@/lib/db/schema";
 import { CreateSubjectForm } from "@/components/academics/CreateSubjectForm";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
@@ -21,6 +21,7 @@ export default async function SubjectManagementPage() {
     createdAt: subjects.createdAt,
   }).from(subjects)
     .leftJoin(gradeLevels, eq(subjects.gradeLevelId, gradeLevels.id))
+    .where(isNull(subjects.deletedAt))
     .orderBy(subjects.name);
 
   return (

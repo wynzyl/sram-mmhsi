@@ -95,6 +95,10 @@ export function formatCurrencyCompact(amount: number | string): string {
  * ```
  */
 export function isValidCurrency(value: string): boolean {
+  const sanitized = value.replace(/[₱,\s]/g, "").trim();
+  if (!sanitized) return false;
+  if (!/^\d+(\.\d+)?$/.test(sanitized)) return false;
+
   const parsed = parseCurrency(value);
-  return !isNaN(parsed) && parsed >= 0;
+  return Number.isFinite(parsed) && parsed >= 0;
 }
