@@ -31,7 +31,15 @@ export async function proxy(req: NextRequest) {
   const isAdminRoute = ADMIN_PREFIXES.some((p) => pathname.startsWith(p));
 
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const session = token ? await decryptSessionJwt(token) : null;
+  let session: Awaited<ReturnType<typeof decryptSessionJwt>> | null = null;
+  if (token) {
+    try {
+      session = await decryptSessionJwt(token);
+    } catch {
+      // Invalid / expired token — treat as unauthenticated
+      session = null;
+    }
+  }
 
   const isAuthenticated = !!session;
   const role = normalizeRole(session?.role);

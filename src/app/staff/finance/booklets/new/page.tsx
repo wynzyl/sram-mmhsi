@@ -25,7 +25,7 @@ export default async function StaffNewBookletPage() {
         </div>
       </div>
 
-      <BookletForm />
+      <BookletForm redirectTo="/staff/finance/booklets" />
     </div>
   );
 }

@@ -52,7 +52,7 @@ export default async function EditStaffSchoolYearPage({ params }: PageProps) {
         </Link>
       </div>
 
-      <EditSchoolYearForm schoolYear={schoolYear} />
+      <EditSchoolYearForm schoolYear={schoolYear} redirectPath="/staff/school-years" />
     </div>
   );
 }

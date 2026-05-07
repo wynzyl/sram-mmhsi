@@ -19,8 +19,8 @@ export interface RegistrationRow {
 interface RegistrationsTableProps {
   registrations: RegistrationRow[];
   emptyMessage?: string;
-  /** Defaults to admin portal student URLs. */
-  studentBasePath?: "/staff/students";
+  /** Defaults to staff portal student URLs. */
+  studentBasePath?: "/admin/students" | "/staff/students";
 }
 
 export default function RegistrationsTable({

@@ -9,7 +9,7 @@ import {
   receiptBooklets,
   users,
 } from "@/lib/db/schema";
-import { eq, desc, asc } from "drizzle-orm";
+import { eq, desc, asc, and, lte } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentLedgerRegister from "@/components/cashier/AssessmentLedgerRegister";
@@ -94,7 +94,12 @@ export async function InternalAssessmentLedgerPage(props: {
         endNumber: receiptBooklets.endNumber,
       })
       .from(receiptBooklets)
-      .where(eq(receiptBooklets.status, "active"))
+      .where(
+        and(
+          eq(receiptBooklets.status, "active"),
+          lte(receiptBooklets.nextNumber, receiptBooklets.endNumber)
+        )
+      )
       .orderBy(asc(receiptBooklets.createdAt));
   }
 

@@ -66,6 +66,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Finance",
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
+        { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
       ],
     },
     {

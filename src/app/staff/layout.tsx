@@ -26,7 +26,7 @@ export default async function StaffLayout({
       <Suspense
         fallback={<aside className="sidebar" style={{ width: 220, flexShrink: 0 }} aria-hidden />}
       >
-        <Sidebar role={user.role as Role} username={user.username} email={user.email} />
+        <Sidebar role={user.role as Role} username={user.username} />
       </Suspense>
       <main className="app-main">{children}</main>
       <style>{`

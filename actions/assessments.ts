@@ -245,11 +245,7 @@ export async function createAssessmentFromEnrollmentAction(
     revalidatePath("/staff/assessments");
     revalidatePath("/staff/enrollments");
     revalidatePath(`/staff/students/${enrollmentRow.studentId}`);
-    revalidatePath("/staff/assessments");
-    revalidatePath("/staff/enrollments");
-    revalidatePath(`/staff/students/${enrollmentRow.studentId}`);
     if (newAssessmentId) {
-      revalidatePath(`/staff/assessments/${newAssessmentId}`);
       revalidatePath(`/staff/assessments/${newAssessmentId}`);
     }
 

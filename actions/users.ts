@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { eq, and, ilike, isNull, sql } from "drizzle-orm";
+import { eq, and, ilike, isNull, sql, count } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
@@ -220,10 +220,11 @@ export async function updateUserAction(
   // 6. Prevent deactivation of the last active privileged account
   if (
     updateData.isActive === false &&
+    existingUser.isActive === true &&
     (existingUser.role === "admin" || existingUser.role === "super_admin")
   ) {
     const activePrivilegedCount = await db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: count() })
       .from(users)
       .where(
         and(
@@ -414,10 +415,11 @@ export async function toggleUserStatusAction(
   // 5. Prevent deactivation of the last active privileged account
   if (
     isActive === false &&
+    existingUser.isActive === true &&
     (existingUser.role === "admin" || existingUser.role === "super_admin")
   ) {
     const activePrivilegedCount = await db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: count() })
       .from(users)
       .where(
         and(

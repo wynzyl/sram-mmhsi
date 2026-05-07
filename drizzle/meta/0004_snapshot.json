@@ -1,6 +1,6 @@
 {
-  "id": "dbf49912-a19d-425d-adec-e7e1626800fd",
-  "prevId": "fcdaf545-104d-4553-ab2e-94dca6045e15",
+  "id": "91d569a4-4756-4125-a0fe-0d28b3f16462",
+  "prevId": "dbf49912-a19d-425d-adec-e7e1626800fd",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -73,16 +73,7 @@
           "notNull": false
         }
       },
-      "indexes": {
-        "pa_payment_id_idx": {
-          "name": "pa_payment_id_idx",
-          "columns": [{ "expression": "payment_id", "isExpression": false, "asc": true, "nulls": "last" }],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "assessment_items_assessment_id_assessments_id_fk": {
           "name": "assessment_items_assessment_id_assessments_id_fk",
@@ -1931,13 +1922,13 @@
           "name": "booklet_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "or_number": {
           "name": "or_number",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "or_status": {
           "name": "or_status",
@@ -2191,7 +2182,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "payments_or_number_required_when_consumed": {
+          "name": "payments_or_number_required_when_consumed",
+          "value": "(\"payments\".\"or_status\" <> 'consumed' OR \"payments\".\"or_number\" IS NOT NULL)"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.receipt_booklets": {

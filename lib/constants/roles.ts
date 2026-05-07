@@ -18,10 +18,12 @@ const ROLE_ALIASES: Record<string, Role> = {
   ADMIN: ROLES.ADMIN,
   REGISTRAR: ROLES.REGISTRAR,
   FINANCE_OFFICER: ROLES.FINANCE_OFFICER,
+  financeOfficer: ROLES.FINANCE_OFFICER,
   CASHIER: ROLES.CASHIER,
   TEACHER: ROLES.TEACHER,
   STUDENT: ROLES.STUDENT,
   PARENT_GUARDIAN: ROLES.PARENT_GUARDIAN,
+  parentGuardian: ROLES.PARENT_GUARDIAN,
 };
 
 export function normalizeRole(role: string | Role | null | undefined): Role | null {

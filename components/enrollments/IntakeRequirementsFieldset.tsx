@@ -116,7 +116,7 @@ export default function IntakeRequirementsFieldset({
   ),
 }: IntakeRequirementsFieldsetProps) {
   return (
-    <fieldset className="rounded-xl border border-(--color-border) bg-(--color-surface-2) p-5 shadow-(--shadow-sm)">
+    <fieldset className="rounded-xl border border-(--color-border) bg-(--color-surface-2) p-5 shadow-sm">
       <legend className="font-display text-lg font-bold text-(--color-text) px-1">{legend}</legend>
       <p className="mb-5 mt-2 max-w-3xl text-sm leading-relaxed text-(--color-text-muted)">{description}</p>
       <ul className="m-0 list-none space-y-0 rounded-lg border border-(--color-border) bg-(--color-surface-elevated) p-0 shadow-sm">

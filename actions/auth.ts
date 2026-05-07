@@ -80,6 +80,14 @@ export async function loginAction(
   const normalizedRole = normalizeRole(user.role);
   if (!normalizedRole) {
     logger.error("[auth] User has unsupported role", { userId: user.id, role: user.role });
+    await logAudit({
+      actor: user.id,
+      actorRole: "system",
+      action: "auth:login_failed",
+      targetEntity: "users",
+      targetId: user.id,
+      context: `unsupported_role=${user.role}`,
+    });
     return { message: "Your account role is not supported. Please contact system support." };
   }
 

@@ -22,39 +22,42 @@ export async function ensureE2eTestUsers(): Promise<void> {
   }
 
   const client = postgres(connectionString, { max: 1 });
-  const db = drizzle(client);
 
-  const passwordHash = await hash(e2eStaffAdmin.password, 12);
-  const email = `${e2eStaffAdmin.username}@srams-e2e.invalid`;
+  try {
+    const db = drizzle(client);
 
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.username, e2eStaffAdmin.username))
-    .limit(1);
+    const passwordHash = await hash(e2eStaffAdmin.password, 12);
+    const email = `${e2eStaffAdmin.username}@srams-e2e.invalid`;
 
-  if (existing.length > 0) {
-    await db
-      .update(users)
-      .set({
+    const existing = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, e2eStaffAdmin.username))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(users)
+        .set({
+          email,
+          passwordHash,
+          role: "admin",
+          isActive: true,
+          forcePasswordChange: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.username, e2eStaffAdmin.username));
+    } else {
+      await db.insert(users).values({
         email,
+        username: e2eStaffAdmin.username,
         passwordHash,
         role: "admin",
         isActive: true,
         forcePasswordChange: false,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.username, e2eStaffAdmin.username));
-  } else {
-    await db.insert(users).values({
-      email,
-      username: e2eStaffAdmin.username,
-      passwordHash,
-      role: "admin",
-      isActive: true,
-      forcePasswordChange: false,
-    });
+      });
+    }
+  } finally {
+    await client.end();
   }
-
-  await client.end();
 }

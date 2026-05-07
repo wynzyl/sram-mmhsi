@@ -8,7 +8,7 @@ const OR_SEQUENCE_MAX = 99_999;
 /** Printed OR prefix: exactly two letters (e.g. AK). */
 const BOOKLET_PREFIX_REGEX = /^[A-Za-z]{2}$/;
 
-/** Canonical booklet series line: `AK 00051-00100` (prefix + space + 5-digit start–end). */
+/** Canonical booklet series line: `AK-00051-00100` (prefix-start-end). */
 export function formatBookletSeriesCanonical(
   prefix: string,
   startNumber: number,
@@ -17,14 +17,14 @@ export function formatBookletSeriesCanonical(
   const p = prefix.trim().toUpperCase();
   const a = String(Math.floor(startNumber)).padStart(OR_SEQUENCE_PAD, "0");
   const b = String(Math.floor(endNumber)).padStart(OR_SEQUENCE_PAD, "0");
-  return `${p} ${a}-${b}`;
+  return `${p}-${a}-${b}`;
 }
 
 export function normalizeBookletSeriesInput(series: string): string {
   return series
     .trim()
-    .replace(/\s+/g, " ")
-    .replace(/\s*-\s*/, "-")
+    .replace(/\s+/g, "")
+    .replace(/\s*-\s*/g, "-")
     .toUpperCase();
 }
 
@@ -35,7 +35,7 @@ export const CreateBookletSchema = z
     series: z
       .string()
       .trim()
-      .min(1, 'Series is required in the form PREFIX 00051-00100 (e.g. "AK 00051-00100").'),
+      .min(1, 'Series is required in the form AK-00051-00100.'),
     prefix: z
       .string()
       .trim()

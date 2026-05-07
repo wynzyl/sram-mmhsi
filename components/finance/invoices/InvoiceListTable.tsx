@@ -22,6 +22,9 @@ export default function InvoiceListTable({
   invoices,
   invoiceDetailBasePath = "/staff/finance/invoices",
 }: InvoiceListTableProps) {
+  const normalizedBasePath =
+    invoiceDetailBasePath.replace(/\/+$/, "") || "/staff/finance/invoices";
+
   return (
     <div className="table-wrapper">
       <table className="data-table">
@@ -68,7 +71,7 @@ export default function InvoiceListTable({
                 <td>{new Date(invoice.createdAt).toLocaleDateString()}</td>
                 <td>
                   <Link
-                    href={`${invoiceDetailBasePath}/${invoice.id}`}
+                    href={`${normalizedBasePath}/${invoice.id}`}
                     className="table-action-link"
                   >
                     View Details
