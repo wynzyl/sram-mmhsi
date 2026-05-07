@@ -19,7 +19,7 @@ export default function GenerateInvoiceButton({ assessmentId }: GenerateInvoiceB
     try {
       const result = await generateInvoiceAction(assessmentId);
       if (result.success && result.invoiceId) {
-        router.push(`/admin/finance/invoices/${result.invoiceId}`);
+        router.push(`/staff/finance/invoices/${result.invoiceId}`);
       } else {
         setErrorMsg(result.message || "Failed to generate invoice.");
       }

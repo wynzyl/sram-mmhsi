@@ -25,7 +25,7 @@ const emptyGuardian = (): GuardianInput => ({
 
 const initialState: CreateStudentFormState = {};
 
-type StudentProfileBase = "/admin/students" | "/staff/students";
+type StudentProfileBase = "/staff/students";
 
 interface GradeLevelOption {
   id: string;
@@ -43,7 +43,7 @@ type StudentFormProps = {
 };
 
 export default function StudentForm({
-  afterCreateStudentBasePath = "/admin/students",
+  afterCreateStudentBasePath = "/staff/students",
   currentSchoolYear,
   gradeLevels,
   lockedRegistrationType,

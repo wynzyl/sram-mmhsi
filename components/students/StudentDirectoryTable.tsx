@@ -18,7 +18,7 @@ function subtitle(row: StudentDirectoryRow): string {
 export function StudentDirectoryTable({
   rows,
   emptyMessage,
-  studentBasePath = "/admin/students",
+  studentBasePath = "/staff/students",
 }: {
   rows: StudentDirectoryRow[];
   emptyMessage: string;

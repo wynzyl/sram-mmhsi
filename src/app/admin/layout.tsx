@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import type { Role } from "@/lib/constants/roles";
+import { ROLES, normalizeRole } from "@/lib/constants/roles";
 
 export default async function AdminLayout({
   children,
@@ -11,8 +12,9 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const session = await requireSession();
+  const role = normalizeRole(session.role);
 
-  if (session.role !== "admin") {
+  if (role !== ROLES.SUPER_ADMIN) {
     redirect("/login");
   }
 

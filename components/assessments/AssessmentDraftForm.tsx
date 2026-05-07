@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState, useEffect, useCallback } from "react";
+import { useActionState, useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createAssessmentFromEnrollmentAction } from "@/actions/assessments";
@@ -8,7 +8,6 @@ import { computeAssessmentTotals } from "@/lib/validators/assessment";
 import type { AssessmentFormState } from "@/lib/validators/assessment";
 import type { NewAssessmentFeeCatalogEntry } from "@/lib/queries/new-assessment-context";
 import { FormStateAlert } from "@/components/forms/FormStateAlert";
-import { SelectField } from "@/components/forms/SelectField";
 import { TextAreaField } from "@/components/forms/TextInputField";
 import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
 import {
@@ -18,7 +17,6 @@ import {
   DataCardFooter,
 } from "@/components/ui/editorial/DataCard";
 import { StatusIndicator } from "@/components/ui/editorial/StatusIndicator";
-import { cn } from "@/lib/utils/cn";
 
 export type FeeCatalogEntry = NewAssessmentFeeCatalogEntry;
 
@@ -44,7 +42,7 @@ interface AssessmentDraftFormProps {
   primaryGuardianLabel?: string | null;
   feeCatalog: FeeCatalogEntry[];
   submitBlockedReason?: string | null;
-  /** Base path without trailing slash, e.g. `/admin/assessments` or `/staff/assessments`. */
+  /** Base path without trailing slash (e.g. `/staff/assessments`). */
   assessmentsBasePath: string;
 }
 
@@ -92,71 +90,12 @@ export default function AssessmentDraftForm({
     initialAssessmentState
   );
 
-  const [rows, setRows] = useState<AssessmentLineRow[]>(() =>
-    submitBlockedReason || feeCatalog.length === 0 ? [] : rowsFromCatalog(feeCatalog)
+  const rows = useMemo<AssessmentLineRow[]>(
+    () => (submitBlockedReason || feeCatalog.length === 0 ? [] : rowsFromCatalog(feeCatalog)),
+    [feeCatalog, submitBlockedReason]
   );
 
   const [remarks, setRemarks] = useState("");
-  const [addSelectValue, setAddSelectValue] = useState("");
-
-  const catalogById = useMemo(
-    () => new Map(feeCatalog.map((e) => [e.feeScheduleItemId, e])),
-    [feeCatalog]
-  );
-
-  const usedIds = useMemo(
-    () => new Set(rows.map((r) => r.feeScheduleItemId).filter(Boolean)),
-    [rows]
-  );
-
-  const addLineFromCatalogId = useCallback(
-    (feeScheduleItemId: string) => {
-      const entry = catalogById.get(feeScheduleItemId);
-      if (!entry || usedIds.has(feeScheduleItemId)) return;
-      setRows((prev) => [
-        ...prev,
-        {
-          rowKey: newRowKey(),
-          feeScheduleItemId: entry.feeScheduleItemId,
-          description: entry.description,
-          amount: String(entry.defaultAmount),
-          isDiscount: entry.isDiscount,
-        },
-      ]);
-    },
-    [catalogById, usedIds]
-  );
-
-  const removeRow = useCallback((rowKey: string) => {
-    setRows((prev) => prev.filter((r) => r.rowKey !== rowKey));
-  }, []);
-
-  const setRowAmount = useCallback((rowKey: string, amount: string) => {
-    setRows((prev) =>
-      prev.map((r) => (r.rowKey === rowKey ? { ...r, amount } : r))
-    );
-  }, []);
-
-  const changeRowFee = useCallback(
-    (rowKey: string, nextFeeScheduleItemId: string) => {
-      const entry = catalogById.get(nextFeeScheduleItemId);
-      if (!entry) return;
-      setRows((prev) =>
-        prev.map((r) =>
-          r.rowKey === rowKey
-            ? {
-                ...r,
-                feeScheduleItemId: entry.feeScheduleItemId,
-                description: entry.description,
-                amount: String(entry.defaultAmount),
-                isDiscount: entry.isDiscount,
-              }
-            : r
-        )
-      );
-    },
-    [catalogById]
-  );
 
   const itemsJson = useMemo(
     () =>
@@ -191,17 +130,7 @@ export default function AssessmentDraftForm({
   }, [state.success, state.assessmentId, router, assessmentsBasePath]);
 
   const blocked = !!submitBlockedReason;
-  const availableToAdd = feeCatalog.filter((c) => !usedIds.has(c.feeScheduleItemId));
   const formId = "enrollment-assessment-form";
-
-  const addFeeOptions = useMemo(
-    () =>
-      availableToAdd.map((c) => ({
-        value: c.feeScheduleItemId,
-        label: `${c.description}${c.isDiscount ? " (discount)" : ""}`,
-      })),
-    [availableToAdd]
-  );
 
   return (
     <div className="space-y-8">
@@ -279,31 +208,15 @@ export default function AssessmentDraftForm({
             </DataCardHeader>
             <DataCardBody className="space-y-4">
               <p className="text-sm text-warm-gray">
-                Lines come from Finance → Fee schedules for this band. Adjust amounts or remove lines
-                that do not apply.
+                Lines come from Finance → Fee schedules for this band. This list is read-only on this
+                page.
               </p>
-
-              {!blocked && availableToAdd.length > 0 && (
-                <SelectField
-                  label="Add fee from catalog"
-                  name="addCatalogFee"
-                  variant="editorial"
-                  placeholder="Select a fee…"
-                  value={addSelectValue}
-                  disabled={pending}
-                  onChange={(v) => {
-                    setAddSelectValue("");
-                    if (v) addLineFromCatalogId(v);
-                  }}
-                  options={addFeeOptions}
-                />
-              )}
 
               {rows.length === 0 ? (
                 <p className="text-sm text-warm-gray">
                   {blocked
                     ? "Fix the warning above before lines can be generated."
-                    : "No lines yet. Add fees from the catalog if you removed every line."}
+                    : "No fee schedule lines are available for this enrollment band."}
                 </p>
               ) : (
                 <div className="overflow-x-auto rounded-md border border-[var(--color-border)]">
@@ -313,83 +226,25 @@ export default function AssessmentDraftForm({
                         <th className="px-3 py-2">Description</th>
                         <th className="px-3 py-2 text-right">Amount (PHP)</th>
                         <th className="px-3 py-2 text-center">Type</th>
-                        <th className="px-3 py-2" />
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((row, index) => {
-                        const selectable = feeCatalog.filter(
-                          (c) =>
-                            c.feeScheduleItemId === row.feeScheduleItemId ||
-                            !usedIds.has(c.feeScheduleItemId)
-                        );
-                        const options = selectable.map((c) => ({
-                          value: c.feeScheduleItemId,
-                          label: `${c.description}${c.isDiscount ? " (discount)" : ""}`,
-                        }));
+                      {rows.map((row) => {
                         return (
                           <tr
                             key={row.rowKey}
                             className="border-b border-[var(--color-border)] last:border-b-0"
                           >
-                            <td className="px-3 py-2 align-top">
-                              <label className="sr-only" htmlFor={`feeLine_${row.rowKey}`}>
-                                Line {index + 1} fee
-                              </label>
-                              <select
-                                id={`feeLine_${row.rowKey}`}
-                                className="input-editorial min-w-[12rem] max-w-full"
-                                disabled={blocked || pending}
-                                value={row.feeScheduleItemId}
-                                onChange={(e) => changeRowFee(row.rowKey, e.target.value)}
-                              >
-                                {options.map((opt) => (
-                                  <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </option>
-                                ))}
-                              </select>
+                            <td className="px-3 py-2 align-middle font-medium text-charcoal">
+                              {row.description}
                             </td>
-                            <td className="px-3 py-2 align-top">
-                              <label className="sr-only" htmlFor={`amountLine_${row.rowKey}`}>
-                                Line {index + 1} amount
-                              </label>
-                              <input
-                                id={`amountLine_${row.rowKey}`}
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                inputMode="decimal"
-                                className="input-editorial w-full text-right tabular-nums"
-                                disabled={blocked || pending}
-                                value={row.amount}
-                                onChange={(e) => {
-                                  if (!pending) setRowAmount(row.rowKey, e.target.value);
-                                }}
-                              />
+                            <td className="px-3 py-2 text-right align-middle tabular-nums text-charcoal">
+                              <CurrencyDisplay amount={Number.parseFloat(row.amount) || 0} />
                             </td>
                             <td className="px-3 py-2 text-center align-middle">
-                              <span
-                                className={cn(
-                                  "inline-block rounded px-2 py-0.5 text-xs font-medium",
-                                  row.isDiscount
-                                    ? "bg-blue-50 text-blue-800"
-                                    : "bg-[var(--color-surface-2)] text-charcoal"
-                                )}
-                              >
+                              <span className="inline-block rounded bg-[var(--color-surface-2)] px-2 py-0.5 text-xs font-medium text-charcoal">
                                 {row.isDiscount ? "Discount" : "Charge"}
                               </span>
-                            </td>
-                            <td className="px-3 py-2 text-right align-middle">
-                              <button
-                                type="button"
-                                className="text-sm font-medium text-[var(--color-primary)] hover:underline disabled:opacity-50"
-                                disabled={blocked || pending}
-                                onClick={() => removeRow(row.rowKey)}
-                                aria-label={`Remove line ${index + 1}`}
-                              >
-                                Remove
-                              </button>
                             </td>
                           </tr>
                         );

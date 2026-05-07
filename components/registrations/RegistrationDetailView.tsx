@@ -40,10 +40,6 @@ import {
   Zap,
 } from "lucide-react";
 
-function portalHref(path: string, linkBase: "admin" | "staff") {
-  return linkBase === "staff" ? path.replace(/^\/admin/, "/staff") : path;
-}
-
 function enrollmentTypeLabel(studentType: string): string {
   if (studentType === "new_student") return "New";
   if (studentType === "transferee") return "Transferee";
@@ -122,11 +118,9 @@ function countIntakeComplete(docs: EnrollmentIntakeDocuments | null): { done: nu
 function EnrollmentBillingCell({
   row,
   flags,
-  linkBase,
 }: {
   row: EnrollmentRecordRow;
   flags: StudentRecordFlags;
-  linkBase: "admin" | "staff";
 }) {
   if (row.status === "cancelled") {
     return <span className="text-[var(--color-text-muted)]">—</span>;
@@ -135,7 +129,7 @@ function EnrollmentBillingCell({
   if (flags.canReadAssessments && row.assessmentId) {
     return (
       <Link
-        href={portalHref(`/admin/assessments/${row.assessmentId}`, linkBase)}
+        href={`/staff/assessments/${row.assessmentId}`}
         className="font-mono text-sm text-[var(--color-primary)] underline-offset-2 hover:underline"
       >
         Open ledger
@@ -146,7 +140,7 @@ function EnrollmentBillingCell({
   if (row.status === "pending" && flags.canCreateAssessment) {
     return (
       <Link
-        href={portalHref(`/admin/assessments/new/${row.id}`, linkBase)}
+        href={`/staff/assessments/new/${row.id}`}
         className="font-mono text-sm text-[var(--color-primary)] underline-offset-2 hover:underline"
       >
         Build assessment
@@ -170,7 +164,6 @@ export type RegistrationDetailViewProps = {
   assessmentSummaries: AssessmentSummaryRow[];
   invoices: InvoiceSummaryRow[];
   flags: StudentRecordFlags;
-  linkBase?: "admin" | "staff";
   backHref: string;
   backLabel?: string;
 };
@@ -188,7 +181,6 @@ export function RegistrationDetailView({
   assessmentSummaries,
   invoices,
   flags,
-  linkBase = "staff",
   backHref,
   backLabel = "Back to queue",
 }: RegistrationDetailViewProps) {
@@ -289,7 +281,7 @@ export function RegistrationDetailView({
             <div className="flex shrink-0 flex-wrap items-center gap-2 pb-1 md:pb-3 print:hidden">
               {flags.canEditStudent ? (
                 <Link
-                  href={portalHref(`/admin/students/${student.id}/edit`, linkBase)}
+                  href={`/staff/students/${student.id}/edit`}
                   className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-[var(--color-primary)] bg-[var(--color-surface-elevated)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)]"
                 >
                   <Pencil className="h-4 w-4" aria-hidden />
@@ -483,7 +475,7 @@ export function RegistrationDetailView({
                 {flags.canEnroll ? (
                   <li className="h-full">
                     <Link
-                      href={`${portalHref("/admin/enrollments/new", linkBase)}?studentId=${student.id}`}
+                      href={`/staff/enrollments/new?studentId=${student.id}`}
                       className="flex h-full items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-surface-2)]">
@@ -499,7 +491,7 @@ export function RegistrationDetailView({
                 {flags.canReadAssessments && assessmentIdForActions ? (
                   <li className="h-full">
                     <Link
-                      href={portalHref(`/admin/assessments/${assessmentIdForActions}`, linkBase)}
+                      href={`/staff/assessments/${assessmentIdForActions}`}
                       className="flex h-full items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-surface-2)]">
@@ -682,7 +674,7 @@ export function RegistrationDetailView({
                         <StatusBadge status={row.status} type="enrollment" />
                       </td>
                       <td className="px-4 py-3">
-                        <EnrollmentBillingCell row={row} flags={flags} linkBase={linkBase} />
+                        <EnrollmentBillingCell row={row} flags={flags} />
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-muted)]">
                         {row.enrolledAt
@@ -744,7 +736,7 @@ export function RegistrationDetailView({
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
-                          href={portalHref(`/admin/assessments/${a.id}`, linkBase)}
+                          href={`/staff/assessments/${a.id}`}
                           className="font-mono text-sm text-[var(--color-primary)] underline-offset-2 hover:underline"
                         >
                           Ledger
@@ -806,7 +798,7 @@ export function RegistrationDetailView({
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
-                          href={portalHref(`/admin/finance/invoices/${inv.id}`, linkBase)}
+                          href={`/staff/finance/invoices/${inv.id}`}
                           className="font-mono text-sm text-[var(--color-primary)] underline-offset-2 hover:underline"
                         >
                           View

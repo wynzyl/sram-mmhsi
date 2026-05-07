@@ -1,80 +1,27 @@
 import type { Metadata } from "next";
-import { requireSession } from "@/lib/auth/session";
-import { hasPermission } from "@/lib/rbac/permissions";
-import { redirect } from "next/navigation";
+import { InternalStudentDirectoryPage } from "@/app/_internal/students/students-directory-page";
 import { staffHomePathForRole } from "@/lib/utils/staff-home";
 import type { Role } from "@/lib/constants/roles";
-import { parseUuidSearchParam } from "@/lib/utils/query-params";
-import { studentDirectoryListHref } from "@/lib/utils/student-directory-href";
-import {
-  fetchStudentDirectoryPage,
-  getStudentDirectoryEmptyMessage,
-} from "@/lib/queries/students-directory";
-import { StudentDirectoryView } from "@/components/students/StudentDirectoryView";
+import { requireSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: "Master List",
   description: "Enrolled students master list (staff).",
 };
 
-interface PageProps {
+export default async function StaffStudentsMasterListPage(props: {
   searchParams: Promise<{ q?: string; page?: string; schoolYearId?: string; gradeLevelId?: string }>;
-}
-
-export default async function StaffStudentsMasterListPage({ searchParams }: PageProps) {
+}) {
   const session = await requireSession();
-  if (!hasPermission(session.role, "students:read")) {
-    redirect(staffHomePathForRole(session.role as Role));
-  }
-
-  const {
-    q = "",
-    page = "1",
-    schoolYearId: schoolYearIdRaw,
-    gradeLevelId: gradeLevelIdRaw,
-  } = await searchParams;
-  const schoolYearId = parseUuidSearchParam(schoolYearIdRaw);
-  const gradeLevelId = parseUuidSearchParam(gradeLevelIdRaw);
-
-  const currentPageRaw = Math.max(1, parseInt(page, 10) || 1);
-
-  const data = await fetchStudentDirectoryPage({
-    q,
-    page: currentPageRaw,
-    schoolYearId,
-    gradeLevelId,
-  });
-
-  if (data.totalCount > 0 && currentPageRaw > data.totalPages) {
-    redirect(
-      studentDirectoryListHref("/staff/students", {
-        q: q.trim() || undefined,
-        schoolYearId,
-        gradeLevelId,
-        page: data.totalPages,
-      })
-    );
-  }
-
-  const canCreate = hasPermission(session.role, "students:create");
-  const emptyMessage = getStudentDirectoryEmptyMessage(q, schoolYearId, gradeLevelId);
+  const deniedRedirect = staffHomePathForRole(session.role as Role);
 
   return (
-    <StudentDirectoryView
+    <InternalStudentDirectoryPage
+      searchParams={props.searchParams}
       basePath="/staff/students"
       registerHref="/staff/register"
-      canCreate={canCreate}
+      deniedRedirect={deniedRedirect}
       title="Student Directory"
-      q={q}
-      schoolYearId={schoolYearId}
-      gradeLevelId={gradeLevelId}
-      schoolYearOptions={data.schoolYearOptions}
-      gradeLevelOptions={data.gradeLevelOptions}
-      rows={data.rows}
-      emptyMessage={emptyMessage}
-      totalCount={data.totalCount}
-      totalPages={data.totalPages}
-      currentPage={data.currentPage}
       quickLinks={[
         {
           href: "/staff/register",

@@ -46,7 +46,6 @@ interface EnrollmentsListViewProps {
   canCancel: boolean;
   canCancelWithBalance: boolean;
   canOverrideEnrolled: boolean;
-  portalBase: "/admin" | "/staff";
 }
 
 /**
@@ -64,7 +63,6 @@ export default function EnrollmentsListView({
   canCancel,
   canCancelWithBalance,
   canOverrideEnrolled,
-  portalBase,
 }: EnrollmentsListViewProps) {
   const [search, setSearch] = useState("");
 
@@ -98,7 +96,7 @@ export default function EnrollmentsListView({
     </span>
   );
 
-  const newEnrollmentHref = portalBase === "/staff" ? "/staff/enrollments/new" : "/admin/enrollments/new";
+  const newEnrollmentHref = "/staff/enrollments/new";
 
   return (
     <div className="space-y-6">
@@ -131,8 +129,8 @@ export default function EnrollmentsListView({
             tab.key === "all" ? totalAll : countMap[tab.key as EnrollmentStatus] ?? 0;
           const href =
             tab.key === "all"
-              ? `${portalBase}/enrollments`
-              : `${portalBase}/enrollments?status=${tab.key}`;
+              ? "/staff/enrollments"
+              : `/staff/enrollments?status=${tab.key}`;
 
           return (
             <Link
@@ -224,7 +222,6 @@ export default function EnrollmentsListView({
                   canCancel={canCancel}
                   canCancelWithBalance={canCancelWithBalance}
                   canOverrideEnrolled={canOverrideEnrolled}
-                  portalBase={portalBase}
                 />
               </div>
             );

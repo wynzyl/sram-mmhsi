@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { logoutAction } from "@/actions/auth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { ROLE_LABELS } from "@/lib/constants/roles";
+import { ROLE_LABELS, normalizeRole, ROLES } from "@/lib/constants/roles";
 import { NAV_CONFIG } from "./sidebar-nav";
 import type { Role } from "@/lib/constants/roles";
 import type { NavIconName, NavItem } from "./sidebar-nav";
@@ -115,7 +115,7 @@ const ICONS: Record<NavIconName, React.ReactNode> = {
 // ─── Portal label helper ───────────────────────────────────────────────────────
 
 function portalLabel(role: Role): string {
-  if (role === "admin") return "Admin Portal";
+  if (role === "super_admin" || role === "admin") return "Admin Portal";
   if (role === "student" || role === "parent_guardian") return "Student Portal";
   return "Staff Portal";
 }
@@ -150,7 +150,12 @@ function isNavActive(pathname: string, sp: URLSearchParams, item: NavItem): bool
     return true;
   }
 
-  if (pathname === path) return true;
+  if (pathname === path) {
+    if (item.notActiveWhen && sp.get(item.notActiveWhen.param) === item.notActiveWhen.value) {
+      return false;
+    }
+    return true;
+  }
   return path !== "/" && pathname.startsWith(`${path}/`);
 }
 
@@ -171,7 +176,8 @@ interface SidebarProps {
 export function Sidebar({ role, username, email }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const sections = NAV_CONFIG[role] ?? [];
+  const resolvedRole = normalizeRole(role) ?? ROLES.ADMIN;
+  const sections = NAV_CONFIG[resolvedRole] ?? [];
 
   return (
     <aside className="sidebar">
@@ -184,7 +190,7 @@ export function Sidebar({ role, username, email }: SidebarProps) {
         </svg>
         <div>
           <p className="sidebar-brand-name">MERRYLAND</p>
-          <p className="sidebar-brand-portal">{portalLabel(role)}</p>
+          <p className="sidebar-brand-portal">{portalLabel(resolvedRole)}</p>
         </div>
       </div>
 
@@ -253,8 +259,8 @@ export function Sidebar({ role, username, email }: SidebarProps) {
             {username.charAt(0).toUpperCase()}
           </div>
           <div className="user-info">
-            <p className="user-name">{username}</p>
-            <p className="user-role">{ROLE_LABELS[role]}</p>
+            <p className="user-name" title={email}>{username}</p>
+            <p className="user-role">{ROLE_LABELS[resolvedRole]}</p>
           </div>
         </div>
         <form action={logoutAction}>

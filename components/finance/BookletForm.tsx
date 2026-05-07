@@ -22,7 +22,7 @@ export default function BookletForm({ variant = "default" }: BookletFormProps) {
 
   useEffect(() => {
     if (state.success) {
-      router.push("/admin/finance/booklets");
+      router.push("/staff/finance/booklets");
     }
   }, [state.success, router]);
 

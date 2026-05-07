@@ -109,7 +109,7 @@ export async function createFeeScheduleAction(
       newState: parsed.data,
     }, { throwOnFail: true });
 
-    revalidatePath("/admin/finance/fee-schedules");
+    revalidatePath("/staff/finance/fee-schedules");
     return { success: true, message: "Fee schedule created successfully." };
   } catch (error) {
     logger.error("[finance] Failed to create fee schedule", { error });
@@ -198,8 +198,8 @@ export async function updateFeeScheduleAction(
       newState: parsed.data,
     }, { throwOnFail: true });
 
-    revalidatePath("/admin/finance/fee-schedules");
-    revalidatePath(`/admin/finance/fee-schedules/${id}`);
+    revalidatePath("/staff/finance/fee-schedules");
+    revalidatePath(`/staff/finance/fee-schedules/${id}`);
     return { success: true, message: "Fee schedule updated successfully." };
   } catch (error) {
     logger.error("[finance] Failed to update fee schedule", { error });
@@ -253,7 +253,7 @@ export async function addFeeScheduleItemAction(
       newState: parsed.data,
     }, { throwOnFail: true });
 
-    revalidatePath(`/admin/finance/fee-schedules/${parsed.data.feeScheduleId}`);
+    revalidatePath(`/staff/finance/fee-schedules/${parsed.data.feeScheduleId}`);
     return { success: true, message: "Fee item added successfully." };
   } catch (error) {
     logger.error("[finance] Failed to add fee schedule item", { error });
@@ -308,7 +308,7 @@ export async function removeFeeScheduleItemAction(
       previousState: existing,
     }, { throwOnFail: true });
 
-    revalidatePath(`/admin/finance/fee-schedules/${feeScheduleId}`);
+    revalidatePath(`/staff/finance/fee-schedules/${feeScheduleId}`);
     return { success: true, message: "Fee item removed successfully." };
   } catch (error) {
     const cause =

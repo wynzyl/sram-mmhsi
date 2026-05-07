@@ -8,13 +8,13 @@ type StaffPortalBase = StudentDirectoryBasePath;
 
 export function StudentDirectoryRowActions({
   studentId,
-  studentBasePath = "/admin/students",
+  studentBasePath = "/staff/students",
 }: {
   studentId: string;
   studentBasePath?: StaffPortalBase;
 }) {
   const enrollBase =
-    studentBasePath === "/staff/students" ? "/staff/enrollments/new" : "/admin/enrollments/new";
+    "/staff/enrollments/new";
 
   return (
     <div className="flex items-center justify-end gap-0.5">

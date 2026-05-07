@@ -21,7 +21,7 @@ interface AssessmentsTableProps {
 
 export default function AssessmentsTable({
   assessments,
-  assessmentsBasePath = "/admin/assessments",
+  assessmentsBasePath = "/staff/assessments",
 }: AssessmentsTableProps) {
   return (
     <div className="table-wrapper">

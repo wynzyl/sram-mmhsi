@@ -32,7 +32,7 @@ export default function EditSchoolYearForm({ schoolYear }: EditSchoolYearFormPro
 
   useEffect(() => {
     if (state.success) {
-      router.push("/admin/school-years");
+      router.push("/staff/school-years");
     }
   }, [state.success, router]);
 

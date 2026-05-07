@@ -1,4 +1,4 @@
-export type StudentDirectoryBasePath = "/admin/students" | "/staff/students";
+export type StudentDirectoryBasePath = "/staff/students";
 
 export function studentDirectoryListHref(
   basePath: StudentDirectoryBasePath,

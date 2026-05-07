@@ -17,6 +17,7 @@ import { FEE_ASSESSMENT_BANDS } from "@/lib/fee-schedule/bands";
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export const roleEnum = pgEnum("role", [
+  "super_admin",
   "admin",
   "registrar",
   "finance_officer",

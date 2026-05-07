@@ -31,7 +31,7 @@ interface RegistrationsListViewProps {
   /** When false, omit the built-in editorial heading (parent page supplies the title). */
   showQueueHeading?: boolean;
   emptyMessage?: string;
-  studentBasePath?: "/admin/students" | "/staff/students";
+  studentBasePath?: "/staff/students";
 }
 
 const STAGGER_CLASSES = [
@@ -75,7 +75,7 @@ export default function RegistrationsListView({
   totalCount,
   showQueueHeading = true,
   emptyMessage = "No registrations found.",
-  studentBasePath = "/admin/students",
+  studentBasePath = "/staff/students",
 }: RegistrationsListViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const queueTotal = totalCount ?? registrations.length;

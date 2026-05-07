@@ -16,7 +16,7 @@
 - [x] Structured logger (§14)
 - [x] Login page UI
 - [x] Auth session implementation (JWT `jose`, httpOnly cookie, `actions/auth.ts`)
-- [x] Route protection (`proxy.ts` — staff vs portal vs admin; Next.js 16 proxy convention)
+- [x] Route protection (`proxy.ts` — staff vs portal vs admin; Next.js 16 proxy convention replaces `middleware.ts`)
 - [x] DB migrations applied (`drizzle/0000` … `0008`+ as generated)
 - [x] `npm run dev` baseline
 
