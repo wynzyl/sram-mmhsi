@@ -217,24 +217,29 @@ export async function updateUserAction(
     };
   }
 
-  // 6. Prevent deactivation of last active admin
-  if (updateData.isActive === false && existingUser.role === "admin") {
-    const activeAdminCount = await db
+  // 6. Prevent deactivation of the last active privileged account
+  if (
+    updateData.isActive === false &&
+    (existingUser.role === "admin" || existingUser.role === "super_admin")
+  ) {
+    const activePrivilegedCount = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(
         and(
-          eq(users.role, "admin"),
+          eq(users.role, existingUser.role),
           eq(users.isActive, true),
           isNull(users.deletedAt)
         )
       );
 
-    if ((activeAdminCount[0]?.count ?? 0) <= 1) {
+    if ((activePrivilegedCount[0]?.count ?? 0) <= 1) {
       return {
         errors: {
           isActive: [
-            "Cannot deactivate the last active administrator account.",
+            existingUser.role === "super_admin"
+              ? "Cannot deactivate the last active super administrator account."
+              : "Cannot deactivate the last active administrator account.",
           ],
         },
       };
@@ -406,23 +411,30 @@ export async function toggleUserStatusAction(
     };
   }
 
-  // 5. Prevent deactivation of last active admin
-  if (isActive === false && existingUser.role === "admin") {
-    const activeAdminCount = await db
+  // 5. Prevent deactivation of the last active privileged account
+  if (
+    isActive === false &&
+    (existingUser.role === "admin" || existingUser.role === "super_admin")
+  ) {
+    const activePrivilegedCount = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(
         and(
-          eq(users.role, "admin"),
+          eq(users.role, existingUser.role),
           eq(users.isActive, true),
           isNull(users.deletedAt)
         )
       );
 
-    if ((activeAdminCount[0]?.count ?? 0) <= 1) {
+    if ((activePrivilegedCount[0]?.count ?? 0) <= 1) {
       return {
         errors: {
-          _form: ["Cannot deactivate the last active administrator account."],
+          _form: [
+            existingUser.role === "super_admin"
+              ? "Cannot deactivate the last active super administrator account."
+              : "Cannot deactivate the last active administrator account.",
+          ],
         },
       };
     }

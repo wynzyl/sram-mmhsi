@@ -115,7 +115,7 @@ export async function createBookletAction(
       },
     }, { throwOnFail: true });
 
-    revalidatePath("/admin/finance/booklets");
+    revalidatePath("/staff/finance/booklets");
     return { success: true, message: "Receipt booklet created successfully." };
   } catch (error) {
     logger.error("[cashier] Failed to create booklet", { error });
@@ -319,7 +319,7 @@ export async function postPaymentAction(
       }, { throwOnFail: true });
     });
 
-    revalidatePath(`/admin/assessments/${assessmentId}`);
+    revalidatePath(`/staff/assessments/${assessmentId}`);
     return { success: true, message: `Payment posted successfully. OR Number: ${orNumberToAssign}` };
   } catch (error: unknown) {
     logger.error("[cashier] Failed to post payment", { error: String(error) });
@@ -450,9 +450,9 @@ export async function voidPaymentAction(
       columns: { assessmentId: true },
     });
     if (link?.assessmentId) {
-      revalidatePath(`/admin/assessments/${link.assessmentId}`);
+      revalidatePath(`/staff/assessments/${link.assessmentId}`);
     }
-    revalidatePath("/admin/assessments");
+    revalidatePath("/staff/assessments");
 
     return { success: true, message: "Payment voided successfully." };
   } catch (error: any) {

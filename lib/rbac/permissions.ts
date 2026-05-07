@@ -1,4 +1,4 @@
-import { Role, STAFF_ROLES, PORTAL_ROLES } from "@/lib/constants/roles";
+import { Role, STAFF_ROLES, PORTAL_ROLES, normalizeRole } from "@/lib/constants/roles";
 
 /**
  * RBAC permission map for SRAMS.
@@ -52,7 +52,7 @@ export type Permission =
   | "assignments:manage";
 
 const PERMISSIONS: Record<Role, Permission[]> = {
-  admin: [
+  super_admin: [
     "students:read", "students:create", "students:update", "students:delete",
     "registrations:read", "registrations:create", "registrations:review",
     "enrollments:read",
@@ -68,6 +68,20 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "reports:finance", "reports:academic",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage",
+  ],
+  admin: [
+    "students:read", "students:create", "students:update", "students:delete",
+    "registrations:read", "registrations:create", "registrations:review",
+    "enrollments:read",
+    "enrollments:create",
+    "enrollments:cancel",
+    "enrollments:cancel_with_balance",
+    "enrollments:override_enroll",
+    "assessments:read", "assessments:create", "assessments:update",
+    "payments:read", "payments:post", "payments:void",
+    "invoices:read", "invoices:send",
+    "grades:read", "grades:encode", "grades:submit", "grades:lock",
+    "reports:finance", "reports:academic",
   ],
   registrar: [
     "students:read", "students:create", "students:update",
@@ -113,17 +127,22 @@ const PERMISSIONS: Record<Role, Permission[]> = {
 };
 
 export function hasPermission(role: Role, permission: Permission): boolean {
-  return PERMISSIONS[role]?.includes(permission) ?? false;
+  const normalizedRole = normalizeRole(role);
+  if (!normalizedRole) return false;
+  return PERMISSIONS[normalizedRole]?.includes(permission) ?? false;
 }
 
 export function getPermissions(role: Role): Permission[] {
-  return PERMISSIONS[role] ?? [];
+  const normalizedRole = normalizeRole(role);
+  return normalizedRole ? PERMISSIONS[normalizedRole] ?? [] : [];
 }
 
 export function isStaffRole(role: Role): boolean {
-  return STAFF_ROLES.includes(role);
+  const normalizedRole = normalizeRole(role);
+  return normalizedRole ? STAFF_ROLES.includes(normalizedRole) : false;
 }
 
 export function isPortalRole(role: Role): boolean {
-  return PORTAL_ROLES.includes(role);
+  const normalizedRole = normalizeRole(role);
+  return normalizedRole ? PORTAL_ROLES.includes(normalizedRole) : false;
 }

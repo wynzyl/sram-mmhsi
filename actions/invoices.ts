@@ -93,8 +93,8 @@ export async function generateInvoiceAction(
       amountDue: assessment.balance,
     });
 
-    revalidatePath("/admin/finance/invoices");
-    revalidatePath(`/admin/assessments/${assessmentId}`);
+    revalidatePath("/staff/finance/invoices");
+    revalidatePath(`/staff/assessments/${assessmentId}`);
 
     return { success: true, message: "Invoice generated successfully.", invoiceId: newInvoice.id };
   } catch (error) {
@@ -173,8 +173,8 @@ export async function sendInvoiceAction(
 
     await logUpdateAction(session, "invoices", invoiceId, {}, { sent: true, sentTo: email });
 
-    revalidatePath("/admin/finance/invoices");
-    revalidatePath(`/admin/finance/invoices/${invoiceId}`);
+    revalidatePath("/staff/finance/invoices");
+    revalidatePath(`/staff/finance/invoices/${invoiceId}`);
 
     return { success: true, message: "Invoice sent successfully." };
   } catch (error: any) {

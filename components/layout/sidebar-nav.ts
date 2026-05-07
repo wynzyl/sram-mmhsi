@@ -25,6 +25,8 @@ export type NavItem = {
   children?: NavItem[];
   /** When set, active only if pathname equals href path (no `startsWith`); use for Master List vs `/staff/students/new`. */
   pathMatch?: "exact";
+  /** If pathname matches this item's path but this query param equals `value`, item is not active (e.g. Enrollments vs cancelled-only list). */
+  notActiveWhen?: { param: string; value: string };
 };
 
 export type NavSection = {
@@ -33,27 +35,37 @@ export type NavSection = {
 };
 
 export const NAV_CONFIG: Record<Role, NavSection[]> = {
-  admin: [
+  super_admin: [
     {
       label: "Overview",
       items: [{ href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" }],
     },
     {
+      label: "System",
+      items: [
+        { href: "/admin/users", label: "Users", icon: "users" },
+        { href: "/staff/school-years", label: "School Years", icon: "school-years" },
+      ],
+    },
+  ],
+
+  admin: [
+    {
+      label: "Overview",
+      items: [{ href: "/staff/dashboard", label: "Dashboard", icon: "dashboard" }],
+    },
+    {
       label: "Academic",
       items: [
-        { href: "/admin/students", label: "Students", icon: "students" },
-        { href: "/admin/registrations", label: "Registrations", icon: "registrations" },
-        { href: "/admin/enrollments", label: "Enrollments", icon: "enrollments" },
-        { href: "/admin/academics/subjects", label: "Subjects", icon: "subjects" },
-        { href: "/admin/academics/assignments", label: "Assignments", icon: "assignments" },
+        { href: "/staff/students", label: "Students", icon: "students" },
+        { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
+        { href: "/staff/enrollments", label: "Enrollments", icon: "enrollments" },
       ],
     },
     {
       label: "Finance",
       items: [
-        { href: "/admin/finance/fee-schedules", label: "Fee Schedules", icon: "fee-schedules" },
-        { href: "/admin/finance/booklets", label: "OR Booklets", icon: "booklets" },
-        { href: "/admin/assessments", label: "Assessments", icon: "assessments" },
+        { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
       ],
     },
     {
@@ -61,38 +73,37 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
         { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
-        { href: "/staff/invoices", label: "Invoices", icon: "invoices" },
-      ],
-    },
-    {
-      label: "System",
-      items: [
-        { href: "/admin/users", label: "Users", icon: "users" },
-        { href: "/admin/school-years", label: "School Years", icon: "school-years" },
+        { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
       ],
     },
   ],
 
   registrar: [
     {
-      label: "Registrar",
+      label: "Overview",
+      items: [{ href: "/staff/dashboard", label: "Dashboard", icon: "dashboard" }],
+    },
+    {
+      label: "Academic",
       items: [
-        { href: "/staff/dashboard", label: "Dashboard", icon: "dashboard" },
+        { href: "/staff/students", label: "Students", icon: "students" },
+        { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
         {
-          href: "/staff/register",
-          label: "Register Student",
-          icon: "students",
-          children: [
-            { href: "/staff/students/new", label: "New Student", icon: "students" },
-            { href: "/staff/students/new?intent=transferee", label: "Transferee", icon: "students" },
-            // { href: "/staff/enrollments/new", label: "Old Student", icon: "enrollments" },
-          ],
+          href: "/staff/enrollments",
+          label: "Enrollments",
+          icon: "enrollments",
+          notActiveWhen: { param: "status", value: "cancelled" },
         },
-        { href: "/staff/registrations", label: "Verify Records", icon: "registrations" },
-        { href: "/staff/enrollments", label: "Enrollment", icon: "enrollments", pathMatch: "exact" },
-        { href: "/staff/students", label: "Master List", icon: "students", pathMatch: "exact" },
-        { href: "/staff/enrollments/cancelled", label: "Cancelled Enrollments", icon: "enrollments" },
+        {
+          href: "/staff/enrollments?status=cancelled",
+          label: "Cancelled Enrollments",
+          icon: "enrollments",
+        },
       ],
+    },
+    {
+      label: "Finance",
+      items: [{ href: "/staff/assessments", label: "Assessments", icon: "assessments" }],
     },
     {
       label: "Cashier",
@@ -100,6 +111,10 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
         { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
       ],
+    },
+    {
+      label: "System",
+      items: [{ href: "/staff/school-years", label: "School Years", icon: "school-years" }],
     },
   ],
 
@@ -128,7 +143,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Cashier",
       items: [
         { href: "/staff/payments", label: "Payments", icon: "payments" },
-        { href: "/staff/invoices", label: "Invoices", icon: "invoices" },
+        { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
       ],
     },
   ],

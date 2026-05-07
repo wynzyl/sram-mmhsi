@@ -40,7 +40,8 @@
 - [x] `lib/auth/session.ts` — JWT (jose), httpOnly cookie, DB-backed sessions, renewal/revocation patterns
 - [x] `lib/validators/auth.ts` — Zod login schema
 - [x] `actions/auth.ts` — login + logout; bcrypt; audit for success/failure
-- [x] `proxy.ts` — unauthenticated redirect; staff vs portal vs admin-only routes; role landing redirects
+- [x] `proxy.ts` — unauthenticated redirect; staff vs portal vs admin-only routes; role landing redirects  
+  *(Next.js 16: the root file was `middleware.ts`; it is now `proxy.ts` with a named `proxy` export. Doc or comments that say “middleware” for this layer mean `proxy.ts`.)*
 - [x] `components/auth/LoginForm.tsx` — client form with `useActionState`
 - [x] `scripts/seed.ts` — admin seed (`npm run db:seed`)
 - [x] Path aliases — `tsconfig.json` / `next.config.ts` for `@/` imports

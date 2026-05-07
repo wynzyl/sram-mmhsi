@@ -100,7 +100,7 @@ export default function NewEnrollmentForm({
   promotionByStudentId,
   registrationContextByStudentId: registrationContextByStudentIdProp,
   prefillStudentId,
-  afterSuccessRedirect = "/admin/enrollments",
+  afterSuccessRedirect = "/staff/enrollments",
 }: NewEnrollmentFormProps) {
   const registrationContextByStudentId = registrationContextByStudentIdProp ?? {};
 

@@ -21,14 +21,14 @@ export interface PendingEnrollmentRow {
 interface PendingAssessmentsQueueProps {
   rows: PendingEnrollmentRow[];
   canCreate: boolean;
-  /** Base path without trailing slash, e.g. `/admin/assessments` or `/staff/assessments`. */
+  /** Base path without trailing slash (e.g. `/staff/assessments`). */
   assessmentsBasePath?: string;
 }
 
 export default function PendingAssessmentsQueue({
   rows,
   canCreate,
-  assessmentsBasePath = "/admin/assessments",
+  assessmentsBasePath = "/staff/assessments",
 }: PendingAssessmentsQueueProps) {
   const count = rows.length;
 

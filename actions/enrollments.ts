@@ -307,9 +307,9 @@ export async function createEnrollmentAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/enrollments");
     revalidatePath("/staff/enrollments");
-    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/staff/enrollments");
+    revalidatePath(`/staff/students/${studentId}`);
     revalidatePath(`/staff/students/${studentId}`);
 
     return { success: true, enrollmentId: newEnrollmentId };
@@ -513,11 +513,11 @@ export async function updateEnrollmentStatusAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/enrollments");
     revalidatePath("/staff/enrollments");
-    revalidatePath("/admin/assessments");
+    revalidatePath("/staff/enrollments");
     revalidatePath("/staff/assessments");
-    revalidatePath(`/admin/students/${enrollment.studentId}`);
+    revalidatePath("/staff/assessments");
+    revalidatePath(`/staff/students/${enrollment.studentId}`);
     revalidatePath(`/staff/students/${enrollment.studentId}`);
 
     return {
