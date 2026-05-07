@@ -308,10 +308,7 @@ export async function createEnrollmentAction(
     });
 
     revalidatePath("/staff/enrollments");
-    revalidatePath("/staff/enrollments");
     revalidatePath(`/staff/students/${studentId}`);
-    revalidatePath(`/staff/students/${studentId}`);
-
     return { success: true, enrollmentId: newEnrollmentId };
   } catch (err) {
     const detail = collectPgErrorText(err);
@@ -514,11 +511,9 @@ export async function updateEnrollmentStatusAction(
     });
 
     revalidatePath("/staff/enrollments");
-    revalidatePath("/staff/enrollments");
-    revalidatePath("/staff/assessments");
     revalidatePath("/staff/assessments");
     revalidatePath(`/staff/students/${enrollment.studentId}`);
-    revalidatePath(`/staff/students/${enrollment.studentId}`);
+   
 
     return {
       success: true,

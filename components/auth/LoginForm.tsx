@@ -17,7 +17,7 @@ export default function LoginForm() {
       {state?.message && (
         <div
           role="alert"
-          className="flex items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-error)_35%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-error)_10%,var(--color-surface))] px-3 py-2.5 text-sm font-medium text-(--color-error)"
+          className="flex items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-error)_35%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-error)_10%,var(--color-surface))] px-3 py-2.5 text-sm font-medium text-(color:--color-error)"
         >
           <svg
             width="16"

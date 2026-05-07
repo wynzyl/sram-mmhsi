@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
+import { ReferenceCode } from "@/components/data-display/ReferenceCode";
 import { StatusBadge } from "@/components/data-display/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { StudentRecordTabShell, type StudentRecordTabDef } from "@/components/students/StudentRecordTabShell";
@@ -632,7 +633,9 @@ export function StudentRecordProfile({
               <div className="student-record-hero-meta">
                 <div className="student-record-meta-tile">
                   <span className="student-record-meta-label">Reference</span>
-                  <span className="student-record-meta-value student-record-mono">{student.referenceNumber}</span>
+                  <span className="student-record-meta-value">
+                    <ReferenceCode code={student.referenceNumber} />
+                  </span>
                 </div>
                 {student.lrn ? (
                   <div className="student-record-meta-tile">

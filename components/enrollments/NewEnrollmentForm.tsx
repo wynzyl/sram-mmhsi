@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createEnrollmentAction } from "@/actions/enrollments";
 import type { EnrollmentFormState } from "@/lib/validators/enrollment";
 import IntakeRequirementsFieldset from "@/components/enrollments/IntakeRequirementsFieldset";
+import { FormStateAlert } from "@/components/forms/FormStateAlert";
 import type { RegistrationEnrollmentContext } from "@/lib/types/registration-enrollment-context";
 import { enrollmentIntakeDocumentsToPreserved } from "@/lib/utils/intake-documents";
 
@@ -143,16 +144,7 @@ export default function NewEnrollmentForm({
 
   return (
     <form action={action} className="student-form">
-      {state.message && (
-        <div className="alert alert-error" role="alert">
-          {state.message}
-        </div>
-      )}
-      {state.errors?._form && (
-        <div className="alert alert-error" role="alert">
-          {state.errors._form.join(" ")}
-        </div>
-      )}
+      <FormStateAlert state={state} />
 
       {!currentSchoolYear && (
         <div className="alert alert-error" role="alert">

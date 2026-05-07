@@ -487,9 +487,6 @@ export async function updateStudentAction(
 
     revalidatePath("/staff/students");
     revalidatePath(`/staff/students/${studentId}`);
-    revalidatePath("/staff/students");
-    revalidatePath(`/staff/students/${studentId}`);
-
     return { success: true };
   } catch (err) {
     logger.error("[students] Failed to update student", { error: String(err) });

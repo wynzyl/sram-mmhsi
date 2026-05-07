@@ -47,11 +47,11 @@ CREATE TYPE academic_status AS ENUM (
 
 ```sql
 ALTER TABLE enrollments
-ADD COLUMN academic_status academic_status DEFAULT 'active',
+ADD COLUMN academic_status academic_status,
 ADD COLUMN academic_status_updated_at TIMESTAMP;
 ```
 
-**Default value:** When a student's enrollment status becomes `"enrolled"`, their academic status should default to `"active"`.
+**Initialization rule:** Do not use a DB-level default. Set `academic_status = 'active'` explicitly in the server-side enrollment transition handler when status becomes `"enrolled"` (including manual `override_enroll`), and keep `academic_status_updated_at` as `NULL` at that moment.
 
 **Timestamp:** The `academicStatusUpdatedAt` field is set whenever `academicStatus` changes (not on initial creation, only on updates).
 
@@ -184,7 +184,7 @@ After implementation:
 
 1. **Schema verification:**
    - Run `npm run db:studio` and verify `academicStatusEnum` exists
-   - Verify `enrollments.academicStatus` column exists with default 'active'
+   - Verify `enrollments.academicStatus` column exists with no DB default
    - Verify `enrollments.academicStatusUpdatedAt` timestamp column exists
 
 2. **Permission testing:**
@@ -193,8 +193,8 @@ After implementation:
    - Login as `cashier` or `teacher` → should NOT be able to update academic status
 
 3. **Workflow testing:**
-   - Create new enrollment → verify `academicStatus` defaults to "active", `academicStatusUpdatedAt` is NULL
-   - Update enrollment to "enrolled" → verify `academicStatus` remains "active", timestamp still NULL
+   - Create new enrollment → verify `academicStatus` remains NULL before enrollment is marked `"enrolled"`
+   - Update enrollment to "enrolled" (including override) → verify handler sets `academicStatus` to "active" and `academicStatusUpdatedAt` stays NULL
    - Update `academicStatus` to "completed" → verify change persists AND `academicStatusUpdatedAt` is set to NOW()
    - Check audit logs capture the change (actor, action, previous value, new value)
 

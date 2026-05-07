@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { schoolYears } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import FeeScheduleForm from "@/components/finance/FeeScheduleForm";
+import { getSchoolYears } from "@/src/queries/schoolYears";
 
 export const metadata: Metadata = {
   title: "New Fee Schedule",
@@ -17,10 +15,7 @@ export default async function StaffNewFeeSchedulePage() {
     redirect("/staff/dashboard");
   }
 
-  const sys = await db
-    .select({ id: schoolYears.id, label: schoolYears.label, isActive: schoolYears.isActive })
-    .from(schoolYears)
-    .orderBy(desc(schoolYears.startDate));
+  const sys = await getSchoolYears();
 
   return (
     <div className="page-container page-container-narrow">

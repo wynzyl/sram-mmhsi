@@ -17,13 +17,12 @@ export async function InternalNewAssessmentForEnrollmentPage(props: {
 
   const ctx = await loadNewAssessmentPageContext(enrollmentId);
   if (!ctx) notFound();
+  if (ctx.status === "not_pending") {
+    redirect(assessmentsBasePath);
+  }
 
   const { enrollment: e, catalogBandLabel, primaryGuardianLabel, feeCatalog, submitBlockedReason } =
     ctx;
-
-  if (e.enrollmentStatus !== "pending") {
-    redirect(assessmentsBasePath);
-  }
 
   return (
     <div className="page-container max-w-7xl">

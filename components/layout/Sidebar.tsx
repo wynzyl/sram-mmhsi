@@ -170,14 +170,16 @@ function isParentRegisterActive(pathname: string, sp: URLSearchParams, item: Nav
 interface SidebarProps {
   role: Role;
   username: string;
-  email: string;
 }
 
-export function Sidebar({ role, username, email }: SidebarProps) {
+export function Sidebar({ role, username }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const resolvedRole = normalizeRole(role) ?? ROLES.ADMIN;
-  const sections = NAV_CONFIG[resolvedRole] ?? [];
+  const normalizedRole = normalizeRole(role);
+  const resolvedRole = normalizedRole ?? ROLES.ADMIN;
+  const sections = normalizedRole ? NAV_CONFIG[normalizedRole] ?? [] : [];
+  const usernameTitle =
+    username.length > 28 ? `${username.slice(0, 28)}…` : username;
 
   return (
     <aside className="sidebar">
@@ -259,7 +261,9 @@ export function Sidebar({ role, username, email }: SidebarProps) {
             {username.charAt(0).toUpperCase()}
           </div>
           <div className="user-info">
-            <p className="user-name" title={email}>{username}</p>
+            <p className="user-name" title={usernameTitle}>
+              {username}
+            </p>
             <p className="user-role">{ROLE_LABELS[resolvedRole]}</p>
           </div>
         </div>

@@ -15,6 +15,7 @@ interface SchoolYear {
 
 interface EditSchoolYearFormProps {
   schoolYear: SchoolYear;
+  redirectPath: string;
 }
 
 const initialState: UpdateSchoolYearFormState = {};
@@ -26,15 +27,15 @@ function formatDateForInput(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export default function EditSchoolYearForm({ schoolYear }: EditSchoolYearFormProps) {
+export default function EditSchoolYearForm({ schoolYear, redirectPath }: EditSchoolYearFormProps) {
   const router = useRouter();
   const [state, action, pending] = useActionState(updateSchoolYearAction, initialState);
 
   useEffect(() => {
     if (state.success) {
-      router.push("/staff/school-years");
+      router.replace(redirectPath);
     }
-  }, [state.success, router]);
+  }, [state.success, redirectPath, router]);
 
   return (
     <form action={action} className="form-card" noValidate>

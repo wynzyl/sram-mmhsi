@@ -20,25 +20,36 @@ import type {
 const VALID_STATUSES = ["pending", "assessed", "enrolled", "cancelled", "all"] as const;
 
 export async function EnrollmentsIndexPage(props: {
-  searchParams: Promise<{ status?: string; sy?: string }>;
+  searchParams: Promise<{ status?: string; sy?: string; page?: string }>;
   deniedRedirect: string;
 }) {
   const { searchParams, deniedRedirect } = props;
   const session = await requireSession();
   if (!hasPermission(session.role, "enrollments:read")) redirect(deniedRedirect);
 
-  const { status = "all" } = await searchParams;
+  const { status = "all", page: pageParam } = await searchParams;
   const filterStatus = (
     (VALID_STATUSES as readonly string[]).includes(status) ? status : "all"
   ) as "all" | EnrollmentStatus;
+  const page = Math.max(1, Number.parseInt(pageParam ?? "1", 10) || 1);
+  const pageSize = 100;
+  const offset = (page - 1) * pageSize;
 
   const canCreate = hasPermission(session.role, "enrollments:create");
+  const canManage =
+    hasPermission(session.role, "assessments:create") || canCreate;
   const canCancel = hasPermission(session.role, "enrollments:cancel");
   const canCancelWithBalance = hasPermission(session.role, "enrollments:cancel_with_balance");
   const canOverrideEnrolled = hasPermission(session.role, "enrollments:override_enroll");
 
   const statusFilter =
     filterStatus !== "all" ? eq(enrollments.status, filterStatus) : undefined;
+
+  const [{ count: totalFilteredCountRaw }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(enrollments)
+    .where(statusFilter);
+  const totalFilteredCount = Number(totalFilteredCountRaw ?? 0);
 
   const rows = await db
     .select({
@@ -68,7 +79,10 @@ export async function EnrollmentsIndexPage(props: {
     .leftJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
     .where(statusFilter)
     .orderBy(desc(enrollments.createdAt))
-    .limit(100);
+    .offset(offset)
+    .limit(pageSize);
+
+  const hasMore = offset + rows.length < totalFilteredCount;
 
   const counts = await db
     .select({ status: enrollments.status, count: sql<number>`count(*)` })
@@ -122,8 +136,12 @@ export async function EnrollmentsIndexPage(props: {
         countMap={countMap}
         filterStatus={filterStatus}
         schoolYearLabel={schoolYearLabel}
+        page={page}
+        pageSize={pageSize}
+        totalFilteredCount={totalFilteredCount}
+        hasMore={hasMore}
         canCreate={canCreate}
-        canManage={canCreate}
+        canManage={canManage}
         canCancel={canCancel}
         canCancelWithBalance={canCancelWithBalance}
         canOverrideEnrolled={canOverrideEnrolled}

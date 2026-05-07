@@ -14,7 +14,16 @@ export const SESSION_COOKIE_NAME = "srams_session";
 function getSecretKey() {
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("[SRAMS] AUTH_SECRET is not set.");
-  return new TextEncoder().encode(secret);
+
+  const encoded = new TextEncoder().encode(secret);
+  const MIN_BYTES = 32;
+  if (encoded.length < MIN_BYTES) {
+    throw new Error(
+      `[SRAMS] AUTH_SECRET must be at least ${MIN_BYTES} bytes long.`
+    );
+  }
+
+  return encoded;
 }
 
 export async function encryptSessionJwt(payload: SessionPayload): Promise<string> {

@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { students, parentsGuardians, studentGuardianLinks } from "@/lib/db/schema";
 import type { Role } from "@/lib/constants/roles";
 import { ROLES } from "@/lib/constants/roles";
-import { eq, and, isNull, desc, inArray } from "drizzle-orm";
+import { eq, and, isNull, asc, inArray } from "drizzle-orm";
 
 /**
  * Returns distinct student row ids the portal user may view (linked student account or guardian links).
@@ -51,7 +51,7 @@ export async function getPortalStudentLabels(studentIds: string[]): Promise<Port
     })
     .from(students)
     .where(and(inArray(students.id, studentIds), isNull(students.deletedAt)))
-    .orderBy(desc(students.lastName));
+    .orderBy(asc(students.lastName));
 
   return rows;
 }

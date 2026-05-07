@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-type StaffPortalBase = "/staff/students";
-
 /** Kebab actions for a student row — used on Students and Registrations lists */
 export function StudentRowActionsMenu({
   studentId,
   studentBasePath = "/staff/students",
 }: {
   studentId: string;
-  studentBasePath?: StaffPortalBase;
+  studentBasePath?: "/admin/students" | "/staff/students";
 }) {
-  const enrollBase = "/staff/enrollments/new";
+  const enrollBase =
+    studentBasePath.startsWith("/admin")
+      ? "/admin/enrollments/new"
+      : "/staff/enrollments/new";
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
