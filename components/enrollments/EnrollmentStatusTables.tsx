@@ -6,6 +6,7 @@ import { DataTable } from "@/components/data-display/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 import Link from "next/link";
 import type {
   PendingEnrollment,
@@ -13,23 +14,28 @@ import type {
   EnrolledStudent,
   CancelledEnrollment,
 } from "@/lib/queries/enrollment-queue";
+import type { PaginatedResult } from "@/lib/types/pagination";
 
 // ─── Pending Enrollments Table ───────────────────────────────────────────────
 
 type PendingEnrollmentsTableProps = {
-  enrollments: PendingEnrollment[];
+  paginatedData: PaginatedResult<PendingEnrollment>;
   basePath: string; // e.g., "/staff"
   searchQuery?: string;
   gradeLevelFilter?: string;
+  enrollmentsBasePath: string;
 };
 
 export function PendingEnrollmentsTable({
-  enrollments,
+  paginatedData,
   basePath,
   searchQuery = "",
   gradeLevelFilter = "",
+  enrollmentsBasePath,
 }: PendingEnrollmentsTableProps) {
-  // Apply filters
+  const enrollments = paginatedData.data;
+
+  // Apply client-side filters (pagination already handled server-side)
   const filteredEnrollments = useMemo(() => {
     let filtered = enrollments;
 
@@ -143,6 +149,7 @@ export function PendingEnrollmentsTable({
         searchable={false}
         pageSize={25}
       />
+      <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
         <div className="text-center text-sm text-[var(--color-text-muted)]">
           No enrollments match the current filters.
@@ -155,19 +162,23 @@ export function PendingEnrollmentsTable({
 // ─── Assessed Enrollments Table ───────────────────────────────────────────────
 
 type AssessedEnrollmentsTableProps = {
-  enrollments: AssessedEnrollment[];
+  paginatedData: PaginatedResult<AssessedEnrollment>;
   basePath: string;
   searchQuery?: string;
   gradeLevelFilter?: string;
+  enrollmentsBasePath: string;
 };
 
 export function AssessedEnrollmentsTable({
-  enrollments,
+  paginatedData,
   basePath,
   searchQuery = "",
   gradeLevelFilter = "",
+  enrollmentsBasePath,
 }: AssessedEnrollmentsTableProps) {
-  // Apply filters
+  const enrollments = paginatedData.data;
+
+  // Apply client-side filters (pagination already handled server-side)
   const filteredEnrollments = useMemo(() => {
     let filtered = enrollments;
 
@@ -295,6 +306,7 @@ export function AssessedEnrollmentsTable({
         searchable={false}
         pageSize={25}
       />
+      <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
         <div className="text-center text-sm text-[var(--color-text-muted)]">
           No enrollments match the current filters.
@@ -307,19 +319,23 @@ export function AssessedEnrollmentsTable({
 // ─── Enrolled Students Table ──────────────────────────────────────────────────
 
 type EnrolledStudentsTableProps = {
-  students: EnrolledStudent[];
+  paginatedData: PaginatedResult<EnrolledStudent>;
   basePath: string;
   searchQuery?: string;
   gradeLevelFilter?: string;
+  enrollmentsBasePath: string;
 };
 
 export function EnrolledStudentsTable({
-  students,
+  paginatedData,
   basePath,
   searchQuery = "",
   gradeLevelFilter = "",
+  enrollmentsBasePath,
 }: EnrolledStudentsTableProps) {
-  // Apply filters
+  const students = paginatedData.data;
+
+  // Apply client-side filters (pagination already handled server-side)
   const filteredStudents = useMemo(() => {
     let filtered = students;
 
@@ -418,6 +434,7 @@ export function EnrolledStudentsTable({
         searchable={false}
         pageSize={25}
       />
+      <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredStudents.length === 0 && (searchQuery || gradeLevelFilter) && (
         <div className="text-center text-sm text-[var(--color-text-muted)]">
           No students match the current filters.
@@ -430,19 +447,23 @@ export function EnrolledStudentsTable({
 // ─── Cancelled Enrollments Table ──────────────────────────────────────────────
 
 type CancelledEnrollmentsTableProps = {
-  enrollments: CancelledEnrollment[];
+  paginatedData: PaginatedResult<CancelledEnrollment>;
   basePath: string;
   searchQuery?: string;
   gradeLevelFilter?: string;
+  enrollmentsBasePath: string;
 };
 
 export function CancelledEnrollmentsTable({
-  enrollments,
+  paginatedData,
   basePath,
   searchQuery = "",
   gradeLevelFilter = "",
+  enrollmentsBasePath,
 }: CancelledEnrollmentsTableProps) {
-  // Apply filters
+  const enrollments = paginatedData.data;
+
+  // Apply client-side filters (pagination already handled server-side)
   const filteredEnrollments = useMemo(() => {
     let filtered = enrollments;
 
@@ -541,6 +562,7 @@ export function CancelledEnrollmentsTable({
         searchable={false}
         pageSize={25}
       />
+      <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
         <div className="text-center text-sm text-[var(--color-text-muted)]">
           No enrollments match the current filters.

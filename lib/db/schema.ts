@@ -303,6 +303,7 @@ export const registrations = pgTable(
   (t) => [
     index("reg_student_sy_idx").on(t.studentId, t.schoolYearId),
     index("reg_status_idx").on(t.status),
+    index("reg_sy_status_idx").on(t.schoolYearId, t.status), // MEMORY OPTIMIZATION: Composite index for enrollment queue
   ]
 );
 
@@ -334,6 +335,8 @@ export const enrollments = pgTable(
       .on(t.studentId, t.schoolYearId)
       .where(sql`status != 'cancelled'`),
     index("enrollment_status_idx").on(t.status),
+    index("enrollment_sy_status_idx").on(t.schoolYearId, t.status), // MEMORY OPTIMIZATION: Composite index for enrollment queue
+    index("enrollment_student_sy_status_idx").on(t.studentId, t.schoolYearId, t.status), // MEMORY OPTIMIZATION: For old student lookups
   ]
 );
 
