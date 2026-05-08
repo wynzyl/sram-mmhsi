@@ -527,3 +527,28 @@
     color: var(--color-ops-muted);
   }
 }
+  /* Pagination */
+  .pagination-btn {
+    @apply inline-flex h-9 min-w-9 items-center justify-center rounded-md px-3 text-sm font-medium transition;
+    color: var(--color-ops-ink);
+    border: 1px solid var(--color-ops-line);
+    background: var(--color-ops-panel);
+  }
+
+  .pagination-btn:hover:not(.pagination-btn-disabled):not(.pagination-btn-active) {
+    background: color-mix(in srgb, var(--color-primary-400) 8%, var(--color-ops-panel));
+    border-color: var(--color-primary-400);
+  }
+
+  .pagination-btn-active {
+    background: var(--color-primary-400);
+    border-color: var(--color-primary-400);
+    color: white;
+  }
+
+  .pagination-btn-disabled {
+    @apply cursor-not-allowed;
+    color: var(--color-ops-muted);
+    opacity: 0.5;
+  }
+

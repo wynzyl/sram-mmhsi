@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -11,6 +11,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils/cn";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -23,12 +24,17 @@ interface DataTableProps<TData> {
   searchPlaceholder?: string;
   pageSize?: number;
   enablePagination?: boolean;
+  enableVirtualization?: boolean; // Enable for large datasets (1000+ rows)
+  virtualRowHeight?: number; // Estimated row height in pixels (default: 50)
   className?: string;
 }
 
 /**
- * Generic data table component with built-in sorting, filtering, and pagination
- * Uses TanStack Table for powerful table functionality
+ * Generic data table component with built-in sorting, filtering, and pagination.
+ * Uses TanStack Table for powerful table functionality.
+ *
+ * For large datasets (1000+ rows), enable virtualization to render only visible rows.
+ * This dramatically improves performance by avoiding rendering all rows to the DOM.
  */
 export function DataTable<TData>({
   columns,
@@ -37,10 +43,13 @@ export function DataTable<TData>({
   searchPlaceholder = "Search...",
   pageSize = 20,
   enablePagination = true,
+  enableVirtualization = false,
+  virtualRowHeight = 50,
   className,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const table = useReactTable({
     data,
@@ -51,12 +60,22 @@ export function DataTable<TData>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    ...(enablePagination
+    ...(enablePagination && !enableVirtualization
       ? {
           getPaginationRowModel: getPaginationRowModel(),
           initialState: { pagination: { pageSize } },
         }
       : {}),
+  });
+
+  // Setup virtualization for large datasets
+  const { rows } = table.getRowModel();
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => virtualRowHeight,
+    overscan: 10, // Render 10 extra rows above/below viewport for smooth scrolling
+    enabled: enableVirtualization,
   });
 
   return (
@@ -74,16 +93,27 @@ export function DataTable<TData>({
       )}
 
       <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+        <div
+          ref={tableContainerRef}
+          className="overflow-x-auto"
+          style={
+            enableVirtualization
+              ? {
+                  maxHeight: "600px",
+                  overflow: "auto",
+                }
+              : {}
+          }
+        >
           <table className="w-full">
-            <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+            <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)] sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
                       className={cn(
-                        "px-5 py-3.5 text-left text-xs font-semibold text-[var(--color-text-2)] uppercase tracking-wider",
+                        "px-5 py-3.5 text-left text-xs font-semibold text-[var(--color-text-2)] uppercase tracking-wider bg-[var(--color-surface-2)]",
                         header.column.getCanSort() &&
                           "cursor-pointer select-none hover:bg-[var(--color-surface-3)] transition-colors"
                       )}
@@ -109,7 +139,7 @@ export function DataTable<TData>({
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows.length === 0 ? (
+              {rows.length === 0 ? (
                 <tr>
                   <td
                     colSpan={columns.length}
@@ -118,8 +148,55 @@ export function DataTable<TData>({
                     No results found.
                   </td>
                 </tr>
+              ) : enableVirtualization ? (
+                <>
+                  {/* Spacer for virtual scrolling */}
+                  {rowVirtualizer.getVirtualItems().length > 0 && (
+                    <tr>
+                      <td style={{ height: `${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px` }} />
+                    </tr>
+                  )}
+                  {/* Render only visible rows */}
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const row = rows[virtualRow.index];
+                    return (
+                      <tr
+                        key={row.id}
+                        data-index={virtualRow.index}
+                        ref={(node) => rowVirtualizer.measureElement(node)}
+                        className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-surface-2)] transition-colors"
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <td
+                            key={cell.id}
+                            className="px-5 py-4 text-sm text-[var(--color-text)]"
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                  {/* Spacer for virtual scrolling */}
+                  {rowVirtualizer.getVirtualItems().length > 0 && (
+                    <tr>
+                      <td
+                        style={{
+                          height: `${
+                            rowVirtualizer.getTotalSize() -
+                            (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end ?? 0)
+                          }px`,
+                        }}
+                      />
+                    </tr>
+                  )}
+                </>
               ) : (
-                table.getRowModel().rows.map((row) => (
+                // Non-virtualized rendering (default)
+                rows.map((row) => (
                   <tr
                     key={row.id}
                     className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-surface-2)] transition-colors"
@@ -143,7 +220,7 @@ export function DataTable<TData>({
         </div>
       </div>
 
-      {enablePagination && table.getPageCount() > 1 && (
+      {enablePagination && !enableVirtualization && table.getPageCount() > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-[var(--color-text-muted)]">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
