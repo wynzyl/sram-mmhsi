@@ -63,7 +63,7 @@ export function ConfirmActionButton({
 
   const variantClasses = {
     danger: "text-red-600 hover:text-red-900",
-    primary: "text-indigo-600 hover:text-indigo-900",
+    primary: "text-[var(--color-primary)] hover:text-[var(--color-primary-700)]",
     secondary: "text-gray-600 hover:text-gray-900",
   };
 
@@ -152,7 +152,7 @@ export function BlockConfirmButton({
 
   const variantClasses = {
     danger: "bg-red-600 hover:bg-red-700 text-white",
-    primary: "bg-indigo-600 hover:bg-indigo-700 text-white",
+    primary: "bg-[var(--color-primary)] hover:bg-[var(--color-primary-700)] text-white",
     secondary: "bg-gray-600 hover:bg-gray-700 text-white",
   };
 

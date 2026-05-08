@@ -1,8 +1,7 @@
 /* Typography Design Tokens */
 @layer tokens {
   :root {
-    --font-sans: var(--font-instrument-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-mono: var(--font-jetbrains-mono), 'Courier New', Consolas, Monaco, monospace;
+    /* Note: --font-sans and --font-mono are defined in globals.css using active fonts */
 
     /* Refined scale for school operations UI - optimized for data density */
     --text-xs: 0.6875rem;    /* 11px - micro labels, table metadata */

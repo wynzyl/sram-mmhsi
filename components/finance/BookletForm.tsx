@@ -164,10 +164,10 @@ export default function BookletForm({
   return (
     <form action={action} className="ops-panel p-6">
       <div className="mb-6 flex items-center gap-3">
-        <div className="rounded-lg bg-(--color-ops-panel-muted) p-2 text-(--color-primary-300)">
+        <div className="rounded-lg bg-[var(--color-ops-panel-muted)] p-2 text-[var(--color-primary-300)]">
           <ClipboardPlus className="h-4 w-4" />
         </div>
-        <h2 className="font-display text-3xl leading-none text-(--color-ops-ink)">Add New Booklet</h2>
+        <h2 className="font-display text-3xl leading-none text-[var(--color-ops-ink)]">Add New Booklet</h2>
       </div>
 
       {state.errors?._form && (
@@ -227,7 +227,7 @@ export default function BookletForm({
             </label>
             <div className="relative">
               <input id="dateIssued" type="date" className="ops-input pr-10" />
-              <CalendarDays className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-(--color-ops-muted)" />
+              <CalendarDays className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-[var(--color-ops-muted)]" />
             </div>
           </div>
         </div>
@@ -274,7 +274,7 @@ export default function BookletForm({
             <select id="assignedTo" className="ops-input ops-input-disabled pr-10" disabled defaultValue="">
               <option value="">Select Cashier (assignment soon)</option>
             </select>
-            <UserRound className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-(--color-ops-muted)" />
+            <UserRound className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-[var(--color-ops-muted)]" />
           </div>
         </div>
 
@@ -285,8 +285,8 @@ export default function BookletForm({
       </div>
 
       <div className="ops-panel ops-panel-muted mt-5 p-4">
-        <div className="flex items-center gap-2 text-sm font-semibold tracking-wide text-(--color-ops-ink)">
-          <Info className="h-4 w-4 text-(--color-primary-300)" />
+        <div className="flex items-center gap-2 text-sm font-semibold tracking-wide text-[var(--color-ops-ink)]">
+          <Info className="h-4 w-4 text-[var(--color-primary-300)]" />
           Administrative Protocol
         </div>
         <p className="ops-note mt-2 leading-relaxed">

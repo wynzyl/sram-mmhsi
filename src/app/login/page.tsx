@@ -49,26 +49,26 @@ export default function LoginPage() {
               </svg>
             </div>
             <div>
-              <h1 className="font-display text-xl font-bold text-(--color-text)">
+              <h1 className="font-display text-xl font-bold text-[var(--color-text)]">
                 Merryland Montessori & High School
               </h1>
-              <p className="mt-0.5 max-w-[350px] text-sm text-(--color-text-muted)">
+              <p className="mt-0.5 max-w-[350px] text-sm text-[var(--color-text-muted)]">
                 School Registration &amp; Accounts Monitoring System
               </p>
             </div>
           </div>
 
-          <div className="w-full rounded-xl border border-(--color-ops-line) bg-(--color-ops-panel) p-8 shadow-(--shadow-lg)">
-            <h2 className="mb-1 font-display text-lg font-bold text-(--color-text)">
+          <div className="w-full rounded-xl border border-[var(--color-ops-line)] bg-[var(--color-ops-panel)] p-8 shadow-[var(--shadow-lg)]">
+            <h2 className="mb-1 font-display text-lg font-bold text-[var(--color-text)]">
               Sign in to your account
             </h2>
-            <p className="mb-6 text-sm text-(--color-text-muted)">
+            <p className="mb-6 text-sm text-[var(--color-text-muted)]">
               Enter your credentials to access the system.
             </p>
 
             <LoginForm />
 
-            <p className="mt-5 text-center text-xs text-(--color-text-muted)">
+            <p className="mt-5 text-center text-xs text-[var(--color-text-muted)]">
               Having trouble? Contact your system administrator.
             </p>
           </div>

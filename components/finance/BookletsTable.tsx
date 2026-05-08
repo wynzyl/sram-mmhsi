@@ -73,8 +73,8 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
 
   return (
     <div className="ops-panel p-0">
-      <div className="flex items-center justify-between border-b border-(--color-ops-line) px-5 py-4">
-        <h2 className="font-display text-3xl text-(--color-ops-ink)">Active Booklets</h2>
+      <div className="flex items-center justify-between border-b border-[var(--color-ops-line)] px-5 py-4">
+        <h2 className="font-display text-3xl text-[var(--color-ops-ink)]">Active Booklets</h2>
         <div className="flex items-center gap-2">
           <button type="button" className="ops-icon-btn" aria-label="Filter">
             <SlidersHorizontal className="h-4 w-4" />
@@ -99,7 +99,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
           <tbody>
             {booklets.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-sm text-(--color-ops-muted)">
+                <td colSpan={5} className="px-4 py-12 text-center text-sm text-[var(--color-ops-muted)]">
                   No receipt booklets found.
                 </td>
               </tr>
@@ -107,15 +107,15 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
               booklets.map((booklet) => (
                 <tr key={booklet.id} className="ops-table-row">
                   <td className="ops-table-cell">
-                    <p className="font-semibold tracking-wide text-(--color-ops-ink)">{booklet.prefix}</p>
-                    <p className="mt-1 font-mono text-[13px] text-(--color-ops-muted)">{booklet.series}</p>
+                    <p className="font-semibold tracking-wide text-[var(--color-ops-ink)]">{booklet.prefix}</p>
+                    <p className="mt-1 font-mono text-[13px] text-[var(--color-ops-muted)]">{booklet.series}</p>
                   </td>
-                  <td className="ops-table-cell font-mono text-(--color-ops-ink)">
+                  <td className="ops-table-cell font-mono text-[var(--color-ops-ink)]">
                     <p>{String(booklet.startNumber).padStart(w, "0")}</p>
-                    <p className="text-(--color-ops-muted)">to {String(booklet.endNumber).padStart(w, "0")}</p>
+                    <p className="text-[var(--color-ops-muted)]">to {String(booklet.endNumber).padStart(w, "0")}</p>
                   </td>
                   <td className="ops-table-cell">
-                    <span className="inline-flex min-w-[92px] items-center justify-center border border-(--color-ops-line) bg-(--color-ops-field) px-2 py-1 font-mono text-[13px] text-(--color-ops-field-text)">
+                    <span className="inline-flex min-w-[92px] items-center justify-center border border-[var(--color-ops-line)] bg-[var(--color-ops-field)] px-2 py-1 font-mono text-[13px] text-[var(--color-ops-field-text)]">
                       {booklet.status === "active" ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber) : "--"}
                     </span>
                   </td>

@@ -2,17 +2,17 @@
 @layer tokens {
   :root {
     /* Deep Red Primary - School Authority */
-    --color-primary-50: #fff1f3;
-    --color-primary-100: #ffe3e8;
-    --color-primary-200: #ffc9d3;
-    --color-primary-300: #ffa2b5;
-    --color-primary-400: #f86a89;
-    --color-primary-500: #ea3f68;
-    --color-primary-600: #d1214f;
-    --color-primary-700: #ad183f;
-    --color-primary-800: #911739;
-    --color-primary-900: #7a1735;
-    --color-primary: #c81e4f; /* Brand primary */
+    --color-primary-50: #ffe5e5;
+    --color-primary-100: #ffcccc;
+    --color-primary-200: #ff9999;
+    --color-primary-300: #ff6666;
+    --color-primary-400: #ff3333;
+    --color-primary-500: #ff0000;
+    --color-primary-600: #cc0000;
+    --color-primary-700: #990000;
+    --color-primary-800: #660000;
+    --color-primary-900: #330000;
+    --color-primary: #c70000; /* Brand primary - pure red */
 
     /* Green Accent - Success & Positive States */
     --color-accent-50: #f0fdf4;
@@ -42,8 +42,14 @@
 
     /* Semantic Colors */
     --color-error: #dc2626;
+    --color-error-100: #fee2e2;
+    --color-error-200: #fecaca;
+    --color-error-700: #b91c1c;
     --color-success: #16a34a;
     --color-info: #3b82f6;
+    --color-info-100: #dbeafe;
+    --color-info-200: #bfdbfe;
+    --color-info-700: #1d4ed8;
 
     /* Surface Colors - Light Mode */
     --color-surface: #ffffff;

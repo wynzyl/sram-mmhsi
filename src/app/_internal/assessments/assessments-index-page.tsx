@@ -66,7 +66,7 @@ export async function AssessmentsIndexPage(props: {
   });
 
   return (
-    <div className="page-container max-w-7xl">
+    <div className="page-container">
       <SectionHeader
         size="md"
         accent
