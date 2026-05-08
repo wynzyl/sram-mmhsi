@@ -17,7 +17,7 @@ export default function FeeScheduleForm({ schoolYears }: FeeScheduleFormProps) {
 
   useEffect(() => {
     if (state.success) {
-      router.push("/admin/finance/fee-schedules");
+      router.push("/staff/finance/fee-schedules");
     }
   }, [state.success, router]);
 

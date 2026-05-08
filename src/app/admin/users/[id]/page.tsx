@@ -48,64 +48,64 @@ export default async function UserProfilePage({ params }: PageProps) {
   const canUpdate = hasPermission(session.role, "users:manage");
 
   return (
-    <div className="page-container">
+    <div className="page-container space-y-8">
       <div className="page-header">
         <div>
           <h1 className="page-title">{user.email}</h1>
           <p className="page-subtitle">User Account Details</p>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="flex flex-wrap items-center gap-2">
           {canUpdate && (
             <Link href={`/admin/users/${id}/edit`} className="btn-primary">
               Edit User
             </Link>
           )}
-          <Link href="/admin/users" className="btn-ghost">
+          <Link href="/admin/users" className="btn-secondary">
             ← Back to Users
           </Link>
         </div>
       </div>
 
-      <div className="profile-grid">
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Details */}
-        <div className="profile-card profile-card-wide">
-          <h2 className="profile-card-title">Account Information</h2>
-          <div className="profile-details">
-            <div className="profile-detail-row">
-              <span className="profile-detail-label">Email</span>
-              <span className="profile-detail-value">{user.email}</span>
+        <div className="form-card space-y-5 lg:col-span-2">
+          <h2 className="text-xl font-semibold text-(--color-text)">Account Information</h2>
+          <div className="grid gap-3 text-sm">
+            <div className="grid gap-1 border-b border-(--color-border)/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-(--color-text-muted)">Email</span>
+              <span className="text-(--color-text)">{user.email}</span>
             </div>
-            <div className="profile-detail-row">
-              <span className="profile-detail-label">Username</span>
-              <span className="profile-detail-value">
+            <div className="grid gap-1 border-b border-(--color-border)/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-(--color-text-muted)">Username</span>
+              <span className="text-(--color-text)">
                 <code className="reference-code">{user.username}</code>
               </span>
             </div>
-            <div className="profile-detail-row">
-              <span className="profile-detail-label">Role</span>
-              <span className="profile-detail-value">
-                <span className="badge badge-info">
+            <div className="grid gap-1 border-b border-(--color-border)/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-(--color-text-muted)">Role</span>
+              <span className="text-(--color-text)">
+                <span className="badge badge-secondary">
                   {ROLE_LABELS[user.role as keyof typeof ROLE_LABELS]}
                 </span>
               </span>
             </div>
-            <div className="profile-detail-row">
-              <span className="profile-detail-label">Status</span>
-              <span className="profile-detail-value">
+            <div className="grid gap-1 border-b border-(--color-border)/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-(--color-text-muted)">Status</span>
+              <span className="text-(--color-text)">
                 <span className={`badge ${user.isActive ? "badge-success" : "badge-danger"}`}>
                   {user.isActive ? "Active" : "Inactive"}
                 </span>
               </span>
             </div>
-            <div className="profile-detail-row">
-              <span className="profile-detail-label">Force Password Change</span>
-              <span className="profile-detail-value">
+            <div className="grid gap-1 border-b border-(--color-border)/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-(--color-text-muted)">Force Password Change</span>
+              <span className="text-(--color-text)">
                 {user.forcePasswordChange ? "Yes" : "No"}
               </span>
             </div>
-            <div className="profile-detail-row">
-              <span className="profile-detail-label">Created</span>
-              <span className="profile-detail-value">
+            <div className="grid gap-1 border-b border-(--color-border)/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-(--color-text-muted)">Created</span>
+              <span className="text-(--color-text)">
                 {new Date(user.createdAt).toLocaleDateString("en-PH", {
                   year: "numeric",
                   month: "long",
@@ -113,9 +113,9 @@ export default async function UserProfilePage({ params }: PageProps) {
                 })}
               </span>
             </div>
-            <div className="profile-detail-row">
-              <span className="profile-detail-label">Last Updated</span>
-              <span className="profile-detail-value">
+            <div className="grid gap-1 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-(--color-text-muted)">Last Updated</span>
+              <span className="text-(--color-text)">
                 {new Date(user.updatedAt).toLocaleDateString("en-PH", {
                   year: "numeric",
                   month: "long",
@@ -126,33 +126,33 @@ export default async function UserProfilePage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Reset Password Section */}
-        {canUpdate && (
-          <div className="profile-card profile-card-wide">
-            <h2 className="profile-card-title">Reset Password</h2>
-            <p className="text-muted mb-4">
-              Generate a new password for this user. They will be required to change it on next login if the checkbox is checked.
-            </p>
-            <ResetPasswordForm userId={user.id} />
-          </div>
-        )}
-
-        {/* Sidebar */}
-        <div>
-          <div className="profile-card">
-            <h3 className="profile-card-title">Quick Actions</h3>
-            <div className="flex flex-col gap-2">
+        {/* Quick Actions */}
+        <div className="lg:col-span-2">
+          <div className="form-card space-y-4">
+            <h3 className="text-lg font-semibold text-(--color-text)">Quick Actions</h3>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {canUpdate && (
                 <Link href={`/admin/users/${id}/edit`} className="btn-secondary w-full">
                   Edit User Details
                 </Link>
               )}
-              <Link href="/admin/users" className="btn-ghost w-full">
+              <Link href="/admin/users" className="btn-secondary w-full">
                 Back to User List
               </Link>
             </div>
           </div>
         </div>
+
+        {/* Reset Password Section */}
+        {canUpdate && (
+          <div className="form-card space-y-3 lg:col-span-2">
+            <h2 className="text-xl font-semibold text-(--color-text)">Reset Password</h2>
+            <p className="text-sm text-(--color-text-muted)">
+              Generate a new password for this user. They will be required to change it on next login if the checkbox is checked.
+            </p>
+            <ResetPasswordForm userId={user.id} />
+          </div>
+        )}
       </div>
     </div>
   );

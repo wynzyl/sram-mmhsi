@@ -1,20 +1,16 @@
 import Link from "next/link";
-import type { StudentDirectoryBasePath } from "@/lib/utils/student-directory-href";
 
 const iconClass =
   "inline-flex h-9 w-9 items-center justify-center rounded-md text-[var(--color-primary)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-primary)]";
 
-type StaffPortalBase = StudentDirectoryBasePath;
-
 export function StudentDirectoryRowActions({
   studentId,
-  studentBasePath = "/admin/students",
+  studentBasePath = "/staff/students",
 }: {
   studentId: string;
-  studentBasePath?: StaffPortalBase;
+  studentBasePath?: "/staff/students";
 }) {
-  const enrollBase =
-    studentBasePath === "/staff/students" ? "/staff/enrollments/new" : "/admin/enrollments/new";
+  const enrollBase = "/staff/enrollments/new";
 
   return (
     <div className="flex items-center justify-end gap-0.5">

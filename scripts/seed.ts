@@ -1,6 +1,6 @@
 /**
  * SRAMS Database Seed Script
- * Creates the initial admin user.
+ * Creates the initial super admin user.
  * Run: npx tsx scripts/seed.ts
  *
  * Per Engineering spec §9 — session + user model.
@@ -25,39 +25,39 @@ const db = drizzle(client);
 async function seed() {
   console.log("🌱 Seeding SRAMS database...");
 
-  const ADMIN_USERNAME = "admin";
-  const ADMIN_EMAIL = "admin@srams.local";
-  const ADMIN_PASSWORD = "Admin@2026!"; // Change immediately after first login
+  const SUPER_ADMIN_USERNAME = "admin";
+  const SUPER_ADMIN_EMAIL = "admin@srams.local";
+  const SUPER_ADMIN_PASSWORD = "Admin@2026!"; // Change immediately after first login
 
-  // Check if admin already exists
+  // Check if bootstrap super admin already exists
   const existing = await db
     .select({ id: users.id })
     .from(users)
-    .where(eq(users.username, ADMIN_USERNAME))
+    .where(eq(users.username, SUPER_ADMIN_USERNAME))
     .limit(1);
 
   if (existing.length > 0) {
-    console.log("✅ Admin user already exists. Skipping seed.");
+    console.log("✅ Super admin user already exists. Skipping seed.");
     await client.end();
     return;
   }
 
-  const passwordHash = await hash(ADMIN_PASSWORD, 12);
+  const passwordHash = await hash(SUPER_ADMIN_PASSWORD, 12);
 
   await db.insert(users).values({
-    email: ADMIN_EMAIL,
-    username: ADMIN_USERNAME,
+    email: SUPER_ADMIN_EMAIL,
+    username: SUPER_ADMIN_USERNAME,
     passwordHash,
-    role: "admin",
+    role: "super_admin",
     isActive: true,
     forcePasswordChange: true, // Force password change on first login
   });
 
-  console.log("✅ Admin user created:");
-  console.log(`   Username : ${ADMIN_USERNAME}`);
-  console.log(`   Email    : ${ADMIN_EMAIL}`);
-  console.log(`   Password : ${ADMIN_PASSWORD}`);
-  console.log("\n⚠️  IMPORTANT: Change the admin password immediately after first login!\n");
+  console.log("✅ Super admin user created:");
+  console.log(`   Username : ${SUPER_ADMIN_USERNAME}`);
+  console.log(`   Email    : ${SUPER_ADMIN_EMAIL}`);
+  console.log(`   Password : ${SUPER_ADMIN_PASSWORD}`);
+  console.log("\n⚠️  IMPORTANT: Change the super admin password immediately after first login!\n");
 
   await client.end();
 }

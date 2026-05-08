@@ -74,7 +74,7 @@ export async function createSubjectAction(
 
     await logCreateAction(session, "subjects", newSubject.id, data);
 
-    revalidatePath("/admin/academics/subjects");
+    revalidatePath("/staff/academics/subjects");
     return { success: true, message: "Subject created successfully." };
   } catch (error) {
     logger.error("[academics] Failed to create subject", { error });
@@ -110,7 +110,7 @@ export async function deleteSubjectAction(
 
     await logDeleteAction(session, "subjects", parsed.data.subjectId, "Soft delete");
 
-    revalidatePath("/admin/academics/subjects");
+    revalidatePath("/staff/academics/subjects");
     return { success: true, message: "Subject deleted successfully." };
   } catch (error) {
     logger.error("[academics] Failed to delete subject", { error });
@@ -171,7 +171,7 @@ export async function assignTeacherAction(
 
     await logCreateAction(session, "teacher_assignments", newAssignment.id, data);
 
-    revalidatePath("/admin/academics/assignments");
+    revalidatePath("/staff/academics/assignments");
     return { success: true, message: "Teacher assigned successfully." };
   } catch (error) {
     logger.error("[academics] Failed to assign teacher", { error });
@@ -209,7 +209,7 @@ export async function removeAssignmentAction(
 
     await logDeleteAction(session, "teacher_assignments", parsed.data.assignmentId, "Soft delete");
 
-    revalidatePath("/admin/academics/assignments");
+    revalidatePath("/staff/academics/assignments");
     return { success: true, message: "Assignment removed." };
   } catch (error) {
     logger.error("[academics] Failed to remove assignment", { error });
@@ -265,7 +265,7 @@ export async function lockGradesAction(
       context: `Assignment: ${assignmentId}, Period: ${gradingPeriod}`,
     }, { throwOnFail: true });
 
-    revalidatePath(`/admin/academics/assignments/${assignmentId}`);
+    revalidatePath(`/staff/academics/assignments/${assignmentId}`);
     return { success: true, message: "Grades locked successfully." };
   } catch (error) {
     logger.error("[academics] Failed to lock grades", { error });

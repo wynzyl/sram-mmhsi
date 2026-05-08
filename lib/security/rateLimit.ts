@@ -1,6 +1,6 @@
 /**
  * In-memory sliding window rate limiter.
- * Used in proxy.ts to protect the login Server Action endpoint.
+ * Intended for use in root proxy (see `proxy.ts`) or login Server Action hardening.
  * Per SRAMS Engineering spec §6 (Rate Limiting) and §9 (Login Procedure).
  *
  * NOTE: This is an in-memory store suitable for single-process deployments

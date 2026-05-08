@@ -1,5 +1,4 @@
 import type { StudentDirectoryRow } from "@/lib/queries/students-directory";
-import type { StudentDirectoryBasePath } from "@/lib/utils/student-directory-href";
 import { StudentDirectoryRowActions } from "@/components/students/StudentDirectoryRowActions";
 
 function initials(first: string, last: string): string {
@@ -18,11 +17,9 @@ function subtitle(row: StudentDirectoryRow): string {
 export function StudentDirectoryTable({
   rows,
   emptyMessage,
-  studentBasePath = "/admin/students",
 }: {
   rows: StudentDirectoryRow[];
   emptyMessage: string;
-  studentBasePath?: StudentDirectoryBasePath;
 }) {
   const colSpan = 8;
 
@@ -98,7 +95,7 @@ export function StudentDirectoryTable({
                     </span>
                   </td>
                   <td className="align-middle py-3 text-right">
-                    <StudentDirectoryRowActions studentId={s.id} studentBasePath={studentBasePath} />
+                    <StudentDirectoryRowActions studentId={s.id} />
                   </td>
                 </tr>
               );

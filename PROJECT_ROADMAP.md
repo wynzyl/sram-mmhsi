@@ -2,6 +2,14 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
+> Last sync: 2026-05-08
+
+### Current update highlights (2026-05-08)
+- **Enrollment queue system** now operational with list-first workflow — students automatically populate when eligible, global filters persist across tabs via URL params, and one-click confirmation replaces multi-step wizard.
+- Auto-population of old students with grade progression and balance warnings; new/transferee students flow from approved registrations.
+- Queue architecture includes 5-tab interface (Ready/Pending/Assessed/Enrolled/Cancelled) with parallel data loading and client-side filtering for instant response.
+- Near-term priority remains unchanged: close registration review workflow, portal detail pages, auth hardening, and E2E coverage.
+
 ---
 
 ## Phase 1 — Project Initialization & Base Scaffold
@@ -16,7 +24,7 @@
 - [x] Structured logger (§14)
 - [x] Login page UI
 - [x] Auth session implementation (JWT `jose`, httpOnly cookie, `actions/auth.ts`)
-- [x] Route protection (`proxy.ts` — staff vs portal vs admin; Next.js 16 proxy convention)
+- [x] Route protection (`proxy.ts` — staff vs portal vs admin; Next.js 16 proxy convention replaces `middleware.ts`)
 - [x] DB migrations applied (`drizzle/0000` … `0008`+ as generated)
 - [x] `npm run dev` baseline
 
@@ -53,13 +61,19 @@
 ---
 
 ## Phase 4 — Enrollment Module
-**Status: ✅ Complete**
+**Status: ✅ Complete (Enhanced with queue-based workflow)**
 
+- [x] **Queue-based enrollment workflow** with automatic student eligibility detection (`lib/queries/enrollment-queue.ts`)
+- [x] **Auto-population** of old students from previous year with grade progression and balance warnings
+- [x] **Global filters** with URL persistence — search by name/ID, filter by grade level across all tabs
+- [x] **5-tab interface** (Ready to Enroll, Pending, Assessed, Enrolled, Cancelled) with badge counts
+- [x] **EnrollmentConfirmationDrawer** for one-click enrollment with student type-aware layouts
 - [x] Enrollment workflow (pending → assessed → enrolled, plus cancellation rules)
 - [x] Re-enrollment from existing student record (new enrollment for active school year)
 - [x] Grade level and section assignment
-- [x] Enrollment status management (`actions/enrollments.ts`)
+- [x] Enrollment status management (`actions/enrollment-confirmation.ts`)
 - [x] Audit events: enrollment created / status changes / cancellation
+- [x] Manual entry form preserved at `/staff/enrollments/new` for edge cases
 
 ---
 
@@ -70,6 +84,7 @@
 - [x] Assessment generation per enrollment
 - [x] Assessment item CRUD (tuition, fees, discounts)
 - [x] Assessment balance calculation
+- [x] Assessment draft creation UX refresh (student context + fee-catalog line visibility + computed net summary)
 - [x] Audit events: assessment created/revised; cancellation metadata (migration `0008`)
 
 ---
@@ -80,6 +95,7 @@
 - [x] Receipt booklet management (Admin/Finance Officer)
 - [x] OR number auto-assignment on payment post
 - [x] Payment posting UI (Cashier) — embedded on assessment ledger (`AssessmentLedgerRegister` / `PostPaymentForm`)
+- [x] Shared internal assessment-ledger composition to support consistent payment posting and RBAC checks
 - [x] Payment void workflow
 - [x] OR status tracking (consumed, voided)
 - [x] Payment allocation to assessment items
@@ -101,13 +117,13 @@
 ---
 
 ## Phase 8 — Grade Encoding
-**Status: ✅ Complete**
+**Status:  NOT STARTED**
 
-- [x] Teacher assignment management (Admin)
-- [x] Grade entry per assigned class/subject/period (Teacher) — `/staff/grades`
-- [x] Grade submission and lock workflow
-- [x] Grade period locking (Admin)
-- [x] Audit events: grade saved/submitted/locked
+- [ ] Teacher assignment management (Admin)
+- [ ] Grade entry per assigned class/subject/period (Teacher) — `/staff/grades`
+- [ ] Grade submission and lock workflow
+- [ ] Grade period locking (Admin)
+- [ ] Audit events: grade saved/submitted/locked
 
 ---
 

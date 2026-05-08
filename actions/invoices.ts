@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { invoices, assessments, students } from "@/lib/db/schema";
 import { eq, like } from "drizzle-orm";
@@ -12,6 +13,7 @@ import {
   SendInvoiceSchema,
 } from "@/lib/validators/invoice";
 import type { InvoiceActionState } from "@/lib/validators/invoice";
+import type { BaseFormState } from "@/lib/validators/common-schemas";
 import { logger } from "@/lib/observability/logger";
 import { generateInvoiceNumber } from "@/lib/utils/reference";
 import { sendInvoiceEmail } from "@/lib/email/sender";
@@ -93,14 +95,32 @@ export async function generateInvoiceAction(
       amountDue: assessment.balance,
     });
 
-    revalidatePath("/admin/finance/invoices");
-    revalidatePath(`/admin/assessments/${assessmentId}`);
+    revalidatePath("/staff/finance/invoices");
+    revalidatePath(`/staff/assessments/${assessmentId}`);
 
     return { success: true, message: "Invoice generated successfully.", invoiceId: newInvoice.id };
   } catch (error) {
     logger.error("[invoices] Failed to generate invoice", { error });
     return { message: "An unexpected error occurred. Please try again." };
   }
+}
+
+export async function generateInvoiceConfirmAction(
+  _prevState: BaseFormState,
+  formData: FormData
+): Promise<BaseFormState> {
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const result = await generateInvoiceAction(assessmentId);
+
+  if (result.success && result.invoiceId) {
+    redirect(`/staff/finance/invoices/${result.invoiceId}`);
+  }
+
+  return {
+    success: false,
+    errors: result.errors ?? (result.message ? { _form: [result.message] } : undefined),
+    message: result.message,
+  };
 }
 
 export async function sendInvoiceAction(
@@ -171,14 +191,24 @@ export async function sendInvoiceAction(
       })
       .where(eq(invoices.id, invoiceId));
 
-    await logUpdateAction(session, "invoices", invoiceId, {}, { sent: true, sentTo: email });
-
-    revalidatePath("/admin/finance/invoices");
-    revalidatePath(`/admin/finance/invoices/${invoiceId}`);
+    await logUpdateAction(session, "invoices", invoiceId, {}, {
+      sent: true,
+      invoiceNumber: invoice.invoiceNumber,
+      amountDue: invoice.amountDue,
+      studentName: `${invoice.studentFirstName} ${invoice.studentLastName}`,
+      // avoid logging raw email; omit or hash if audit policy requires recipient tracing
+    });
+    revalidatePath("/staff/finance/invoices");
+    revalidatePath(`/staff/finance/invoices/${invoiceId}`);
 
     return { success: true, message: "Invoice sent successfully." };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[invoices] Failed to send invoice", { error });
-    return { message: error?.message || "An unexpected error occurred while sending the invoice." };
+    return {
+      message:
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred while sending the invoice.",
+    };
   }
 }
