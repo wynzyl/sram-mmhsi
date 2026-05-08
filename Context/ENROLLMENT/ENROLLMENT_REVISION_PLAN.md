@@ -482,24 +482,21 @@ Every confirmation must log:
 ## Open Questions & Decisions Needed
 
 1. **Old Student Balance Blocking:**
-   - Should outstanding balance BLOCK re-enrollment confirmation?
-   - Or just show warning and allow (recommended)?
+   - just show warning and allow (recommended)?
 
 2. **Manual Override Access:**
-   - Admin only?
-   - Or registrar + admin?
-
+   - Admin only
+   
 3. **Section Assignment Timing:**
-   - At enrollment confirmation?
-   - Or later in separate workflow?
+   - At enrollment confirmation - optional
+   - later in separate workflow
 
 4. **Grade 12 Graduates:**
-   - Should they appear in "Ready to Enroll" for next year?
-   - Or separate alumni workflow?
+   - separate alumni workflow
 
 5. **Mid-Year Transfers:**
-   - How to handle students enrolling mid-school-year?
-   - Use manual entry form or separate workflow?
+   - Use manual entry form or separate workflow
+   - or same process as transferee
 
 6. **Bulk Actions:**
    - Should registrar be able to confirm multiple students at once?
