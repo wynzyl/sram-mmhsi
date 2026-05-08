@@ -2,6 +2,13 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
+> Last sync: 2026-05-07
+
+### Current update highlights (2026-05-07)
+- Assessment drafting UX is now aligned with fee-catalog-driven creation flow (`components/assessments/AssessmentDraftForm.tsx`).
+- Assessment ledger composition was centralized through a shared internal page (`src/app/_internal/pages/assessment-ledger-page.tsx`) to reduce duplicated loading and RBAC logic.
+- Near-term priority remains unchanged: close registration review workflow, portal detail pages, auth hardening, and E2E coverage.
+
 ---
 
 ## Phase 1 — Project Initialization & Base Scaffold
@@ -16,7 +23,7 @@
 - [x] Structured logger (§14)
 - [x] Login page UI
 - [x] Auth session implementation (JWT `jose`, httpOnly cookie, `actions/auth.ts`)
-- [x] Route protection (`proxy.ts` — staff vs portal vs admin; Next.js 16 proxy convention)
+- [x] Route protection (`proxy.ts` — staff vs portal vs admin; Next.js 16 proxy convention replaces `middleware.ts`)
 - [x] DB migrations applied (`drizzle/0000` … `0008`+ as generated)
 - [x] `npm run dev` baseline
 
@@ -70,6 +77,7 @@
 - [x] Assessment generation per enrollment
 - [x] Assessment item CRUD (tuition, fees, discounts)
 - [x] Assessment balance calculation
+- [x] Assessment draft creation UX refresh (student context + fee-catalog line visibility + computed net summary)
 - [x] Audit events: assessment created/revised; cancellation metadata (migration `0008`)
 
 ---
@@ -80,6 +88,7 @@
 - [x] Receipt booklet management (Admin/Finance Officer)
 - [x] OR number auto-assignment on payment post
 - [x] Payment posting UI (Cashier) — embedded on assessment ledger (`AssessmentLedgerRegister` / `PostPaymentForm`)
+- [x] Shared internal assessment-ledger composition to support consistent payment posting and RBAC checks
 - [x] Payment void workflow
 - [x] OR status tracking (consumed, voided)
 - [x] Payment allocation to assessment items

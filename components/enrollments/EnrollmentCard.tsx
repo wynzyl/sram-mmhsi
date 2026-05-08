@@ -52,7 +52,6 @@ interface EnrollmentCardProps {
   canCancel: boolean;
   canCancelWithBalance: boolean;
   canOverrideEnrolled: boolean;
-  portalBase: "/admin" | "/staff";
   className?: string;
 }
 
@@ -76,10 +75,6 @@ const OUTSTANDING_PAYMENT_EPSILON = 0.009;
 
 function formatPhp(amount: number): string {
   return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amount);
-}
-
-function withPortal(href: string, portalBase: "/admin" | "/staff"): string {
-  return portalBase === "/staff" ? href.replace(/^\/admin/, "/staff") : href;
 }
 
 function formatDate(value: Date | null): string {
@@ -120,7 +115,6 @@ export function EnrollmentCard({
   canCancel,
   canCancelWithBalance,
   canOverrideEnrolled,
-  portalBase,
   className,
 }: EnrollmentCardProps) {
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -209,9 +203,9 @@ export function EnrollmentCard({
 
           {/* Right: primary CTA stack */}
           <div className="flex shrink-0 flex-col items-stretch gap-2 lg:w-44">
-            <PrimaryAction enrollment={en} portalBase={portalBase} canManage={canManage} />
+            <PrimaryAction enrollment={en} canManage={canManage} />
             <Link
-              href={withPortal(`/admin/students/${en.studentId}`, portalBase)}
+              href={`/staff/students/${en.studentId}`}
               className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-ops-ink transition-colors hover:bg-light-gray"
             >
               <User className="h-3.5 w-3.5" />
@@ -253,7 +247,6 @@ export function EnrollmentCard({
                 assessmentId={en.assessmentId}
                 assessmentTotalPaid={en.assessmentTotalPaid}
                 canCancelWithBalance={canCancelWithBalance}
-                portalBase={portalBase}
               />
             )}
           </div>
@@ -267,17 +260,15 @@ export function EnrollmentCard({
 
 function PrimaryAction({
   enrollment: en,
-  portalBase,
   canManage,
 }: {
   enrollment: EnrollmentCardRow;
-  portalBase: "/admin" | "/staff";
   canManage: boolean;
 }) {
   if (en.status === "pending" && canManage) {
     return (
       <Link
-        href={withPortal(`/admin/assessments/new/${en.id}`, portalBase)}
+        href={`/staff/assessments/new/${en.id}`}
         className="inline-flex items-center justify-center gap-1.5 rounded-md bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md"
       >
         Build assessment
@@ -289,7 +280,7 @@ function PrimaryAction({
   if (en.status === "assessed" && en.assessmentId) {
     return (
       <Link
-        href={withPortal(`/admin/assessments/${en.assessmentId}`, portalBase)}
+        href={`/staff/assessments/${en.assessmentId}`}
         className="inline-flex items-center justify-center gap-1.5 rounded-md bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md"
       >
         <Receipt className="h-3.5 w-3.5" />
@@ -301,7 +292,7 @@ function PrimaryAction({
   if (en.status === "enrolled" && en.assessmentId) {
     return (
       <Link
-        href={withPortal(`/admin/assessments/${en.assessmentId}`, portalBase)}
+        href={`/staff/assessments/${en.assessmentId}`}
         className="inline-flex items-center justify-center gap-1.5 rounded-md bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md"
       >
         <Receipt className="h-3.5 w-3.5" />
@@ -313,7 +304,7 @@ function PrimaryAction({
   if (en.status === "cancelled" && canManage) {
     return (
       <Link
-        href={`${withPortal("/admin/enrollments/new", portalBase)}?studentId=${en.studentId}`}
+        href={`/staff/enrollments/new?studentId=${en.studentId}`}
         className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-200 px-3 py-2 text-xs font-semibold text-ops-ink transition-colors hover:bg-light-gray"
       >
         <RefreshCcw className="h-3.5 w-3.5" />
@@ -380,14 +371,12 @@ function CancelInline({
   assessmentId,
   assessmentTotalPaid,
   canCancelWithBalance,
-  portalBase,
 }: {
   enrollmentId: string;
   status: EnrollmentStatus;
   assessmentId: string | null;
   assessmentTotalPaid: number | null;
   canCancelWithBalance: boolean;
-  portalBase: "/admin" | "/staff";
 }) {
   const [state, action, pending] = useActionState(updateEnrollmentStatusAction, {});
   const [show, setShow] = useState(false);
@@ -426,7 +415,7 @@ function CancelInline({
 
           {financeStatuses && assessmentId && (
             <Link
-              href={withPortal(`/admin/assessments/${assessmentId}`, portalBase)}
+              href={`/staff/assessments/${assessmentId}`}
               className="inline-flex items-center gap-1 text-[11px] text-[var(--color-primary)] underline"
             >
               Open assessment ledger first

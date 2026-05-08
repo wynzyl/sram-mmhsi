@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { logoutAction } from "@/actions/auth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { ROLE_LABELS } from "@/lib/constants/roles";
+import { ROLE_LABELS, normalizeRole, ROLES } from "@/lib/constants/roles";
 import { NAV_CONFIG } from "./sidebar-nav";
 import type { Role } from "@/lib/constants/roles";
 import type { NavIconName, NavItem } from "./sidebar-nav";
@@ -115,7 +115,7 @@ const ICONS: Record<NavIconName, React.ReactNode> = {
 // ─── Portal label helper ───────────────────────────────────────────────────────
 
 function portalLabel(role: Role): string {
-  if (role === "admin") return "Admin Portal";
+  if (role === "super_admin" || role === "admin") return "Admin Portal";
   if (role === "student" || role === "parent_guardian") return "Student Portal";
   return "Staff Portal";
 }
@@ -150,7 +150,12 @@ function isNavActive(pathname: string, sp: URLSearchParams, item: NavItem): bool
     return true;
   }
 
-  if (pathname === path) return true;
+  if (pathname === path) {
+    if (item.notActiveWhen && sp.get(item.notActiveWhen.param) === item.notActiveWhen.value) {
+      return false;
+    }
+    return true;
+  }
   return path !== "/" && pathname.startsWith(`${path}/`);
 }
 
@@ -165,13 +170,16 @@ function isParentRegisterActive(pathname: string, sp: URLSearchParams, item: Nav
 interface SidebarProps {
   role: Role;
   username: string;
-  email: string;
 }
 
-export function Sidebar({ role, username, email }: SidebarProps) {
+export function Sidebar({ role, username }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const sections = NAV_CONFIG[role] ?? [];
+  const normalizedRole = normalizeRole(role);
+  const resolvedRole = normalizedRole ?? ROLES.ADMIN;
+  const sections = normalizedRole ? NAV_CONFIG[normalizedRole] ?? [] : [];
+  const usernameTitle =
+    username.length > 28 ? `${username.slice(0, 28)}…` : username;
 
   return (
     <aside className="sidebar">
@@ -184,7 +192,7 @@ export function Sidebar({ role, username, email }: SidebarProps) {
         </svg>
         <div>
           <p className="sidebar-brand-name">MERRYLAND</p>
-          <p className="sidebar-brand-portal">{portalLabel(role)}</p>
+          <p className="sidebar-brand-portal">{portalLabel(resolvedRole)}</p>
         </div>
       </div>
 
@@ -253,8 +261,10 @@ export function Sidebar({ role, username, email }: SidebarProps) {
             {username.charAt(0).toUpperCase()}
           </div>
           <div className="user-info">
-            <p className="user-name">{username}</p>
-            <p className="user-role">{ROLE_LABELS[role]}</p>
+            <p className="user-name" title={usernameTitle}>
+              {username}
+            </p>
+            <p className="user-role">{ROLE_LABELS[resolvedRole]}</p>
           </div>
         </div>
         <form action={logoutAction}>

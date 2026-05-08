@@ -59,7 +59,7 @@ export default function FeeSchedulesTable({ schedules }: FeeSchedulesTableProps)
                 </td>
                 <td>
                   <Link
-                    href={`/admin/finance/fee-schedules/${schedule.id}`}
+                    href={`/staff/finance/fee-schedules/${schedule.id}`}
                     className="table-action-link"
                   >
                     View / Edit

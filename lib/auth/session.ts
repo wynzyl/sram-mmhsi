@@ -1,19 +1,19 @@
 import "server-only";
-import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { sessions, users } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import type { Role } from "@/lib/constants/roles";
+import {
+  SESSION_COOKIE_NAME,
+  encryptSessionJwt,
+  decryptSessionJwt,
+  type SessionPayload,
+} from "@/lib/auth/session-token";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type SessionPayload = {
-  sessionId: string;
-  userId: string;
-  role: Role;
-  expiresAt: Date;
-};
+export type { SessionPayload };
 
 export type SessionUser = {
   id: string;
@@ -25,48 +25,22 @@ export type SessionUser = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const COOKIE_NAME = "srams_session";
 // 10-hour session per Engineering spec §9 (8-12 hr idle business session)
 const SESSION_DURATION_MS = 10 * 60 * 60 * 1000;
 
-function getSecretKey() {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) throw new Error("[SRAMS] AUTH_SECRET is not set.");
-  return new TextEncoder().encode(secret);
-}
+/** @deprecated Prefer SESSION_COOKIE_NAME from session-token — kept for call sites importing this name */
+export const COOKIE_NAME = SESSION_COOKIE_NAME;
 
-// ─── JWT encrypt / decrypt ────────────────────────────────────────────────────
+// ─── JWT encrypt / decrypt (Edge-safe implementation in session-token.ts) ───────
 
 export async function encryptSession(payload: SessionPayload): Promise<string> {
-  return new SignJWT({
-    sessionId: payload.sessionId,
-    userId: payload.userId,
-    role: payload.role,
-    expiresAt: payload.expiresAt.toISOString(),
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(payload.expiresAt)
-    .sign(getSecretKey());
+  return encryptSessionJwt(payload);
 }
 
 export async function decryptSession(
   token: string | undefined
 ): Promise<SessionPayload | null> {
-  if (!token) return null;
-  try {
-    const { payload } = await jwtVerify(token, getSecretKey(), {
-      algorithms: ["HS256"],
-    });
-    return {
-      sessionId: payload.sessionId as string,
-      userId: payload.userId as string,
-      role: payload.role as Role,
-      expiresAt: new Date(payload.expiresAt as string),
-    };
-  } catch {
-    return null;
-  }
+  return decryptSessionJwt(token);
 }
 
 // ─── Create session ───────────────────────────────────────────────────────────
@@ -103,7 +77,7 @@ export async function createSession(
 
   // 4. Set the cookie (server-side only — httpOnly)
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, jwt, {
+  cookieStore.set(SESSION_COOKIE_NAME, jwt, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -116,7 +90,7 @@ export async function createSession(
 
 export async function getCurrentSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
 
   const payload = await decryptSession(token);
@@ -160,7 +134,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
 
 export async function renewSession(): Promise<void> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return;
 
   const payload = await decryptSession(token);
@@ -174,7 +148,7 @@ export async function renewSession(): Promise<void> {
     .set({ token: newJwt, expiresAt: newExpiresAt })
     .where(eq(sessions.id, payload.sessionId));
 
-  cookieStore.set(COOKIE_NAME, newJwt, {
+  cookieStore.set(SESSION_COOKIE_NAME, newJwt, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -187,7 +161,7 @@ export async function renewSession(): Promise<void> {
 
 export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
   if (token) {
     const payload = await decryptSession(token);
@@ -196,7 +170,7 @@ export async function deleteSession(): Promise<void> {
     }
   }
 
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.delete(SESSION_COOKIE_NAME);
 }
 
 // ─── Require session (throws redirect-compatible error) ───────────────────────

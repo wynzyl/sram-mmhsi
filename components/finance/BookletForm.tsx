@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ClipboardPlus, Info, UserRound } from "lucide-react";
 import { createBookletAction } from "@/actions/cashier";
@@ -8,23 +8,51 @@ import type { BookletFormState } from "@/lib/validators/cashier";
 
 interface BookletFormProps {
   variant?: "default" | "dashboard";
+  /** Optional redirect path after successful submit; falls back to staff listing. */
+  redirectTo?: string;
+  /** Optional callback invoked on successful submit (takes the latest form state). */
+  onSuccess?: (state: BookletFormState) => void;
 }
 
 function inputStateClass(hasError: boolean): string {
   return hasError ? "ops-input ops-input-error" : "ops-input";
 }
 
-export default function BookletForm({ variant = "default" }: BookletFormProps) {
+function deriveBookletFields(series: string): {
+  prefix: string;
+  startNumber: string;
+  endNumber: string;
+} | null {
+  const match = series.trim().toUpperCase().match(/^([A-Z]{2})-(\d{5})-(\d{5})$/);
+  if (!match) return null;
+  return {
+    prefix: match[1],
+    startNumber: String(Number(match[2])),
+    endNumber: String(Number(match[3])),
+  };
+}
+
+export default function BookletForm({
+  variant = "default",
+  redirectTo = "/staff/finance/booklets",
+  onSuccess,
+}: BookletFormProps) {
   const router = useRouter();
   const initialState: BookletFormState = {};
   const [state, action, pending] = useActionState(createBookletAction, initialState);
+  const [seriesInput, setSeriesInput] = useState("");
   const isDashboard = variant === "dashboard";
+  const derivedFields = deriveBookletFields(seriesInput);
 
   useEffect(() => {
     if (state.success) {
-      router.push("/admin/finance/booklets");
+      if (onSuccess) {
+        onSuccess(state);
+      } else if (redirectTo) {
+        router.push(redirectTo);
+      }
     }
-  }, [state.success, router]);
+  }, [state, redirectTo, onSuccess, router]);
 
   if (!isDashboard) {
     return (
@@ -49,12 +77,13 @@ export default function BookletForm({ variant = "default" }: BookletFormProps) {
             id="series"
             name="series"
             className={`form-control ${state.errors?.series ? "form-control-error" : ""}`}
-            placeholder="e.g., AK 00051-00100"
+            placeholder="e.g., AK-00051-00100"
+            value={seriesInput}
+            onChange={(event) => setSeriesInput(event.target.value.toUpperCase())}
             required
           />
           <p className="form-hint text-muted mt-1 text-xs">
-            Must match OR prefix and padded range exactly (same as printed booklet face):{" "}
-            <strong>PREFIX 00051-00100</strong>. Spaces around the hyphen are OK.
+            Standard format: <strong>AK-00051-00100</strong>.
           </p>
           {state.errors?.series && <p className="form-error">{state.errors.series[0]}</p>}
         </div>
@@ -68,16 +97,15 @@ export default function BookletForm({ variant = "default" }: BookletFormProps) {
             id="prefix"
             name="prefix"
             className={`form-control ${state.errors?.prefix ? "form-control-error" : ""}`}
-            placeholder="e.g., AK"
+            placeholder="Auto-derived from booklet"
             maxLength={2}
             pattern="[A-Za-z]{2}"
             title="Two letters only"
-            required
+            value={derivedFields?.prefix ?? ""}
+            readOnly
           />
           <p className="form-hint text-muted mt-1 text-xs">
-            Exactly two letters (e.g. AK). Stored OR format: <strong>PREFIX 00001</strong> (sequence is always 5
-            digits). You may reuse a prefix on another booklet if its start-end range does not overlap any existing
-            booklet with that prefix.
+            Auto-derived from booklet format.
           </p>
           {state.errors?.prefix && <p className="form-error">{state.errors.prefix[0]}</p>}
         </div>
@@ -88,13 +116,13 @@ export default function BookletForm({ variant = "default" }: BookletFormProps) {
               Start Number <span className="required">*</span>
             </label>
             <input
-              type="number"
+              type="text"
               id="startNumber"
               name="startNumber"
               className={`form-control ${state.errors?.startNumber ? "form-control-error" : ""}`}
-              min="1"
-              max="99999"
-              required
+              placeholder="Auto-derived from booklet"
+              value={derivedFields?.startNumber ?? ""}
+              readOnly
             />
             {state.errors?.startNumber && <p className="form-error">{state.errors.startNumber[0]}</p>}
           </div>
@@ -104,13 +132,13 @@ export default function BookletForm({ variant = "default" }: BookletFormProps) {
               End Number <span className="required">*</span>
             </label>
             <input
-              type="number"
+              type="text"
               id="endNumber"
               name="endNumber"
               className={`form-control ${state.errors?.endNumber ? "form-control-error" : ""}`}
-              min="1"
-              max="99999"
-              required
+              placeholder="Auto-derived from booklet"
+              value={derivedFields?.endNumber ?? ""}
+              readOnly
             />
             {state.errors?.endNumber && <p className="form-error">{state.errors.endNumber[0]}</p>}
           </div>
@@ -118,7 +146,7 @@ export default function BookletForm({ variant = "default" }: BookletFormProps) {
 
         <p className="form-hint text-muted mt-2 text-xs">
           Exactly <strong>50</strong> official receipts per booklet (inclusive range). Example: series{" "}
-          <strong className="font-mono">AK 00051-00100</strong> with start <strong>51</strong>, end <strong>100</strong>.
+          <strong className="font-mono">AK-00051-00100</strong> with start <strong>51</strong>, end <strong>100</strong>.
         </p>
 
         <div className="form-actions mt-6" style={{ display: "flex", gap: "1rem" }}>
@@ -165,7 +193,9 @@ export default function BookletForm({ variant = "default" }: BookletFormProps) {
             id="series"
             name="series"
             className={inputStateClass(Boolean(state.errors?.series))}
-            placeholder="e.g., AK 00051-00100"
+            placeholder="e.g., AK-00051-00100"
+            value={seriesInput}
+            onChange={(event) => setSeriesInput(event.target.value.toUpperCase())}
             required
           />
           {state.errors?.series && <p className="mt-1 text-xs text-rose-300">{state.errors.series[0]}</p>}
@@ -181,11 +211,12 @@ export default function BookletForm({ variant = "default" }: BookletFormProps) {
               id="prefix"
               name="prefix"
               className={inputStateClass(Boolean(state.errors?.prefix))}
-              placeholder="e.g., AK"
+              placeholder="Auto-derived"
               maxLength={2}
               pattern="[A-Za-z]{2}"
               title="Two letters only"
-              required
+              value={derivedFields?.prefix ?? ""}
+              readOnly
             />
             {state.errors?.prefix && <p className="mt-1 text-xs text-rose-300">{state.errors.prefix[0]}</p>}
           </div>
@@ -207,13 +238,13 @@ export default function BookletForm({ variant = "default" }: BookletFormProps) {
               Start Number
             </label>
             <input
-              type="number"
+              type="text"
               id="startNumber"
               name="startNumber"
               className={inputStateClass(Boolean(state.errors?.startNumber))}
-              min="1"
-              max="99999"
-              required
+              placeholder="Auto-derived"
+              value={derivedFields?.startNumber ?? ""}
+              readOnly
             />
             {state.errors?.startNumber && <p className="mt-1 text-xs text-rose-300">{state.errors.startNumber[0]}</p>}
           </div>
@@ -223,13 +254,13 @@ export default function BookletForm({ variant = "default" }: BookletFormProps) {
               End Number
             </label>
             <input
-              type="number"
+              type="text"
               id="endNumber"
               name="endNumber"
               className={inputStateClass(Boolean(state.errors?.endNumber))}
-              min="1"
-              max="99999"
-              required
+              placeholder="Auto-derived"
+              value={derivedFields?.endNumber ?? ""}
+              readOnly
             />
             {state.errors?.endNumber && <p className="mt-1 text-xs text-rose-300">{state.errors.endNumber[0]}</p>}
           </div>

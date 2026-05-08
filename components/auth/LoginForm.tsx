@@ -3,6 +3,8 @@
 import { useActionState } from "react";
 import { loginAction } from "@/actions/auth";
 import type { LoginFormState } from "@/lib/validators/auth";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils/cn";
 
 export default function LoginForm() {
   const [state, action, pending] = useActionState<LoginFormState, FormData>(
@@ -11,10 +13,12 @@ export default function LoginForm() {
   );
 
   return (
-    <form id="login-form" className="login-form" action={action}>
-      {/* Global error message */}
+    <form className="flex flex-col gap-4" action={action}>
       {state?.message && (
-        <div id="login-error" role="alert" className="login-alert">
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-error)_35%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-error)_10%,var(--color-surface))] px-3 py-2.5 text-sm font-medium text-(color:--color-error)"
+        >
           <svg
             width="16"
             height="16"
@@ -32,7 +36,7 @@ export default function LoginForm() {
         </div>
       )}
 
-      <div className="form-field">
+      <div>
         <label htmlFor="username" className="form-label">
           Username or Email
         </label>
@@ -43,7 +47,7 @@ export default function LoginForm() {
           autoComplete="username"
           required
           disabled={pending}
-          className={`form-input${state?.errors?.username ? " form-input--error" : ""}`}
+          className={cn("form-control", state?.errors?.username && "form-control-error")}
           placeholder="username or email@school.edu.ph"
         />
         {state?.errors?.username && (
@@ -51,7 +55,7 @@ export default function LoginForm() {
         )}
       </div>
 
-      <div className="form-field">
+      <div>
         <label htmlFor="password" className="form-label">
           Password
         </label>
@@ -62,7 +66,7 @@ export default function LoginForm() {
           autoComplete="current-password"
           required
           disabled={pending}
-          className={`form-input${state?.errors?.password ? " form-input--error" : ""}`}
+          className={cn("form-control", state?.errors?.password && "form-control-error")}
           placeholder="••••••••••"
         />
         {state?.errors?.password && (
@@ -70,22 +74,9 @@ export default function LoginForm() {
         )}
       </div>
 
-      <button
-        id="login-submit"
-        type="submit"
-        disabled={pending}
-        className="btn-primary"
-        aria-busy={pending}
-      >
-        {pending ? (
-          <span className="btn-loading">
-            <span className="spinner" aria-hidden="true" />
-            Signing in…
-          </span>
-        ) : (
-          "Sign In"
-        )}
-      </button>
+      <Button type="submit" className="mt-1 w-full" size="lg" loading={pending}>
+        {pending ? "Signing in…" : "Sign In"}
+      </Button>
     </form>
   );
 }

@@ -232,7 +232,6 @@ export function StudentDirectoryView({
         <StudentDirectoryTable
           rows={rows}
           emptyMessage={emptyMessage}
-          studentBasePath={basePath}
         />
 
         <StudentDirectoryPagination

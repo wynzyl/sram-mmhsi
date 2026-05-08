@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "school_year_active_uidx" ON "school_years" USING btree ("is_active") WHERE "school_years"."is_active" = true;--> statement-breakpoint
+ALTER TABLE "school_years" ADD CONSTRAINT "school_year_dates_order_chk" CHECK ("school_years"."end_date" > "school_years"."start_date");

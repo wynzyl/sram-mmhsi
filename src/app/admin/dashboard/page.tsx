@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -7,29 +8,32 @@ export default function AdminDashboardPage() {
     <div className="dashboard">
       <header className="page-header">
         <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">System overview and quick access</p>
+          <h1 className="page-title">System Settings</h1>
+          <p className="page-subtitle">Manage platform-level setup and user access.</p>
         </div>
       </header>
 
       <div className="stat-grid">
-        <StatCard label="Total Students" value="—" icon="👨‍🎓" color="primary" />
-        <StatCard label="Active Enrollments" value="—" icon="📋" color="accent" />
-        <StatCard label="Pending Payments" value="—" icon="💳" color="warning" />
-        <StatCard label="Pending Registrations" value="—" icon="📝" color="info" />
+        <StatCard label="System Users" value="—" icon="👤" color="primary" />
+        <StatCard label="Roles Configured" value="—" icon="🛡️" color="accent" />
+        <StatCard label="Active School Year" value="—" icon="🗓️" color="warning" />
+        <StatCard label="Audit Status" value="—" icon="🧾" color="info" />
       </div>
 
       <div className="dashboard-sections">
         <section className="dash-card">
-          <h2 className="dash-card-title">Recent Activity</h2>
-          <p className="dash-empty">No recent activity yet.</p>
+          <h2 className="dash-card-title">System Scope</h2>
+          <p className="dash-empty">
+            Operational workflows are under <code>/staff</code>. This admin area is reserved for system
+            setup and access management.
+          </p>
         </section>
         <section className="dash-card">
           <h2 className="dash-card-title">Quick Actions</h2>
           <div className="quick-actions">
-            <a href="/staff/students/new" className="quick-action-btn">+ New Student</a>
-            <a href="/staff/registrations" className="quick-action-btn">View Registrations</a>
-            <a href="/staff/payments" className="quick-action-btn">Post Payment</a>
+            <Link href="/admin/users" className="quick-action-btn">Manage Users</Link>
+            <Link href="/staff/school-years" className="quick-action-btn">Manage School Years</Link>
+            <Link href="/staff/dashboard" className="quick-action-btn">Open Staff Operations</Link>
           </div>
         </section>
       </div>

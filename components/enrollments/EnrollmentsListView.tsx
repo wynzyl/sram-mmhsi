@@ -41,12 +41,15 @@ interface EnrollmentsListViewProps {
   filterStatus: "all" | EnrollmentStatus;
   /** Active school year label, shown in subtitle. */
   schoolYearLabel: string | null;
+  page: number;
+  pageSize: number;
+  totalFilteredCount: number;
+  hasMore: boolean;
   canCreate: boolean;
   canManage: boolean;
   canCancel: boolean;
   canCancelWithBalance: boolean;
   canOverrideEnrolled: boolean;
-  portalBase: "/admin" | "/staff";
 }
 
 /**
@@ -59,12 +62,15 @@ export default function EnrollmentsListView({
   countMap,
   filterStatus,
   schoolYearLabel,
+  page,
+  pageSize,
+  totalFilteredCount,
+  hasMore,
   canCreate,
   canManage,
   canCancel,
   canCancelWithBalance,
   canOverrideEnrolled,
-  portalBase,
 }: EnrollmentsListViewProps) {
   const [search, setSearch] = useState("");
 
@@ -98,7 +104,16 @@ export default function EnrollmentsListView({
     </span>
   );
 
-  const newEnrollmentHref = portalBase === "/staff" ? "/staff/enrollments/new" : "/admin/enrollments/new";
+  const newEnrollmentHref = "/staff/enrollments/new";
+  const createPageHref = (nextPage: number, nextStatus: "all" | EnrollmentStatus = filterStatus) => {
+    const params = new URLSearchParams();
+    if (nextStatus !== "all") params.set("status", nextStatus);
+    if (nextPage > 1) params.set("page", String(nextPage));
+    const query = params.toString();
+    return query ? `/staff/enrollments?${query}` : "/staff/enrollments";
+  };
+  const showingFrom = totalFilteredCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const showingTo = totalFilteredCount === 0 ? 0 : (page - 1) * pageSize + enrollments.length;
 
   return (
     <div className="space-y-6">
@@ -129,10 +144,7 @@ export default function EnrollmentsListView({
           const isActive = filterStatus === tab.key;
           const count =
             tab.key === "all" ? totalAll : countMap[tab.key as EnrollmentStatus] ?? 0;
-          const href =
-            tab.key === "all"
-              ? `${portalBase}/enrollments`
-              : `${portalBase}/enrollments?status=${tab.key}`;
+          const href = createPageHref(1, tab.key);
 
           return (
             <Link
@@ -169,6 +181,31 @@ export default function EnrollmentsListView({
           );
         })}
       </nav>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ops-muted">
+        <span>
+          Showing {showingFrom.toLocaleString()}-{showingTo.toLocaleString()} of{" "}
+          {totalFilteredCount.toLocaleString()}
+        </span>
+        <div className="flex items-center gap-2">
+          {page > 1 ? (
+            <Link
+              href={createPageHref(page - 1)}
+              className="rounded-md border border-gray-200 px-2.5 py-1 hover:bg-light-gray"
+            >
+              Previous
+            </Link>
+          ) : null}
+          {hasMore ? (
+            <Link
+              href={createPageHref(page + 1)}
+              className="rounded-md border border-gray-200 px-2.5 py-1 hover:bg-light-gray"
+            >
+              Next
+            </Link>
+          ) : null}
+        </div>
+      </div>
 
       {/* Search */}
       <div className="relative">
@@ -224,7 +261,6 @@ export default function EnrollmentsListView({
                   canCancel={canCancel}
                   canCancelWithBalance={canCancelWithBalance}
                   canOverrideEnrolled={canOverrideEnrolled}
-                  portalBase={portalBase}
                 />
               </div>
             );

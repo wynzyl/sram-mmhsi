@@ -1,13 +1,19 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createStudentAction } from "@/actions/students";
-import type {
-  CreateStudentFormFieldSnapshot,
-  CreateStudentFormState,
-  GuardianInput,
+import {
+  GuardianSchema,
+  type CreateStudentFormFieldSnapshot,
+  type CreateStudentFormState,
+  type GuardianInput,
 } from "@/lib/validators/student";
+import {
+  emailSchema,
+  lrnSchema,
+  phoneSchema,
+} from "@/lib/validators/common-schemas";
 import { DataCard, DataCardBody } from "@/components/ui/editorial/DataCard";
 import GuardianForm from "@/components/students/GuardianForm";
 import IntakeRequirementsFieldset from "@/components/enrollments/IntakeRequirementsFieldset";
@@ -30,11 +36,10 @@ const emptyGuardian = (): GuardianInput => ({
 
 const initialState: CreateStudentFormState = {};
 
-type StudentProfileBase = "/admin/students" | "/staff/students";
+type StudentProfileBase = "/staff/students";
 
-/** Queue URL after a successful create (matches admin vs staff student area). */
-function registrationsQueuePath(studentBasePath: StudentProfileBase): string {
-  return studentBasePath.startsWith("/staff") ? "/staff/registrations" : "/admin/registrations";
+function registrationsQueuePath(_studentBasePath: StudentProfileBase): string {
+  return "/staff/registrations";
 }
 
 interface GradeLevelOption {
@@ -66,7 +71,7 @@ const stepTitles: Record<FormStep, string> = {
  * `createStudentAction` contract as `StudentForm` (guardians JSON, gender, intake fields, etc.).
  */
 export default function StudentRegistrationForm({
-  afterCreateStudentBasePath = "/admin/students",
+  afterCreateStudentBasePath = "/staff/students",
   successRedirectTo,
   currentSchoolYear,
   gradeLevels,
@@ -79,6 +84,8 @@ export default function StudentRegistrationForm({
   const [guardians, setGuardians] = useState<GuardianInput[]>([
     { ...emptyGuardian(), isPrimary: true },
   ]);
+  /** Client-side per-step validation errors (cleared on field change / step transition). */
+  const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (state.fieldValues) {
@@ -88,6 +95,109 @@ export default function StudentRegistrationForm({
       }
     }
   }, [state.fieldValues]);
+
+  /** Single source of truth for field errors — merge client + server, prefer fresh client errors. */
+  const getError = useCallback(
+    (key: string): string | undefined =>
+      stepErrors[key] ??
+      (state.errors as Record<string, string[] | undefined> | undefined)?.[key]?.[0],
+    [stepErrors, state.errors]
+  );
+
+  /** Update a draft field and clear its stale per-step error (so the inline message disappears as the user types). */
+  const updateDraft = useCallback(
+    <K extends keyof CreateStudentFormFieldSnapshot>(
+      key: K,
+      value: CreateStudentFormFieldSnapshot[K]
+    ) => {
+      setDraft((d) => ({ ...d, [key]: value }));
+      setStepErrors((prev) => {
+        if (!(key in prev)) return prev;
+        const next = { ...prev };
+        delete next[key as string];
+        return next;
+      });
+    },
+    []
+  );
+
+  /** Validate just the fields that live on the requested step. Returns errors keyed by field name. */
+  const validateStep = useCallback(
+    (step: FormStep): Record<string, string> => {
+      const errors: Record<string, string> = {};
+
+      if (step === 1) {
+        if (!draft.firstName?.trim()) errors.firstName = "First name is required.";
+        if (!draft.lastName?.trim()) errors.lastName = "Last name is required.";
+        if (!draft.dateOfBirth) errors.dateOfBirth = "Date of birth is required.";
+        else {
+          const d = new Date(draft.dateOfBirth);
+          if (Number.isNaN(d.getTime())) errors.dateOfBirth = "Invalid date of birth.";
+        }
+        if (!draft.gender) errors.gender = "Gender is required.";
+      }
+
+      if (step === 2) {
+        if (!currentSchoolYear) {
+          errors._form =
+            "An active school year is required before continuing. Configure one under School Years.";
+          return errors;
+        }
+        if (!draft.gradeLevelId) errors.gradeLevelId = "Grade level is required.";
+        if (lockedRegistrationType === "transferee" && !draft.previousSchool?.trim()) {
+          errors.previousSchool = "Previous school is required for transferees.";
+        }
+        const lrnCheck = lrnSchema.safeParse(draft.lrn || undefined);
+        if (!lrnCheck.success) errors.lrn = lrnCheck.error.issues[0]?.message ?? "Invalid LRN.";
+        const phoneCheck = phoneSchema.safeParse(draft.mobileNumber || undefined);
+        if (!phoneCheck.success) {
+          errors.mobileNumber =
+            phoneCheck.error.issues[0]?.message ?? "Invalid mobile number.";
+        }
+        const emailCheck = emailSchema.safeParse(draft.email || undefined);
+        if (!emailCheck.success) {
+          errors.email = emailCheck.error.issues[0]?.message ?? "Invalid email address.";
+        }
+      }
+
+      if (step === 3) {
+        if (guardians.length === 0) {
+          errors.guardians = "At least one guardian is required.";
+        } else {
+          for (let i = 0; i < guardians.length; i++) {
+            const result = GuardianSchema.safeParse(guardians[i]);
+            if (!result.success) {
+              const firstIssue = result.error.issues[0];
+              const fieldName = String(firstIssue?.path[0] ?? "details");
+              errors.guardians = `Guardian ${i + 1}: ${firstIssue?.message ?? `please complete the ${fieldName} field.`}`;
+              break;
+            }
+          }
+          if (!errors.guardians && !guardians.some((g) => g.isPrimary)) {
+            errors.guardians = "Mark one guardian as the primary contact.";
+          }
+        }
+      }
+
+      return errors;
+    },
+    [draft, guardians, currentSchoolYear, lockedRegistrationType]
+  );
+
+  const handleContinue = useCallback(() => {
+    const errors = validateStep(currentStep);
+    if (Object.keys(errors).length > 0) {
+      setStepErrors(errors);
+      return;
+    }
+    setStepErrors({});
+    setCurrentStep((prev) => Math.min(4, prev + 1) as FormStep);
+  }, [currentStep, validateStep]);
+
+  const handleBack = useCallback(() => {
+    setStepErrors({});
+    setCurrentStep((prev) => Math.max(1, prev - 1) as FormStep);
+  }, []);
 
   useEffect(() => {
     if (state.success && state.studentId) {
@@ -103,6 +213,15 @@ export default function StudentRegistrationForm({
     successRedirectTo,
   ]);
 
+  const clearGuardiansError = useCallback(() => {
+    setStepErrors((prev) => {
+      if (!("guardians" in prev)) return prev;
+      const next = { ...prev };
+      delete next.guardians;
+      return next;
+    });
+  }, []);
+
   const handleGuardianChange = (index: number, guardian: GuardianInput) => {
     setGuardians((prev) => {
       const next = [...prev];
@@ -114,6 +233,7 @@ export default function StudentRegistrationForm({
       next[index] = guardian;
       return next;
     });
+    clearGuardiansError();
   };
 
   const handleGuardianRemove = (index: number) => {
@@ -124,10 +244,12 @@ export default function StudentRegistrationForm({
       }
       return next;
     });
+    clearGuardiansError();
   };
 
   const addGuardian = () => {
     setGuardians((prev) => [...prev, emptyGuardian()]);
+    clearGuardiansError();
   };
 
   const disableSubmit = pending || !currentSchoolYear;
@@ -152,7 +274,7 @@ export default function StudentRegistrationForm({
           </span>
           <span className="font-medium text-charcoal">{stepTitles[currentStep]}</span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-light-gray">
+        <div className="h-2 overflow-hidden rounded-full bg-(--color-surface-3)">
           <div
             className="h-full bg-[var(--color-primary)] transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
@@ -214,11 +336,11 @@ export default function StudentRegistrationForm({
                     required
                     autoComplete="given-name"
                     value={draft.firstName ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, firstName: e.target.value }))}
-                    className={editorialFieldClass({ invalid: !!state.errors?.firstName })}
+                    onChange={(e) => updateDraft("firstName", e.target.value)}
+                    className={editorialFieldClass({ invalid: !!getError("firstName") })}
                   />
-                  {state.errors?.firstName && (
-                    <p className="mt-1 text-sm text-red-600">{state.errors.firstName[0]}</p>
+                  {getError("firstName") && (
+                    <p className="mt-1 text-sm text-red-600">{getError("firstName")}</p>
                   )}
                 </div>
 
@@ -231,7 +353,7 @@ export default function StudentRegistrationForm({
                     name="middleName"
                     autoComplete="additional-name"
                     value={draft.middleName ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, middleName: e.target.value }))}
+                    onChange={(e) => updateDraft("middleName", e.target.value)}
                     className={editorialFieldClass()}
                   />
                 </div>
@@ -246,11 +368,11 @@ export default function StudentRegistrationForm({
                     required
                     autoComplete="family-name"
                     value={draft.lastName ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, lastName: e.target.value }))}
-                    className={editorialFieldClass({ invalid: !!state.errors?.lastName })}
+                    onChange={(e) => updateDraft("lastName", e.target.value)}
+                    className={editorialFieldClass({ invalid: !!getError("lastName") })}
                   />
-                  {state.errors?.lastName && (
-                    <p className="mt-1 text-sm text-red-600">{state.errors.lastName[0]}</p>
+                  {getError("lastName") && (
+                    <p className="mt-1 text-sm text-red-600">{getError("lastName")}</p>
                   )}
                 </div>
 
@@ -262,7 +384,7 @@ export default function StudentRegistrationForm({
                     id="suffix"
                     name="suffix"
                     value={draft.suffix ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, suffix: e.target.value }))}
+                    onChange={(e) => updateDraft("suffix", e.target.value)}
                     className={editorialFieldClass()}
                   >
                     <option value="">None</option>
@@ -284,11 +406,11 @@ export default function StudentRegistrationForm({
                     type="date"
                     required
                     value={draft.dateOfBirth ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, dateOfBirth: e.target.value }))}
-                    className={editorialFieldClass({ invalid: !!state.errors?.dateOfBirth })}
+                    onChange={(e) => updateDraft("dateOfBirth", e.target.value)}
+                    className={editorialFieldClass({ invalid: !!getError("dateOfBirth") })}
                   />
-                  {state.errors?.dateOfBirth && (
-                    <p className="mt-1 text-sm text-red-600">{state.errors.dateOfBirth[0]}</p>
+                  {getError("dateOfBirth") && (
+                    <p className="mt-1 text-sm text-red-600">{getError("dateOfBirth")}</p>
                   )}
                 </div>
 
@@ -301,8 +423,8 @@ export default function StudentRegistrationForm({
                     name="gender"
                     required
                     value={draft.gender ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, gender: e.target.value }))}
-                    className={editorialFieldClass({ invalid: !!state.errors?.gender })}
+                    onChange={(e) => updateDraft("gender", e.target.value)}
+                    className={editorialFieldClass({ invalid: !!getError("gender") })}
                   >
                     <option value="" disabled>
                       Select gender
@@ -312,8 +434,8 @@ export default function StudentRegistrationForm({
                     <option value="other">Other</option>
                     <option value="prefer_not_to_say">Prefer not to say</option>
                   </select>
-                  {state.errors?.gender && (
-                    <p className="mt-1 text-sm text-red-600">{state.errors.gender[0]}</p>
+                  {getError("gender") && (
+                    <p className="mt-1 text-sm text-red-600">{getError("gender")}</p>
                   )}
                 </div>
 
@@ -326,7 +448,7 @@ export default function StudentRegistrationForm({
                     name="address"
                     rows={2}
                     value={draft.address ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, address: e.target.value }))}
+                    onChange={(e) => updateDraft("address", e.target.value)}
                     className={editorialFieldClass()}
                   />
                 </div>
@@ -353,11 +475,11 @@ export default function StudentRegistrationForm({
                     maxLength={12}
                     placeholder="12-digit DepEd LRN"
                     value={draft.lrn ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, lrn: e.target.value }))}
-                    className={editorialFieldClass({ invalid: !!state.errors?.lrn, className: "font-mono" })}
+                    onChange={(e) => updateDraft("lrn", e.target.value)}
+                    className={editorialFieldClass({ invalid: !!getError("lrn"), className: "font-mono" })}
                   />
-                  {state.errors?.lrn && (
-                    <p className="mt-1 text-sm text-red-600">{state.errors.lrn[0]}</p>
+                  {getError("lrn") && (
+                    <p className="mt-1 text-sm text-red-600">{getError("lrn")}</p>
                   )}
                 </div>
 
@@ -372,11 +494,11 @@ export default function StudentRegistrationForm({
                     autoComplete="tel"
                     placeholder="09171234567"
                     value={draft.mobileNumber ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, mobileNumber: e.target.value }))}
-                    className={editorialFieldClass({ invalid: !!state.errors?.mobileNumber })}
+                    onChange={(e) => updateDraft("mobileNumber", e.target.value)}
+                    className={editorialFieldClass({ invalid: !!getError("mobileNumber") })}
                   />
-                  {state.errors?.mobileNumber && (
-                    <p className="mt-1 text-sm text-red-600">{state.errors.mobileNumber[0]}</p>
+                  {getError("mobileNumber") && (
+                    <p className="mt-1 text-sm text-red-600">{getError("mobileNumber")}</p>
                   )}
                 </div>
 
@@ -390,11 +512,11 @@ export default function StudentRegistrationForm({
                     type="email"
                     autoComplete="email"
                     value={draft.email ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
-                    className={editorialFieldClass({ invalid: !!state.errors?.email })}
+                    onChange={(e) => updateDraft("email", e.target.value)}
+                    className={editorialFieldClass({ invalid: !!getError("email") })}
                   />
-                  {state.errors?.email && (
-                    <p className="mt-1 text-sm text-red-600">{state.errors.email[0]}</p>
+                  {getError("email") && (
+                    <p className="mt-1 text-sm text-red-600">{getError("email")}</p>
                   )}
                 </div>
 
@@ -407,7 +529,7 @@ export default function StudentRegistrationForm({
                     name="nationality"
                     placeholder="Filipino"
                     value={draft.nationality ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, nationality: e.target.value }))}
+                    onChange={(e) => updateDraft("nationality", e.target.value)}
                     className={editorialFieldClass()}
                   />
                 </div>
@@ -420,7 +542,7 @@ export default function StudentRegistrationForm({
                     id="bloodType"
                     name="bloodType"
                     value={draft.bloodType ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, bloodType: e.target.value }))}
+                    onChange={(e) => updateDraft("bloodType", e.target.value)}
                     className={editorialFieldClass()}
                   >
                     <option value="">Unknown</option>
@@ -444,25 +566,28 @@ export default function StudentRegistrationForm({
                     name="religion"
                     placeholder="Roman Catholic"
                     value={draft.religion ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, religion: e.target.value }))}
+                    onChange={(e) => updateDraft("religion", e.target.value)}
                     className={editorialFieldClass()}
                   />
                 </div>
 
                 <div className="md:col-span-3">
                   <label htmlFor="previousSchool" className="mb-1.5 block text-sm font-medium text-charcoal">
-                    Previous school (transferees)
+                    Previous school{lockedRegistrationType === "transferee" ? " " : " (transferees)"}
+                    {lockedRegistrationType === "transferee" && (
+                      <span className="text-red-600">*</span>
+                    )}
                   </label>
                   <input
                     id="previousSchool"
                     name="previousSchool"
                     placeholder="Name of last school attended"
                     value={draft.previousSchool ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, previousSchool: e.target.value }))}
-                    className={editorialFieldClass({ invalid: !!state.errors?.previousSchool })}
+                    onChange={(e) => updateDraft("previousSchool", e.target.value)}
+                    className={editorialFieldClass({ invalid: !!getError("previousSchool") })}
                   />
-                  {state.errors?.previousSchool && (
-                    <p className="mt-1 text-sm text-red-600">{state.errors.previousSchool[0]}</p>
+                  {getError("previousSchool") && (
+                    <p className="mt-1 text-sm text-red-600">{getError("previousSchool")}</p>
                   )}
                 </div>
 
@@ -480,35 +605,36 @@ export default function StudentRegistrationForm({
                     placeholder="e.g. Birth certificate on file, Form 137 pending"
                     value={draft.submittedDocumentsNotes ?? ""}
                     onChange={(e) =>
-                      setDraft((d) => ({ ...d, submittedDocumentsNotes: e.target.value }))
+                      updateDraft("submittedDocumentsNotes", e.target.value)
                     }
-                    className={editorialFieldClass({ invalid: !!state.errors?.submittedDocumentsNotes })}
+                    className={editorialFieldClass({ invalid: !!getError("submittedDocumentsNotes") })}
                   />
-                  {state.errors?.submittedDocumentsNotes && (
+                  {getError("submittedDocumentsNotes") && (
                     <p className="mt-1 text-sm text-red-600">
-                      {state.errors.submittedDocumentsNotes[0]}
+                      {getError("submittedDocumentsNotes")}
                     </p>
                   )}
                 </div>
               </div>
 
               {currentSchoolYear ? (
-                <div className="grid grid-cols-1 gap-4 border-t border-gray-100 pt-6 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 border-t border-(--color-border) pt-6 md:grid-cols-2">
                   <div>
                     <span className="mb-1.5 block text-sm font-medium text-charcoal">
                       School year <span className="text-red-600">*</span>
                     </span>
                     <div
                       className={editorialFieldClass({
-                        invalid: !!state.errors?.schoolYearId,
-                        className: "bg-light-gray text-warm-gray",
+                        invalid: !!getError("schoolYearId"),
+                        className:
+                          "bg-(--color-surface-3) text-(--color-text-muted)",
                       })}
                     >
-                      <strong className="text-charcoal">{currentSchoolYear.label}</strong>
+                      <strong className="text-(--color-text)">{currentSchoolYear.label}</strong>
                       <span className="ml-2 text-sm">(active year only)</span>
                     </div>
-                    {state.errors?.schoolYearId && (
-                      <p className="mt-1 text-sm text-red-600">{state.errors.schoolYearId[0]}</p>
+                    {getError("schoolYearId") && (
+                      <p className="mt-1 text-sm text-red-600">{getError("schoolYearId")}</p>
                     )}
                   </div>
 
@@ -521,8 +647,8 @@ export default function StudentRegistrationForm({
                       name="gradeLevelId"
                       required
                       value={draft.gradeLevelId ?? ""}
-                      onChange={(e) => setDraft((d) => ({ ...d, gradeLevelId: e.target.value }))}
-                      className={editorialFieldClass({ invalid: !!state.errors?.gradeLevelId })}
+                      onChange={(e) => updateDraft("gradeLevelId", e.target.value)}
+                      className={editorialFieldClass({ invalid: !!getError("gradeLevelId") })}
                     >
                       <option value="">Select grade level</option>
                       {gradeLevels.map((gl) => (
@@ -531,8 +657,8 @@ export default function StudentRegistrationForm({
                         </option>
                       ))}
                     </select>
-                    {state.errors?.gradeLevelId && (
-                      <p className="mt-1 text-sm text-red-600">{state.errors.gradeLevelId[0]}</p>
+                    {getError("gradeLevelId") && (
+                      <p className="mt-1 text-sm text-red-600">{getError("gradeLevelId")}</p>
                     )}
                   </div>
 
@@ -540,18 +666,20 @@ export default function StudentRegistrationForm({
                     <span className="mb-1.5 block text-sm font-medium text-charcoal">Enrollment type</span>
                     <div
                       className={editorialFieldClass({
-                        invalid: !!state.errors?.registrationStudentType,
-                        className: "bg-light-gray",
+                        invalid: !!getError("registrationStudentType"),
+                        className: "bg-(--color-surface-3) text-(--color-text)",
                       })}
                     >
-                      <strong>
+                      <strong className="text-(--color-text)">
                         {lockedRegistrationType === "transferee" ? "Transferee" : "New student"}
                       </strong>
-                      <span className="ml-2 text-sm text-warm-gray">(set by the page you opened)</span>
+                      <span className="ml-2 text-sm text-(--color-text-muted)">
+                        (set by the page you opened)
+                      </span>
                     </div>
-                    {state.errors?.registrationStudentType && (
+                    {getError("registrationStudentType") && (
                       <p className="mt-1 text-sm text-red-600">
-                        {state.errors.registrationStudentType[0]}
+                        {getError("registrationStudentType")}
                       </p>
                     )}
                   </div>
@@ -568,15 +696,15 @@ export default function StudentRegistrationForm({
                 </p>
               </div>
 
-              {state.errors?.guardians && (
-                <p className="text-sm text-red-600">{(state.errors.guardians as string[])[0]}</p>
+              {getError("guardians") && (
+                <p className="text-sm text-red-600">{getError("guardians")}</p>
               )}
 
               <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={addGuardian}
-                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-charcoal transition-colors hover:bg-light-gray"
+                  className="rounded-lg border border-(--color-border) px-3 py-1.5 text-sm font-medium text-charcoal transition-colors hover:bg-(--color-surface-3)"
                 >
                   + Add guardian
                 </button>
@@ -623,11 +751,20 @@ export default function StudentRegistrationForm({
               />
             </div>
 
-            <div className="flex items-center justify-between border-t border-gray-200 pt-6">
+            {stepErrors._form && currentStep < 4 && (
+              <div
+                className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+                role="alert"
+              >
+                {stepErrors._form}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between border-t border-(--color-border) pt-6">
               {currentStep > 1 ? (
                 <button
                   type="button"
-                  onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1) as FormStep)}
+                  onClick={handleBack}
                   className="inline-flex items-center gap-2 px-4 py-2 text-warm-gray transition-colors hover:text-charcoal"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -640,7 +777,7 @@ export default function StudentRegistrationForm({
               {currentStep < 4 ? (
                 <button
                   type="button"
-                  onClick={() => setCurrentStep((prev) => Math.min(4, prev + 1) as FormStep)}
+                  onClick={handleContinue}
                   className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-6 py-2.5 font-medium text-white transition-colors hover:bg-red-700"
                 >
                   Continue

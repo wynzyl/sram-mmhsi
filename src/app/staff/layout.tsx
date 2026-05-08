@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { requireSession } from "@/lib/auth/session";
 import { getCurrentUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { STAFF_ROLES } from "@/lib/constants/roles";
+import { STAFF_ROLES, normalizeRole } from "@/lib/constants/roles";
 import { Sidebar } from "@/components/layout/Sidebar";
 import type { Role } from "@/lib/constants/roles";
 
@@ -12,8 +12,9 @@ export default async function StaffLayout({
   children: React.ReactNode;
 }) {
   const session = await requireSession();
+  const role = normalizeRole(session.role);
 
-  if (!STAFF_ROLES.includes(session.role)) {
+  if (!role || !STAFF_ROLES.includes(role)) {
     redirect("/login");
   }
 
@@ -25,7 +26,7 @@ export default async function StaffLayout({
       <Suspense
         fallback={<aside className="sidebar" style={{ width: 220, flexShrink: 0 }} aria-hidden />}
       >
-        <Sidebar role={user.role as Role} username={user.username} email={user.email} />
+        <Sidebar role={user.role as Role} username={user.username} />
       </Suspense>
       <main className="app-main">{children}</main>
       <style>{`

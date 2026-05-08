@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { StatusBadge } from "@/components/data-display/StatusBadge";
+import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
 
 interface Assessment {
   id: string;
@@ -21,7 +22,7 @@ interface AssessmentsTableProps {
 
 export default function AssessmentsTable({
   assessments,
-  assessmentsBasePath = "/admin/assessments",
+  assessmentsBasePath = "/staff/assessments",
 }: AssessmentsTableProps) {
   return (
     <div className="table-wrapper">
@@ -50,13 +51,13 @@ export default function AssessmentsTable({
                 <td style={{ fontWeight: 600 }}>{assessment.studentName}</td>
                 <td>{assessment.schoolYear}</td>
                 <td style={{ textAlign: "right" }}>
-                  ₱{assessment.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  <CurrencyDisplay amount={assessment.totalAmount} />
                 </td>
                 <td style={{ textAlign: "right", color: "var(--color-success)" }}>
-                  ₱{assessment.totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  <CurrencyDisplay amount={assessment.totalPaid} />
                 </td>
                 <td style={{ textAlign: "right", fontWeight: "bold", color: assessment.balance > 0 ? "var(--color-error)" : "inherit" }}>
-                  ₱{assessment.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  <CurrencyDisplay amount={assessment.balance} />
                 </td>
                 <td>
                   <StatusBadge type="billing" status={assessment.billingStatus} />

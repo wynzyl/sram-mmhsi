@@ -139,7 +139,7 @@ export default function EnrollmentWizardForm({
   promotionByStudentId,
   registrationContextByStudentId: registrationContextByStudentIdProp,
   prefillStudentId,
-  afterSuccessRedirect = "/admin/enrollments",
+  afterSuccessRedirect = "/staff/enrollments",
 }: EnrollmentWizardFormProps) {
   const registrationContextByStudentId = registrationContextByStudentIdProp ?? {};
 
