@@ -13,7 +13,7 @@ const ADMIN_PREFIXES = ["/admin"];
 
 const ROLE_LANDING: Record<Role, string> = {
   super_admin: "/admin/dashboard",
-  admin: "/staff/dashboard",
+  admin: "/admin/dashboard",
   registrar: "/staff/dashboard",
   finance_officer: "/staff/finance",
   cashier: "/staff/payments",
@@ -68,7 +68,13 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL(landing, req.nextUrl));
   }
 
-  if (isAuthenticated && role && isAdminRoute && role !== ROLES.SUPER_ADMIN) {
+  if (
+    isAuthenticated &&
+    role &&
+    isAdminRoute &&
+    role !== ROLES.SUPER_ADMIN &&
+    role !== ROLES.ADMIN
+  ) {
     const landing = ROLE_LANDING[role] ?? "/login";
     return NextResponse.redirect(new URL(landing, req.nextUrl));
   }

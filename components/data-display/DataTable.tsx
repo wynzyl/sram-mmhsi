@@ -22,6 +22,7 @@ interface DataTableProps<TData> {
   searchable?: boolean;
   searchPlaceholder?: string;
   pageSize?: number;
+  enablePagination?: boolean;
   className?: string;
 }
 
@@ -35,6 +36,7 @@ export function DataTable<TData>({
   searchable = false,
   searchPlaceholder = "Search...",
   pageSize = 20,
+  enablePagination = true,
   className,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -49,8 +51,12 @@ export function DataTable<TData>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize } },
+    ...(enablePagination
+      ? {
+          getPaginationRowModel: getPaginationRowModel(),
+          initialState: { pagination: { pageSize } },
+        }
+      : {}),
   });
 
   return (
@@ -137,7 +143,7 @@ export function DataTable<TData>({
         </div>
       </div>
 
-      {table.getPageCount() > 1 && (
+      {enablePagination && table.getPageCount() > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-[var(--color-text-muted)]">
             Page {table.getState().pagination.pageIndex + 1} of{" "}

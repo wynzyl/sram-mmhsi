@@ -147,7 +147,7 @@ export function PendingEnrollmentsTable({
         columns={columns}
         data={filteredEnrollments}
         searchable={false}
-        pageSize={25}
+        enablePagination={false}
       />
       <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
@@ -304,7 +304,7 @@ export function AssessedEnrollmentsTable({
         columns={columns}
         data={filteredEnrollments}
         searchable={false}
-        pageSize={25}
+        enablePagination={false}
       />
       <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
@@ -432,7 +432,7 @@ export function EnrolledStudentsTable({
         columns={columns}
         data={filteredStudents}
         searchable={false}
-        pageSize={25}
+        enablePagination={false}
       />
       <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredStudents.length === 0 && (searchQuery || gradeLevelFilter) && (
@@ -560,7 +560,7 @@ export function CancelledEnrollmentsTable({
         columns={columns}
         data={filteredEnrollments}
         searchable={false}
-        pageSize={25}
+        enablePagination={false}
       />
       <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (

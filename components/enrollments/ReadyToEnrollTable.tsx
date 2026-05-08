@@ -218,7 +218,7 @@ export function ReadyToEnrollTable({
         columns={columns}
         data={filteredStudents}
         searchable={false}
-        pageSize={25}
+        enablePagination={false}
       />
 
       {/* Results Summary */}

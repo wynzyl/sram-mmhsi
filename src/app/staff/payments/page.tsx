@@ -88,12 +88,15 @@ export default async function CashierQueuePage() {
       paymentId: payments.id,
       orNumber: payments.orNumber,
       amount: payments.amount,
+      paymentDate: payments.paymentDate,
       studentFirstName: students.firstName,
       studentLastName: students.lastName,
     })
     .from(payments)
     .innerJoin(students, eq(payments.studentId, students.id))
-    .where(eq(payments.status, "posted"))
+    .where(
+      and(eq(payments.status, "posted"), sql`DATE(${payments.paymentDate}) = CURRENT_DATE`)
+    )
     .orderBy(desc(payments.paymentDate), desc(payments.createdAt))
     .limit(20);
 
@@ -211,6 +214,12 @@ export default async function CashierQueuePage() {
                         </p>
                         <p className="mt-1 truncate text-xs text-(--color-text-muted)">
                           {p.studentLastName}, {p.studentFirstName}
+                        </p>
+                        <p className="mt-1 truncate text-[11px] text-(--color-text-muted)">
+                          {new Date(p.paymentDate).toLocaleTimeString("en-PH", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
                         </p>
                       </div>
                       <div className="shrink-0 text-sm font-semibold text-(--color-success)">
