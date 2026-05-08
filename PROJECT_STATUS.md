@@ -1,12 +1,18 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-05-05
+> Last updated: 2026-05-07
 
 ## Current phase
 
 **Core school operations (Phases 1–8)** are implemented in code: auth, student records, registrations listing + creation through student onboarding, enrollments, assessments, fees, cashier/OR posting, invoices, and teacher grade encoding.
 
 **Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, executive/reporting dashboards, formal OR **receipt** print view, **E2E** tests, and wiring **rate limit** + mandatory **password-change** gate.
+
+## Latest updates (2026-05-07)
+
+- [x] Assessment draft creation UX refreshed in `components/assessments/AssessmentDraftForm.tsx` with stronger student context, fee-catalog-driven line rendering, computed summary totals, and explicit assessment audit/finalization guidance.
+- [x] Shared assessment-ledger page abstraction added in `src/app/_internal/pages/assessment-ledger-page.tsx` to centralize permission checks, data loading, and handoff into `AssessmentLedgerRegister`.
+- [x] Assessment-to-ledger workflow messaging clarified so teams create assessment once, then continue payment/invoice operations in the ledger/finance flow.
 
 ---
 
@@ -52,8 +58,8 @@
 - [x] **Registrations list + intake visibility** — paginated approved-registration queues for `admin` and `staff` (`admin/registrations`, `staff/registrations`)
 - [x] **Registration creation on student onboarding** — student creation now inserts an approved `registrations` row in the same transaction (`actions/students.ts`)
 - [x] **Enrollments** — create, status transitions, cancellation (`actions/enrollments.ts`, `admin/enrollments/*`)
-- [x] **Fee schedules & assessments** — schedules, per-enrollment assessments, items, balances (`actions/finance.ts`, `actions/assessments.ts`, `admin/finance/*`, `admin/assessments/*`)
-- [x] **Cashier & OR** — booklet setup, post/void payment, allocations (`actions/cashier.ts`, booklet pages, payment UI on **assessment** ledger — not a separate `/staff/payments` page)
+- [x] **Fee schedules & assessments** — schedules, per-enrollment assessments, items, balances, and refreshed assessment draft UX (`actions/finance.ts`, `actions/assessments.ts`, `admin/finance/*`, `admin/assessments/*`, `components/assessments/AssessmentDraftForm.tsx`)
+- [x] **Cashier & OR** — booklet setup, post/void payment, allocations, and shared internal ledger composition (`actions/cashier.ts`, booklet pages, payment UI on **assessment** ledger, `src/app/_internal/pages/assessment-ledger-page.tsx`)
 - [x] **Invoices** — generate, send (Nodemailer/Gmail), status (`actions/invoices.ts`, `admin/finance/invoices/*`)
 - [x] **Academics & grades** — subjects, assignments, teacher grade encoding and lock (`actions/academics.ts`, `actions/teacher.ts`, `/staff/grades/*`, admin assignment pages)
 - [x] **Users** — admin user CRUD, password reset / `forcePasswordChange` field (`actions/users.ts`)
