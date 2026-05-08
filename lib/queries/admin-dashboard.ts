@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import { and, desc, eq, gt, gte, isNull, lt, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
@@ -34,16 +35,26 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
-export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics> {
-  const [activeSchoolYear] = await db
+/**
+ * Internal function to fetch admin dashboard metrics (uncached).
+ * Use the cached wrapper `getAdminDashboardMetrics()` instead.
+ */
+async function _getAdminDashboardMetricsUncached(): Promise<AdminDashboardMetrics> {
+  // Parallelize school year queries (optimization: avoid waterfall)
+  const schoolYearsData = await db
     .select({
       id: schoolYears.id,
       label: schoolYears.label,
       startDate: schoolYears.startDate,
+      isActive: schoolYears.isActive,
     })
     .from(schoolYears)
-    .where(and(eq(schoolYears.isActive, true), isNull(schoolYears.deletedAt)))
-    .limit(1);
+    .where(isNull(schoolYears.deletedAt))
+    .orderBy(desc(schoolYears.startDate))
+    .limit(2); // Get active + previous in one query
+
+  const activeSchoolYear = schoolYearsData.find((sy) => sy.isActive);
+  const previousSchoolYear = schoolYearsData.find((sy) => !sy.isActive);
 
   if (!activeSchoolYear) {
     return {
@@ -60,19 +71,6 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
       overdueAccountsAmount: 0,
     };
   }
-
-  const [previousSchoolYear] = await db
-    .select({ id: schoolYears.id })
-    .from(schoolYears)
-    .where(
-      and(
-        isNull(schoolYears.deletedAt),
-        eq(schoolYears.isActive, false),
-        lt(schoolYears.startDate, activeSchoolYear.startDate)
-      )
-    )
-    .orderBy(desc(schoolYears.startDate))
-    .limit(1);
 
   const [totalEnrolledRow, approvedRegistrationsRow] = await Promise.all([
     db
@@ -211,3 +209,17 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
     overdueAccountsAmount,
   };
 }
+
+/**
+ * Get admin dashboard metrics with caching.
+ * Cache is revalidated every 15 minutes to balance freshness and performance.
+ * Cache can be manually invalidated using revalidateTag('admin-dashboard').
+ */
+export const getAdminDashboardMetrics = unstable_cache(
+  _getAdminDashboardMetricsUncached,
+  ['admin-dashboard-metrics'],
+  {
+    revalidate: 900, // 15 minutes
+    tags: ['admin-dashboard', 'enrollments', 'payments'],
+  }
+);

@@ -28,11 +28,15 @@ import type { GuardianInput } from "@/lib/validators/student";
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
+/**
+ * Gets the next student sequence number atomically using PostgreSQL sequence.
+ * This prevents race conditions when creating students concurrently.
+ */
 async function getNextStudentSequence(): Promise<number> {
-  const result = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(students);
-  return (result[0]?.count ?? 0) + 1;
+  const [result] = await db.execute<{ nextval: number }>(
+    sql`SELECT nextval('student_ref_seq') as nextval`
+  );
+  return result?.nextval ?? 1;
 }
 
 // ─── Create Student Action ────────────────────────────────────────────────────
@@ -220,28 +224,37 @@ export async function createStudentAction(
         })
         .returning({ id: students.id });
 
-      for (const guardian of guardians) {
-        const [newGuardian] = await tx
-          .insert(parentsGuardians)
-          .values({
-            firstName: guardian.firstName,
-            middleName: guardian.middleName,
-            lastName: guardian.lastName,
-            relationship: guardian.relationship,
-            address: guardian.address,
-            occupation: guardian.occupation,
-            contactNumber: guardian.contactNumber,
-            email: guardian.email,
-            createdBy: session.userId,
-            updatedBy: session.userId,
-          })
-          .returning({ id: parentsGuardians.id });
+      // Batch insert all guardians in a single query (eliminates N queries)
+      const guardianValues = guardians.map((guardian) => ({
+        firstName: guardian.firstName,
+        middleName: guardian.middleName,
+        lastName: guardian.lastName,
+        relationship: guardian.relationship,
+        address: guardian.address,
+        occupation: guardian.occupation,
+        contactNumber: guardian.contactNumber,
+        email: guardian.email,
+        createdBy: session.userId,
+        updatedBy: session.userId,
+      }));
 
-        await tx.insert(studentGuardianLinks).values({
-          studentId: insertedStudent.id,
-          guardianId: newGuardian.id,
-          isPrimary: guardian.isPrimary ?? false,
-        });
+      const insertedGuardians =
+        guardianValues.length > 0
+          ? await tx
+              .insert(parentsGuardians)
+              .values(guardianValues)
+              .returning({ id: parentsGuardians.id })
+          : [];
+
+      // Batch insert all guardian links in a single query
+      const linkValues = insertedGuardians.map((newGuardian, index) => ({
+        studentId: insertedStudent.id,
+        guardianId: newGuardian.id,
+        isPrimary: guardians[index].isPrimary ?? false,
+      }));
+
+      if (linkValues.length > 0) {
+        await tx.insert(studentGuardianLinks).values(linkValues);
       }
 
       await tx.insert(registrations).values({

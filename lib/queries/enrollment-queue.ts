@@ -9,7 +9,7 @@ import {
   assessments,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
-import { eq, and, ne, isNull, desc, sql } from "drizzle-orm";
+import { eq, and, ne, isNull, desc, sql, lt } from "drizzle-orm";
 import {
   type PaginationParams,
   type PaginatedResult,
@@ -204,8 +204,7 @@ export async function getReadyToEnrollStudents(
         eq(registrations.status, "approved"),
         eq(students.isActive, true)
       )
-    )
-    .limit(500); // EMERGENCY: Prevent memory overflow
+    );
 
   // Step 2: Get existing enrollments for current school year (to filter out already enrolled)
   const currentEnrollments = await db
@@ -245,22 +244,32 @@ export async function getReadyToEnrollStudents(
       hasCompleteDocuments: areDocumentsComplete(r.intakeDocuments as EnrollmentIntakeDocuments | null),
     }));
 
-  // Step 4: Get previous school year ID (only 1 year back - MEMORY OPTIMIZATION)
+  // Step 4: Get previous school year ID efficiently (single query, no full scan)
+  // Get the active school year's start date first to find the previous one
+  const [activeSchoolYear] = await db
+    .select({ startDate: schoolYears.startDate })
+    .from(schoolYears)
+    .where(eq(schoolYears.id, activeSchoolYearId))
+    .limit(1);
+
+  if (!activeSchoolYear) {
+    throw new Error("Active school year not found");
+  }
+
+  // Get the most recent school year that started before the active year
   const [previousSchoolYear] = await db
     .select({ id: schoolYears.id })
     .from(schoolYears)
-    .where(isNull(schoolYears.deletedAt))
+    .where(
+      and(
+        isNull(schoolYears.deletedAt),
+        lt(schoolYears.startDate, activeSchoolYear.startDate)
+      )
+    )
     .orderBy(desc(schoolYears.startDate))
-    .limit(2); // Get current + previous
+    .limit(1);
 
-  // Get the ID of the year before active year
-  const allSchoolYearIds = await db
-    .select({ id: schoolYears.id })
-    .from(schoolYears)
-    .where(isNull(schoolYears.deletedAt))
-    .orderBy(desc(schoolYears.startDate));
-
-  const previousSchoolYearId = allSchoolYearIds.find(sy => sy.id !== activeSchoolYearId)?.id;
+  const previousSchoolYearId = previousSchoolYear?.id;
 
   // If no previous year exists, skip old student lookup and return only new/transferee students
   if (!previousSchoolYearId) {
@@ -306,7 +315,6 @@ export async function getReadyToEnrollStudents(
         eq(students.isActive, true)
       )
     )
-    .limit(500) // EMERGENCY: Prevent memory overflow
     .orderBy(desc(schoolYears.startDate)); // Most recent year first
 
   // Step 6: Get all grade levels for promotion calculation

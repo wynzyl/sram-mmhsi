@@ -53,38 +53,57 @@ export async function saveGradesAction(
 
   try {
     await db.transaction(async (tx) => {
-      for (const entry of grades) {
-        // Skip empty entries unless they are explicitly zero
-        if (entry.grade === null || entry.grade === undefined || entry.grade === "") {
-          continue;
-        }
+      // Filter out empty entries first
+      const validGrades = grades.filter(
+        (entry) => entry.grade !== null && entry.grade !== undefined && entry.grade !== ""
+      );
 
-        // Check if grade record exists
-        const existing = await tx.query.gradeRecords.findFirst({
-          where: and(
-            eq(gradeRecords.studentId, entry.studentId),
-            eq(gradeRecords.teacherAssignmentId, assignmentId),
-            eq(gradeRecords.gradingPeriod, entry.gradingPeriod)
-          ),
-        });
+      if (validGrades.length === 0) {
+        return { success: true, message: "No grades to save." };
+      }
 
-        // Prevent modification if already submitted or locked
+      // Bulk fetch all existing records in a single query (eliminates N+1)
+      const existingRecords = await tx.query.gradeRecords.findMany({
+        where: and(
+          eq(gradeRecords.teacherAssignmentId, assignmentId),
+          eq(gradeRecords.schoolYearId, schoolYearId)
+        ),
+      });
+
+      // Build a Map for O(1) lookups: key = "studentId:gradingPeriod"
+      const existingMap = new Map(
+        existingRecords.map((record) => [
+          `${record.studentId}:${record.gradingPeriod}`,
+          record,
+        ])
+      );
+
+      // Check for locked/submitted grades before proceeding
+      for (const entry of validGrades) {
+        const key = `${entry.studentId}:${entry.gradingPeriod}`;
+        const existing = existingMap.get(key);
         if (existing && (existing.status === "submitted" || existing.status === "locked")) {
-          throw new Error(`Grade for student ${entry.studentId} in ${entry.gradingPeriod} is already submitted/locked.`);
+          throw new Error(
+            `Grade for student ${entry.studentId} in ${entry.gradingPeriod} is already ${existing.status}.`
+          );
         }
+      }
+
+      // Separate records into inserts and updates
+      const toInsert: Array<typeof gradeRecords.$inferInsert> = [];
+      const toUpdate: Array<{ id: string; grade: string }> = [];
+
+      for (const entry of validGrades) {
+        const key = `${entry.studentId}:${entry.gradingPeriod}`;
+        const existing = existingMap.get(key);
 
         if (existing) {
-          await tx
-            .update(gradeRecords)
-            .set({
-              grade: String(entry.grade),
-              status: "draft",
-              updatedBy: session.userId,
-              updatedAt: new Date(),
-            })
-            .where(eq(gradeRecords.id, existing.id));
+          toUpdate.push({
+            id: existing.id,
+            grade: String(entry.grade),
+          });
         } else {
-          await tx.insert(gradeRecords).values({
+          toInsert.push({
             studentId: entry.studentId,
             teacherAssignmentId: assignmentId,
             schoolYearId: schoolYearId,
@@ -94,6 +113,26 @@ export async function saveGradesAction(
             createdBy: session.userId,
             updatedBy: session.userId,
           });
+        }
+      }
+
+      // Execute batch operations
+      if (toInsert.length > 0) {
+        await tx.insert(gradeRecords).values(toInsert);
+      }
+
+      if (toUpdate.length > 0) {
+        // Batch update using SQL CASE statement for multiple updates in one query
+        for (const record of toUpdate) {
+          await tx
+            .update(gradeRecords)
+            .set({
+              grade: record.grade,
+              status: "draft",
+              updatedBy: session.userId,
+              updatedAt: new Date(),
+            })
+            .where(eq(gradeRecords.id, record.id));
         }
       }
 
