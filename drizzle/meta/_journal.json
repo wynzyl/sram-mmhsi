@@ -43,6 +43,13 @@
       "when": 1778135605479,
       "tag": "0005_add_active_school_year_uniqueness_and_date_check",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778217647123,
+      "tag": "0006_add_enrollment_queue_indexes",
+      "breakpoints": true
     }
   ]
 }
