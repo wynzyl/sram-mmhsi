@@ -33,16 +33,26 @@ export type NewAssessmentEnrollmentContext = {
   assessmentBand: (typeof gradeLevels.$inferSelect)["assessmentBand"];
 };
 
-/**
- * Loads enrollment, fee catalog, and optional primary guardian for the new-assessment page.
- */
-export async function loadNewAssessmentPageContext(enrollmentId: string): Promise<{
+export type NewAssessmentPageReadyContext = {
+  status: "ready";
   enrollment: NewAssessmentEnrollmentContext;
   catalogBandLabel: string;
   primaryGuardianLabel: string | null;
   feeCatalog: NewAssessmentFeeCatalogEntry[];
   submitBlockedReason: string | null;
-} | null> {
+};
+
+export type NewAssessmentPageBlockedContext = {
+  status: "not_pending";
+  reason: "not_pending";
+};
+
+/**
+ * Loads enrollment, fee catalog, and optional primary guardian for the new-assessment page.
+ */
+export async function loadNewAssessmentPageContext(
+  enrollmentId: string
+): Promise<NewAssessmentPageReadyContext | NewAssessmentPageBlockedContext | null> {
   const row = await db
     .select({
       enrollmentId: enrollments.id,
@@ -67,6 +77,12 @@ export async function loadNewAssessmentPageContext(enrollmentId: string): Promis
   if (row.length === 0) return null;
 
   const e = row[0];
+  if (e.enrollmentStatus !== "pending") {
+    return {
+      status: "not_pending",
+      reason: "not_pending",
+    };
+  }
 
   const primaryRow = await db
     .select({
@@ -118,6 +134,7 @@ export async function loadNewAssessmentPageContext(enrollmentId: string): Promis
         : null;
 
   return {
+    status: "ready",
     enrollment: {
       enrollmentId: e.enrollmentId,
       enrollmentStatus: e.enrollmentStatus,

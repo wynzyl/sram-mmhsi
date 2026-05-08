@@ -19,14 +19,14 @@ export interface RegistrationRow {
 interface RegistrationsTableProps {
   registrations: RegistrationRow[];
   emptyMessage?: string;
-  /** Defaults to admin portal student URLs. */
+  /** Defaults to staff portal student URLs. */
   studentBasePath?: "/admin/students" | "/staff/students";
 }
 
 export default function RegistrationsTable({
   registrations,
   emptyMessage = "No registrations found.",
-  studentBasePath = "/admin/students",
+  studentBasePath = "/staff/students",
 }: RegistrationsTableProps) {
   const colSpan = 8;
 

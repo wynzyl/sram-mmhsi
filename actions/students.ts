@@ -275,9 +275,9 @@ export async function createStudentAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/students");
     revalidatePath("/staff/students");
-    revalidatePath("/admin/registrations");
+    revalidatePath("/staff/students");
+    revalidatePath("/staff/registrations");
     revalidatePath("/staff/registrations");
 
     return { success: true, studentId: newStudent.id };
@@ -485,11 +485,8 @@ export async function updateStudentAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/students");
-    revalidatePath(`/admin/students/${studentId}`);
     revalidatePath("/staff/students");
     revalidatePath(`/staff/students/${studentId}`);
-
     return { success: true };
   } catch (err) {
     logger.error("[students] Failed to update student", { error: String(err) });

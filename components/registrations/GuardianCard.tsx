@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils/cn";
-import { Mail, Phone, Star } from "lucide-react";
+import { Star } from "lucide-react";
 
 interface Guardian {
   id: string;
@@ -34,7 +34,7 @@ export function GuardianCard({
   onEdit,
   onRemove,
   className,
-  compact = false,
+  compact: _compact = false,
 }: GuardianCardProps) {
   const fullName = [guardian.firstName, guardian.middleName, guardian.lastName]
     .filter(Boolean)
@@ -43,9 +43,9 @@ export function GuardianCard({
   return (
     <div
       className={cn(
-        "bg-white rounded-lg border border-gray-200 p-4",
+        "rounded-lg border border-(--color-border) bg-(--color-surface-elevated) p-4",
         "transition-all duration-150",
-        onEdit && "hover:border-gray-300 hover:shadow-md",
+        onEdit && "hover:border-(--color-border-2) hover:shadow-(--shadow-md)",
         className
       )}
     >
@@ -62,50 +62,56 @@ export function GuardianCard({
           )}
 
           {/* Name */}
-          <h3 className="font-display font-semibold text-lg text-charcoal truncate">
+          <h3 className="truncate font-display text-lg font-semibold text-(--color-text)">
             {fullName}
           </h3>
 
           {/* Relationship & Occupation */}
-          <div className="flex items-center gap-2 text-sm text-warm-gray mt-1">
-            <span className="capitalize">{guardian.relationship}</span>
-            {guardian.occupation && (
-              <>
-                <span className="text-gray-300">•</span>
-                <span>{guardian.occupation}</span>
-              </>
-            )}
+          {/* Contact Information - 3 columns x 2 rows */}
+          <div className="mt-3 grid grid-cols-1 gap-2 text-sm md:grid-cols-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Address</p>
+              <p className="truncate text-(--color-text)">{guardian.address?.trim() || "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Tel Number</p>
+              {guardian.contactNumber?.trim() ? (
+                <a
+                  href={`tel:${guardian.contactNumber}`}
+                  className="font-mono text-(--color-text) transition-colors hover:text-(--color-primary)"
+                >
+                  {guardian.contactNumber}
+                </a>
+              ) : (
+                <p className="text-(--color-text)">—</p>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Email</p>
+              {guardian.email?.trim() ? (
+                <a
+                  href={`mailto:${guardian.email}`}
+                  className="block truncate text-(--color-text) transition-colors hover:text-(--color-primary)"
+                >
+                  {guardian.email}
+                </a>
+              ) : (
+                <p className="text-(--color-text)">—</p>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Occupation</p>
+              <p className="truncate text-(--color-text)">{guardian.occupation?.trim() || "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Relationship</p>
+              <p className="truncate capitalize text-(--color-text)">{guardian.relationship || "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Primary</p>
+              <p className="text-(--color-text)">{guardian.isPrimary ? "Yes" : "No"}</p>
+            </div>
           </div>
-
-          {!compact && guardian.address?.trim() ? (
-            <p className="mt-2 text-sm text-warm-gray">{guardian.address}</p>
-          ) : null}
-
-          {!compact && (
-            <>
-              {/* Contact Information */}
-              <div className="mt-3 space-y-1.5">
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="w-3.5 h-3.5 text-warm-gray shrink-0" />
-                  <a
-                    href={`tel:${guardian.contactNumber}`}
-                    className="font-mono text-charcoal hover:text-[var(--color-primary)] transition-colors"
-                  >
-                    {guardian.contactNumber}
-                  </a>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="w-3.5 h-3.5 text-warm-gray shrink-0" />
-                  <a
-                    href={`mailto:${guardian.email}`}
-                    className="text-charcoal hover:text-[var(--color-primary)] transition-colors truncate"
-                  >
-                    {guardian.email}
-                  </a>
-                </div>
-              </div>
-            </>
-          )}
         </div>
 
         {/* Actions */}
@@ -115,7 +121,7 @@ export function GuardianCard({
               <button
                 type="button"
                 onClick={() => onEdit(guardian.id)}
-                className="text-xs text-warm-gray hover:text-charcoal transition-colors px-2 py-1 rounded hover:bg-gray-50"
+                className="rounded px-2 py-1 text-xs text-(--color-text-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-text)"
               >
                 Edit
               </button>
@@ -124,7 +130,7 @@ export function GuardianCard({
               <button
                 type="button"
                 onClick={() => onRemove(guardian.id)}
-                className="text-xs text-red-600 hover:text-red-700 transition-colors px-2 py-1 rounded hover:bg-red-50"
+                className="rounded px-2 py-1 text-xs text-(--color-error) transition-colors hover:bg-[color-mix(in_srgb,var(--color-error)_12%,transparent)] hover:text-(--color-error)"
               >
                 Remove
               </button>

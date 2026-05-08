@@ -101,7 +101,7 @@ export async function createSchoolYearAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/school-years");
+    revalidatePath("/staff/school-years");
 
     return { success: true, schoolYearId: newSchoolYear.id };
   } catch (err) {
@@ -220,8 +220,8 @@ export async function updateSchoolYearAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/school-years");
-    revalidatePath(`/admin/school-years/${schoolYearId}/edit`);
+    revalidatePath("/staff/school-years");
+    revalidatePath(`/staff/school-years/${schoolYearId}/edit`);
 
     return { success: true };
   } catch (err) {
@@ -312,7 +312,7 @@ export async function toggleSchoolYearStatusAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/school-years");
+    revalidatePath("/staff/school-years");
 
     return { success: true };
   } catch (err) {
@@ -417,7 +417,7 @@ export async function deleteSchoolYearAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/school-years");
+    revalidatePath("/staff/school-years");
 
     return { success: true };
   } catch (err) {

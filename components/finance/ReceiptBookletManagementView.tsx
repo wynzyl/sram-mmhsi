@@ -55,7 +55,10 @@ export function ReceiptBookletManagementView({
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-          <BookletForm variant="dashboard" />
+          <BookletForm
+            variant="dashboard"
+            redirectTo="/staff/finance/booklets"
+          />
           <BookletsTable booklets={booklets} variant="dashboard" />
         </div>
 

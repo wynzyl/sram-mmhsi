@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { eq, and, ilike, isNull, sql } from "drizzle-orm";
+import { eq, and, ilike, isNull, sql, count } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
@@ -217,24 +217,30 @@ export async function updateUserAction(
     };
   }
 
-  // 6. Prevent deactivation of last active admin
-  if (updateData.isActive === false && existingUser.role === "admin") {
-    const activeAdminCount = await db
-      .select({ count: sql<number>`count(*)` })
+  // 6. Prevent deactivation of the last active privileged account
+  if (
+    updateData.isActive === false &&
+    existingUser.isActive === true &&
+    (existingUser.role === "admin" || existingUser.role === "super_admin")
+  ) {
+    const activePrivilegedCount = await db
+      .select({ count: count() })
       .from(users)
       .where(
         and(
-          eq(users.role, "admin"),
+          eq(users.role, existingUser.role),
           eq(users.isActive, true),
           isNull(users.deletedAt)
         )
       );
 
-    if ((activeAdminCount[0]?.count ?? 0) <= 1) {
+    if ((activePrivilegedCount[0]?.count ?? 0) <= 1) {
       return {
         errors: {
           isActive: [
-            "Cannot deactivate the last active administrator account.",
+            existingUser.role === "super_admin"
+              ? "Cannot deactivate the last active super administrator account."
+              : "Cannot deactivate the last active administrator account.",
           ],
         },
       };
@@ -406,23 +412,31 @@ export async function toggleUserStatusAction(
     };
   }
 
-  // 5. Prevent deactivation of last active admin
-  if (isActive === false && existingUser.role === "admin") {
-    const activeAdminCount = await db
-      .select({ count: sql<number>`count(*)` })
+  // 5. Prevent deactivation of the last active privileged account
+  if (
+    isActive === false &&
+    existingUser.isActive === true &&
+    (existingUser.role === "admin" || existingUser.role === "super_admin")
+  ) {
+    const activePrivilegedCount = await db
+      .select({ count: count() })
       .from(users)
       .where(
         and(
-          eq(users.role, "admin"),
+          eq(users.role, existingUser.role),
           eq(users.isActive, true),
           isNull(users.deletedAt)
         )
       );
 
-    if ((activeAdminCount[0]?.count ?? 0) <= 1) {
+    if ((activePrivilegedCount[0]?.count ?? 0) <= 1) {
       return {
         errors: {
-          _form: ["Cannot deactivate the last active administrator account."],
+          _form: [
+            existingUser.role === "super_admin"
+              ? "Cannot deactivate the last active super administrator account."
+              : "Cannot deactivate the last active administrator account.",
+          ],
         },
       };
     }

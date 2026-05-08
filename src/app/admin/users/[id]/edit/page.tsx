@@ -48,7 +48,7 @@ export default async function EditUserPage({ params }: PageProps) {
           <h1 className="page-title">Edit User</h1>
           <p className="page-subtitle">{user.email}</p>
         </div>
-        <Link href={`/admin/users/${id}`} className="btn-ghost">
+        <Link href={`/admin/users/${id}`} className="btn-secondary">
           ← Back to Profile
         </Link>
       </div>

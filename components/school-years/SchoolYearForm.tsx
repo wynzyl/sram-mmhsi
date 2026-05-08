@@ -13,7 +13,7 @@ export default function SchoolYearForm() {
 
   useEffect(() => {
     if (state.success && state.schoolYearId) {
-      router.push("/admin/school-years");
+      router.push("/staff/school-years");
     }
   }, [state.success, state.schoolYearId, router]);
 

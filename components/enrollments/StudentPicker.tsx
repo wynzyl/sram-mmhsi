@@ -117,7 +117,7 @@ export function StudentPicker({
       <div className="relative">
         <Search
           aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-gray"
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--color-text-muted)"
         />
         <input
           type="text"
@@ -146,7 +146,7 @@ export function StudentPicker({
             type="button"
             aria-label="Clear selection"
             onClick={handleClear}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-warm-gray transition-colors hover:bg-light-gray hover:text-charcoal"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-(--color-text-muted) transition-colors hover:bg-(--color-surface-3) hover:text-(--color-text)"
           >
             <X className="h-4 w-4" />
           </button>
@@ -157,12 +157,12 @@ export function StudentPicker({
         <div
           id="student-picker-list"
           role="listbox"
-          className="absolute z-30 mt-1 max-h-80 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-[var(--shadow-lg)]"
+          className="absolute z-30 mt-1 max-h-80 w-full overflow-auto rounded-lg border border-(--color-border) bg-(--color-surface-elevated) shadow-(--shadow-lg)"
         >
           {filtered.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-warm-gray">
+            <p className="px-4 py-6 text-center text-sm text-(--color-text-muted)">
               No students match{" "}
-              <strong className="text-charcoal">{query}</strong>.
+              <strong className="text-(--color-text)">{query}</strong>.
             </p>
           ) : (
             <ul className="py-1">
@@ -182,31 +182,31 @@ export function StudentPicker({
                       }}
                       className={cn(
                         "flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors",
-                        isActive ? "bg-[var(--color-primary)]/[0.06]" : "bg-white",
-                        "hover:bg-[var(--color-primary)]/[0.06]"
+                        isActive ? "bg-(--color-primary)/15" : "bg-transparent",
+                        "hover:bg-(--color-primary)/15"
                       )}
                     >
                       <span
-                        className={cn(
+                          className={cn(
                           "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
                           isSelected
                             ? "bg-[var(--color-primary)] text-white"
-                            : "border border-gray-300 bg-white"
+                            : "border border-(--color-border-2) bg-(--color-surface)"
                         )}
                       >
                         {isSelected && <Check className="h-3 w-3" strokeWidth={3} />}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-display text-base font-semibold leading-tight text-charcoal">
+                        <span className="block font-display text-base font-semibold leading-tight text-(--color-text)">
                           {s.lastName}, {s.firstName}
                         </span>
-                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-warm-gray">
+                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-(--color-text-muted)">
                           <code className="rounded bg-(--color-surface-3) px-1.5 py-0.5 font-mono text-(--color-text)">
                             {s.referenceNumber}
                           </code>
                           <span aria-hidden="true">·</span>
                           <span>
-                            <span className="font-medium text-charcoal">{s.typeLabel}</span>
+                            <span className="font-medium text-(--color-text-2)">{s.typeLabel}</span>
                             {s.contextLabel ? ` · ${s.contextLabel}` : null}
                           </span>
                         </span>
@@ -218,7 +218,7 @@ export function StudentPicker({
             </ul>
           )}
           {students.length > MAX_VISIBLE && filtered.length === MAX_VISIBLE && (
-            <p className="border-t border-gray-100 px-4 py-2 text-center text-[11px] text-warm-gray">
+            <p className="border-t border-(--color-border) px-4 py-2 text-center text-[11px] text-(--color-text-muted)">
               Showing first {MAX_VISIBLE} matches — refine your search to see more.
             </p>
           )}

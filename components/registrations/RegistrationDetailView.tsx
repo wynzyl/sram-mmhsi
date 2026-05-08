@@ -40,10 +40,6 @@ import {
   Zap,
 } from "lucide-react";
 
-function portalHref(path: string, linkBase: "admin" | "staff") {
-  return linkBase === "staff" ? path.replace(/^\/admin/, "/staff") : path;
-}
-
 function enrollmentTypeLabel(studentType: string): string {
   if (studentType === "new_student") return "New";
   if (studentType === "transferee") return "Transferee";
@@ -122,20 +118,18 @@ function countIntakeComplete(docs: EnrollmentIntakeDocuments | null): { done: nu
 function EnrollmentBillingCell({
   row,
   flags,
-  linkBase,
 }: {
   row: EnrollmentRecordRow;
   flags: StudentRecordFlags;
-  linkBase: "admin" | "staff";
 }) {
   if (row.status === "cancelled") {
-    return <span className="text-warm-gray">—</span>;
+    return <span className="text-[var(--color-text-muted)]">—</span>;
   }
 
   if (flags.canReadAssessments && row.assessmentId) {
     return (
       <Link
-        href={portalHref(`/admin/assessments/${row.assessmentId}`, linkBase)}
+        href={`/staff/assessments/${row.assessmentId}`}
         className="font-mono text-sm text-[var(--color-primary)] underline-offset-2 hover:underline"
       >
         Open ledger
@@ -146,7 +140,7 @@ function EnrollmentBillingCell({
   if (row.status === "pending" && flags.canCreateAssessment) {
     return (
       <Link
-        href={portalHref(`/admin/assessments/new/${row.id}`, linkBase)}
+        href={`/staff/assessments/new/${row.id}`}
         className="font-mono text-sm text-[var(--color-primary)] underline-offset-2 hover:underline"
       >
         Build assessment
@@ -155,10 +149,10 @@ function EnrollmentBillingCell({
   }
 
   if (row.status === "assessed" && !row.assessmentId && flags.canReadAssessments) {
-    return <span className="text-sm text-warm-gray">Missing ledger</span>;
+    return <span className="text-sm text-[var(--color-text-muted)]">Missing ledger</span>;
   }
 
-  return <span className="text-warm-gray">—</span>;
+  return <span className="text-[var(--color-text-muted)]">—</span>;
 }
 
 export type RegistrationDetailViewProps = {
@@ -170,7 +164,6 @@ export type RegistrationDetailViewProps = {
   assessmentSummaries: AssessmentSummaryRow[];
   invoices: InvoiceSummaryRow[];
   flags: StudentRecordFlags;
-  linkBase?: "admin" | "staff";
   backHref: string;
   backLabel?: string;
 };
@@ -188,7 +181,6 @@ export function RegistrationDetailView({
   assessmentSummaries,
   invoices,
   flags,
-  linkBase = "staff",
   backHref,
   backLabel = "Back to queue",
 }: RegistrationDetailViewProps) {
@@ -227,28 +219,28 @@ export function RegistrationDetailView({
     <div className="page-container space-y-8 print:space-y-4">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-2 font-mono text-sm text-warm-gray transition-colors hover:text-charcoal print:hidden"
+        className="inline-flex items-center gap-2 font-mono text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)] print:hidden"
       >
         ← {backLabel}
       </Link>
 
-      <header className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[var(--shadow-md)] print:shadow-none">
+      <header className="relative overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-md)] print:shadow-none">
         <div
-          className="h-28 bg-gradient-to-br from-[var(--color-primary)] via-[#9b1c1c] to-[#3a0d0d] sm:h-32 print:h-16 print:bg-charcoal"
+          className="h-28 bg-gradient-to-br from-[var(--color-primary)] via-[var(--color-primary-700)] to-[var(--color-surface-2)] sm:h-32 print:h-16 print:bg-[var(--color-surface-3)]"
           aria-hidden
         />
         <div className="relative px-4 pb-1 pt-0 sm:px-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end">
               <div
-                className="-mt-12 flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-[var(--color-surface-2)] font-display text-3xl font-bold tracking-tight text-charcoal shadow-md sm:-mt-14 sm:h-32 sm:w-32 print:border-gray-200"
+                className="-mt-12 flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl border-4 border-[var(--color-surface-elevated)] bg-[var(--color-surface-2)] font-display text-3xl font-bold tracking-tight text-[var(--color-text)] shadow-md sm:-mt-14 sm:h-32 sm:w-32 print:border-[var(--color-border)]"
                 aria-hidden
               >
                 {initials || "—"}
               </div>
               <div className="min-w-0 space-y-2 pb-1 sm:pb-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="font-display text-2xl font-bold tracking-tight text-charcoal sm:text-3xl md:text-4xl">
+                  <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--color-text)] sm:text-3xl md:text-4xl">
                     {fullName}
                   </h1>
                   <span
@@ -256,7 +248,7 @@ export function RegistrationDetailView({
                       "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide",
                       student.isActive
                         ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                        : "border-gray-200 bg-light-gray text-warm-gray"
+                        : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
                     )}
                   >
                     <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
@@ -268,16 +260,16 @@ export function RegistrationDetailView({
                     <StatusIndicator status="pending" label="Placement pending" size="sm" pulse />
                   )}
                 </div>
-                <p className="text-sm text-warm-gray sm:text-base">
-                  <span className="font-mono text-charcoal">{student.referenceNumber}</span>
-                  <span className="mx-2 text-gray-300">·</span>
+                <p className="text-sm text-[var(--color-text-muted)] sm:text-base">
+                  <span className="font-mono text-[var(--color-text)]">{student.referenceNumber}</span>
+                  <span className="mx-2 text-[var(--color-border-2)]">·</span>
                   {placementSubtitle}
                 </p>
                 {student.lrn || age != null ? (
-                  <p className="text-xs text-warm-gray sm:text-sm">
+                  <p className="text-xs text-[var(--color-text-muted)] sm:text-sm">
                     {student.lrn ? (
                       <>
-                        LRN <span className="font-mono text-charcoal">{student.lrn}</span>
+                        LRN <span className="font-mono text-[var(--color-text)]">{student.lrn}</span>
                       </>
                     ) : null}
                     {student.lrn && age != null ? <span> · </span> : null}
@@ -289,8 +281,8 @@ export function RegistrationDetailView({
             <div className="flex shrink-0 flex-wrap items-center gap-2 pb-1 md:pb-3 print:hidden">
               {flags.canEditStudent ? (
                 <Link
-                  href={portalHref(`/admin/students/${student.id}/edit`, linkBase)}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-[var(--color-primary)] bg-white px-4 py-2 text-sm font-semibold text-[var(--color-primary)] transition-colors hover:bg-red-50"
+                  href={`/staff/students/${student.id}/edit`}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-[var(--color-primary)] bg-[var(--color-surface-elevated)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)]"
                 >
                   <Pencil className="h-4 w-4" aria-hidden />
                   Edit profile
@@ -299,7 +291,7 @@ export function RegistrationDetailView({
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--color-primary-700)]"
               >
                 <Printer className="h-4 w-4" aria-hidden />
                 Print record
@@ -308,7 +300,7 @@ export function RegistrationDetailView({
           </div>
 
           <nav
-            className="mt-4 flex flex-wrap gap-1 border-t border-gray-100 pt-3 print:hidden"
+            className="mt-4 flex flex-wrap gap-1 border-t border-[var(--color-border)] pt-3 print:hidden"
             aria-label="Student record sections"
           >
             {tabs.map((t) => (
@@ -320,7 +312,7 @@ export function RegistrationDetailView({
                   "relative px-4 py-2.5 text-sm font-medium transition-colors",
                   tab === t.id
                     ? "text-[var(--color-primary)] after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-[var(--color-primary)]"
-                    : "text-warm-gray hover:text-charcoal"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                 )}
               >
                 {t.label}
@@ -336,43 +328,43 @@ export function RegistrationDetailView({
             {flags.canReadAssessments ? (
               <DataCard className="p-6">
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                  <h2 className="flex items-center gap-2 font-display text-xl font-bold text-charcoal">
+                  <h2 className="flex items-center gap-2 font-display text-xl font-bold text-[var(--color-text)]">
                     <FileText className="h-5 w-5 text-[var(--color-primary)]" aria-hidden />
                     Billing overview
                   </h2>
                   {latestAssessment ? (
-                    <span className="text-xs font-mono text-warm-gray">{latestAssessment.schoolYear}</span>
+                    <span className="text-xs font-mono text-[var(--color-text-muted)]">{latestAssessment.schoolYear}</span>
                   ) : null}
                 </div>
                 {latestAssessment ? (
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3">
-                      <p className="text-xs font-medium uppercase tracking-wide text-warm-gray">
+                      <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]">
                         Assessed
                       </p>
-                      <p className="mt-1 font-display text-lg font-bold text-charcoal">
+                      <p className="mt-1 font-display text-lg font-bold text-[var(--color-text)]">
                         <CurrencyDisplay amount={Number(latestAssessment.totalAmount)} />
                       </p>
                     </div>
                     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3">
-                      <p className="text-xs font-medium uppercase tracking-wide text-warm-gray">
+                      <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]">
                         Paid
                       </p>
-                      <p className="mt-1 font-display text-lg font-bold text-charcoal">
+                      <p className="mt-1 font-display text-lg font-bold text-[var(--color-text)]">
                         <CurrencyDisplay amount={Number(latestAssessment.totalPaid)} />
                       </p>
                     </div>
                     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3">
-                      <p className="text-xs font-medium uppercase tracking-wide text-warm-gray">
+                      <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]">
                         Balance
                       </p>
-                      <p className="mt-1 font-display text-lg font-bold text-charcoal">
+                      <p className="mt-1 font-display text-lg font-bold text-[var(--color-text)]">
                         <CurrencyDisplay amount={Number(latestAssessment.balance)} />
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-warm-gray">
+                  <p className="text-sm text-[var(--color-text-muted)]">
                     No assessment ledger yet. Create an assessment from an enrollment when ready.
                   </p>
                 )}
@@ -381,21 +373,21 @@ export function RegistrationDetailView({
 
             <div className="grid gap-6 lg:grid-cols-2">
               <DataCard className="p-6">
-                <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold text-charcoal">
+                <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold text-[var(--color-text)]">
                   <Home className="h-5 w-5 text-[var(--color-primary)]" aria-hidden />
                   Contact
                 </h2>
                 <ul className="space-y-4 text-sm">
                   <li className="flex gap-3">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-warm-gray" aria-hidden />
-                    <span className="text-charcoal">{student.address?.trim() || "—"}</span>
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+                    <span className="text-[var(--color-text)]">{student.address?.trim() || "—"}</span>
                   </li>
                   <li className="flex gap-3">
-                    <Phone className="mt-0.5 h-4 w-4 shrink-0 text-warm-gray" aria-hidden />
-                    <span className="text-charcoal">{student.mobileNumber?.trim() || "—"}</span>
+                    <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+                    <span className="text-[var(--color-text)]">{student.mobileNumber?.trim() || "—"}</span>
                   </li>
                   <li className="flex gap-3">
-                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-warm-gray" aria-hidden />
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
                     {student.email?.trim() ? (
                       <a
                         href={`mailto:${student.email}`}
@@ -404,18 +396,18 @@ export function RegistrationDetailView({
                         {student.email}
                       </a>
                     ) : (
-                      <span className="text-charcoal">—</span>
+                      <span className="text-[var(--color-text)]">—</span>
                     )}
                   </li>
                 </ul>
               </DataCard>
 
               <DataCard className="p-6">
-                <h2 className="mb-4 font-display text-xl font-bold text-charcoal">Student details</h2>
+                <h2 className="mb-4 font-display text-xl font-bold text-[var(--color-text)]">Student details</h2>
                 <dl className="space-y-2 text-sm">
-                  <div className="flex justify-between gap-4 border-b border-gray-50 pb-2">
-                    <dt className="text-warm-gray">Date of birth</dt>
-                    <dd className="text-right font-medium text-charcoal">
+                  <div className="flex justify-between gap-4 border-b border-[var(--color-border)] pb-2">
+                    <dt className="text-[var(--color-text-muted)]">Date of birth</dt>
+                    <dd className="text-right font-medium text-[var(--color-text)]">
                       {student.dateOfBirth
                         ? new Date(student.dateOfBirth).toLocaleDateString("en-PH", {
                             year: "numeric",
@@ -425,19 +417,19 @@ export function RegistrationDetailView({
                         : "—"}
                     </dd>
                   </div>
-                  <div className="flex justify-between gap-4 border-b border-gray-50 pb-2">
-                    <dt className="text-warm-gray">Gender</dt>
-                    <dd className="text-right capitalize text-charcoal">{student.gender ?? "—"}</dd>
+                  <div className="flex justify-between gap-4 border-b border-[var(--color-border)] pb-2">
+                    <dt className="text-[var(--color-text-muted)]">Gender</dt>
+                    <dd className="text-right capitalize text-[var(--color-text)]">{student.gender ?? "—"}</dd>
                   </div>
-                  <div className="flex justify-between gap-4 border-b border-gray-50 pb-2">
-                    <dt className="text-warm-gray">Previous school</dt>
-                    <dd className="max-w-[55%] text-right text-charcoal">
+                  <div className="flex justify-between gap-4 border-b border-[var(--color-border)] pb-2">
+                    <dt className="text-[var(--color-text-muted)]">Previous school</dt>
+                    <dd className="max-w-[55%] text-right text-[var(--color-text)]">
                       {student.previousSchool ?? "—"}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <dt className="text-warm-gray">Document notes</dt>
-                    <dd className="max-w-[55%] whitespace-pre-wrap text-right text-charcoal">
+                    <dt className="text-[var(--color-text-muted)]">Document notes</dt>
+                    <dd className="max-w-[55%] whitespace-pre-wrap text-right text-[var(--color-text)]">
                       {student.submittedDocumentsNotes ?? "—"}
                     </dd>
                   </div>
@@ -446,10 +438,10 @@ export function RegistrationDetailView({
             </div>
 
             <div className="space-y-4">
-              <h2 className="font-display text-xl font-bold text-charcoal">Parents / guardians</h2>
+              <h2 className="font-display text-xl font-bold text-[var(--color-text)]">Parents / guardians</h2>
               {guardians.length === 0 ? (
                 <DataCard className="p-6">
-                  <p className="text-warm-gray">No guardians on file.</p>
+                  <p className="text-[var(--color-text-muted)]">No guardians on file.</p>
                 </DataCard>
               ) : (
                 guardians.map((g) => (
@@ -475,45 +467,45 @@ export function RegistrationDetailView({
 
           <aside className="space-y-6 print:hidden">
             <DataCard className="p-5">
-              <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-charcoal">
+              <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-[var(--color-text)]">
                 <Zap className="h-5 w-5 text-amber-500" aria-hidden />
                 Quick actions
               </h2>
-              <ul className="flex flex-col gap-2">
+              <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 {flags.canEnroll ? (
-                  <li>
+                  <li className="h-full">
                     <Link
-                      href={`${portalHref("/admin/enrollments/new", linkBase)}?studentId=${student.id}`}
-                      className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-red-50/50"
+                      href={`/staff/enrollments/new?studentId=${student.id}`}
+                      className="flex h-full items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-surface-2)]">
-                        <CalendarDays className="h-5 w-5 text-charcoal" aria-hidden />
+                        <CalendarDays className="h-5 w-5 text-[var(--color-text)]" aria-hidden />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-charcoal">Enrollment</span>
-                        <span className="block text-xs text-warm-gray">Start or continue enrollment</span>
+                        <span className="block text-sm font-semibold text-[var(--color-text)]">Enrollment</span>
+                        <span className="block text-xs text-[var(--color-text-muted)]">Start or continue enrollment</span>
                       </span>
                     </Link>
                   </li>
                 ) : null}
                 {flags.canReadAssessments && assessmentIdForActions ? (
-                  <li>
+                  <li className="h-full">
                     <Link
-                      href={portalHref(`/admin/assessments/${assessmentIdForActions}`, linkBase)}
-                      className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-red-50/50"
+                      href={`/staff/assessments/${assessmentIdForActions}`}
+                      className="flex h-full items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-surface-2)]">
                         {flags.canPostPayments ? (
-                          <CreditCard className="h-5 w-5 text-charcoal" aria-hidden />
+                          <CreditCard className="h-5 w-5 text-[var(--color-text)]" aria-hidden />
                         ) : (
-                          <FileText className="h-5 w-5 text-charcoal" aria-hidden />
+                          <FileText className="h-5 w-5 text-[var(--color-text)]" aria-hidden />
                         )}
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-charcoal">
+                        <span className="block text-sm font-semibold text-[var(--color-text)]">
                           {flags.canPostPayments ? "Billing & payments" : "Assessment ledger"}
                         </span>
-                        <span className="block text-xs text-warm-gray">
+                        <span className="block text-xs text-[var(--color-text-muted)]">
                           {flags.canPostPayments
                             ? "Ledger, allocations, and OR posting"
                             : "Fees, lines, and history"}
@@ -523,50 +515,50 @@ export function RegistrationDetailView({
                   </li>
                 ) : null}
                 {guardianMail ? (
-                  <li>
+                  <li className="h-full">
                     <a
                       href={guardianMail}
-                      className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-red-50/50"
+                      className="flex h-full items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-surface-2)]">
-                        <Mail className="h-5 w-5 text-charcoal" aria-hidden />
+                        <Mail className="h-5 w-5 text-[var(--color-text)]" aria-hidden />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-charcoal">Email guardian</span>
-                        <span className="block text-xs text-warm-gray">Opens your mail app</span>
+                        <span className="block text-sm font-semibold text-[var(--color-text)]">Email guardian</span>
+                        <span className="block text-xs text-[var(--color-text-muted)]">Opens your mail app</span>
                       </span>
                     </a>
                   </li>
                 ) : null}
                 {flags.canReadInvoices ? (
-                  <li>
+                  <li className="h-full">
                     <button
                       type="button"
                       onClick={() => setTab("invoices")}
-                      className="flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-red-50/50"
+                      className="flex h-full w-full items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-surface-2)]">
-                        <FileText className="h-5 w-5 text-charcoal" aria-hidden />
+                        <FileText className="h-5 w-5 text-[var(--color-text)]" aria-hidden />
                       </span>
                       <span className="min-w-0 text-left">
-                        <span className="block text-sm font-semibold text-charcoal">Invoices</span>
-                        <span className="block text-xs text-warm-gray">Open the invoices tab</span>
+                        <span className="block text-sm font-semibold text-[var(--color-text)]">Invoices</span>
+                        <span className="block text-xs text-[var(--color-text-muted)]">Open the invoices tab</span>
                       </span>
                     </button>
                   </li>
                 ) : null}
-                <li>
+                <li className="h-full">
                   <button
                     type="button"
                     onClick={() => setTab("documents")}
-                    className="flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-red-50/50"
+                    className="flex h-full w-full items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-3 py-3 text-left transition-colors hover:border-[var(--color-primary)]/40 hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
                   >
                     <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-surface-2)]">
-                      <ClipboardList className="h-5 w-5 text-charcoal" aria-hidden />
+                      <ClipboardList className="h-5 w-5 text-[var(--color-text)]" aria-hidden />
                     </span>
                     <span className="min-w-0 text-left">
-                      <span className="block text-sm font-semibold text-charcoal">Intake documents</span>
-                      <span className="block text-xs text-warm-gray">Checklist & requirements</span>
+                      <span className="block text-sm font-semibold text-[var(--color-text)]">Intake documents</span>
+                      <span className="block text-xs text-[var(--color-text-muted)]">Checklist & requirements</span>
                     </span>
                   </button>
                 </li>
@@ -574,11 +566,11 @@ export function RegistrationDetailView({
             </DataCard>
 
             {student.bloodType ? (
-              <DataCard className="border-rose-100 bg-rose-50/40 p-4">
-                <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-rose-900">
+              <DataCard className="border-(--color-warning-400)/45 bg-[color-mix(in_srgb,var(--color-warning-500)_12%,var(--color-surface-elevated))] p-4">
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-(--color-warning-300)">
                   Health note
                 </h3>
-                <p className="text-sm text-rose-950">
+                <p className="text-sm text-(--color-text)">
                   Blood type on file:{" "}
                   <span className="font-semibold">{student.bloodType}</span>. (Allergies and protocols
                   are not tracked in SRAMS yet.)
@@ -593,7 +585,7 @@ export function RegistrationDetailView({
         <div className="space-y-6">
           {requirementsSnapshots.length === 0 ? (
             <DataCard className="p-8 text-center">
-              <p className="text-warm-gray">No enrollment intake checklists on file for this student.</p>
+              <p className="text-[var(--color-text-muted)]">No enrollment intake checklists on file for this student.</p>
             </DataCard>
           ) : (
             requirementsSnapshots.map((snap) => {
@@ -604,10 +596,10 @@ export function RegistrationDetailView({
                 <DataCard key={snap.enrollmentId} className="p-6">
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 space-y-2">
-                      <h3 className="font-display text-lg font-bold text-charcoal">
+                      <h3 className="font-display text-lg font-bold text-[var(--color-text)]">
                         {snap.schoolYear} · {snap.gradeLevel}
                       </h3>
-                      <p className="text-sm text-warm-gray">
+                      <p className="text-sm text-[var(--color-text-muted)]">
                         Type {registrationStudentTypeLabel(snap.studentType)} · Recorded{" "}
                         {snap.recordedAt.toLocaleDateString("en-PH", {
                           year: "numeric",
@@ -620,7 +612,7 @@ export function RegistrationDetailView({
                     <DocumentProgressRing completed={progress.done} total={progress.total} size="lg" />
                   </div>
                   {!snap.intakeDocuments ? (
-                    <p className="mt-4 text-sm text-warm-gray">No checklist data for this enrollment.</p>
+                    <p className="mt-4 text-sm text-[var(--color-text-muted)]">No checklist data for this enrollment.</p>
                   ) : (
                     <ul className="mt-6 space-y-2">
                       {INTAKE_ROWS.map(({ key, label }) => {
@@ -631,7 +623,7 @@ export function RegistrationDetailView({
                             key={key}
                             className="flex items-center justify-between gap-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3"
                           >
-                            <span className="font-display text-base font-semibold leading-snug tracking-tight text-charcoal md:text-lg">
+                            <span className="font-display text-base font-semibold leading-snug tracking-tight text-[var(--color-text)] md:text-lg">
                               {label}
                             </span>
                             <Badge variant={variant} className="shrink-0 text-xs capitalize">
@@ -655,7 +647,7 @@ export function RegistrationDetailView({
       {tab === "history" && (
         <DataCard className="overflow-hidden">
           {enrollmentRows.length === 0 ? (
-            <p className="p-6 text-warm-gray">No enrollment records.</p>
+            <p className="p-6 text-[var(--color-text-muted)]">No enrollment records.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px] text-left text-sm">
@@ -676,15 +668,15 @@ export function RegistrationDetailView({
                     <tr key={row.id} className="border-b border-[var(--color-border)]">
                       <td className="px-4 py-3">{row.schoolYear}</td>
                       <td className="px-4 py-3">{row.gradeLevel}</td>
-                      <td className="px-4 py-3 text-warm-gray">{row.sectionName ?? "—"}</td>
+                      <td className="px-4 py-3 text-[var(--color-text-muted)]">{row.sectionName ?? "—"}</td>
                       <td className="px-4 py-3">{enrollmentTypeLabel(row.studentType)}</td>
                       <td className="px-4 py-3">
                         <StatusBadge status={row.status} type="enrollment" />
                       </td>
                       <td className="px-4 py-3">
-                        <EnrollmentBillingCell row={row} flags={flags} linkBase={linkBase} />
+                        <EnrollmentBillingCell row={row} flags={flags} />
                       </td>
-                      <td className="px-4 py-3 text-warm-gray">
+                      <td className="px-4 py-3 text-[var(--color-text-muted)]">
                         {row.enrolledAt
                           ? new Date(row.enrolledAt).toLocaleDateString("en-PH", {
                               year: "numeric",
@@ -693,7 +685,7 @@ export function RegistrationDetailView({
                             })
                           : "—"}
                       </td>
-                      <td className="px-4 py-3 text-warm-gray">
+                      <td className="px-4 py-3 text-[var(--color-text-muted)]">
                         {new Date(row.createdAt).toLocaleDateString("en-PH", {
                           year: "numeric",
                           month: "short",
@@ -712,7 +704,7 @@ export function RegistrationDetailView({
       {tab === "billing" && flags.canReadAssessments && (
         <DataCard className="overflow-hidden">
           {assessmentSummaries.length === 0 ? (
-            <p className="p-6 text-warm-gray">No assessment ledgers for this student.</p>
+            <p className="p-6 text-[var(--color-text-muted)]">No assessment ledgers for this student.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-left text-sm">
@@ -744,7 +736,7 @@ export function RegistrationDetailView({
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
-                          href={portalHref(`/admin/assessments/${a.id}`, linkBase)}
+                          href={`/staff/assessments/${a.id}`}
                           className="font-mono text-sm text-[var(--color-primary)] underline-offset-2 hover:underline"
                         >
                           Ledger
@@ -762,7 +754,7 @@ export function RegistrationDetailView({
       {tab === "invoices" && flags.canReadInvoices && (
         <DataCard className="overflow-hidden">
           {invoices.length === 0 ? (
-            <p className="p-6 text-warm-gray">No invoices for this student.</p>
+            <p className="p-6 text-[var(--color-text-muted)]">No invoices for this student.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-left text-sm">
@@ -788,7 +780,7 @@ export function RegistrationDetailView({
                           {inv.status.replace(/_/g, " ")}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-warm-gray">
+                      <td className="px-4 py-3 text-[var(--color-text-muted)]">
                         {inv.dueDate
                           ? new Date(inv.dueDate).toLocaleDateString("en-PH", {
                               year: "numeric",
@@ -797,7 +789,7 @@ export function RegistrationDetailView({
                             })
                           : "—"}
                       </td>
-                      <td className="px-4 py-3 text-warm-gray">
+                      <td className="px-4 py-3 text-[var(--color-text-muted)]">
                         {new Date(inv.createdAt).toLocaleDateString("en-PH", {
                           year: "numeric",
                           month: "short",
@@ -806,7 +798,7 @@ export function RegistrationDetailView({
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
-                          href={portalHref(`/admin/finance/invoices/${inv.id}`, linkBase)}
+                          href={`/staff/finance/invoices/${inv.id}`}
                           className="font-mono text-sm text-[var(--color-primary)] underline-offset-2 hover:underline"
                         >
                           View
