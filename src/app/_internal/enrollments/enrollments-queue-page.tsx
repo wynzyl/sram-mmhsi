@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { sections, schoolYears } from "@/lib/db/schema";
+import { sections, schoolYears, gradeLevels } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { getEnrollmentQueueData } from "@/lib/queries/enrollment-queue";
 import { EnrollmentQueueTabs } from "@/components/enrollments/EnrollmentQueueTabs";
+import { EnrollmentGlobalFilters } from "@/components/enrollments/EnrollmentGlobalFilters";
 import { ReadyToEnrollTableClient } from "@/components/enrollments/ReadyToEnrollTableClient";
 import {
   PendingEnrollmentsTable,
@@ -20,7 +21,7 @@ import { Plus, RefreshCw, FileText } from "lucide-react";
 type TabKey = "ready-to-enroll" | "pending" | "assessed" | "enrolled" | "cancelled";
 
 type EnrollmentQueuePageProps = {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; search?: string; gradeLevel?: string }>;
   deniedRedirect: string;
   enrollmentsBasePath: string; // e.g., "/staff/enrollments"
   staffBasePath: string; // e.g., "/staff"
@@ -50,6 +51,8 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
 
   const params = await searchParams;
   const currentTab = getCurrentTabFromParams(params.tab);
+  const searchQuery = params.search || "";
+  const gradeLevelFilter = params.gradeLevel || "";
 
   // Permissions
   const canCreate = hasPermission(session.role, "enrollments:create");
@@ -76,13 +79,17 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
     );
   }
 
-  // Fetch enrollment queue data and sections in parallel
-  const [queueData, allSections] = await Promise.all([
+  // Fetch enrollment queue data, sections, and grade levels in parallel
+  const [queueData, allSections, allGradeLevels] = await Promise.all([
     getEnrollmentQueueData(),
     db
       .select({ id: sections.id, name: sections.name, gradeLevelId: sections.gradeLevelId })
       .from(sections)
       .where(eq(sections.schoolYearId, activeSchoolYear.id)),
+    db
+      .select({ id: gradeLevels.id, name: gradeLevels.name })
+      .from(gradeLevels)
+      .orderBy(gradeLevels.order),
   ]);
 
   if (!queueData) {
@@ -118,20 +125,51 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
             students={readyToEnroll}
             schoolYearId={activeSchoolYear.id}
             sections={allSections.map((s) => ({ id: s.id, name: s.name }))}
+            gradeLevels={allGradeLevels}
+            searchQuery={searchQuery}
+            gradeLevelFilter={gradeLevelFilter}
           />
         );
 
       case "pending":
-        return <PendingEnrollmentsTable enrollments={pending} basePath={staffBasePath} />;
+        return (
+          <PendingEnrollmentsTable
+            enrollments={pending}
+            basePath={staffBasePath}
+            searchQuery={searchQuery}
+            gradeLevelFilter={gradeLevelFilter}
+          />
+        );
 
       case "assessed":
-        return <AssessedEnrollmentsTable enrollments={assessed} basePath={staffBasePath} />;
+        return (
+          <AssessedEnrollmentsTable
+            enrollments={assessed}
+            basePath={staffBasePath}
+            searchQuery={searchQuery}
+            gradeLevelFilter={gradeLevelFilter}
+          />
+        );
 
       case "enrolled":
-        return <EnrolledStudentsTable students={enrolled} basePath={staffBasePath} />;
+        return (
+          <EnrolledStudentsTable
+            students={enrolled}
+            basePath={staffBasePath}
+            searchQuery={searchQuery}
+            gradeLevelFilter={gradeLevelFilter}
+          />
+        );
 
       case "cancelled":
-        return <CancelledEnrollmentsTable enrollments={cancelled} basePath={staffBasePath} />;
+        return (
+          <CancelledEnrollmentsTable
+            enrollments={cancelled}
+            basePath={staffBasePath}
+            searchQuery={searchQuery}
+            gradeLevelFilter={gradeLevelFilter}
+          />
+        );
 
       default:
         return null;
@@ -174,6 +212,9 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
           )}
         </div>
       </header>
+
+      {/* Global Filters */}
+      <EnrollmentGlobalFilters gradeLevels={allGradeLevels} basePath={enrollmentsBasePath} />
 
       {/* Tabs Navigation */}
       <EnrollmentQueueTabs

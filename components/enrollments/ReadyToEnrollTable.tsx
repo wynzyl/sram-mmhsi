@@ -9,12 +9,55 @@ import { AlertCircle, CheckCircle2, FileText, UserPlus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
 import type { ReadyToEnrollStudent } from "@/lib/queries/enrollment-queue";
 
+type GradeLevel = {
+  id: string;
+  name: string;
+};
+
 type ReadyToEnrollTableProps = {
   students: ReadyToEnrollStudent[];
   onConfirmEnrollment: (student: ReadyToEnrollStudent) => void;
+  gradeLevels?: GradeLevel[];
+  searchQuery?: string;
+  gradeLevelFilter?: string;
 };
 
-export function ReadyToEnrollTable({ students, onConfirmEnrollment }: ReadyToEnrollTableProps) {
+export function ReadyToEnrollTable({
+  students,
+  onConfirmEnrollment,
+  gradeLevels = [],
+  searchQuery = "",
+  gradeLevelFilter = "",
+}: ReadyToEnrollTableProps) {
+  // Filter students based on search and grade level (from global filters)
+  const filteredStudents = useMemo(() => {
+    let filtered = students;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (student) =>
+          student.firstName.toLowerCase().includes(query) ||
+          student.lastName.toLowerCase().includes(query) ||
+          student.studentRef.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by grade level
+    if (gradeLevelFilter && gradeLevelFilter !== "all") {
+      filtered = filtered.filter((student) => {
+        const enrollingGradeId =
+          student.studentType === "old_student"
+            ? student.suggestedGradeLevelId
+            : student.registrationGradeLevelId;
+        return enrollingGradeId === gradeLevelFilter;
+      });
+    }
+
+    return filtered;
+  }, [students, searchQuery, gradeLevelFilter]);
+
   const columns = useMemo<ColumnDef<ReadyToEnrollStudent>[]>(
     () => [
       {
@@ -173,11 +216,17 @@ export function ReadyToEnrollTable({ students, onConfirmEnrollment }: ReadyToEnr
       {/* Table */}
       <DataTable
         columns={columns}
-        data={students}
-        searchable
-        searchPlaceholder="Search by name or student ID..."
+        data={filteredStudents}
+        searchable={false}
         pageSize={25}
       />
+
+      {/* Results Summary */}
+      {filteredStudents.length === 0 && (searchQuery || gradeLevelFilter) && (
+        <div className="mt-4 text-center text-sm text-[var(--color-text-muted)]">
+          No students match the current filters. Try adjusting your search or grade level filter.
+        </div>
+      )}
     </div>
   );
 }

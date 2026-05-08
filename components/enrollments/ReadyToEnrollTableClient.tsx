@@ -10,6 +10,9 @@ type ReadyToEnrollTableClientProps = {
   students: ReadyToEnrollStudent[];
   schoolYearId: string;
   sections?: Array<{ id: string; name: string }>;
+  gradeLevels?: Array<{ id: string; name: string }>;
+  searchQuery?: string;
+  gradeLevelFilter?: string;
 };
 
 /**
@@ -19,11 +22,15 @@ type ReadyToEnrollTableClientProps = {
  * - Opens drawer when "Enroll" button is clicked
  * - Handles successful enrollment (refresh page)
  * - Provides sections for optional assignment
+ * - Uses global filters from URL params
  */
 export function ReadyToEnrollTableClient({
   students,
   schoolYearId,
   sections = [],
+  gradeLevels = [],
+  searchQuery = "",
+  gradeLevelFilter = "",
 }: ReadyToEnrollTableClientProps) {
   const router = useRouter();
   const [selectedStudent, setSelectedStudent] = useState<ReadyToEnrollStudent | null>(null);
@@ -51,7 +58,13 @@ export function ReadyToEnrollTableClient({
 
   return (
     <>
-      <ReadyToEnrollTable students={students} onConfirmEnrollment={handleConfirmEnrollment} />
+      <ReadyToEnrollTable
+        students={students}
+        onConfirmEnrollment={handleConfirmEnrollment}
+        gradeLevels={gradeLevels}
+        searchQuery={searchQuery}
+        gradeLevelFilter={gradeLevelFilter}
+      />
 
       {selectedStudent && (
         <EnrollmentConfirmationDrawer

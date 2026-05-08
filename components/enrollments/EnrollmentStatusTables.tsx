@@ -19,9 +19,38 @@ import type {
 type PendingEnrollmentsTableProps = {
   enrollments: PendingEnrollment[];
   basePath: string; // e.g., "/staff"
+  searchQuery?: string;
+  gradeLevelFilter?: string;
 };
 
-export function PendingEnrollmentsTable({ enrollments, basePath }: PendingEnrollmentsTableProps) {
+export function PendingEnrollmentsTable({
+  enrollments,
+  basePath,
+  searchQuery = "",
+  gradeLevelFilter = "",
+}: PendingEnrollmentsTableProps) {
+  // Apply filters
+  const filteredEnrollments = useMemo(() => {
+    let filtered = enrollments;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (e) =>
+          e.firstName.toLowerCase().includes(query) ||
+          e.lastName.toLowerCase().includes(query) ||
+          e.studentRef.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by grade level
+    if (gradeLevelFilter && gradeLevelFilter !== "all") {
+      filtered = filtered.filter((e) => e.gradeLevelId === gradeLevelFilter);
+    }
+
+    return filtered;
+  }, [enrollments, searchQuery, gradeLevelFilter]);
   const columns = useMemo<ColumnDef<PendingEnrollment>[]>(
     () => [
       {
@@ -110,11 +139,15 @@ export function PendingEnrollmentsTable({ enrollments, basePath }: PendingEnroll
       </div>
       <DataTable
         columns={columns}
-        data={enrollments}
-        searchable
-        searchPlaceholder="Search by name or student ID..."
+        data={filteredEnrollments}
+        searchable={false}
         pageSize={25}
       />
+      {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
+        <div className="text-center text-sm text-[var(--color-text-muted)]">
+          No enrollments match the current filters.
+        </div>
+      )}
     </div>
   );
 }
@@ -124,9 +157,36 @@ export function PendingEnrollmentsTable({ enrollments, basePath }: PendingEnroll
 type AssessedEnrollmentsTableProps = {
   enrollments: AssessedEnrollment[];
   basePath: string;
+  searchQuery?: string;
+  gradeLevelFilter?: string;
 };
 
-export function AssessedEnrollmentsTable({ enrollments, basePath }: AssessedEnrollmentsTableProps) {
+export function AssessedEnrollmentsTable({
+  enrollments,
+  basePath,
+  searchQuery = "",
+  gradeLevelFilter = "",
+}: AssessedEnrollmentsTableProps) {
+  // Apply filters
+  const filteredEnrollments = useMemo(() => {
+    let filtered = enrollments;
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (e) =>
+          e.firstName.toLowerCase().includes(query) ||
+          e.lastName.toLowerCase().includes(query) ||
+          e.studentRef.toLowerCase().includes(query)
+      );
+    }
+
+    if (gradeLevelFilter && gradeLevelFilter !== "all") {
+      filtered = filtered.filter((e) => e.gradeLevelId === gradeLevelFilter);
+    }
+
+    return filtered;
+  }, [enrollments, searchQuery, gradeLevelFilter]);
   const columns = useMemo<ColumnDef<AssessedEnrollment>[]>(
     () => [
       {
@@ -231,11 +291,15 @@ export function AssessedEnrollmentsTable({ enrollments, basePath }: AssessedEnro
       </div>
       <DataTable
         columns={columns}
-        data={enrollments}
-        searchable
-        searchPlaceholder="Search by name or student ID..."
+        data={filteredEnrollments}
+        searchable={false}
         pageSize={25}
       />
+      {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
+        <div className="text-center text-sm text-[var(--color-text-muted)]">
+          No enrollments match the current filters.
+        </div>
+      )}
     </div>
   );
 }
@@ -245,9 +309,36 @@ export function AssessedEnrollmentsTable({ enrollments, basePath }: AssessedEnro
 type EnrolledStudentsTableProps = {
   students: EnrolledStudent[];
   basePath: string;
+  searchQuery?: string;
+  gradeLevelFilter?: string;
 };
 
-export function EnrolledStudentsTable({ students, basePath }: EnrolledStudentsTableProps) {
+export function EnrolledStudentsTable({
+  students,
+  basePath,
+  searchQuery = "",
+  gradeLevelFilter = "",
+}: EnrolledStudentsTableProps) {
+  // Apply filters
+  const filteredStudents = useMemo(() => {
+    let filtered = students;
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.firstName.toLowerCase().includes(query) ||
+          s.lastName.toLowerCase().includes(query) ||
+          s.studentRef.toLowerCase().includes(query)
+      );
+    }
+
+    if (gradeLevelFilter && gradeLevelFilter !== "all") {
+      filtered = filtered.filter((s) => s.gradeLevelId === gradeLevelFilter);
+    }
+
+    return filtered;
+  }, [students, searchQuery, gradeLevelFilter]);
   const columns = useMemo<ColumnDef<EnrolledStudent>[]>(
     () => [
       {
@@ -323,11 +414,15 @@ export function EnrolledStudentsTable({ students, basePath }: EnrolledStudentsTa
       </div>
       <DataTable
         columns={columns}
-        data={students}
-        searchable
-        searchPlaceholder="Search by name or student ID..."
+        data={filteredStudents}
+        searchable={false}
         pageSize={25}
       />
+      {filteredStudents.length === 0 && (searchQuery || gradeLevelFilter) && (
+        <div className="text-center text-sm text-[var(--color-text-muted)]">
+          No students match the current filters.
+        </div>
+      )}
     </div>
   );
 }
@@ -337,9 +432,36 @@ export function EnrolledStudentsTable({ students, basePath }: EnrolledStudentsTa
 type CancelledEnrollmentsTableProps = {
   enrollments: CancelledEnrollment[];
   basePath: string;
+  searchQuery?: string;
+  gradeLevelFilter?: string;
 };
 
-export function CancelledEnrollmentsTable({ enrollments, basePath }: CancelledEnrollmentsTableProps) {
+export function CancelledEnrollmentsTable({
+  enrollments,
+  basePath,
+  searchQuery = "",
+  gradeLevelFilter = "",
+}: CancelledEnrollmentsTableProps) {
+  // Apply filters
+  const filteredEnrollments = useMemo(() => {
+    let filtered = enrollments;
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (e) =>
+          e.firstName.toLowerCase().includes(query) ||
+          e.lastName.toLowerCase().includes(query) ||
+          e.studentRef.toLowerCase().includes(query)
+      );
+    }
+
+    if (gradeLevelFilter && gradeLevelFilter !== "all") {
+      filtered = filtered.filter((e) => e.gradeLevelId === gradeLevelFilter);
+    }
+
+    return filtered;
+  }, [enrollments, searchQuery, gradeLevelFilter]);
   const columns = useMemo<ColumnDef<CancelledEnrollment>[]>(
     () => [
       {
@@ -415,11 +537,15 @@ export function CancelledEnrollmentsTable({ enrollments, basePath }: CancelledEn
       </div>
       <DataTable
         columns={columns}
-        data={enrollments}
-        searchable
-        searchPlaceholder="Search by name or student ID..."
+        data={filteredEnrollments}
+        searchable={false}
         pageSize={25}
       />
+      {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
+        <div className="text-center text-sm text-[var(--color-text-muted)]">
+          No enrollments match the current filters.
+        </div>
+      )}
     </div>
   );
 }
