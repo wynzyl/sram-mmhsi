@@ -78,6 +78,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
       ],
     },
+    {
+      label: "System",
+      items: [
+        { href: "/staff/school-years", label: "School Years", icon: "school-years" },
+      ],
+    },
   ],
 
   registrar: [
