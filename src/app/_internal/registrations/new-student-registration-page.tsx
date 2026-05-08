@@ -37,7 +37,7 @@ export async function InternalNewStudentRegistrationPage(props: {
       Create the learner profile and an <strong className="text-[var(--color-text)]">approved</strong>{" "}
       registration for the active school year. Grade, requirements, and enrollment type follow how you opened
       this page; use{" "}
-      <code className="rounded bg-(--color-surface-3) px-1.5 py-0.5 font-mono text-sm text-(--color-text)">
+      <code className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5 font-mono text-sm text-[var(--color-text)]">
         ?intent=transferee
       </code>{" "}
       for transferee intake.

@@ -5,11 +5,11 @@ export function getReceiptStatusClasses(status: ReceiptBookletStatus): string {
     case "active":
       return "border-emerald-500/35 bg-emerald-500/15 text-emerald-300";
     case "exhausted":
-      return "border-(--color-ops-line) bg-(--color-ops-panel-muted) text-(--color-ops-muted)";
+      return "border-[var(--color-ops-line)] bg-[var(--color-ops-panel-muted)] text-[var(--color-ops-muted)]";
     case "voided":
       return "border-rose-500/35 bg-rose-500/15 text-rose-300";
     default:
-      return "border-(--color-ops-line) bg-(--color-ops-panel-muted) text-(--color-ops-muted)";
+      return "border-[var(--color-ops-line)] bg-[var(--color-ops-panel-muted)] text-[var(--color-ops-muted)]";
   }
 }
 

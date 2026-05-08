@@ -63,9 +63,9 @@ export default function PostPaymentForm({
 
   if (state.success) {
     return (
-      <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
         <p className="font-display text-xl font-extrabold text-charcoal">Payment posted</p>
-        <p className="mt-1 text-sm text-(--color-text-2)">{state.message}</p>
+        <p className="mt-1 text-sm text-[var(--color-text-2)]">{state.message}</p>
         {onCancel && (
           <Button type="button" variant="secondary" className="mt-4" onClick={onCancel}>
             Close
@@ -79,7 +79,7 @@ export default function PostPaymentForm({
     <form action={action} className="space-y-4">
       {state.errors?._form && (
         <div
-          className="rounded-lg border border-(--color-border) bg-(--color-surface-2) px-4 py-3 text-sm text-(--color-error)"
+          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm text-[var(--color-error)]"
           role="alert"
         >
           {state.errors._form.map((err, i) => (
@@ -89,7 +89,7 @@ export default function PostPaymentForm({
       )}
       {state.message && !state.success && (
         <div
-          className="rounded-lg border border-(--color-border) bg-(--color-surface-2) px-4 py-3 text-sm text-(--color-error)"
+          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm text-[var(--color-error)]"
           role="alert"
         >
           {state.message}
@@ -99,9 +99,9 @@ export default function PostPaymentForm({
       <input type="hidden" name="studentId" value={studentId} />
       <input type="hidden" name="assessmentId" value={assessmentId} />
 
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-(--color-border) bg-(--color-surface-2) px-4 py-3">
-        <span className="text-sm font-semibold text-(--color-text-2)">Amount due (balance)</span>
-        <span className="font-display text-lg font-black text-(--color-primary)">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3">
+        <span className="text-sm font-semibold text-[var(--color-text-2)]">Amount due (balance)</span>
+        <span className="font-display text-lg font-black text-[var(--color-primary)]">
           <CurrencyDisplay amount={balance} />
         </span>
       </div>
@@ -173,7 +173,7 @@ export default function PostPaymentForm({
       </div>
 
       {paymentMethod === "cash" && (
-        <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               label="Amount tendered"
@@ -194,15 +194,15 @@ export default function PostPaymentForm({
                 autoComplete="off"
               />
             </FormField>
-            <div className="rounded-lg border border-(--color-border) bg-(--color-surface-2) px-4 py-3">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-(--color-text-muted)">
+            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                 Change
               </span>
-              <span className="mt-2 block font-mono text-lg font-semibold text-(--color-text)">
+              <span className="mt-2 block font-mono text-lg font-semibold text-[var(--color-text)]">
                 {payNum > 0 && tenderNum >= payNum ? (
                   <CurrencyDisplay amount={change} />
                 ) : (
-                  <span className="text-(--color-text-muted)">—</span>
+                  <span className="text-[var(--color-text-muted)]">—</span>
                 )}
               </span>
             </div>

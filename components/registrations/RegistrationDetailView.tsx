@@ -566,11 +566,11 @@ export function RegistrationDetailView({
             </DataCard>
 
             {student.bloodType ? (
-              <DataCard className="border-(--color-warning-400)/45 bg-[color-mix(in_srgb,var(--color-warning-500)_12%,var(--color-surface-elevated))] p-4">
-                <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-(--color-warning-300)">
+              <DataCard className="border-[var(--color-warning-400)/45 bg-[color-mix(in_srgb,var(--color-warning-500)_12%,var(--color-surface-elevated))] p-4">
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-[var(--color-warning-300)">
                   Health note
                 </h3>
-                <p className="text-sm text-(--color-text)">
+                <p className="text-sm text-[var(--color-text)">
                   Blood type on file:{" "}
                   <span className="font-semibold">{student.bloodType}</span>. (Allergies and protocols
                   are not tracked in SRAMS yet.)

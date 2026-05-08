@@ -97,7 +97,7 @@ export function StudentDirectoryView({
   const clearHref = basePath;
 
   return (
-    <div className="page-container max-w-none space-y-8">
+    <div className="page-container space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--color-text)]">{title}</h1>

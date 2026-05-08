@@ -117,7 +117,7 @@ export default async function CashierQueuePage() {
   const studentsAssessed = Number(studentAssessedRow?.count ?? 0);
 
   return (
-    <PageContainer>
+    <PageContainer width="standard">
       <PageHeader
         title="Payment Queue"
         description="Newly assessed students and outstanding balances ready for posting."
@@ -130,7 +130,7 @@ export default async function CashierQueuePage() {
               <CardTitle className="text-sm">Total Collection (Today)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="font-display text-xl font-black text-(--color-primary)">
+              <div className="font-display text-xl font-black text-[var(--color-primary)]">
                 <CurrencyDisplay amount={totalCollectedToday} />
               </div>
             </CardContent>
@@ -177,7 +177,7 @@ export default async function CashierQueuePage() {
         <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-12">
           <Card className="lg:col-span-8">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm uppercase tracking-wide text-(--color-text-muted)">
+              <CardTitle className="text-sm uppercase tracking-wide text-[var(--color-text-muted)">
                 Cashier Policy
               </CardTitle>
             </CardHeader>
@@ -185,7 +185,7 @@ export default async function CashierQueuePage() {
               <h3 className="font-display text-2xl font-extrabold text-charcoal">
                 Daily Reconciliation Reminder
               </h3>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-(--color-text-2)">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-text-2)">
                 All cash and check transactions must be reconciled and closed before 4:30 PM.
                 Ensure physical receipts match the digital ledger entries to avoid audit
                 discrepancies. Contact your supervisor for partial-payment overrides and exception
@@ -200,29 +200,29 @@ export default async function CashierQueuePage() {
             </CardHeader>
             <CardContent>
               {recentCollections.length === 0 ? (
-                <p className="text-sm text-(--color-text-muted)">No posted payments yet.</p>
+                <p className="text-sm text-[var(--color-text-muted)">No posted payments yet.</p>
               ) : (
                 <ul className="max-h-48 space-y-2 overflow-y-auto pr-1">
                   {recentCollections.map((p) => (
                     <li
                       key={p.paymentId}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-(--color-border) bg-(--color-surface-2) px-3 py-2"
+                      className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2) px-3 py-2"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-(--color-text)">
+                        <p className="truncate text-sm font-semibold text-[var(--color-text)">
                           Receipt {p.orNumber ? <ReferenceCode code={p.orNumber} /> : "#—"}
                         </p>
-                        <p className="mt-1 truncate text-xs text-(--color-text-muted)">
+                        <p className="mt-1 truncate text-xs text-[var(--color-text-muted)">
                           {p.studentLastName}, {p.studentFirstName}
                         </p>
-                        <p className="mt-1 truncate text-[11px] text-(--color-text-muted)">
+                        <p className="mt-1 truncate text-[11px] text-[var(--color-text-muted)">
                           {new Date(p.paymentDate).toLocaleTimeString("en-PH", {
                             hour: "numeric",
                             minute: "2-digit",
                           })}
                         </p>
                       </div>
-                      <div className="shrink-0 text-sm font-semibold text-(--color-success)">
+                      <div className="shrink-0 text-sm font-semibold text-[var(--color-success)]">
                         <CurrencyDisplay amount={Number(p.amount)} />
                       </div>
                     </li>

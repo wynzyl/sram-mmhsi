@@ -8,7 +8,7 @@ export const Card = forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border border-(--color-border) bg-(--color-surface-elevated) shadow-(--shadow) transition-shadow duration-150",
+      "rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow)] transition-shadow duration-150",
       className
     )}
     {...props}
@@ -35,7 +35,7 @@ export const CardTitle = forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight text-(--color-text)",
+      "text-lg font-semibold leading-none tracking-tight text-[var(--color-text)",
       className
     )}
     {...props}
@@ -49,7 +49,7 @@ export const CardDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-(--color-text-muted)", className)}
+    className={cn("text-sm text-[var(--color-text-muted)", className)}
     {...props}
   />
 ));

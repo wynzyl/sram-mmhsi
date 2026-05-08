@@ -274,7 +274,7 @@ export default function StudentRegistrationForm({
           </span>
           <span className="font-medium text-charcoal">{stepTitles[currentStep]}</span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-(--color-surface-3)">
+        <div className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
           <div
             className="h-full bg-[var(--color-primary)] transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
@@ -618,7 +618,7 @@ export default function StudentRegistrationForm({
               </div>
 
               {currentSchoolYear ? (
-                <div className="grid grid-cols-1 gap-4 border-t border-(--color-border) pt-6 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 border-t border-[var(--color-border)] pt-6 md:grid-cols-2">
                   <div>
                     <span className="mb-1.5 block text-sm font-medium text-charcoal">
                       School year <span className="text-red-600">*</span>
@@ -627,10 +627,10 @@ export default function StudentRegistrationForm({
                       className={editorialFieldClass({
                         invalid: !!getError("schoolYearId"),
                         className:
-                          "bg-(--color-surface-3) text-(--color-text-muted)",
+                          "bg-[var(--color-surface-3)] text-[var(--color-text-muted)]",
                       })}
                     >
-                      <strong className="text-(--color-text)">{currentSchoolYear.label}</strong>
+                      <strong className="text-[var(--color-text)]">{currentSchoolYear.label}</strong>
                       <span className="ml-2 text-sm">(active year only)</span>
                     </div>
                     {getError("schoolYearId") && (
@@ -667,13 +667,13 @@ export default function StudentRegistrationForm({
                     <div
                       className={editorialFieldClass({
                         invalid: !!getError("registrationStudentType"),
-                        className: "bg-(--color-surface-3) text-(--color-text)",
+                        className: "bg-[var(--color-surface-3)] text-[var(--color-text)]",
                       })}
                     >
-                      <strong className="text-(--color-text)">
+                      <strong className="text-[var(--color-text)]">
                         {lockedRegistrationType === "transferee" ? "Transferee" : "New student"}
                       </strong>
-                      <span className="ml-2 text-sm text-(--color-text-muted)">
+                      <span className="ml-2 text-sm text-[var(--color-text-muted)]">
                         (set by the page you opened)
                       </span>
                     </div>
@@ -704,7 +704,7 @@ export default function StudentRegistrationForm({
                 <button
                   type="button"
                   onClick={addGuardian}
-                  className="rounded-lg border border-(--color-border) px-3 py-1.5 text-sm font-medium text-charcoal transition-colors hover:bg-(--color-surface-3)"
+                  className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-charcoal transition-colors hover:bg-[var(--color-surface-3)]"
                 >
                   + Add guardian
                 </button>
@@ -760,7 +760,7 @@ export default function StudentRegistrationForm({
               </div>
             )}
 
-            <div className="flex items-center justify-between border-t border-(--color-border) pt-6">
+            <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-6">
               {currentStep > 1 ? (
                 <button
                   type="button"

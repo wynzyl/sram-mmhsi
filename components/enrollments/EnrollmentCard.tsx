@@ -161,7 +161,7 @@ export function EnrollmentCard({
             </div>
 
             <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
-              <code className="rounded bg-(--color-surface-3) px-2 py-0.5 font-mono text-[12px] text-(--color-text)">
+              <code className="rounded bg-[var(--color-surface-3)] px-2 py-0.5 font-mono text-[12px] text-[var(--color-text)]">
                 {en.referenceNumber}
               </code>
               <span className="text-ops-muted">·</span>

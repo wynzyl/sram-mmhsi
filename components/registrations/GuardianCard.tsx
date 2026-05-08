@@ -43,9 +43,9 @@ export function GuardianCard({
   return (
     <div
       className={cn(
-        "rounded-lg border border-(--color-border) bg-(--color-surface-elevated) p-4",
+        "rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated) p-4",
         "transition-all duration-150",
-        onEdit && "hover:border-(--color-border-2) hover:shadow-(--shadow-md)",
+        onEdit && "hover:border-[var(--color-border-2)] hover:shadow-[var(--shadow-md)]",
         className
       )}
     >
@@ -62,7 +62,7 @@ export function GuardianCard({
           )}
 
           {/* Name */}
-          <h3 className="truncate font-display text-lg font-semibold text-(--color-text)">
+          <h3 className="truncate font-display text-lg font-semibold text-[var(--color-text)">
             {fullName}
           </h3>
 
@@ -70,46 +70,46 @@ export function GuardianCard({
           {/* Contact Information - 3 columns x 2 rows */}
           <div className="mt-3 grid grid-cols-1 gap-2 text-sm md:grid-cols-3">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Address</p>
-              <p className="truncate text-(--color-text)">{guardian.address?.trim() || "—"}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Address</p>
+              <p className="truncate text-[var(--color-text)">{guardian.address?.trim() || "—"}</p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Tel Number</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Tel Number</p>
               {guardian.contactNumber?.trim() ? (
                 <a
                   href={`tel:${guardian.contactNumber}`}
-                  className="font-mono text-(--color-text) transition-colors hover:text-(--color-primary)"
+                  className="font-mono text-[var(--color-text) transition-colors hover:text-[var(--color-primary)]"
                 >
                   {guardian.contactNumber}
                 </a>
               ) : (
-                <p className="text-(--color-text)">—</p>
+                <p className="text-[var(--color-text)">—</p>
               )}
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Email</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Email</p>
               {guardian.email?.trim() ? (
                 <a
                   href={`mailto:${guardian.email}`}
-                  className="block truncate text-(--color-text) transition-colors hover:text-(--color-primary)"
+                  className="block truncate text-[var(--color-text) transition-colors hover:text-[var(--color-primary)]"
                 >
                   {guardian.email}
                 </a>
               ) : (
-                <p className="text-(--color-text)">—</p>
+                <p className="text-[var(--color-text)">—</p>
               )}
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Occupation</p>
-              <p className="truncate text-(--color-text)">{guardian.occupation?.trim() || "—"}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Occupation</p>
+              <p className="truncate text-[var(--color-text)">{guardian.occupation?.trim() || "—"}</p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Relationship</p>
-              <p className="truncate capitalize text-(--color-text)">{guardian.relationship || "—"}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Relationship</p>
+              <p className="truncate capitalize text-[var(--color-text)">{guardian.relationship || "—"}</p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">Primary</p>
-              <p className="text-(--color-text)">{guardian.isPrimary ? "Yes" : "No"}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Primary</p>
+              <p className="text-[var(--color-text)">{guardian.isPrimary ? "Yes" : "No"}</p>
             </div>
           </div>
         </div>
@@ -121,7 +121,7 @@ export function GuardianCard({
               <button
                 type="button"
                 onClick={() => onEdit(guardian.id)}
-                className="rounded px-2 py-1 text-xs text-(--color-text-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-text)"
+                className="rounded px-2 py-1 text-xs text-[var(--color-text-muted) transition-colors hover:bg-[var(--color-surface-2) hover:text-[var(--color-text)"
               >
                 Edit
               </button>
@@ -130,7 +130,7 @@ export function GuardianCard({
               <button
                 type="button"
                 onClick={() => onRemove(guardian.id)}
-                className="rounded px-2 py-1 text-xs text-(--color-error) transition-colors hover:bg-[color-mix(in_srgb,var(--color-error)_12%,transparent)] hover:text-(--color-error)"
+                className="rounded px-2 py-1 text-xs text-[var(--color-error)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-error)_12%,transparent)] hover:text-[var(--color-error)]"
               >
                 Remove
               </button>

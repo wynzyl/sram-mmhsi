@@ -65,7 +65,7 @@ export function ReceiptBookletManagementView({
         <div className="grid gap-4 md:grid-cols-3">
           <div className="ops-panel">
             <div className="flex items-center gap-4">
-              <div className="rounded-xl bg-(--color-ops-panel-muted) p-3 text-(--color-primary-300)">
+              <div className="rounded-xl bg-[var(--color-ops-panel-muted)] p-3 text-[var(--color-primary-300)]">
                 <Layers3 className="h-6 w-6" />
               </div>
               <div>
@@ -81,14 +81,14 @@ export function ReceiptBookletManagementView({
           <div className="ops-panel">
             <div className="flex items-center justify-between">
               <p className="ops-kpi-label">Consumption Rate</p>
-              <Gauge className="h-4 w-4 text-(--color-ops-positive)" />
+              <Gauge className="h-4 w-4 text-[var(--color-ops-positive)]" />
             </div>
-            <p className="mt-1 text-3xl font-semibold text-(--color-ops-positive)">
+            <p className="mt-1 text-3xl font-semibold text-[var(--color-ops-positive)]">
               {averageUsage}%
             </p>
-            <div className="mt-3 h-2 rounded-full bg-(--color-ops-field)">
+            <div className="mt-3 h-2 rounded-full bg-[var(--color-ops-field)]">
               <div
-                className="h-2 rounded-full bg-(--color-primary-300)"
+                className="h-2 rounded-full bg-[var(--color-primary-300)]"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -97,9 +97,9 @@ export function ReceiptBookletManagementView({
           <div className="ops-panel">
             <div className="flex items-center justify-between">
               <p className="ops-kpi-label">Low Stock Alert</p>
-              <TriangleAlert className="h-4 w-4 text-(--color-ops-danger)" />
+              <TriangleAlert className="h-4 w-4 text-[var(--color-ops-danger)]" />
             </div>
-            <p className="mt-1 text-3xl font-semibold text-(--color-ops-danger)">
+            <p className="mt-1 text-3xl font-semibold text-[var(--color-ops-danger)]">
               {lowStockCount.toString().padStart(2, "0")}
             </p>
             <p className="ops-kpi-sub">
@@ -108,7 +108,7 @@ export function ReceiptBookletManagementView({
           </div>
         </div>
 
-        <div className="hidden items-center gap-2 text-xs text-(--color-ops-muted) md:flex">
+        <div className="hidden items-center gap-2 text-xs text-[var(--color-ops-muted)] md:flex">
           <ClipboardList className="h-3.5 w-3.5" />
           {footerNote}
         </div>
