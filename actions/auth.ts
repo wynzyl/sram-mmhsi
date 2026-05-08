@@ -10,12 +10,13 @@ import { createSession, deleteSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { logger } from "@/lib/observability/logger";
 import type { Role } from "@/lib/constants/roles";
-import { STAFF_ROLES } from "@/lib/constants/roles";
+import { normalizeRole } from "@/lib/constants/roles";
 
 // ─── Role → Landing Page Map ──────────────────────────────────────────────────
 
 const ROLE_LANDING: Record<Role, string> = {
-  admin: "/admin/dashboard",
+  super_admin: "/admin/dashboard",
+  admin: "/staff/dashboard",
   registrar: "/staff/dashboard",
   finance_officer: "/staff/finance",
   cashier: "/staff/payments",
@@ -76,7 +77,21 @@ export async function loginAction(
   }
 
   // 4. Create server-side session
-  await createSession(user.id, user.role as Role);
+  const normalizedRole = normalizeRole(user.role);
+  if (!normalizedRole) {
+    logger.error("[auth] User has unsupported role", { userId: user.id, role: user.role });
+    await logAudit({
+      actor: user.id,
+      actorRole: "system",
+      action: "auth:login_failed",
+      targetEntity: "users",
+      targetId: user.id,
+      context: `unsupported_role=${user.role}`,
+    });
+    return { message: "Your account role is not supported. Please contact system support." };
+  }
+
+  await createSession(user.id, normalizedRole);
 
   // 5. Audit: successful login
   logger.info("[auth] User logged in", { userId: user.id, role: user.role });
@@ -90,7 +105,7 @@ export async function loginAction(
 
   // 6. Redirect to role landing page
   // redirect() throws internally — must be called outside try/catch
-  const landing = ROLE_LANDING[user.role as Role] ?? "/login";
+  const landing = ROLE_LANDING[normalizedRole] ?? "/login";
   redirect(landing);
 }
 

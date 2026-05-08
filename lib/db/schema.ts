@@ -9,6 +9,7 @@ import {
   uuid,
   uniqueIndex,
   index,
+  check,
   jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -17,6 +18,7 @@ import { FEE_ASSESSMENT_BANDS } from "@/lib/fee-schedule/bands";
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export const roleEnum = pgEnum("role", [
+  "super_admin",
   "admin",
   "registrar",
   "finance_officer",
@@ -144,7 +146,15 @@ export const schoolYears = pgTable("school_years", {
   updatedBy: uuid("updated_by").references(() => users.id),
   deletedAt: timestamp("deleted_at"),
   deletedBy: uuid("deleted_by").references(() => users.id),
-});
+}, (t) => [
+  // Enforce only one active school year at a time.
+  uniqueIndex("school_year_active_uidx")
+    .on(t.isActive)
+    .where(sql`${t.isActive} = true`),
+
+  // Prevent inverted date ranges.
+  check("school_year_dates_order_chk", sql`${t.endDate} > ${t.startDate}`),
+]);
 
 export const gradeLevels = pgTable("grade_levels", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -434,8 +444,8 @@ export const payments = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     studentId: uuid("student_id").notNull().references(() => students.id),
     assessmentId: uuid("assessment_id").references(() => assessments.id),
-    bookletId: uuid("booklet_id").references(() => receiptBooklets.id),
-    orNumber: text("or_number"),
+    bookletId: uuid("booklet_id").notNull().references(() => receiptBooklets.id),
+    orNumber: text("or_number").notNull(),
     orStatus: orStatusEnum("or_status").notNull().default("consumed"),
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
     paymentMethod: text("payment_method").notNull(),  // cash, check, gcash, etc.
@@ -452,6 +462,11 @@ export const payments = pgTable(
     updatedBy: uuid("updated_by").references(() => users.id),
   },
   (t) => [
+    // OR-tracking invariant: whenever OR is marked consumed, the OR number must exist.
+    check(
+      "payments_or_number_required_when_consumed",
+      sql`(${t.orStatus} <> 'consumed' OR ${t.orNumber} IS NOT NULL)`,
+    ),
     uniqueIndex("payments_or_number_idx").on(t.orNumber),
     uniqueIndex("payments_reference_number_unique_idx")
       .on(t.referenceNumber)
@@ -514,7 +529,10 @@ export const teacherAssignments = pgTable(
     deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
-    uniqueIndex("ta_unique_idx").on(t.teacherId, t.subjectId, t.sectionId, t.schoolYearId),
+    uniqueIndex("ta_unique_idx")
+      .on(t.teacherId, t.subjectId, t.sectionId, t.schoolYearId)
+      // Allow re-creating the same assignment after soft-delete.
+      .where(sql`${t.deletedAt} is null`),
     index("ta_teacher_idx").on(t.teacherId),
   ]
 );

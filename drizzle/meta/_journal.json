@@ -13,7 +13,7 @@
       "idx": 1,
       "version": "7",
       "when": 1778044006090,
-      "tag": "0001_purple_meggan",
+      "tag": "0001_add_parent_guardian_profile_fields",
       "breakpoints": true
     },
     {
@@ -21,6 +21,27 @@
       "version": "7",
       "when": 1778046000000,
       "tag": "0002_soft_delete_academics",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778121439903,
+      "tag": "0003_add_super_admin_role_and_teacher_assignment_unique_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778135489524,
+      "tag": "0004_require_or_fields_for_consumed_payments",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778135605479,
+      "tag": "0005_add_active_school_year_uniqueness_and_date_check",
       "breakpoints": true
     }
   ]

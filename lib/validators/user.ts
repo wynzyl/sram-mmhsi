@@ -33,6 +33,7 @@ export const CreateUserSchema = z.object({
   password: passwordSchema,
   role: z.enum(
     [
+      ROLES.SUPER_ADMIN,
       ROLES.ADMIN,
       ROLES.REGISTRAR,
       ROLES.FINANCE_OFFICER,
@@ -74,6 +75,7 @@ export const UpdateUserSchema = z.object({
     .toLowerCase(),
   role: z.enum(
     [
+      ROLES.SUPER_ADMIN,
       ROLES.ADMIN,
       ROLES.REGISTRAR,
       ROLES.FINANCE_OFFICER,

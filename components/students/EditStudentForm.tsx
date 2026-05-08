@@ -75,7 +75,7 @@ export default function EditStudentForm({
 
   useEffect(() => {
     if (state.success) {
-      router.push(afterSaveRedirect ?? `/admin/students/${student.id}`);
+      router.push(afterSaveRedirect ?? `/staff/students/${student.id}`);
     }
   }, [state.success, student.id, router, afterSaveRedirect]);
 

@@ -32,7 +32,7 @@ export default async function CashierDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/staff/invoices" className="block">
+        <Link href="/staff/finance/invoices" className="block">
           <Card className="h-full transition-shadow hover:shadow-md">
             <CardHeader>
               <CardTitle>Invoices</CardTitle>

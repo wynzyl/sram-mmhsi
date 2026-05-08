@@ -8,6 +8,7 @@ import type {
   CreateStudentFormState,
   GuardianInput,
 } from "@/lib/validators/student";
+import type { StudentDirectoryBasePath } from "@/lib/utils/student-directory-href";
 import GuardianForm from "./GuardianForm";
 import IntakeRequirementsFieldset from "@/components/enrollments/IntakeRequirementsFieldset";
 
@@ -25,7 +26,9 @@ const emptyGuardian = (): GuardianInput => ({
 
 const initialState: CreateStudentFormState = {};
 
-type StudentProfileBase = "/admin/students" | "/staff/students";
+// StudentForm can be used in both staff and admin flows; keep this type aligned
+// with the shared student directory base-path type.
+type StudentProfileBase = StudentDirectoryBasePath;
 
 interface GradeLevelOption {
   id: string;
@@ -43,7 +46,7 @@ type StudentFormProps = {
 };
 
 export default function StudentForm({
-  afterCreateStudentBasePath = "/admin/students",
+  afterCreateStudentBasePath = "/staff/students",
   currentSchoolYear,
   gradeLevels,
   lockedRegistrationType,

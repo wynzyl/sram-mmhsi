@@ -1,11 +1,12 @@
 import { z } from "zod";
 
 /** Matches `EnrollmentIntakeDocuments` field values in `lib/db/schema.ts`. */
-export const intakeDocumentStatusSchema = z.enum([
-  "received",
-  "not_applicable",
-  "to_follow",
-]);
+export const intakeDocumentStatusSchema = z.enum(
+  ["received", "not_applicable", "to_follow"],
+  {
+    message: "Please select Received, Not applicable, or To follow.",
+  }
+);
 
 export type IntakeDocumentStatus = z.infer<typeof intakeDocumentStatusSchema>;
 

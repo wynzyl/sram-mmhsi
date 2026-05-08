@@ -109,7 +109,7 @@ Authentication is JWT-based using `jose` library (NOT NextAuth). Session managem
 - `createSession()` — Creates session on login
 - `deleteSession()` — Logout
 
-Middleware enforces role checks at route level.
+Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redirects, staff vs portal separation, and `/admin` restrictions. **Next.js 16** renamed the former `middleware.ts` convention to `proxy.ts`; older writeups may still say “middleware.”
 
 ### User Roles & Permissions
 
@@ -245,7 +245,7 @@ All UI components use CSS custom properties for theming (deep red primary color,
 
 1. **Soft Delete Only:** Use `deletedAt` / `deletedBy` fields. Never hard delete.
 2. **No Dashboards Before Logic:** Do not build overview/dashboard pages until core CRUD operations exist.
-3. **RBAC at 3 Levels:** Route guard (middleware) + server action validation + audit logging.
+3. **RBAC at 3 Levels:** Route guard (`proxy.ts`) + server action validation + audit logging.
 4. **Always Use Reusable Components:** Do not create one-off table/form components.
 5. **Defensive Key Generation:** Use `key={item.id}` for DB records, never array index.
 6. **Zod for Runtime Validation:** Parse external input (forms, API responses) with Zod schemas.

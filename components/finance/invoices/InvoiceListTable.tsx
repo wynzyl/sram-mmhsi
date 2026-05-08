@@ -14,9 +14,17 @@ interface InvoiceData {
 
 interface InvoiceListTableProps {
   invoices: InvoiceData[];
+  /** Base path without trailing slash; detail links append `/${invoice.id}`. */
+  invoiceDetailBasePath?: string;
 }
 
-export default function InvoiceListTable({ invoices }: InvoiceListTableProps) {
+export default function InvoiceListTable({
+  invoices,
+  invoiceDetailBasePath = "/staff/finance/invoices",
+}: InvoiceListTableProps) {
+  const normalizedBasePath =
+    invoiceDetailBasePath.replace(/\/+$/, "") || "/staff/finance/invoices";
+
   return (
     <div className="table-wrapper">
       <table className="data-table">
@@ -63,7 +71,7 @@ export default function InvoiceListTable({ invoices }: InvoiceListTableProps) {
                 <td>{new Date(invoice.createdAt).toLocaleDateString()}</td>
                 <td>
                   <Link
-                    href={`/admin/finance/invoices/${invoice.id}`}
+                    href={`${normalizedBasePath}/${invoice.id}`}
                     className="table-action-link"
                   >
                     View Details

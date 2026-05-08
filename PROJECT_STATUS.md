@@ -1,12 +1,18 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-05-05
+> Last updated: 2026-05-07
 
 ## Current phase
 
 **Core school operations (Phases 1–8)** are implemented in code: auth, student records, registrations listing + creation through student onboarding, enrollments, assessments, fees, cashier/OR posting, invoices, and teacher grade encoding.
 
 **Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, executive/reporting dashboards, formal OR **receipt** print view, **E2E** tests, and wiring **rate limit** + mandatory **password-change** gate.
+
+## Latest updates (2026-05-07)
+
+- [x] Assessment draft creation UX refreshed in `components/assessments/AssessmentDraftForm.tsx` with stronger student context, fee-catalog-driven line rendering, computed summary totals, and explicit assessment audit/finalization guidance.
+- [x] Shared assessment-ledger page abstraction added in `src/app/_internal/pages/assessment-ledger-page.tsx` to centralize permission checks, data loading, and handoff into `AssessmentLedgerRegister`.
+- [x] Assessment-to-ledger workflow messaging clarified so teams create assessment once, then continue payment/invoice operations in the ledger/finance flow.
 
 ---
 
@@ -40,7 +46,8 @@
 - [x] `lib/auth/session.ts` — JWT (jose), httpOnly cookie, DB-backed sessions, renewal/revocation patterns
 - [x] `lib/validators/auth.ts` — Zod login schema
 - [x] `actions/auth.ts` — login + logout; bcrypt; audit for success/failure
-- [x] `proxy.ts` — unauthenticated redirect; staff vs portal vs admin-only routes; role landing redirects
+- [x] `proxy.ts` — unauthenticated redirect; staff vs portal vs admin-only routes; role landing redirects  
+  *(Next.js 16: the root file was `middleware.ts`; it is now `proxy.ts` with a named `proxy` export. Doc or comments that say “middleware” for this layer mean `proxy.ts`.)*
 - [x] `components/auth/LoginForm.tsx` — client form with `useActionState`
 - [x] `scripts/seed.ts` — admin seed (`npm run db:seed`)
 - [x] Path aliases — `tsconfig.json` / `next.config.ts` for `@/` imports
@@ -51,8 +58,8 @@
 - [x] **Registrations list + intake visibility** — paginated approved-registration queues for `admin` and `staff` (`admin/registrations`, `staff/registrations`)
 - [x] **Registration creation on student onboarding** — student creation now inserts an approved `registrations` row in the same transaction (`actions/students.ts`)
 - [x] **Enrollments** — create, status transitions, cancellation (`actions/enrollments.ts`, `admin/enrollments/*`)
-- [x] **Fee schedules & assessments** — schedules, per-enrollment assessments, items, balances (`actions/finance.ts`, `actions/assessments.ts`, `admin/finance/*`, `admin/assessments/*`)
-- [x] **Cashier & OR** — booklet setup, post/void payment, allocations (`actions/cashier.ts`, booklet pages, payment UI on **assessment** ledger — not a separate `/staff/payments` page)
+- [x] **Fee schedules & assessments** — schedules, per-enrollment assessments, items, balances, and refreshed assessment draft UX (`actions/finance.ts`, `actions/assessments.ts`, `admin/finance/*`, `admin/assessments/*`, `components/assessments/AssessmentDraftForm.tsx`)
+- [x] **Cashier & OR** — booklet setup, post/void payment, allocations, and shared internal ledger composition (`actions/cashier.ts`, booklet pages, payment UI on **assessment** ledger, `src/app/_internal/pages/assessment-ledger-page.tsx`)
 - [x] **Invoices** — generate, send (Nodemailer/Gmail), status (`actions/invoices.ts`, `admin/finance/invoices/*`)
 - [x] **Academics & grades** — subjects, assignments, teacher grade encoding and lock (`actions/academics.ts`, `actions/teacher.ts`, `/staff/grades/*`, admin assignment pages)
 - [x] **Users** — admin user CRUD, password reset / `forcePasswordChange` field (`actions/users.ts`)

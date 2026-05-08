@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
+import { ReferenceCode } from "@/components/data-display/ReferenceCode";
 import { StatusBadge } from "@/components/data-display/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { StudentRecordTabShell, type StudentRecordTabDef } from "@/components/students/StudentRecordTabShell";
@@ -126,10 +127,6 @@ function invoiceStatusVariant(
   }
 }
 
-function portalHref(path: string, linkBase: "admin" | "staff") {
-  return linkBase === "staff" ? path.replace(/^\/admin/, "/staff") : path;
-}
-
 const INTAKE_REQUIREMENT_ROWS: {
   key: keyof EnrollmentIntakeDocuments;
   label: string;
@@ -207,11 +204,9 @@ function RequirementsRecordCard({ snap }: { snap: StudentRequirementsSnapshot })
 function EnrollmentBillingCell({
   row,
   flags,
-  linkBase,
 }: {
   row: EnrollmentRecordRow;
   flags: StudentRecordFlags;
-  linkBase: "admin" | "staff";
 }) {
   if (row.status === "cancelled") {
     return <span className="student-record-muted">—</span>;
@@ -220,7 +215,7 @@ function EnrollmentBillingCell({
   if (flags.canReadAssessments && row.assessmentId) {
     return (
       <Link
-        href={portalHref(`/admin/assessments/${row.assessmentId}`, linkBase)}
+        href={`/staff/assessments/${row.assessmentId}`}
         className="student-record-inline-link"
       >
         Open ledger
@@ -231,7 +226,7 @@ function EnrollmentBillingCell({
   if (row.status === "pending" && flags.canCreateAssessment) {
     return (
       <Link
-        href={portalHref(`/admin/assessments/new/${row.id}`, linkBase)}
+        href={`/staff/assessments/new/${row.id}`}
         className="student-record-inline-link"
       >
         Build assessment
@@ -255,7 +250,6 @@ export function StudentRecordProfile({
   assessmentSummaries,
   invoices,
   flags,
-  linkBase = "admin",
 }: {
   student: StudentRecordStudent;
   guardians: GuardianRow[];
@@ -265,8 +259,6 @@ export function StudentRecordProfile({
   assessmentSummaries: AssessmentSummaryRow[];
   invoices: InvoiceSummaryRow[];
   flags: StudentRecordFlags;
-  /** Use `staff` when rendering under `/staff/students/*` so navigation stays in the staff shell. */
-  linkBase?: "admin" | "staff";
 }) {
   const fullName = [student.firstName, student.middleName, student.lastName, student.suffix]
     .filter(Boolean)
@@ -447,7 +439,7 @@ export function StudentRecordProfile({
                       <StatusBadge status={row.status} type="enrollment" />
                     </td>
                     <td>
-                      <EnrollmentBillingCell row={row} flags={flags} linkBase={linkBase} />
+                      <EnrollmentBillingCell row={row} flags={flags} />
                     </td>
                     <td className="student-record-muted">
                       {row.enrolledAt
@@ -513,7 +505,7 @@ export function StudentRecordProfile({
                     </td>
                     <td className="text-right">
                       <Link
-                        href={portalHref(`/admin/assessments/${a.id}`, linkBase)}
+                        href={`/staff/assessments/${a.id}`}
                         className="student-record-inline-link"
                       >
                         Ledger
@@ -577,7 +569,7 @@ export function StudentRecordProfile({
                     </td>
                     <td className="text-right">
                       <Link
-                        href={portalHref(`/admin/finance/invoices/${inv.id}`, linkBase)}
+                        href={`/staff/finance/invoices/${inv.id}`}
                         className="student-record-inline-link"
                       >
                         View
@@ -609,7 +601,7 @@ export function StudentRecordProfile({
 
   return (
     <div className="student-record-page page-container">
-      <Link href={portalHref("/admin/students", linkBase)} className="student-record-back">
+      <Link href="/staff/students" className="student-record-back">
         ← Back to Students
       </Link>
 
@@ -641,7 +633,9 @@ export function StudentRecordProfile({
               <div className="student-record-hero-meta">
                 <div className="student-record-meta-tile">
                   <span className="student-record-meta-label">Reference</span>
-                  <span className="student-record-meta-value student-record-mono">{student.referenceNumber}</span>
+                  <span className="student-record-meta-value">
+                    <ReferenceCode code={student.referenceNumber} />
+                  </span>
                 </div>
                 {student.lrn ? (
                   <div className="student-record-meta-tile">
@@ -672,7 +666,7 @@ export function StudentRecordProfile({
           <div className="student-record-hero-actions">
             {flags.canEnroll && (
               <Link
-                href={`${portalHref("/admin/enrollments/new", linkBase)}?studentId=${student.id}`}
+                href={`/staff/enrollments/new?studentId=${student.id}`}
                 className="student-record-btn student-record-btn-primary"
                 id="enroll-student-btn"
               >
@@ -681,7 +675,7 @@ export function StudentRecordProfile({
             )}
             {flags.canEditStudent && (
               <Link
-                href={portalHref(`/admin/students/${student.id}/edit`, linkBase)}
+                href={`/staff/students/${student.id}/edit`}
                 className="student-record-btn student-record-btn-secondary"
                 id="edit-student-btn"
               >

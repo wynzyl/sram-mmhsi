@@ -37,7 +37,7 @@ type ActiveBooklet = {
 };
 
 export type AssessmentLedgerRegisterProps = {
-  /** Base path for student profile links, e.g. `/admin/students` or `/staff/students`. */
+  /** Base path for student profile links (staff operational shell). */
   studentRecordsBasePath?: string;
   assessment: {
     id: string;
@@ -63,7 +63,7 @@ function lineSignedAmount(item: LedgerLineItem): number {
 }
 
 export default function AssessmentLedgerRegister({
-  studentRecordsBasePath = "/admin/students",
+  studentRecordsBasePath = "/staff/students",
   assessment,
   items,
   payments,
