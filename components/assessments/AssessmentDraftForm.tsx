@@ -44,6 +44,8 @@ interface AssessmentDraftFormProps {
   submitBlockedReason?: string | null;
   /** Base path without trailing slash (e.g. `/staff/assessments`). */
   assessmentsBasePath: string;
+  /** Route to fee schedule setup page (e.g. `/staff/finance/fee-schedules`). */
+  feeSchedulesPath?: string;
 }
 
 const initialAssessmentState: AssessmentFormState = {};
@@ -83,6 +85,7 @@ export default function AssessmentDraftForm({
   feeCatalog,
   submitBlockedReason,
   assessmentsBasePath,
+  feeSchedulesPath = "/staff/finance/fee-schedules",
 }: AssessmentDraftFormProps) {
   const router = useRouter();
   const [state, action, pending] = useActionState(
@@ -141,7 +144,12 @@ export default function AssessmentDraftForm({
           className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
           role="alert"
         >
-          {submitBlockedReason}
+          <p>{submitBlockedReason}</p>
+          <p className="mt-2">
+            <Link href={feeSchedulesPath} className="font-semibold underline hover:no-underline">
+              Open fee setup
+            </Link>
+          </p>
         </div>
       )}
 
@@ -158,7 +166,7 @@ export default function AssessmentDraftForm({
             <DataCardBody className="space-y-4">
               <div className="flex gap-4">
                 <div
-                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-[var(--color-border)] bg-[var(--color-surface-2)] font-display text-lg font-bold text-charcoal"
+                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-(--color-border) bg-(--color-surface-2) font-display text-lg font-bold text-charcoal"
                   aria-hidden
                 >
                   {studentInitials(studentFirstName, studentLastName)}
@@ -176,7 +184,7 @@ export default function AssessmentDraftForm({
                 </div>
               </div>
               <dl className="grid gap-2 text-sm">
-                <div className="flex justify-between gap-4 border-t border-[var(--color-border)] pt-3">
+                <div className="flex justify-between gap-4 border-t border-(--color-border) pt-3">
                   <dt className="text-warm-gray">Grade</dt>
                   <dd className="text-right font-medium text-charcoal">{gradeLabel}</dd>
                 </div>
@@ -202,7 +210,7 @@ export default function AssessmentDraftForm({
           <DataCard className="animate-reveal-stagger stagger-delay-2">
             <DataCardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-lg font-bold text-charcoal">Current charges</h2>
-              <span className="rounded-md bg-[var(--color-primary)]/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-primary)]">
+              <span className="rounded-md bg-(--color-primary)/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-(--color-primary)">
                 Draft
               </span>
             </DataCardHeader>
@@ -213,16 +221,24 @@ export default function AssessmentDraftForm({
               </p>
 
               {rows.length === 0 ? (
-                <p className="text-sm text-warm-gray">
-                  {blocked
-                    ? "Fix the warning above before lines can be generated."
-                    : "No fee schedule lines are available for this enrollment band."}
-                </p>
+                <div className="space-y-2 text-sm text-warm-gray">
+                  <p>
+                    {blocked
+                      ? "Fix the warning above before lines can be generated."
+                      : "No fee schedule lines are available for this enrollment band."}
+                  </p>
+                  <Link
+                    href={feeSchedulesPath}
+                    className="inline-flex rounded-md border border-(--color-border) bg-(--color-surface) px-3 py-1.5 text-xs font-semibold text-charcoal hover:bg-(--color-surface-2)"
+                  >
+                    Go to fee setup
+                  </Link>
+                </div>
               ) : (
-                <div className="overflow-x-auto rounded-md border border-[var(--color-border)]">
-                  <table className="w-full min-w-[28rem] text-sm">
+                <div className="overflow-x-auto rounded-md border border-(--color-border)">
+                  <table className="w-full min-w-md text-sm">
                     <thead>
-                      <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)] text-left text-xs font-semibold uppercase tracking-wide text-warm-gray">
+                      <tr className="border-b border-(--color-border) bg-(--color-surface-2) text-left text-xs font-semibold uppercase tracking-wide text-warm-gray">
                         <th className="px-3 py-2">Description</th>
                         <th className="px-3 py-2 text-right">Amount (PHP)</th>
                         <th className="px-3 py-2 text-center">Type</th>
@@ -233,7 +249,7 @@ export default function AssessmentDraftForm({
                         return (
                           <tr
                             key={row.rowKey}
-                            className="border-b border-[var(--color-border)] last:border-b-0"
+                            className="border-b border-(--color-border) last:border-b-0"
                           >
                             <td className="px-3 py-2 align-middle font-medium text-charcoal">
                               {row.description}
@@ -242,7 +258,7 @@ export default function AssessmentDraftForm({
                               <CurrencyDisplay amount={Number.parseFloat(row.amount) || 0} />
                             </td>
                             <td className="px-3 py-2 text-center align-middle">
-                              <span className="inline-block rounded bg-[var(--color-surface-2)] px-2 py-0.5 text-xs font-medium text-charcoal">
+                              <span className="inline-block rounded bg-(--color-surface-2) px-2 py-0.5 text-xs font-medium text-charcoal">
                                 {row.isDiscount ? "Discount" : "Charge"}
                               </span>
                             </td>
@@ -291,7 +307,7 @@ export default function AssessmentDraftForm({
           </DataCard>
 
           {/* Summary */}
-          <DataCard className="animate-reveal-stagger stagger-delay-4 border-[var(--color-primary)]/20 bg-[var(--color-surface-2)]/80">
+          <DataCard className="animate-reveal-stagger stagger-delay-4 border-(--color-primary)/20 bg-(--color-surface-2)/80">
             <DataCardHeader>
               <h2 className="font-display text-lg font-bold text-charcoal">Assessment summary</h2>
             </DataCardHeader>
@@ -308,11 +324,11 @@ export default function AssessmentDraftForm({
                     className={discountSum > 0 ? "text-blue-700" : undefined}
                   />
                 </li>
-                <li className="flex justify-between gap-4 border-t border-dashed border-[var(--color-border)] pt-3">
+                <li className="flex justify-between gap-4 border-t border-dashed border-(--color-border) pt-3">
                   <span className="font-display font-bold text-charcoal">Net assessed balance</span>
                   <CurrencyDisplay
                     amount={netAssessed}
-                    className="font-display text-lg font-bold text-[var(--color-primary)]"
+                    className="font-display text-lg font-bold text-(--color-primary)"
                   />
                 </li>
               </ul>
@@ -324,14 +340,14 @@ export default function AssessmentDraftForm({
             <DataCardFooter className="flex flex-wrap items-center justify-between gap-3">
               <Link
                 href={assessmentsBasePath}
-                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-charcoal hover:bg-[var(--color-surface-2)]"
+                className="rounded-md border border-(--color-border) bg-(--color-surface) px-4 py-2 text-sm font-medium text-charcoal hover:bg-(--color-surface-2)"
               >
                 Back
               </Link>
               <button
                 type="submit"
                 form={formId}
-                className="rounded-md bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
+                className="rounded-md bg-(--color-primary) px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
                 disabled={pending || blocked || rows.length === 0}
               >
                 {pending ? "Saving…" : "Save assessment"}
@@ -343,7 +359,7 @@ export default function AssessmentDraftForm({
 
       {/* Audit / finalization callout */}
       <section
-        className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-5"
+        className="rounded-lg border border-(--color-border) bg-(--color-surface) px-6 py-5"
         aria-labelledby="assessment-audit-heading"
       >
         <h2
@@ -354,7 +370,7 @@ export default function AssessmentDraftForm({
         </h2>
         <p className="mt-2 text-sm text-charcoal">
           This screen is the <strong>only</strong> time an assessment is created for this enrollment.
-          When you save, the system records an audit entry (<code className="rounded bg-[var(--color-surface-2)] px-1 font-mono text-xs">assessment_created_and_enrollment_assessed</code>),
+          When you save, the system records an audit entry (<code className="rounded bg-(--color-surface-2) px-1 font-mono text-xs">assessment_created_and_enrollment_assessed</code>),
           locks in the line items you confirmed, and sets the enrollment to <strong>Assessed</strong>.
           Further payment activity is tracked on the ledger, not by re-running this screen.
         </p>

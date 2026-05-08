@@ -56,6 +56,7 @@ export async function InternalNewAssessmentForEnrollmentPage(props: {
         feeCatalog={feeCatalog}
         submitBlockedReason={submitBlockedReason}
         assessmentsBasePath={assessmentsBasePath}
+        feeSchedulesPath="/staff/finance/fee-schedules"
       />
     </div>
   );
