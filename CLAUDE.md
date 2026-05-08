@@ -114,7 +114,7 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 ### User Roles & Permissions
 
 **Roles (via `roleEnum` in schema):**
-- 'super_admin' - Manages system setup, users, roles, database-related settings.
+- `super_admin` - Manages system setup, users, roles, database-related settings.
 - `admin` —  Can view and access all business operations and reports
 - `registrar` — Student records & enrollment management
 - `finance_officer` — Fee schedules, assessments, invoices, OR booklet setup
@@ -211,7 +211,7 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 ### Reusable Components
 
 **Data Display:**
-- `DataTable` — tanstack table 
+- `DataTable<t` — tanstack table 
 - `StatusBadge` — Maps DB status enums to styled badges
 - `CurrencyDisplay` — Formats amounts in PHP locale (en-PH)
 - `ReferenceCode` — Displays student reference numbers

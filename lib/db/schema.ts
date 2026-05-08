@@ -187,17 +187,27 @@ export const curriculums = pgTable("curriculums", {
   createdBy: uuid("created_by").references(() => users.id),
 });
 
-export const subjects = pgTable("subjects", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  code: text("code").notNull(),
-  curriculumId: uuid("curriculum_id").references(() => curriculums.id).notNull(),
-  gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  createdBy: uuid("created_by").references(() => users.id),
-  deletedAt: timestamp("deleted_at"),
-  deletedBy: uuid("deleted_by").references(() => users.id),
-});
+export const subjects = pgTable(
+  "subjects",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    code: text("code").notNull(),
+    curriculumId: uuid("curriculum_id").references(() => curriculums.id).notNull(),
+    gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    index("subjects_curriculum_idx").on(t.curriculumId),
+    // Partial index for active subjects (soft delete optimization)
+    index("subjects_active_idx")
+      .on(t.id)
+      .where(sql`${t.deletedAt} IS NULL`),
+  ]
+);
 
 // ─── Students & Parents ───────────────────────────────────────────────────────
 
@@ -407,18 +417,24 @@ export const assessments = pgTable(
   ]
 );
 
-export const assessmentItems = pgTable("assessment_items", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  assessmentId: uuid("assessment_id").notNull().references(() => assessments.id, { onDelete: "cascade" }),
-  feeScheduleItemId: uuid("fee_schedule_item_id").references(() => feeScheduleItems.id),
-  description: text("description").notNull(),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
-  isDiscount: boolean("is_discount").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  createdBy: uuid("created_by").references(() => users.id),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  updatedBy: uuid("updated_by").references(() => users.id),
-});
+export const assessmentItems = pgTable(
+  "assessment_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    assessmentId: uuid("assessment_id").notNull().references(() => assessments.id, { onDelete: "cascade" }),
+    feeScheduleItemId: uuid("fee_schedule_item_id").references(() => feeScheduleItems.id),
+    description: text("description").notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    isDiscount: boolean("is_discount").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+  },
+  (t) => [
+    index("ai_assessment_idx").on(t.assessmentId),
+  ]
+);
 
 // ─── Payments ─────────────────────────────────────────────────────────────────
 
@@ -480,13 +496,19 @@ export const payments = pgTable(
   ]
 );
 
-export const paymentAllocations = pgTable("payment_allocations", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  paymentId: uuid("payment_id").notNull().references(() => payments.id, { onDelete: "cascade" }),
-  assessmentItemId: uuid("assessment_item_id").references(() => assessmentItems.id),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const paymentAllocations = pgTable(
+  "payment_allocations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    paymentId: uuid("payment_id").notNull().references(() => payments.id, { onDelete: "cascade" }),
+    assessmentItemId: uuid("assessment_item_id").references(() => assessmentItems.id),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("pa_payment_idx").on(t.paymentId),
+  ]
+);
 
 // ─── Invoices ─────────────────────────────────────────────────────────────────
 
@@ -537,6 +559,11 @@ export const teacherAssignments = pgTable(
       // Allow re-creating the same assignment after soft-delete.
       .where(sql`${t.deletedAt} is null`),
     index("ta_teacher_idx").on(t.teacherId),
+    index("ta_subject_idx").on(t.subjectId),
+    // Partial index for active assignments (soft delete optimization)
+    index("ta_active_idx")
+      .on(t.teacherId)
+      .where(sql`${t.deletedAt} IS NULL`),
   ]
 );
 
@@ -561,6 +588,7 @@ export const gradeRecords = pgTable(
   },
   (t) => [
     uniqueIndex("gr_unique_idx").on(t.studentId, t.teacherAssignmentId, t.gradingPeriod),
+    index("gr_teacher_assignment_idx").on(t.teacherAssignmentId),
     index("gr_student_idx").on(t.studentId),
     index("gr_status_idx").on(t.status),
   ]
