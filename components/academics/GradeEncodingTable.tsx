@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, memo } from "react";
 import { saveGradesAction, submitGradesAction } from "@/actions/teacher";
 
 type StudentData = {
@@ -13,6 +13,60 @@ type StudentData = {
     Q4?: { grade: string; status: string };
   };
 };
+
+/**
+ * Memoized student grade row component.
+ * Prevents unnecessary re-renders when parent state changes (e.g., tab switching, save state updates).
+ * Only re-renders when the student's specific grade data or disabled state changes.
+ */
+const StudentGradeRow = memo(
+  ({
+    student,
+    activeTab,
+    isDisabled,
+  }: {
+    student: StudentData;
+    activeTab: "Q1" | "Q2" | "Q3" | "Q4";
+    isDisabled: boolean;
+  }) => {
+    const gradeData = student.grades[activeTab];
+
+    return (
+      <tr>
+        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">
+          {student.name}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            max="100"
+            name={`grade_${student.id}_${activeTab}`}
+            defaultValue={gradeData?.grade || ""}
+            disabled={isDisabled}
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500"
+          />
+        </td>
+      </tr>
+    );
+  },
+  // Custom comparison function: only re-render if these specific props change
+  (prevProps, nextProps) => {
+    // Don't re-render if student ID, grade, and disabled state are unchanged
+    const prevGrade = prevProps.student.grades[prevProps.activeTab]?.grade;
+    const nextGrade = nextProps.student.grades[nextProps.activeTab]?.grade;
+
+    return (
+      prevProps.student.id === nextProps.student.id &&
+      prevProps.activeTab === nextProps.activeTab &&
+      prevGrade === nextGrade &&
+      prevProps.isDisabled === nextProps.isDisabled
+    );
+  }
+);
+
+StudentGradeRow.displayName = "StudentGradeRow";
 
 export function GradeEncodingTable({
   assignmentId,
@@ -150,28 +204,14 @@ export function GradeEncodingTable({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {students.map((student) => {
-                  const gradeData = student.grades[activeTab];
-                  return (
-                    <tr key={student.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">
-                        {student.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          name={`grade_${student.id}_${activeTab}`}
-                          defaultValue={gradeData?.grade || ""}
-                          disabled={isLockedOrSubmitted}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500"
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
+                {students.map((student) => (
+                  <StudentGradeRow
+                    key={student.id}
+                    student={student}
+                    activeTab={activeTab}
+                    isDisabled={isLockedOrSubmitted}
+                  />
+                ))}
               </tbody>
             </table>
           </div>

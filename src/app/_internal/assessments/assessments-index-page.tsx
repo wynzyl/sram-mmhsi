@@ -1,19 +1,21 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { assessments, students, schoolYears, enrollments, gradeLevels } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { enrollments, gradeLevels, schoolYears, students } from "@/lib/db/schema";
+import { desc, eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentsTable from "@/components/finance/AssessmentsTable";
 import PendingAssessmentsQueue from "@/components/assessments/PendingAssessmentsQueue";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
+import { getAssessmentsList } from "@/lib/queries/assessments";
+import { Pagination } from "@/components/ui/Pagination";
 
 const dateQueued = (d: Date) =>
   d.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" });
 
 export async function AssessmentsIndexPage(props: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; page?: string }>;
   assessmentsBasePath: "/staff/assessments";
   deniedRedirect: string;
 }) {
@@ -24,8 +26,10 @@ export async function AssessmentsIndexPage(props: {
     redirect(deniedRedirect);
   }
 
-  const { view } = await searchParams;
+  const params = await searchParams;
+  const { view, page: pageParam } = params;
   const tab = view === "ledgers" ? "ledgers" : "pending";
+  const currentPage = Math.max(1, parseInt(pageParam || "1", 10));
 
   const canCreate = hasPermission(session.role, "assessments:create");
 
@@ -55,31 +59,11 @@ export async function AssessmentsIndexPage(props: {
     queuedAtLabel: dateQueued(r.enrollmentCreatedAt),
   }));
 
-  const rows = await db
-    .select({
-      id: assessments.id,
-      totalAmount: assessments.totalAmount,
-      totalPaid: assessments.totalPaid,
-      balance: assessments.balance,
-      billingStatus: assessments.billingStatus,
-      studentLastName: students.lastName,
-      studentFirstName: students.firstName,
-      schoolYear: schoolYears.label,
-    })
-    .from(assessments)
-    .innerJoin(students, eq(assessments.studentId, students.id))
-    .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
-    .orderBy(desc(assessments.createdAt));
-
-  const tableData = rows.map((r) => ({
-    id: r.id,
-    studentName: `${r.studentLastName}, ${r.studentFirstName}`,
-    schoolYear: r.schoolYear,
-    totalAmount: Number(r.totalAmount),
-    totalPaid: Number(r.totalPaid),
-    balance: Number(r.balance),
-    billingStatus: r.billingStatus,
-  }));
+  // Use paginated query for assessments ledgers
+  const assessmentsResult = await getAssessmentsList({
+    page: currentPage,
+    pageSize: 25,
+  });
 
   return (
     <div className="page-container max-w-7xl">
@@ -125,7 +109,18 @@ export async function AssessmentsIndexPage(props: {
           assessmentsBasePath={assessmentsBasePath}
         />
       ) : (
-        <AssessmentsTable assessments={tableData} assessmentsBasePath={assessmentsBasePath} />
+        <>
+          <AssessmentsTable assessments={assessmentsResult.data} assessmentsBasePath={assessmentsBasePath} />
+          {assessmentsResult.pagination.totalPages > 1 && (
+            <div className="mt-6">
+              <Pagination
+                currentPage={assessmentsResult.pagination.page}
+                totalPages={assessmentsResult.pagination.totalPages}
+                baseUrl={`${assessmentsBasePath}?view=ledgers`}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

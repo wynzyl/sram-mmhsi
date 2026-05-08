@@ -211,7 +211,7 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 ### Reusable Components
 
 **Data Display:**
-- `DataTable<t` — tanstack table 
+- `DataTable<t>` — tanstack table 
 - `StatusBadge` — Maps DB status enums to styled badges
 - `CurrencyDisplay` — Formats amounts in PHP locale (en-PH)
 - `ReferenceCode` — Displays student reference numbers
@@ -237,9 +237,6 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 **UI Primitives (Shadcn/ui-based):**
 - `Button`, `Input`, `Card`, `Badge`, `Spinner`, `ThemeToggle`
 
-All UI components use CSS custom properties for theming (deep red primary color, green accents).
-
-**📘 See `FORM-MIGRATION-GUIDE.md` for complete form component migration patterns.**
 
 ### Rules (Non-Negotiable)
 
