@@ -52,7 +52,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
   admin: [
     {
       label: "Overview",
-      items: [{ href: "/staff/dashboard", label: "Dashboard", icon: "dashboard" }],
+      items: [{ href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" }],
     },
     {
       label: "Academic",

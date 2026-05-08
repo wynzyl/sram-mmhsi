@@ -83,6 +83,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
     "booklets:manage",
     "fee_schedules:manage",
+    "school_years:manage",
     "reports:finance", "reports:academic",
   ],
   registrar: [

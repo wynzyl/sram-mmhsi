@@ -12,7 +12,7 @@ export default async function StaffDashboardPage() {
     redirect("/login");
   }
 
-  if (role === ROLES.SUPER_ADMIN) {
+  if (role === ROLES.SUPER_ADMIN || role === ROLES.ADMIN) {
     redirect("/admin/dashboard");
   }
 

@@ -16,7 +16,7 @@ import { normalizeRole } from "@/lib/constants/roles";
 
 const ROLE_LANDING: Record<Role, string> = {
   super_admin: "/admin/dashboard",
-  admin: "/staff/dashboard",
+  admin: "/admin/dashboard",
   registrar: "/staff/dashboard",
   finance_officer: "/staff/finance",
   cashier: "/staff/payments",

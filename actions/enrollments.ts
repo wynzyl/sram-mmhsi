@@ -9,6 +9,7 @@ import {
   gradeLevels,
   assessments,
   registrations,
+  auditLogs,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
 import { eq, and, ne, isNull, desc } from "drizzle-orm";

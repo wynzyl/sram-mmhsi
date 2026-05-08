@@ -14,7 +14,7 @@ export function staffHomePathForRole(role: Role): string {
     case "teacher":
       return "/staff/grades";
     case "admin":
-      return "/staff/registrations";
+      return "/admin/dashboard";
     default:
       return "/login";
   }
