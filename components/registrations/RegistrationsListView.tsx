@@ -31,7 +31,8 @@ interface RegistrationsListViewProps {
   /** When false, omit the built-in editorial heading (parent page supplies the title). */
   showQueueHeading?: boolean;
   emptyMessage?: string;
-  studentBasePath?: string;}
+  studentBasePath?: "/admin/students" | "/staff/students";
+}
 
 const STAGGER_CLASSES = [
   "stagger-delay-1",
