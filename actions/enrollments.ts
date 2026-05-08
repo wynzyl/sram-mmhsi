@@ -9,7 +9,6 @@ import {
   gradeLevels,
   assessments,
   registrations,
-  auditLogs,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
 import { eq, and, ne, isNull, desc } from "drizzle-orm";
@@ -377,13 +376,6 @@ export async function updateEnrollmentStatusAction(
       studentId: true,
       schoolYearId: true,
       gradeLevelId: true,
-      sectionId: true,
-      enrolledAt: true,
-      updatedBy: true,
-      updatedAt: true,
-      cancelledAt: true,
-      cancelledBy: true,
-      cancelRemarks: true,
     },
   });
 
@@ -474,37 +466,17 @@ export async function updateEnrollmentStatusAction(
       }
     });
 
-    const updatedSnapshot = {
-      ...updateValues,
-      ...(assessmentForCancel && action === "cancel"
-        ? { assessmentId: assessmentForCancel.id }
-        : {}),
-    };
-
-    const previousSnapshot = {
-      status: enrollment.status,
-      updatedBy: enrollment.updatedBy,
-      updatedAt: enrollment.updatedAt,
-      ...(action === "override_enroll" && {
-        enrolledAt: enrollment.enrolledAt,
-        ...(sectionId ? { sectionId: enrollment.sectionId } : {}),
-      }),
-      ...(action === "cancel" && {
-        cancelledAt: enrollment.cancelledAt,
-        cancelledBy: enrollment.cancelledBy,
-        cancelRemarks: enrollment.cancelRemarks,
-      }),
-      ...(assessmentForCancel && action === "cancel"
-        ? { assessmentId: assessmentForCancel.id }
-        : {}),
-    };
-
     await logUpdateAction(
       session,
       "enrollments",
       enrollmentId,
-      previousSnapshot,
-      updatedSnapshot
+      { status: enrollment.status },
+      {
+        ...updateValues,
+        ...(assessmentForCancel && action === "cancel"
+          ? { assessmentId: assessmentForCancel.id }
+          : {}),
+      }
     );
 
     logger.info("[enrollments] Status updated", {

@@ -12,7 +12,7 @@ import {
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
 import { eq, ne, ilike, and, sql } from "drizzle-orm";
-import { requireSession, getCurrentUser } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
 import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
