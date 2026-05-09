@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { RegistrationQueuePage } from "@/app/_internal/registrations/registration-queue-page";
+import { RegistrationQueuePage } from "@/app/page-templates/registrations/registration-queue-page";
 
 export const metadata: Metadata = {
   title: "Registrations",

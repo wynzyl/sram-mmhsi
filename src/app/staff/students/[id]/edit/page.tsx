@@ -5,7 +5,7 @@ import { students } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { InternalEditStudentPage } from "@/app/_internal/students/edit-student-page";
+import { InternalEditStudentPage } from "@/app/page-templates/students/edit-student-page";
 
 interface PageProps {
   params: Promise<{ id: string }>;

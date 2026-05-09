@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AssessmentsIndexPage } from "@/app/_internal/assessments/assessments-index-page";
+import { AssessmentsIndexPage } from "@/app/page-templates/assessments/assessments-index-page";
 
 export const metadata: Metadata = {
   title: "Assessments",

@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { enrollments, gradeLevels, schoolYears, sections, students } from "@/lib/db/schema";
 import { and, asc, desc, eq, ilike, isNull, ne, or, sql } from "drizzle-orm";
 
-export const STUDENT_DIRECTORY_PAGE_SIZE = 20;
+export const STUDENT_DIRECTORY_PAGE_SIZE = 10;
 
 export type StudentDirectoryRow = {
   enrollmentId: string;

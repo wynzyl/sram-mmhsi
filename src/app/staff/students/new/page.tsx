@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { InternalNewStudentRegistrationPage } from "@/app/_internal/registrations/new-student-registration-page";
+import { InternalNewStudentRegistrationPage } from "@/app/page-templates/registrations/new-student-registration-page";
 import { staffHomePathForRole } from "@/lib/utils/staff-home";
 import type { Role } from "@/lib/constants/roles";
 import { requireSession } from "@/lib/auth/session";

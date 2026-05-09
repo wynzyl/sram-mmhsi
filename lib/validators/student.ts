@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { IntakeDocumentStatus } from "@/lib/validators/intake-documents";
-import type { CreateStudentWithRegistrationInput } from "./registration";
+import type { CreateStudentWithRegistrationInput } from "@/features/registrations/registrations.schema";
 import {
   nameSchema,
   emailSchema,

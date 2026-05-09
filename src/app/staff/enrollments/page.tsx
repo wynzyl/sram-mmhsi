@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { EnrollmentQueuePage } from "@/app/_internal/enrollments/enrollments-queue-page";
+import { EnrollmentQueuePage } from "@/app/page-templates/enrollments/enrollments-queue-page";
 
 export const metadata: Metadata = {
   title: "Enrollments",
