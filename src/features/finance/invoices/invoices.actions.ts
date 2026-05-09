@@ -17,6 +17,7 @@ import type { BaseFormState } from "@/lib/validators/common-schemas";
 import { logger } from "@/lib/observability/logger";
 import { generateInvoiceNumber } from "@/lib/utils/reference";
 import { sendInvoiceEmail } from "@/lib/email/sender";
+import { generateAssessmentLetterHtml } from "@/lib/email/templates/assessment-letter";
 
 export async function generateInvoiceAction(
   assessmentId: string
@@ -149,6 +150,7 @@ export async function sendInvoiceAction(
         status: invoices.status,
         studentFirstName: students.firstName,
         studentLastName: students.lastName,
+        studentReferenceNumber: students.referenceNumber,
       })
       .from(invoices)
       .innerJoin(students, eq(invoices.studentId, students.id))
@@ -159,24 +161,16 @@ export async function sendInvoiceAction(
       return { message: "Invoice not found." };
     }
 
-    const htmlContent = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-        <h2 style="color: #111827; margin-bottom: 24px;">Invoice: ${invoice.invoiceNumber}</h2>
-        <p style="color: #374151;">Dear ${invoice.studentFirstName} ${invoice.studentLastName},</p>
-        <p style="color: #374151;">Please find your invoice details below:</p>
-        <div style="background-color: #f3f4f6; padding: 16px; border-radius: 6px; margin: 20px 0;">
-          <p style="margin: 0 0 8px 0;"><strong>Amount Due:</strong> ₱${Number(invoice.amountDue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-          <p style="margin: 0;"><strong>Status:</strong> ${invoice.status.toUpperCase()}</p>
-        </div>
-        <p style="color: #374151;">Thank you for your prompt payment.</p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-        <p style="color: #6b7280; font-size: 12px;">This is an automated message from SRAMS. Please do not reply directly to this email.</p>
-      </div>
-    `;
+    const htmlContent = generateAssessmentLetterHtml({
+      invoiceNumber: invoice.invoiceNumber,
+      studentName: `${invoice.studentFirstName} ${invoice.studentLastName}`,
+      studentReferenceNumber: invoice.studentReferenceNumber,
+      amountDue: invoice.amountDue,
+    });
 
     await sendInvoiceEmail({
       to: email,
-      subject: `Invoice ${invoice.invoiceNumber} from SRAMS`,
+      subject: `Assessment Invoice ${invoice.invoiceNumber} — Merryland Montesorri and High School`,
       html: htmlContent,
     });
 

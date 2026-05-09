@@ -47,7 +47,8 @@
       "Bash(psql:*)",
       "Bash(npx drizzle-kit studio)",
       "Bash(tree:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(powershell -Command \"Remove-Item -Path ''E:\\\\Projects\\\\SRAMS\\\\SRAMS-MMHSI\\\\.claude\\\\worktrees'' -Recurse -Force\")"
     ]
   }
 }
