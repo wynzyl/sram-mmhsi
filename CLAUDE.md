@@ -26,7 +26,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Phase 3.2 Complete:** All 9 validator files use `BaseFormState` and common schemas
 - ✅ **Phase 3.3 Partial:** 1/16 forms migrated, comprehensive migration guide created (`FORM-MIGRATION-GUIDE.md`)
 - ✅ **Phase 3.4 Complete:** All duplicate button components replaced with `ConfirmActionButton`
-- ✅ **Build & Tests:** TypeScript compiles with no errors, all 13 Vitest tests pass
+- ✅ **Build & Tests:** TypeScript compiles with no errors, all 29 Vitest tests pass
+
+**Folder Restructure (2026-05-09):**
+
+- ✅ **Phase 1-4:** All features migrated to `src/features/` structure
+- ✅ **Phase 5:** Import paths updated
+- ✅ **Phase 6:** Cleanup complete - removed duplicate schemas and unused files
+- ✅ **Architecture:** Hybrid schema approach - shared schemas in `lib/validators/`, feature-specific in `src/features/*/`
 
 ## Important Documentation References
 
@@ -77,23 +84,26 @@ NODE_ENV="development"
 
 ### Core Design Principles
 
-1. **Strict Layer Separation:** Business logic lives exclusively in server actions (`actions/*.ts`), data reads in queries, validation in Zod schemas (`lib/validators/*.ts`)
-2. **OR Tracking is Mandatory:** Every payment transaction must be linked to an OR number from an active booklet
-3. **Audit Everything Financial:** All payment posts, voids, and OR consumption must generate audit log entries
-4. **Role-Based Access Control (RBAC):** Enforce at 3 levels — route guard, server action validation, and audit logging
-5. **Soft Delete Only:** Use `deletedAt` / `deletedBy` fields — never hard delete records
+1. **Feature-Based Architecture:** Code organized by domain feature in `src/features/` with actions, schemas, queries, and components co-located
+2. **Hybrid Schema Strategy:** Shared schemas (common-schemas, intake-documents) in `lib/validators/`, feature-specific schemas in `src/features/*/`
+3. **OR Tracking is Mandatory:** Every payment transaction must be linked to an OR number from an active booklet
+4. **Audit Everything Financial:** All payment posts, voids, and OR consumption must generate audit log entries
+5. **Role-Based Access Control (RBAC):** Enforce at 3 levels — route guard, server action validation, and audit logging
+6. **Soft Delete Only:** Use `deletedAt` / `deletedBy` fields — never hard delete records
 
 ### Layer Boundaries (Non-Negotiable)
 
-| Layer             | Location              | Responsibility                                    | Rules                                               |
-| ----------------- | --------------------- | ------------------------------------------------- | --------------------------------------------------- |
-| Server Actions    | `actions/*.ts`        | ALL business logic and DB writes                  | Must use `"use server"` directive                   |
-| Zod Schemas       | `lib/validators/*.ts` | Single source of truth for all data shapes        | Export schemas AND TypeScript types                 |
-| Utility Functions | `lib/utils/*.ts`      | Pure transformations only (format, compute, etc.) | No database calls, no business logic                |
-| Client Components | `components/**/*.tsx` | UI state and form interactions only               | No direct DB access, no business logic              |
-| Auth & Sessions   | `lib/auth/*.ts`       | JWT-based session management                      | Use `requireSession()` in server components & pages |
+| Layer             | Location                                | Responsibility                                    | Rules                                               |
+| ----------------- | --------------------------------------- | ------------------------------------------------- | --------------------------------------------------- |
+| Server Actions    | `src/features/*/*.actions.ts`           | ALL business logic and DB writes                  | Must use `"use server"` directive                   |
+| Zod Schemas       | `src/features/*/*.schema.ts` or `lib/validators/*.ts` | Data validation and type definitions | Shared schemas in lib, feature-specific in features |
+| Server Queries    | `src/features/*/*.queries.ts`           | ALL database reads                                | Server-only, passed as props to components          |
+| Utility Functions | `lib/utils/*.ts`                        | Pure transformations only (format, compute, etc.) | No database calls, no business logic                |
+| Client Components | `src/features/*/components/*.tsx`       | UI state and form interactions only               | No direct DB access, no business logic              |
+| Auth & Sessions   | `lib/auth/*.ts`                         | JWT-based session management                      | Use `requireSession()` in server components & pages |
+| Page Templates    | `src/app/page-templates/`               | Reusable page components for routes               | Server components that compose features             |
 
-**Violations:** No business logic in `.tsx` files. No direct DB calls in components. No raw SQL outside actions.
+**Violations:** No business logic in `.tsx` files. No direct DB calls in components. No raw SQL outside queries/actions.
 
 ### Routing & Authentication
 

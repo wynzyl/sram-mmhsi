@@ -45,7 +45,9 @@
       "Bash(xargs:*)",
       "Bash(exit:*)",
       "Bash(psql:*)",
-      "Bash(npx drizzle-kit studio)"
+      "Bash(npx drizzle-kit studio)",
+      "Bash(tree:*)",
+      "Bash(test:*)"
     ]
   }
 }

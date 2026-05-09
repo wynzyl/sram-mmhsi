@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CreateStudentSchema } from "../students/students.schema";
-import { intakeDocumentStatusSchema, preprocessIntakeRadio } from "./intake-documents.schema";
+import { intakeDocumentStatusSchema, preprocessIntakeRadio } from "@/lib/validators/intake-documents";
 
 export const registrationIntentEnumSchema = z.enum(["new_student", "transferee"]);
 
@@ -33,33 +33,6 @@ export const CreateStudentWithRegistrationSchema = CreateStudentSchema.extend({
       });
     }
   }
-
-  // const blockToFollow = (
-  //   value: (typeof data)["intakeForm138"],
-  //   path: keyof Pick<
-  //     typeof data,
-  //     | "intakeForm138"
-  //     | "intakeBirthCertificatePsa"
-  //     | "intakeGoodMoralCharacter"
-  //     | "intakeQualifiedVoucher"
-  //     | "intakeEscCertificate"
-  //   >,
-  //   label: string
-  // ) => {
-  //   if (value === "to_follow") {
-  //     ctx.addIssue({
-  //       code: z.ZodIssueCode.custom,
-  //       message: `${label}: choose Received or Not applicable before submitting (To follow is for tracking only).`,
-  //       path: [path],
-  //     });
-  //   }
-  // };
-
-  // blockToFollow(data.intakeForm138, "intakeForm138", "FORM 138");
-  // blockToFollow(data.intakeBirthCertificatePsa, "intakeBirthCertificatePsa", "Birth Certificate (PSA)");
-  // blockToFollow(data.intakeGoodMoralCharacter, "intakeGoodMoralCharacter", "Good Moral Character");
-  // blockToFollow(data.intakeQualifiedVoucher, "intakeQualifiedVoucher", "Qualified Voucher Certificate");
-  // blockToFollow(data.intakeEscCertificate, "intakeEscCertificate", "ESC Certificate");
 });
 
 export type CreateStudentWithRegistrationInput = z.infer<typeof CreateStudentWithRegistrationSchema>;
