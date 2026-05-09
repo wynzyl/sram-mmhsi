@@ -1,11 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-const nextConfig: NextConfig = {
   allowedDevOrigins: [
     'http://localhost:3000',
-    ...(process.env.NEXT_ALLOWED_DEV_ORIGINS
-      ? process.env.NEXT_ALLOWED_DEV_ORIGINS.split(',').map((v) => v.trim()).filter(Boolean)
+    ...(process.env.APP_BASE_URL
+      ? process.env.APP_BASE_URL.split(',').map((v) => v.trim()).filter(Boolean)
       : []),
   ],
 

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import FeeScheduleForm from "@/features/finance/components/FeeScheduleForm";
-import { getSchoolYears } from "@/src/queries/schoolYears";
+import { getSchoolYears } from "@/lib/queries/schoolYears";
 
 export const metadata: Metadata = {
   title: "New Fee Schedule",

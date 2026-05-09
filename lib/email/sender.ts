@@ -9,6 +9,9 @@ const transporter = nodemailer.createTransport({
     user: GMAIL_USER,
     pass: GMAIL_APP_PASSWORD,
   },
+  tls: {
+    rejectUnauthorized: false,
+  },
 });
 
 type SendInvoiceEmailOptions = {
