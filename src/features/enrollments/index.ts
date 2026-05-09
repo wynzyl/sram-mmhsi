@@ -51,4 +51,4 @@ export { default as StudentPicker } from "./components/StudentPicker";
 export type { StudentPickerOption } from "./components/StudentPicker";
 
 // Re-export intake document utilities
-export { parseIntakeDocumentStatus } from './intake-documents.schema';
+export { parseIntakeDocumentStatus } from '@/lib/validators/intake-documents';

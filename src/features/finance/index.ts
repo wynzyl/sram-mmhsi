@@ -1,10 +1,5 @@
 // Fee Schedules
 export * from "./fee-schedules/fee-schedules.actions";
-// Schema exports temporarily disabled due to migration incompleteness - use @/lib/validators/finance
-
-// Booklets
-// Actions exports temporarily disabled due to duplication with fee-schedules
-// Schema exports temporarily disabled due to migration incompleteness - use @/lib/validators/finance
 
 // Invoices
 export * from "./invoices/invoices.actions";
