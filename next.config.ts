@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ['http://localhost:3000', 'http://26.207.172.83'],
+const nextConfig: NextConfig = {
+  allowedDevOrigins: [
+    'http://localhost:3000',
+    ...(process.env.NEXT_ALLOWED_DEV_ORIGINS
+      ? process.env.NEXT_ALLOWED_DEV_ORIGINS.split(',').map((v) => v.trim()).filter(Boolean)
+      : []),
+  ],
 
   // Next.js 16 uses Turbopack by default - configure file watching
   turbopack: {
