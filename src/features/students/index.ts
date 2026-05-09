@@ -15,7 +15,7 @@ export * from "./students.schema";
 
 // Utils
 export * from "./students.utils";
-export * from "./students-directory-href";
+export * from "@/lib/utils/student-directory-href";
 
 // Components
 export { default as StudentForm } from "./components/StudentForm";

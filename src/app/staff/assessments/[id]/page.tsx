@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { InternalAssessmentLedgerPage } from "@/app/_internal/assessments/assessment-ledger-page";
+import { InternalAssessmentLedgerPage } from "@/app/page-templates/assessments/assessment-ledger-page";
 
 interface PageProps {
   params: Promise<{ id: string }>;

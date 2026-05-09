@@ -7,7 +7,7 @@ import { staffHomePathForRole } from "@/lib/utils/staff-home";
 import type { Role } from "@/lib/constants/roles";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { InternalStudentProfilePage } from "@/app/_internal/students/student-profile-page";
+import { InternalStudentProfilePage } from "@/app/page-templates/students/student-profile-page";
 
 interface PageProps {
   params: Promise<{ id: string }>;

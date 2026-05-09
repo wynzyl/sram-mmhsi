@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { InternalNewEnrollmentPage } from "@/app/_internal/enrollments/new-enrollment-page";
+import { InternalNewEnrollmentPage } from "@/app/page-templates/enrollments/new-enrollment-page";
 import { staffHomePathForRole } from "@/lib/utils/staff-home";
 import type { Role } from "@/lib/constants/roles";
 import { requireSession } from "@/lib/auth/session";

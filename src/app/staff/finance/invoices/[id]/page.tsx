@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { InternalInvoiceDetailPage } from "@/app/_internal/invoices/invoice-detail-page";
+import { InternalInvoiceDetailPage } from "@/app/page-templates/invoices/invoice-detail-page";
 
 export const metadata: Metadata = {
   title: "Invoice Details | SRAMS",

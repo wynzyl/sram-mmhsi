@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { InternalStudentDirectoryPage } from "@/app/_internal/students/students-directory-page";
+import { InternalStudentDirectoryPage } from "@/app/page-templates/students/students-directory-page";
 import { staffHomePathForRole } from "@/lib/utils/staff-home";
 import type { Role } from "@/lib/constants/roles";
 import { requireSession } from "@/lib/auth/session";

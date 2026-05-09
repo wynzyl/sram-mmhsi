@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { InternalNewAssessmentForEnrollmentPage } from "@/app/_internal/assessments/new-assessment-for-enrollment-page";
+import { InternalNewAssessmentForEnrollmentPage } from "@/app/page-templates/assessments/new-assessment-for-enrollment-page";
 
 export const metadata: Metadata = { title: "Fee assessment" };
 

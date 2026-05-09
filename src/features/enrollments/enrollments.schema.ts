@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { intakeDocumentStatusSchema, preprocessIntakeRadio, parseIntakeDocumentStatus, type IntakeDocumentStatus } from "./intake-documents.schema";
+import { intakeDocumentStatusSchema, preprocessIntakeRadio, parseIntakeDocumentStatus, type IntakeDocumentStatus } from "@/lib/validators/intake-documents";
 import type { BaseFormState } from "@/lib/validators/common-schemas";
 
 // Re-export for convenience
