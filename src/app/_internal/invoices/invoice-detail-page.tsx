@@ -5,7 +5,7 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import { eq, and } from "drizzle-orm";
 import Link from "next/link";
-import SendInvoiceDialog from "@/components/finance/invoices/SendInvoiceDialog";
+import SendInvoiceDialog from "@/features/finance/components/invoices/SendInvoiceDialog";
 
 type InvoiceDetailRoute = "/staff/finance/invoices";
 type AssessmentsBase = "/staff/assessments";

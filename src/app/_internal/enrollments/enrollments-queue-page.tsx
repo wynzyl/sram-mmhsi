@@ -9,18 +9,18 @@ import {
   getEnrollmentQueueData,
   getEnrollmentQueueCounts,
   type TabKey,
-} from "@/lib/queries/enrollment-queue";
+} from "@/features/enrollments/enrollments-queue.queries";
 import type { PaginationParams } from "@/lib/types/pagination";
 import { unstable_cache } from "next/cache";
-import { EnrollmentQueueTabs } from "@/components/enrollments/EnrollmentQueueTabs";
-import { EnrollmentGlobalFilters } from "@/components/enrollments/EnrollmentGlobalFilters";
-import { ReadyToEnrollTableClient } from "@/components/enrollments/ReadyToEnrollTableClient";
+import { EnrollmentQueueTabs } from "@/features/enrollments";
+import { EnrollmentGlobalFilters } from "@/features/enrollments";
+import { ReadyToEnrollTableClient } from "@/features/enrollments";
 import {
   PendingEnrollmentsTable,
   AssessedEnrollmentsTable,
   EnrolledStudentsTable,
   CancelledEnrollmentsTable,
-} from "@/components/enrollments/EnrollmentStatusTables";
+} from "@/features/enrollments";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw, FileText } from "lucide-react";
 

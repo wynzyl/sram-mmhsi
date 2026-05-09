@@ -12,7 +12,7 @@ import {
 } from "@/lib/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
-import { CashierPaymentProcessingView } from "@/components/cashier/CashierPaymentProcessingView";
+import { CashierPaymentProcessingView } from "@/features/payments/components/CashierPaymentProcessingView";
 import { hasPermission } from "@/lib/rbac/permissions";
 
 interface PageProps {

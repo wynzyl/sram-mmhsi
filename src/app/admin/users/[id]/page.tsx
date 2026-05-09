@@ -7,7 +7,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { ROLE_LABELS } from "@/lib/constants/roles";
-import ResetPasswordForm from "@/components/users/ResetPasswordForm";
+import ResetPasswordForm from "@/features/users/components/ResetPasswordForm";
 
 interface PageProps {
   params: Promise<{ id: string }>;

@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import AssessmentDraftForm from "@/components/assessments/AssessmentDraftForm";
+import AssessmentDraftForm from "@/features/assessments/components/AssessmentDraftForm";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
-import { loadNewAssessmentPageContext } from "@/lib/queries/new-assessment-context";
+import { loadNewAssessmentPageContext } from "@/features/assessments";
 
 export async function InternalNewAssessmentForEnrollmentPage(props: {
   enrollmentId: string;

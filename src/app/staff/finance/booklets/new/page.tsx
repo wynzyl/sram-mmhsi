@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import BookletForm from "@/components/finance/BookletForm";
+import BookletForm from "@/features/finance/components/BookletForm";
 
 export const metadata: Metadata = {
   title: "Register Receipt Booklet",

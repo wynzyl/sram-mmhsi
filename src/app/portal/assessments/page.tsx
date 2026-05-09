@@ -11,8 +11,8 @@ import {
 } from "@/lib/queries/portal-student";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
-import { StatusBadge } from "@/components/data-display/StatusBadge";
+import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
 export const metadata = { title: "My Assessments" };
 
