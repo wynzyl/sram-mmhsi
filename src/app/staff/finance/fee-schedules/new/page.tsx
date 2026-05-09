@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import FeeScheduleForm from "@/components/finance/FeeScheduleForm";
+import FeeScheduleForm from "@/features/finance/components/FeeScheduleForm";
 import { getSchoolYears } from "@/src/queries/schoolYears";
 
 export const metadata: Metadata = {

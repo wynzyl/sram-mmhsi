@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { students, parentsGuardians, studentGuardianLinks, enrollments } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
-import EditStudentForm from "@/components/students/EditStudentForm";
-import { StudentEditHero } from "@/components/students/StudentEditHero";
+import EditStudentForm from "@/features/students/components/EditStudentForm";
+import { StudentEditHero } from "@/features/students/components/StudentEditHero";
 
 /** Thin route pages must verify `students:update` before rendering. */
 export async function InternalEditStudentPage(props: {

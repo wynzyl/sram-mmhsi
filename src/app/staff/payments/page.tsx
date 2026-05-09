@@ -12,11 +12,11 @@ import {
   students,
 } from "@/lib/db/schema";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { CashierQueueTable } from "@/components/cashier/CashierQueueTable";
+import { CashierQueueTable } from "@/features/payments/components/CashierQueueTable";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CurrencyDisplay } from "@/components/data-display/CurrencyDisplay";
-import { ReferenceCode } from "@/components/data-display/ReferenceCode";
+import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { ReferenceCode } from "@/components/shared/ReferenceCode";
 
 export default async function CashierQueuePage() {
   const session = await requireSession();

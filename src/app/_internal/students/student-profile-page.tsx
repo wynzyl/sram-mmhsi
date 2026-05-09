@@ -22,9 +22,9 @@ import {
   type InvoiceSummaryRow,
   type CurrentPlacement,
   type StudentRecordFlags,
-} from "@/components/students/StudentRecordProfile";
-import { RegistrationDetailView } from "@/components/registrations/RegistrationDetailView";
-import { getStudentRequirementsSnapshots } from "@/lib/queries/student-requirements-snapshots";
+} from "@/features/students/components/StudentRecordProfile";
+import { RegistrationDetailView } from "@/features/registrations/components/RegistrationDetailView";
+import { getStudentRequirementsSnapshots } from "@/features/registrations/registrations.queries";
 
 /** Caller must have verified `students:read` before render (thin route pages use `redirect` when missing). */
 export async function InternalStudentProfilePage(props: {

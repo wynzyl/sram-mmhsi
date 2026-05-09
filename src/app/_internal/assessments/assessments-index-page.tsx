@@ -5,10 +5,10 @@ import { desc, eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac/permissions";
-import AssessmentsTable from "@/components/finance/AssessmentsTable";
-import PendingAssessmentsQueue from "@/components/assessments/PendingAssessmentsQueue";
+import AssessmentsTable from "@/features/finance/components/AssessmentsTable";
+import PendingAssessmentsQueue from "@/features/assessments/components/PendingAssessmentsQueue";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
-import { getAssessmentsList } from "@/lib/queries/assessments";
+import { getAssessmentsList } from "@/features/assessments";
 import { Pagination } from "@/components/ui/Pagination";
 
 const dateQueued = (d: Date) =>

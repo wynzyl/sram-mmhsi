@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
-import SchoolYearForm from "@/components/school-years/SchoolYearForm";
+import SchoolYearForm from "@/features/school-years/components/SchoolYearForm";
 
 export const metadata: Metadata = {
   title: "Create School Year",
