@@ -11,7 +11,7 @@ import {
   gradeRecords
 } from "@/lib/db/schema";
 import { notFound, redirect } from "next/navigation";
-import { GradeEncodingTable } from "@/components/academics/GradeEncodingTable";
+import { GradeEncodingTable } from "@/features/academics";
 
 export default async function GradeEncodingPage({
   params,

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
-import UserForm from "@/components/users/UserForm";
+import UserForm from "@/features/users/components/UserForm";
 
 export const metadata: Metadata = {
   title: "Create User",

@@ -6,7 +6,7 @@ import { schoolYears } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import EditSchoolYearForm from "@/components/school-years/EditSchoolYearForm";
+import EditSchoolYearForm from "@/features/school-years/components/EditSchoolYearForm";
 
 interface PageProps {
   params: Promise<{ id: string }>;

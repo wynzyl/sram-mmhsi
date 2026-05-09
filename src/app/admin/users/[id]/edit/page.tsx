@@ -6,7 +6,7 @@ import { users } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import EditUserForm from "@/components/users/EditUserForm";
+import EditUserForm from "@/features/users/components/EditUserForm";
 
 interface PageProps {
   params: Promise<{ id: string }>;

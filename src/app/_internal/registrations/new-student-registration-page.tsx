@@ -4,7 +4,7 @@ import { schoolYears, gradeLevels } from "@/lib/db/schema";
 import { eq, asc, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import StudentRegistrationForm from "@/components/registrations/StudentRegistrationForm";
+import StudentRegistrationForm from "@/features/registrations/components/StudentRegistrationForm";
 
 export async function InternalNewStudentRegistrationPage(props: {
   searchParams: Promise<{ intent?: string }>;

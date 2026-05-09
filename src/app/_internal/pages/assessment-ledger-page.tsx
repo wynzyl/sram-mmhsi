@@ -13,7 +13,7 @@ import {
 import { eq, desc, asc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import AssessmentLedgerRegister from "@/components/cashier/AssessmentLedgerRegister";
+import AssessmentLedgerRegister from "@/features/payments/components/AssessmentLedgerRegister";
 
 export async function InternalAssessmentLedgerPage(props: {
   assessmentId: string;

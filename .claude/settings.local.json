@@ -28,7 +28,24 @@
       "Bash(wc:*)",
       "Bash(npm run test:*)",
       "Bash(grep:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(findstr:*)",
+      "Bash(chmod:*)",
+      "Bash(bash:*)",
+      "Bash(find:*)",
+      "Bash(xargs sed:*)",
+      "Bash(for file in lib/queries/students-directory.ts lib/queries/enrollment-queue.ts lib/queries/enrollment-registration-context.ts lib/queries/student-requirements-snapshots.ts lib/queries/new-assessment-context.ts lib/queries/assessments.ts)",
+      "Bash(do)",
+      "Bash(then)",
+      "Bash(echo:*)",
+      "Bash(else)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(xargs:*)",
+      "Bash(exit:*)",
+      "Bash(psql:*)",
+      "Bash(npx drizzle-kit studio)"
     ]
   }
 }

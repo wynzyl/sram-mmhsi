@@ -5,7 +5,7 @@ import { feeSchedules, schoolYears, feeScheduleItems } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import FeeScheduleItemsList from "@/components/finance/FeeScheduleItemsList";
+import FeeScheduleItemsList from "@/features/finance/components/FeeScheduleItemsList";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
 
 interface PageProps {
