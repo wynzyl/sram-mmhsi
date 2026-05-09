@@ -13,6 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Current Delivery Snapshot (2026-05-06)
 
 **Core Features:**
+
 - Core operations (auth, students, registrations queue, enrollments, assessments, payments/OR, invoices, grades) are implemented.
 - Registration creation is integrated in student onboarding; dedicated intake/review actions are still pending.
 - Portal currently has `/portal/dashboard`; portal detail pages (`/portal/assessments`, `/portal/payments`, `/portal/grades`) are pending.
@@ -20,6 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - E2E Playwright test suite is not yet committed.
 
 **Refactoring Status (2026-05-06):**
+
 - ✅ **Phase 3.1 Complete:** All 11 action files use centralized `logAudit()` utility
 - ✅ **Phase 3.2 Complete:** All 9 validator files use `BaseFormState` and common schemas
 - ✅ **Phase 3.3 Partial:** 1/16 forms migrated, comprehensive migration guide created (`FORM-MIGRATION-GUIDE.md`)
@@ -114,8 +116,9 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 ### User Roles & Permissions
 
 **Roles (via `roleEnum` in schema):**
+
 - `super_admin` - Manages system setup, users, roles, database-related settings.
-- `admin` —  Can view and access all business operations and reports
+- `admin` — Can view and access all business operations and reports
 - `registrar` — Student records & enrollment management
 - `finance_officer` — Fee schedules, assessments, invoices, OR booklet setup
 - `cashier` — Payment posting only
@@ -128,10 +131,12 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 ### Database Schema Key Relationships
 
 **Students & Parents:**
+
 - `users` → `students` (optional portal account via `userId`)
 - `students` ↔ `parentsGuardians` via `studentGuardianLinks` (many-to-many)
 
 **Academic Workflow:**
+
 - `schoolYears` (one active at a time)
 - `gradeLevels` (static: Kinder, Grade 1–12)
 - `sections` (per grade level + school year)
@@ -140,12 +145,14 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 - `gradeRecords` (student + assignment + grading period: Q1–Q4)
 
 **Registration → Enrollment Flow:**
+
 1. `registrations` (approved records currently created during student onboarding; dedicated review actions pending)
 2. `enrollments` (status: pending → assessed → enrolled)
 3. `feeSchedules` + `feeScheduleItems` (schedule for every group level - (Casa, Lower Elem, Higher Elem, JHS, SHS))
 4. `assessments` + `assessmentItems` (copied from fee schedule on enrollment)
 
 **Payment & OR Tracking (Critical):**
+
 1. `receiptBooklets` — OR booklet definition (series, start/end number, status)
 2. `payments` — Payment record (linked to `bookletId` + `orNumber`)
 3. `paymentAllocations` — Payment distribution across assessment items
@@ -154,6 +161,7 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 6. GCash and bank transfer always require a reference number (not optional)
 
 **Invoices:**
+
 - `invoices` (status: draft → sent → viewed → settled/overdue)
 - Linked to `assessments` for tracking outstanding balances
 - Finance officers send via email integration
@@ -189,6 +197,7 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
    - Capture: actor, timestamp, OR number, amount, student reference
 
 **Related Files:**
+
 - Schema: `lib/db/schema.ts` (tables: `receiptBooklets`, `payments`)
 - Actions: `actions/cashier.ts` (payment posting logic)
 - Validators: `lib/validators/cashier.ts`
@@ -196,6 +205,7 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 ### Grade Encoding Workflow
 
 **Grade Lifecycle:**
+
 1. Admin assigns teacher to subject + section via `teacherAssignments`
 2. Teacher encodes grades per student per grading period (Q1–Q4)
 3. Grade status: `draft` → `submitted` → `locked`
@@ -204,6 +214,7 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 **Grading Periods:** Q1, Q2, Q3, Q4 (hardcoded in system)
 
 **Related Files:**
+
 - Schema: `gradeRecords`, `teacherAssignments`
 - Actions: `actions/teacher.ts` (encode/submit), `actions/academics.ts` (assign/lock)
 - Components: `components/academics/GradeEncodingTable.tsx`
@@ -211,12 +222,14 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 ### Reusable Components
 
 **Data Display:**
-- `DataTable<t>` — tanstack table 
+
+- `DataTable<t>` — tanstack table
 - `StatusBadge` — Maps DB status enums to styled badges
 - `CurrencyDisplay` — Formats amounts in PHP locale (en-PH)
 - `ReferenceCode` — Displays student reference numbers
 
 **Forms (Refactored - Phase 3.2/3.3):**
+
 - `FormStateAlert` — **USE THIS** for all error/success messages (replaces manual alert blocks)
 - `TextInputField` — Controlled text input with error display
 - `SelectField` — Controlled select dropdown with error display
@@ -226,17 +239,19 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 - `FormActions` — Form submit/cancel buttons
 
 **Actions (Refactored - Phase 3.4):**
+
 - `ConfirmActionButton` — **USE THIS** for all confirmation actions (delete, lock, remove, etc.)
 - `InlineConfirmButton` — Inline variant (for table cells)
 - `BlockConfirmButton` — Full-width variant (for modals)
 
 **Layout:**
+
 - `PageHeader` — Page title + breadcrumb
 - `PageContainer` — Page wrapper with consistent padding
 
 **UI Primitives (Shadcn/ui-based):**
-- `Button`, `Input`, `Card`, `Badge`, `Spinner`, `ThemeToggle`
 
+- `Button`, `Input`, `Card`, `Badge`, `Spinner`, `ThemeToggle`
 
 ### Rules (Non-Negotiable)
 
@@ -253,6 +268,7 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 ### Common Patterns
 
 **Server Component Pattern (fetching data):**
+
 ```typescript
 // src/app/admin/students/page.tsx
 import { requireSession } from "@/lib/auth/session";
@@ -272,19 +288,20 @@ export default async function StudentsPage() {
 ```
 
 **Server Action Pattern (mutations) - REFACTORED:**
+
 ```typescript
 // actions/students.ts
 "use server";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { logAudit } from "@/lib/utils/audit-logger";  // ✅ Phase 3.1: Use centralized audit
+import { logAudit } from "@/lib/utils/audit-logger"; // ✅ Phase 3.1: Use centralized audit
 import { db } from "@/lib/db";
 import { createStudentSchema } from "@/lib/validators/student";
-import type { CreateStudentFormState } from "@/lib/validators/student";  // ✅ Phase 3.2: BaseFormState
+import type { CreateStudentFormState } from "@/lib/validators/student"; // ✅ Phase 3.2: BaseFormState
 
 export async function createStudent(
   _prevState: CreateStudentFormState,
-  formData: FormData
+  formData: FormData,
 ): Promise<CreateStudentFormState> {
   const session = await requireSession();
 
@@ -304,10 +321,13 @@ export async function createStudent(
   }
 
   // 3. Business logic + DB write
-  const [student] = await db.insert(students).values({
-    ...parsed,
-    createdBy: session.userId,
-  }).returning();
+  const [student] = await db
+    .insert(students)
+    .values({
+      ...parsed,
+      createdBy: session.userId,
+    })
+    .returning();
 
   // 4. Audit log - ✅ Use centralized logger (Phase 3.1)
   await logAudit({
@@ -323,7 +343,27 @@ export async function createStudent(
 }
 ```
 
+Enforce at **3 levels**: route guard → server action validation → audit logging. UI hiding is NOT security. 
+
+### ActionResult Pattern (NON-NEGOTIABLE)
+
+All server actions must return this shape:
+
+```typescript
+type ActionResult<T> =
+  | { ok: true; data: T }
+  | {
+      ok: false;
+      error: {
+        code: string;
+        message: string;
+        fieldErrors?: Record<string, string[]>;
+      };
+    };
+```
+
 **Client Component Pattern (form submission) - REFACTORED:**
+
 ```typescript
 // components/students/StudentForm.tsx
 "use client";
@@ -357,6 +397,7 @@ export function StudentForm() {
 ```
 
 **Validator Pattern - REFACTORED (Phase 3.2):**
+
 ```typescript
 // lib/validators/student.ts
 import { z } from "zod";
@@ -364,26 +405,27 @@ import {
   nameSchema,
   emailSchema,
   phoneSchema,
-  type BaseFormState,  // ✅ Use shared base type
+  type BaseFormState, // ✅ Use shared base type
 } from "./common-schemas";
 
 export const CreateStudentSchema = z.object({
-  firstName: nameSchema,        // ✅ Use common schemas
+  firstName: nameSchema, // ✅ Use common schemas
   middleName: z.string().trim().optional(),
   lastName: nameSchema.toUpperCase(),
-  email: emailSchema,           // ✅ Reusable validation
-  mobileNumber: phoneSchema,    // ✅ Reusable validation
+  email: emailSchema, // ✅ Reusable validation
+  mobileNumber: phoneSchema, // ✅ Reusable validation
 });
 
 export type CreateStudentInput = z.infer<typeof CreateStudentSchema>;
 
 // ✅ Extend BaseFormState instead of redefining
 export type CreateStudentFormState = BaseFormState<CreateStudentInput> & {
-  studentId?: string;  // Additional fields beyond base
+  studentId?: string; // Additional fields beyond base
 };
 ```
 
 **Confirmation Button Pattern - REFACTORED (Phase 3.4):**
+
 ```typescript
 // Instead of creating custom button components, use ConfirmActionButton:
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
@@ -428,6 +470,7 @@ new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(15
 **E2E Tests:** Playwright is configured as target tooling, but the committed end-to-end suite is still pending.
 
 **Test Commands:**
+
 - `npm run test` — Run all unit tests
 - `npm run test:watch` — Watch mode for TDD
 - `npm run test:e2e` — Run Playwright tests
@@ -435,6 +478,7 @@ new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(15
 ### Migrations
 
 **Workflow:**
+
 1. Modify `lib/db/schema.ts`
 2. Run `npm run db:generate` — Creates migration file in `drizzle/`
 3. Review generated SQL in `drizzle/*.sql`
@@ -450,15 +494,19 @@ Create migration files with clear, human-readable, descriptive filenames; avoid 
 ### Seeding
 
 **System Configuration Seed:**
+
 ```bash
 npm run db:seed-config
 ```
+
 Seeds: school years, grade levels, sections, default admin user.
 
 **Sample Data Seed:**
+
 ```bash
 npm run db:seed
 ```
+
 Seeds: students, enrollments, assessments (for testing).
 
 ### Style Guidelines
@@ -466,11 +514,13 @@ Seeds: students, enrollments, assessments (for testing).
 **CSS:** Use Tailwind utility classes for layout, CSS custom properties for theming.
 
 **Color Palette:**
+
 - Primary: Deep Red (`--color-primary`)
 - Accent: Green (`--color-success`)
 - Surface: Light gray backgrounds (`--color-surface`, `--color-surface-2`)
 
 **Design Principles:**
+
 - Clean, grid-aligned layouts
 - High information density for operational screens (cashier, registrar)
 - Professional academic feel

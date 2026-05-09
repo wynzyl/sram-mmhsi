@@ -5,7 +5,7 @@ import { and, eq, desc, ne, notExists, sql, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import RegistrationsListView from "@/components/registrations/RegistrationsListView";
+import RegistrationsListView from "@/features/registrations/components/RegistrationsListView";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
 import { parseUuidSearchParam } from "@/lib/utils/query-params";
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import LoginForm from "@/components/auth/LoginForm";
+import { LoginForm } from "@/features/auth";
 
 export const metadata: Metadata = {
   title: "Login",

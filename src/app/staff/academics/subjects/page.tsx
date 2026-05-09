@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { eq, isNull } from "drizzle-orm";
 import { subjects, gradeLevels } from "@/lib/db/schema";
-import { CreateSubjectForm } from "@/components/academics/CreateSubjectForm";
+import { CreateSubjectForm } from "@/features/academics";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
-import { deleteSubjectAction } from "@/actions/academics";
+import { deleteSubjectAction } from "@/features/academics";
 
 export default async function StaffSubjectManagementPage() {
   const gradeLevelsList = await db.query.gradeLevels.findMany({

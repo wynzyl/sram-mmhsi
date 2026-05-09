@@ -6,8 +6,8 @@ import { students, schoolYears, gradeLevels, enrollments } from "@/lib/db/schema
 import { eq, asc, desc, ne, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import EnrollmentWizardForm from "@/components/enrollments/EnrollmentWizardForm";
-import { getRegistrationContextByStudentIdForSchoolYear } from "@/lib/queries/enrollment-registration-context";
+import { EnrollmentWizardForm } from "@/features/enrollments";
+import { getRegistrationContextByStudentIdForSchoolYear } from "@/features/enrollments/enrollment-registration-context.queries";
 
 export async function InternalNewEnrollmentPage(props: {
   searchParams: Promise<{ studentId?: string; registrationId?: string }>;

@@ -6,7 +6,7 @@ import { feeSchedules, schoolYears, feeScheduleItems } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import FeeSchedulesTable from "@/components/finance/FeeSchedulesTable";
+import FeeSchedulesTable from "@/features/finance/components/FeeSchedulesTable";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
 
 export const metadata: Metadata = {

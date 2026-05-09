@@ -5,11 +5,11 @@ import type { StudentDirectoryBasePath } from "@/lib/utils/student-directory-hre
 import {
   fetchStudentDirectoryPage,
   getStudentDirectoryEmptyMessage,
-} from "@/lib/queries/students-directory";
+} from "@/features/students/students.queries";
 import {
   StudentDirectoryView,
   type StudentDirectoryQuickLink,
-} from "@/components/students/StudentDirectoryView";
+} from "@/features/students/components/StudentDirectoryView";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 

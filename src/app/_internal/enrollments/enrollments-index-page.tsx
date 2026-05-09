@@ -11,11 +11,11 @@ import {
 import { eq, desc, sql, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import EnrollmentsListView from "@/components/enrollments/EnrollmentsListView";
+import { EnrollmentsListView } from "@/features/enrollments";
 import type {
   EnrollmentCardRow,
   EnrollmentStatus,
-} from "@/components/enrollments/EnrollmentCard";
+} from "@/features/enrollments";
 
 const VALID_STATUSES = ["pending", "assessed", "enrolled", "cancelled", "all"] as const;
 

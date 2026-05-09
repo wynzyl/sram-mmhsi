@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { desc } from "drizzle-orm";
-import { ReceiptBookletManagementView } from "@/components/finance/ReceiptBookletManagementView";
+import { ReceiptBookletManagementView } from "@/features/finance/components/ReceiptBookletManagementView";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { receiptBooklets } from "@/lib/db/schema";

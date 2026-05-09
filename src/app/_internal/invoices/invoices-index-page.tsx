@@ -3,7 +3,7 @@ import { invoices, students } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
-import InvoiceListTable from "@/components/finance/invoices/InvoiceListTable";
+import InvoiceListTable from "@/features/finance/components/invoices/InvoiceListTable";
 import { desc, eq } from "drizzle-orm";
 
 type InvoiceListRoute = "/staff/finance/invoices";

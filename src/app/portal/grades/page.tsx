@@ -14,7 +14,7 @@ import type { Role } from "@/lib/constants/roles";
 import { getPortalStudentIds, getPortalStudentLabels } from "@/lib/queries/portal-student";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { StatusBadge } from "@/components/data-display/StatusBadge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
 export const metadata = { title: "My Grades" };
 
