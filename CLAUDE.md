@@ -33,7 +33,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Phase 1-4:** All features migrated to `src/features/` structure
 - ✅ **Phase 5:** Import paths updated
 - ✅ **Phase 6:** Cleanup complete - removed duplicate schemas and unused files
-- ✅ **Architecture:** Hybrid schema approach - shared schemas in `lib/validators/`, feature-specific in `src/features/*/`
+- ✅ **Architecture:** Hybrid schema approach - shared schemas in `src/lib/validators/`, feature-specific in `src/features/*/`
+
+**Library Migration (2026-05-11):**
+
+- ✅ **Complete:** Migrated `lib/` to `src/lib/` for unified source structure
+- ✅ **58 files** moved with git history preserved
+- ✅ All application code now under `src/` directory
+- ✅ Path alias `@/lib/*` updated in tsconfig.json
 
 ## Important Documentation References
 
@@ -85,7 +92,7 @@ NODE_ENV="development"
 ### Core Design Principles
 
 1. **Feature-Based Architecture:** Code organized by domain feature in `src/features/` with actions, schemas, queries, and components co-located
-2. **Hybrid Schema Strategy:** Shared schemas (common-schemas, intake-documents) in `lib/validators/`, feature-specific schemas in `src/features/*/`
+2. **Hybrid Schema Strategy:** Shared schemas (common-schemas, intake-documents) in `src/lib/validators/`, feature-specific schemas in `src/features/*/`
 3. **OR Tracking is Mandatory:** Every payment transaction must be linked to an OR number from an active booklet
 4. **Audit Everything Financial:** All payment posts, voids, and OR consumption must generate audit log entries
 5. **Role-Based Access Control (RBAC):** Enforce at 3 levels — route guard, server action validation, and audit logging
@@ -96,11 +103,11 @@ NODE_ENV="development"
 | Layer             | Location                                | Responsibility                                    | Rules                                               |
 | ----------------- | --------------------------------------- | ------------------------------------------------- | --------------------------------------------------- |
 | Server Actions    | `src/features/*/*.actions.ts`           | ALL business logic and DB writes                  | Must use `"use server"` directive                   |
-| Zod Schemas       | `src/features/*/*.schema.ts` or `lib/validators/*.ts` | Data validation and type definitions | Shared schemas in lib, feature-specific in features |
+| Zod Schemas       | `src/features/*/*.schema.ts` or `src/lib/validators/*.ts` | Data validation and type definitions | Shared schemas in src/lib, feature-specific in features |
 | Server Queries    | `src/features/*/*.queries.ts`           | ALL database reads                                | Server-only, passed as props to components          |
-| Utility Functions | `lib/utils/*.ts`                        | Pure transformations only (format, compute, etc.) | No database calls, no business logic                |
+| Utility Functions | `src/lib/utils/*.ts`                    | Pure transformations only (format, compute, etc.) | No database calls, no business logic                |
 | Client Components | `src/features/*/components/*.tsx`       | UI state and form interactions only               | No direct DB access, no business logic              |
-| Auth & Sessions   | `lib/auth/*.ts`                         | JWT-based session management                      | Use `requireSession()` in server components & pages |
+| Auth & Sessions   | `src/lib/auth/*.ts`                     | JWT-based session management                      | Use `requireSession()` in server components & pages |
 | Page Templates    | `src/app/page-templates/`               | Reusable page components for routes               | Server components that compose features             |
 
 **Violations:** No business logic in `.tsx` files. No direct DB calls in components. No raw SQL outside queries/actions.
@@ -114,7 +121,7 @@ Route structure (App Router):
 - `/staff/*` — Internal operations portal for registrar/finance/cashier/teacher role flows
 - `/portal/*` — Student/parent portal (dashboard scaffold currently implemented)
 
-Authentication is JWT-based using `jose` library (NOT NextAuth). Session management in `lib/auth/session.ts`:
+Authentication is JWT-based using `jose` library (NOT NextAuth). Session management in `src/lib/auth/session.ts`:
 
 - `requireSession()` — Throws redirect if unauthenticated (use in pages/layouts)
 - `getCurrentUser()` — Returns user + role or null (use in server components)
@@ -136,7 +143,7 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 - `student` — View own assessments, payments, grades
 - `parent_guardian` — View linked student's assessments, payments, grades
 
-**Permission checks:** Use `hasPermission(role, permission)` from `lib/rbac/permissions.ts` in server actions before executing sensitive operations.
+**Permission checks:** Use `hasPermission(role, permission)` from `src/lib/rbac/permissions.ts` in server actions before executing sensitive operations.
 
 ### Database Schema Key Relationships
 
@@ -208,9 +215,9 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 
 **Related Files:**
 
-- Schema: `lib/db/schema.ts` (tables: `receiptBooklets`, `payments`)
+- Schema: `src/lib/db/schema.ts` (tables: `receiptBooklets`, `payments`)
 - Actions: `actions/cashier.ts` (payment posting logic)
-- Validators: `lib/validators/cashier.ts`
+- Validators: `src/lib/validators/cashier.ts`
 
 ### Grade Encoding Workflow
 
@@ -409,7 +416,7 @@ export function StudentForm() {
 **Validator Pattern - REFACTORED (Phase 3.2):**
 
 ```typescript
-// lib/validators/student.ts
+// src/lib/validators/student.ts
 import { z } from "zod";
 import {
   nameSchema,
@@ -453,7 +460,7 @@ import { deleteSubjectAction } from "@/actions/academics";
 
 ### Reference Number Generation
 
-Use `lib/utils/reference.ts` for generating student reference numbers:
+Use `src/lib/utils/reference.ts` for generating student reference numbers:
 
 ```typescript
 import { generateStudentReference } from "@/lib/utils/reference";
@@ -489,7 +496,7 @@ new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(15
 
 **Workflow:**
 
-1. Modify `lib/db/schema.ts`
+1. Modify `src/lib/db/schema.ts`
 2. Run `npm run db:generate` — Creates migration file in `drizzle/`
 3. Review generated SQL in `drizzle/*.sql`
 4. Run `npm run db:migrate` — Applies migration to database
@@ -549,4 +556,4 @@ Seeds: students, enrollments, assessments (for testing).
 
 - **Stripe:** Optional for online tuition payments (not yet implemented)
 - **Google Sheets:** Backup/export only (not main database)
-- **Gmail (Nodemailer):** Invoice sending via `lib/email/` (implementation in progress)
+- **Gmail (Nodemailer):** Invoice sending via `src/lib/email/` (implementation in progress)
