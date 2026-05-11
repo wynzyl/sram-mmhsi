@@ -6,7 +6,7 @@
 
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { schoolYears, gradeLevels } from "../lib/db/schema";
+import { schoolYears, gradeLevels } from "../src/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { config } from "dotenv";
 import { expand } from "dotenv-expand";

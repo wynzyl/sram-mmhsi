@@ -10,7 +10,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { hash } from "bcryptjs";
-import { users } from "../lib/db/schema";
+import { users } from "../src/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { loadEnvConfig } from "@next/env";
 
