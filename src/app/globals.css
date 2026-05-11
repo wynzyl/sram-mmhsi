@@ -614,12 +614,81 @@
     @apply w-full;
   }
 
+  /* ==================== UNIFIED TABLE SYSTEM ==================== */
+
+  /* Table container with border and shadow */
+  .table-container {
+    @apply overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow)];
+  }
+
+  /* Base table */
+  .table {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .table thead tr {
+    @apply border-b border-[var(--color-border)];
+  }
+
+  .table thead th {
+    @apply bg-[var(--color-surface-3)] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)];
+  }
+
+  .table tbody tr {
+    @apply border-b border-[var(--color-border)]/70 transition-colors;
+  }
+
+  .table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .table tbody tr:hover {
+    @apply bg-[var(--color-surface-3)]/65;
+  }
+
+  .table tbody td {
+    @apply px-4 py-3 text-[var(--color-text-2)];
+  }
+
+  /* Cell modifiers */
+  .table-th-num {
+    @apply text-right;
+  }
+
+  .table-td-num {
+    @apply text-right font-medium;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .table-td-muted {
+    color: var(--color-ops-muted);
+  }
+
+  /* Table variants */
+  .table-compact thead th {
+    @apply px-3 py-2;
+  }
+
+  .table-compact tbody td {
+    @apply px-3 py-2;
+  }
+
+  .table-striped tbody tr:nth-child(even) {
+    @apply bg-[var(--color-surface-3)]/30;
+  }
+
+  /* Empty state */
+  .table-empty {
+    @apply px-4 py-10 text-center text-sm text-[var(--color-text-muted)];
+  }
+
+  /* Backward compatibility aliases */
   .table-wrapper {
     @apply overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow)];
   }
 
   .data-table {
-    @apply w-full border-collapse;
+    @apply w-full border-collapse text-sm;
   }
 
   .data-table thead tr {
@@ -631,19 +700,23 @@
   }
 
   .data-table tbody tr {
-    @apply border-b border-[var(--color-border)]/70;
+    @apply border-b border-[var(--color-border)]/70 transition-colors;
   }
 
-  .table-row-hover {
-    @apply transition-colors hover:bg-[var(--color-surface-3)]/65;
+  .data-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .data-table tbody tr:hover {
+    @apply bg-[var(--color-surface-3)]/65;
   }
 
   .data-table tbody td {
-    @apply px-4 py-3 text-sm text-[var(--color-text-2)];
+    @apply px-4 py-3 text-[var(--color-text-2)];
   }
 
-  .table-empty {
-    @apply px-4 py-10 text-center text-sm text-[var(--color-text-muted)];
+  .table-row-hover {
+    /* Already handled by .table tbody tr:hover */
   }
 
   .text-muted {
@@ -1008,6 +1081,7 @@
     @apply overflow-x-auto;
   }
 
+  /* Ledger register table - uses similar structure to unified table */
   .ledger-register-table {
     @apply w-full border-collapse text-sm;
   }
@@ -1561,7 +1635,7 @@
     @apply flex-shrink-0 flex items-center gap-2;
   }
 
-  /* ── Finance table ── */
+  /* ── Finance table (uses unified table system with custom styling) ── */
   .fin-table-wrap {
     @apply overflow-x-auto;
   }
@@ -1605,6 +1679,7 @@
   .fin-td-num {
     text-align: right !important;
     font-variant-numeric: tabular-nums;
+    font-weight: 500;
   }
 
   .fin-td-muted {
