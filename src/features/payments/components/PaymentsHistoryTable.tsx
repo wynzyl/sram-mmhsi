@@ -6,6 +6,7 @@ import type { VoidPaymentFormState } from "../payments.schema";
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { FormStateAlert } from "@/components/forms/FormStateAlert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,11 +176,9 @@ export default function PaymentsHistoryTable({
 
   return (
     <div className={embedded ? undefined : "mt-6"}>
-      {state.message && !state.success && (
-        <div className="bg-red-100 text-red-700 border border-red-200 rounded-md p-4 mb-4 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
-          {state.message}
-        </div>
-      )}
+      <div className="mx-4 mt-4">
+        <FormStateAlert state={state} />
+      </div>
 
       <DataTable
         columns={columns}

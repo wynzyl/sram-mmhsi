@@ -1,0 +1,247 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e5]
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: MERRYLAND
+          - paragraph [ref=e10]: Admin Portal
+      - navigation "Main navigation" [ref=e11]:
+        - generic [ref=e12]:
+          - paragraph [ref=e13]: Overview
+          - link "Dashboard" [ref=e14] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - img [ref=e15]
+            - text: Dashboard
+        - generic [ref=e20]:
+          - paragraph [ref=e21]: System
+          - link "Users" [ref=e22] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e23]
+            - text: Users
+          - link "School Years" [ref=e26] [cursor=pointer]:
+            - /url: /staff/school-years
+            - img [ref=e27]
+            - text: School Years
+      - 'button "Switch theme (current: Dark)" [ref=e30] [cursor=pointer]':
+        - img [ref=e31]
+        - generic [ref=e33]: Dark
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: A
+          - generic [ref=e37]:
+            - paragraph [ref=e38]: admin
+            - paragraph [ref=e39]: Super Administrator
+        - button "Sign out" [ref=e41] [cursor=pointer]:
+          - img [ref=e42]
+    - main [ref=e45]:
+      - generic [ref=e194]:
+        - generic [ref=e197]:
+          - heading "Assessments" [level=1] [ref=e198]: Assessments
+          - paragraph [ref=e200]: Open a ledger to post payments, view OR history, and track outstanding balances after fee assessment.
+        - navigation "Assessment views" [ref=e206]:
+          - link "Fee assessment queue" [ref=e207] [cursor=pointer]:
+            - /url: /staff/assessments?view=pending
+          - link "Assessment ledgers" [active] [ref=e208] [cursor=pointer]:
+            - /url: /staff/assessments?view=ledgers
+        - table [ref=e222]:
+          - rowgroup [ref=e223]:
+            - row "Student School Year Total Assessed Total Paid Balance Status Action" [ref=e224]:
+              - columnheader "Student" [ref=e225]
+              - columnheader "School Year" [ref=e226]
+              - columnheader "Total Assessed" [ref=e227]
+              - columnheader "Total Paid" [ref=e228]
+              - columnheader "Balance" [ref=e229]
+              - columnheader "Status" [ref=e230]
+              - columnheader "Action" [ref=e231]
+          - rowgroup [ref=e232]:
+            - row "MARIO, Maria 2026-2027 ₱23,300.00 ₱0.00 ₱23,300.00 Outstanding View Ledger" [ref=e233]:
+              - cell "MARIO, Maria" [ref=e234]
+              - cell "2026-2027" [ref=e235]
+              - cell "₱23,300.00" [ref=e236]
+              - cell "₱0.00" [ref=e237]
+              - cell "₱23,300.00" [ref=e238]
+              - cell "Outstanding" [ref=e239]:
+                - generic [ref=e240]: Outstanding
+              - cell "View Ledger" [ref=e241]:
+                - link "View Ledger" [ref=e242] [cursor=pointer]:
+                  - /url: /staff/assessments/83d750be-0c59-48ea-85ea-35f1af4ad473
+            - row "FOX, Samantha 2026-2027 ₱23,300.00 ₱5,000.00 ₱18,300.00 Outstanding View Ledger" [ref=e243]:
+              - cell "FOX, Samantha" [ref=e244]
+              - cell "2026-2027" [ref=e245]
+              - cell "₱23,300.00" [ref=e246]
+              - cell "₱5,000.00" [ref=e247]
+              - cell "₱18,300.00" [ref=e248]
+              - cell "Outstanding" [ref=e249]:
+                - generic [ref=e250]: Outstanding
+              - cell "View Ledger" [ref=e251]:
+                - link "View Ledger" [ref=e252] [cursor=pointer]:
+                  - /url: /staff/assessments/061a67fe-d695-4459-9a8c-493cd1ec5e05
+            - row "AGUSTIN, Agustin 2026-2027 ₱23,300.00 ₱5,000.00 ₱18,300.00 Outstanding View Ledger" [ref=e253]:
+              - cell "AGUSTIN, Agustin" [ref=e254]
+              - cell "2026-2027" [ref=e255]
+              - cell "₱23,300.00" [ref=e256]
+              - cell "₱5,000.00" [ref=e257]
+              - cell "₱18,300.00" [ref=e258]
+              - cell "Outstanding" [ref=e259]:
+                - generic [ref=e260]: Outstanding
+              - cell "View Ledger" [ref=e261]:
+                - link "View Ledger" [ref=e262] [cursor=pointer]:
+                  - /url: /staff/assessments/d720cf18-e5e5-41b2-bd43-a1f797a33769
+            - row "CAMARAO, Rey 2026-2027 ₱26,200.00 ₱15,000.00 ₱11,200.00 Outstanding View Ledger" [ref=e263]:
+              - cell "CAMARAO, Rey" [ref=e264]
+              - cell "2026-2027" [ref=e265]
+              - cell "₱26,200.00" [ref=e266]
+              - cell "₱15,000.00" [ref=e267]
+              - cell "₱11,200.00" [ref=e268]
+              - cell "Outstanding" [ref=e269]:
+                - generic [ref=e270]: Outstanding
+              - cell "View Ledger" [ref=e271]:
+                - link "View Ledger" [ref=e272] [cursor=pointer]:
+                  - /url: /staff/assessments/06f77574-29c9-447a-97c9-97b70cd23c74
+            - row "ZEZE, Zaldy 2026-2027 ₱21,700.00 ₱10,000.00 ₱11,700.00 Outstanding View Ledger" [ref=e273]:
+              - cell "ZEZE, Zaldy" [ref=e274]
+              - cell "2026-2027" [ref=e275]
+              - cell "₱21,700.00" [ref=e276]
+              - cell "₱10,000.00" [ref=e277]
+              - cell "₱11,700.00" [ref=e278]
+              - cell "Outstanding" [ref=e279]:
+                - generic [ref=e280]: Outstanding
+              - cell "View Ledger" [ref=e281]:
+                - link "View Ledger" [ref=e282] [cursor=pointer]:
+                  - /url: /staff/assessments/47282e5a-2120-44f5-87ff-9c0529b6496b
+            - row "ABELLERA, Carla 2026-2027 ₱21,700.00 ₱6,500.00 ₱15,200.00 Outstanding View Ledger" [ref=e283]:
+              - cell "ABELLERA, Carla" [ref=e284]
+              - cell "2026-2027" [ref=e285]
+              - cell "₱21,700.00" [ref=e286]
+              - cell "₱6,500.00" [ref=e287]
+              - cell "₱15,200.00" [ref=e288]
+              - cell "Outstanding" [ref=e289]:
+                - generic [ref=e290]: Outstanding
+              - cell "View Ledger" [ref=e291]:
+                - link "View Ledger" [ref=e292] [cursor=pointer]:
+                  - /url: /staff/assessments/756d3905-38e2-49b4-88d5-49750e3abcad
+            - row "QUINTO, Jessa Mae 2026-2027 ₱21,700.00 ₱8,000.00 ₱13,700.00 Outstanding View Ledger" [ref=e293]:
+              - cell "QUINTO, Jessa Mae" [ref=e294]
+              - cell "2026-2027" [ref=e295]
+              - cell "₱21,700.00" [ref=e296]
+              - cell "₱8,000.00" [ref=e297]
+              - cell "₱13,700.00" [ref=e298]
+              - cell "Outstanding" [ref=e299]:
+                - generic [ref=e300]: Outstanding
+              - cell "View Ledger" [ref=e301]:
+                - link "View Ledger" [ref=e302] [cursor=pointer]:
+                  - /url: /staff/assessments/5ae0fd0c-5155-4e61-b5dd-f4fd11657f45
+            - row "CRISTOBAL, Jesus 2026-2027 ₱21,700.00 ₱15,000.00 ₱6,700.00 Outstanding View Ledger" [ref=e303]:
+              - cell "CRISTOBAL, Jesus" [ref=e304]
+              - cell "2026-2027" [ref=e305]
+              - cell "₱21,700.00" [ref=e306]
+              - cell "₱15,000.00" [ref=e307]
+              - cell "₱6,700.00" [ref=e308]
+              - cell "Outstanding" [ref=e309]:
+                - generic [ref=e310]: Outstanding
+              - cell "View Ledger" [ref=e311]:
+                - link "View Ledger" [ref=e312] [cursor=pointer]:
+                  - /url: /staff/assessments/29a9d2a8-a5c8-4f2e-8ee8-f5d20ece0315
+            - row "CAPARAS, Mario 2026-2027 ₱21,700.00 ₱10,000.00 ₱11,700.00 Outstanding View Ledger" [ref=e313]:
+              - cell "CAPARAS, Mario" [ref=e314]
+              - cell "2026-2027" [ref=e315]
+              - cell "₱21,700.00" [ref=e316]
+              - cell "₱10,000.00" [ref=e317]
+              - cell "₱11,700.00" [ref=e318]
+              - cell "Outstanding" [ref=e319]:
+                - generic [ref=e320]: Outstanding
+              - cell "View Ledger" [ref=e321]:
+                - link "View Ledger" [ref=e322] [cursor=pointer]:
+                  - /url: /staff/assessments/08fe8ddb-a616-4db7-ad4f-753583c46ef6
+            - row "TAYAG, Ian 2026-2027 ₱23,500.00 ₱23,500.00 ₱0.00 Fully Paid View Ledger" [ref=e323]:
+              - cell "TAYAG, Ian" [ref=e324]
+              - cell "2026-2027" [ref=e325]
+              - cell "₱23,500.00" [ref=e326]
+              - cell "₱23,500.00" [ref=e327]
+              - cell "₱0.00" [ref=e328]
+              - cell "Fully Paid" [ref=e329]:
+                - generic [ref=e330]: Fully Paid
+              - cell "View Ledger" [ref=e331]:
+                - link "View Ledger" [ref=e332] [cursor=pointer]:
+                  - /url: /staff/assessments/c2279ac7-be98-42af-b0a7-c47856320ced
+            - row "CAPARAS, Mario 2025-2026 ₱20,200.00 ₱20,200.00 ₱0.00 Fully Paid View Ledger" [ref=e333]:
+              - cell "CAPARAS, Mario" [ref=e334]
+              - cell "2025-2026" [ref=e335]
+              - cell "₱20,200.00" [ref=e336]
+              - cell "₱20,200.00" [ref=e337]
+              - cell "₱0.00" [ref=e338]
+              - cell "Fully Paid" [ref=e339]:
+                - generic [ref=e340]: Fully Paid
+              - cell "View Ledger" [ref=e341]:
+                - link "View Ledger" [ref=e342] [cursor=pointer]:
+                  - /url: /staff/assessments/a00ecd0d-dfa5-4297-b7f8-104037708a46
+            - row "CRISTOBAL, Jesus 2025-2026 ₱20,200.00 ₱20,200.00 ₱0.00 Fully Paid View Ledger" [ref=e343]:
+              - cell "CRISTOBAL, Jesus" [ref=e344]
+              - cell "2025-2026" [ref=e345]
+              - cell "₱20,200.00" [ref=e346]
+              - cell "₱20,200.00" [ref=e347]
+              - cell "₱0.00" [ref=e348]
+              - cell "Fully Paid" [ref=e349]:
+                - generic [ref=e350]: Fully Paid
+              - cell "View Ledger" [ref=e351]:
+                - link "View Ledger" [ref=e352] [cursor=pointer]:
+                  - /url: /staff/assessments/0c68b4b1-27fa-4667-a059-633658c9f387
+            - row "HERMOSA, Christine 2025-2026 ₱20,200.00 ₱20,200.00 ₱0.00 Fully Paid View Ledger" [ref=e353]:
+              - cell "HERMOSA, Christine" [ref=e354]
+              - cell "2025-2026" [ref=e355]
+              - cell "₱20,200.00" [ref=e356]
+              - cell "₱20,200.00" [ref=e357]
+              - cell "₱0.00" [ref=e358]
+              - cell "Fully Paid" [ref=e359]:
+                - generic [ref=e360]: Fully Paid
+              - cell "View Ledger" [ref=e361]:
+                - link "View Ledger" [ref=e362] [cursor=pointer]:
+                  - /url: /staff/assessments/970212fe-5755-44c2-aa04-ef98e4f8a35f
+            - row "TAGATA, Juan Carlos 2025-2026 ₱20,200.00 ₱20,200.00 ₱0.00 Fully Paid View Ledger" [ref=e363]:
+              - cell "TAGATA, Juan Carlos" [ref=e364]
+              - cell "2025-2026" [ref=e365]
+              - cell "₱20,200.00" [ref=e366]
+              - cell "₱20,200.00" [ref=e367]
+              - cell "₱0.00" [ref=e368]
+              - cell "Fully Paid" [ref=e369]:
+                - generic [ref=e370]: Fully Paid
+              - cell "View Ledger" [ref=e371]:
+                - link "View Ledger" [ref=e372] [cursor=pointer]:
+                  - /url: /staff/assessments/ab7d5137-e0d3-498c-acc8-60a3c6e65c20
+            - row "FLORES, Ana 2025-2026 ₱20,200.00 ₱20,200.00 ₱0.00 Fully Paid View Ledger" [ref=e373]:
+              - cell "FLORES, Ana" [ref=e374]
+              - cell "2025-2026" [ref=e375]
+              - cell "₱20,200.00" [ref=e376]
+              - cell "₱20,200.00" [ref=e377]
+              - cell "₱0.00" [ref=e378]
+              - cell "Fully Paid" [ref=e379]:
+                - generic [ref=e380]: Fully Paid
+              - cell "View Ledger" [ref=e381]:
+                - link "View Ledger" [ref=e382] [cursor=pointer]:
+                  - /url: /staff/assessments/e2d1d590-a0de-45eb-a63f-3ad2edbff561
+            - row "VALIENTE, Jonathan 2025-2026 ₱20,200.00 ₱20,200.00 ₱0.00 Fully Paid View Ledger" [ref=e383]:
+              - cell "VALIENTE, Jonathan" [ref=e384]
+              - cell "2025-2026" [ref=e385]
+              - cell "₱20,200.00" [ref=e386]
+              - cell "₱20,200.00" [ref=e387]
+              - cell "₱0.00" [ref=e388]
+              - cell "Fully Paid" [ref=e389]:
+                - generic [ref=e390]: Fully Paid
+              - cell "View Ledger" [ref=e391]:
+                - link "View Ledger" [ref=e392] [cursor=pointer]:
+                  - /url: /staff/assessments/f0425a43-b954-4764-b2ba-aafa4082467b
+            - row "ABELLERA, Carla 2025-2026 ₱12,500.00 ₱10,500.00 ₱2,000.00 Outstanding View Ledger" [ref=e393]:
+              - cell "ABELLERA, Carla" [ref=e394]
+              - cell "2025-2026" [ref=e395]
+              - cell "₱12,500.00" [ref=e396]
+              - cell "₱10,500.00" [ref=e397]
+              - cell "₱2,000.00" [ref=e398]
+              - cell "Outstanding" [ref=e399]:
+                - generic [ref=e400]: Outstanding
+              - cell "View Ledger" [ref=e401]:
+                - link "View Ledger" [ref=e402] [cursor=pointer]:
+                  - /url: /staff/assessments/70a3fddb-ab89-47c7-9ca4-edd4f699836d
+  - button "Open Next.js Dev Tools" [ref=e83] [cursor=pointer]:
+    - img [ref=e84]
+  - alert [ref=e87]: Assessments | SRAMS

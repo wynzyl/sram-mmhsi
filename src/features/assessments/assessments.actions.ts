@@ -102,7 +102,7 @@ export async function createAssessmentFromEnrollmentAction(
   }
 
   // Validate submitted items against resolved template items
-  const submittedById = new Map(items.map((row) => [row.feeScheduleItemId, row.amount]));
+  const submittedById = new Map(items.map((row) => [row.feeTemplateItemId, row.amount]));
   if (submittedById.size !== items.length) {
     return { message: "Each catalog fee may only appear once." };
   }
@@ -129,7 +129,7 @@ export async function createAssessmentFromEnrollmentAction(
     feeItemTypeId: string;
   }[] = [];
   for (const line of items) {
-    const template = templateMap.get(line.feeScheduleItemId)!;
+    const template = templateMap.get(line.feeTemplateItemId)!;
     resolvedLines.push({
       feeTemplateItemId: template.feeTemplateItemId,
       feeItemTypeId: template.feeItemTypeId,

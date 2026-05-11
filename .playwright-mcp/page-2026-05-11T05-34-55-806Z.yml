@@ -1,0 +1,92 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e32] [cursor=pointer]:
+    - img [ref=e33]
+  - alert [ref=e36]: Dashboard | SRAMS
+  - generic [ref=e37]:
+    - complementary [ref=e38]:
+      - generic [ref=e39]:
+        - img [ref=e40]
+        - generic [ref=e43]:
+          - paragraph [ref=e44]: MERRYLAND
+          - paragraph [ref=e45]: Admin Portal
+      - navigation "Main navigation" [ref=e46]:
+        - generic [ref=e47]:
+          - paragraph [ref=e48]: Overview
+          - link "Dashboard" [ref=e49] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - img [ref=e50]
+            - text: Dashboard
+        - generic [ref=e55]:
+          - paragraph [ref=e56]: System
+          - link "Users" [ref=e57] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e58]
+            - text: Users
+          - link "School Years" [ref=e61] [cursor=pointer]:
+            - /url: /staff/school-years
+            - img [ref=e62]
+            - text: School Years
+      - 'button "Switch theme (current: Dark)" [ref=e65] [cursor=pointer]':
+        - img [ref=e66]
+        - generic [ref=e68]: Dark
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - generic [ref=e71]: A
+          - generic [ref=e72]:
+            - paragraph [ref=e73]: admin
+            - paragraph [ref=e74]: Super Administrator
+        - button "Sign out" [ref=e76] [cursor=pointer]:
+          - img [ref=e77]
+    - main [ref=e80]:
+      - generic [ref=e81]:
+        - generic [ref=e83]:
+          - heading "Operations Overview" [level=1] [ref=e84]
+          - paragraph [ref=e85]: Key enrollment and finance KPIs for SY 2026-2027.
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - generic [ref=e88]: 🎓
+            - generic [ref=e89]:
+              - paragraph [ref=e90]: Total Enrolled (vs target)
+              - paragraph [ref=e91]: "8"
+              - paragraph [ref=e92]: "vs last SY (7): +1"
+          - generic [ref=e93]:
+            - generic [ref=e94]: 📈
+            - generic [ref=e95]:
+              - paragraph [ref=e96]: Enrollment Conversion Rate
+              - paragraph [ref=e97]: 114.3%
+              - paragraph [ref=e98]: 8 of 7 approved registrations
+          - generic [ref=e99]:
+            - generic [ref=e100]: 💰
+            - generic [ref=e101]:
+              - paragraph [ref=e102]: Total Collected (MTD)
+              - paragraph [ref=e103]: ₱93,000.00
+          - generic [ref=e104]:
+            - generic [ref=e105]: 📊
+            - generic [ref=e106]:
+              - paragraph [ref=e107]: Collection Rate
+              - paragraph [ref=e108]: 51.2%
+              - paragraph [ref=e109]: Based on ₱93,000.00 collected this month
+          - generic [ref=e110]:
+            - generic [ref=e111]: 🧾
+            - generic [ref=e112]:
+              - paragraph [ref=e113]: Outstanding Receivables (A/R)
+              - paragraph [ref=e114]: ₱88,500.00
+          - generic [ref=e115]:
+            - generic [ref=e116]: ⚠️
+            - generic [ref=e117]:
+              - paragraph [ref=e118]: Overdue Accounts (count + amount)
+              - paragraph [ref=e119]: ₱0.00
+              - paragraph [ref=e120]: 0 accounts
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - heading "KPI Scope" [level=2] [ref=e123]
+            - paragraph [ref=e124]: Metrics are derived from active school-year enrollment records, assessments, posted payments, and overdue invoice-linked balances.
+          - generic [ref=e125]:
+            - heading "Quick Actions" [level=2] [ref=e126]
+            - generic [ref=e127]:
+              - link "Manage Users" [ref=e128] [cursor=pointer]:
+                - /url: /admin/users
+              - link "Manage School Years" [ref=e129] [cursor=pointer]:
+                - /url: /staff/school-years
+              - link "Open Staff Operations" [ref=e130] [cursor=pointer]:
+                - /url: /staff/dashboard

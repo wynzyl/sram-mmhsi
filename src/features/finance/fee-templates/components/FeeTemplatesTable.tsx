@@ -32,11 +32,13 @@ type FeeTemplatesTableProps = {
 export function FeeTemplatesTable({ templates }: FeeTemplatesTableProps) {
   if (templates.length === 0) {
     return (
-      <div className="rounded-lg border bg-white p-8 text-center">
-        <p className="mb-4 text-gray-600">No fee templates created yet.</p>
-        <Link href="/staff/finance/fee-templates/new">
-          <Button>Create First Template</Button>
-        </Link>
+      <div className="fin-panel">
+        <div className="fin-empty">
+          <p className="fin-empty-text">No fee templates created yet.</p>
+          <p className="fin-empty-text">
+            Use the Create Template button in the header above to get started.
+          </p>
+        </div>
       </div>
     );
   }
@@ -45,9 +47,7 @@ export function FeeTemplatesTable({ templates }: FeeTemplatesTableProps) {
   const templatesByBand = templates.reduce(
     (acc, template) => {
       const band = template.assessmentBand;
-      if (!acc[band]) {
-        acc[band] = [];
-      }
+      if (!acc[band]) acc[band] = [];
       acc[band].push(template);
       return acc;
     },
@@ -55,16 +55,19 @@ export function FeeTemplatesTable({ templates }: FeeTemplatesTableProps) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="fin-stack">
       {Object.entries(templatesByBand).map(([band, bandTemplates]) => (
-        <div key={band} className="rounded-lg border bg-white">
-          <div className="border-b bg-gray-50 px-6 py-4">
-            <h3 className="text-lg font-semibold">
+        <div key={band} className="fin-panel">
+          <div className="fin-panel-head">
+            <h2 className="fin-panel-title">
               {FEE_ASSESSMENT_BAND_LABELS[band as keyof typeof FEE_ASSESSMENT_BAND_LABELS]}
-            </h3>
+            </h2>
+            <span className="fin-panel-meta">
+              {bandTemplates.length} template{bandTemplates.length !== 1 ? "s" : ""}
+            </span>
           </div>
 
-          <div className="divide-y">
+          <div className="fin-template-list">
             {bandTemplates.map((template) => {
               const totalAmount = template.items.reduce((sum, item) => {
                 const amount = Number(item.defaultAmount);
@@ -72,46 +75,42 @@ export function FeeTemplatesTable({ templates }: FeeTemplatesTableProps) {
               }, 0);
 
               return (
-                <div
-                  key={template.id}
-                  className="flex items-center justify-between px-6 py-4 hover:bg-gray-50"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
+                <div key={template.id} className="fin-template-row">
+                  <div className="fin-template-row-main">
+                    <div className="fin-template-row-name-row">
                       <Link
                         href={`/staff/finance/fee-templates/${template.id}`}
-                        className="font-medium text-primary hover:underline"
+                        className="fin-template-name-link"
                       >
                         {template.name}
                       </Link>
                       {!template.isActive && (
-                        <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-700">
-                          Inactive
-                        </span>
+                        <span className="fin-badge fin-badge-muted">Inactive</span>
                       )}
                     </div>
 
                     {template.description && (
-                      <p className="mt-1 text-sm text-gray-600">{template.description}</p>
+                      <p className="fin-template-desc">{template.description}</p>
                     )}
 
-                    <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
-                      <span>{template.items.length} items</span>
-                      <span className="font-medium">
+                    <div className="fin-template-stats">
+                      <span className="fin-stat-item">{template.items.length} item{template.items.length !== 1 ? "s" : ""}</span>
+                      <span className="fin-stat-divider" aria-hidden>·</span>
+                      <span className="fin-stat-total">
                         Total:{" "}
-                        {new Intl.NumberFormat("en-PH", {
-                          style: "currency",
-                          currency: "PHP",
-                        }).format(totalAmount)}
+                        <strong>
+                          {new Intl.NumberFormat("en-PH", {
+                            style: "currency",
+                            currency: "PHP",
+                          }).format(totalAmount)}
+                        </strong>
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="fin-template-row-actions">
                     <Link href={`/staff/finance/fee-templates/${template.id}`}>
-                      <Button variant="secondary" size="sm">
-                        View Details
-                      </Button>
+                      <Button variant="secondary" size="sm">View Details</Button>
                     </Link>
                   </div>
                 </div>

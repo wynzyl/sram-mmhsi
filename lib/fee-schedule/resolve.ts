@@ -12,7 +12,7 @@ import {
   feeScheduleOverrides,
   feeItemTypes,
 } from "@/lib/db/schema";
-import { and, eq, lte, gte, or, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { FeeAssessmentBand } from "@/lib/fee-schedule/bands";
 
 type DbQuery = typeof db.query;
@@ -36,7 +36,7 @@ export type FeeScheduleResolution = {
  * Resolves the active fee schedule for a school year + assessment band.
  *
  * @param executor - Database query executor (db or transaction)
- * @param params - School year ID, assessment band, and optional effective date
+ * @param params - School year ID and assessment band
  * @returns Resolved fee schedule with items (including overrides), or null if not found
  *
  * @example
@@ -68,10 +68,9 @@ export async function resolveFeeScheduleForAssessment(
   params: {
     schoolYearId: string;
     assessmentBand: FeeAssessmentBand;
-    effectiveDate?: Date;
   }
 ): Promise<FeeScheduleResolution> {
-  const { schoolYearId, assessmentBand, effectiveDate = new Date() } = params;
+  const { schoolYearId, assessmentBand } = params;
 
   // ─── Step 1: Find Active Schedule ────────────────────────────────────────
 
@@ -79,12 +78,7 @@ export async function resolveFeeScheduleForAssessment(
     where: and(
       eq(schoolYearFeeSchedules.schoolYearId, schoolYearId),
       eq(schoolYearFeeSchedules.assessmentBand, assessmentBand),
-      eq(schoolYearFeeSchedules.isActive, true),
-      lte(schoolYearFeeSchedules.effectiveDate, effectiveDate),
-      or(
-        isNull(schoolYearFeeSchedules.expiryDate),
-        gte(schoolYearFeeSchedules.expiryDate, effectiveDate)
-      )
+      eq(schoolYearFeeSchedules.isActive, true)
     ),
     orderBy: (t, { desc }) => [desc(t.effectiveDate)],
   });

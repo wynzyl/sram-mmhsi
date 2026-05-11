@@ -112,6 +112,9 @@ export function CurrencyInputField({
     }
   };
 
+  const numericValue = typeof value === "string" ? parseFloat(value) : value;
+  const rawValue = !isNaN(numericValue) && numericValue > 0 ? numericValue : "";
+
   const inputClassName = `form-control ${error ? "form-control-error" : ""} ${className ?? ""}`.trim();
 
   return (
@@ -124,9 +127,10 @@ export function CurrencyInputField({
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
           ₱
         </span>
+        {/* Hidden input carries the raw numeric value for form submission */}
+        <input type="hidden" name={name} value={rawValue} />
         <input
           id={name}
-          name={name}
           type="text"
           inputMode="decimal"
           className={`${inputClassName} pl-8`}

@@ -1,0 +1,78 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e5]
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: MERRYLAND
+          - paragraph [ref=e10]: Admin Portal
+      - navigation "Main navigation" [ref=e11]:
+        - generic [ref=e12]:
+          - paragraph [ref=e13]: Overview
+          - link "Dashboard" [ref=e14] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - img [ref=e15]
+            - text: Dashboard
+        - generic [ref=e20]:
+          - paragraph [ref=e21]: System
+          - link "Users" [ref=e22] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e23]
+            - text: Users
+          - link "School Years" [ref=e26] [cursor=pointer]:
+            - /url: /staff/school-years
+            - img [ref=e27]
+            - text: School Years
+      - 'button "Switch theme (current: Dark)" [ref=e30] [cursor=pointer]':
+        - img [ref=e31]
+        - generic [ref=e33]: Dark
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: A
+          - generic [ref=e37]:
+            - paragraph [ref=e38]: admin
+            - paragraph [ref=e39]: Super Administrator
+        - button "Sign out" [ref=e41] [cursor=pointer]:
+          - img [ref=e42]
+    - main [ref=e45]:
+      - generic [ref=e46]:
+        - generic [ref=e49]:
+          - heading "Assessments" [level=1] [ref=e50]: Assessments
+          - paragraph [ref=e52]:
+            - strong [ref=e53]: "Step 1:"
+            - text: pick a student below, then complete the one-time fee assessment.
+            - generic [ref=e54]:
+              - strong [ref=e55]: "Step 2:"
+              - text: on the fee form, confirm catalog lines and save—the enrollment becomes
+              - strong [ref=e56]: Assessed
+              - text: . Use
+              - strong [ref=e57]: Assessment ledgers
+              - text: for payments and balances.
+        - navigation "Assessment views" [ref=e58]:
+          - link "Fee assessment queue (1)" [ref=e59] [cursor=pointer]:
+            - /url: /staff/assessments?view=pending
+          - link "Assessment ledgers" [ref=e60] [cursor=pointer]:
+            - /url: /staff/assessments?view=ledgers
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - heading "Fee assessment queue" [level=2] [ref=e63]
+            - generic [ref=e64]: 1 pending
+          - generic [ref=e65]:
+            - paragraph [ref=e66]:
+              - text: Each row is a
+              - strong [ref=e67]: pending
+              - text: enrollment. Open the fee assessment to build the one-time charge snapshot from your fee catalog; saving moves the enrollment to
+              - strong [ref=e68]: Assessed
+              - text: . Payments are tracked on the billing ledger afterward.
+            - list "Pending enrollments awaiting fee assessment" [ref=e69]:
+              - listitem [ref=e70]:
+                - generic [ref=e71]:
+                  - paragraph [ref=e72]: MARIO, Maria
+                  - paragraph [ref=e73]: SRAMS-2026-00082
+                  - paragraph [ref=e74]: "School year: 2026-2027·Grade: Grade 3"
+                  - paragraph [ref=e75]: Queued May 11, 2026
+                - link "Open fee assessment" [ref=e77] [cursor=pointer]:
+                  - /url: /staff/assessments/new/98760a21-a538-4338-885b-f7a54e1108fc
+  - button "Open Next.js Dev Tools" [ref=e83] [cursor=pointer]:
+    - img [ref=e84]
+  - alert [ref=e87]
