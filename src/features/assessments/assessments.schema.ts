@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { BaseFormState } from "@/lib/validators/common-schemas";
 
 export const AssessmentScheduleLineSubmissionSchema = z.object({
-  feeScheduleItemId: z.string().uuid(),
+  feeTemplateItemId: z.string().uuid(),
   amount: z.coerce.number().finite().nonnegative(),
 });
 
@@ -17,12 +17,12 @@ export const CreateAssessmentFromEnrollmentSchema = z
   .superRefine((data, ctx) => {
     const seen = new Set<string>();
     for (let i = 0; i < data.items.length; i++) {
-      const id = data.items[i]!.feeScheduleItemId;
+      const id = data.items[i]!.feeTemplateItemId;
       if (seen.has(id)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Each catalog fee may only be added once.",
-          path: ["items", i, "feeScheduleItemId"],
+          path: ["items", i, "feeTemplateItemId"],
         });
         return;
       }

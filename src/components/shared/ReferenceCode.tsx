@@ -13,7 +13,7 @@ export function ReferenceCode({ code, className }: ReferenceCodeProps) {
   return (
     <code
       className={cn(
-        "font-[family-name:var(--font-mono)] text-xs bg-[var(--color-surface-2)] px-2 py-0.5 rounded border border-[var(--color-border)]",
+        "font-[family-name:var(--font-mono)] text-xs bg-[var(--color-surface-2)] px-2 py-0.5 rounded border border-[var(--color-border)] whitespace-nowrap",
         className
       )}
     >

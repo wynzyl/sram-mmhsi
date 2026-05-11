@@ -7,6 +7,7 @@ import { schoolYears } from "@/lib/db/schema";
 import { desc, isNull } from "drizzle-orm";
 import { getAllFeeTemplates } from "@/features/finance/fee-templates/fee-templates.queries";
 import { TemplateAssignmentForm } from "@/features/finance/fee-templates/components/TemplateAssignmentForm";
+import { Button } from "@/components/ui/button";
 
 export const metadata = {
   title: "Assign Fee Template | SRAMS",
@@ -20,7 +21,6 @@ export default async function NewFeeSchedulePage() {
     redirect("/staff/dashboard");
   }
 
-  // Load available templates and school years
   const templates = await getAllFeeTemplates();
   const activeTemplates = templates.filter((t) => t.isActive);
 
@@ -30,59 +30,70 @@ export default async function NewFeeSchedulePage() {
   });
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
+    <div className="fin-page fin-page-narrow">
       {/* Breadcrumb */}
-      <nav className="mb-6 text-sm text-gray-600">
-        <Link href="/staff/finance/fee-schedules" className="hover:underline">
+      <nav className="fin-breadcrumb" aria-label="Breadcrumb">
+        <Link href="/staff/finance/fee-schedules" className="fin-breadcrumb-link">
           Fee Schedules
         </Link>
-        <span className="mx-2">/</span>
-        <span className="text-gray-900">Assign Template</span>
+        <span className="fin-breadcrumb-sep" aria-hidden>/</span>
+        <span className="fin-breadcrumb-current">Assign Template</span>
       </nav>
 
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Assign Fee Template to School Year</h1>
-        <p className="mt-2 text-gray-600">
-          Select a fee template and assign it to a school year and assessment band. The
-          template's default amounts will be used, but you can add overrides afterward.
-        </p>
+      <div className="fin-page-header">
+        <div className="fin-page-header-main">
+          <p className="fin-eyebrow">Finance · Fee Management</p>
+          <h1 className="fin-title">Assign Fee Template</h1>
+          <p className="fin-subtitle">
+            Select a fee template and assign it to a school year and assessment band. The
+            template's default amounts will be used, but you can add overrides afterward.
+          </p>
+        </div>
       </div>
 
-      {/* Check if templates exist */}
       {activeTemplates.length === 0 ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
-          <h3 className="mb-2 font-semibold text-amber-900">No Templates Available</h3>
-          <p className="mb-4 text-sm text-amber-800">
-            You need to create fee templates before you can assign them to school years.
-          </p>
-          <Link href="/staff/finance/fee-templates/new">
-            <button className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90">
-              Create Fee Template
-            </button>
-          </Link>
+        <div className="fin-callout fin-callout-warn">
+          <div className="fin-callout-icon" aria-hidden>⚠</div>
+          <div>
+            <p className="fin-callout-title">No Templates Available</p>
+            <p className="fin-callout-body">
+              You need to create fee templates before you can assign them to school years.
+            </p>
+            <Link href="/staff/finance/fee-templates/new" className="mt-3 inline-block">
+              <Button size="sm">Create Fee Template</Button>
+            </Link>
+          </div>
         </div>
       ) : (
-        <>
-          {/* Form */}
-          <div className="rounded-lg border bg-white p-6">
-            <TemplateAssignmentForm
-              templates={activeTemplates}
-              schoolYears={allSchoolYears}
-            />
+        <div className="fin-stack">
+          {/* Form card */}
+          <div className="fin-panel">
+            <div className="fin-panel-head">
+              <h2 className="fin-panel-title">Assignment Details</h2>
+            </div>
+            <div className="fin-panel-body fin-panel-body-form">
+              <TemplateAssignmentForm
+                templates={activeTemplates}
+                schoolYears={allSchoolYears}
+              />
+            </div>
           </div>
 
-          {/* Help Text */}
-          <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <h3 className="mb-2 font-semibold">Important Notes</h3>
-            <ul className="list-inside list-disc space-y-1 text-sm text-gray-700">
-              <li>Each assessment band can only have one active schedule per school year</li>
-              <li>If you need to change amounts for a specific year, add overrides instead of creating a new template</li>
-              <li>Deactivate the old schedule before creating a new one for the same band and year</li>
-              <li>The effective date is usually the school year start date</li>
-            </ul>
+          {/* Notes card */}
+          <div className="fin-callout fin-callout-muted">
+            <div className="fin-callout-icon" aria-hidden>📋</div>
+            <div>
+              <p className="fin-callout-title">Important Notes</p>
+              <ul className="fin-callout-list">
+                <li>Each assessment band can only have one active schedule per school year</li>
+                <li>If you need to change amounts for a specific year, add overrides instead of creating a new template</li>
+                <li>Deactivate the old schedule before creating a new one for the same band and year</li>
+                <li>The effective date is usually the school year start date</li>
+              </ul>
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

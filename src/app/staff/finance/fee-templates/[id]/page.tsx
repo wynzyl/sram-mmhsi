@@ -27,85 +27,84 @@ export default async function FeeTemplateDetailPage(props: PageProps) {
   }
 
   const template = await getFeeTemplateById(params.id);
-
-  if (!template) {
-    notFound();
-  }
+  if (!template) notFound();
 
   const allFeeTypes = await getAllFeeItemTypes();
 
-  // Calculate template total
   const templateTotal = template.items.reduce((sum, item) => {
     const amount = Number(item.defaultAmount);
     return item.feeItemType.isDiscount ? sum - amount : sum + amount;
   }, 0);
 
+  const bandLabel =
+    FEE_ASSESSMENT_BAND_LABELS[
+      template.assessmentBand as keyof typeof FEE_ASSESSMENT_BAND_LABELS
+    ];
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="fin-page">
       {/* Breadcrumb */}
-      <nav className="mb-6 text-sm text-gray-600">
-        <Link href="/staff/finance/fee-templates" className="hover:underline">
+      <nav className="fin-breadcrumb" aria-label="Breadcrumb">
+        <Link href="/staff/finance/fee-templates" className="fin-breadcrumb-link">
           Fee Templates
         </Link>
-        <span className="mx-2">/</span>
-        <span className="text-gray-900">{template.name}</span>
+        <span className="fin-breadcrumb-sep" aria-hidden>/</span>
+        <span className="fin-breadcrumb-current">{template.name}</span>
       </nav>
 
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{template.name}</h1>
-            <div className="mt-2 flex items-center gap-3">
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                {FEE_ASSESSMENT_BAND_LABELS[template.assessmentBand as keyof typeof FEE_ASSESSMENT_BAND_LABELS]}
-              </span>
-              {!template.isActive && (
-                <span className="rounded-full bg-gray-200 px-3 py-1 text-sm font-medium text-gray-700">
-                  Inactive
-                </span>
-              )}
-            </div>
-            {template.description && (
-              <p className="mt-2 text-gray-600">{template.description}</p>
+      {/* Page header */}
+      <div className="fin-page-header">
+        <div className="fin-page-header-main">
+          <p className="fin-eyebrow">Finance · Fee Management</p>
+          <h1 className="fin-title">{template.name}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginTop: "0.625rem", flexWrap: "wrap" }}>
+            <span className="fin-band-pill">{bandLabel}</span>
+            {!template.isActive && (
+              <span className="fin-badge fin-badge-muted">Inactive</span>
             )}
           </div>
+          {template.description && (
+            <p className="fin-subtitle" style={{ marginTop: "0.5rem" }}>
+              {template.description}
+            </p>
+          )}
+        </div>
 
-          <div className="rounded-lg border bg-white p-4">
-            <div className="text-sm text-gray-600">Template Total</div>
-            <div className="text-2xl font-bold">
-              {new Intl.NumberFormat("en-PH", {
-                style: "currency",
-                currency: "PHP",
-              }).format(templateTotal)}
-            </div>
-            <div className="mt-1 text-xs text-gray-500">
-              {template.items.length} item{template.items.length !== 1 ? "s" : ""}
-            </div>
-          </div>
+        {/* Total KPI card */}
+        <div className="fin-kpi-card">
+          <span className="fin-kpi-label">Template Total</span>
+          <span className="fin-kpi-value">
+            {new Intl.NumberFormat("en-PH", {
+              style: "currency",
+              currency: "PHP",
+            }).format(templateTotal)}
+          </span>
+          <span className="fin-kpi-sub">
+            {template.items.length} item{template.items.length !== 1 ? "s" : ""}
+          </span>
         </div>
       </div>
 
-      {/* Items Manager */}
+      {/* Items table with modal trigger in panel header */}
       <FeeTemplateItemsManager
         templateId={template.id}
         items={template.items}
         availableFeeTypes={allFeeTypes}
       />
 
-      {/* Actions */}
-      <div className="mt-8 rounded-lg border bg-gray-50 p-4">
-        <h3 className="mb-3 font-semibold">Next Steps</h3>
-        <div className="space-y-2 text-sm">
-          <p>
-            Once you've added all fee items to this template, you can assign it to a
-            school year:
+      {/* Next steps callout */}
+      <div className="fin-callout fin-callout-muted">
+        <div className="fin-callout-icon" aria-hidden>→</div>
+        <div>
+          <p className="fin-callout-title">Next Steps</p>
+          <p className="fin-callout-body" style={{ marginBottom: "0.5rem" }}>
+            Once you've added all fee items, assign this template to a school year.
           </p>
           <Link
             href="/staff/finance/fee-schedules/new"
-            className="inline-block font-medium text-primary hover:underline"
+            className="fin-callout-link"
           >
-            → Assign to School Year
+            Assign to School Year →
           </Link>
         </div>
       </div>
