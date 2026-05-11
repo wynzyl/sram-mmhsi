@@ -1,6 +1,58 @@
+/**
+ * SRAMS Global Styles
+ * ===================
+ *
+ * Table of Contents:
+ * ------------------
+ * 1. Design Tokens (@layer tokens)
+ *    - Color System (Primary, Accent, Warning, Semantic, Surfaces, Text, Borders)
+ *    - Shadow System
+ *    - Border Radius System
+ *    - Spacing System
+ *    - Typography System
+ *    - Motion System
+ *    - Dark Mode Overrides
+ *
+ * 2. Base Styles (@layer base)
+ *    - Typography Defaults (body, headings, code)
+ *    - Background Gradients (light/dark mode)
+ *
+ * 3. Layout Components (@layer components)
+ *    - Page Container, Header, Title
+ *    - Form Grid Layouts
+ *
+ * 4. UI Components (@layer components)
+ *    - Unified Button System (.btn, .btn-primary, .btn-icon)
+ *    - Unified Panel System (.panel, .panel-head, .panel-body)
+ *    - Unified Modal System (.modal-backdrop, .modal-dialog)
+ *    - Unified Callout System (.callout, .callout-warn)
+ *    - Unified Empty State System (.empty-state)
+ *    - Unified Table System (.table, .table-container)
+ *    - Form Controls (.form-control, .form-label, .form-error)
+ *    - Badge System (.badge, .badge-success)
+ *    - Alert System (.alert, .alert-error)
+ *
+ * 5. Feature Components (@layer components)
+ *    - Operations Shell (.ops-shell, .ops-panel, .ops-input, .ops-kpi-*)
+ *    - Finance Feature (.fin-page, .fin-panel, .fin-table, .fin-schedule-*, .fin-modal-*)
+ *    - Ledger Register (.ledger-register-*, all 42 classes)
+ *    - Cashier Modal (.cashier-modal-*)
+ *    - Backward Compatibility Aliases
+ *
+ * 6. Animation Utilities (@layer utilities)
+ *    - Keyframes (reveal-stagger, slide-in-soft, badge-pulse, shake, checkmark, ring-fill)
+ *    - Animation Classes (.animate-*, .stagger-delay-*)
+ *    - Motion Utilities (.hover-lift, .hover-elevate, .transition-smooth)
+ *    - Typography Utilities (.font-display, .text-ops-ink)
+ *    - Color Utilities (.text-accent-*, .bg-accent-*)
+ *    - Reference Code (.reference-code)
+ */
+
 @import "tailwindcss";
 
-/* ==================== DESIGN TOKENS ==================== */
+/* ========================================================================
+   LAYER 1: DESIGN TOKENS
+   ======================================================================== */
 @layer tokens {
   :root {
     /* ── Color System: Primary (Deep Red) ── */
@@ -225,7 +277,9 @@
   }
 }
 
-/* ==================== BASE STYLES ==================== */
+/* ========================================================================
+   LAYER 2: BASE STYLES
+   ======================================================================== */
 @layer base {
 
 
@@ -272,8 +326,11 @@
 }
 
 @layer utilities {
-  /* ==================== EDITORIAL ANIMATIONS ==================== */
+  /* ========================================================================
+   LAYER 6: ANIMATION UTILITIES
+   ======================================================================== */
 
+  /* Keyframe Definitions */
   @keyframes reveal-stagger {
     from {
       opacity: 0;
@@ -451,8 +508,11 @@
   }
 }
 
-/* ==================== Shared form system (legacy + editorial) ==================== */
+/* ========================================================================
+   LAYER 3: LAYOUT COMPONENTS
+   ======================================================================== */
 @layer components {
+  /* Page Layout */
   .page-container {
     @apply mx-auto w-full max-w-7xl space-y-6 px-4 py-6 md:px-6;
   }
@@ -543,7 +603,11 @@
     @apply rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 shadow-[var(--shadow)];
   }
 
-  /* ==================== UNIFIED BUTTON SYSTEM ==================== */
+  /* ========================================================================
+     LAYER 4: UI COMPONENTS
+     ======================================================================== */
+
+  /* ── Unified Button System ── */
 
   /* Base button - all buttons extend this */
   .btn {
@@ -959,6 +1023,12 @@
     @apply border-rose-500/35 bg-rose-500/12 text-rose-300;
   }
 
+  /* ========================================================================
+     LAYER 5: FEATURE COMPONENTS
+     ======================================================================== */
+
+  /* ── Operations Shell Feature ── */
+
   .ops-shell {
     @apply min-h-screen px-4 py-6 sm:px-6 lg:px-8;
     background: radial-gradient(circle at top, var(--color-ops-shell-strong) 0%, var(--color-ops-shell) 46%, var(--color-surface-2) 100%);
@@ -1091,7 +1161,7 @@
     opacity: 0.5;
   }
 
-  /* ==================== LEDGER REGISTER — Billing / Cashier View ==================== */
+  /* ── Ledger Register Feature (Cashier Billing View) ── */
 
   @keyframes ledger-fade-up {
     from { opacity: 0; transform: translateY(10px); }
@@ -1402,7 +1472,7 @@
     color: var(--color-ops-muted);
   }
 
-  /* ==================== CASHIER PAYMENT MODAL ==================== */
+  /* ── Cashier Payment Modal ── */
 
   .cashier-modal-backdrop {
     position: fixed;
@@ -1470,7 +1540,7 @@
     @apply overflow-y-auto p-6 flex-1;
   }
 
-  /* ==================== FINANCE PAGES — Fee Schedules / Templates / Items ==================== */
+  /* ── Finance Feature (Fee Schedules, Templates, Items) ── */
 
   @keyframes fin-fade-up {
     from { opacity: 0; transform: translateY(8px); }
@@ -2102,7 +2172,7 @@
     min-width: 1.1em;
   }
 
-  /* ==================== FINANCE MODAL ==================== */
+  /* ── Finance Modal ── */
 
   @keyframes fin-modal-in {
     from { opacity: 0; transform: scale(0.97) translateY(10px); }
