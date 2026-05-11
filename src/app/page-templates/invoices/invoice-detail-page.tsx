@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { eq, and } from "drizzle-orm";
 import Link from "next/link";
 import SendInvoiceDialog from "@/features/finance/components/invoices/SendInvoiceDialog";
+import PrintInvoiceButton from "@/features/finance/components/invoices/PrintInvoiceButton";
 import { formatCurrency } from "@/lib/utils/currency";
 
 type InvoiceDetailRoute = "/staff/finance/invoices";
@@ -116,7 +117,7 @@ export async function InternalInvoiceDetailPage(props: {
     <div className="page-container">
 
       {/* ── TOP BAR ── */}
-      <div style={{
+      <div className="no-print" style={{
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -150,11 +151,14 @@ export async function InternalInvoiceDetailPage(props: {
             {status.label}
           </span>
         </div>
-        <SendInvoiceDialog invoiceId={invoice.id} defaultEmail={defaultEmail} />
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <PrintInvoiceButton invoiceId={invoice.id} />
+          <SendInvoiceDialog invoiceId={invoice.id} defaultEmail={defaultEmail} />
+        </div>
       </div>
 
       {/* ── INVOICE DOCUMENT ── */}
-      <div style={{
+      <div id="invoice-document" style={{
         background: "var(--color-surface)",
         border: "1px solid var(--color-border)",
         borderRadius: "0.5rem",
@@ -307,7 +311,7 @@ export async function InternalInvoiceDetailPage(props: {
         </div>
 
         {/* FOOTER STRIP — timeline + meta */}
-        <div style={{
+        <div className="no-print" style={{
           borderTop: "1px solid var(--color-border)",
           background: "var(--color-surface-2)",
           padding: "1.25rem 3.5rem",

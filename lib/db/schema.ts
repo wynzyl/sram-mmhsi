@@ -12,7 +12,7 @@ import {
   check,
   jsonb,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { FEE_ASSESSMENT_BANDS } from "@/lib/fee-schedule/bands";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -387,6 +387,118 @@ export const feeScheduleItems = pgTable("fee_schedule_items", {
   updatedBy: uuid("updated_by").references(() => users.id),
 });
 
+// ─── Fee Templates (Reusable Fee Structures) ─────────────────────────────
+
+/** Master fee type definitions - ensures consistency across all templates */
+export const feeItemTypesCategoryEnum = pgEnum("fee_item_type_category", [
+  "tuition",
+  "fees",
+  "materials",
+  "discount",
+  "other",
+]);
+
+export const feeItemTypes = pgTable("fee_item_types", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  category: feeItemTypesCategoryEnum("category").notNull(),
+  isDiscount: boolean("is_discount").notNull().default(false),
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: uuid("updated_by").references(() => users.id),
+}, (t) => [
+  uniqueIndex("fee_item_types_code_uidx").on(t.code),
+  index("fee_item_types_category_idx").on(t.category),
+  index("fee_item_types_active_idx").on(t.isActive).where(sql`${t.isActive} = true`),
+]);
+
+/** Reusable fee templates per assessment band */
+export const feeTemplates = pgTable("fee_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  assessmentBand: feeAssessmentBandEnum("assessment_band").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: uuid("updated_by").references(() => users.id),
+}, (t) => [
+  index("fee_templates_band_idx").on(t.assessmentBand),
+  index("fee_templates_active_idx").on(t.isActive).where(sql`${t.isActive} = true`),
+]);
+
+/** Template items link fee types to default amounts */
+export const feeTemplateItems = pgTable("fee_template_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  feeTemplateId: uuid("fee_template_id")
+    .notNull()
+    .references(() => feeTemplates.id, { onDelete: "cascade" }),
+  feeItemTypeId: uuid("fee_item_type_id")
+    .notNull()
+    .references(() => feeItemTypes.id),
+  defaultAmount: numeric("default_amount", { precision: 12, scale: 2 }).notNull(),
+  order: integer("order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: uuid("updated_by").references(() => users.id),
+}, (t) => [
+  index("fee_template_items_template_idx").on(t.feeTemplateId),
+  index("fee_template_items_type_idx").on(t.feeItemTypeId),
+  uniqueIndex("fee_template_items_template_type_uidx").on(t.feeTemplateId, t.feeItemTypeId),
+]);
+
+/** Links templates to school years with effective dates */
+export const schoolYearFeeSchedules = pgTable("school_year_fee_schedules", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  schoolYearId: uuid("school_year_id")
+    .notNull()
+    .references(() => schoolYears.id, { onDelete: "cascade" }),
+  assessmentBand: feeAssessmentBandEnum("assessment_band").notNull(),
+  feeTemplateId: uuid("fee_template_id")
+    .notNull()
+    .references(() => feeTemplates.id),
+  effectiveDate: timestamp("effective_date").notNull(),
+  expiryDate: timestamp("expiry_date"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: uuid("updated_by").references(() => users.id),
+}, (t) => [
+  uniqueIndex("syfs_sy_band_active_uidx")
+    .on(t.schoolYearId, t.assessmentBand)
+    .where(sql`${t.isActive} = true`),
+  index("syfs_sy_band_idx").on(t.schoolYearId, t.assessmentBand),
+  index("syfs_effective_idx").on(t.effectiveDate),
+  check("syfs_dates_chk", sql`${t.expiryDate} IS NULL OR ${t.expiryDate} > ${t.effectiveDate}`),
+]);
+
+/** Year-specific amount adjustments without duplicating entire schedules */
+export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  scheduleId: uuid("schedule_id")
+    .notNull()
+    .references(() => schoolYearFeeSchedules.id, { onDelete: "cascade" }),
+  feeTemplateItemId: uuid("fee_template_item_id")
+    .notNull()
+    .references(() => feeTemplateItems.id),
+  overrideAmount: numeric("override_amount", { precision: 12, scale: 2 }).notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: uuid("updated_by").references(() => users.id),
+}, (t) => [
+  uniqueIndex("fso_schedule_item_uidx").on(t.scheduleId, t.feeTemplateItemId),
+  index("fso_schedule_idx").on(t.scheduleId),
+]);
+
 // ─── Assessments (Billing) ────────────────────────────────────────────────────
 
 export const assessments = pgTable(
@@ -422,9 +534,17 @@ export const assessmentItems = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     assessmentId: uuid("assessment_id").notNull().references(() => assessments.id, { onDelete: "cascade" }),
+    /** Legacy: References old fee_schedule_items (will be migrated to feeTemplateItemId) */
     feeScheduleItemId: uuid("fee_schedule_item_id").references(() => feeScheduleItems.id),
+    /** New: References fee_template_items for audit trail */
+    feeTemplateItemId: uuid("fee_template_item_id").references(() => feeTemplateItems.id),
+    /** New: References fee_item_types for reporting/analytics */
+    feeItemTypeId: uuid("fee_item_type_id").references(() => feeItemTypes.id),
+    /** Snapshot: Fee description from fee_item_types.name at time of assessment */
     description: text("description").notNull(),
+    /** Snapshot: Resolved amount (includes overrides) at time of assessment */
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    /** Snapshot: Discount flag from fee_item_types.isDiscount at time of assessment */
     isDiscount: boolean("is_discount").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
@@ -433,6 +553,8 @@ export const assessmentItems = pgTable(
   },
   (t) => [
     index("ai_assessment_idx").on(t.assessmentId),
+    index("ai_fee_item_type_idx").on(t.feeItemTypeId),
+    index("ai_fee_template_item_idx").on(t.feeTemplateItemId),
   ]
 );
 
@@ -618,3 +740,76 @@ export const auditLogs = pgTable(
     index("audit_created_idx").on(t.createdAt),
   ]
 );
+
+// ─── Relations ────────────────────────────────────────────────────────────────
+
+// Fee Templates Relations
+export const feeTemplatesRelations = relations(feeTemplates, ({ many }) => ({
+  items: many(feeTemplateItems),
+}));
+
+export const feeTemplateItemsRelations = relations(feeTemplateItems, ({ one }) => ({
+  feeTemplate: one(feeTemplates, {
+    fields: [feeTemplateItems.feeTemplateId],
+    references: [feeTemplates.id],
+  }),
+  feeItemType: one(feeItemTypes, {
+    fields: [feeTemplateItems.feeItemTypeId],
+    references: [feeItemTypes.id],
+  }),
+}));
+
+export const feeItemTypesRelations = relations(feeItemTypes, ({ many }) => ({
+  templateItems: many(feeTemplateItems),
+  assessmentItems: many(assessmentItems),
+}));
+
+export const schoolYearFeeSchedulesRelations = relations(schoolYearFeeSchedules, ({ one, many }) => ({
+  schoolYear: one(schoolYears, {
+    fields: [schoolYearFeeSchedules.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  feeTemplate: one(feeTemplates, {
+    fields: [schoolYearFeeSchedules.feeTemplateId],
+    references: [feeTemplates.id],
+  }),
+  overrides: many(feeScheduleOverrides),
+}));
+
+export const feeScheduleOverridesRelations = relations(feeScheduleOverrides, ({ one }) => ({
+  schedule: one(schoolYearFeeSchedules, {
+    fields: [feeScheduleOverrides.scheduleId],
+    references: [schoolYearFeeSchedules.id],
+  }),
+  feeTemplateItem: one(feeTemplateItems, {
+    fields: [feeScheduleOverrides.feeTemplateItemId],
+    references: [feeTemplateItems.id],
+  }),
+}));
+
+export const assessmentItemsRelations = relations(assessmentItems, ({ one }) => ({
+  assessment: one(assessments, {
+    fields: [assessmentItems.assessmentId],
+    references: [assessments.id],
+  }),
+  feeTemplateItem: one(feeTemplateItems, {
+    fields: [assessmentItems.feeTemplateItemId],
+    references: [feeTemplateItems.id],
+  }),
+  feeItemType: one(feeItemTypes, {
+    fields: [assessmentItems.feeItemTypeId],
+    references: [feeItemTypes.id],
+  }),
+}));
+
+export const assessmentsRelations = relations(assessments, ({ one, many }) => ({
+  enrollment: one(enrollments, {
+    fields: [assessments.enrollmentId],
+    references: [enrollments.id],
+  }),
+  items: many(assessmentItems),
+}));
+
+export const schoolYearsRelations = relations(schoolYears, ({ many }) => ({
+  feeSchedules: many(schoolYearFeeSchedules),
+}));

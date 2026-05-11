@@ -4,6 +4,7 @@ import { studentDirectoryListHref } from "@/lib/utils/student-directory-href";
 import type { StudentDirectoryBasePath } from "@/lib/utils/student-directory-href";
 import {
   fetchStudentDirectoryPage,
+  fetchActiveSchoolYearId,
   getStudentDirectoryEmptyMessage,
 } from "@/features/students/students.queries";
 import {
@@ -31,8 +32,16 @@ export async function InternalStudentDirectoryPage(props: {
     schoolYearId: schoolYearIdRaw,
     gradeLevelId: gradeLevelIdRaw,
   } = await searchParams;
-  const schoolYearId = parseUuidSearchParam(schoolYearIdRaw);
   const gradeLevelId = parseUuidSearchParam(gradeLevelIdRaw);
+  let schoolYearId = parseUuidSearchParam(schoolYearIdRaw);
+
+  // Default to the active school year when none is specified in the URL.
+  if (!schoolYearId) {
+    const activeId = await fetchActiveSchoolYearId();
+    if (activeId) {
+      redirect(studentDirectoryListHref(basePath, { q: q.trim() || undefined, schoolYearId: activeId, gradeLevelId }));
+    }
+  }
 
   const currentPageRaw = Math.max(1, parseInt(page, 10) || 1);
 

@@ -48,7 +48,12 @@
       "Bash(npx drizzle-kit studio)",
       "Bash(tree:*)",
       "Bash(test:*)",
-      "Bash(powershell -Command \"Remove-Item -Path ''E:\\\\Projects\\\\SRAMS\\\\SRAMS-MMHSI\\\\.claude\\\\worktrees'' -Recurse -Force\")"
+      "Bash(powershell -Command \"Remove-Item -Path ''E:\\\\Projects\\\\SRAMS\\\\SRAMS-MMHSI\\\\.claude\\\\worktrees'' -Recurse -Force\")",
+      "Bash(git log:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npm run db:seed-fee-types:*)",
+      "Bash(npm run db:push:*)",
+      "Bash(npx drizzle-kit push:*)"
     ]
   }
 }

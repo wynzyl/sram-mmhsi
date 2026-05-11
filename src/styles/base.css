@@ -78,6 +78,21 @@
     .no-print {
       display: none !important;
     }
+
+    /* Invoice print: isolate the document card, remove chrome */
+    #invoice-document {
+      box-shadow: none !important;
+      border: none !important;
+      border-radius: 0 !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+    }
+
+    /* Ensure colors print (browsers suppress bg by default) */
+    #invoice-document * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
   }
 }
 

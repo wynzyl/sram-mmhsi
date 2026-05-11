@@ -5,6 +5,69 @@
     {
       "idx": 0,
       "version": "7",
+      "when": 1777962803921,
+      "tag": "0000_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778044006090,
+      "tag": "0001_add_parent_guardian_profile_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778046000000,
+      "tag": "0002_soft_delete_academics",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778121439903,
+      "tag": "0003_add_super_admin_role_and_teacher_assignment_unique_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778135489524,
+      "tag": "0004_require_or_fields_for_consumed_payments",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778135605479,
+      "tag": "0005_add_active_school_year_uniqueness_and_date_check",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778217647123,
+      "tag": "0006_add_enrollment_queue_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1778227977913,
+      "tag": "0007_skinny_betty_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778313800000,
+      "tag": "0008_add_student_reference_sequence",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
       "when": 1747051200000,
       "tag": "0010_add_fee_templates",
       "breakpoints": true
