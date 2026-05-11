@@ -614,6 +614,218 @@
     @apply w-full;
   }
 
+  /* ==================== UNIFIED PANEL SYSTEM ==================== */
+
+  /* Base panel/card container */
+  .panel {
+    @apply rounded-2xl border overflow-hidden;
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .panel-head {
+    @apply flex items-center justify-between gap-3 px-5 py-3.5 border-b;
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .panel-body {
+    @apply p-5;
+  }
+
+  .panel-footer {
+    @apply px-5 py-4 border-t flex items-center justify-between gap-4 flex-wrap;
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  /* Backward compatibility aliases */
+  .fin-panel {
+    @apply rounded-2xl border overflow-hidden;
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ops-panel {
+    @apply rounded-2xl border overflow-hidden;
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ops-panel-muted {
+    background: var(--color-ops-panel-muted);
+  }
+
+  /* ==================== UNIFIED MODAL SYSTEM ==================== */
+
+  @keyframes modal-in {
+    from { opacity: 0; transform: scale(0.97) translateY(10px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0); }
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--color-ops-ink) 55%, transparent);
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-dialog {
+    @apply w-full rounded-2xl border overflow-hidden flex flex-col;
+    max-width: 36rem;
+    max-height: calc(100dvh - 2rem);
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-lg);
+    animation: modal-in 0.22s ease-out both;
+  }
+
+  .modal-dialog-lg {
+    max-width: 48rem;
+  }
+
+  .modal-header {
+    @apply flex items-start justify-between gap-4 px-6 py-5 border-b flex-shrink-0;
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .modal-body {
+    @apply overflow-y-auto p-6 flex-1;
+  }
+
+  .modal-footer {
+    @apply px-6 py-4 border-t flex items-center justify-end gap-3 flex-shrink-0;
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  /* Backward compatibility aliases */
+  .fin-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--color-ops-ink) 55%, transparent);
+    backdrop-filter: blur(4px);
+  }
+
+  .fin-modal-dialog {
+    @apply w-full rounded-2xl border overflow-hidden flex flex-col;
+    max-width: 36rem;
+    max-height: calc(100dvh - 2rem);
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-lg);
+    animation: modal-in 0.22s ease-out both;
+  }
+
+  .cashier-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--color-ops-ink) 55%, transparent);
+    backdrop-filter: blur(4px);
+  }
+
+  .cashier-modal-dialog {
+    @apply w-full rounded-2xl border overflow-hidden flex flex-col;
+    max-width: 48rem; /* Cashier modals are typically larger */
+    max-height: calc(100dvh - 2rem);
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-lg);
+    animation: modal-in 0.22s ease-out both;
+  }
+
+  /* ==================== UNIFIED CALLOUT SYSTEM ==================== */
+
+  .callout {
+    @apply flex gap-3 rounded-xl border p-4;
+    border-color: color-mix(in srgb, var(--color-info) 25%, transparent);
+    background: color-mix(in srgb, var(--color-info) 6%, var(--color-ops-panel));
+  }
+
+  .callout-info {
+    /* Default - already defined in .callout */
+  }
+
+  .callout-warn {
+    border-color: color-mix(in srgb, var(--color-ops-warning) 30%, transparent);
+    background: color-mix(in srgb, var(--color-ops-warning) 8%, var(--color-ops-panel));
+  }
+
+  .callout-success {
+    border-color: color-mix(in srgb, var(--color-ops-positive) 30%, transparent);
+    background: color-mix(in srgb, var(--color-ops-positive) 8%, var(--color-ops-panel));
+  }
+
+  .callout-error {
+    border-color: color-mix(in srgb, var(--color-error) 30%, transparent);
+    background: color-mix(in srgb, var(--color-error) 8%, var(--color-ops-panel));
+  }
+
+  /* Backward compatibility aliases */
+  .fin-callout {
+    @apply flex gap-3 rounded-xl border p-4;
+    border-color: color-mix(in srgb, var(--color-info) 25%, transparent);
+    background: color-mix(in srgb, var(--color-info) 6%, var(--color-ops-panel));
+  }
+
+  .fin-callout-warn {
+    @apply flex gap-3 rounded-xl border p-4;
+    border-color: color-mix(in srgb, var(--color-ops-warning) 30%, transparent);
+    background: color-mix(in srgb, var(--color-ops-warning) 8%, var(--color-ops-panel));
+  }
+
+  .fin-callout-success {
+    @apply flex gap-3 rounded-xl border p-4;
+    border-color: color-mix(in srgb, var(--color-ops-positive) 30%, transparent);
+    background: color-mix(in srgb, var(--color-ops-positive) 8%, var(--color-ops-panel));
+  }
+
+  /* ==================== UNIFIED EMPTY STATE SYSTEM ==================== */
+
+  .empty-state {
+    @apply flex flex-col items-center justify-center gap-4 px-6 py-12 text-center;
+  }
+
+  .empty-state-text {
+    @apply text-sm;
+    color: var(--color-ops-muted);
+  }
+
+  .empty-state-icon {
+    @apply text-2xl;
+    color: var(--color-ops-muted);
+    opacity: 0.5;
+  }
+
+  /* Backward compatibility aliases */
+  .fin-empty {
+    @apply flex flex-col items-center justify-center gap-4 px-6 py-12 text-center;
+  }
+
+  .fin-empty-text {
+    @apply text-sm;
+    color: var(--color-ops-muted);
+  }
+
   /* ==================== UNIFIED TABLE SYSTEM ==================== */
 
   /* Table container with border and shadow */
