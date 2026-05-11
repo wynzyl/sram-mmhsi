@@ -5,7 +5,6 @@ import {
   students,
   schoolYears,
   gradeLevels,
-  feeScheduleItems,
   studentGuardianLinks,
   parentsGuardians,
 } from "@/lib/db/schema";
@@ -14,7 +13,8 @@ import { resolveFeeScheduleForAssessment } from "@/lib/fee-schedule/resolve";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
 
 export type NewAssessmentFeeCatalogEntry = {
-  feeScheduleItemId: string;
+  feeTemplateItemId: string; // Changed from feeScheduleItemId
+  feeItemTypeId: string;     // New: For reporting
   description: string;
   defaultAmount: string;
   isDiscount: boolean;
@@ -104,35 +104,28 @@ export async function loadNewAssessmentPageContext(
 
   const catalogBandLabel = FEE_ASSESSMENT_BAND_LABELS[e.assessmentBand];
 
-  const schedule = await resolveFeeScheduleForAssessment(db, {
+  const feeResolution = await resolveFeeScheduleForAssessment(db, {
     schoolYearId: e.schoolYearId,
     assessmentBand: e.assessmentBand,
   });
 
   let feeCatalog: NewAssessmentFeeCatalogEntry[] = [];
 
-  if (schedule) {
-    const items = await db
-      .select()
-      .from(feeScheduleItems)
-      .where(eq(feeScheduleItems.feeScheduleId, schedule.id))
-      .orderBy(asc(feeScheduleItems.order), asc(feeScheduleItems.createdAt));
-
-    feeCatalog = items.map((item) => ({
-      feeScheduleItemId: item.id,
+  if (feeResolution) {
+    feeCatalog = feeResolution.items.map((item) => ({
+      feeTemplateItemId: item.feeTemplateItemId, // Changed from feeScheduleItemId
+      feeItemTypeId: item.feeItemTypeId,         // New: For reporting
       description: item.description,
-      defaultAmount: String(item.amount),
+      defaultAmount: item.amount,
       isDiscount: item.isDiscount,
     }));
   }
 
-  const submitBlockedReason = !schedule
-    ? `No fee schedule exists for this school year and fee band (${catalogBandLabel}), or a legacy school-wide catalog. Create one under Finance → Fee schedules with line items.`
-    : !schedule.isActive
-      ? `The fee schedule for this grade band (${catalogBandLabel}) is inactive. Activate it in Finance before assessing.`
-      : feeCatalog.length === 0
-        ? `Add at least one fee to the catalog for this grade band (${catalogBandLabel}) under Finance → Fee schedules before assessing.`
-        : null;
+  const submitBlockedReason = !feeResolution
+    ? `No fee schedule exists for this school year and fee band (${catalogBandLabel}). Create one under Finance → Fee Templates with line items.`
+    : feeCatalog.length === 0
+      ? `Add at least one fee to the template for this grade band (${catalogBandLabel}) under Finance → Fee Templates before assessing.`
+      : null;
 
   return {
     status: "ready",

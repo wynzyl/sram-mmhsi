@@ -6,10 +6,9 @@ import {
   enrollments,
   assessments,
   assessmentItems,
-  feeScheduleItems,
   gradeLevels,
 } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "@/lib/fee-schedule/resolve";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -83,72 +82,60 @@ export async function createAssessmentFromEnrollmentAction(
     return { message: "An assessment already exists for this enrollment." };
   }
 
-  const scheduleRow = await resolveFeeScheduleForAssessment(db, {
+  const scheduleResolution = await resolveFeeScheduleForAssessment(db, {
     schoolYearId: enrollmentRow.schoolYearId,
     assessmentBand: gradeRow.assessmentBand,
   });
 
-  if (!scheduleRow) {
+  if (!scheduleResolution) {
     return {
       message:
-        "No fee schedule exists for this school year and grade band (or legacy school-wide catalog). Configure Finance → Fee schedules first.",
+        "No fee schedule exists for this school year and grade band. Configure Finance → Fee Templates first.",
     };
   }
 
-  if (!scheduleRow.isActive) {
+  if (scheduleResolution.items.length === 0) {
     return {
       message:
-        "The fee schedule for this enrollment’s grade band is inactive. Activate it under Finance → Fee schedules.",
+        "The fee template has no line items yet. Add fee types to the template under Finance → Fee Templates.",
     };
   }
 
-  const catalogCountRow = await db
-    .select({ n: feeScheduleItems.id })
-    .from(feeScheduleItems)
-    .where(eq(feeScheduleItems.feeScheduleId, scheduleRow.id))
-    .limit(1);
-
-  if (catalogCountRow.length === 0) {
-    return {
-      message:
-        "The fee catalog has no line items yet. Add fee types under Finance → Fee schedules for this school year first.",
-    };
-  }
-
+  // Validate submitted items against resolved template items
   const submittedById = new Map(items.map((row) => [row.feeScheduleItemId, row.amount]));
   if (submittedById.size !== items.length) {
     return { message: "Each catalog fee may only appear once." };
   }
 
   const submittedIds = [...submittedById.keys()];
-  const catalogMatches = await db.query.feeScheduleItems.findMany({
-    where: and(
-      eq(feeScheduleItems.feeScheduleId, scheduleRow.id),
-      inArray(feeScheduleItems.id, submittedIds)
-    ),
-  });
+  const templateItemIds = new Set(scheduleResolution.items.map(i => i.feeTemplateItemId));
 
-  if (catalogMatches.length !== submittedIds.length) {
+  // Check if all submitted items exist in the resolved template
+  const invalidIds = submittedIds.filter(id => !templateItemIds.has(id));
+  if (invalidIds.length > 0) {
     return {
       message:
-        "One or more selected fees are not in the school year catalog. Refresh the page and try again.",
+        "One or more selected fees are not in the current fee template. Refresh the page and try again.",
     };
   }
 
-  const catalogMap = new Map(catalogMatches.map((c) => [c.id, c]));
+  // Build resolved lines using template data + submitted amounts
+  const templateMap = new Map(scheduleResolution.items.map((item) => [item.feeTemplateItemId, item]));
   const resolvedLines: {
     description: string;
     amount: number;
     isDiscount: boolean;
-    feeScheduleItemId: string;
+    feeTemplateItemId: string;
+    feeItemTypeId: string;
   }[] = [];
   for (const line of items) {
-    const catalog = catalogMap.get(line.feeScheduleItemId)!;
+    const template = templateMap.get(line.feeScheduleItemId)!;
     resolvedLines.push({
-      feeScheduleItemId: catalog.id,
-      description: catalog.description,
+      feeTemplateItemId: template.feeTemplateItemId,
+      feeItemTypeId: template.feeItemTypeId,
+      description: template.description,
       amount: line.amount,
-      isDiscount: catalog.isDiscount,
+      isDiscount: template.isDiscount,
     });
   }
 
@@ -166,17 +153,16 @@ export async function createAssessmentFromEnrollmentAction(
         schoolYearId: enrollmentRow.schoolYearId,
         assessmentBand: gradeRow.assessmentBand,
       });
-      if (!scheduleCheck?.isActive || scheduleCheck.id !== scheduleRow.id) {
+      if (!scheduleCheck || scheduleCheck.scheduleId !== scheduleResolution.scheduleId) {
         throw new Error("FEE_SCHEDULE_CHANGED");
       }
 
-      const latestMatches = await tx.query.feeScheduleItems.findMany({
-        where: and(
-          eq(feeScheduleItems.feeScheduleId, scheduleRow.id),
-          inArray(feeScheduleItems.id, submittedIds)
-        ),
-      });
-      if (latestMatches.length !== submittedIds.length) {
+      // Verify template items haven't changed
+      const currentTemplateItemIds = new Set(scheduleCheck.items.map(i => i.feeTemplateItemId));
+      const originalTemplateItemIds = new Set(submittedIds);
+
+      if (currentTemplateItemIds.size !== originalTemplateItemIds.size ||
+          ![...originalTemplateItemIds].every(id => currentTemplateItemIds.has(id))) {
         throw new Error("FEE_SCHEDULE_CHANGED");
       }
 
@@ -200,10 +186,11 @@ export async function createAssessmentFromEnrollmentAction(
       await tx.insert(assessmentItems).values(
         resolvedLines.map((item) => ({
           assessmentId: newAssessment.id,
-          feeScheduleItemId: item.feeScheduleItemId,
-          description: item.description,
+          feeTemplateItemId: item.feeTemplateItemId, // ← New: For audit trail
+          feeItemTypeId: item.feeItemTypeId,          // ← New: For reporting
+          description: item.description,               // ← Snapshot from fee_item_types.name
           amount: String(Number(item.amount).toFixed(2)),
-          isDiscount: item.isDiscount,
+          isDiscount: item.isDiscount,                 // ← Snapshot from fee_item_types.isDiscount
           createdBy: session.userId,
           updatedBy: session.userId,
         }))
@@ -231,7 +218,7 @@ export async function createAssessmentFromEnrollmentAction(
           enrollmentId,
           totalAmount: assessmentTotalAmount,
           lineCount: resolvedLines.length,
-          feeScheduleId: scheduleRow.id,
+          feeScheduleId: scheduleResolution.scheduleId,
         },
       }, { throwOnFail: true });
     });

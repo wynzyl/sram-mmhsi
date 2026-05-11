@@ -22,7 +22,8 @@ export type FeeCatalogEntry = NewAssessmentFeeCatalogEntry;
 
 interface AssessmentLineRow {
   rowKey: string;
-  feeScheduleItemId: string;
+  feeTemplateItemId: string;
+  feeItemTypeId: string;
   description: string;
   amount: string;
   isDiscount: boolean;
@@ -59,7 +60,8 @@ function newRowKey(): string {
 function rowsFromCatalog(catalog: FeeCatalogEntry[]): AssessmentLineRow[] {
   return catalog.map((entry) => ({
     rowKey: newRowKey(),
-    feeScheduleItemId: entry.feeScheduleItemId,
+    feeTemplateItemId: entry.feeTemplateItemId,
+    feeItemTypeId: entry.feeItemTypeId,
     description: entry.description,
     amount: String(entry.defaultAmount),
     isDiscount: entry.isDiscount,
@@ -104,7 +106,8 @@ export default function AssessmentDraftForm({
     () =>
       JSON.stringify(
         rows.map((r) => ({
-          feeScheduleItemId: r.feeScheduleItemId,
+          feeTemplateItemId: r.feeTemplateItemId,
+          feeItemTypeId: r.feeItemTypeId,
           amount: r.amount,
         }))
       ),

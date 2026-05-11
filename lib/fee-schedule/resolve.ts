@@ -1,31 +1,138 @@
+/**
+ * Fee Schedule Resolution Logic (Template-Based System)
+ *
+ * Resolves the active fee schedule for a given school year + assessment band.
+ * Returns resolved fee items including any year-specific overrides.
+ */
+
 import { db } from "@/lib/db";
-import { feeSchedules } from "@/lib/db/schema";
-import { and, eq, isNull } from "drizzle-orm";
+import {
+  schoolYearFeeSchedules,
+  feeTemplateItems,
+  feeScheduleOverrides,
+  feeItemTypes,
+} from "@/lib/db/schema";
+import { and, eq, lte, gte, or, isNull } from "drizzle-orm";
 import type { FeeAssessmentBand } from "@/lib/fee-schedule/bands";
 
 type DbQuery = typeof db.query;
 
+export type ResolvedFeeItem = {
+  feeTemplateItemId: string;
+  feeItemTypeId: string; // For populating assessment_items.fee_item_type_id
+  description: string; // From fee_item_types.name
+  amount: string;
+  isDiscount: boolean; // From fee_item_types.is_discount
+  order: number;
+};
+
+export type FeeScheduleResolution = {
+  scheduleId: string;
+  feeTemplateId: string;
+  items: ResolvedFeeItem[];
+} | null;
+
 /**
- * Band-specific fee schedule for a school year, or legacy school-wide row (assessment_band IS NULL).
+ * Resolves the active fee schedule for a school year + assessment band.
+ *
+ * @param executor - Database query executor (db or transaction)
+ * @param params - School year ID, assessment band, and optional effective date
+ * @returns Resolved fee schedule with items (including overrides), or null if not found
+ *
+ * @example
+ * ```ts
+ * const resolution = await resolveFeeScheduleForAssessment(db, {
+ *   schoolYearId: "uuid",
+ *   assessmentBand: "casa",
+ * });
+ *
+ * if (!resolution) {
+ *   throw new Error("No fee schedule configured");
+ * }
+ *
+ * // Use resolved items to create assessment
+ * await db.insert(assessmentItems).values(
+ *   resolution.items.map(item => ({
+ *     assessmentId: assessment.id,
+ *     feeTemplateItemId: item.feeTemplateItemId,
+ *     feeItemTypeId: item.feeItemTypeId,
+ *     description: item.description,
+ *     amount: item.amount,
+ *     isDiscount: item.isDiscount,
+ *   }))
+ * );
+ * ```
  */
 export async function resolveFeeScheduleForAssessment(
   executor: { query: DbQuery },
-  params: { schoolYearId: string; assessmentBand: FeeAssessmentBand }
-): Promise<{ id: string; isActive: boolean } | null> {
-  const { schoolYearId, assessmentBand } = params;
+  params: {
+    schoolYearId: string;
+    assessmentBand: FeeAssessmentBand;
+    effectiveDate?: Date;
+  }
+): Promise<FeeScheduleResolution> {
+  const { schoolYearId, assessmentBand, effectiveDate = new Date() } = params;
 
-  const bandRow = await executor.query.feeSchedules.findFirst({
+  // ─── Step 1: Find Active Schedule ────────────────────────────────────────
+
+  const schedule = await executor.query.schoolYearFeeSchedules.findFirst({
     where: and(
-      eq(feeSchedules.schoolYearId, schoolYearId),
-      eq(feeSchedules.assessmentBand, assessmentBand)
+      eq(schoolYearFeeSchedules.schoolYearId, schoolYearId),
+      eq(schoolYearFeeSchedules.assessmentBand, assessmentBand),
+      eq(schoolYearFeeSchedules.isActive, true),
+      lte(schoolYearFeeSchedules.effectiveDate, effectiveDate),
+      or(
+        isNull(schoolYearFeeSchedules.expiryDate),
+        gte(schoolYearFeeSchedules.expiryDate, effectiveDate)
+      )
     ),
-    columns: { id: true, isActive: true },
+    orderBy: (t, { desc }) => [desc(t.effectiveDate)],
   });
-  if (bandRow) return bandRow;
 
-  const legacy = await executor.query.feeSchedules.findFirst({
-    where: and(eq(feeSchedules.schoolYearId, schoolYearId), isNull(feeSchedules.assessmentBand)),
-    columns: { id: true, isActive: true },
+  if (!schedule) {
+    return null;
+  }
+
+  // ─── Step 2: Load Template Items with Fee Type Details ───────────────────
+
+  const templateItems = await executor.query.feeTemplateItems.findMany({
+    where: eq(feeTemplateItems.feeTemplateId, schedule.feeTemplateId),
+    with: {
+      feeItemType: true, // Join with fee_item_types to get name/description
+    },
+    orderBy: (t, { asc }) => [asc(t.order), asc(t.createdAt)],
   });
-  return legacy ?? null;
+
+  if (templateItems.length === 0) {
+    return null;
+  }
+
+  // ─── Step 3: Load Overrides for This Schedule ────────────────────────────
+
+  const overrides = await executor.query.feeScheduleOverrides.findMany({
+    where: eq(feeScheduleOverrides.scheduleId, schedule.id),
+  });
+
+  const overrideMap = new Map(
+    overrides.map((o) => [o.feeTemplateItemId, o.overrideAmount])
+  );
+
+  // ─── Step 4: Merge Template Items with Overrides ─────────────────────────
+
+  const resolvedItems: ResolvedFeeItem[] = templateItems.map((item) => ({
+    feeTemplateItemId: item.id,
+    feeItemTypeId: item.feeItemTypeId, // For assessment_items reporting
+    description: item.feeItemType.name, // Get name from fee_item_types
+    amount: overrideMap.has(item.id)
+      ? String(overrideMap.get(item.id))
+      : item.defaultAmount,
+    isDiscount: item.feeItemType.isDiscount, // Get from fee_item_types
+    order: item.order,
+  }));
+
+  return {
+    scheduleId: schedule.id,
+    feeTemplateId: schedule.feeTemplateId,
+    items: resolvedItems,
+  };
 }

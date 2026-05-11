@@ -1,5 +1,5 @@
 {
-  "id": "7f0917cf-1ee5-4f02-857e-87e43ef6654d",
+  "id": "526b6ea5-38ed-4475-a86a-536d6d55842d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -23,18 +23,6 @@
         },
         "fee_schedule_item_id": {
           "name": "fee_schedule_item_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "fee_template_item_id": {
-          "name": "fee_template_item_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "fee_item_type_id": {
-          "name": "fee_item_type_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -85,53 +73,7 @@
           "notNull": false
         }
       },
-      "indexes": {
-        "ai_assessment_idx": {
-          "name": "ai_assessment_idx",
-          "columns": [
-            {
-              "expression": "assessment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "ai_fee_item_type_idx": {
-          "name": "ai_fee_item_type_idx",
-          "columns": [
-            {
-              "expression": "fee_item_type_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "ai_fee_template_item_idx": {
-          "name": "ai_fee_template_item_idx",
-          "columns": [
-            {
-              "expression": "fee_template_item_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "assessment_items_assessment_id_assessments_id_fk": {
           "name": "assessment_items_assessment_id_assessments_id_fk",
@@ -152,32 +94,6 @@
           "tableTo": "fee_schedule_items",
           "columnsFrom": [
             "fee_schedule_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "assessment_items_fee_template_item_id_fee_template_items_id_fk": {
-          "name": "assessment_items_fee_template_item_id_fee_template_items_id_fk",
-          "tableFrom": "assessment_items",
-          "tableTo": "fee_template_items",
-          "columnsFrom": [
-            "fee_template_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "assessment_items_fee_item_type_id_fee_item_types_id_fk": {
-          "name": "assessment_items_fee_item_type_id_fee_item_types_id_fk",
-          "tableFrom": "assessment_items",
-          "tableTo": "fee_item_types",
-          "columnsFrom": [
-            "fee_item_type_id"
           ],
           "columnsTo": [
             "id"
@@ -819,54 +735,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "enrollment_sy_status_idx": {
-          "name": "enrollment_sy_status_idx",
-          "columns": [
-            {
-              "expression": "school_year_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "enrollment_student_sy_status_idx": {
-          "name": "enrollment_student_sy_status_idx",
-          "columns": [
-            {
-              "expression": "student_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "school_year_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -981,174 +849,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.fee_item_types": {
-      "name": "fee_item_types",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "code": {
-          "name": "code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "category": {
-          "name": "category",
-          "type": "fee_item_type_category",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_discount": {
-          "name": "is_discount",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "display_order": {
-          "name": "display_order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_by": {
-          "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "fee_item_types_code_uidx": {
-          "name": "fee_item_types_code_uidx",
-          "columns": [
-            {
-              "expression": "code",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "fee_item_types_category_idx": {
-          "name": "fee_item_types_category_idx",
-          "columns": [
-            {
-              "expression": "category",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "fee_item_types_active_idx": {
-          "name": "fee_item_types_active_idx",
-          "columns": [
-            {
-              "expression": "is_active",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"fee_item_types\".\"is_active\" = true",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "fee_item_types_created_by_users_id_fk": {
-          "name": "fee_item_types_created_by_users_id_fk",
-          "tableFrom": "fee_item_types",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "fee_item_types_updated_by_users_id_fk": {
-          "name": "fee_item_types_updated_by_users_id_fk",
-          "tableFrom": "fee_item_types",
-          "tableTo": "users",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "fee_item_types_code_unique": {
-          "name": "fee_item_types_code_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.fee_schedule_items": {
       "name": "fee_schedule_items",
       "schema": "",
@@ -1250,166 +950,6 @@
         "fee_schedule_items_updated_by_users_id_fk": {
           "name": "fee_schedule_items_updated_by_users_id_fk",
           "tableFrom": "fee_schedule_items",
-          "tableTo": "users",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.fee_schedule_overrides": {
-      "name": "fee_schedule_overrides",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "schedule_id": {
-          "name": "schedule_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fee_template_item_id": {
-          "name": "fee_template_item_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "override_amount": {
-          "name": "override_amount",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reason": {
-          "name": "reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_by": {
-          "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "fso_schedule_item_uidx": {
-          "name": "fso_schedule_item_uidx",
-          "columns": [
-            {
-              "expression": "schedule_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "fee_template_item_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "fso_schedule_idx": {
-          "name": "fso_schedule_idx",
-          "columns": [
-            {
-              "expression": "schedule_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "fee_schedule_overrides_schedule_id_school_year_fee_schedules_id_fk": {
-          "name": "fee_schedule_overrides_schedule_id_school_year_fee_schedules_id_fk",
-          "tableFrom": "fee_schedule_overrides",
-          "tableTo": "school_year_fee_schedules",
-          "columnsFrom": [
-            "schedule_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "fee_schedule_overrides_fee_template_item_id_fee_template_items_id_fk": {
-          "name": "fee_schedule_overrides_fee_template_item_id_fee_template_items_id_fk",
-          "tableFrom": "fee_schedule_overrides",
-          "tableTo": "fee_template_items",
-          "columnsFrom": [
-            "fee_template_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "fee_schedule_overrides_created_by_users_id_fk": {
-          "name": "fee_schedule_overrides_created_by_users_id_fk",
-          "tableFrom": "fee_schedule_overrides",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "fee_schedule_overrides_updated_by_users_id_fk": {
-          "name": "fee_schedule_overrides_updated_by_users_id_fk",
-          "tableFrom": "fee_schedule_overrides",
           "tableTo": "users",
           "columnsFrom": [
             "updated_by"
@@ -1597,313 +1137,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.fee_template_items": {
-      "name": "fee_template_items",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "fee_template_id": {
-          "name": "fee_template_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fee_item_type_id": {
-          "name": "fee_item_type_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "default_amount": {
-          "name": "default_amount",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "order": {
-          "name": "order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_by": {
-          "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "fee_template_items_template_idx": {
-          "name": "fee_template_items_template_idx",
-          "columns": [
-            {
-              "expression": "fee_template_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "fee_template_items_type_idx": {
-          "name": "fee_template_items_type_idx",
-          "columns": [
-            {
-              "expression": "fee_item_type_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "fee_template_items_template_type_uidx": {
-          "name": "fee_template_items_template_type_uidx",
-          "columns": [
-            {
-              "expression": "fee_template_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "fee_item_type_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "fee_template_items_fee_template_id_fee_templates_id_fk": {
-          "name": "fee_template_items_fee_template_id_fee_templates_id_fk",
-          "tableFrom": "fee_template_items",
-          "tableTo": "fee_templates",
-          "columnsFrom": [
-            "fee_template_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "fee_template_items_fee_item_type_id_fee_item_types_id_fk": {
-          "name": "fee_template_items_fee_item_type_id_fee_item_types_id_fk",
-          "tableFrom": "fee_template_items",
-          "tableTo": "fee_item_types",
-          "columnsFrom": [
-            "fee_item_type_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "fee_template_items_created_by_users_id_fk": {
-          "name": "fee_template_items_created_by_users_id_fk",
-          "tableFrom": "fee_template_items",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "fee_template_items_updated_by_users_id_fk": {
-          "name": "fee_template_items_updated_by_users_id_fk",
-          "tableFrom": "fee_template_items",
-          "tableTo": "users",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.fee_templates": {
-      "name": "fee_templates",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "assessment_band": {
-          "name": "assessment_band",
-          "type": "fee_assessment_band",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_by": {
-          "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "fee_templates_band_idx": {
-          "name": "fee_templates_band_idx",
-          "columns": [
-            {
-              "expression": "assessment_band",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "fee_templates_active_idx": {
-          "name": "fee_templates_active_idx",
-          "columns": [
-            {
-              "expression": "is_active",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"fee_templates\".\"is_active\" = true",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "fee_templates_created_by_users_id_fk": {
-          "name": "fee_templates_created_by_users_id_fk",
-          "tableFrom": "fee_templates",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "fee_templates_updated_by_users_id_fk": {
-          "name": "fee_templates_updated_by_users_id_fk",
-          "tableFrom": "fee_templates",
-          "tableTo": "users",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.grade_levels": {
       "name": "grade_levels",
       "schema": "",
@@ -2074,21 +1307,6 @@
             }
           ],
           "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "gr_teacher_assignment_idx": {
-          "name": "gr_teacher_assignment_idx",
-          "columns": [
-            {
-              "expression": "teacher_assignment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -2642,23 +1860,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "pa_payment_idx": {
-          "name": "pa_payment_idx",
-          "columns": [
-            {
-              "expression": "payment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "payment_allocations_payment_id_payments_id_fk": {
           "name": "payment_allocations_payment_id_payments_id_fk",
@@ -2720,13 +1922,13 @@
           "name": "booklet_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "or_number": {
           "name": "or_number",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "or_status": {
           "name": "or_status",
@@ -2980,12 +2182,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "payments_or_number_required_when_consumed": {
-          "name": "payments_or_number_required_when_consumed",
-          "value": "(\"payments\".\"or_status\" <> 'consumed' OR \"payments\".\"or_number\" IS NOT NULL)"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.receipt_booklets": {
@@ -3247,27 +2444,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "reg_sy_status_idx": {
-          "name": "reg_sy_status_idx",
-          "columns": [
-            {
-              "expression": "school_year_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -3356,207 +2532,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.school_year_fee_schedules": {
-      "name": "school_year_fee_schedules",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "school_year_id": {
-          "name": "school_year_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "assessment_band": {
-          "name": "assessment_band",
-          "type": "fee_assessment_band",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fee_template_id": {
-          "name": "fee_template_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "effective_date": {
-          "name": "effective_date",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expiry_date": {
-          "name": "expiry_date",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_by": {
-          "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "syfs_sy_band_active_uidx": {
-          "name": "syfs_sy_band_active_uidx",
-          "columns": [
-            {
-              "expression": "school_year_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "assessment_band",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"school_year_fee_schedules\".\"is_active\" = true",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "syfs_sy_band_idx": {
-          "name": "syfs_sy_band_idx",
-          "columns": [
-            {
-              "expression": "school_year_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "assessment_band",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "syfs_effective_idx": {
-          "name": "syfs_effective_idx",
-          "columns": [
-            {
-              "expression": "effective_date",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "school_year_fee_schedules_school_year_id_school_years_id_fk": {
-          "name": "school_year_fee_schedules_school_year_id_school_years_id_fk",
-          "tableFrom": "school_year_fee_schedules",
-          "tableTo": "school_years",
-          "columnsFrom": [
-            "school_year_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "school_year_fee_schedules_fee_template_id_fee_templates_id_fk": {
-          "name": "school_year_fee_schedules_fee_template_id_fee_templates_id_fk",
-          "tableFrom": "school_year_fee_schedules",
-          "tableTo": "fee_templates",
-          "columnsFrom": [
-            "fee_template_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "school_year_fee_schedules_created_by_users_id_fk": {
-          "name": "school_year_fee_schedules_created_by_users_id_fk",
-          "tableFrom": "school_year_fee_schedules",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "school_year_fee_schedules_updated_by_users_id_fk": {
-          "name": "school_year_fee_schedules_updated_by_users_id_fk",
-          "tableFrom": "school_year_fee_schedules",
-          "tableTo": "users",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "syfs_dates_chk": {
-          "name": "syfs_dates_chk",
-          "value": "\"school_year_fee_schedules\".\"expiry_date\" IS NULL OR \"school_year_fee_schedules\".\"expiry_date\" > \"school_year_fee_schedules\".\"effective_date\""
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.school_years": {
       "name": "school_years",
       "schema": "",
@@ -3632,24 +2607,7 @@
           "notNull": false
         }
       },
-      "indexes": {
-        "school_year_active_uidx": {
-          "name": "school_year_active_uidx",
-          "columns": [
-            {
-              "expression": "is_active",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"school_years\".\"is_active\" = true",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "school_years_created_by_users_id_fk": {
           "name": "school_years_created_by_users_id_fk",
@@ -3694,12 +2652,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "school_year_dates_order_chk": {
-          "name": "school_year_dates_order_chk",
-          "value": "\"school_years\".\"end_date\" > \"school_years\".\"start_date\""
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.sections": {
@@ -4318,53 +3271,9 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
         }
       },
-      "indexes": {
-        "subjects_curriculum_idx": {
-          "name": "subjects_curriculum_idx",
-          "columns": [
-            {
-              "expression": "curriculum_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "subjects_active_idx": {
-          "name": "subjects_active_idx",
-          "columns": [
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"subjects\".\"deleted_at\" IS NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "subjects_curriculum_id_curriculums_id_fk": {
           "name": "subjects_curriculum_id_curriculums_id_fk",
@@ -4398,19 +3307,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "subjects_deleted_by_users_id_fk": {
-          "name": "subjects_deleted_by_users_id_fk",
-          "tableFrom": "subjects",
-          "tableTo": "users",
-          "columnsFrom": [
-            "deleted_by"
           ],
           "columnsTo": [
             "id"
@@ -4472,18 +3368,6 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -4516,7 +3400,6 @@
             }
           ],
           "isUnique": true,
-          "where": "\"teacher_assignments\".\"deleted_at\" is null",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -4532,37 +3415,6 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "ta_subject_idx": {
-          "name": "ta_subject_idx",
-          "columns": [
-            {
-              "expression": "subject_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "ta_active_idx": {
-          "name": "ta_active_idx",
-          "columns": [
-            {
-              "expression": "teacher_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"teacher_assignments\".\"deleted_at\" IS NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -4627,19 +3479,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "teacher_assignments_deleted_by_users_id_fk": {
-          "name": "teacher_assignments_deleted_by_users_id_fk",
-          "tableFrom": "teacher_assignments",
-          "tableTo": "users",
-          "columnsFrom": [
-            "deleted_by"
           ],
           "columnsTo": [
             "id"
@@ -4847,17 +3686,6 @@
         "senior_high"
       ]
     },
-    "public.fee_item_type_category": {
-      "name": "fee_item_type_category",
-      "schema": "public",
-      "values": [
-        "tuition",
-        "fees",
-        "materials",
-        "discount",
-        "other"
-      ]
-    },
     "public.grade_status": {
       "name": "grade_status",
       "schema": "public",
@@ -4909,7 +3737,6 @@
       "name": "role",
       "schema": "public",
       "values": [
-        "super_admin",
         "admin",
         "registrar",
         "finance_officer",
