@@ -778,7 +778,7 @@ export default function StudentRegistrationForm({
                 <button
                   type="button"
                   onClick={handleContinue}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-6 py-2.5 font-medium text-white transition-colors hover:bg-red-700"
+                  className="btn btn-primary"
                 >
                   Continue
                   <ChevronRight className="h-4 w-4" />
@@ -787,7 +787,7 @@ export default function StudentRegistrationForm({
                 <button
                   type="submit"
                   disabled={disableSubmit}
-                  className="rounded-lg bg-[var(--color-primary)] px-6 py-2.5 font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="btn btn-primary"
                 >
                   {pending ? "Registering…" : "Register student"}
                 </button>

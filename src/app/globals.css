@@ -543,16 +543,75 @@
     @apply rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 shadow-[var(--shadow)];
   }
 
+  /* ==================== UNIFIED BUTTON SYSTEM ==================== */
+
+  /* Base button - all buttons extend this */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-all;
+    @apply focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60;
+    min-height: 2.5rem; /* 40px */
+  }
+
+  /* Size variants */
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+    min-height: 2rem; /* 32px */
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+    min-height: 3rem; /* 48px */
+  }
+
+  /* Color variants */
   .btn-primary {
-    @apply inline-flex h-10 items-center justify-center rounded-md border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition;
-    @apply hover:bg-[var(--color-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/60;
-    @apply disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border border-[var(--color-primary)] bg-[var(--color-primary)] text-white;
+    @apply hover:bg-[var(--color-primary-700)] focus-visible:ring-[var(--color-primary)]/60;
   }
 
   .btn-secondary {
-    @apply inline-flex h-10 items-center justify-center rounded-md border border-[var(--color-border-2)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-text)] transition;
-    @apply hover:bg-[var(--color-surface-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-2)]/70;
-    @apply disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border border-[var(--color-border-2)] bg-[var(--color-surface)] text-[var(--color-text)];
+    @apply hover:bg-[var(--color-surface-3)] focus-visible:ring-[var(--color-border-2)]/70;
+  }
+
+  .btn-danger {
+    @apply border border-red-600 bg-red-600 text-white;
+    @apply hover:bg-red-700 focus-visible:ring-red-600/60;
+  }
+
+  .btn-danger-outline {
+    @apply border border-red-500 bg-transparent text-red-600;
+    @apply hover:bg-red-50 focus-visible:ring-red-500/60;
+    @apply dark:text-red-400 dark:hover:bg-red-950/30;
+  }
+
+  .btn-success {
+    @apply border border-green-600 bg-green-600 text-white;
+    @apply hover:bg-green-700 focus-visible:ring-green-600/60;
+  }
+
+  .btn-ghost {
+    @apply border border-transparent bg-transparent text-[var(--color-text)];
+    @apply hover:bg-[var(--color-surface-3)] focus-visible:ring-[var(--color-border)];
+  }
+
+  /* Icon buttons (square) */
+  .btn-icon {
+    @apply flex h-8 w-8 items-center justify-center rounded-md p-0 transition;
+    min-height: auto;
+  }
+
+  .btn-icon-sm {
+    @apply h-7 w-7;
+  }
+
+  .btn-icon-lg {
+    @apply h-10 w-10;
+  }
+
+  /* Layout modifiers */
+  .btn-full {
+    @apply w-full;
   }
 
   .table-wrapper {

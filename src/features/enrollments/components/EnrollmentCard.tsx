@@ -269,7 +269,7 @@ function PrimaryAction({
     return (
       <Link
         href={`/staff/assessments/new/${en.id}`}
-        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md"
+        className="btn btn-primary btn-sm"
       >
         Build assessment
         <ArrowRight className="h-3.5 w-3.5" />
@@ -281,7 +281,7 @@ function PrimaryAction({
     return (
       <Link
         href={`/staff/assessments/${en.assessmentId}`}
-        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md"
+        className="btn btn-primary btn-sm"
       >
         <Receipt className="h-3.5 w-3.5" />
         Open ledger
@@ -293,7 +293,7 @@ function PrimaryAction({
     return (
       <Link
         href={`/staff/assessments/${en.assessmentId}`}
-        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md"
+        className="btn btn-primary btn-sm"
       >
         <Receipt className="h-3.5 w-3.5" />
         View ledger
@@ -305,7 +305,7 @@ function PrimaryAction({
     return (
       <Link
         href={`/staff/enrollments/new?studentId=${en.studentId}`}
-        className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-200 px-3 py-2 text-xs font-semibold text-ops-ink transition-colors hover:bg-light-gray"
+        className="btn btn-secondary btn-sm"
       >
         <RefreshCcw className="h-3.5 w-3.5" />
         Re-enroll
@@ -403,7 +403,7 @@ function CancelInline({
         <button
           type="button"
           onClick={() => setShow(true)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-50"
+          className="btn btn-danger-outline btn-sm"
         >
           <X className="h-3.5 w-3.5" />
           Begin cancellation
@@ -544,7 +544,7 @@ function OverrideEnrollBlock({
             <button
               type="submit"
               disabled={pending}
-              className="inline-flex items-center gap-1 rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-red-700 disabled:opacity-50"
+              className="btn btn-primary btn-sm"
             >
               {pending ? "Saving…" : "Confirm override"}
             </button>
