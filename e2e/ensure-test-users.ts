@@ -3,7 +3,7 @@ import postgres from "postgres";
 import { hash } from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { loadEnvConfig } from "@next/env";
-import { users } from "../lib/db/schema";
+import { users } from "../src/lib/db/schema";
 import { e2eStaffAdmin } from "./credentials";
 
 loadEnvConfig(process.cwd());

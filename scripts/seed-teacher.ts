@@ -11,7 +11,7 @@ import {
   students,
   enrollments,
   curriculums,
-} from "../lib/db/schema";
+} from "../src/lib/db/schema";
 import { loadEnvConfig } from "@next/env";
 import { eq } from "drizzle-orm";
 
