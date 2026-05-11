@@ -8,6 +8,7 @@ import { updateStudentAction } from "../students.actions";
 import type { UpdateStudentFormState, GuardianInput } from "../students.schema";
 import { FormStateAlert } from "@/components/forms/FormStateAlert";
 import { DataCard } from "@/components/ui/editorial/DataCard";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import GuardianForm from "./GuardianForm";
 
@@ -462,21 +463,16 @@ export default function EditStudentForm({
         >
           Cancel
         </Link>
-        <button
+        <Button
           type="submit"
-          className="btn btn-primary"
+          variant="primary"
+          size="md"
           id="submit-student"
           disabled={pending}
+          loading={pending}
         >
-          {pending ? (
-            <>
-              <span className="spinner" aria-hidden="true" />
-              Saving...
-            </>
-          ) : (
-            "Save changes"
-          )}
-        </button>
+          {pending ? "Saving..." : "Save changes"}
+        </Button>
       </div>
     </form>
   );

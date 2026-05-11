@@ -18,6 +18,7 @@ import { DataCard, DataCardBody } from "@/components/ui/editorial/DataCard";
 import GuardianForm from "@/features/students/components/GuardianForm";
 import IntakeRequirementsFieldset from "@/features/enrollments/components/IntakeRequirementsFieldset";
 import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { editorialFieldClass } from "@/lib/utils/editorial-styles";
@@ -775,22 +776,25 @@ export default function StudentRegistrationForm({
               )}
 
               {currentStep < 4 ? (
-                <button
+                <Button
                   type="button"
                   onClick={handleContinue}
-                  className="btn btn-primary"
+                  variant="primary"
+                  size="md"
                 >
                   Continue
                   <ChevronRight className="h-4 w-4" />
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   type="submit"
                   disabled={disableSubmit}
-                  className="btn btn-primary"
+                  variant="primary"
+                  size="md"
+                  loading={pending}
                 >
                   {pending ? "Registering…" : "Register student"}
-                </button>
+                </Button>
               )}
             </div>
           </DataCardBody>

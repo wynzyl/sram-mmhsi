@@ -17,6 +17,7 @@ import { DataCard } from "@/components/ui/editorial/DataCard";
 import { StatusIndicator } from "@/components/ui/editorial/StatusIndicator";
 import { DocumentProgressRing } from "@/features/registrations/components/DocumentProgressRing";
 import { PaymentProgressBar } from "@/features/enrollments";
+import { Button, buttonVariants } from "@/components/ui/button";
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import { cn } from "@/lib/utils/cn";
 
@@ -269,7 +270,7 @@ function PrimaryAction({
     return (
       <Link
         href={`/staff/assessments/new/${en.id}`}
-        className="btn btn-primary btn-sm"
+        className={buttonVariants({ variant: "primary", size: "sm" })}
       >
         Build assessment
         <ArrowRight className="h-3.5 w-3.5" />
@@ -281,7 +282,7 @@ function PrimaryAction({
     return (
       <Link
         href={`/staff/assessments/${en.assessmentId}`}
-        className="btn btn-primary btn-sm"
+        className={buttonVariants({ variant: "primary", size: "sm" })}
       >
         <Receipt className="h-3.5 w-3.5" />
         Open ledger
@@ -293,7 +294,7 @@ function PrimaryAction({
     return (
       <Link
         href={`/staff/assessments/${en.assessmentId}`}
-        className="btn btn-primary btn-sm"
+        className={buttonVariants({ variant: "primary", size: "sm" })}
       >
         <Receipt className="h-3.5 w-3.5" />
         View ledger
@@ -305,7 +306,7 @@ function PrimaryAction({
     return (
       <Link
         href={`/staff/enrollments/new?studentId=${en.studentId}`}
-        className="btn btn-secondary btn-sm"
+        className={buttonVariants({ variant: "secondary", size: "sm" })}
       >
         <RefreshCcw className="h-3.5 w-3.5" />
         Re-enroll
@@ -403,7 +404,7 @@ function CancelInline({
         <button
           type="button"
           onClick={() => setShow(true)}
-          className="btn btn-danger-outline btn-sm"
+          className={buttonVariants({ variant: "ghost", size: "sm", className: "border-red-200 bg-white text-red-700 hover:bg-red-50" })}
         >
           <X className="h-3.5 w-3.5" />
           Begin cancellation
@@ -544,7 +545,7 @@ function OverrideEnrollBlock({
             <button
               type="submit"
               disabled={pending}
-              className="btn btn-primary btn-sm"
+              className={buttonVariants({ variant: "primary", size: "sm" })}
             >
               {pending ? "Saving…" : "Confirm override"}
             </button>
