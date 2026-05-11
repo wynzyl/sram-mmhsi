@@ -163,7 +163,7 @@ Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redi
 
 **Registration → Enrollment Flow:**
 
-1. `registrations` (approved records currently created during student onboarding; dedicated review actions pending)
+1. `registrations` (approved records currently created during student onboarding)
 2. `enrollments` (status: pending → assessed → enrolled)
 3. `feeSchedules` + `feeScheduleItems` (schedule for every group level - (Casa, Lower Elem, Higher Elem, JHS, SHS))
 4. `assessments` + `assessmentItems` (copied from fee schedule on enrollment)
