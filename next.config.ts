@@ -7,11 +7,11 @@ const nextConfig: NextConfig = {
       ? process.env.APP_BASE_URL.split(',').map((v) => v.trim()).filter(Boolean)
       : []),
   ],
-
-  // Next.js 16 uses Turbopack by default - configure file watching
-  turbopack: { 
-    // Reduce filesystem watching overhead by ignoring unnecessary directories
-    // This improves development server performance and HMR responsiveness
+  experimental: {
+    // Enable filesystem caching for `next dev`
+    turbopackFileSystemCacheForDev: true,
+    // Enable filesystem caching for `next build`
+    turbopackFileSystemCacheForBuild: true,
   },
 
   // Fallback webpack config for when using --webpack flag
