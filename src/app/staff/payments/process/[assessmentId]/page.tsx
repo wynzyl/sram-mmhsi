@@ -10,7 +10,7 @@ import {
   schoolYears,
   students,
 } from "@/lib/db/schema";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, and, lte } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { CashierPaymentProcessingView } from "@/features/payments/components/CashierPaymentProcessingView";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -84,7 +84,12 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
       endNumber: receiptBooklets.endNumber,
     })
     .from(receiptBooklets)
-    .where(eq(receiptBooklets.status, "active"))
+    .where(
+      and(
+        eq(receiptBooklets.status, "active"),
+        lte(receiptBooklets.nextNumber, receiptBooklets.endNumber) // PERFORMANCE: Filter out exhausted booklets
+      )
+    )
     .orderBy(asc(receiptBooklets.createdAt));
 
   return (

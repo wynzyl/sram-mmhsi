@@ -290,6 +290,48 @@ export async function deactivateFeeScheduleAction(
   });
 
   revalidatePath("/staff/finance/fee-schedules");
+  revalidatePath(`/staff/finance/fee-schedules/${parsed.data.scheduleId}`);
+
+  return { success: true };
+}
+
+export async function activateFeeScheduleAction(
+  _prevState: { message?: string; success?: boolean },
+  formData: FormData
+): Promise<{ message?: string; success?: boolean }> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "fee_schedules:manage")) {
+    return { message: "Permission denied" };
+  }
+
+  const parsed = DeactivateScheduleSchema.safeParse({
+    scheduleId: formData.get("scheduleId"),
+  });
+
+  if (!parsed.success) {
+    return { message: "Invalid schedule ID" };
+  }
+
+  await db
+    .update(schoolYearFeeSchedules)
+    .set({
+      isActive: true,
+      updatedBy: session.userId,
+      updatedAt: new Date(),
+    })
+    .where(eq(schoolYearFeeSchedules.id, parsed.data.scheduleId));
+
+  await logAudit({
+    actor: session.userId,
+    actorRole: session.role,
+    action: "fee_schedule_activated",
+    targetEntity: "school_year_fee_schedules",
+    targetId: parsed.data.scheduleId,
+  });
+
+  revalidatePath("/staff/finance/fee-schedules");
+  revalidatePath(`/staff/finance/fee-schedules/${parsed.data.scheduleId}`);
 
   return { success: true };
 }

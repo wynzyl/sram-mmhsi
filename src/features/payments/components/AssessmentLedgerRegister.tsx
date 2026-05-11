@@ -14,6 +14,7 @@ export type LedgerLineItem = {
   description: string;
   amount: string;
   isDiscount: boolean;
+  feeItemTypeId: string | null;
 };
 
 export type LedgerPaymentRow = {
@@ -55,6 +56,7 @@ export type AssessmentLedgerRegisterProps = {
   activeBooklets: ActiveBooklet[];
   canPost: boolean;
   canVoid: boolean;
+  balanceForwardTypeId: string | null;
 };
 
 function lineSignedAmount(item: LedgerLineItem): number {
@@ -76,6 +78,7 @@ export default function AssessmentLedgerRegister({
   activeBooklets,
   canPost,
   canVoid,
+  balanceForwardTypeId,
 }: AssessmentLedgerRegisterProps) {
   const router = useRouter();
   const [payOpen, setPayOpen] = useState(false);
@@ -275,33 +278,64 @@ export default function AssessmentLedgerRegister({
                     </td>
                   </tr>
                 ) : (
-                  items.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        {item.isDiscount && (
-                          <span
-                            style={{
-                              fontSize: "10px",
-                              fontWeight: 700,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
-                              color: "var(--color-ops-positive)",
-                              marginRight: "0.4em",
-                            }}
-                          >
-                            DISC
+                  items.map((item) => {
+                    const isBalanceForward = balanceForwardTypeId && item.feeItemTypeId === balanceForwardTypeId;
+                    return (
+                      <tr
+                        key={item.id}
+                        style={
+                          isBalanceForward
+                            ? {
+                                backgroundColor: "rgba(245, 158, 11, 0.05)",
+                                borderLeft: "4px solid rgba(245, 158, 11, 0.5)",
+                              }
+                            : undefined
+                        }
+                      >
+                        <td>
+                          {item.isDiscount && (
+                            <span
+                              style={{
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                letterSpacing: "0.08em",
+                                textTransform: "uppercase",
+                                color: "var(--color-ops-positive)",
+                                marginRight: "0.4em",
+                              }}
+                            >
+                              DISC
+                            </span>
+                          )}
+                          {isBalanceForward && (
+                            <span
+                              style={{
+                                display: "inline-block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                letterSpacing: "0.08em",
+                                textTransform: "uppercase",
+                                color: "rgb(180, 83, 9)",
+                                backgroundColor: "rgba(245, 158, 11, 0.15)",
+                                padding: "2px 6px",
+                                borderRadius: "4px",
+                                marginRight: "0.5em",
+                              }}
+                            >
+                              PREVIOUS YEAR
+                            </span>
+                          )}
+                          {item.description}
+                        </td>
+                        <td className="ledger-register-td-num">
+                          <span className={item.isDiscount ? "ledger-register-discount" : ""}>
+                            {item.isDiscount ? "−" : ""}
+                            <CurrencyDisplay amount={Number(item.amount)} />
                           </span>
-                        )}
-                        {item.description}
-                      </td>
-                      <td className="ledger-register-td-num">
-                        <span className={item.isDiscount ? "ledger-register-discount" : ""}>
-                          {item.isDiscount ? "−" : ""}
-                          <CurrencyDisplay amount={Number(item.amount)} />
-                        </span>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
               <tfoot>

@@ -39,7 +39,7 @@ const buttonVariants = cva(
         danger:
           "bg-[var(--color-error)] text-white border border-[var(--color-error)] hover:bg-red-700 focus-visible:ring-[var(--color-error)]",
         "danger-outline":
-          "border border-red-500 bg-transparent text-red-600 hover:bg-red-50 focus-visible:ring-red-500/60 dark:text-red-400 dark:hover:bg-red-950/30",
+          "border border-[var(--color-error)] bg-transparent text-[var(--color-error-foreground)] hover:bg-[var(--color-error-surface)] focus-visible:ring-[var(--color-error)] dark:text-[var(--color-error-foreground-dark, var(--color-error-foreground))] dark:hover:bg-[var(--color-error-surface-dark, var(--color-error-surface))]",
         success:
           "border border-green-600 bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-600/60",
       },

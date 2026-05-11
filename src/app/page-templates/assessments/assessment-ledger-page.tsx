@@ -8,6 +8,7 @@ import {
   schoolYears,
   receiptBooklets,
   users,
+  feeItemTypes,
 } from "@/lib/db/schema";
 import { eq, desc, asc, and, lte } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
@@ -47,12 +48,19 @@ export async function InternalAssessmentLedgerPage(props: {
 
   if (!assessment) notFound();
 
+  // Get BALANCE_FORWARD fee type ID for visual indicators
+  const balanceForwardType = await db.query.feeItemTypes.findFirst({
+    where: eq(feeItemTypes.code, "BALANCE_FORWARD"),
+    columns: { id: true },
+  });
+
   const items = await db
     .select({
       id: assessmentItems.id,
       description: assessmentItems.description,
       amount: assessmentItems.amount,
       isDiscount: assessmentItems.isDiscount,
+      feeItemTypeId: assessmentItems.feeItemTypeId,
     })
     .from(assessmentItems)
     .where(eq(assessmentItems.assessmentId, id))
@@ -134,6 +142,7 @@ export async function InternalAssessmentLedgerPage(props: {
         activeBooklets={activeBooklets}
         canPost={canPost}
         canVoid={canVoid}
+        balanceForwardTypeId={balanceForwardType?.id ?? null}
       />
     </div>
   );

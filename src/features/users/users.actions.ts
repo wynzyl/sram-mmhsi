@@ -52,37 +52,38 @@ export async function createUserAction(
 
   const { password, ...userData } = parsed.data;
 
-  // 3. Duplicate detection
-  const existingEmail = await db
-    .select({ id: users.id })
+  // 3. Duplicate detection (PERFORMANCE: Single query checks both email and username)
+  const duplicates = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      username: users.username,
+    })
     .from(users)
     .where(
-      and(ilike(users.email, userData.email), isNull(users.deletedAt))
+      and(
+        sql`(
+          LOWER(${users.email}) = LOWER(${userData.email})
+          OR LOWER(${users.username}) = LOWER(${userData.username})
+        )`,
+        isNull(users.deletedAt)
+      )
     )
-    .limit(1);
+    .limit(2);
 
-  if (existingEmail.length > 0) {
-    return {
-      errors: {
-        email: ["This email is already in use."],
-      },
-    };
+  const errors: Record<string, string[]> = {};
+
+  for (const dup of duplicates) {
+    if (dup.email.toLowerCase() === userData.email.toLowerCase()) {
+      errors.email = ["This email is already in use."];
+    }
+    if (dup.username.toLowerCase() === userData.username.toLowerCase()) {
+      errors.username = ["This username is already in use."];
+    }
   }
 
-  const existingUsername = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(
-      and(ilike(users.username, userData.username), isNull(users.deletedAt))
-    )
-    .limit(1);
-
-  if (existingUsername.length > 0) {
-    return {
-      errors: {
-        username: ["This username is already in use."],
-      },
-    };
+  if (Object.keys(errors).length > 0) {
+    return { errors };
   }
 
   try {
