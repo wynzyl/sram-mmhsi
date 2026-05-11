@@ -24,167 +24,107 @@ export default async function StaffFeeSchedulesPage() {
     redirect("/staff/dashboard");
   }
 
-  // Get all school years
   const allSchoolYears = await db.query.schoolYears.findMany({
     where: isNull(schoolYears.deletedAt),
     orderBy: [desc(schoolYears.startDate)],
   });
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Fee Schedules</h1>
-            <p className="mt-2 text-gray-600">
-              Assign fee templates to school years. Each assessment band can have one
-              active fee schedule per school year.
-            </p>
-          </div>
-
+    <div className="fin-page">
+      {/* Page header */}
+      <div className="fin-page-header">
+        <div className="fin-page-header-main">
+          <p className="fin-eyebrow">Finance · Fee Management</p>
+          <h1 className="fin-title">Fee Schedules</h1>
+          <p className="fin-subtitle">
+            Assign fee templates to school years. Each assessment band can have one
+            active fee schedule per school year.
+          </p>
+        </div>
+        <div className="fin-page-header-actions">
           <Link href="/staff/finance/fee-schedules/new">
             <Button>Assign Template</Button>
           </Link>
         </div>
       </div>
 
-      {/* Info Card */}
-      <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <h3 className="mb-2 font-semibold text-blue-900">How It Works</h3>
-        <ul className="space-y-1 text-sm text-blue-800">
-          <li>
-            • Create reusable templates under{" "}
-            <Link
-              href="/staff/finance/fee-templates"
-              className="font-medium underline"
-            >
-              Fee Templates
-            </Link>
-          </li>
-          <li>
-            • Assign templates to school years here (one per band per year)
-          </li>
-          <li>• Add year-specific overrides if amounts differ from the template</li>
-          <li>• When creating assessments, the active schedule is automatically used</li>
-        </ul>
+      {/* Info callout */}
+      <div className="fin-callout">
+        <div className="fin-callout-icon" aria-hidden>ℹ</div>
+        <div>
+          <p className="fin-callout-title">How It Works</p>
+          <ul className="fin-callout-list">
+            <li>
+              Create reusable templates under{" "}
+              <Link href="/staff/finance/fee-templates" className="fin-callout-link">
+                Fee Templates
+              </Link>
+            </li>
+            <li>Assign templates to school years here (one per band per year)</li>
+            <li>Add year-specific overrides if amounts differ from the template</li>
+            <li>When creating assessments, the active schedule is automatically used</li>
+          </ul>
+        </div>
       </div>
 
-      {/* School Years List */}
-      <div className="space-y-6">
+      {/* School years */}
+      <div className="fin-stack">
         {allSchoolYears.map(async (schoolYear) => {
           const schedules = await getSchoolYearFeeSchedules(schoolYear.id);
 
           return (
-            <div key={schoolYear.id} className="rounded-lg border bg-white">
-              <div className="border-b bg-gray-50 px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">
-                    {schoolYear.label}
-                    {schoolYear.isActive && (
-                      <span className="ml-3 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                        Active
-                      </span>
-                    )}
-                  </h3>
-                  <div className="text-sm text-gray-600">
-                    {new Date(schoolYear.startDate).toLocaleDateString()} -{" "}
-                    {new Date(schoolYear.endDate).toLocaleDateString()}
-                  </div>
+            <div key={schoolYear.id} className="fin-panel">
+              <div className="fin-panel-head">
+                <div className="fin-panel-head-left">
+                  <h2 className="fin-panel-title">{schoolYear.label}</h2>
+                  {schoolYear.isActive && (
+                    <span className="fin-badge fin-badge-active">Active Year</span>
+                  )}
                 </div>
+                <span className="fin-panel-meta">
+                  {new Date(schoolYear.startDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                  {" – "}
+                  {new Date(schoolYear.endDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
               </div>
 
-              <div className="p-6">
+              <div className="fin-panel-body">
                 {schedules.length === 0 ? (
-                  <div className="text-center text-gray-500">
-                    <p className="mb-3">No fee schedules assigned yet.</p>
+                  <div className="fin-empty">
+                    <p className="fin-empty-text">No fee schedules assigned yet.</p>
                     <Link href="/staff/finance/fee-schedules/new">
-                      <Button variant="secondary" size="sm">
-                        Assign Template
-                      </Button>
+                      <Button variant="secondary" size="sm">Assign Template</Button>
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="fin-schedule-grid">
                     {schedules.map((schedule) => {
                       const totalAmount = schedule.feeTemplate.items.reduce(
                         (sum, item) => {
-                          // Apply overrides
                           const override = schedule.overrides.find(
                             (o) => o.feeTemplateItemId === item.id
                           );
-                          const amount = Number(
-                            override?.overrideAmount ?? item.defaultAmount
-                          );
-                          return item.feeItemType.isDiscount
-                            ? sum - amount
-                            : sum + amount;
+                          const amount = Number(override?.overrideAmount ?? item.defaultAmount);
+                          return item.feeItemType.isDiscount ? sum - amount : sum + amount;
                         },
                         0
                       );
 
                       return (
-                        <div
-                          key={schedule.id}
-                          className="rounded-lg border bg-gray-50 p-4"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3">
-                                <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                                  {FEE_ASSESSMENT_BAND_LABELS[schedule.assessmentBand as keyof typeof FEE_ASSESSMENT_BAND_LABELS]}
-                                </span>
-                                {!schedule.isActive && (
-                                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-700">
-                                    Inactive
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="mt-2 font-medium">
-                                {schedule.feeTemplate.name}
-                              </div>
-
-                              <div className="mt-1 text-sm text-gray-600">
-                                {schedule.feeTemplate.items.length} items
-                                {schedule.overrides.length > 0 && (
-                                  <span className="ml-2 text-amber-600">
-                                    ({schedule.overrides.length} override
-                                    {schedule.overrides.length !== 1 ? "s" : ""})
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="mt-2 text-lg font-semibold">
-                                {new Intl.NumberFormat("en-PH", {
-                                  style: "currency",
-                                  currency: "PHP",
-                                }).format(totalAmount)}
-                              </div>
-
-                              <div className="mt-1 text-xs text-gray-500">
-                                Effective:{" "}
-                                {new Date(
-                                  schedule.effectiveDate
-                                ).toLocaleDateString()}
-                                {schedule.expiryDate && (
-                                  <>
-                                    {" "}
-                                    - {new Date(schedule.expiryDate).toLocaleDateString()}
-                                  </>
-                                )}
-                              </div>
+                        <div key={schedule.id} className={`fin-schedule-card${!schedule.isActive ? " fin-schedule-card-inactive" : ""}`}>
+                          <div className="fin-schedule-card-top">
+                            <div className="fin-schedule-card-meta">
+                              <span className="fin-band-pill">
+                                {FEE_ASSESSMENT_BAND_LABELS[schedule.assessmentBand as keyof typeof FEE_ASSESSMENT_BAND_LABELS]}
+                              </span>
+                              {!schedule.isActive && (
+                                <span className="fin-badge fin-badge-muted">Inactive</span>
+                              )}
                             </div>
-
-                            <div className="flex gap-2">
-                              <Link
-                                href={`/staff/finance/fee-schedules/${schedule.id}`}
-                              >
-                                <Button variant="secondary" size="sm">
-                                  View Details
-                                </Button>
+                            <div className="fin-schedule-card-actions">
+                              <Link href={`/staff/finance/fee-schedules/${schedule.id}`}>
+                                <Button variant="secondary" size="sm">View Details</Button>
                               </Link>
-
                               {schedule.isActive && (
                                 <InlineConfirmButton
                                   action={deactivateFeeScheduleAction}
@@ -197,6 +137,27 @@ export default async function StaffFeeSchedulesPage() {
                               )}
                             </div>
                           </div>
+
+                          <p className="fin-schedule-card-name">{schedule.feeTemplate.name}</p>
+
+                          <div className="fin-schedule-card-stats">
+                            <span className="fin-stat-item">
+                              {schedule.feeTemplate.items.length} item{schedule.feeTemplate.items.length !== 1 ? "s" : ""}
+                            </span>
+                            {schedule.overrides.length > 0 && (
+                              <span className="fin-stat-item fin-stat-override">
+                                {schedule.overrides.length} override{schedule.overrides.length !== 1 ? "s" : ""}
+                              </span>
+                            )}
+                            <span className="fin-stat-date">
+                              Effective: {new Date(schedule.effectiveDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                              {schedule.expiryDate && ` – ${new Date(schedule.expiryDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`}
+                            </span>
+                          </div>
+
+                          <div className="fin-schedule-card-total">
+                            {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(totalAmount)}
+                          </div>
                         </div>
                       );
                     })}
@@ -206,6 +167,14 @@ export default async function StaffFeeSchedulesPage() {
             </div>
           );
         })}
+
+        {allSchoolYears.length === 0 && (
+          <div className="fin-panel">
+            <div className="fin-empty">
+              <p className="fin-empty-text">No school years configured. Set up school years first.</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

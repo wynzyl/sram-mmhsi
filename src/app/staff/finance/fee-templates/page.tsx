@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getAllFeeTemplates } from "@/features/finance/fee-templates/fee-templates.queries";
 import { FeeTemplatesTable } from "@/features/finance/fee-templates/components/FeeTemplatesTable";
-import { Button } from "@/components/ui/button";
+import { CreateTemplateModal } from "@/features/finance/fee-templates/components/CreateTemplateModal";
 
 export const metadata = {
   title: "Fee Templates | SRAMS",
@@ -21,47 +21,43 @@ export default async function FeeTemplatesPage() {
   const templates = await getAllFeeTemplates();
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="fin-page">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Fee Templates</h1>
-            <p className="mt-2 text-gray-600">
-              Create reusable fee structures for each assessment band. Templates can be
-              assigned to multiple school years.
-            </p>
-          </div>
-
-          <Link href="/staff/finance/fee-templates/new">
-            <Button>Create Template</Button>
-          </Link>
+      <div className="fin-page-header">
+        <div className="fin-page-header-main">
+          <p className="fin-eyebrow">Finance · Fee Management</p>
+          <h1 className="fin-title">Fee Templates</h1>
+          <p className="fin-subtitle">
+            Create reusable fee structures for each assessment band. Templates can be
+            assigned to multiple school years.
+          </p>
+        </div>
+        <div className="fin-page-header-actions">
+          <CreateTemplateModal />
         </div>
       </div>
 
-      {/* Info Card */}
-      <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <h3 className="mb-2 font-semibold text-blue-900">How Templates Work</h3>
-        <ul className="space-y-1 text-sm text-blue-800">
-          <li>• Create one template per assessment band (Casa, Lower Elem, etc.)</li>
-          <li>• Add fee items (tuition, fees, materials, discounts) to each template</li>
-          <li>
-            • Assign templates to school years under{" "}
-            <Link
-              href="/staff/finance/fee-schedules"
-              className="font-medium underline"
-            >
-              Fee Schedules
-            </Link>
-          </li>
-          <li>• Reuse templates across multiple years to save time</li>
-          <li>
-            • Add year-specific overrides when amounts change without creating new templates
-          </li>
-        </ul>
+      {/* Info callout */}
+      <div className="fin-callout">
+        <div className="fin-callout-icon" aria-hidden>ℹ</div>
+        <div>
+          <p className="fin-callout-title">How Templates Work</p>
+          <ul className="fin-callout-list">
+            <li>Create one template per assessment band (Casa, Lower Elem, etc.)</li>
+            <li>Add fee items (tuition, fees, materials, discounts) to each template</li>
+            <li>
+              Assign templates to school years under{" "}
+              <Link href="/staff/finance/fee-schedules" className="fin-callout-link">
+                Fee Schedules
+              </Link>
+            </li>
+            <li>Reuse templates across multiple years to save time</li>
+            <li>Add year-specific overrides when amounts change without creating new templates</li>
+          </ul>
+        </div>
       </div>
 
-      {/* Templates Table */}
+      {/* Templates list */}
       <FeeTemplatesTable templates={templates} />
     </div>
   );

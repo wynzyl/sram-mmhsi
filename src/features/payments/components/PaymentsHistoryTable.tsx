@@ -176,7 +176,7 @@ export default function PaymentsHistoryTable({
   return (
     <div className={embedded ? undefined : "mt-6"}>
       {state.message && !state.success && (
-        <div className="bg-red-100 text-red-700 border border-red-200 rounded-md p-4 mb-4 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+        <div className="alert alert-error mx-4 mt-4 mb-0">
           {state.message}
         </div>
       )}

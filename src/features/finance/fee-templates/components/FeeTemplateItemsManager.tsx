@@ -1,15 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import {
-  addFeeTemplateItemAction,
-  removeFeeTemplateItemAction,
-} from "../fee-templates.actions";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
-import { SelectField } from "@/components/forms/SelectField";
-import { CurrencyInputField } from "@/components/forms/CurrencyInputField";
+import { removeFeeTemplateItemAction } from "../fee-templates.actions";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
-import { Button } from "@/components/ui/button";
+import { AddFeeItemModal } from "./AddFeeItemModal";
 
 type FeeItemType = {
   id: string;
@@ -39,150 +32,109 @@ export function FeeTemplateItemsManager({
   items,
   availableFeeTypes,
 }: FeeTemplateItemsManagerProps) {
-  const [addState, addAction, isAdding] = useActionState(
-    addFeeTemplateItemAction,
-    {}
-  );
-  const [feeItemTypeId, setFeeItemTypeId] = useState("");
-  const [defaultAmount, setDefaultAmount] = useState("");
-  const [order, setOrder] = useState("");
-
-  // Filter out already added fee types
   const usedFeeTypeIds = new Set(items.map((item) => item.feeItemTypeId));
-  const availableOptions = availableFeeTypes.filter(
-    (ft) => !usedFeeTypeIds.has(ft.id)
-  );
+  const sortedItems = [...items].sort((a, b) => a.order - b.order);
+
+  const templateTotal = sortedItems.reduce((sum, item) => {
+    const amount = Number(item.defaultAmount);
+    return item.feeItemType.isDiscount ? sum - amount : sum + amount;
+  }, 0);
 
   return (
-    <div className="space-y-6">
-      {/* Add New Item Form */}
-      <div className="rounded-lg border bg-white p-6">
-        <h3 className="mb-4 text-lg font-semibold">Add Fee Item</h3>
-
-        <form action={addAction} className="space-y-4">
-          <input type="hidden" name="feeTemplateId" value={templateId} />
-
-          <FormStateAlert state={addState} />
-
-          <SelectField
-            label="Fee Type"
-            name="feeItemTypeId"
-            required
-            value={feeItemTypeId}
-            onChange={setFeeItemTypeId}
-            options={[
-              { value: "", label: "Select fee type..." },
-              ...availableOptions.map((ft) => ({
-                value: ft.id,
-                label: `${ft.name}${ft.isDiscount ? " (Discount)" : ""}`,
-              })),
-            ]}
-            error={addState.errors?.feeItemTypeId}
+    <div className="fin-panel">
+      <div className="fin-panel-head">
+        <h3 className="fin-panel-title">Template Items</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span className="fin-panel-meta">
+            {items.length} item{items.length !== 1 ? "s" : ""}
+          </span>
+          <AddFeeItemModal
+            templateId={templateId}
+            availableFeeTypes={availableFeeTypes}
+            usedFeeTypeIds={usedFeeTypeIds}
           />
-
-          <CurrencyInputField
-            label="Default Amount"
-            name="defaultAmount"
-            required
-            value={defaultAmount}
-            onChange={(value) => setDefaultAmount(String(value))}
-            error={addState.errors?.defaultAmount}
-          />
-
-          <div className="space-y-2">
-            <label htmlFor="order" className="block text-sm font-medium">
-              Display Order <span className="text-gray-500">(optional)</span>
-            </label>
-            <input
-              type="number"
-              id="order"
-              name="order"
-              value={order}
-              onChange={(e) => setOrder(e.target.value)}
-              min="0"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="0"
-            />
-            <p className="text-sm text-gray-500">
-              Lower numbers appear first. Leave blank to append to the end.
-            </p>
-            {addState.errors?.order && (
-              <p className="text-sm text-red-600">{addState.errors.order[0]}</p>
-            )}
-          </div>
-
-          <Button type="submit" disabled={isAdding || availableOptions.length === 0}>
-            {isAdding ? "Adding..." : "Add Item"}
-          </Button>
-
-          {availableOptions.length === 0 && (
-            <p className="text-sm text-amber-600">
-              All available fee types have been added to this template.
-            </p>
-          )}
-        </form>
+        </div>
       </div>
 
-      {/* Current Items List */}
-      <div className="rounded-lg border bg-white p-6">
-        <h3 className="mb-4 text-lg font-semibold">Template Items</h3>
-
-        {items.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            No items yet. Add fee types above to build this template.
+      {items.length === 0 ? (
+        <div className="fin-empty">
+          <div style={{
+            width: "2.5rem", height: "2.5rem", borderRadius: "50%",
+            background: "color-mix(in srgb, var(--color-ops-line) 60%, transparent)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "1.1rem", color: "var(--color-ops-muted)",
+          }} aria-hidden>
+            ₱
+          </div>
+          <p className="fin-empty-text">No items yet.</p>
+          <p className="fin-empty-text" style={{ marginTop: "-0.5rem", fontSize: "0.75rem" }}>
+            Use the <strong>+ Add Fee Item</strong> button above to build this template.
           </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b bg-gray-50">
+        </div>
+      ) : (
+        <>
+          <div className="fin-table-wrap">
+            <table className="fin-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Order</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Fee Type</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Category</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium">
-                    Default Amount
-                  </th>
-                  <th className="px-4 py-3 text-right text-sm font-medium">Actions</th>
+                  <th scope="col" className="fin-th fin-th-num">#</th>
+                  <th scope="col" className="fin-th">Fee Type</th>
+                  <th scope="col" className="fin-th">Category</th>
+                  <th scope="col" className="fin-th fin-th-num">Default Amount</th>
+                  <th scope="col" className="fin-th fin-th-num">Remove</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
-                {items
-                  .sort((a, b) => a.order - b.order)
-                  .map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm">{item.order}</td>
-                      <td className="px-4 py-3 text-sm font-medium">
-                        {item.feeItemType.name}
-                        {item.feeItemType.isDiscount && (
-                          <span className="ml-2 text-xs text-green-600">(Discount)</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm capitalize text-gray-600">
-                        {item.feeItemType.category}
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm font-medium">
-                        {new Intl.NumberFormat("en-PH", {
-                          style: "currency",
-                          currency: "PHP",
-                        }).format(Number(item.defaultAmount))}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <InlineConfirmButton
-                          action={removeFeeTemplateItemAction}
-                          confirmMessage={`Remove ${item.feeItemType.name} from this template?`}
-                          hiddenFields={{ id: item.id }}
-                          label="Remove"
-                          loadingLabel="Removing..."
-                          variant="danger"
-                        />
-                      </td>
-                    </tr>
-                  ))}
+              <tbody>
+                {sortedItems.map((item) => (
+                  <tr key={item.id} className="fin-tr">
+                    <td className="fin-td fin-td-num fin-td-muted">{item.order}</td>
+                    <td className="fin-td">
+                      <span className="fin-td-name">{item.feeItemType.name}</span>
+                      {item.feeItemType.isDiscount && (
+                        <span className="fin-disc-tag">DISC</span>
+                      )}
+                    </td>
+                    <td className="fin-td fin-td-muted capitalize">{item.feeItemType.category}</td>
+                    <td className="fin-td fin-td-num fin-td-amount">
+                      {item.feeItemType.isDiscount && (
+                        <span className="fin-minus">−</span>
+                      )}
+                      {new Intl.NumberFormat("en-PH", {
+                        style: "currency",
+                        currency: "PHP",
+                      }).format(Number(item.defaultAmount))}
+                    </td>
+                    <td className="fin-td fin-td-num">
+                      <InlineConfirmButton
+                        action={removeFeeTemplateItemAction}
+                        confirmMessage={`Remove ${item.feeItemType.name} from this template?`}
+                        hiddenFields={{ id: item.id }}
+                        label="Remove"
+                        loadingLabel="Removing…"
+                        variant="danger"
+                      />
+                    </td>
+                  </tr>
+                ))}
               </tbody>
+              <tfoot>
+                <tr className="fin-tfoot-row">
+                  <td colSpan={3} className="fin-td">
+                    <span className="fin-tfoot-label">Template Total</span>
+                  </td>
+                  <td className="fin-td fin-td-num fin-tfoot-total">
+                    {new Intl.NumberFormat("en-PH", {
+                      style: "currency",
+                      currency: "PHP",
+                    }).format(templateTotal)}
+                  </td>
+                  <td className="fin-td" />
+                </tr>
+              </tfoot>
             </table>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

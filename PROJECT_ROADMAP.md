@@ -51,7 +51,7 @@
 - [x] Parent/Guardian linking — `createStudentAction` / `updateStudentAction`
 - [x] Registration submission during student onboarding — `createStudentAction` inserts approved `registrations` rows in same transaction
 - [ ] Dedicated registration intake action (separate from student-create flow)
-- [ ] Registration review (approve/reject) workflow
+- [ ] Registration review (approve/reject) workflow (NOT Implemented)
 - [x] Duplicate student detection (name / optional DOB / LRN)
 - [x] Audit events: student created / updated
 - [x] Student list/search table (TanStack Table)

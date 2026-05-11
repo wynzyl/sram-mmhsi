@@ -118,7 +118,7 @@ export async function addFeeTemplateItemAction(
       feeTemplateId: parsed.data.feeTemplateId,
       feeItemTypeId: parsed.data.feeItemTypeId,
       defaultAmount: parsed.data.defaultAmount.toString(),
-      order: parsed.data.order,
+      order: parsed.data.order ?? 0,
       createdBy: session.userId,
       updatedBy: session.userId,
     })
