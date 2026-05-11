@@ -608,6 +608,18 @@
      ======================================================================== */
 
   /* ── Unified Button System ── */
+  /*
+   * Usage:
+   *   <button className="btn btn-primary">Submit</button>
+   *   <button className="btn btn-secondary btn-sm">Cancel</button>
+   *   <button className="btn btn-icon"><Icon /></button>
+   *
+   * Variants:
+   *   Sizes: .btn-sm, .btn-lg
+   *   Colors: .btn-primary, .btn-secondary, .btn-danger, .btn-danger-outline, .btn-success, .btn-ghost
+   *   Icons: .btn-icon, .btn-icon-sm, .btn-icon-lg
+   *   Layout: .btn-full (full width)
+   */
 
   /* Base button - all buttons extend this */
   .btn {
@@ -679,6 +691,17 @@
   }
 
   /* ==================== UNIFIED PANEL SYSTEM ==================== */
+  /*
+   * Usage:
+   *   <div className="panel">
+   *     <div className="panel-head">Header</div>
+   *     <div className="panel-body">Content</div>
+   *     <div className="panel-footer">Footer</div>
+   *   </div>
+   *
+   * Backward compatible with:
+   *   .fin-panel, .ops-panel
+   */
 
   /* Base panel/card container */
   .panel {
@@ -724,6 +747,22 @@
   }
 
   /* ==================== UNIFIED MODAL SYSTEM ==================== */
+  /*
+   * Usage:
+   *   <div className="modal-backdrop">
+   *     <div className="modal-dialog">
+   *       <div className="modal-header">Title</div>
+   *       <div className="modal-body">Content</div>
+   *       <div className="modal-footer">Actions</div>
+   *     </div>
+   *   </div>
+   *
+   * Variants:
+   *   .modal-dialog-lg (larger modal)
+   *
+   * Backward compatible with:
+   *   .fin-modal-*, .cashier-modal-*
+   */
 
   @keyframes modal-in {
     from { opacity: 0; transform: scale(0.97) translateY(10px); }
@@ -818,6 +857,16 @@
   }
 
   /* ==================== UNIFIED CALLOUT SYSTEM ==================== */
+  /*
+   * Usage:
+   *   <div className="callout callout-info">Info message</div>
+   *   <div className="callout callout-warn">Warning message</div>
+   *   <div className="callout callout-success">Success message</div>
+   *   <div className="callout callout-error">Error message</div>
+   *
+   * Backward compatible with:
+   *   .fin-callout, .fin-callout-warn, .fin-callout-success
+   */
 
   .callout {
     @apply flex gap-3 rounded-xl border p-4;
@@ -891,6 +940,36 @@
   }
 
   /* ==================== UNIFIED TABLE SYSTEM ==================== */
+  /*
+   * Usage:
+   *   <div className="table-container">
+   *     <table className="table">
+   *       <thead>
+   *         <tr>
+   *           <th>Name</th>
+   *           <th className="table-th-num">Amount</th>
+   *         </tr>
+   *       </thead>
+   *       <tbody>
+   *         <tr>
+   *           <td>Item</td>
+   *           <td className="table-td-num">1,000.00</td>
+   *         </tr>
+   *       </tbody>
+   *     </table>
+   *   </div>
+   *
+   * Variants:
+   *   .table-compact (smaller padding)
+   *   .table-striped (alternating row colors)
+   *
+   * Cell modifiers:
+   *   .table-th-num, .table-td-num (right-aligned numeric columns)
+   *   .table-td-muted (muted text color)
+   *
+   * Backward compatible with:
+   *   .data-table, .fin-table, .ledger-register-table
+   */
 
   /* Table container with border and shadow */
   .table-container {
