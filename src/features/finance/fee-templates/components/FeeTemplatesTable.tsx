@@ -35,9 +35,9 @@ export function FeeTemplatesTable({ templates }: FeeTemplatesTableProps) {
       <div className="fin-panel">
         <div className="fin-empty">
           <p className="fin-empty-text">No fee templates created yet.</p>
-          <Link href="/staff/finance/fee-templates/new">
-            <Button>Create First Template</Button>
-          </Link>
+          <p className="fin-empty-text">
+            Use the Create Template button in the header above to get started.
+          </p>
         </div>
       </div>
     );

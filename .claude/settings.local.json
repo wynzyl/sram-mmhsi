@@ -53,7 +53,16 @@
       "Bash(npx tsx:*)",
       "Bash(npm run db:seed-fee-types:*)",
       "Bash(npm run db:push:*)",
-      "Bash(npx drizzle-kit push:*)"
+      "Bash(npx drizzle-kit push:*)",
+      "Bash(timeout 10 tail:*)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "Bash(curl:*)",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_type",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "Bash(npx stylelint:*)"
     ]
   }
 }

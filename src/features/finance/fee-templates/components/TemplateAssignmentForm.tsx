@@ -55,8 +55,16 @@ export function TemplateAssignmentForm({
     const selectedSY = schoolYears.find((sy) => sy.id === value);
     setSchoolYearId(value);
     if (selectedSY) {
-      setEffectiveDate(new Date(selectedSY.startDate).toISOString().split("T")[0]);
-      setExpiryDate(new Date(selectedSY.endDate).toISOString().split("T")[0]);
+      // Format dates using local timezone to avoid off-by-one day issues
+      const formatLocalDate = (date: Date | string) => {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+      setEffectiveDate(formatLocalDate(selectedSY.startDate));
+      setExpiryDate(formatLocalDate(selectedSY.endDate));
     }
   };
 

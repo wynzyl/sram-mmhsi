@@ -1,0 +1,286 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e5]
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: MERRYLAND
+          - paragraph [ref=e10]: Admin Portal
+      - navigation "Main navigation" [ref=e11]:
+        - generic [ref=e12]:
+          - paragraph [ref=e13]: Overview
+          - link "Dashboard" [ref=e14] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - img [ref=e15]
+            - text: Dashboard
+        - generic [ref=e20]:
+          - paragraph [ref=e21]: System
+          - link "Users" [ref=e22] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e23]
+            - text: Users
+          - link "School Years" [ref=e26] [cursor=pointer]:
+            - /url: /staff/school-years
+            - img [ref=e27]
+            - text: School Years
+      - 'button "Switch theme (current: Dark)" [ref=e266] [cursor=pointer]':
+        - img [ref=e31]
+        - generic [ref=e268]: Dark
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]: A
+          - generic [ref=e36]:
+            - paragraph [ref=e37]: admin
+            - paragraph [ref=e38]: Super Administrator
+        - button "Sign out" [ref=e40] [cursor=pointer]:
+          - img [ref=e41]
+    - main [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - paragraph [ref=e48]: Enrollment Management
+            - heading "Enrollment Queue" [level=1] [ref=e49]
+            - paragraph [ref=e50]: List-first enrollment workflow. Students automatically appear in the queue when eligible.
+          - generic [ref=e51]:
+            - button "Refresh" [ref=e53]:
+              - img [ref=e54]
+              - text: Refresh
+            - link "Manual Entry" [ref=e59] [cursor=pointer]:
+              - /url: /staff/enrollments/new
+              - button "Manual Entry" [ref=e60]:
+                - img [ref=e61]
+                - text: Manual Entry
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - img [ref=e67]
+            - searchbox "Search by name or student ID..." [ref=e70]
+          - generic [ref=e71]:
+            - img [ref=e72]
+            - combobox [ref=e74]:
+              - option "All Grade Levels" [selected]
+              - option "Junior Casa"
+              - option "Senior Casa"
+              - option "Grade 1"
+              - option "Grade 2"
+              - option "Grade 3"
+              - option "Grade 4"
+              - option "Grade 5"
+              - option "Grade 6"
+              - option "Grade 7"
+              - option "Grade 8"
+              - option "Grade 9"
+              - option "Grade 10"
+              - option "Grade 11"
+              - option "Grade 12"
+        - navigation "Enrollment tabs" [ref=e76]:
+          - button "Ready to Enroll 7" [ref=e77]:
+            - generic [ref=e78]: Ready to Enroll
+            - generic [ref=e79]: "7"
+          - button "Pending 0" [ref=e80]:
+            - generic [ref=e81]: Pending
+            - generic [ref=e82]: "0"
+          - button "Assessed 0" [ref=e83]:
+            - generic [ref=e84]: Assessed
+            - generic [ref=e85]: "0"
+          - button "Enrolled 9" [ref=e86]:
+            - generic [ref=e87]: Enrolled
+            - generic [ref=e88]: "9"
+          - button "Cancelled 0" [ref=e89]:
+            - generic [ref=e90]: Cancelled
+            - generic [ref=e91]: "0"
+        - generic [ref=e92]:
+          - generic [ref=e93]:
+            - generic [ref=e95]:
+              - img [ref=e96]
+              - generic [ref=e99]:
+                - heading "Ready to Enroll Queue" [level=3] [ref=e100]
+                - paragraph [ref=e101]:
+                  - text: Students in this list are eligible for enrollment confirmation. Review their details and click
+                  - strong [ref=e102]: Enroll
+                  - text: or
+                  - strong [ref=e103]: Re-Enroll
+                  - text: to create a pending enrollment record.
+            - table [ref=e107]:
+              - rowgroup [ref=e108]:
+                - row "Student ID Student Name Type Enrolling Grade Documents Balance Status Action" [ref=e109]:
+                  - columnheader "Student ID" [ref=e110] [cursor=pointer]:
+                    - generic [ref=e111]: Student ID
+                  - columnheader "Student Name" [ref=e112] [cursor=pointer]:
+                    - generic [ref=e113]: Student Name
+                  - columnheader "Type" [ref=e114] [cursor=pointer]:
+                    - generic [ref=e115]: Type
+                  - columnheader "Enrolling Grade" [ref=e116]:
+                    - generic [ref=e117]: Enrolling Grade
+                  - columnheader "Documents" [ref=e118]:
+                    - generic [ref=e119]: Documents
+                  - columnheader "Balance Status" [ref=e120]:
+                    - generic [ref=e121]: Balance Status
+                  - columnheader "Action" [ref=e122]:
+                    - generic [ref=e123]: Action
+              - rowgroup [ref=e124]:
+                - 'row "SRAMS-2026-00021 FLORES, Ana Returning Previous: Grade 1 → Grade 2 N/A Clear Re-Enroll" [ref=e125]':
+                  - cell "SRAMS-2026-00021" [ref=e126]
+                  - cell "FLORES, Ana" [ref=e127]:
+                    - generic [ref=e271]: FLORES, Ana
+                  - cell "Returning" [ref=e130]:
+                    - generic [ref=e272]: Returning
+                  - 'cell "Previous: Grade 1 → Grade 2" [ref=e132]':
+                    - generic [ref=e273]:
+                      - generic [ref=e274]: "Previous: Grade 1"
+                      - generic [ref=e275]: → Grade 2
+                  - cell "N/A" [ref=e136]
+                  - cell "Clear" [ref=e137]:
+                    - generic [ref=e276]:
+                      - img [ref=e277]
+                      - generic [ref=e280]: Clear
+                  - cell "Re-Enroll" [ref=e143]:
+                    - button "Re-Enroll" [ref=e281]:
+                      - img [ref=e282]
+                      - text: Re-Enroll
+                - 'row "SRAMS-2026-00041 HERMOSA, Christine Returning Previous: Grade 3 → Grade 4 N/A Clear Re-Enroll" [ref=e148]':
+                  - cell "SRAMS-2026-00041" [ref=e149]
+                  - cell "HERMOSA, Christine" [ref=e150]:
+                    - generic [ref=e286]: HERMOSA, Christine
+                  - cell "Returning" [ref=e153]:
+                    - generic [ref=e287]: Returning
+                  - 'cell "Previous: Grade 3 → Grade 4" [ref=e155]':
+                    - generic [ref=e288]:
+                      - generic [ref=e289]: "Previous: Grade 3"
+                      - generic [ref=e290]: → Grade 4
+                  - cell "N/A" [ref=e159]
+                  - cell "Clear" [ref=e160]:
+                    - generic [ref=e291]:
+                      - img [ref=e292]
+                      - generic [ref=e295]: Clear
+                  - cell "Re-Enroll" [ref=e166]:
+                    - button "Re-Enroll" [ref=e296]:
+                      - img [ref=e297]
+                      - text: Re-Enroll
+                - row "SRAMS-2026-00082 MARIO, Maria New Grade 3 Incomplete N/A Enroll" [ref=e171]:
+                  - cell "SRAMS-2026-00082" [ref=e172]
+                  - cell "MARIO, Maria" [ref=e173]:
+                    - generic [ref=e301]: MARIO, Maria
+                  - cell "New" [ref=e176]:
+                    - generic [ref=e302]: New
+                  - cell "Grade 3" [ref=e178]
+                  - cell "Incomplete" [ref=e179]:
+                    - generic [ref=e303]:
+                      - img [ref=e304]
+                      - generic [ref=e307]: Incomplete
+                  - cell "N/A" [ref=e185]
+                  - cell "Enroll" [ref=e186]:
+                    - button "Enroll" [ref=e308]:
+                      - img [ref=e309]
+                      - text: Enroll
+                - 'row "SRAMS-2026-00031 TAGATA, Juan Carlos Returning Previous: Grade 3 → Grade 4 N/A Clear Re-Enroll" [ref=e191]':
+                  - cell "SRAMS-2026-00031" [ref=e192]
+                  - cell "TAGATA, Juan Carlos" [ref=e193]:
+                    - generic [ref=e313]: TAGATA, Juan Carlos
+                  - cell "Returning" [ref=e196]:
+                    - generic [ref=e314]: Returning
+                  - 'cell "Previous: Grade 3 → Grade 4" [ref=e198]':
+                    - generic [ref=e315]:
+                      - generic [ref=e316]: "Previous: Grade 3"
+                      - generic [ref=e317]: → Grade 4
+                  - cell "N/A" [ref=e202]
+                  - cell "Clear" [ref=e203]:
+                    - generic [ref=e318]:
+                      - img [ref=e319]
+                      - generic [ref=e322]: Clear
+                  - cell "Re-Enroll" [ref=e209]:
+                    - button "Re-Enroll" [ref=e323]:
+                      - img [ref=e324]
+                      - text: Re-Enroll
+                - 'row "SRAMS-2026-00011 VALIENTE, Jonathan Returning Previous: Grade 3 → Grade 4 N/A Clear Re-Enroll" [ref=e214]':
+                  - cell "SRAMS-2026-00011" [ref=e215]
+                  - cell "VALIENTE, Jonathan" [ref=e216]:
+                    - generic [ref=e328]: VALIENTE, Jonathan
+                  - cell "Returning" [ref=e219]:
+                    - generic [ref=e329]: Returning
+                  - 'cell "Previous: Grade 3 → Grade 4" [ref=e221]':
+                    - generic [ref=e330]:
+                      - generic [ref=e331]: "Previous: Grade 3"
+                      - generic [ref=e332]: → Grade 4
+                  - cell "N/A" [ref=e225]
+                  - cell "Clear" [ref=e226]:
+                    - generic [ref=e333]:
+                      - img [ref=e334]
+                      - generic [ref=e337]: Clear
+                  - cell "Re-Enroll" [ref=e232]:
+                    - button "Re-Enroll" [ref=e338]:
+                      - img [ref=e339]
+                      - text: Re-Enroll
+          - generic [ref=e237]:
+            - generic [ref=e238]: Showing 1 to 5 of 5 records
+            - generic [ref=e239]:
+              - link "Previous" [disabled] [ref=e240] [cursor=pointer]:
+                - /url: /staff/enrollments?page=0
+                - button "Previous" [disabled] [ref=e241]:
+                  - img [ref=e242]
+                  - text: Previous
+              - generic [ref=e244]:
+                - generic [ref=e245]: Page
+                - generic [ref=e246]: "1"
+                - generic [ref=e247]: of
+                - generic [ref=e248]: "1"
+              - link "Next" [disabled] [ref=e249] [cursor=pointer]:
+                - /url: /staff/enrollments?page=2
+                - button "Next" [disabled] [ref=e250]:
+                  - text: Next
+                  - img [ref=e251]
+          - generic [ref=e343]:
+            - generic [ref=e345]:
+              - generic [ref=e346]:
+                - paragraph [ref=e347]: Enrollment Confirmation
+                - heading "MARIO, Maria" [level=2] [ref=e348]
+                - paragraph [ref=e349]: SRAMS-2026-00082
+              - button "Close" [ref=e350]:
+                - img [ref=e351]
+            - generic [ref=e354]:
+              - generic [ref=e356]: New Student
+              - generic [ref=e357]:
+                - heading "Enrollment Details" [level=3] [ref=e358]:
+                  - img [ref=e359]
+                  - text: Enrollment Details
+                - generic [ref=e363]:
+                  - generic [ref=e364]: Enrolling Grade
+                  - generic [ref=e365]: Grade 3
+              - generic [ref=e366]:
+                - heading "Document Checklist" [level=3] [ref=e367]:
+                  - img [ref=e368]
+                  - text: Document Checklist
+                - generic [ref=e371]:
+                  - generic [ref=e372]:
+                    - generic [ref=e373]: Form 138
+                    - generic [ref=e374]: N/A
+                  - generic [ref=e375]:
+                    - generic [ref=e376]: Birth Certificate (PSA)
+                    - generic [ref=e377]:
+                      - img [ref=e378]
+                      - generic [ref=e380]: To Follow
+                  - generic [ref=e381]:
+                    - generic [ref=e382]: Good Moral Character
+                    - generic [ref=e383]: N/A
+                  - generic [ref=e384]:
+                    - generic [ref=e385]: Qualified Voucher
+                    - generic [ref=e386]: N/A
+                  - generic [ref=e387]:
+                    - generic [ref=e388]: ESC Certificate
+                    - generic [ref=e389]: N/A
+              - paragraph [ref=e391]:
+                - strong [ref=e392]: "What happens next:"
+                - text: This enrollment will be created with status
+                - strong [ref=e393]: Pending
+                - text: . The finance officer will then assess fees and create an assessment ledger.
+              - generic [ref=e394]:
+                - button "Cancel" [ref=e395]
+                - button "Confirm Enrollment" [ref=e396]
+        - paragraph [ref=e254]:
+          - strong [ref=e255]: "Note:"
+          - text: This is the new list-first enrollment queue. If you need to manually create an enrollment record, use the
+          - link "manual entry form" [ref=e256] [cursor=pointer]:
+            - /url: /staff/enrollments/new
+          - text: .
+  - button "Open Next.js Dev Tools" [ref=e262] [cursor=pointer]:
+    - img [ref=e263]
+  - alert [ref=e269]
