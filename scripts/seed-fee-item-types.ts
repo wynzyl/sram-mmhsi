@@ -118,6 +118,13 @@ async function seedFeeItemTypes() {
 
     // Other
     {
+      code: "BALANCE_FORWARD",
+      name: "Balance Forward from Previous Year",
+      category: "other" as const,
+      isDiscount: false,
+      displayOrder: 0, // Show first in assessments
+    },
+    {
       code: "OTHER",
       name: "Other Fees",
       category: "other" as const,

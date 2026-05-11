@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
-import { Button } from "@/components/ui/button";
+import { FeeTemplateDetailModal } from "./FeeTemplateDetailModal";
 
 type FeeItemType = {
   id: string;
   name: string;
+  category: string;
   isDiscount: boolean;
 };
 
 type FeeTemplateItem = {
   id: string;
   defaultAmount: string;
+  order: number;
   feeItemType: FeeItemType;
 };
 
@@ -109,9 +111,7 @@ export function FeeTemplatesTable({ templates }: FeeTemplatesTableProps) {
                   </div>
 
                   <div className="fin-template-row-actions">
-                    <Link href={`/staff/finance/fee-templates/${template.id}`}>
-                      <Button variant="secondary" size="sm">View Details</Button>
-                    </Link>
+                    <FeeTemplateDetailModal template={template} />
                   </div>
                 </div>
               );

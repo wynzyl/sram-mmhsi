@@ -2324,4 +2324,185 @@
 
   }
 
+  /* ── Fee Template Detail Modal ── */
+
+  .fin-detail-modal-dialog {
+    @apply w-full rounded-2xl border overflow-hidden flex flex-col;
+
+    max-width: 44rem;
+    max-height: calc(100dvh - 2rem);
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-lg);
+    animation: fin-modal-in 0.22s ease-out both;
+  }
+
+  .fin-detail-modal-header {
+    /* Override base modal header to allow description */
+    align-items: flex-start;
+  }
+
+  .fin-detail-modal-header-content {
+    @apply flex-1 min-w-0;
+  }
+
+  .fin-detail-modal-meta {
+    @apply flex items-center gap-2 flex-wrap mt-1.5;
+  }
+
+  /* ── KPI Strip ── */
+  .fin-detail-kpi-strip {
+    @apply flex items-stretch flex-shrink-0 border-b;
+
+    border-color: var(--color-ops-line);
+    background: color-mix(in srgb, var(--color-primary) 4%, var(--color-ops-panel-muted));
+  }
+
+  .fin-detail-kpi-item {
+    @apply flex flex-col items-center justify-center gap-0.5 px-5 py-3 flex-1 text-center;
+  }
+
+  .fin-detail-kpi-label {
+    @apply text-[10px] font-bold uppercase tracking-[0.12em];
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-detail-kpi-value {
+    @apply text-base font-bold tabular-nums;
+
+    color: var(--color-ops-ink);
+    font-family: var(--font-display);
+  }
+
+  .fin-detail-kpi-secondary {
+    @apply text-sm;
+
+    color: var(--color-ops-muted);
+    font-weight: 600;
+  }
+
+  .fin-detail-kpi-discount {
+    @apply text-sm;
+
+    color: var(--color-ops-positive, #16a34a);
+    font-weight: 600;
+  }
+
+  .fin-detail-kpi-divider {
+    width: 1px;
+    align-self: stretch;
+    margin: 0.625rem 0;
+    background: var(--color-ops-line);
+    flex-shrink: 0;
+  }
+
+  /* ── Detail Modal Body ── */
+  .fin-detail-modal-body {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .fin-detail-items-section {
+    @apply flex flex-col gap-4;
+  }
+
+  /* ── Category Group ── */
+  .fin-detail-category-group {
+    @apply rounded-xl border overflow-hidden;
+
+    border-color: var(--color-ops-line);
+  }
+
+  .fin-detail-category-head {
+    @apply flex items-center gap-2 px-4 py-2 border-b;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .fin-detail-category-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .fin-detail-category-label {
+    @apply flex-1 text-xs font-semibold uppercase tracking-[0.1em];
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-detail-category-subtotal {
+    @apply text-xs font-semibold tabular-nums;
+
+    color: var(--color-ops-ink);
+  }
+
+  /* ── Item rows ── */
+  .fin-detail-item-list {
+    @apply divide-y;
+
+    border-color: color-mix(in srgb, var(--color-ops-line) 50%, transparent);
+  }
+
+  .fin-detail-item-row {
+    @apply flex items-center gap-3 px-4 py-2.5 transition-colors;
+  }
+
+  .fin-detail-item-row:hover {
+    background: color-mix(in srgb, var(--color-ops-line) 18%, transparent);
+  }
+
+  .fin-detail-item-order {
+    @apply text-[11px] font-semibold tabular-nums w-5 text-center flex-shrink-0;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-detail-item-name {
+    @apply flex-1 text-sm font-medium;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fin-detail-item-amount {
+    @apply text-sm font-semibold tabular-nums flex items-center gap-0.5 flex-shrink-0;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fin-detail-item-amount-disc {
+    color: var(--color-ops-positive, #16a34a);
+  }
+
+  /* ── Net Total row ── */
+  .fin-detail-total-row {
+    @apply flex items-center justify-between px-4 py-3 rounded-xl border;
+
+    border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  }
+
+  .fin-detail-total-label {
+    @apply text-xs font-bold uppercase tracking-[0.12em];
+
+    color: var(--color-primary);
+  }
+
+  .fin-detail-total-value {
+    @apply text-base font-bold tabular-nums;
+
+    font-family: var(--font-display);
+    color: var(--color-primary);
+  }
+
+  /* ── Footer ── */
+  .fin-detail-modal-footer {
+    @apply flex items-center justify-end gap-3 px-6 py-4 border-t flex-shrink-0;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
 }

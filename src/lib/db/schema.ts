@@ -277,8 +277,13 @@ export const studentGuardianLinks = pgTable(
     guardianId: uuid("guardian_id").notNull().references(() => parentsGuardians.id),
     isPrimary: boolean("is_primary").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
   },
-  (t) => [index("sgl_student_idx").on(t.studentId)]
+  (t) => [
+    index("sgl_student_idx").on(t.studentId),
+    index("student_guardian_links_guardian_idx").on(t.guardianId), // PERFORMANCE: Parent portal reverse lookups
+  ]
 );
 
 // ─── Registration & Enrollment ────────────────────────────────────────────────
@@ -347,6 +352,7 @@ export const enrollments = pgTable(
     index("enrollment_status_idx").on(t.status),
     index("enrollment_sy_status_idx").on(t.schoolYearId, t.status), // MEMORY OPTIMIZATION: Composite index for enrollment queue
     index("enrollment_student_sy_status_idx").on(t.studentId, t.schoolYearId, t.status), // MEMORY OPTIMIZATION: For old student lookups
+    index("enrollment_sy_status_created_idx").on(t.schoolYearId, t.status, t.createdAt), // PERFORMANCE: Queue sorting by creation date
   ]
 );
 
@@ -427,6 +433,8 @@ export const feeTemplates = pgTable("fee_templates", {
   createdBy: uuid("created_by").references(() => users.id),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: uuid("updated_by").references(() => users.id),
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: uuid("deleted_by").references(() => users.id),
 }, (t) => [
   index("fee_templates_band_idx").on(t.assessmentBand),
   index("fee_templates_active_idx").on(t.isActive).where(sql`${t.isActive} = true`),
@@ -526,6 +534,8 @@ export const assessments = pgTable(
   (t) => [
     index("assessment_student_sy_idx").on(t.studentId, t.schoolYearId),
     uniqueIndex("assessments_enrollment_id_uidx").on(t.enrollmentId),
+    index("assessments_billing_status_idx").on(t.billingStatus), // PERFORMANCE: Outstanding balance queries
+    index("assessments_student_billing_idx").on(t.studentId, t.billingStatus), // PERFORMANCE: Student balance lookups
   ]
 );
 
@@ -576,7 +586,12 @@ export const receiptBooklets = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     updatedBy: uuid("updated_by").references(() => users.id),
   },
-  (t) => [index("booklet_status_idx").on(t.status)]
+  (t) => [
+    index("booklet_status_idx").on(t.status),
+    index("receipt_booklets_status_active_idx")
+      .on(t.status)
+      .where(sql`${t.status} = 'active'`), // PERFORMANCE: Payment processing active booklet lookups
+  ]
 );
 
 export const payments = pgTable(
@@ -615,6 +630,8 @@ export const payments = pgTable(
     index("payments_student_idx").on(t.studentId),
     index("payments_status_idx").on(t.status),
     index("payments_date_idx").on(t.paymentDate),
+    index("payments_student_date_idx").on(t.studentId, t.paymentDate), // PERFORMANCE: Student payment history queries
+    index("payments_assessment_status_idx").on(t.assessmentId, t.status), // PERFORMANCE: Assessment reconciliation
   ]
 );
 
@@ -713,6 +730,7 @@ export const gradeRecords = pgTable(
     index("gr_teacher_assignment_idx").on(t.teacherAssignmentId),
     index("gr_student_idx").on(t.studentId),
     index("gr_status_idx").on(t.status),
+    index("grade_records_teacher_status_period_idx").on(t.teacherAssignmentId, t.status, t.gradingPeriod), // PERFORMANCE: Grade submission workflow queries
   ]
 );
 

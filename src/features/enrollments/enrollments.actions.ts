@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { db } from "@/lib/db";
 import {
   enrollments,
@@ -309,6 +309,8 @@ export async function createEnrollmentAction(
 
     revalidatePath("/staff/enrollments");
     revalidatePath(`/staff/students/${studentId}`);
+    // @ts-expect-error - Next.js 16 types incorrectly expect 2 args, but API accepts single tag string
+    revalidateTag('enrollments'); // PERFORMANCE: Invalidate enrollment counts cache
     return { success: true, enrollmentId: newEnrollmentId };
   } catch (err) {
     const detail = collectPgErrorText(err);
@@ -486,7 +488,8 @@ export async function updateEnrollmentStatusAction(
     revalidatePath("/staff/enrollments");
     revalidatePath("/staff/assessments");
     revalidatePath(`/staff/students/${enrollment.studentId}`);
-   
+    // @ts-expect-error - Next.js 16 types incorrectly expect 2 args, but API accepts single tag string
+    revalidateTag('enrollments'); // PERFORMANCE: Invalidate enrollment counts cache
 
     return {
       success: true,

@@ -7,8 +7,10 @@ import {
   assessments,
   assessmentItems,
   gradeLevels,
+  schoolYears,
+  feeItemTypes,
 } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne, isNotNull, desc } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "@/lib/fee-schedule/resolve";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -74,6 +76,47 @@ export async function createAssessmentFromEnrollmentAction(
     };
   }
 
+  // ─── Check for Balance Forward (Old Students) ────────────────────────────
+  let balanceForwardItem: {
+    description: string;
+    amount: string;
+    previousAssessmentId: string;
+  } | null = null;
+
+  if (enrollmentRow.studentType === "old_student") {
+    // Find most recent previous enrollment with assessment
+    const [priorEnrollment] = await db
+      .select({
+        assessmentId: assessments.id,
+        balance: assessments.balance,
+        schoolYearLabel: schoolYears.label,
+      })
+      .from(enrollments)
+      .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+      .leftJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
+      .where(
+        and(
+          eq(enrollments.studentId, enrollmentRow.studentId),
+          ne(enrollments.schoolYearId, enrollmentRow.schoolYearId), // Different year
+          eq(enrollments.status, "enrolled"), // Only fully enrolled
+          isNotNull(assessments.id) // Has assessment
+        )
+      )
+      .orderBy(desc(schoolYears.startDate))
+      .limit(1);
+
+    if (priorEnrollment && priorEnrollment.balance && priorEnrollment.assessmentId) {
+      const balanceAmount = Number(priorEnrollment.balance);
+      if (balanceAmount > 0.01) { // Skip zero and negative (credits)
+        balanceForwardItem = {
+          description: `Balance Forward from ${priorEnrollment.schoolYearLabel}`,
+          amount: priorEnrollment.balance,
+          previousAssessmentId: priorEnrollment.assessmentId,
+        };
+      }
+    }
+  }
+
   const existing = await db.query.assessments.findFirst({
     where: eq(assessments.enrollmentId, enrollmentId),
     columns: { id: true },
@@ -125,7 +168,7 @@ export async function createAssessmentFromEnrollmentAction(
     description: string;
     amount: number;
     isDiscount: boolean;
-    feeTemplateItemId: string;
+    feeTemplateItemId: string | null; // Allow null for balance forward items
     feeItemTypeId: string;
   }[] = [];
   for (const line of items) {
@@ -136,6 +179,31 @@ export async function createAssessmentFromEnrollmentAction(
       description: template.description,
       amount: line.amount,
       isDiscount: template.isDiscount,
+    });
+  }
+
+  // ─── Add Balance Forward Item (if applicable) ────────────────────────────
+  if (balanceForwardItem) {
+    // Get BALANCE_FORWARD fee item type (must exist in seed data)
+    const balanceForwardType = await db.query.feeItemTypes.findFirst({
+      where: eq(feeItemTypes.code, "BALANCE_FORWARD"),
+      columns: { id: true },
+    });
+
+    if (!balanceForwardType) {
+      return {
+        message:
+          "Balance Forward fee type not found in system. Run: npx tsx scripts/seed-fee-item-types.ts",
+      };
+    }
+
+    // Prepend balance forward to beginning (will show first in list)
+    resolvedLines.unshift({
+      feeTemplateItemId: null, // Not from template
+      feeItemTypeId: balanceForwardType.id,
+      description: balanceForwardItem.description,
+      amount: Number(balanceForwardItem.amount),
+      isDiscount: false,
     });
   }
 
@@ -186,7 +254,7 @@ export async function createAssessmentFromEnrollmentAction(
       await tx.insert(assessmentItems).values(
         resolvedLines.map((item) => ({
           assessmentId: newAssessment.id,
-          feeTemplateItemId: item.feeTemplateItemId, // ← New: For audit trail
+          feeTemplateItemId: item.feeTemplateItemId ?? null, // Allow null for balance forward
           feeItemTypeId: item.feeItemTypeId,          // ← New: For reporting
           description: item.description,               // ← Snapshot from fee_item_types.name
           amount: String(Number(item.amount).toFixed(2)),
@@ -219,6 +287,8 @@ export async function createAssessmentFromEnrollmentAction(
           totalAmount: assessmentTotalAmount,
           lineCount: resolvedLines.length,
           feeScheduleId: scheduleResolution.scheduleId,
+          hasBalanceForward: !!balanceForwardItem,
+          balanceForwardAmount: balanceForwardItem?.amount ?? null,
         },
       }, { throwOnFail: true });
     });
