@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   ],
 
   // Next.js 16 uses Turbopack by default - configure file watching
-  turbopack: {
+  turbopack: { 
     // Reduce filesystem watching overhead by ignoring unnecessary directories
     // This improves development server performance and HMR responsiveness
   },
