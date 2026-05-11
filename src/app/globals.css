@@ -566,6 +566,7 @@
   /* ── Header ── */
   .ledger-register-top {
     @apply rounded-2xl border p-5 md:p-7;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel);
     box-shadow: var(--shadow-md);
@@ -586,6 +587,7 @@
 
   .ledger-register-eyebrow {
     @apply text-xs font-semibold uppercase tracking-[0.14em] mb-1;
+
     color: var(--color-ops-muted);
     display: flex;
     align-items: center;
@@ -604,12 +606,14 @@
 
   .ledger-register-title {
     @apply text-3xl font-bold tracking-tight leading-tight;
+
     font-family: var(--font-display);
     color: var(--color-ops-ink);
   }
 
   .ledger-register-meta {
     @apply mt-1.5 flex items-center gap-2 text-sm;
+
     color: var(--color-ops-muted);
   }
 
@@ -620,6 +624,7 @@
 
   .ledger-register-student-link {
     @apply text-sm font-medium underline-offset-2 transition;
+
     color: var(--color-primary);
     text-decoration: underline;
     text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
@@ -641,6 +646,7 @@
 
   .ledger-register-tile {
     @apply px-5 py-4;
+
     background: var(--color-ops-panel-muted);
     border-right: 1px solid var(--color-ops-line);
     position: relative;
@@ -655,11 +661,13 @@
 
   .ledger-register-tile-label {
     @apply text-[11px] uppercase tracking-[0.14em] font-semibold;
+
     color: var(--color-ops-muted);
   }
 
   .ledger-register-tile-value {
     @apply text-2xl font-semibold tabular-nums;
+
     color: var(--color-ops-ink);
     font-family: var(--font-display);
   }
@@ -684,6 +692,7 @@
 
   .ledger-register-btn-primary {
     @apply inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm font-semibold transition;
+
     background: var(--color-primary);
     color: white;
     border: 1px solid transparent;
@@ -712,6 +721,7 @@
   /* ── Sections ── */
   .ledger-register-section {
     @apply rounded-2xl border overflow-hidden;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel);
     box-shadow: var(--shadow-sm);
@@ -721,12 +731,14 @@
 
   .ledger-register-section-head {
     @apply flex items-center justify-between px-5 py-3.5 border-b;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
   }
 
   .ledger-register-section-title {
     @apply text-xs font-bold uppercase tracking-[0.12em];
+
     color: var(--color-ops-muted);
     font-family: var(--font-body);
   }
@@ -742,6 +754,7 @@
 
   .ledger-register-table thead th {
     @apply px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.1em] border-b;
+
     color: var(--color-ops-muted);
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
@@ -753,6 +766,7 @@
 
   .ledger-register-table tbody tr {
     @apply border-b transition-colors;
+
     border-color: color-mix(in srgb, var(--color-ops-line) 60%, transparent);
   }
 
@@ -766,6 +780,7 @@
 
   .ledger-register-table tbody td {
     @apply px-5 py-3.5;
+
     color: var(--color-ops-ink);
   }
 
@@ -781,6 +796,7 @@
 
   .ledger-register-empty {
     @apply px-5 py-10 text-center text-sm;
+
     color: var(--color-ops-muted);
   }
 
@@ -788,6 +804,7 @@
   .ledger-register-table tfoot tr.ledger-register-foot-row th,
   .ledger-register-table tfoot tr.ledger-register-foot-row td {
     @apply px-5 py-3 border-t font-semibold;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
     color: var(--color-ops-ink);
@@ -800,6 +817,7 @@
 
   .ledger-register-foot-sub td {
     @apply px-5 py-2 text-xs;
+
     color: var(--color-ops-warning);
     background: color-mix(in srgb, var(--color-ops-warning) 6%, transparent);
   }
@@ -811,6 +829,7 @@
 
   .ledger-register-payments-footer {
     @apply px-5 py-4 border-t flex items-center justify-between gap-4 flex-wrap;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
   }
@@ -821,16 +840,19 @@
 
   .ledger-register-foot-inline-label {
     @apply text-xs font-semibold uppercase tracking-[0.1em];
+
     color: var(--color-ops-muted);
   }
 
   .ledger-register-foot-inline-value {
     @apply text-base font-semibold tabular-nums;
+
     color: var(--color-ops-ink);
   }
 
   .ledger-register-foot-hint {
     @apply text-xs;
+
     color: var(--color-ops-muted);
   }
 
@@ -850,6 +872,7 @@
 
   .cashier-modal-dialog {
     @apply w-full max-w-3xl rounded-2xl border overflow-hidden;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel);
     box-shadow: var(--shadow-lg);
@@ -861,28 +884,33 @@
 
   .cashier-modal-header {
     @apply flex items-start justify-between gap-4 px-6 py-5 border-b flex-shrink-0;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
   }
 
   .cashier-modal-kicker {
     @apply text-[11px] font-bold uppercase tracking-[0.16em] mb-0.5;
+
     color: var(--color-primary);
   }
 
   .cashier-modal-title {
     @apply text-xl font-bold;
+
     font-family: var(--font-display);
     color: var(--color-ops-ink);
   }
 
   .cashier-modal-sub {
     @apply text-sm mt-0.5;
+
     color: var(--color-ops-muted);
   }
 
   .cashier-modal-close {
     @apply flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md text-lg font-light transition;
+
     color: var(--color-ops-muted);
     line-height: 1;
   }
@@ -906,6 +934,7 @@
   /* ── Page shell ── */
   .fin-page {
     @apply mx-auto w-full max-w-7xl space-y-6 px-4 py-6 md:px-6;
+
     animation: fin-fade-up 0.3s ease-out both;
   }
 
@@ -928,6 +957,7 @@
 
   .fin-eyebrow {
     @apply text-xs font-semibold uppercase tracking-[0.14em] mb-1.5 flex items-center gap-2;
+
     color: var(--color-ops-muted);
   }
 
@@ -943,23 +973,27 @@
 
   .fin-title {
     @apply text-3xl font-bold tracking-tight leading-tight;
+
     font-family: var(--font-display);
     color: var(--color-ops-ink);
   }
 
   .fin-subtitle {
     @apply mt-2 text-sm max-w-2xl;
+
     color: var(--color-ops-muted);
   }
 
   /* ── Breadcrumb ── */
   .fin-breadcrumb {
     @apply flex items-center gap-1.5 text-sm mb-2;
+
     color: var(--color-ops-muted);
   }
 
   .fin-breadcrumb-link {
     @apply transition;
+
     color: var(--color-ops-muted);
     text-decoration: underline;
     text-decoration-color: transparent;
@@ -982,6 +1016,7 @@
   /* ── Callout / Info box ── */
   .fin-callout {
     @apply flex gap-3 rounded-xl border p-4;
+
     border-color: color-mix(in srgb, var(--color-info) 25%, transparent);
     background: color-mix(in srgb, var(--color-info) 6%, var(--color-ops-panel));
   }
@@ -1003,22 +1038,26 @@
 
   .fin-callout-icon {
     @apply flex-shrink-0 text-base w-5 h-5 flex items-center justify-center;
+
     color: var(--color-ops-muted);
     margin-top: 1px;
   }
 
   .fin-callout-title {
     @apply text-sm font-semibold mb-1;
+
     color: var(--color-ops-ink);
   }
 
   .fin-callout-body {
     @apply text-sm;
+
     color: var(--color-ops-muted);
   }
 
   .fin-callout-list {
     @apply space-y-1 text-sm;
+
     color: var(--color-ops-muted);
     list-style: none;
     padding: 0;
@@ -1034,6 +1073,7 @@
 
   .fin-callout-link {
     @apply font-medium underline;
+
     color: var(--color-primary);
     text-underline-offset: 2px;
   }
@@ -1049,6 +1089,7 @@
 
   .fin-panel {
     @apply rounded-2xl border overflow-hidden;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel);
     box-shadow: var(--shadow-sm);
@@ -1056,6 +1097,7 @@
 
   .fin-panel-head {
     @apply flex items-center justify-between gap-3 px-5 py-3.5 border-b;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
   }
@@ -1066,12 +1108,14 @@
 
   .fin-panel-title {
     @apply text-xs font-bold uppercase tracking-[0.12em];
+
     color: var(--color-ops-muted);
     font-family: var(--font-body);
   }
 
   .fin-panel-meta {
     @apply text-xs;
+
     color: var(--color-ops-muted);
   }
 
@@ -1090,12 +1134,14 @@
 
   .fin-empty-text {
     @apply text-sm;
+
     color: var(--color-ops-muted);
   }
 
   /* ── Badges ── */
   .fin-badge {
     @apply inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold border;
+
   }
 
   .fin-badge-active {
@@ -1119,6 +1165,7 @@
   /* ── Band pill ── */
   .fin-band-pill {
     @apply inline-flex items-center rounded-full px-3 py-0.5 text-xs font-semibold;
+
     background: color-mix(in srgb, var(--color-primary) 10%, transparent);
     color: var(--color-primary);
     border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
@@ -1132,6 +1179,7 @@
 
   .fin-schedule-card {
     @apply rounded-xl border p-4 flex flex-col gap-2 transition;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
   }
@@ -1158,16 +1206,19 @@
 
   .fin-schedule-card-name {
     @apply text-sm font-semibold;
+
     color: var(--color-ops-ink);
   }
 
   .fin-schedule-card-stats {
     @apply flex flex-wrap items-center gap-2 text-xs;
+
     color: var(--color-ops-muted);
   }
 
   .fin-schedule-card-total {
     @apply text-xl font-semibold tabular-nums mt-1;
+
     font-family: var(--font-display);
     color: var(--color-ops-ink);
   }
@@ -1175,6 +1226,7 @@
   /* ── Stat items ── */
   .fin-stat-item {
     @apply text-xs;
+
     color: var(--color-ops-muted);
   }
 
@@ -1184,6 +1236,7 @@
 
   .fin-stat-total {
     @apply text-xs;
+
     color: var(--color-ops-muted);
   }
 
@@ -1193,6 +1246,7 @@
 
   .fin-stat-date {
     @apply text-xs;
+
     color: var(--color-ops-muted);
   }
 
@@ -1204,6 +1258,7 @@
 
   .fin-template-row {
     @apply flex items-center justify-between gap-4 px-5 py-4 transition-colors;
+
   }
 
   .fin-template-row:hover {
@@ -1220,6 +1275,7 @@
 
   .fin-template-name-link {
     @apply text-sm font-semibold transition underline-offset-2;
+
     color: var(--color-primary);
     text-decoration: underline;
     text-decoration-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
@@ -1232,11 +1288,13 @@
 
   .fin-template-desc {
     @apply mt-1 text-xs;
+
     color: var(--color-ops-muted);
   }
 
   .fin-template-stats {
     @apply mt-2 flex items-center gap-1.5 text-xs flex-wrap;
+
   }
 
   .fin-template-row-actions {
@@ -1254,6 +1312,7 @@
 
   .fin-th {
     @apply px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.1em] border-b;
+
     color: var(--color-ops-muted);
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
@@ -1265,6 +1324,7 @@
 
   .fin-tr {
     @apply border-b transition-colors;
+
     border-color: color-mix(in srgb, var(--color-ops-line) 60%, transparent);
   }
 
@@ -1278,6 +1338,7 @@
 
   .fin-td {
     @apply px-5 py-3.5;
+
     color: var(--color-ops-ink);
   }
 
@@ -1306,6 +1367,7 @@
 
   .fin-disc-tag {
     @apply inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold ml-1.5 align-middle;
+
     color: var(--color-ops-positive);
     background: color-mix(in srgb, var(--color-ops-positive) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--color-ops-positive) 25%, transparent);
@@ -1323,11 +1385,13 @@
 
   .fin-tfoot-label {
     @apply text-xs font-bold uppercase tracking-[0.08em];
+
     color: var(--color-ops-muted);
   }
 
   .fin-tfoot-total {
     @apply font-bold text-base;
+
     color: var(--color-ops-ink);
   }
 
@@ -1342,6 +1406,7 @@
 
   .fin-field-hint {
     @apply mt-1.5 text-xs;
+
     color: var(--color-ops-muted);
   }
 
@@ -1358,42 +1423,50 @@
   /* ── Template preview panel ── */
   .fin-preview-panel {
     @apply rounded-xl border overflow-hidden;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
   }
 
   .fin-preview-head {
     @apply flex items-center justify-between gap-3 px-4 py-3 border-b;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel);
   }
 
   .fin-preview-label {
     @apply text-[11px] font-bold uppercase tracking-[0.12em];
+
     color: var(--color-ops-muted);
   }
 
   .fin-preview-name {
     @apply text-xs font-semibold;
+
     color: var(--color-ops-ink);
   }
 
   .fin-preview-body {
     @apply divide-y px-0;
+
     border-color: color-mix(in srgb, var(--color-ops-line) 60%, transparent);
   }
 
   .fin-preview-row {
     @apply flex items-center justify-between gap-4 px-4 py-2.5 text-sm;
+
   }
 
   .fin-preview-row-name {
     @apply flex items-center gap-1.5;
+
     color: var(--color-ops-ink);
   }
 
   .fin-preview-row-amount {
     @apply font-medium tabular-nums;
+
     color: var(--color-ops-ink);
   }
 
@@ -1403,29 +1476,34 @@
 
   .fin-preview-total-row {
     @apply flex items-center justify-between gap-4 px-4 py-3 border-t;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel);
   }
 
   .fin-preview-total-label {
     @apply text-xs font-bold uppercase tracking-[0.08em];
+
     color: var(--color-ops-muted);
   }
 
   .fin-preview-total-value {
     @apply text-base font-bold tabular-nums;
+
     font-family: var(--font-display);
     color: var(--color-ops-ink);
   }
 
   .fin-preview-hint {
     @apply px-4 py-2.5 text-xs;
+
     color: var(--color-ops-muted);
   }
 
   /* ── KPI summary card (template detail header) ── */
   .fin-kpi-card {
     @apply flex-shrink-0 rounded-xl border p-4 flex flex-col gap-0.5 min-w-[9rem];
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
     box-shadow: var(--shadow-sm);
@@ -1433,23 +1511,27 @@
 
   .fin-kpi-label {
     @apply text-[11px] font-semibold uppercase tracking-[0.14em];
+
     color: var(--color-ops-muted);
   }
 
   .fin-kpi-value {
     @apply text-2xl font-bold tabular-nums;
+
     font-family: var(--font-display);
     color: var(--color-ops-ink);
   }
 
   .fin-kpi-sub {
     @apply text-xs;
+
     color: var(--color-ops-muted);
   }
 
   /* Ordered list variant for callouts */
   .fin-callout-ol {
     @apply space-y-1 text-sm;
+
     color: var(--color-ops-muted);
     list-style: none;
     counter-reset: fin-ol;
@@ -1494,6 +1576,7 @@
 
   .fin-modal-dialog {
     @apply w-full rounded-2xl border overflow-hidden flex flex-col;
+
     max-width: 36rem;
     max-height: calc(100dvh - 2rem);
     border-color: var(--color-ops-line);
@@ -1504,28 +1587,33 @@
 
   .fin-modal-header {
     @apply flex items-start justify-between gap-4 px-6 py-5 border-b flex-shrink-0;
+
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
   }
 
   .fin-modal-kicker {
     @apply text-[11px] font-bold uppercase tracking-[0.16em] mb-0.5;
+
     color: var(--color-primary);
   }
 
   .fin-modal-title {
     @apply text-xl font-bold leading-snug;
+
     font-family: var(--font-display);
     color: var(--color-ops-ink);
   }
 
   .fin-modal-sub {
     @apply text-sm mt-0.5;
+
     color: var(--color-ops-muted);
   }
 
   .fin-modal-close {
     @apply flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md text-xl font-light transition;
+
     color: var(--color-ops-muted);
     line-height: 1;
   }
@@ -1537,6 +1625,7 @@
 
   .fin-modal-body {
     @apply overflow-y-auto p-6 flex-1;
+
   }
 
 }

@@ -28,13 +28,13 @@ export const UpdateFeeTemplateSchema = z.object({
 export const AddFeeTemplateItemSchema = z.object({
   feeTemplateId: z.string().uuid(),
   feeItemTypeId: z.string().uuid(),
-  defaultAmount: z.coerce.number().min(0, "Amount must be positive"),
+  defaultAmount: z.coerce.number().min(0, "Amount must be non-negative"),
   order: z.coerce.number().int().min(0).optional(),
 });
 
 export const UpdateFeeTemplateItemSchema = z.object({
   id: z.string().uuid(),
-  defaultAmount: z.coerce.number().min(0, "Amount must be positive").optional(),
+  defaultAmount: z.coerce.number().min(0, "Amount must be non-negative").optional(),
   order: z.coerce.number().int().min(0).optional(),
 });
 
@@ -61,13 +61,13 @@ export const DeactivateScheduleSchema = z.object({
 export const CreateFeeOverrideSchema = z.object({
   scheduleId: z.string().uuid(),
   feeTemplateItemId: z.string().uuid(),
-  overrideAmount: z.coerce.number().min(0, "Amount must be positive"),
+  overrideAmount: z.coerce.number().min(0, "Amount must be non-negative"),
   reason: z.string().optional(),
 });
 
 export const UpdateFeeOverrideSchema = z.object({
   id: z.string().uuid(),
-  overrideAmount: z.coerce.number().min(0, "Amount must be positive").optional(),
+  overrideAmount: z.coerce.number().min(0, "Amount must be non-negative").optional(),
   reason: z.string().optional(),
 });
 
