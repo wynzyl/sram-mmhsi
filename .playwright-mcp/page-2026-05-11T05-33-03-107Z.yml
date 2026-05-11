@@ -1,0 +1,25 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - img "Merryland Montessori & High School — Where Excellent Foundation Begins" [ref=e4]
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - img [ref=e9]
+        - generic [ref=e12]:
+          - heading "Merryland Montessori & High School" [level=1] [ref=e13]
+          - paragraph [ref=e14]: School Registration & Accounts Monitoring System
+      - generic [ref=e15]:
+        - heading "Sign in to your account" [level=2] [ref=e16]
+        - paragraph [ref=e17]: Enter your credentials to access the system.
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - generic [ref=e20]: Username or Email
+            - textbox "Username or Email" [ref=e21]:
+              - /placeholder: username or email@school.edu.ph
+          - generic [ref=e22]:
+            - generic [ref=e23]: Password
+            - textbox "Password" [ref=e24]:
+              - /placeholder: ••••••••••
+          - button "Sign In" [ref=e25]
+        - paragraph [ref=e26]: Having trouble? Contact your system administrator.
+  - button "Open Next.js Dev Tools" [ref=e32] [cursor=pointer]:
+    - img [ref=e33]

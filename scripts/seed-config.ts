@@ -52,8 +52,9 @@ async function seedConfig() {
   // ─── Grade Levels ───────────────────────────────────────────────────────────
   /** Maps each grade to a fee assessment band (Casa / elem / JHS / SHS). Kinder 1–2 are Casa; use Casa Junior/Senior/Advance names if you prefer—they share the same `casa` band. */
   const gradeData = [
-    { name: "Kinder 1", order: 1, assessmentBand: "casa" as const },
-    { name: "Kinder 2", order: 2, assessmentBand: "casa" as const },
+    { name: "Junior Casa", order: 1, assessmentBand: "casa" as const },
+    { name: "Senior Casa", order: 2, assessmentBand: "casa" as const },
+    { name: "Advance Casa", order: 2, assessmentBand: "casa" as const },
     { name: "Grade 1", order: 3, assessmentBand: "lower_elementary" as const },
     { name: "Grade 2", order: 4, assessmentBand: "lower_elementary" as const },
     { name: "Grade 3", order: 5, assessmentBand: "lower_elementary" as const },

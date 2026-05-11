@@ -520,7 +520,7 @@
     @apply text-xs;
     color: var(--color-ops-muted);
   }
-}
+
   /* Pagination */
   .pagination-btn {
     @apply inline-flex h-9 min-w-9 items-center justify-center rounded-md px-3 text-sm font-medium transition;
@@ -546,3 +546,1086 @@
     opacity: 0.5;
   }
 
+  /* ==================== LEDGER REGISTER — Billing / Cashier View ==================== */
+
+  @keyframes ledger-fade-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes ledger-modal-in {
+    from { opacity: 0; transform: scale(0.97) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .ledger-register {
+    @apply mx-auto w-full max-w-7xl space-y-6 px-4 py-6 md:px-6;
+    animation: ledger-fade-up 0.35s ease-out both;
+  }
+
+  /* ── Header ── */
+  .ledger-register-top {
+    @apply rounded-2xl border p-5 md:p-7;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-md);
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 768px) {
+    .ledger-register-top {
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+    }
+    .ledger-register-top-main    { grid-column: 1; grid-row: 1; }
+    .ledger-register-tiles-wrap  { grid-column: 1 / -1; grid-row: 2; }
+    .ledger-register-actions     { grid-column: 2; grid-row: 1; align-self: start; }
+  }
+
+  .ledger-register-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] mb-1;
+
+    color: var(--color-ops-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ledger-register-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 0.35rem;
+    height: 0.35rem;
+    border-radius: 50%;
+    background: var(--color-primary);
+    flex-shrink: 0;
+  }
+
+  .ledger-register-title {
+    @apply text-3xl font-bold tracking-tight leading-tight;
+
+    font-family: var(--font-display);
+    color: var(--color-ops-ink);
+  }
+
+  .ledger-register-meta {
+    @apply mt-1.5 flex items-center gap-2 text-sm;
+
+    color: var(--color-ops-muted);
+  }
+
+  .ledger-register-meta-sep {
+    opacity: 0.4;
+    font-size: 0.9em;
+  }
+
+  .ledger-register-student-link {
+    @apply text-sm font-medium underline-offset-2 transition;
+
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+  .ledger-register-student-link:hover {
+    color: var(--color-primary-700);
+    text-decoration-color: var(--color-primary-700);
+  }
+
+  /* ── KPI Tiles ── */
+  .ledger-register-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--color-ops-line);
+  }
+
+  .ledger-register-tile {
+    @apply px-5 py-4;
+
+    background: var(--color-ops-panel-muted);
+    border-right: 1px solid var(--color-ops-line);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .ledger-register-tile:last-child {
+    border-right: none;
+  }
+
+  .ledger-register-tile-label {
+    @apply text-[11px] uppercase tracking-[0.14em] font-semibold;
+
+    color: var(--color-ops-muted);
+  }
+
+  .ledger-register-tile-value {
+    @apply text-2xl font-semibold tabular-nums;
+
+    color: var(--color-ops-ink);
+    font-family: var(--font-display);
+  }
+
+  .ledger-register-tile-paid .ledger-register-tile-value {
+    color: var(--color-ops-positive);
+  }
+
+  .ledger-register-tile-owe {
+    background: color-mix(in srgb, var(--color-primary) 5%, var(--color-ops-panel-muted));
+  }
+
+  .ledger-register-tile-owe .ledger-register-tile-value,
+  .ledger-register-tile-balance-num {
+    color: var(--color-primary);
+  }
+
+  /* ── Header Actions ── */
+  .ledger-register-actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .ledger-register-btn-primary {
+    @apply inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm font-semibold transition;
+
+    background: var(--color-primary);
+    color: white;
+    border: 1px solid transparent;
+  }
+  .ledger-register-btn-primary:hover {
+    background: var(--color-primary-700);
+  }
+  .ledger-register-btn-primary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* ── Two-column body ── */
+  .ledger-register-column {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .ledger-register-column {
+      grid-template-columns: minmax(280px, 360px) 1fr;
+    }
+  }
+
+  /* ── Sections ── */
+  .ledger-register-section {
+    @apply rounded-2xl border overflow-hidden;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ledger-register-section-head {
+    @apply flex items-center justify-between px-5 py-3.5 border-b;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .ledger-register-section-title {
+    @apply text-xs font-bold uppercase tracking-[0.12em];
+
+    color: var(--color-ops-muted);
+    font-family: var(--font-body);
+  }
+
+  /* ── Fee Table ── */
+  .ledger-register-table-wrap {
+    @apply overflow-x-auto;
+  }
+
+  .ledger-register-table {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .ledger-register-table thead th {
+    @apply px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.1em] border-b;
+
+    color: var(--color-ops-muted);
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .ledger-register-th-num {
+    text-align: right !important;
+  }
+
+  .ledger-register-table tbody tr {
+    @apply border-b transition-colors;
+
+    border-color: color-mix(in srgb, var(--color-ops-line) 60%, transparent);
+  }
+
+  .ledger-register-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .ledger-register-table tbody tr:hover {
+    background: color-mix(in srgb, var(--color-ops-line) 25%, transparent);
+  }
+
+  .ledger-register-table tbody td {
+    @apply px-5 py-3.5;
+
+    color: var(--color-ops-ink);
+  }
+
+  .ledger-register-td-num {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  .ledger-register-discount {
+    color: var(--color-ops-positive);
+  }
+
+  .ledger-register-empty {
+    @apply px-5 py-10 text-center text-sm;
+
+    color: var(--color-ops-muted);
+  }
+
+  /* ── Fee Totals Footer ── */
+  .ledger-register-table tfoot tr.ledger-register-foot-row th,
+  .ledger-register-table tfoot tr.ledger-register-foot-row td {
+    @apply px-5 py-3 border-t font-semibold;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+    color: var(--color-ops-ink);
+  }
+
+  .ledger-register-foot-value {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ledger-register-foot-sub td {
+    @apply px-5 py-2 text-xs;
+
+    color: var(--color-ops-warning);
+    background: color-mix(in srgb, var(--color-ops-warning) 6%, transparent);
+  }
+
+  /* ── Payments section body ── */
+  .ledger-register-payments-body {
+    @apply flex-1;
+  }
+
+  .ledger-register-payments-footer {
+    @apply px-5 py-4 border-t flex items-center justify-between gap-4 flex-wrap;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .ledger-register-foot-inline {
+    @apply flex items-center gap-3;
+  }
+
+  .ledger-register-foot-inline-label {
+    @apply text-xs font-semibold uppercase tracking-[0.1em];
+
+    color: var(--color-ops-muted);
+  }
+
+  .ledger-register-foot-inline-value {
+    @apply text-base font-semibold tabular-nums;
+
+    color: var(--color-ops-ink);
+  }
+
+  .ledger-register-foot-hint {
+    @apply text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  /* ==================== CASHIER PAYMENT MODAL ==================== */
+
+  .cashier-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--color-ops-ink) 55%, transparent);
+    backdrop-filter: blur(4px);
+  }
+
+  .cashier-modal-dialog {
+    @apply w-full max-w-3xl rounded-2xl border overflow-hidden;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-lg);
+    max-height: calc(100dvh - 2rem);
+    display: flex;
+    flex-direction: column;
+    animation: ledger-modal-in 0.25s ease-out both;
+  }
+
+  .cashier-modal-header {
+    @apply flex items-start justify-between gap-4 px-6 py-5 border-b flex-shrink-0;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .cashier-modal-kicker {
+    @apply text-[11px] font-bold uppercase tracking-[0.16em] mb-0.5;
+
+    color: var(--color-primary);
+  }
+
+  .cashier-modal-title {
+    @apply text-xl font-bold;
+
+    font-family: var(--font-display);
+    color: var(--color-ops-ink);
+  }
+
+  .cashier-modal-sub {
+    @apply text-sm mt-0.5;
+
+    color: var(--color-ops-muted);
+  }
+
+  .cashier-modal-close {
+    @apply flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md text-lg font-light transition;
+
+    color: var(--color-ops-muted);
+    line-height: 1;
+  }
+
+  .cashier-modal-close:hover {
+    background: color-mix(in srgb, var(--color-ops-line) 50%, transparent);
+    color: var(--color-ops-ink);
+  }
+
+  .cashier-modal-body {
+    @apply overflow-y-auto p-6 flex-1;
+  }
+
+  /* ==================== FINANCE PAGES — Fee Schedules / Templates / Items ==================== */
+
+  @keyframes fin-fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Page shell ── */
+  .fin-page {
+    @apply mx-auto w-full max-w-7xl space-y-6 px-4 py-6 md:px-6;
+
+    animation: fin-fade-up 0.3s ease-out both;
+  }
+
+  .fin-page-narrow {
+    max-width: 52rem;
+  }
+
+  /* ── Page header ── */
+  .fin-page-header {
+    @apply flex flex-col gap-4 md:flex-row md:items-end md:justify-between;
+  }
+
+  .fin-page-header-main {
+    @apply flex-1;
+  }
+
+  .fin-page-header-actions {
+    @apply flex-shrink-0 flex items-center gap-2;
+  }
+
+  .fin-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] mb-1.5 flex items-center gap-2;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 0.3rem;
+    height: 0.3rem;
+    border-radius: 50%;
+    background: var(--color-primary);
+    flex-shrink: 0;
+  }
+
+  .fin-title {
+    @apply text-3xl font-bold tracking-tight leading-tight;
+
+    font-family: var(--font-display);
+    color: var(--color-ops-ink);
+  }
+
+  .fin-subtitle {
+    @apply mt-2 text-sm max-w-2xl;
+
+    color: var(--color-ops-muted);
+  }
+
+  /* ── Breadcrumb ── */
+  .fin-breadcrumb {
+    @apply flex items-center gap-1.5 text-sm mb-2;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-breadcrumb-link {
+    @apply transition;
+
+    color: var(--color-ops-muted);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+  }
+
+  .fin-breadcrumb-link:hover {
+    color: var(--color-ops-ink);
+    text-decoration-color: var(--color-ops-line);
+  }
+
+  .fin-breadcrumb-sep {
+    opacity: 0.4;
+  }
+
+  .fin-breadcrumb-current {
+    color: var(--color-ops-ink);
+    font-weight: 500;
+  }
+
+  /* ── Callout / Info box ── */
+  .fin-callout {
+    @apply flex gap-3 rounded-xl border p-4;
+
+    border-color: color-mix(in srgb, var(--color-info) 25%, transparent);
+    background: color-mix(in srgb, var(--color-info) 6%, var(--color-ops-panel));
+  }
+
+  .fin-callout-warn {
+    border-color: color-mix(in srgb, var(--color-ops-warning) 30%, transparent);
+    background: color-mix(in srgb, var(--color-ops-warning) 8%, var(--color-ops-panel));
+  }
+
+  .fin-callout-muted {
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .fin-callout-success {
+    border-color: color-mix(in srgb, var(--color-ops-positive) 30%, transparent);
+    background: color-mix(in srgb, var(--color-ops-positive) 8%, var(--color-ops-panel));
+  }
+
+  .fin-callout-icon {
+    @apply flex-shrink-0 text-base w-5 h-5 flex items-center justify-center;
+
+    color: var(--color-ops-muted);
+    margin-top: 1px;
+  }
+
+  .fin-callout-title {
+    @apply text-sm font-semibold mb-1;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fin-callout-body {
+    @apply text-sm;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-callout-list {
+    @apply space-y-1 text-sm;
+
+    color: var(--color-ops-muted);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .fin-callout-list li::before {
+    content: '·';
+    margin-right: 0.4em;
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  .fin-callout-link {
+    @apply font-medium underline;
+
+    color: var(--color-primary);
+    text-underline-offset: 2px;
+  }
+
+  .fin-callout-link:hover {
+    color: var(--color-primary-700);
+  }
+
+  /* ── Panel card ── */
+  .fin-stack {
+    @apply space-y-5;
+  }
+
+  .fin-panel {
+    @apply rounded-2xl border overflow-hidden;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .fin-panel-head {
+    @apply flex items-center justify-between gap-3 px-5 py-3.5 border-b;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .fin-panel-head-left {
+    @apply flex items-center gap-2.5;
+  }
+
+  .fin-panel-title {
+    @apply text-xs font-bold uppercase tracking-[0.12em];
+
+    color: var(--color-ops-muted);
+    font-family: var(--font-body);
+  }
+
+  .fin-panel-meta {
+    @apply text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-panel-body {
+    @apply p-5;
+  }
+
+  .fin-panel-body-form {
+    @apply p-6;
+  }
+
+  /* ── Empty state ── */
+  .fin-empty {
+    @apply flex flex-col items-center justify-center gap-4 px-6 py-12 text-center;
+  }
+
+  .fin-empty-text {
+    @apply text-sm;
+
+    color: var(--color-ops-muted);
+  }
+
+  /* ── Badges ── */
+  .fin-badge {
+    @apply inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold border;
+
+  }
+
+  .fin-badge-active {
+    border-color: color-mix(in srgb, var(--color-ops-positive) 35%, transparent);
+    background: color-mix(in srgb, var(--color-ops-positive) 12%, transparent);
+    color: var(--color-ops-positive);
+  }
+
+  .fin-badge-muted {
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+    color: var(--color-ops-muted);
+  }
+
+  .fin-badge-warn {
+    border-color: color-mix(in srgb, var(--color-ops-warning) 35%, transparent);
+    background: color-mix(in srgb, var(--color-ops-warning) 10%, transparent);
+    color: var(--color-ops-warning);
+  }
+
+  /* ── Band pill ── */
+  .fin-band-pill {
+    @apply inline-flex items-center rounded-full px-3 py-0.5 text-xs font-semibold;
+
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+
+  /* ── Schedule cards grid ── */
+  .fin-schedule-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .fin-schedule-card {
+    @apply rounded-xl border p-4 flex flex-col gap-2 transition;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .fin-schedule-card:hover {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .fin-schedule-card-inactive {
+    opacity: 0.65;
+  }
+
+  .fin-schedule-card-top {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .fin-schedule-card-meta {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .fin-schedule-card-actions {
+    @apply flex items-center gap-2 flex-shrink-0;
+  }
+
+  .fin-schedule-card-name {
+    @apply text-sm font-semibold;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fin-schedule-card-stats {
+    @apply flex flex-wrap items-center gap-2 text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-schedule-card-total {
+    @apply text-xl font-semibold tabular-nums mt-1;
+
+    font-family: var(--font-display);
+    color: var(--color-ops-ink);
+  }
+
+  /* ── Stat items ── */
+  .fin-stat-item {
+    @apply text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-stat-divider {
+    color: var(--color-ops-line);
+  }
+
+  .fin-stat-total {
+    @apply text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-stat-override {
+    color: var(--color-ops-warning);
+  }
+
+  .fin-stat-date {
+    @apply text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  /* ── Template list rows ── */
+  .fin-template-list {
+    @apply divide-y;
+    border-color: color-mix(in srgb, var(--color-ops-line) 60%, transparent);
+  }
+
+  .fin-template-row {
+    @apply flex items-center justify-between gap-4 px-5 py-4 transition-colors;
+
+  }
+
+  .fin-template-row:hover {
+    background: color-mix(in srgb, var(--color-ops-line) 20%, transparent);
+  }
+
+  .fin-template-row-main {
+    @apply flex-1 min-w-0;
+  }
+
+  .fin-template-row-name-row {
+    @apply flex items-center gap-2 flex-wrap;
+  }
+
+  .fin-template-name-link {
+    @apply text-sm font-semibold transition underline-offset-2;
+
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+
+  .fin-template-name-link:hover {
+    color: var(--color-primary-700);
+    text-decoration-color: var(--color-primary-700);
+  }
+
+  .fin-template-desc {
+    @apply mt-1 text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-template-stats {
+    @apply mt-2 flex items-center gap-1.5 text-xs flex-wrap;
+
+  }
+
+  .fin-template-row-actions {
+    @apply flex-shrink-0 flex items-center gap-2;
+  }
+
+  /* ── Finance table ── */
+  .fin-table-wrap {
+    @apply overflow-x-auto;
+  }
+
+  .fin-table {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .fin-th {
+    @apply px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.1em] border-b;
+
+    color: var(--color-ops-muted);
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .fin-th-num {
+    text-align: right !important;
+  }
+
+  .fin-tr {
+    @apply border-b transition-colors;
+
+    border-color: color-mix(in srgb, var(--color-ops-line) 60%, transparent);
+  }
+
+  .fin-tr:last-child {
+    border-bottom: none;
+  }
+
+  .fin-tr:hover {
+    background: color-mix(in srgb, var(--color-ops-line) 20%, transparent);
+  }
+
+  .fin-td {
+    @apply px-5 py-3.5;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fin-td-num {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fin-td-muted {
+    color: var(--color-ops-muted) !important;
+  }
+
+  .fin-td-name {
+    @apply font-medium;
+    color: var(--color-ops-ink);
+  }
+
+  .fin-td-amount {
+    @apply font-semibold;
+  }
+
+  .fin-minus {
+    color: var(--color-ops-positive);
+    margin-right: 1px;
+  }
+
+  .fin-disc-tag {
+    @apply inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold ml-1.5 align-middle;
+
+    color: var(--color-ops-positive);
+    background: color-mix(in srgb, var(--color-ops-positive) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-ops-positive) 25%, transparent);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Table footer ── */
+  .fin-tfoot-row {
+    border-top: 2px solid var(--color-ops-line) !important;
+  }
+
+  .fin-tfoot-row .fin-td {
+    background: var(--color-ops-panel-muted);
+  }
+
+  .fin-tfoot-label {
+    @apply text-xs font-bold uppercase tracking-[0.08em];
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-tfoot-total {
+    @apply font-bold text-base;
+
+    color: var(--color-ops-ink);
+  }
+
+  /* ── Form helpers ── */
+  .fin-form-stack {
+    @apply space-y-5;
+  }
+
+  .fin-date-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
+  }
+
+  .fin-field-hint {
+    @apply mt-1.5 text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-form-actions {
+    @apply flex items-center gap-3 pt-2;
+  }
+
+  .fin-form-actions-border {
+    @apply border-t;
+    border-color: var(--color-ops-line);
+    padding-top: 1.25rem;
+  }
+
+  /* ── Template preview panel ── */
+  .fin-preview-panel {
+    @apply rounded-xl border overflow-hidden;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .fin-preview-head {
+    @apply flex items-center justify-between gap-3 px-4 py-3 border-b;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+  }
+
+  .fin-preview-label {
+    @apply text-[11px] font-bold uppercase tracking-[0.12em];
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-preview-name {
+    @apply text-xs font-semibold;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fin-preview-body {
+    @apply divide-y px-0;
+
+    border-color: color-mix(in srgb, var(--color-ops-line) 60%, transparent);
+  }
+
+  .fin-preview-row {
+    @apply flex items-center justify-between gap-4 px-4 py-2.5 text-sm;
+
+  }
+
+  .fin-preview-row-name {
+    @apply flex items-center gap-1.5;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fin-preview-row-amount {
+    @apply font-medium tabular-nums;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fin-preview-row-discount {
+    color: var(--color-ops-positive);
+  }
+
+  .fin-preview-total-row {
+    @apply flex items-center justify-between gap-4 px-4 py-3 border-t;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+  }
+
+  .fin-preview-total-label {
+    @apply text-xs font-bold uppercase tracking-[0.08em];
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-preview-total-value {
+    @apply text-base font-bold tabular-nums;
+
+    font-family: var(--font-display);
+    color: var(--color-ops-ink);
+  }
+
+  .fin-preview-hint {
+    @apply px-4 py-2.5 text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  /* ── KPI summary card (template detail header) ── */
+  .fin-kpi-card {
+    @apply flex-shrink-0 rounded-xl border p-4 flex flex-col gap-0.5 min-w-[9rem];
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .fin-kpi-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em];
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-kpi-value {
+    @apply text-2xl font-bold tabular-nums;
+
+    font-family: var(--font-display);
+    color: var(--color-ops-ink);
+  }
+
+  .fin-kpi-sub {
+    @apply text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  /* Ordered list variant for callouts */
+  .fin-callout-ol {
+    @apply space-y-1 text-sm;
+
+    color: var(--color-ops-muted);
+    list-style: none;
+    counter-reset: fin-ol;
+    padding: 0;
+    margin: 0;
+  }
+
+  .fin-callout-ol li {
+    counter-increment: fin-ol;
+    display: flex;
+    gap: 0.5em;
+    align-items: baseline;
+  }
+
+  .fin-callout-ol li::before {
+    content: counter(fin-ol) ".";
+    color: var(--color-primary);
+    font-weight: 700;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    min-width: 1.1em;
+  }
+
+  /* ==================== FINANCE MODAL ==================== */
+
+  @keyframes fin-modal-in {
+    from { opacity: 0; transform: scale(0.97) translateY(10px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0); }
+  }
+
+  .fin-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--color-ops-ink) 55%, transparent);
+    backdrop-filter: blur(4px);
+  }
+
+  .fin-modal-dialog {
+    @apply w-full rounded-2xl border overflow-hidden flex flex-col;
+
+    max-width: 36rem;
+    max-height: calc(100dvh - 2rem);
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-lg);
+    animation: fin-modal-in 0.22s ease-out both;
+  }
+
+  .fin-modal-header {
+    @apply flex items-start justify-between gap-4 px-6 py-5 border-b flex-shrink-0;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .fin-modal-kicker {
+    @apply text-[11px] font-bold uppercase tracking-[0.16em] mb-0.5;
+
+    color: var(--color-primary);
+  }
+
+  .fin-modal-title {
+    @apply text-xl font-bold leading-snug;
+
+    font-family: var(--font-display);
+    color: var(--color-ops-ink);
+  }
+
+  .fin-modal-sub {
+    @apply text-sm mt-0.5;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fin-modal-close {
+    @apply flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md text-xl font-light transition;
+
+    color: var(--color-ops-muted);
+    line-height: 1;
+  }
+
+  .fin-modal-close:hover {
+    background: color-mix(in srgb, var(--color-ops-line) 50%, transparent);
+    color: var(--color-ops-ink);
+  }
+
+  .fin-modal-body {
+    @apply overflow-y-auto p-6 flex-1;
+
+  }
+
+}

@@ -62,6 +62,12 @@ function lineSignedAmount(item: LedgerLineItem): number {
   return item.isDiscount ? -n : n;
 }
 
+/** Clamp a value between 0–100 for the progress bar. */
+function paidPercent(paid: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.min(100, Math.max(0, (paid / total) * 100));
+}
+
 export default function AssessmentLedgerRegister({
   studentRecordsBasePath = "/staff/students",
   assessment,
@@ -75,6 +81,8 @@ export default function AssessmentLedgerRegister({
   const [payOpen, setPayOpen] = useState(false);
   const [formNonce, setFormNonce] = useState(0);
 
+  const totalNum  = Number(assessment.totalAmount);
+  const paidNum   = Number(assessment.totalPaid);
   const balanceNum = Number(assessment.balance);
   const isFullyPaid = assessment.billingStatus === "fully_paid";
   const isCancelledEnrollment = assessment.billingStatus === "cancelled";
@@ -84,6 +92,8 @@ export default function AssessmentLedgerRegister({
   const paymentsRecorded = payments
     .filter((p) => p.status !== "voided")
     .reduce((sum, p) => sum + Number(p.amount), 0);
+
+  const percent = paidPercent(paidNum, totalNum);
 
   const openPayment = useCallback(() => {
     setFormNonce((n) => n + 1);
@@ -113,7 +123,9 @@ export default function AssessmentLedgerRegister({
 
   return (
     <div className="ledger-register">
+      {/* ── Header card ── */}
       <header className="ledger-register-top">
+        {/* Left: identity */}
         <div className="ledger-register-top-main">
           <p className="ledger-register-eyebrow">Billing ledger · Cashier view</p>
           <h1 className="ledger-register-title">
@@ -121,72 +133,138 @@ export default function AssessmentLedgerRegister({
           </h1>
           <p className="ledger-register-meta">
             <span>School year {assessment.schoolYear}</span>
-            <span className="ledger-register-meta-sep" aria-hidden>
-              ·
-            </span>
+            <span className="ledger-register-meta-sep" aria-hidden>·</span>
             <Link
               href={`${studentRecordsBasePath}/${assessment.studentId}`}
               className="ledger-register-student-link"
             >
-              Open student record
+              Open student record ↗
             </Link>
           </p>
         </div>
 
-        <div className="ledger-register-tiles">
-          <div className="ledger-register-tile">
-            <span className="ledger-register-tile-label">Total assessed</span>
-            <span className="ledger-register-tile-value">
-              <CurrencyDisplay amount={Number(assessment.totalAmount)} />
-            </span>
-          </div>
-          <div className="ledger-register-tile ledger-register-tile-paid">
-            <span className="ledger-register-tile-label">Total paid</span>
-            <span className="ledger-register-tile-value">
-              <CurrencyDisplay amount={Number(assessment.totalPaid)} />
-            </span>
-          </div>
-          <div
-            className={`ledger-register-tile ledger-register-tile-balance ${!isFullyPaid && !isCancelledEnrollment && balanceNum > 0 ? "ledger-register-tile-owe" : ""}`}
-          >
-            <span className="ledger-register-tile-label">Balance due</span>
-            <span className="ledger-register-tile-value ledger-register-tile-balance-num">
-              {isCancelledEnrollment ? (
-                <StatusBadge type="billing" status="cancelled" />
-              ) : isFullyPaid ? (
-                <StatusBadge type="billing" status="fully_paid" />
-              ) : (
-                <CurrencyDisplay amount={balanceNum} />
-              )}
-            </span>
-          </div>
-        </div>
-
+        {/* Right: actions */}
         <div className="ledger-register-actions">
           {canOpenPay && (
-            <button type="button" className="ledger-register-btn-primary" onClick={openPayment}>
+            <button
+              type="button"
+              className="ledger-register-btn-primary"
+              onClick={openPayment}
+            >
+              {/* Receipt icon */}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V8z"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <line x1="10" y1="9" x2="8" y2="9"/>
+              </svg>
               Receive payment
             </button>
           )}
           <GenerateInvoiceButton assessmentId={assessment.id} />
         </div>
+
+        {/* Bottom: KPI tiles + progress bar */}
+        <div className="ledger-register-tiles-wrap">
+          {/* Progress bar */}
+          <div
+            style={{
+              height: "4px",
+              borderRadius: "9999px",
+              background: "color-mix(in srgb, var(--color-ops-line) 80%, transparent)",
+              marginBottom: "1rem",
+              overflow: "hidden",
+            }}
+            role="progressbar"
+            aria-valuenow={Math.round(percent)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${Math.round(percent)}% of assessed fees paid`}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${percent}%`,
+                borderRadius: "9999px",
+                background: isFullyPaid
+                  ? "var(--color-ops-positive)"
+                  : "var(--color-primary)",
+                transition: "width 0.6s ease",
+              }}
+            />
+          </div>
+
+          <div className="ledger-register-tiles">
+            {/* Total assessed */}
+            <div className="ledger-register-tile">
+              <span className="ledger-register-tile-label">Total assessed</span>
+              <span className="ledger-register-tile-value">
+                <CurrencyDisplay amount={totalNum} />
+              </span>
+            </div>
+
+            {/* Total paid */}
+            <div className="ledger-register-tile ledger-register-tile-paid">
+              <span className="ledger-register-tile-label">Total paid</span>
+              <span className="ledger-register-tile-value">
+                <CurrencyDisplay amount={paidNum} />
+              </span>
+              {totalNum > 0 && (
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--color-ops-muted)",
+                    marginTop: "2px",
+                  }}
+                >
+                  {Math.round(percent)}% of total
+                </span>
+              )}
+            </div>
+
+            {/* Balance due */}
+            <div
+              className={`ledger-register-tile ledger-register-tile-balance${!isFullyPaid && !isCancelledEnrollment && balanceNum > 0 ? " ledger-register-tile-owe" : ""}`}
+            >
+              <span className="ledger-register-tile-label">Balance due</span>
+              <span className="ledger-register-tile-value ledger-register-tile-balance-num">
+                {isCancelledEnrollment ? (
+                  <StatusBadge type="billing" status="cancelled" />
+                ) : isFullyPaid ? (
+                  <StatusBadge type="billing" status="fully_paid" />
+                ) : (
+                  <CurrencyDisplay amount={balanceNum} />
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
       </header>
 
+      {/* ── Two-column body ── */}
       <div className="ledger-register-column">
+        {/* Fee Assessment table */}
         <section className="ledger-register-section" aria-labelledby="ledger-fees-heading">
           <div className="ledger-register-section-head">
             <h2 id="ledger-fees-heading" className="ledger-register-section-title">
               Fee assessment
             </h2>
+            <span
+              style={{
+                fontSize: "11px",
+                color: "var(--color-ops-muted)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {items.length} line{items.length !== 1 ? "s" : ""}
+            </span>
           </div>
           <div className="ledger-register-table-wrap">
             <table className="ledger-register-table">
               <thead>
                 <tr>
                   <th scope="col">Description</th>
-                  <th scope="col" className="ledger-register-th-num">
-                    Amount
-                  </th>
+                  <th scope="col" className="ledger-register-th-num">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -199,11 +277,25 @@ export default function AssessmentLedgerRegister({
                 ) : (
                   items.map((item) => (
                     <tr key={item.id}>
-                      <td>{item.description}</td>
+                      <td>
+                        {item.isDiscount && (
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              fontWeight: 700,
+                              letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              color: "var(--color-ops-positive)",
+                              marginRight: "0.4em",
+                            }}
+                          >
+                            DISC
+                          </span>
+                        )}
+                        {item.description}
+                      </td>
                       <td className="ledger-register-td-num">
-                        <span
-                          className={item.isDiscount ? "ledger-register-discount" : ""}
-                        >
+                        <span className={item.isDiscount ? "ledger-register-discount" : ""}>
                           {item.isDiscount ? "−" : ""}
                           <CurrencyDisplay amount={Number(item.amount)} />
                         </span>
@@ -219,14 +311,11 @@ export default function AssessmentLedgerRegister({
                     <CurrencyDisplay amount={feesRunning} />
                   </td>
                 </tr>
-                {Math.abs(feesRunning - Number(assessment.totalAmount)) > 0.005 ? (
+                {Math.abs(feesRunning - totalNum) > 0.005 ? (
                   <tr className="ledger-register-foot-sub">
                     <td colSpan={2}>
-                      Stored assessment total differs from line sum — stored{" "}
-                      <CurrencyDisplay
-                        className="font-medium"
-                        amount={Number(assessment.totalAmount)}
-                      />
+                      ⚠ Stored total differs from line sum — stored{" "}
+                      <CurrencyDisplay className="font-medium" amount={totalNum} />
                     </td>
                   </tr>
                 ) : null}
@@ -235,30 +324,41 @@ export default function AssessmentLedgerRegister({
           </div>
         </section>
 
+        {/* Payment history */}
         <section className="ledger-register-section" aria-labelledby="ledger-payments-heading">
           <div className="ledger-register-section-head">
             <h2 id="ledger-payments-heading" className="ledger-register-section-title">
               Payment history
             </h2>
+            <span
+              style={{
+                fontSize: "11px",
+                color: "var(--color-ops-muted)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {payments.filter((p) => p.status !== "voided").length} posted
+            </span>
           </div>
           <div className="ledger-register-payments-body">
             <PaymentsHistoryTable payments={payUiRows} canVoid={canVoid} embedded />
           </div>
           <div className="ledger-register-payments-footer">
             <div className="ledger-register-foot-inline">
-              <span className="ledger-register-foot-inline-label">Totals (payments posted)</span>
+              <span className="ledger-register-foot-inline-label">Payments posted</span>
               <span className="ledger-register-foot-inline-value">
                 <CurrencyDisplay amount={paymentsRecorded} />
               </span>
             </div>
             <p className="ledger-register-foot-hint">
               Ledger total paid{" "}
-              <CurrencyDisplay amount={Number(assessment.totalPaid)} className="font-medium" />
+              <CurrencyDisplay amount={paidNum} className="font-medium" />
             </p>
           </div>
         </section>
       </div>
 
+      {/* ── Payment modal ── */}
       {payOpen && (
         <div
           className="cashier-modal-backdrop no-print"
@@ -278,7 +378,8 @@ export default function AssessmentLedgerRegister({
                   Post official receipt payment
                 </h2>
                 <p className="cashier-modal-sub">
-                  {assessment.studentLastName}, {assessment.studentFirstName} ·{" "}
+                  {assessment.studentLastName}, {assessment.studentFirstName}
+                  {" · "}
                   {assessment.schoolYear}
                 </p>
               </div>
