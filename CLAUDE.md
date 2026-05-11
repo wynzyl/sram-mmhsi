@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Critical Business Feature:** Official Receipt (OR) booklet management is a first-class accounting control feature — every payment must consume a serialized OR number from an active booklet.
 
-### Current Delivery Snapshot (2026-05-06)
+### Current Delivery Snapshot (2026-05-11)
 
 **Core Features:**
 
@@ -20,13 +20,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Authentication hardening still pending: login rate-limit integration and forced password-change gate.
 - E2E Playwright test suite is not yet committed.
 
-**Refactoring Status (2026-05-06):**
+**Refactoring Status:**
 
 - ✅ **Phase 3.1 Complete:** All 11 action files use centralized `logAudit()` utility
 - ✅ **Phase 3.2 Complete:** All 9 validator files use `BaseFormState` and common schemas
-- ✅ **Phase 3.3 Partial:** 1/16 forms migrated, comprehensive migration guide created (`FORM-MIGRATION-GUIDE.md`)
+- ✅ **Phase 3.3 Partial:** 1/16 forms migrated, comprehensive migration guide created
 - ✅ **Phase 3.4 Complete:** All duplicate button components replaced with `ConfirmActionButton`
-- ✅ **Build & Tests:** TypeScript compiles with no errors, all 29 Vitest tests pass
+- ✅ **Build & Tests:** TypeScript compiles with no errors, all 13 Vitest tests pass
 
 **Folder Restructure (2026-05-09):**
 

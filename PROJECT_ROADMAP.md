@@ -2,9 +2,14 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-05-08
+> Last sync: 2026-05-11
 
-### Current update highlights (2026-05-08)
+### Current update highlights (2026-05-11)
+- **Library migration completed** — All 58 files migrated from `lib/` to `src/lib/` for unified source structure. All application code now under `src/` directory with git history preserved via `git mv`.
+- **Architecture alignment** — Path alias `@/lib/*` updated in tsconfig.json; cleaner project structure aligned with modern Next.js conventions and monorepo best practices.
+- **Documentation updated** — CLAUDE.md, PROJECT_STATUS.md, and PROJECT_ROADMAP.md now reflect new `src/lib/` paths throughout.
+
+### Previous highlights (2026-05-08)
 - **Enrollment queue system** now operational with list-first workflow — students automatically populate when eligible, global filters persist across tabs via URL params, and one-click confirmation replaces multi-step wizard.
 - Auto-population of old students with grade progression and balance warnings; new/transferee students flow from approved registrations.
 - Queue architecture includes 5-tab interface (Ready/Pending/Assessed/Enrolled/Cancelled) with parallel data loading and client-side filtering for instant response.
@@ -34,9 +39,9 @@
 **Status: 🟡 Mostly complete**
 
 - [x] Login action: credential validation, bcrypt compare, session creation
-- [x] Session validation helper for server actions (`requireSession`, `lib/auth/session.ts`)
+- [x] Session validation helper for server actions (`requireSession`, `src/lib/auth/session.ts`)
 - [x] Audit logging: user login success / failed login
-- [ ] Rate limiting middleware on `/api/auth/*` — `lib/security/rateLimit.ts` exists; not wired to login yet
+- [ ] Rate limiting middleware on `/api/auth/*` — `src/lib/security/rateLimit.ts` exists; not wired to login yet
 - [ ] Force-password-change flow — field + admin reset exist; no post-login gate enforcing change
 - [x] Role-based landing redirect after login (`auth.ts` + `proxy.ts`)
 - [x] Protected route behavior per role group (staff vs portal vs admin-only)
@@ -63,7 +68,7 @@
 ## Phase 4 — Enrollment Module
 **Status: ✅ Complete (Enhanced with queue-based workflow)**
 
-- [x] **Queue-based enrollment workflow** with automatic student eligibility detection (`lib/queries/enrollment-queue.ts`)
+- [x] **Queue-based enrollment workflow** with automatic student eligibility detection (`src/lib/queries/enrollment-queue.ts`)
 - [x] **Auto-population** of old students from previous year with grade progression and balance warnings
 - [x] **Global filters** with URL persistence — search by name/ID, filter by grade level across all tabs
 - [x] **5-tab interface** (Ready to Enroll, Pending, Assessed, Enrolled, Cancelled) with badge counts
