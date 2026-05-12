@@ -1,14 +1,10 @@
-MERRYLAND MONTESORRI and HIGH SCHOOL Inc.
-San Vicente, Urdaneta, Pangasinan
-
-
+MERRYLAND MONTESSORI and HIGH SCHOOL Inc.San Vicente, Urdaneta, Pangasinan
 
 Date: May 9, 2026 - right align
 
 Invoice No.: 2026-00001 - left align
 
 ASSESSMENT INVOICE - center align
-
 
 Dear Parent/Guardian,
 

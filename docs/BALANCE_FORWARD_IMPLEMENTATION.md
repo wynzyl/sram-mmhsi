@@ -15,6 +15,7 @@ This document summarizes the implementation of the **Multi-Year Balance Transfer
 **Before:** When a student with an outstanding balance re-enrolled, the system created a "Balance Forward" line item in the new assessment, but the old assessment still showed the balance as outstanding. This resulted in the same debt appearing twice in the books.
 
 **After:** When creating an assessment for a returning student:
+
 1. ALL prior year assessments with outstanding balances are identified
 2. SEPARATE balance forward items are created for each prior year (maintaining year-by-year audit trail)
 3. Source assessments are marked as "transferred" (balance set to ₱0, transfer metadata added)
@@ -28,18 +29,21 @@ This document summarizes the implementation of the **Multi-Year Balance Transfer
 
 ### Database Schema (Phase 1)
 
-**Migration File:** `drizzle/0011_friendly_jasper_sitwell.sql`
+**Migration File:** `drizzle/0011_assessment_transfer_soft_delete_tracking.sql`
 
 **New Fields on `assessments` table:**
+
 - `transferred_at` (timestamp) - When balance was transferred
 - `transferred_by` (uuid) - User who initiated transfer
 - `transferred_to_assessment_id` (uuid) - Target assessment receiving the balance
 - `transfer_remarks` (text) - Optional transfer notes
 
 **New Field on `assessment_items` table:**
+
 - `source_assessment_id` (uuid) - For balance forward items, links back to source assessment
 
 **New Indexes:**
+
 - `assessments_transferred_at_idx` - Performance for active assessment queries
 - `ai_source_assessment_idx` - Reverse lookup for balance forward items
 
@@ -48,6 +52,7 @@ This document summarizes the implementation of the **Multi-Year Balance Transfer
 **File:** `src/features/assessments/assessments.actions.ts`
 
 **Multi-Year Balance Transfer Logic:**
+
 ```typescript
 // OLD: Found only the most recent prior year
 const [priorEnrollment] = await db.select(...)
@@ -64,6 +69,7 @@ const priorEnrollments = await db.select(...)
 ```
 
 **Transaction Flow:**
+
 1. **Validate** all source assessments are still untransferred (race condition check)
 2. **Create** new assessment with computed total (includes all balance forwards)
 3. **Insert** assessment items (fee schedule + separate balance forward per prior year)
@@ -80,19 +86,21 @@ const priorEnrollments = await db.select(...)
 **File:** `src/features/payments/payments.actions.ts`
 
 **Post Payment Validation:**
+
 ```typescript
 if (assessment.transferredAt != null) {
   throw new Error(
-    "PAYMENT_BLOCKED: This assessment's balance was transferred to a newer school year..."
+    "PAYMENT_BLOCKED: This assessment's balance was transferred to a newer school year...",
   );
 }
 ```
 
 **Void Payment Validation:**
+
 ```typescript
 if (assessment.transferred_at != null) {
   throw new Error(
-    "VOID_BLOCKED: This assessment's balance was transferred to a newer school year..."
+    "VOID_BLOCKED: This assessment's balance was transferred to a newer school year...",
   );
 }
 ```
@@ -102,6 +110,7 @@ if (assessment.transferred_at != null) {
 **File:** `src/lib/queries/admin-dashboard.ts`
 
 **Outstanding Receivables Query:**
+
 ```typescript
 .where(and(
   eq(assessments.schoolYearId, activeSchoolYear.id),
@@ -112,6 +121,7 @@ if (assessment.transferred_at != null) {
 ```
 
 **Overdue Accounts Query:**
+
 ```typescript
 .where(and(
   ...existing filters,
@@ -126,11 +136,13 @@ if (assessment.transferred_at != null) {
 **New Action:** `reverseBalanceTransferAction(assessmentId)`
 
 **Validations:**
+
 - Only allow if `totalPaid = 0` (no payments posted)
 - Only allow if enrollment status = "assessed" (not "enrolled")
 - Permission: `assessments:reverse_transfer` (admin/super_admin only)
 
 **Process:**
+
 1. Find all balance forward items linked to source assessments
 2. For each source assessment:
    - Restore balance (set `balance = transferred amount`)
@@ -140,6 +152,7 @@ if (assessment.transferred_at != null) {
 4. Recalculate target assessment totals
 
 **RBAC Permission Added:**
+
 ```typescript
 // src/lib/rbac/permissions.ts
 export type Permission =
@@ -153,12 +166,15 @@ Granted to: `super_admin`, `admin`
 ### UI Indicators (Phase 6)
 
 **Files Modified:**
+
 - `src/app/page-templates/assessments/assessment-ledger-page.tsx`
 - `src/features/payments/components/AssessmentLedgerRegister.tsx`
 - `src/features/assessments/assessments.queries.ts`
 
 **Changes:**
+
 1. **Transfer Warning Banner** - Displayed when `transferredAt != null`:
+
    ```
    ⚠️ Balance Transferred
    This assessment's outstanding balance was transferred to a newer school year on [date].
@@ -176,15 +192,15 @@ Granted to: `super_admin`, `admin`
 
 ## Edge Cases Handled
 
-| Scenario | Solution |
-|----------|----------|
-| **Multiple years unpaid** | System creates separate line item for each year (e.g., "Balance Forward from 2023-2024: ₱5,000", "Balance Forward from 2024-2025: ₱3,000") |
-| **Payment blocking** | Clear error message: "PAYMENT_BLOCKED: This assessment's balance was transferred..." |
-| **Concurrent enrollments** | Postgres row-level locking ensures second transaction waits and sees first transfer |
-| **Reversal after payment** | Admin reversal validates `totalPaid = 0` before allowing undo |
-| **Partial payments before transfer** | Only outstanding `balance` is transferred (not original `totalAmount`) |
-| **Year gaps** | Student skips 2024, enrolls 2026 directly from 2023 → 2023 balance transfers to 2026 |
-| **Dashboard double-counting** | All queries filter `WHERE transferredAt IS NULL` |
+| Scenario                             | Solution                                                                                                                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Multiple years unpaid**            | System creates separate line item for each year (e.g., "Balance Forward from 2023-2024: ₱5,000", "Balance Forward from 2024-2025: ₱3,000") |
+| **Payment blocking**                 | Clear error message: "PAYMENT_BLOCKED: This assessment's balance was transferred..."                                                       |
+| **Concurrent enrollments**           | Postgres row-level locking ensures second transaction waits and sees first transfer                                                        |
+| **Reversal after payment**           | Admin reversal validates `totalPaid = 0` before allowing undo                                                                              |
+| **Partial payments before transfer** | Only outstanding `balance` is transferred (not original `totalAmount`)                                                                     |
+| **Year gaps**                        | Student skips 2024, enrolls 2026 directly from 2023 → 2023 balance transfers to 2026                                                       |
+| **Dashboard double-counting**        | All queries filter `WHERE transferredAt IS NULL`                                                                                           |
 
 ---
 
@@ -193,6 +209,7 @@ Granted to: `super_admin`, `admin`
 ### Manual Test Scenario (Recommended)
 
 **Setup:**
+
 1. Create Student A with 2023 enrollment
    - Assessment: ₱10,000
    - Paid: ₱0
@@ -206,6 +223,7 @@ Granted to: `super_admin`, `admin`
 3. Create Student A with 2025 enrollment
 
 **Verification (2025 Assessment):**
+
 - [ ] Shows TWO balance forward items:
   - "Balance Forward from 2023-2024: ₱10,000"
   - "Balance Forward from 2024-2025: ₱9,000"
@@ -214,16 +232,19 @@ Granted to: `super_admin`, `admin`
 - [ ] 2024 assessment: `balance = ₱0`, `transferredAt = [timestamp]`
 
 **Payment Blocking:**
+
 - [ ] Attempt to post payment on 2023 → Error: "PAYMENT_BLOCKED..."
 - [ ] Navigate to 2023 ledger → Transfer warning banner displayed
 - [ ] Payment form disabled on 2023 ledger
 
 **Dashboard Calculations:**
+
 - [ ] Before transfer: Outstanding = ₱10,000 + ₱9,000 = ₱19,000
 - [ ] After transfer: Outstanding = ₱0 + ₱0 + ₱19,000 = ₱19,000 (no double-count)
 - [ ] After 2025 payment of ₱5,000: Outstanding = ₱14,000
 
 **Admin Reversal:**
+
 - [ ] Login as admin/super_admin
 - [ ] Run `reverseBalanceTransferAction(2025AssessmentId)`
 - [ ] Verify:
@@ -235,11 +256,13 @@ Granted to: `super_admin`, `admin`
 ### Automated Test Coverage (Pending)
 
 **Unit Tests (Vitest):**
+
 - [ ] `computeAssessmentTotals()` with balance forward items
 - [ ] Balance transfer validation logic
 - [ ] Reversal validation (payments exist, enrollment status)
 
 **E2E Tests (Playwright):**
+
 - [ ] Multi-year enrollment flow
 - [ ] Payment blocking on transferred assessment
 - [ ] Transfer warning banner display
@@ -252,33 +275,34 @@ Granted to: `super_admin`, `admin`
 All operations generate audit log entries:
 
 **Transfer:**
+
 ```typescript
-action: "assessment_balance_transferred"
-targetEntity: "assessments"
-targetId: sourceAssessmentId
-context: targetAssessmentId
+action: "assessment_balance_transferred";
+targetEntity: "assessments";
+targetId: sourceAssessmentId;
+context: targetAssessmentId;
 newState: {
-  transferredToAssessmentId,
-  transferredAmount,
-  sourceSchoolYear,
-  targetEnrollmentId
+  (transferredToAssessmentId,
+    transferredAmount,
+    sourceSchoolYear,
+    targetEnrollmentId);
 }
 ```
 
 **Reversal:**
+
 ```typescript
-action: "assessment_transfer_reversed"
-targetEntity: "assessments"
-targetId: sourceAssessmentId
-context: targetAssessmentId
+action: "assessment_transfer_reversed";
+targetEntity: "assessments";
+targetId: sourceAssessmentId;
+context: targetAssessmentId;
 newState: {
-  restoredBalance,
-  reversedFromAssessmentId,
-  reversedBy
+  (restoredBalance, reversedFromAssessmentId, reversedBy);
 }
 ```
 
 **Assessment Creation (with transfers):**
+
 ```typescript
 action: "assessment_created_and_enrollment_assessed"
 targetEntity: "assessments"
@@ -295,10 +319,12 @@ newState: {
 ## Performance Considerations
 
 **Indexes Added:**
+
 1. `assessments_transferred_at_idx` - Speeds up active assessment queries (`WHERE transferredAt IS NULL`)
 2. `ai_source_assessment_idx` - Speeds up reverse lookups for transfer reversals
 
 **Query Optimization:**
+
 - Dashboard queries use indexed `transferredAt IS NULL` filter
 - Multi-year balance forward query ordered by `schoolYears.startDate` (indexed)
 
@@ -309,18 +335,21 @@ newState: {
 ### Production Deployment Steps
 
 1. **Backup Database:**
+
    ```bash
    pg_dump -U postgres SRAMS_DB > backup_pre_balance_transfer_$(date +%Y%m%d).sql
    ```
 
 2. **Apply Migration:**
+
    ```bash
    npm run db:migrate
    # Or manually:
-   docker exec -i srams-mmhsi-db-1 psql -U postgres -d SRAMS_DB < drizzle/0011_friendly_jasper_sitwell.sql
+   docker exec -i srams-mmhsi-db-1 psql -U postgres -d SRAMS_DB < drizzle/0011_assessment_transfer_soft_delete_tracking.sql
    ```
 
 3. **Verify Schema:**
+
    ```bash
    npm run db:studio
    # Check assessments table has: transferredAt, transferredBy, transferredToAssessmentId, transferRemarks
@@ -328,6 +357,7 @@ newState: {
    ```
 
 4. **Deploy Application Code:**
+
    ```bash
    npm run build
    # Deploy to production server
@@ -344,12 +374,14 @@ newState: {
 If issues are discovered:
 
 1. **Revert Code:**
+
    ```bash
    git revert <commit-hash>
    npm run build
    ```
 
 2. **Revert Database (if needed):**
+
    ```sql
    -- Remove new columns
    ALTER TABLE assessments DROP COLUMN transferred_at;
@@ -395,21 +427,26 @@ If issues are discovered:
 ## Files Modified
 
 ### Schema
+
 - `src/lib/db/schema.ts` - Added transfer tracking fields + indexes
-- `drizzle/0011_friendly_jasper_sitwell.sql` - Migration file
+- `drizzle/0011_assessment_transfer_soft_delete_tracking.sql` - Migration file
 
 ### Actions
+
 - `src/features/assessments/assessments.actions.ts` - Multi-year transfer logic + reversal action
 - `src/features/payments/payments.actions.ts` - Payment/void blocking
 
 ### Queries
+
 - `src/lib/queries/admin-dashboard.ts` - Dashboard filters
 - `src/features/assessments/assessments.queries.ts` - Assessment list type update
 
 ### RBAC
+
 - `src/lib/rbac/permissions.ts` - New `assessments:reverse_transfer` permission
 
 ### UI
+
 - `src/app/page-templates/assessments/assessment-ledger-page.tsx` - Pass transfer metadata
 - `src/features/payments/components/AssessmentLedgerRegister.tsx` - Transfer warning banner
 
@@ -420,12 +457,14 @@ If issues are discovered:
 The balance forward implementation is **production-ready** and addresses the core accounting requirement: **a student's outstanding balance should only appear once in the books** (in the current active year). All phases are complete, edge cases are handled, and comprehensive audit logging is in place.
 
 **Recommended Next Steps:**
+
 1. Run manual test scenario to verify behavior
 2. Write automated tests (unit + E2E)
 3. Deploy to staging for QA review
 4. Update user documentation with transfer workflow
 
 **Questions or Issues?**
+
 - Check audit logs: `SELECT * FROM audit_logs WHERE action LIKE '%transfer%'`
 - Review plan file: `docs/ASSESSMENT/balance-forward-plan.md`
 - Contact: Engineering team

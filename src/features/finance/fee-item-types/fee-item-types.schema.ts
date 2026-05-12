@@ -12,8 +12,8 @@ export const CreateFeeItemTypeSchema = z.object({
     .regex(/^[A-Z0-9_]+$/, "Code may only contain letters, numbers, and underscores"),
   name: z.string().min(2, "Name must be at least 2 characters").max(80, "Name too long"),
   category: z.enum(FEE_ITEM_CATEGORIES, { message: "Select a valid category" }),
-  isDiscount: z.coerce.boolean().default(false),
-  displayOrder: z.coerce.number().int().min(0).default(0),
+  isDiscount: z.boolean().default(false),
+  displayOrder: z.number().int().min(0).default(0),
 });
 
 export const UpdateFeeItemTypeSchema = z.object({

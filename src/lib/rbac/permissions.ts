@@ -27,8 +27,8 @@ export type Permission =
   | "assessments:read"
   | "assessments:create"
   | "assessments:update"
-  | "assessments:reverse_transfer"
-  // Payments
+  /** Reverse a payment transfer between assessments — admin-only; requires detailed remarks. */
+  | "assessments:reverse_transfer"  // Payments
   | "payments:read"
   | "payments:post"
   | "payments:void"
