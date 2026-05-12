@@ -35,6 +35,8 @@ export async function InternalAssessmentLedgerPage(props: {
       totalPaid: assessments.totalPaid,
       balance: assessments.balance,
       billingStatus: assessments.billingStatus,
+      transferredAt: assessments.transferredAt,
+      transferredToAssessmentId: assessments.transferredToAssessmentId,
       studentName: students.lastName,
       studentFirstName: students.firstName,
       schoolYear: schoolYears.label,
@@ -61,6 +63,7 @@ export async function InternalAssessmentLedgerPage(props: {
       amount: assessmentItems.amount,
       isDiscount: assessmentItems.isDiscount,
       feeItemTypeId: assessmentItems.feeItemTypeId,
+      sourceAssessmentId: assessmentItems.sourceAssessmentId,
     })
     .from(assessmentItems)
     .where(eq(assessmentItems.assessmentId, id))
@@ -136,6 +139,8 @@ export async function InternalAssessmentLedgerPage(props: {
           totalPaid: assessment.totalPaid,
           balance: assessment.balance,
           billingStatus: assessment.billingStatus,
+          transferredAt: assessment.transferredAt?.toISOString() ?? null,
+          transferredToAssessmentId: assessment.transferredToAssessmentId,
         }}
         items={items}
         payments={ledgerPayments}

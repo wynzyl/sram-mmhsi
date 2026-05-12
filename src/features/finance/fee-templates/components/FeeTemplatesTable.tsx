@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
+import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 import { FeeTemplateDetailModal } from "./FeeTemplateDetailModal";
 
 type FeeItemType = {

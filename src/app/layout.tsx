@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Crimson_Pro, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import Script from "next/script";
 import { RootProviders } from "@/components/providers/RootProviders";
 import "./globals.css";
 
@@ -41,17 +42,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <script
+      <body
+        className={`${crimsonPro.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
+      >
+        {/* Theme initialization script - runs before page hydration to prevent flash */}
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var s=localStorage.getItem('theme');var r=s;if(!s||s==='system'){r=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.classList.remove('light','dark');document.documentElement.classList.add(r);document.documentElement.style.colorScheme=r;}catch(_){}})();`,
           }}
         />
-      </head>
-      <body
-        className={`${crimsonPro.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
-      >
         <RootProviders>{children}</RootProviders>
       </body>
     </html>
