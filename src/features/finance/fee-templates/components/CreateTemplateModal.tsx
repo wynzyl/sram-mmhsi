@@ -6,7 +6,7 @@ import { createFeeTemplateAction } from "../fee-templates.actions";
 import { FormStateAlert } from "@/components/forms/FormStateAlert";
 import { TextInputField } from "@/components/forms/TextInputField";
 import { SelectField } from "@/components/forms/SelectField";
-import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
+import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 import { Button } from "@/components/ui/button";
 
 export function CreateTemplateModal() {

@@ -100,15 +100,15 @@ NODE_ENV="development"
 
 ### Layer Boundaries (Non-Negotiable)
 
-| Layer             | Location                                | Responsibility                                    | Rules                                               |
-| ----------------- | --------------------------------------- | ------------------------------------------------- | --------------------------------------------------- |
-| Server Actions    | `src/features/*/*.actions.ts`           | ALL business logic and DB writes                  | Must use `"use server"` directive                   |
-| Zod Schemas       | `src/features/*/*.schema.ts` or `src/lib/validators/*.ts` | Data validation and type definitions | Shared schemas in src/lib, feature-specific in features |
-| Server Queries    | `src/features/*/*.queries.ts`           | ALL database reads                                | Server-only, passed as props to components          |
-| Utility Functions | `src/lib/utils/*.ts`                    | Pure transformations only (format, compute, etc.) | No database calls, no business logic                |
-| Client Components | `src/features/*/components/*.tsx`       | UI state and form interactions only               | No direct DB access, no business logic              |
-| Auth & Sessions   | `src/lib/auth/*.ts`                     | JWT-based session management                      | Use `requireSession()` in server components & pages |
-| Page Templates    | `src/app/page-templates/`               | Reusable page components for routes               | Server components that compose features             |
+| Layer             | Location                                                  | Responsibility                                    | Rules                                                   |
+| ----------------- | --------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------- |
+| Server Actions    | `src/features/*/*.actions.ts`                             | ALL business logic and DB writes                  | Must use `"use server"` directive                       |
+| Zod Schemas       | `src/features/*/*.schema.ts` or `src/lib/validators/*.ts` | Data validation and type definitions              | Shared schemas in src/lib, feature-specific in features |
+| Server Queries    | `src/features/*/*.queries.ts`                             | ALL database reads                                | Server-only, passed as props to components              |
+| Utility Functions | `src/lib/utils/*.ts`                                      | Pure transformations only (format, compute, etc.) | No database calls, no business logic                    |
+| Client Components | `src/features/*/components/*.tsx`                         | UI state and form interactions only               | No direct DB access, no business logic                  |
+| Auth & Sessions   | `src/lib/auth/*.ts`                                       | JWT-based session management                      | Use `requireSession()` in server components & pages     |
+| Page Templates    | `src/app/page-templates/`                                 | Reusable page components for routes               | Server components that compose features                 |
 
 **Violations:** No business logic in `.tsx` files. No direct DB calls in components. No raw SQL outside queries/actions.
 
@@ -128,7 +128,13 @@ Authentication is JWT-based using `jose` library (NOT NextAuth). Session managem
 - `createSession()` — Creates session on login
 - `deleteSession()` — Logout
 
-Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redirects, staff vs portal separation, and `/admin` restrictions. **Next.js 16** renamed the former `middleware.ts` convention to `proxy.ts`; older writeups may still say “middleware.”
+
+
+## NextJS Revalidate Tag Rule
+
+1. https://nextjs.org/docs/messages/revalidate-tag-single-arg
+
+2.  Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated       redirects, staff vs portal separation, and `/admin` restrictions. **Next.js 16** renamed the former `middleware.ts` convention to `proxy.ts`; older writeups may still say “middleware.”
 
 ### User Roles & Permissions
 
@@ -360,7 +366,7 @@ export async function createStudent(
 }
 ```
 
-Enforce at **3 levels**: route guard → server action validation → audit logging. UI hiding is NOT security. 
+Enforce at **3 levels**: route guard → server action validation → audit logging. UI hiding is NOT security.
 
 ### ActionResult Pattern (NON-NEGOTIABLE)
 
@@ -457,6 +463,88 @@ import { deleteSubjectAction } from "@/actions/academics";
   variant="danger"
 />
 ```
+
+### System Constants Pattern
+
+**When to use constants vs database tables:**
+
+| Aspect | Constants (recommended) | Database Tables |
+|--------|------------------------|----------------|
+| **Use for** | System configuration (roles, assessment bands) | User-managed data |
+| **Change frequency** | Rarely (requires migrations) | Frequently (via UI) |
+| **Type safety** | Compile-time validation | Runtime only |
+| **Performance** | No queries needed | Requires DB queries |
+| **Examples** | Roles, assessment bands, grading periods | Students, payments, grades |
+
+**Location:** `src/lib/constants/`
+
+**Pattern (Constants + PostgreSQL Enum):**
+
+```typescript
+// File: src/lib/constants/system-values.ts
+
+// 1. Define constant array with const assertion
+export const SYSTEM_VALUES = ["value1", "value2"] as const;
+
+// 2. Derive TypeScript type
+export type SystemValue = (typeof SYSTEM_VALUES)[number];
+
+// 3. Provide human-readable labels
+export const SYSTEM_VALUE_LABELS: Record<SystemValue, string> = {
+  value1: "Label 1",
+  value2: "Label 2",
+};
+```
+
+**Usage in schema:**
+```typescript
+// File: src/lib/db/schema.ts
+import { SYSTEM_VALUES } from "@/lib/constants/system-values";
+
+// Create PostgreSQL enum from constants (automatic sync)
+export const systemValueEnum = pgEnum("system_value", SYSTEM_VALUES);
+
+// Use in table definitions
+export const someTable = pgTable("some_table", {
+  systemValue: systemValueEnum("system_value").notNull(),
+});
+```
+
+**Database Design (Normalized Storage):**
+
+Store the actual value **once** in a logical table, access via relationships:
+
+```typescript
+// ✅ GOOD: Single source of truth
+gradeLevels → has assessment_band field
+assessments → enrollment → gradeLevel.assessmentBand (access via relationship)
+
+// ❌ BAD: Duplication
+gradeLevels → has assessment_band
+assessments → also has assessment_band (must keep in sync)
+```
+
+**Access pattern:**
+```typescript
+const assessment = await db.query.assessments.findFirst({
+  with: {
+    enrollment: {
+      with: {
+        gradeLevel: true  // Pull assessmentBand from here
+      }
+    }
+  }
+});
+
+const band = assessment.enrollment.gradeLevel.assessmentBand;
+```
+
+**When to use this pattern:**
+- ✅ Values are system configuration, not user data
+- ✅ Rarely change (require schema migrations)
+- ✅ Need TypeScript type safety
+- ✅ Used in forms/UI dropdowns (no DB query needed)
+- ✅ Part of business logic structure (like roles, assessment bands)
 
 ### Reference Number Generation
 

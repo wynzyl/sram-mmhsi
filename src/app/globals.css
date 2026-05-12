@@ -2505,4 +2505,296 @@
     background: var(--color-ops-panel-muted);
   }
 
+  /* ── Fee Item Types (fit-*) ── */
+
+  .fit-kpi-strip {
+    @apply flex items-center gap-0 rounded-xl border overflow-hidden;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+  }
+
+  .fit-kpi-item {
+    @apply flex flex-col items-center justify-center flex-1 gap-0.5 py-4 px-3;
+  }
+
+  .fit-kpi-value {
+    @apply text-2xl font-bold tabular-nums leading-none;
+
+    font-family: var(--font-display);
+    color: var(--color-ops-ink);
+  }
+
+  .fit-kpi-value-ok {
+    color: var(--color-ops-positive);
+  }
+
+  .fit-kpi-value-disc {
+    color: var(--color-primary);
+  }
+
+  .fit-kpi-label {
+    @apply text-xs uppercase tracking-[0.1em] font-medium;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fit-kpi-divider {
+    width: 1px;
+    align-self: stretch;
+    background: var(--color-ops-line);
+    flex-shrink: 0;
+  }
+
+  /* List layout */
+  .fit-list-wrap {
+    @apply space-y-6;
+  }
+
+  .fit-group {}
+
+  .fit-group-head {
+    @apply flex items-center gap-2 mb-2 px-1;
+  }
+
+  .fit-group-label {
+    @apply text-xs font-semibold uppercase tracking-[0.12em];
+
+    color: var(--color-ops-muted);
+  }
+
+  .fit-group-count {
+    @apply text-xs font-mono rounded-full px-1.5 py-0.5 leading-none;
+
+    background: var(--color-ops-line);
+    color: var(--color-ops-muted);
+  }
+
+  /* Table rows */
+  .fit-table-row {
+    @apply transition-colors;
+  }
+
+  .fit-table-row:hover {
+    background: color-mix(in srgb, var(--color-primary) 3%, transparent);
+  }
+
+  .fit-code-pill {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold;
+
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
+    letter-spacing: 0.04em;
+  }
+
+  .fit-name {
+    @apply text-sm font-medium;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fit-category-tag {
+    @apply inline-flex items-center gap-1.5 text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fit-category-dot {
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .fit-fee-tag {
+    @apply inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wide;
+
+    background: color-mix(in srgb, var(--color-ops-muted) 10%, transparent);
+    color: var(--color-ops-muted);
+  }
+
+  /* Action buttons in table */
+  .fit-actions {
+    @apply flex items-center gap-2;
+  }
+
+  .fit-row-action {
+    @apply inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md transition-colors cursor-pointer;
+
+    background: transparent;
+    border: 1px solid var(--color-ops-line);
+    color: var(--color-ops-muted);
+  }
+
+  .fit-row-action:hover {
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+    color: var(--color-primary);
+  }
+
+  .fit-row-action-warn:hover {
+    background: color-mix(in srgb, var(--color-ops-warning) 10%, transparent);
+    border-color: color-mix(in srgb, var(--color-ops-warning) 35%, transparent);
+    color: var(--color-ops-warning);
+  }
+
+  .fit-row-action-ok:hover {
+    background: color-mix(in srgb, var(--color-ops-positive) 10%, transparent);
+    border-color: color-mix(in srgb, var(--color-ops-positive) 35%, transparent);
+    color: var(--color-ops-positive);
+  }
+
+  /* Empty state */
+  .fit-empty-icon {
+    @apply flex items-center justify-center w-12 h-12 rounded-2xl mx-auto mb-3;
+
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+    color: var(--color-primary);
+  }
+
+  .fit-empty-title {
+    @apply text-base font-semibold mb-1 text-center;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fit-empty-sub {
+    @apply text-sm text-center max-w-xs mx-auto;
+
+    color: var(--color-ops-muted);
+  }
+
+  /* Form fields (modal) */
+  .fit-field {
+    @apply flex flex-col gap-1;
+  }
+
+  .fit-field-grow {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .fit-field-shrink {
+    flex: 0 0 6rem;
+  }
+
+  .fit-row {
+    @apply flex gap-3 items-start;
+  }
+
+  .fit-label {
+    @apply text-xs font-semibold uppercase tracking-[0.1em];
+
+    color: var(--color-ops-muted);
+  }
+
+  .fit-required {
+    color: var(--color-primary);
+  }
+
+  .fit-input {
+    @apply w-full rounded-lg border px-3 py-2 text-sm transition-colors outline-none;
+
+    background: var(--color-ops-panel-muted);
+    border-color: var(--color-ops-line);
+    color: var(--color-ops-ink);
+  }
+
+  .fit-input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  }
+
+  .fit-input-readonly {
+    @apply text-sm font-mono rounded-lg px-3 py-2;
+
+    background: var(--color-ops-line);
+    color: var(--color-ops-muted);
+    border: 1px solid transparent;
+    cursor: not-allowed;
+  }
+
+  .fit-select {
+    @apply w-full rounded-lg border px-3 py-2 text-sm transition-colors outline-none appearance-none cursor-pointer;
+
+    background: var(--color-ops-panel-muted);
+    border-color: var(--color-ops-line);
+    color: var(--color-ops-ink);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem;
+  }
+
+  .fit-select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  }
+
+  .fit-hint {
+    @apply text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
+  .fit-error {
+    @apply text-xs font-medium;
+
+    color: #dc2626;
+  }
+
+  /* Toggle switch */
+  .fit-toggle-row {
+    @apply flex items-center gap-3 rounded-xl border p-3;
+
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+
+  .fit-toggle {
+    flex-shrink: 0;
+    position: relative;
+    width: 2.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    background: var(--color-ops-line);
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    padding: 0;
+  }
+
+  .fit-toggle-on {
+    background: var(--color-ops-positive);
+  }
+
+  .fit-toggle-thumb {
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  .fit-toggle-on .fit-toggle-thumb {
+    transform: translateX(1rem);
+  }
+
+  .fit-toggle-label {
+    @apply text-sm font-medium;
+
+    color: var(--color-ops-ink);
+  }
+
+  .fit-toggle-sub {
+    @apply text-xs;
+
+    color: var(--color-ops-muted);
+  }
+
 }
