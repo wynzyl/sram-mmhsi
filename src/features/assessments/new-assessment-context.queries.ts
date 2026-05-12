@@ -9,8 +9,8 @@ import {
   parentsGuardians,
 } from "@/lib/db/schema";
 import { eq, asc, desc } from "drizzle-orm";
-import { resolveFeeScheduleForAssessment } from "@/lib/fee-schedule/resolve";
-import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
+import { resolveFeeScheduleForAssessment } from "./assessments.queries";
+import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 
 export type NewAssessmentFeeCatalogEntry = {
   feeTemplateItemId: string; // Changed from feeScheduleItemId
