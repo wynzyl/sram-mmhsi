@@ -4,6 +4,7 @@ import { getAdminDashboardMetrics } from "@/lib/queries/admin-dashboard";
 import { formatCurrency } from "@/lib/utils/currency";
 
 export const metadata: Metadata = { title: "Dashboard" };
+export const dynamic = "force-dynamic"; // Prevent static generation during build
 
 function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;

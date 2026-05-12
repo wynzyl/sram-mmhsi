@@ -211,7 +211,7 @@ export async function createStudentAction(
   try {
     // 5–8. Generate reference, insert student + guardians + approved registration (single transaction)
     // Retry logic for duplicate reference numbers (handles sequence out-of-sync)
-    let referenceNumber: string;
+    let referenceNumber: string = "";
     let retries = 0;
     const MAX_RETRIES = 5;
 
