@@ -509,41 +509,65 @@ export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
 
 // ─── Assessments (Billing) ────────────────────────────────────────────────────
 
-export const assessments = pgTable(
-  "assessments",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    enrollmentId: uuid("enrollment_id").notNull().references(() => enrollments.id),
-    studentId: uuid("student_id").notNull().references(() => students.id),
-    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
-    totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
-    totalPaid: numeric("total_paid", { precision: 12, scale: 2 }).notNull().default("0"),
-    balance: numeric("balance", { precision: 12, scale: 2 }).notNull(),
-    billingStatus: assessmentBillingStatusEnum("billing_status")
-      .notNull()
-      .default("outstanding"),
-    remarks: text("remarks"),
-    /** Set when the linked enrollment is cancelled — blocks new payments on this ledger. */
-    cancelledAt: timestamp("cancelled_at"),
-    cancelledBy: uuid("cancelled_by").references(() => users.id),
-    /** Balance transfer tracking: Set when this assessment's balance is carried forward to a new school year */
-    transferredAt: timestamp("transferred_at"),
-    transferredBy: uuid("transferred_by").references(() => users.id),
-    transferredToAssessmentId: uuid("transferred_to_assessment_id").references(() => assessments.id),
-    transferRemarks: text("transfer_remarks"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    createdBy: uuid("created_by").references(() => users.id),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
-    updatedBy: uuid("updated_by").references(() => users.id),
-  },
-  (t) => [
-    index("assessment_student_sy_idx").on(t.studentId, t.schoolYearId),
-    uniqueIndex("assessments_enrollment_id_uidx").on(t.enrollmentId),
-    index("assessments_billing_status_idx").on(t.billingStatus), // PERFORMANCE: Outstanding balance queries
-    index("assessments_student_billing_idx").on(t.studentId, t.billingStatus), // PERFORMANCE: Student balance lookups
-    index("assessments_transferred_at_idx").on(t.transferredAt), // PERFORMANCE: Filter active assessments (WHERE transferredAt IS NULL)
-  ]
-);
+// NOTE: Drizzle/TypeScript cannot type self-referencing FKs in object style. FK is enforced in migration only.
+  // NOTE: Drizzle/TypeScript cannot type self-referencing FKs in object style. FK is enforced in migration only.
+  export const assessments = pgTable(
+    "assessments",
+    {
+      id: uuid("id").primaryKey().defaultRandom(),
+      enrollmentId: uuid("enrollment_id").notNull().references(() => enrollments.id),
+      studentId: uuid("student_id").notNull().references(() => students.id),
+      schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+      totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
+      totalPaid: numeric("total_paid", { precision: 12, scale: 2 }).notNull().default("0"),
+      balance: numeric("balance", { precision: 12, scale: 2 }).notNull(),
+      billingStatus: assessmentBillingStatusEnum("billing_status")
+        .notNull()
+        .default("outstanding"),
+      remarks: text("remarks"),
+      /** Set when the linked enrollment is cancelled — blocks new payments on this ledger. */
+      cancelledAt: timestamp("cancelled_at"),
+      cancelledBy: uuid("cancelled_by").references(() => users.id),
+      /** Balance transfer tracking: Set when this assessment's balance is carried forward to a new school year */
+      transferredAt: timestamp("transferred_at"),
+      transferredBy: uuid("transferred_by").references(() => users.id),
+      transferredToAssessmentId: uuid("transferred_to_assessment_id"), // See migration for FK
+      transferRemarks: text("transfer_remarks"),
+      createdAt: timestamp("created_at").notNull().defaultNow(),
+      createdBy: uuid("created_by").references(() => users.id),
+      updatedAt: timestamp("updated_at").notNull().defaultNow(),
+      updatedBy: uuid("updated_by").references(() => users.id),
+    },
+    (t) => [
+      index("assessment_student_sy_idx").on(t.studentId, t.schoolYearId),
+      uniqueIndex("assessments_enrollment_id_uidx").on(t.enrollmentId),
+      index("assessments_billing_status_idx").on(t.billingStatus), // PERFORMANCE: Outstanding balance queries
+      index("assessments_student_billing_idx").on(t.studentId, t.billingStatus), // PERFORMANCE: Student balance lookups
+      index("assessments_transferred_at_idx").on(t.transferredAt), // PERFORMANCE: Filter active assessments (WHERE transferredAt IS NULL)
+      // DB-level: All transfer fields must be NULL or all NOT NULL
+      check(
+        "assessments_transfer_fields_atomic",
+        sql`
+          ((
+            ${t.transferredAt} IS NULL AND
+            ${t.transferredBy} IS NULL AND
+            ${t.transferredToAssessmentId} IS NULL
+          ) OR (
+    sourceAssessmentId: uuid("source_assessment_id").references(() => assessments.id, { onDelete: "restrict" }),            ${t.transferredBy} IS NOT NULL AND
+            ${t.transferredToAssessmentId} IS NOT NULL
+          ))`
+      ),
+      // DB-level: Prevent re-transfer (cannot set transfer fields if already transferred)
+      check(
+        "assessments_no_retransfer",
+        sql`
+          (${t.transferredAt} IS NULL) OR (
+            ${t.transferredAt} IS NOT NULL AND
+            OLD.transferredAt IS NULL
+          )`
+      ),
+    ]
+  );
 
 export const assessmentItems = pgTable(
   "assessment_items",

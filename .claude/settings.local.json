@@ -65,10 +65,6 @@
       "Bash(npx stylelint:*)",
       "Bash(git checkout:*)",
       "WebSearch",
-      "PowerShell($result = Test-NetConnection -ComputerName localhost -Port 5432 -WarningAction SilentlyContinue; Write-Output \"TcpTestSucceeded: $\\($result.TcpTestSucceeded\\)\")",
-      "PowerShell(docker exec srams-mmhsi-db-1 psql -U postgres -d SRAMS_DB -c \"SELECT 1;\" 2>&1)",
-      "PowerShell(docker exec srams-mmhsi-app-1 sh -c \"DATABASE_URL='postgresql://postgres:722811@db:5432/SRAMS_DB' npx tsx scripts/seed-config.ts\" 2>&1)",
-      "Bash(docker exec:*)",
       "Bash(docker logs:*)",
       "Bash(docker-compose restart:*)"
     ]

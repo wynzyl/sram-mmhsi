@@ -51,9 +51,8 @@ export type AssessmentLedgerRegisterProps = {
     totalPaid: string;
     balance: string;
     billingStatus: string;
-    transferredAt: Date | null;
-    transferredToAssessmentId: string | null;
-  };
+    transferredAt: string | null;
+    transferredToAssessmentId: string | null;  };
   items: LedgerLineItem[];
   payments: LedgerPaymentRow[];
   activeBooklets: ActiveBooklet[];
