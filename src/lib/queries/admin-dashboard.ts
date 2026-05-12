@@ -152,7 +152,8 @@ async function _getAdminDashboardMetricsUncached(): Promise<AdminDashboardMetric
         and(
           eq(assessments.schoolYearId, activeSchoolYear.id),
           ne(assessments.billingStatus, "cancelled"),
-          gt(assessments.balance, "0")
+          gt(assessments.balance, "0"),
+          isNull(assessments.transferredAt) // Exclude transferred balances
         )
       )
       .then((rows) => rows[0]),
@@ -167,6 +168,7 @@ async function _getAdminDashboardMetricsUncached(): Promise<AdminDashboardMetric
           eq(assessments.schoolYearId, activeSchoolYear.id),
           ne(assessments.billingStatus, "cancelled"),
           gt(assessments.balance, "0"),
+          isNull(assessments.transferredAt), // Exclude transferred balances
           sql`EXISTS (
             SELECT 1
             FROM ${invoices}

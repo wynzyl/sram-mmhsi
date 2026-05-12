@@ -100,15 +100,15 @@ NODE_ENV="development"
 
 ### Layer Boundaries (Non-Negotiable)
 
-| Layer             | Location                                | Responsibility                                    | Rules                                               |
-| ----------------- | --------------------------------------- | ------------------------------------------------- | --------------------------------------------------- |
-| Server Actions    | `src/features/*/*.actions.ts`           | ALL business logic and DB writes                  | Must use `"use server"` directive                   |
-| Zod Schemas       | `src/features/*/*.schema.ts` or `src/lib/validators/*.ts` | Data validation and type definitions | Shared schemas in src/lib, feature-specific in features |
-| Server Queries    | `src/features/*/*.queries.ts`           | ALL database reads                                | Server-only, passed as props to components          |
-| Utility Functions | `src/lib/utils/*.ts`                    | Pure transformations only (format, compute, etc.) | No database calls, no business logic                |
-| Client Components | `src/features/*/components/*.tsx`       | UI state and form interactions only               | No direct DB access, no business logic              |
-| Auth & Sessions   | `src/lib/auth/*.ts`                     | JWT-based session management                      | Use `requireSession()` in server components & pages |
-| Page Templates    | `src/app/page-templates/`               | Reusable page components for routes               | Server components that compose features             |
+| Layer             | Location                                                  | Responsibility                                    | Rules                                                   |
+| ----------------- | --------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------- |
+| Server Actions    | `src/features/*/*.actions.ts`                             | ALL business logic and DB writes                  | Must use `"use server"` directive                       |
+| Zod Schemas       | `src/features/*/*.schema.ts` or `src/lib/validators/*.ts` | Data validation and type definitions              | Shared schemas in src/lib, feature-specific in features |
+| Server Queries    | `src/features/*/*.queries.ts`                             | ALL database reads                                | Server-only, passed as props to components              |
+| Utility Functions | `src/lib/utils/*.ts`                                      | Pure transformations only (format, compute, etc.) | No database calls, no business logic                    |
+| Client Components | `src/features/*/components/*.tsx`                         | UI state and form interactions only               | No direct DB access, no business logic                  |
+| Auth & Sessions   | `src/lib/auth/*.ts`                                       | JWT-based session management                      | Use `requireSession()` in server components & pages     |
+| Page Templates    | `src/app/page-templates/`                                 | Reusable page components for routes               | Server components that compose features                 |
 
 **Violations:** No business logic in `.tsx` files. No direct DB calls in components. No raw SQL outside queries/actions.
 
@@ -128,7 +128,13 @@ Authentication is JWT-based using `jose` library (NOT NextAuth). Session managem
 - `createSession()` — Creates session on login
 - `deleteSession()` — Logout
 
-Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redirects, staff vs portal separation, and `/admin` restrictions. **Next.js 16** renamed the former `middleware.ts` convention to `proxy.ts`; older writeups may still say “middleware.”
+
+
+## NextJS Revalidate Tag Rule
+
+1. https://nextjs.org/docs/messages/revalidate-tag-single-arg
+
+2.  Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated       redirects, staff vs portal separation, and `/admin` restrictions. **Next.js 16** renamed the former `middleware.ts` convention to `proxy.ts`; older writeups may still say “middleware.”
 
 ### User Roles & Permissions
 
@@ -360,7 +366,7 @@ export async function createStudent(
 }
 ```
 
-Enforce at **3 levels**: route guard → server action validation → audit logging. UI hiding is NOT security. 
+Enforce at **3 levels**: route guard → server action validation → audit logging. UI hiding is NOT security.
 
 ### ActionResult Pattern (NON-NEGOTIABLE)
 

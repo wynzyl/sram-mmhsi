@@ -19,6 +19,7 @@ export type AssessmentListItem = {
   totalPaid: number;
   balance: number;
   billingStatus: "outstanding" | "fully_paid" | "cancelled";
+  transferredAt: Date | null;
 };
 
 /**
@@ -46,6 +47,7 @@ export async function getAssessmentsList(
       totalPaid: assessments.totalPaid,
       balance: assessments.balance,
       billingStatus: assessments.billingStatus,
+      transferredAt: assessments.transferredAt,
       studentLastName: students.lastName,
       studentFirstName: students.firstName,
       schoolYear: schoolYears.label,
@@ -66,6 +68,7 @@ export async function getAssessmentsList(
       totalPaid: Number(r.totalPaid),
       balance: Number(r.balance),
       billingStatus: r.billingStatus,
+      transferredAt: r.transferredAt,
     })
   );
 

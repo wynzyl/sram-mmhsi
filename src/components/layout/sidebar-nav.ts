@@ -15,7 +15,8 @@ export type NavIconName =
   | "grades"
   | "payments"
   | "invoices"
-  | "finance";
+  | "finance"
+  | "fee-item-types";
 
 /** One level of nested links (e.g. Register Student). Deeper nesting is not rendered. */
 export type NavItem = {
@@ -67,6 +68,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
         { href: "/staff/finance/fee-schedules", label: "Fee Schedules", icon: "fee-schedules" },
+        { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
         { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
       ],
     },
@@ -111,7 +113,10 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     },
     {
       label: "Finance",
-      items: [{ href: "/staff/assessments", label: "Assessments", icon: "assessments" }],
+      items: [
+        { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
+        { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
+      ],
     },
     {
       label: "Cashier",
@@ -136,6 +141,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
         { href: "/staff/finance/fee-schedules", label: "Fee Schedules", icon: "fee-schedules" },
+        { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
         { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
       ],
