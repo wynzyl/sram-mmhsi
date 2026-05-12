@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { assignTemplateToSchoolYearAction } from "../fee-templates.actions";
 import { FormStateAlert } from "@/components/forms/FormStateAlert";
 import { SelectField } from "@/components/forms/SelectField";
-import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
+import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 import { Button } from "@/components/ui/button";
 
 type FeeTemplate = {

@@ -4,7 +4,7 @@ import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createFeeScheduleAction } from "@/features/finance/fee-schedules/fee-schedules.actions";
 import type { FeeScheduleFormState } from "@/lib/validators/finance";
-import { FEE_ASSESSMENT_BANDS, FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
+import { FEE_ASSESSMENT_BANDS, FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 
 interface FeeScheduleFormProps {
   schoolYears: { id: string; label: string; isActive: boolean }[];

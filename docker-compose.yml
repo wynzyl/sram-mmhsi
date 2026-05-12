@@ -1,0 +1,37 @@
+services:
+  # Next.js Application
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    environment:
+      DATABASE_URL: postgresql://POSTGRES_USER:POSTGRES_PASSWORD@db:5432/SRAMS_DB
+    depends_on:
+      - db
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - node_modules/
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    restart: always
+    env_file:
+      - .env.local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-SRAMS_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+volumes:
+  db-data:

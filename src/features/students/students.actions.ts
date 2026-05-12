@@ -210,15 +210,46 @@ export async function createStudentAction(
 
   try {
     // 5–8. Generate reference, insert student + guardians + approved registration (single transaction)
-    const seq = await getNextStudentSequence();
-    const referenceNumber = generateStudentRef(new Date().getFullYear(), seq);
+    // Retry logic for duplicate reference numbers (handles sequence out-of-sync)
+    let referenceNumber: string = "";
+    let retries = 0;
+    const MAX_RETRIES = 5;
+
+    while (retries < MAX_RETRIES) {
+      const seq = await getNextStudentSequence();
+      referenceNumber = generateStudentRef(new Date().getFullYear(), seq);
+
+      // Check if this reference already exists
+      const existing = await db
+        .select({ id: students.id })
+        .from(students)
+        .where(eq(students.referenceNumber, referenceNumber))
+        .limit(1);
+
+      if (existing.length === 0) {
+        break; // Reference is unique, proceed
+      }
+
+      retries++;
+      if (retries >= MAX_RETRIES) {
+        logger.error("[students] Failed to generate unique reference after retries", {
+          lastAttempt: referenceNumber,
+          retries,
+        });
+        return {
+          message:
+            "Unable to generate a unique student reference number. Please contact system administrator to resync the student sequence.",
+          fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
+        };
+      }
+    }
 
     const newStudent = await db.transaction(async (tx) => {
       const [insertedStudent] = await tx
         .insert(students)
         .values({
           ...studentData,
-          referenceNumber,
+          referenceNumber: referenceNumber!,
           createdBy: session.userId,
           updatedBy: session.userId,
         })
