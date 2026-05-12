@@ -57,6 +57,7 @@ function TriRadios({
           type="radio"
           name={name}
           value="not_applicable"
+          required
           defaultChecked={v === "not_applicable"}
           className={inputClass}
         />
@@ -67,6 +68,7 @@ function TriRadios({
           type="radio"
           name={name}
           value="to_follow"
+          required
           defaultChecked={v === "to_follow"}
           className={inputClass}
         />
@@ -90,14 +92,20 @@ function DocumentRequirementRow({
   return (
     <li
       className={cn(
-        "rounded-r-lg border-b border-l-4 border-b-(--color-border) border-l-(--color-primary)/35 bg-[var(--color-surface-elevated) py-4 pl-4 last:border-b-0"
+        "rounded-r-lg border-b border-l-4 py-4 pl-4 last:border-b-0",
+        error
+          ? "border-b-[var(--color-error)]/20 border-l-[var(--color-error)] bg-[var(--color-error)]/5"
+          : "border-b-[var(--color-border)] border-l-[var(--color-primary)]/35 bg-[var(--color-surface-elevated)]"
       )}
     >
-      <span className="mb-2 block font-display text-base font-semibold leading-snug tracking-tight text-[var(--color-text) md:text-lg">
+      <span className="mb-2 block font-display text-base font-semibold leading-snug tracking-tight text-[var(--color-text)] md:text-lg">
         {title}
+        {error && <span className="ml-2 text-sm font-normal text-[var(--color-error)]">(required)</span>}
       </span>
       <TriRadios name={name} preserved={preserved} />
-      {error && <p className="mt-2 text-sm text-[var(--color-error)]">{error}</p>}
+      {error && (
+        <p className="mt-2 text-sm font-medium text-[var(--color-error)]">{error}</p>
+      )}
     </li>
   );
 }

@@ -139,7 +139,7 @@ export async function InternalAssessmentLedgerPage(props: {
           totalPaid: assessment.totalPaid,
           balance: assessment.balance,
           billingStatus: assessment.billingStatus,
-          transferredAt: assessment.transferredAt,
+          transferredAt: assessment.transferredAt?.toISOString() ?? null,
           transferredToAssessmentId: assessment.transferredToAssessmentId,
         }}
         items={items}

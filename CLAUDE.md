@@ -464,6 +464,88 @@ import { deleteSubjectAction } from "@/actions/academics";
 />
 ```
 
+### System Constants Pattern
+
+**When to use constants vs database tables:**
+
+| Aspect | Constants (recommended) | Database Tables |
+|--------|------------------------|----------------|
+| **Use for** | System configuration (roles, assessment bands) | User-managed data |
+| **Change frequency** | Rarely (requires migrations) | Frequently (via UI) |
+| **Type safety** | Compile-time validation | Runtime only |
+| **Performance** | No queries needed | Requires DB queries |
+| **Examples** | Roles, assessment bands, grading periods | Students, payments, grades |
+
+**Location:** `src/lib/constants/`
+
+**Pattern (Constants + PostgreSQL Enum):**
+
+```typescript
+// File: src/lib/constants/system-values.ts
+
+// 1. Define constant array with const assertion
+export const SYSTEM_VALUES = ["value1", "value2"] as const;
+
+// 2. Derive TypeScript type
+export type SystemValue = (typeof SYSTEM_VALUES)[number];
+
+// 3. Provide human-readable labels
+export const SYSTEM_VALUE_LABELS: Record<SystemValue, string> = {
+  value1: "Label 1",
+  value2: "Label 2",
+};
+```
+
+**Usage in schema:**
+```typescript
+// File: src/lib/db/schema.ts
+import { SYSTEM_VALUES } from "@/lib/constants/system-values";
+
+// Create PostgreSQL enum from constants (automatic sync)
+export const systemValueEnum = pgEnum("system_value", SYSTEM_VALUES);
+
+// Use in table definitions
+export const someTable = pgTable("some_table", {
+  systemValue: systemValueEnum("system_value").notNull(),
+});
+```
+
+**Database Design (Normalized Storage):**
+
+Store the actual value **once** in a logical table, access via relationships:
+
+```typescript
+// ✅ GOOD: Single source of truth
+gradeLevels → has assessment_band field
+assessments → enrollment → gradeLevel.assessmentBand (access via relationship)
+
+// ❌ BAD: Duplication
+gradeLevels → has assessment_band
+assessments → also has assessment_band (must keep in sync)
+```
+
+**Access pattern:**
+```typescript
+const assessment = await db.query.assessments.findFirst({
+  with: {
+    enrollment: {
+      with: {
+        gradeLevel: true  // Pull assessmentBand from here
+      }
+    }
+  }
+});
+
+const band = assessment.enrollment.gradeLevel.assessmentBand;
+```
+
+**When to use this pattern:**
+- ✅ Values are system configuration, not user data
+- ✅ Rarely change (require schema migrations)
+- ✅ Need TypeScript type safety
+- ✅ Used in forms/UI dropdowns (no DB query needed)
+- ✅ Part of business logic structure (like roles, assessment bands)
+
 ### Reference Number Generation
 
 Use `src/lib/utils/reference.ts` for generating student reference numbers:

@@ -11,7 +11,7 @@ import {
   feeItemTypes,
 } from "@/lib/db/schema";
 import { eq, and, ne, isNotNull, isNull, desc, asc } from "drizzle-orm";
-import { resolveFeeScheduleForAssessment } from "@/lib/fee-schedule/resolve";
+import { resolveFeeScheduleForAssessment } from "./assessments.queries";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
