@@ -735,17 +735,61 @@ export const getEnrollmentQueueCounts = unstable_cache(
       enrolledCount,
       cancelledCount,
     ] = await Promise.all([
-    // Ready to enroll: approved registrations without enrollments
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(registrations)
-      .where(
-        and(
-          eq(registrations.schoolYearId, activeSchoolYearId),
-          eq(registrations.status, "approved")
+    // Ready to enroll: new/transferee approved registrations (not yet enrolled, active)
+    // + old students enrolled last year (not yet in current year, not Grade 12 completers)
+    db.execute<{ total: string }>(sql`
+      WITH
+        new_transferee AS (
+          SELECT r.student_id
+          FROM registrations r
+          INNER JOIN students s ON r.student_id = s.id
+          WHERE r.school_year_id = ${activeSchoolYearId}
+            AND r.status = 'approved'
+            AND s.is_active = true
+            AND NOT EXISTS (
+              SELECT 1 FROM enrollments e2
+              WHERE e2.student_id = r.student_id
+                AND e2.school_year_id = ${activeSchoolYearId}
+                AND e2.status != 'cancelled'
+            )
+        ),
+        school_year_context AS (
+          SELECT
+            sy.id AS active_id,
+            prev.id AS previous_id
+          FROM school_years sy
+          LEFT JOIN LATERAL (
+            SELECT id FROM school_years
+            WHERE start_date < sy.start_date AND deleted_at IS NULL
+            ORDER BY start_date DESC LIMIT 1
+          ) prev ON true
+          WHERE sy.id = ${activeSchoolYearId}
+        ),
+        max_grade AS (
+          SELECT MAX("order") AS max_order FROM grade_levels
+        ),
+        old_students AS (
+          SELECT DISTINCT e.student_id
+          FROM school_year_context syc
+          INNER JOIN enrollments e ON e.school_year_id = syc.previous_id
+          INNER JOIN students s ON e.student_id = s.id
+          INNER JOIN grade_levels gl ON e.grade_level_id = gl.id
+          WHERE syc.previous_id IS NOT NULL
+            AND e.status = 'enrolled'
+            AND s.is_active = true
+            AND gl."order" < (SELECT max_order FROM max_grade)
+            AND NOT EXISTS (
+              SELECT 1 FROM enrollments e2
+              WHERE e2.student_id = e.student_id
+                AND e2.school_year_id = ${activeSchoolYearId}
+                AND e2.status != 'cancelled'
+            )
         )
-      )
-      .then(([result]) => Number(result?.count || 0)),
+      SELECT (
+        (SELECT COUNT(*) FROM new_transferee) +
+        (SELECT COUNT(*) FROM old_students)
+      )::int AS total
+    `).then((rows) => Number((rows as unknown as Array<{ total: string }>)[0]?.total || 0)),
 
     // Pending: enrollments with pending status
     db

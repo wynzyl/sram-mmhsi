@@ -44,18 +44,29 @@ export async function loginAction(
   const { username, password } = parsed.data;
 
   // 2. Look up user by username OR email (constant-time pattern)
-  const user = await db.query.users.findFirst({
-    where: or(eq(users.username, username), eq(users.email, username)),
-    columns: {
-      id: true,
-      email: true,
-      username: true,
-      passwordHash: true,
-      role: true,
-      isActive: true,
-      forcePasswordChange: true,
-    },
-  });
+  let user;
+  try {
+    user = await db.query.users.findFirst({
+      where: or(eq(users.username, username), eq(users.email, username)),
+      columns: {
+        id: true,
+        email: true,
+        username: true,
+        passwordHash: true,
+        role: true,
+        isActive: true,
+        forcePasswordChange: true,
+      },
+    });
+  } catch (error) {
+    logger.error("[auth] Database query failed", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return {
+      message: "Database error. Please ensure migrations are applied (npm run db:migrate) and the database is running.",
+    };
+  }
 
   // 3. Compare password — always run compare to prevent timing attacks
   const dummyHash =

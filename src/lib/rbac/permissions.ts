@@ -27,7 +27,8 @@ export type Permission =
   | "assessments:read"
   | "assessments:create"
   | "assessments:update"
-  // Payments
+  /** Reverse a payment transfer between assessments — admin-only; requires detailed remarks. */
+  | "assessments:reverse_transfer"  // Payments
   | "payments:read"
   | "payments:post"
   | "payments:void"
@@ -60,7 +61,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "enrollments:cancel",
     "enrollments:cancel_with_balance",
     "enrollments:override_enroll",
-    "assessments:read", "assessments:create", "assessments:update",
+    "assessments:read", "assessments:create", "assessments:update", "assessments:reverse_transfer",
     "payments:read", "payments:post", "payments:void",
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
@@ -77,7 +78,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "enrollments:cancel",
     "enrollments:cancel_with_balance",
     "enrollments:override_enroll",
-    "assessments:read", "assessments:create", "assessments:update",
+    "assessments:read", "assessments:create", "assessments:update", "assessments:reverse_transfer",
     "payments:read", "payments:post", "payments:void",
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",

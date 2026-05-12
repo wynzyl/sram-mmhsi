@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FEE_ASSESSMENT_BANDS } from "@/lib/fee-schedule/bands";
+import { FEE_ASSESSMENT_BANDS } from "@/lib/constants/assessment-bands";
 import type { BaseFormState } from "@/lib/validators/common-schemas";
 
 // ─── Fee Schedule Validators ──────────────────────────────────────────────────
