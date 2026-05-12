@@ -15,6 +15,7 @@ export type LedgerLineItem = {
   amount: string;
   isDiscount: boolean;
   feeItemTypeId: string | null;
+  sourceAssessmentId: string | null;
 };
 
 export type LedgerPaymentRow = {
@@ -50,6 +51,8 @@ export type AssessmentLedgerRegisterProps = {
     totalPaid: string;
     balance: string;
     billingStatus: string;
+    transferredAt: Date | null;
+    transferredToAssessmentId: string | null;
   };
   items: LedgerLineItem[];
   payments: LedgerPaymentRow[];
@@ -89,7 +92,8 @@ export default function AssessmentLedgerRegister({
   const balanceNum = Number(assessment.balance);
   const isFullyPaid = assessment.billingStatus === "fully_paid";
   const isCancelledEnrollment = assessment.billingStatus === "cancelled";
-  const canOpenPay = canPost && !isFullyPaid && !isCancelledEnrollment && balanceNum > 0;
+  const isTransferred = assessment.transferredAt != null;
+  const canOpenPay = canPost && !isFullyPaid && !isCancelledEnrollment && !isTransferred && balanceNum > 0;
 
   const feesRunning = items.reduce((sum, row) => sum + lineSignedAmount(row), 0);
   const paymentsRecorded = payments
@@ -243,6 +247,63 @@ export default function AssessmentLedgerRegister({
           </div>
         </div>
       </header>
+
+      {/* ── Transfer Warning Banner ── */}
+      {assessment.transferredAt && (
+        <div
+          style={{
+            padding: "1rem 1.25rem",
+            marginBottom: "1.5rem",
+            borderRadius: "6px",
+            border: "1px solid color-mix(in srgb, var(--color-ops-warning) 30%, transparent)",
+            background: "color-mix(in srgb, var(--color-ops-warning) 8%, transparent)",
+          }}
+        >
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-ops-warning)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ flexShrink: 0, marginTop: "2px" }}
+              aria-hidden
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>
+              <p style={{ fontWeight: 600, marginBottom: "0.25rem", color: "var(--color-ops-warning)" }}>
+                Balance Transferred
+              </p>
+              <p style={{ fontSize: "0.875rem", lineHeight: "1.5", color: "var(--color-ops-body)" }}>
+                This assessment's outstanding balance was transferred to a newer school year on{" "}
+                {new Date(assessment.transferredAt).toLocaleDateString("en-PH", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}.
+                {" "}Payment posting and voiding are disabled for this ledger.
+                {assessment.transferredToAssessmentId && (
+                  <>
+                    {" "}
+                    <Link
+                      href={`/staff/assessments/${assessment.transferredToAssessmentId}`}
+                      style={{ color: "var(--color-primary)", textDecoration: "underline" }}
+                    >
+                      View current year assessment →
+                    </Link>
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Two-column body ── */}
       <div className="ledger-register-column">

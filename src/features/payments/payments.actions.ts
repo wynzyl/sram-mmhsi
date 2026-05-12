@@ -170,6 +170,11 @@ export async function postPaymentAction(
           "This ledger is closed because the enrollment was cancelled. You cannot post new payments here. Use Void payment on existing rows if reversing posted tuition."
         );
       }
+      if (assessment.transferredAt != null) {
+        throw new Error(
+          "PAYMENT_BLOCKED: This assessment's balance was transferred to a newer school year. All payments must be posted to the current year's assessment instead."
+        );
+      }
       if (Number(assessment.balance) < amount) {
         throw new Error("Payment amount exceeds the current balance.");
       }
@@ -413,8 +418,16 @@ export async function voidPaymentAction(
         );
         if (Array.isArray(assessmentRows) && assessmentRows.length > 0) {
           const assessment = assessmentRows[0] as any;
+
+          // Block voiding payments on transferred assessments
+          if (assessment.transferred_at != null) {
+            throw new Error(
+              "VOID_BLOCKED: This assessment's balance was transferred to a newer school year. Voiding this payment would affect a closed ledger, which is not allowed."
+            );
+          }
+
           const pAmount = Number(payment.amount);
-          
+
           const newTotalPaid = Number(assessment.total_paid) - pAmount;
           const newBalance = Number(assessment.balance) + pAmount;
 

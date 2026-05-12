@@ -78,6 +78,13 @@
       "when": 1778485020915,
       "tag": "0010_illegal_white_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1778560497702,
+      "tag": "0011_friendly_jasper_sitwell",
+      "breakpoints": true
     }
   ]
 }
