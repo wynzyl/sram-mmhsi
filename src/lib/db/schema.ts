@@ -13,7 +13,7 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
-import { FEE_ASSESSMENT_BANDS } from "@/lib/fee-schedule/bands";
+import { FEE_ASSESSMENT_BANDS } from "@/lib/constants/assessment-bands";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 

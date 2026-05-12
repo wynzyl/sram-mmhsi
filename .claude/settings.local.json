@@ -66,7 +66,17 @@
       "Bash(git checkout:*)",
       "WebSearch",
       "Bash(docker logs:*)",
-      "Bash(docker-compose restart:*)"
+      "Bash(docker-compose restart:*)",
+      "Bash(git mv:*)",
+      "Bash(if [ -f .env.local ])",
+      "Bash(then echo \"DATABASE_URL exists:\")",
+      "Bash(else echo \".env.local not found\")",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(taskkill:*)",
+      "Bash(docker ps:*)",
+      "Bash(SET PGPASSWORD=722811:*)",
+      "Bash(PGPASSWORD=722811 psql:*)",
+      "Bash(git rm:*)"
     ]
   }
 }

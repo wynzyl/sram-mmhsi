@@ -9,7 +9,7 @@ import {
   deactivateFeeScheduleAction,
 } from "@/features/finance/fee-templates/fee-templates.actions";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
-import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
+import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 
 interface PageProps {
   params: Promise<{ id: string }>;
