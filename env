@@ -1,0 +1,23 @@
+# ─── Application ──────────────────────────────────────────────────────────────
+APP_BASE_URL=http://localhost:3000
+
+# ─── Database (matches docker-compose.yml) ────────────────────────────────────
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=722811
+DATABASE_URL=postgresql://POSTGRES_USER:POSTGRES_PASSWORD@localhost:5432/SRAMS_DB
+
+# ─── Auth ─────────────────────────────────────────────────────────────────────
+AUTH_SECRET=rEnfiX5GLgc1oHzrJA7VOSGm9ij25zzTAB-YWsXCa3A
+
+# ─── Gmail (leave blank for local dev) ───────────────────────────────────────
+GMAIL_CLIENT_ID=
+GMAIL_CLIENT_SECRET=
+GMAIL_REFRESH_TOKEN=
+GMAIL_USER=europhilsolutions@gmail.com
+GMAIL_APP_PASSWORD=ykdpehzpfyekvkvj
+# ─── Stripe (leave blank for local dev) ──────────────────────────────────────
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# ─── Node environment ─────────────────────────────────────────────────────────
+NODE_ENV=development
