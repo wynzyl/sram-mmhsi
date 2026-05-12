@@ -7,7 +7,7 @@ import {
   getAllFeeItemTypes,
 } from "@/features/finance/fee-templates/fee-templates.queries";
 import { FeeTemplateItemsManager } from "@/features/finance/fee-templates/components/FeeTemplateItemsManager";
-import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/fee-schedule/bands";
+import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 
 export const metadata = {
   title: "Fee Template Details | SRAMS",

@@ -10,8 +10,8 @@ import {
   schoolYears,
   feeItemTypes,
 } from "@/lib/db/schema";
-import { eq, and, ne, isNotNull, desc } from "drizzle-orm";
-import { resolveFeeScheduleForAssessment } from "@/lib/fee-schedule/resolve";
+import { eq, and, ne, isNotNull, isNull, desc, asc } from "drizzle-orm";
+import { resolveFeeScheduleForAssessment } from "./assessments.queries";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -76,43 +76,48 @@ export async function createAssessmentFromEnrollmentAction(
     };
   }
 
-  // ─── Check for Balance Forward (Old Students) ────────────────────────────
-  let balanceForwardItem: {
+  // ─── Check for Balance Forward (Old Students - Multi-Year Support) ─────────
+  let balanceForwardItems: Array<{
     description: string;
     amount: string;
-    previousAssessmentId: string;
-  } | null = null;
+    sourceAssessmentId: string;
+    schoolYearLabel: string;
+  }> = [];
 
   if (enrollmentRow.studentType === "old_student") {
-    // Find most recent previous enrollment with assessment
-    const [priorEnrollment] = await db
+    // Find ALL prior enrollments with outstanding balances (not just most recent)
+    const priorEnrollments = await db
       .select({
         assessmentId: assessments.id,
         balance: assessments.balance,
         schoolYearLabel: schoolYears.label,
+        startDate: schoolYears.startDate,
+        transferredAt: assessments.transferredAt, // Check if already transferred
       })
       .from(enrollments)
       .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
-      .leftJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
+      .innerJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
       .where(
         and(
           eq(enrollments.studentId, enrollmentRow.studentId),
           ne(enrollments.schoolYearId, enrollmentRow.schoolYearId), // Different year
           eq(enrollments.status, "enrolled"), // Only fully enrolled
-          isNotNull(assessments.id) // Has assessment
+          isNotNull(assessments.id), // Has assessment
+          isNull(assessments.transferredAt) // Not yet transferred
         )
       )
-      .orderBy(desc(schoolYears.startDate))
-      .limit(1);
+      .orderBy(asc(schoolYears.startDate)); // Oldest first (chronological order)
 
-    if (priorEnrollment && priorEnrollment.balance && priorEnrollment.assessmentId) {
-      const balanceAmount = Number(priorEnrollment.balance);
+    // Create balance forward item for EACH prior year with outstanding balance
+    for (const prior of priorEnrollments) {
+      const balanceAmount = Number(prior.balance);
       if (balanceAmount > 0.01) { // Skip zero and negative (credits)
-        balanceForwardItem = {
-          description: `Balance Forward from ${priorEnrollment.schoolYearLabel}`,
-          amount: priorEnrollment.balance,
-          previousAssessmentId: priorEnrollment.assessmentId,
-        };
+        balanceForwardItems.push({
+          description: `Balance Forward from ${prior.schoolYearLabel}`,
+          amount: prior.balance,
+          sourceAssessmentId: prior.assessmentId,
+          schoolYearLabel: prior.schoolYearLabel,
+        });
       }
     }
   }
@@ -170,6 +175,7 @@ export async function createAssessmentFromEnrollmentAction(
     isDiscount: boolean;
     feeTemplateItemId: string | null; // Allow null for balance forward items
     feeItemTypeId: string;
+    sourceAssessmentId?: string; // For balance forward items only
   }[] = [];
   for (const line of items) {
     const template = templateMap.get(line.feeTemplateItemId)!;
@@ -182,8 +188,8 @@ export async function createAssessmentFromEnrollmentAction(
     });
   }
 
-  // ─── Add Balance Forward Item (if applicable) ────────────────────────────
-  if (balanceForwardItem) {
+  // ─── Add Balance Forward Items (if applicable - Multi-Year Support) ───────
+  if (balanceForwardItems.length > 0) {
     // Get BALANCE_FORWARD fee item type (must exist in seed data)
     const balanceForwardType = await db.query.feeItemTypes.findFirst({
       where: eq(feeItemTypes.code, "BALANCE_FORWARD"),
@@ -197,14 +203,17 @@ export async function createAssessmentFromEnrollmentAction(
       };
     }
 
-    // Prepend balance forward to beginning (will show first in list)
-    resolvedLines.unshift({
-      feeTemplateItemId: null, // Not from template
-      feeItemTypeId: balanceForwardType.id,
-      description: balanceForwardItem.description,
-      amount: Number(balanceForwardItem.amount),
-      isDiscount: false,
-    });
+    // Prepend ALL balance forward items to beginning (chronological order - oldest first)
+    for (const bfItem of balanceForwardItems) {
+      resolvedLines.unshift({
+        feeTemplateItemId: null, // Not from template
+        feeItemTypeId: balanceForwardType.id,
+        description: bfItem.description,
+        amount: Number(bfItem.amount),
+        isDiscount: false,
+        sourceAssessmentId: bfItem.sourceAssessmentId, // Link to source assessment
+      });
+    }
   }
 
   const assessmentTotalAmount = computeAssessmentTotals(resolvedLines);
@@ -234,6 +243,32 @@ export async function createAssessmentFromEnrollmentAction(
         throw new Error("FEE_SCHEDULE_CHANGED");
       }
 
+      // ─── Validate Source Assessments Still Untransferred (Race Condition Check) ───
+      if (balanceForwardItems.length > 0) {
+        const sourceAssessmentIds = balanceForwardItems.map(bf => bf.sourceAssessmentId);
+        const sourceAssessments = await tx
+          .select({ id: assessments.id, transferredAt: assessments.transferredAt })
+          .from(assessments)
+          .where(
+            and(
+              eq(assessments.id, sourceAssessmentIds[0]),
+              // Check all source assessments in a single query would be ideal, but for simplicity check each
+            )
+          );
+
+        // Verify none have been transferred in a concurrent transaction
+        for (const sourceId of sourceAssessmentIds) {
+          const sourceCheck = await tx.query.assessments.findFirst({
+            where: eq(assessments.id, sourceId),
+            columns: { id: true, transferredAt: true },
+          });
+
+          if (sourceCheck?.transferredAt) {
+            throw new Error("SOURCE_ASSESSMENT_ALREADY_TRANSFERRED");
+          }
+        }
+      }
+
       const [newAssessment] = await tx
         .insert(assessments)
         .values({
@@ -259,10 +294,43 @@ export async function createAssessmentFromEnrollmentAction(
           description: item.description,               // ← Snapshot from fee_item_types.name
           amount: String(Number(item.amount).toFixed(2)),
           isDiscount: item.isDiscount,                 // ← Snapshot from fee_item_types.isDiscount
+          sourceAssessmentId: item.sourceAssessmentId ?? null, // ← Link to source assessment for balance forward
           createdBy: session.userId,
           updatedBy: session.userId,
         }))
       );
+
+      // ─── Mark Source Assessments as Transferred (Close Prior Years) ─────────────
+      for (const bfItem of balanceForwardItems) {
+        await tx
+          .update(assessments)
+          .set({
+            balance: "0.00", // Close out the balance
+            transferredAt: new Date(),
+            transferredBy: session.userId,
+            transferredToAssessmentId: newAssessment.id,
+            transferRemarks: `Balance of ${bfItem.amount} transferred to ${enrollmentRow.schoolYearId}`,
+            updatedBy: session.userId,
+            updatedAt: new Date(),
+          })
+          .where(eq(assessments.id, bfItem.sourceAssessmentId));
+
+        // Audit log each transfer
+        await logAudit({
+          actor: session.userId,
+          actorRole: session.role,
+          action: "assessment_balance_transferred",
+          targetEntity: "assessments",
+          targetId: bfItem.sourceAssessmentId,
+          context: newAssessment.id,
+          newState: {
+            transferredToAssessmentId: newAssessment.id,
+            transferredAmount: bfItem.amount,
+            sourceSchoolYear: bfItem.schoolYearLabel,
+            targetEnrollmentId: enrollmentId,
+          },
+        }, { throwOnFail: true });
+      }
 
       await tx
         .update(enrollments)
@@ -287,8 +355,9 @@ export async function createAssessmentFromEnrollmentAction(
           totalAmount: assessmentTotalAmount,
           lineCount: resolvedLines.length,
           feeScheduleId: scheduleResolution.scheduleId,
-          hasBalanceForward: !!balanceForwardItem,
-          balanceForwardAmount: balanceForwardItem?.amount ?? null,
+          balanceForwardCount: balanceForwardItems.length,
+          balanceForwardTotal: balanceForwardItems.reduce((sum, bf) => sum + Number(bf.amount), 0),
+          transferredAssessments: balanceForwardItems.map(bf => bf.sourceAssessmentId),
         },
       }, { throwOnFail: true });
     });
@@ -316,5 +385,185 @@ export async function createAssessmentFromEnrollmentAction(
     }
     logger.error("[assessments] Failed to create assessment", { error: String(err) });
     return { message: "An unexpected error occurred. Please try again." };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reverse Balance Transfer (Admin-only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ReverseBalanceTransferFormState = {
+  message?: string;
+  success?: boolean;
+};
+
+/**
+ * Reverses a balance transfer operation.
+ * - Deletes balance forward items from target assessment
+ * - Restores source assessments (transferredAt = NULL, restore balance)
+ * - Recalculates target assessment totals
+ * - Admin/super_admin only
+ * - Only allowed if NO payments posted on target assessment
+ * - Only allowed if enrollment status = "assessed" (not "enrolled")
+ */
+export async function reverseBalanceTransferAction(
+  assessmentId: string
+): Promise<ReverseBalanceTransferFormState> {
+  const session = await requireSession();
+
+  // Permission check
+  if (!hasPermission(session.role, "assessments:reverse_transfer")) {
+    return {
+      message: "You do not have permission to reverse balance transfers. This action is restricted to administrators.",
+    };
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      // 1. Fetch target assessment (the one receiving balance forwards)
+      const targetAssessment = await tx.query.assessments.findFirst({
+        where: eq(assessments.id, assessmentId),
+        with: {
+          enrollment: true,
+        },
+      });
+
+      if (!targetAssessment) {
+        throw new Error("Assessment not found.");
+      }
+
+      // 2. Validate no payments posted
+      if (Number(targetAssessment.totalPaid) > 0) {
+        throw new Error(
+          "REVERSAL_BLOCKED: Cannot reverse balance transfer after payments have been posted to this assessment. Void all payments first."
+        );
+      }
+
+      // 3. Validate enrollment status is still "assessed" (not enrolled)
+      if (targetAssessment.enrollment?.status !== "assessed") {
+        throw new Error(
+          "REVERSAL_BLOCKED: Can only reverse transfers on assessments with status 'assessed'. This enrollment has already progressed to another status."
+        );
+      }
+
+      // 4. Find all balance forward items linked to source assessments
+      const balanceForwardItems = await tx.query.assessmentItems.findMany({
+        where: and(
+          eq(assessmentItems.assessmentId, assessmentId),
+          isNotNull(assessmentItems.sourceAssessmentId)
+        ),
+      });
+
+      if (balanceForwardItems.length === 0) {
+        throw new Error("No balance forward items found to reverse.");
+      }
+
+      // 5. For each source assessment, restore the transferred balance
+      for (const bfItem of balanceForwardItems) {
+        if (!bfItem.sourceAssessmentId) continue;
+
+        const sourceAssessment = await tx.query.assessments.findFirst({
+          where: eq(assessments.id, bfItem.sourceAssessmentId),
+        });
+
+        if (!sourceAssessment) {
+          logger.warn(`[reverseBalanceTransfer] Source assessment ${bfItem.sourceAssessmentId} not found, skipping`);
+          continue;
+        }
+
+        // Restore source assessment balance
+        await tx
+          .update(assessments)
+          .set({
+            balance: bfItem.amount, // Restore the transferred amount
+            transferredAt: null,
+            transferredBy: null,
+            transferredToAssessmentId: null,
+            transferRemarks: null,
+            updatedBy: session.userId,
+            updatedAt: new Date(),
+          })
+          .where(eq(assessments.id, bfItem.sourceAssessmentId));
+
+        // Audit log restoration
+        await logAudit({
+          actor: session.userId,
+          actorRole: session.role,
+          action: "assessment_transfer_reversed",
+          targetEntity: "assessments",
+          targetId: bfItem.sourceAssessmentId,
+          context: assessmentId,
+          newState: {
+            restoredBalance: bfItem.amount,
+            reversedFromAssessmentId: assessmentId,
+            reversedBy: session.userId,
+          },
+        }, { throwOnFail: true });
+      }
+
+      // 6. Delete balance forward items from target assessment
+      await tx
+        .delete(assessmentItems)
+        .where(
+          and(
+            eq(assessmentItems.assessmentId, assessmentId),
+            isNotNull(assessmentItems.sourceAssessmentId)
+          )
+        );
+
+      // 7. Recalculate target assessment totals (excluding deleted balance forwards)
+      const remainingItems = await tx.query.assessmentItems.findMany({
+        where: eq(assessmentItems.assessmentId, assessmentId),
+      });
+
+      const newTotal = remainingItems.reduce((sum, item) => {
+        const amount = Number(item.amount);
+        return item.isDiscount ? sum - amount : sum + amount;
+      }, 0);
+
+      await tx
+        .update(assessments)
+        .set({
+          totalAmount: String(newTotal.toFixed(2)),
+          balance: String(newTotal.toFixed(2)), // Since totalPaid = 0
+          updatedBy: session.userId,
+          updatedAt: new Date(),
+        })
+        .where(eq(assessments.id, assessmentId));
+
+      // 8. Audit log the target assessment modification
+      await logAudit({
+        actor: session.userId,
+        actorRole: session.role,
+        action: "assessment_updated_transfer_reversal",
+        targetEntity: "assessments",
+        targetId: assessmentId,
+        context: targetAssessment.enrollmentId,
+        newState: {
+          removedBalanceForwardCount: balanceForwardItems.length,
+          newTotalAmount: newTotal,
+          restoredSourceAssessments: balanceForwardItems.map(bf => bf.sourceAssessmentId),
+        },
+      }, { throwOnFail: true });
+    });
+
+    logger.info("[assessments] Balance transfer reversed", {
+      assessmentId,
+      actorId: session.userId,
+    });
+
+    revalidatePath("/staff/assessments");
+    revalidatePath(`/staff/assessments/${assessmentId}`);
+
+    return {
+      success: true,
+      message: "Balance transfer reversed successfully. Prior year balances have been restored.",
+    };
+  } catch (err) {
+    if (String(err).includes("REVERSAL_BLOCKED")) {
+      return { message: String(err).replace("Error: REVERSAL_BLOCKED: ", "") };
+    }
+    logger.error("[assessments] Failed to reverse balance transfer", { error: String(err) });
+    return { message: "An unexpected error occurred while reversing the transfer. Please try again." };
   }
 }

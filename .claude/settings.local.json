@@ -64,7 +64,19 @@
       "mcp__plugin_playwright_playwright__browser_close",
       "Bash(npx stylelint:*)",
       "Bash(git checkout:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(docker logs:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(git mv:*)",
+      "Bash(if [ -f .env.local ])",
+      "Bash(then echo \"DATABASE_URL exists:\")",
+      "Bash(else echo \".env.local not found\")",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(taskkill:*)",
+      "Bash(docker ps:*)",
+      "Bash(SET PGPASSWORD=722811:*)",
+      "Bash(PGPASSWORD=722811 psql:*)",
+      "Bash(git rm:*)"
     ]
   }
 }
