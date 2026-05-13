@@ -10,33 +10,27 @@ services:
       - .env.local
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
-      WATCHPACK_POLLING: "true"
-      CHOKIDAR_USEPOLLING: "true"
-    depends_on:
-      db:
-        condition: service_healthy
-    command: sh -c "npm run db:migrate && npm run dev"
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
-
-  # PostgreSQL Database
-  db:
-    image: postgres:15-alpine
-    restart: always
-    env_file:
-      - .env.local
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-SRAMS_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    ports:
-      - "5433:5432"
-    volumes:
-      - db-data:/var/lib/postgresql/data
-
-volumes:
-  db-data:
+      # Connect to host machine's PostgreSQL via host.docker.internal
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@host.docker.internal:5432/${POSTGRES_DB:-SRAMS_DB}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    develop:
+      watch:
+        # Sync source files for hot reload
+        - action: sync
+          path: ./src
+          target: /app/src
+        # Sync public assets
+        - action: sync
+          path: ./public
+          target: /app/public
+        # Rebuild on package.json changes
+        - action: rebuild
+          path: ./package.json
+        # Rebuild on config changes
+        - action: rebuild
+          path: ./next.config.ts
+        - action: rebuild
+          path: ./tailwind.config.ts
+        - action: rebuild
+          path: ./tsconfig.json
