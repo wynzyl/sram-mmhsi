@@ -728,6 +728,7 @@ export const getEnrollmentQueueCounts = unstable_cache(
     }
 
     // Get all counts in parallel using COUNT(*) (fast, uses indexes)
+    // Each promise has explicit error handling to prevent silent failures
     const [
       readyToEnrollCount,
       pendingCount,
@@ -789,7 +790,12 @@ export const getEnrollmentQueueCounts = unstable_cache(
         (SELECT COUNT(*) FROM new_transferee) +
         (SELECT COUNT(*) FROM old_students)
       )::int AS total
-    `).then((rows) => Number((rows as unknown as Array<{ total: string }>)[0]?.total || 0)),
+    `)
+      .then((rows) => Number((rows as unknown as Array<{ total: string }>)[0]?.total || 0))
+      .catch((err) => {
+        console.error("[enrollments-queue] readyToEnroll count failed:", err);
+        return 0;
+      }),
 
     // Pending: enrollments with pending status
     db
@@ -801,7 +807,11 @@ export const getEnrollmentQueueCounts = unstable_cache(
           eq(enrollments.status, "pending")
         )
       )
-      .then(([result]) => Number(result?.count || 0)),
+      .then(([result]) => Number(result?.count || 0))
+      .catch((err) => {
+        console.error("[enrollments-queue] pending count failed:", err);
+        return 0;
+      }),
 
     // Assessed: enrollments with assessed status
     db
@@ -813,7 +823,11 @@ export const getEnrollmentQueueCounts = unstable_cache(
           eq(enrollments.status, "assessed")
         )
       )
-      .then(([result]) => Number(result?.count || 0)),
+      .then(([result]) => Number(result?.count || 0))
+      .catch((err) => {
+        console.error("[enrollments-queue] assessed count failed:", err);
+        return 0;
+      }),
 
     // Enrolled: enrollments with enrolled status
     db
@@ -825,7 +839,11 @@ export const getEnrollmentQueueCounts = unstable_cache(
           eq(enrollments.status, "enrolled")
         )
       )
-      .then(([result]) => Number(result?.count || 0)),
+      .then(([result]) => Number(result?.count || 0))
+      .catch((err) => {
+        console.error("[enrollments-queue] enrolled count failed:", err);
+        return 0;
+      }),
 
     // Cancelled: enrollments with cancelled status
     db
@@ -837,7 +855,11 @@ export const getEnrollmentQueueCounts = unstable_cache(
           eq(enrollments.status, "cancelled")
         )
       )
-      .then(([result]) => Number(result?.count || 0)),
+      .then(([result]) => Number(result?.count || 0))
+      .catch((err) => {
+        console.error("[enrollments-queue] cancelled count failed:", err);
+        return 0;
+      }),
     ]);
 
     return {

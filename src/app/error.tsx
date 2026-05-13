@@ -1,0 +1,68 @@
+"use client";
+
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    // Log error to monitoring service (e.g., Sentry)
+    console.error("[GlobalError]", error);
+  }, [error]);
+
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
+      <div className="mx-auto max-w-md text-center">
+        <div className="mb-6 flex justify-center">
+          <div className="rounded-full bg-[var(--color-error-muted)] p-4">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-error)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+        </div>
+
+        <h1 className="mb-2 font-display text-2xl font-bold text-[var(--color-text)]">
+          Something went wrong
+        </h1>
+        <p className="mb-6 text-[var(--color-text-muted)]">
+          An unexpected error occurred. Our team has been notified and is working to
+          resolve the issue.
+        </p>
+
+        {error.digest && (
+          <p className="mb-4 font-mono text-xs text-[var(--color-text-muted)]">
+            Error ID: {error.digest}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Button onClick={reset} variant="primary">
+            Try again
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => (window.location.href = "/")}
+          >
+            Go to home
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
