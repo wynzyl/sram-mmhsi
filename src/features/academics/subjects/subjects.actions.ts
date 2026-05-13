@@ -74,7 +74,7 @@ export async function createSubjectAction(
       })
       .returning({ id: subjects.id });
 
-    await logCreateAction(session, "subjects", newSubject.id, data);
+    await logCreateAction(session, "subjects", newSubject.id, data, { throwOnFail: true });
 
     revalidatePath("/staff/academics/subjects");
     return { success: true, message: "Subject created successfully." };
@@ -110,7 +110,7 @@ export async function deleteSubjectAction(
       })
       .where(eq(subjects.id, parsed.data.subjectId));
 
-    await logDeleteAction(session, "subjects", parsed.data.subjectId, "Soft delete");
+    await logDeleteAction(session, "subjects", parsed.data.subjectId, "Soft delete", { throwOnFail: true });
 
     revalidatePath("/staff/academics/subjects");
     return { success: true, message: "Subject deleted successfully." };
@@ -171,7 +171,7 @@ export async function assignTeacherAction(
       })
       .returning({ id: teacherAssignments.id });
 
-    await logCreateAction(session, "teacher_assignments", newAssignment.id, data);
+    await logCreateAction(session, "teacher_assignments", newAssignment.id, data, { throwOnFail: true });
 
     revalidatePath("/staff/academics/assignments");
     return { success: true, message: "Teacher assigned successfully." };
@@ -209,7 +209,7 @@ export async function removeAssignmentAction(
       })
       .where(eq(teacherAssignments.id, parsed.data.assignmentId));
 
-    await logDeleteAction(session, "teacher_assignments", parsed.data.assignmentId, "Soft delete");
+    await logDeleteAction(session, "teacher_assignments", parsed.data.assignmentId, "Soft delete", { throwOnFail: true });
 
     revalidatePath("/staff/academics/assignments");
     return { success: true, message: "Assignment removed." };

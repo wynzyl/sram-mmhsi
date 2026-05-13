@@ -24,8 +24,10 @@ export type {
 export * from "./enrollments.schema";
 
 // Components
+export { default as CancelEnrollmentForm } from "./components/CancelEnrollmentForm";
+export type { EnrollmentStatus, CancelEnrollmentFormProps } from "./components/CancelEnrollmentForm";
 export { default as EnrollmentCard } from "./components/EnrollmentCard";
-export type { EnrollmentCardRow, EnrollmentStatus, SectionOption } from "./components/EnrollmentCard";
+export type { EnrollmentCardRow, SectionOption } from "./components/EnrollmentCard";
 export { default as EnrollmentConfirmationDrawer } from "./components/EnrollmentConfirmationDrawer";
 export { default as EnrollmentGlobalFilters } from "./components/EnrollmentGlobalFilters";
 export { default as EnrollmentQueueTabs } from "./components/EnrollmentQueueTabs";

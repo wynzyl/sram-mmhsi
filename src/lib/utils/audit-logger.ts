@@ -103,20 +103,22 @@ export async function logAudit(
  * @param entity - Entity type (e.g., "students", "enrollments")
  * @param id - Created entity ID
  * @param data - Created entity data (partial snapshot)
+ * @param options - Audit options (e.g., throwOnFail for financial operations)
  *
  * @example
  * ```typescript
  * await logCreateAction(session, "students", student.id, {
  *   studentRef: student.studentRef,
  *   lastName: student.lastName,
- * });
+ * }, { throwOnFail: true }); // For critical operations
  * ```
  */
 export async function logCreateAction(
   session: AuditSession,
   entity: string,
   id: string,
-  data?: object
+  data?: object,
+  options: AuditOptions = {}
 ): Promise<void> {
   const actorId = session.id ?? session.userId ?? "unknown";
   await logAudit({
@@ -126,7 +128,7 @@ export async function logCreateAction(
     targetEntity: entity,
     targetId: id,
     newState: data,
-  });
+  }, options);
 }
 
 /**
@@ -137,10 +139,11 @@ export async function logCreateAction(
  * @param id - Updated entity ID
  * @param previous - Previous state snapshot
  * @param updated - New state snapshot
+ * @param options - Audit options (e.g., throwOnFail for financial operations)
  *
  * @example
  * ```typescript
- * await logUpdateAction(session, "students", studentId, oldData, newData);
+ * await logUpdateAction(session, "students", studentId, oldData, newData, { throwOnFail: true });
  * ```
  */
 export async function logUpdateAction(
@@ -148,7 +151,8 @@ export async function logUpdateAction(
   entity: string,
   id: string,
   previous: object,
-  updated: object
+  updated: object,
+  options: AuditOptions = {}
 ): Promise<void> {
   const actorId = session.id ?? session.userId ?? "unknown";
   await logAudit({
@@ -159,7 +163,7 @@ export async function logUpdateAction(
     targetId: id,
     previousState: previous,
     newState: updated,
-  });
+  }, options);
 }
 
 /**
@@ -169,17 +173,19 @@ export async function logUpdateAction(
  * @param entity - Entity type
  * @param id - Deleted entity ID
  * @param context - Optional deletion context/reason
+ * @param options - Audit options (e.g., throwOnFail for financial operations)
  *
  * @example
  * ```typescript
- * await logDeleteAction(session, "students", studentId, "Duplicate record");
+ * await logDeleteAction(session, "students", studentId, "Duplicate record", { throwOnFail: true });
  * ```
  */
 export async function logDeleteAction(
   session: AuditSession,
   entity: string,
   id: string,
-  context?: string
+  context?: string,
+  options: AuditOptions = {}
 ): Promise<void> {
   const actorId = session.id ?? session.userId ?? "unknown";
   await logAudit({
@@ -189,5 +195,5 @@ export async function logDeleteAction(
     targetEntity: entity,
     targetId: id,
     context,
-  });
+  }, options);
 }

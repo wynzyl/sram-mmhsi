@@ -106,7 +106,7 @@ export async function createUserAction(
       email: userData.email,
       username: userData.username,
       role: userData.role,
-    });
+    }, { throwOnFail: true });
 
     logger.info("[users] User created", {
       userId: newUser.id,
@@ -270,7 +270,8 @@ export async function updateUserAction(
         role: existingUser.role,
         isActive: existingUser.isActive,
       },
-      updateData
+      updateData,
+      { throwOnFail: true }
     );
 
     logger.info("[users] User updated", {
@@ -348,7 +349,8 @@ export async function resetPasswordAction(
       "users",
       userId,
       {},
-      { passwordReset: true, forcePasswordChange }
+      { passwordReset: true, forcePasswordChange },
+      { throwOnFail: true }
     );
 
     logger.info("[users] Password reset", {
@@ -460,7 +462,8 @@ export async function toggleUserStatusAction(
       "users",
       userId,
       { isActive: existingUser.isActive },
-      { isActive }
+      { isActive },
+      { throwOnFail: true }
     );
 
     logger.info("[users] User status changed", {

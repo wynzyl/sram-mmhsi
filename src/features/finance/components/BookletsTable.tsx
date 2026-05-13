@@ -111,8 +111,8 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
                     <p className="mt-1 font-mono text-[13px] text-[var(--color-ops-muted)]">{booklet.series}</p>
                   </td>
                   <td className="ops-table-cell font-mono text-[var(--color-ops-ink)]">
-                    <p>{String(booklet.startNumber).padStart(w, "0")}</p>
-                    <p className="text-[var(--color-ops-muted)]">to {String(booklet.endNumber).padStart(w, "0")}</p>
+                    <span>{String(booklet.startNumber).padStart(w, "0")}</span>
+                    <span className="text-[var(--color-ops-muted)]"> – {String(booklet.endNumber).padStart(w, "0")}</span>
                   </td>
                   <td className="ops-table-cell">
                     <span className="inline-flex min-w-[92px] items-center justify-center border border-[var(--color-ops-line)] bg-[var(--color-ops-field)] px-2 py-1 font-mono text-[13px] text-[var(--color-ops-field-text)]">

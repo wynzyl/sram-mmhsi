@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils/cn";
+import { formatCurrency } from "@/lib/utils/currency";
 
 interface PaymentProgressBarProps {
   /** Total amount paid so far (PHP). */
@@ -8,14 +9,6 @@ interface PaymentProgressBarProps {
   /** When true, render only the bar (no caption). */
   compact?: boolean;
   className?: string;
-}
-
-function formatPhp(amount: number): string {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(amount);
 }
 
 /**
@@ -42,7 +35,7 @@ export default function PaymentProgressBar({
         aria-valuenow={Math.round(percentage)}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`Tuition paid ${formatPhp(safePaid)} of ${formatPhp(safeTotal)}`}
+        aria-label={`Tuition paid ${formatCurrency(safePaid)} of ${formatCurrency(safeTotal)}`}
       >
         <div
           className={cn(
@@ -68,10 +61,10 @@ export default function PaymentProgressBar({
                   : "text-ops-ink"
               )}
             >
-              {formatPhp(safePaid)}
+              {formatCurrency(safePaid)}
             </span>
             <span className="mx-1">/</span>
-            <span>{formatPhp(safeTotal)}</span>
+            <span>{formatCurrency(safeTotal)}</span>
           </span>
           <span
             className={cn(

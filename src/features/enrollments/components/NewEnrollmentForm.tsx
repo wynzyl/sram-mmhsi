@@ -209,8 +209,7 @@ export default function NewEnrollmentForm({
               School Year <span className="required">*</span>
             </span>
             <div
-              className={`form-control ${state.errors?.schoolYearId ? "form-control-error" : ""}`}
-              style={{ background: "var(--color-surface-2)" }}
+              className={`form-control bg-[var(--color-surface-2)] ${state.errors?.schoolYearId ? "form-control-error" : ""}`}
               aria-live="polite"
             >
               {currentSchoolYear ? (
@@ -226,11 +225,11 @@ export default function NewEnrollmentForm({
               <p className="form-error">{state.errors.schoolYearId[0]}</p>
             )}
             {regCtx && currentSchoolYear && (
-              <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+              <p className="form-hint text-muted text-sm mt-1">
                 Same school year as the student&apos;s <strong>approved registration</strong>.
               </p>
             )}
-            <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+            <p className="form-hint text-muted text-sm mt-1">
               Past school years cannot be selected for new enrollments.
             </p>
           </div>
@@ -258,14 +257,14 @@ export default function NewEnrollmentForm({
               <p className="form-error">{state.errors.gradeLevelId[0]}</p>
             )}
             {promotionHint && (
-              <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+              <p className="form-hint text-muted text-sm mt-1">
                 {promotionHint.hasNextGradeLevel
                   ? `Prior enrollment (${promotionHint.lastGradeName}). Default grade is the next level — change only when appropriate.`
                   : `${promotionHint.lastGradeName} matches the highest grade in the catalog. Confirm with admin before enrolling again.`}
               </p>
             )}
             {!promotionHint && regCtx && (
-              <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+              <p className="form-hint text-muted text-sm mt-1">
                 Default grade matches the <strong>approved registration</strong>; change if enrollment
                 differs.
               </p>
@@ -282,14 +281,13 @@ export default function NewEnrollmentForm({
               <input type="hidden" name="studentType" value="old_student" />
               <div
                 id="enrollment-type-display"
-                className={`form-control ${state.errors?.studentType ? "form-control-error" : ""}`}
-                style={{ background: "var(--color-surface-2)" }}
+                className={`form-control bg-[var(--color-surface-2)] ${state.errors?.studentType ? "form-control-error" : ""}`}
                 aria-live="polite"
               >
                 <strong>Old</strong>
                 <span className="text-muted ml-2">(returning — prior enrollment on file)</span>
               </div>
-              <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+              <p className="form-hint text-muted text-sm mt-1">
                 Enrollment type is fixed for learners who already have a record in a previous school year.
               </p>
             </>
@@ -314,7 +312,7 @@ export default function NewEnrollmentForm({
                 <option value="new_student">New</option>
                 <option value="transferee">Transferee</option>
               </select>
-              <p className="form-hint text-muted" style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>
+              <p className="form-hint text-muted text-sm mt-1">
                 For <strong>Transferee</strong>, enter the previous school below (saved on the student
                 record).
               </p>

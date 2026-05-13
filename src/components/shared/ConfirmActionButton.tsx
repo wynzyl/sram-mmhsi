@@ -1,12 +1,24 @@
 "use client";
 
-import { useActionState, type MouseEvent } from "react";
+import { useState, useActionState } from "react";
 import type { BaseFormState } from "@/lib/validators/common-schemas";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 export type ConfirmActionButtonProps = {
   /** Server action to execute on confirmation */
   action: (prevState: BaseFormState, formData: FormData) => Promise<BaseFormState>;
-  /** Confirmation message shown in confirm dialog */
+  /** Confirmation message shown in dialog */
   confirmMessage: string;
   /** Hidden form fields to submit (e.g., { studentId: "123", reason: "test" }) */
   hiddenFields: Record<string, string>;
@@ -20,11 +32,13 @@ export type ConfirmActionButtonProps = {
   className?: string;
   /** Callback after successful action */
   onSuccess?: () => void;
+  /** Optional title for the dialog (defaults to "Confirm Action") */
+  dialogTitle?: string;
 };
 
 /**
  * Reusable confirmation button that executes a server action after user confirms.
- * Consolidates the pattern used in DeleteSubjectButton, LockGradesButton, RemoveAssignmentButton.
+ * Uses AlertDialog instead of browser confirm() for a polished UX.
  *
  * @example
  * ```tsx
@@ -47,14 +61,10 @@ export function ConfirmActionButton({
   variant = "danger",
   className,
   onSuccess,
+  dialogTitle = "Confirm Action",
 }: ConfirmActionButtonProps) {
+  const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(action, {});
-
-  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-    if (!confirm(confirmMessage)) {
-      e.preventDefault();
-    }
-  };
 
   // Call onSuccess callback if action succeeded
   if (state.success && onSuccess) {
@@ -62,30 +72,56 @@ export function ConfirmActionButton({
   }
 
   const variantClasses = {
-    danger: "text-red-600 hover:text-red-900",
-    primary: "text-[var(--color-primary)] hover:text-[var(--color-primary-700)]",
-    secondary: "text-gray-600 hover:text-gray-900",
+    danger: "text-destructive hover:text-destructive/80",
+    primary: "text-primary hover:text-primary/80",
+    secondary: "text-muted-foreground hover:text-foreground",
   };
 
-  const buttonClassName = `${variantClasses[variant]} disabled:opacity-50 transition-colors ${className ?? ""}`.trim();
+  const buttonClassName = `${variantClasses[variant]} disabled:opacity-50 transition-colors font-medium ${className ?? ""}`.trim();
+
+  const handleConfirm = () => {
+    const formData = new FormData();
+    Object.entries(hiddenFields).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+    formAction(formData);
+    setOpen(false);
+  };
 
   return (
-    <form action={formAction} className="inline">
-      {Object.entries(hiddenFields).map(([key, value]) => (
-        <input key={key} type="hidden" name={key} value={value} />
-      ))}
-      <button
-        type="submit"
-        disabled={isPending}
-        className={buttonClassName}
-        onClick={handleClick}
-      >
-        {isPending ? loadingLabel : label}
-      </button>
+    <>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogTrigger asChild>
+          <button
+            type="button"
+            disabled={isPending}
+            className={buttonClassName}
+          >
+            {isPending ? loadingLabel : label}
+          </button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirm}
+              className={variant === "danger" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {state.errors?._form && (
-        <span className="text-red-600 text-xs block mt-1">{state.errors._form[0]}</span>
+        <span className="mt-1 block text-xs text-destructive">
+          {state.errors._form[0]}
+        </span>
       )}
-    </form>
+    </>
   );
 }
 
@@ -137,43 +173,55 @@ export function BlockConfirmButton({
   variant = "danger",
   className,
   onSuccess,
+  dialogTitle = "Confirm Action",
 }: ConfirmActionButtonProps) {
+  const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(action, {});
-
-  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-    if (!confirm(confirmMessage)) {
-      e.preventDefault();
-    }
-  };
 
   if (state.success && onSuccess) {
     onSuccess();
   }
 
-  const variantClasses = {
-    danger: "bg-red-600 hover:bg-red-700 text-white",
-    primary: "bg-[var(--color-primary)] hover:bg-[var(--color-primary-700)] text-white",
-    secondary: "bg-gray-600 hover:bg-gray-700 text-white",
+  const handleConfirm = () => {
+    const formData = new FormData();
+    Object.entries(hiddenFields).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+    formAction(formData);
+    setOpen(false);
   };
 
-  const buttonClassName = `w-full py-2 px-4 rounded-md font-medium disabled:opacity-50 transition-colors ${variantClasses[variant]} ${className ?? ""}`.trim();
-
   return (
-    <form action={formAction}>
-      {Object.entries(hiddenFields).map(([key, value]) => (
-        <input key={key} type="hidden" name={key} value={value} />
-      ))}
-      <button
-        type="submit"
-        disabled={isPending}
-        className={buttonClassName}
-        onClick={handleClick}
-      >
-        {isPending ? loadingLabel : label}
-      </button>
+    <>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant={variant}
+            disabled={isPending}
+            className={`w-full ${className ?? ""}`}
+          >
+            {isPending ? loadingLabel : label}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirm}
+              className={variant === "danger" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {state.errors?._form && (
-        <p className="text-red-600 text-sm mt-2">{state.errors._form[0]}</p>
+        <p className="mt-2 text-sm text-destructive">{state.errors._form[0]}</p>
       )}
-    </form>
+    </>
   );
 }
