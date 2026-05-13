@@ -84,7 +84,10 @@
       "Bash(timeout:*)",
       "Bash(ping:*)",
       "Bash(netstat:*)",
-      "mcp__plugin_playwright_playwright__browser_evaluate"
+      "mcp__plugin_playwright_playwright__browser_evaluate",
+      "Bash(ls components.json postcss.config.* tailwind.config.*)",
+      "Bash(ls src/components/ui/)",
+      "Bash(docker exec sram-mmhsi-db-1 *)"
     ]
   }
 }

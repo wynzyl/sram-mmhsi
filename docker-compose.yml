@@ -1,4 +1,25 @@
 services:
+  # PostgreSQL database
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-722811}
+      POSTGRES_DB: ${POSTGRES_DB:-SRAMS_DB}
+    ports:
+      # Exposed on host port 5432 so host-side tools (drizzle-kit, seed scripts) keep working
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-SRAMS_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # Next.js Application (development)
   app:
     build:
@@ -10,10 +31,11 @@ services:
       - .env.local
     environment:
       NODE_ENV: development
-      # Connect to host machine's PostgreSQL via host.docker.internal
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@host.docker.internal:5432/${POSTGRES_DB:-SRAMS_DB}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      # Inside the compose network, reach Postgres via the service name.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+    depends_on:
+      db:
+        condition: service_healthy
     develop:
       watch:
         # Sync source files for hot reload
@@ -34,3 +56,6 @@ services:
           path: ./tailwind.config.ts
         - action: rebuild
           path: ./tsconfig.json
+
+volumes:
+  db-data:
