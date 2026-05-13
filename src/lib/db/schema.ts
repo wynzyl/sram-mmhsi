@@ -553,18 +553,9 @@ export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
             ${t.transferredBy} IS NULL AND
             ${t.transferredToAssessmentId} IS NULL
           ) OR (
-    sourceAssessmentId: uuid("source_assessment_id").references(() => assessments.id, { onDelete: "restrict" }),            ${t.transferredBy} IS NOT NULL AND
+            ${t.transferredBy} IS NOT NULL AND
             ${t.transferredToAssessmentId} IS NOT NULL
           ))`
-      ),
-      // DB-level: Prevent re-transfer (cannot set transfer fields if already transferred)
-      check(
-        "assessments_no_retransfer",
-        sql`
-          (${t.transferredAt} IS NULL) OR (
-            ${t.transferredAt} IS NOT NULL AND
-            OLD.transferredAt IS NULL
-          )`
       ),
     ]
   );
