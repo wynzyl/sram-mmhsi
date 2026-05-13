@@ -26,22 +26,22 @@ import { cn } from "@/lib/utils/cn";
 import { Loader2 } from "lucide-react";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-2)]",
+  "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]",
   {
     variants: {
       variant: {
         primary:
-          "border border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-[var(--shadow-sm)] hover:bg-[var(--color-primary-700)] hover:shadow-[var(--shadow)] focus-visible:ring-[var(--color-primary)]",
+          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 border border-primary",
         secondary:
-          "border border-[var(--color-border-2)] bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:bg-[var(--color-surface-3)] focus-visible:ring-[var(--color-border-2)]",
+          "bg-card text-foreground border border-border shadow-xs hover:bg-muted",
         ghost:
-          "border border-transparent bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text)]",
+          "border border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
         danger:
-          "bg-[var(--color-error)] text-white border border-[var(--color-error)] hover:bg-red-700 focus-visible:ring-[var(--color-error)]",
+          "bg-destructive text-destructive-foreground border border-destructive shadow-sm hover:bg-destructive/90",
         "danger-outline":
-          "border border-[var(--color-error)] bg-transparent text-[var(--color-error-foreground)] hover:bg-[var(--color-error-surface)] focus-visible:ring-[var(--color-error)] dark:text-[var(--color-error-foreground-dark, var(--color-error-foreground))] dark:hover:bg-[var(--color-error-surface-dark, var(--color-error-surface))]",
+          "border border-destructive bg-transparent text-destructive hover:bg-destructive/10",
         success:
-          "border border-green-600 bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-600/60",
+          "bg-success text-success-foreground border border-success shadow-sm hover:bg-success/90",
       },
       size: {
         sm: "h-8 px-3 text-xs",

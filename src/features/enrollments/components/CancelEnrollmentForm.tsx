@@ -155,7 +155,7 @@ export default function CancelEnrollmentForm({
           <p className="mt-1 text-[11px] text-[var(--color-error)]">{remarksError}</p>
         )}
         {state.message && !state.success && (
-          <p className="mt-1 text-[11px] text-[var(--color-error)]">{state.message}</p>
+          <p className="mt-1 text-[11px] text-(--color-error)">{state.message}</p>
         )}
       </div>
     );
