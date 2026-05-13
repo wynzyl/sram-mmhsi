@@ -1,4 +1,14 @@
 
+# --- Dev stage (hot reload via `next dev`) ---
+FROM node:24-alpine AS dev
+WORKDIR /app
+ENV NODE_ENV=development
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
+
 # --- Builder stage ---
 FROM node:24-alpine AS builder
 WORKDIR /app
@@ -20,7 +30,9 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/src ./src
-# (Optional) Copy any other required files (e.g., drizzle config, etc.)
+# Drizzle migrations + seed/maintenance scripts must exist at runtime
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 
 # Expose the default Next.js port
