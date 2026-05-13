@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 
 /**
@@ -8,6 +9,8 @@ import { useTheme } from "@/components/providers/ThemeProvider";
  */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const cycleTheme = () => {
     if (theme === "light") setTheme("dark");
@@ -84,11 +87,14 @@ export function ThemeToggle() {
     <button
       onClick={cycleTheme}
       className="theme-toggle-btn"
-      title={`Current theme: ${getLabel()} (click to cycle)`}
-      aria-label={`Switch theme (current: ${getLabel()})`}
+      title={mounted ? `Current theme: ${getLabel()} (click to cycle)` : undefined}
+      aria-label={mounted ? `Switch theme (current: ${getLabel()})` : "Switch theme"}
+      suppressHydrationWarning
     >
-      {getIcon()}
-      <span className="theme-toggle-label">{getLabel()}</span>
+      <span suppressHydrationWarning>{mounted ? getIcon() : null}</span>
+      <span className="theme-toggle-label" suppressHydrationWarning>
+        {mounted ? getLabel() : ""}
+      </span>
 
       <style jsx>{`
         .theme-toggle-btn {
