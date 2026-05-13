@@ -1,22 +1,26 @@
 services:
-  # Next.js Application
+  # Next.js Application (development)
   app:
-    build: .
+    build:
+      context: .
+      target: dev
     ports:
       - "3000:3000"
     env_file:
       - .env.local
     environment:
-      DATABASE_URL: postgresql://POSTGRES_USER:POSTGRES_PASSWORD@db:5432/SRAMS_DB
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
     depends_on:
-      - db
-    develop:
-      watch:
-        - action: sync
-          path: .
-          target: /app
-          ignore:
-            - node_modules/
+      db:
+        condition: service_healthy
+    command: sh -c "npm run db:migrate && npm run dev"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
 
   # PostgreSQL Database
   db:
@@ -30,8 +34,9 @@ services:
       timeout: 5s
       retries: 5
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+
 volumes:
   db-data:
