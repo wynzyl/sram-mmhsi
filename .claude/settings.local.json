@@ -51,10 +51,6 @@
       "Bash(powershell -Command \"Remove-Item -Path ''E:\\\\Projects\\\\SRAMS\\\\SRAMS-MMHSI\\\\.claude\\\\worktrees'' -Recurse -Force\")",
       "Bash(git log:*)",
       "Bash(npx tsx:*)",
-      "Bash(npm run db:seed-fee-types:*)",
-      "Bash(npm run db:push:*)",
-      "Bash(npx drizzle-kit push:*)",
-      "Bash(timeout 10 tail:*)",
       "mcp__plugin_playwright_playwright__browser_navigate",
       "Bash(curl:*)",
       "mcp__plugin_playwright_playwright__browser_snapshot",
@@ -70,14 +66,15 @@
       "Bash(git mv:*)",
       "Bash(if [ -f .env.local ])",
       "Bash(then echo \"DATABASE_URL exists:\")",
-      "Bash(else echo \".env.local not found\")",
       "Bash(npx drizzle-kit:*)",
       "Bash(taskkill:*)",
       "Bash(docker ps:*)",
-      "Bash(SET PGPASSWORD=722811:*)",
-      "Bash(PGPASSWORD=722811 psql:*)",
       "Bash(git rm:*)",
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "mcp__plugin_playwright_playwright__browser_fill_form",
+      "mcp__plugin_playwright_playwright__browser_wait_for",
+      "Bash(docker compose exec:*)",
+      "Bash(docker compose:*)"
     ]
   }
 }
