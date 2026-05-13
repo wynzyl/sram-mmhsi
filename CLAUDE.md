@@ -591,14 +591,17 @@ new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(15
 **Workflow:**
 
 1. Modify `src/lib/db/schema.ts`
-2. Run `npm run db:generate` — Creates migration file in `drizzle/`
+2. Run `npm run db:generate --name=descriptive_migration_name` — Creates migration file in `drizzle/`
 3. Review generated SQL in `drizzle/*.sql`
 4. Run `npm run db:migrate` — Applies migration to database
 5. Commit both schema changes AND migration files
 
-### Rule
+**Migration Naming (Non-Negotiable):**
 
-Create migration files with clear, human-readable, descriptive filenames; avoid fancy or non-descriptive names.
+- **ALWAYS** use clear, human-readable, descriptive names for migrations
+- Use snake_case format: `add_student_lrn_field`, `create_payment_allocations_table`, `fix_assessment_balance_constraint`
+- **NEVER** use auto-generated random names like `rich_gamora` or `fancy_unicorn`
+- Name should describe what the migration does
 
 **Important:** Never use `db:push` in production. Always use migrations for traceability.
 
