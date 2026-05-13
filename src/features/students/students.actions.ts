@@ -311,7 +311,7 @@ export async function createStudentAction(
       schoolYearId,
       gradeLevelId,
       registrationStudentType,
-    });
+    }, { throwOnFail: true });
 
     logger.info("[students] Student created with registration", {
       studentId: newStudent.id,
@@ -526,7 +526,8 @@ export async function updateStudentAction(
     // 8. Audit log
     await logUpdateAction(session, "students", studentId,
       { firstName: existingStudent.firstName, lastName: existingStudent.lastName, isActive: existingStudent.isActive },
-      { firstName: studentData.firstName, lastName: studentData.lastName, isActive }
+      { firstName: studentData.firstName, lastName: studentData.lastName, isActive },
+      { throwOnFail: true }
     );
 
     logger.info("[students] Student updated", {

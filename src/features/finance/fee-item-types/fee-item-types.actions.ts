@@ -65,7 +65,7 @@ export async function createFeeItemTypeAction(
     targetEntity: "fee_item_types",
     targetId: type.id,
     newState: { code: parsed.data.code, name: parsed.data.name, category: parsed.data.category },
-  });
+  }, { throwOnFail: true });
 
   revalidatePath(REVALIDATE);
 
@@ -121,7 +121,7 @@ export async function updateFeeItemTypeAction(
     targetEntity: "fee_item_types",
     targetId: parsed.data.id,
     newState: { name: parsed.data.name, category: parsed.data.category },
-  });
+  }, { throwOnFail: true });
 
   revalidatePath(REVALIDATE);
 
@@ -162,7 +162,7 @@ export async function toggleFeeItemTypeAction(
     action: parsed.data.isActive ? "fee_item_type_activated" : "fee_item_type_deactivated",
     targetEntity: "fee_item_types",
     targetId: parsed.data.id,
-  });
+  }, { throwOnFail: true });
 
   revalidatePath(REVALIDATE);
 
