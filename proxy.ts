@@ -3,6 +3,9 @@ import { decryptSessionJwt, SESSION_COOKIE_NAME } from "@/lib/auth/session-token
 import type { Role } from "@/lib/constants/roles";
 import { ROLES, STAFF_ROLES, PORTAL_ROLES, normalizeRole } from "@/lib/constants/roles";
 
+// Header name for request correlation ID (used for distributed tracing)
+const CORRELATION_ID_HEADER = "x-correlation-id";
+
 const PUBLIC_ROUTES = ["/login"];
 
 const STAFF_PREFIXES = ["/admin", "/staff"];
@@ -24,6 +27,9 @@ const ROLE_LANDING: Record<Role, string> = {
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Generate or forward correlation ID for request tracing
+  const correlationId = req.headers.get(CORRELATION_ID_HEADER) ?? crypto.randomUUID();
 
   const isPublic = PUBLIC_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));
   const isStaffRoute = STAFF_PREFIXES.some((p) => pathname.startsWith(p));
@@ -79,5 +85,8 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL(landing, req.nextUrl));
   }
 
-  return NextResponse.next();
+  // Add correlation ID to response headers for tracing
+  const response = NextResponse.next();
+  response.headers.set(CORRELATION_ID_HEADER, correlationId);
+  return response;
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { compare } from "bcryptjs";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -11,6 +12,11 @@ import { logAudit } from "@/lib/utils/audit-logger";
 import { logger } from "@/lib/observability/logger";
 import type { Role } from "@/lib/constants/roles";
 import { normalizeRole } from "@/lib/constants/roles";
+import {
+  isLoginRateLimited,
+  resetLoginRateLimit,
+  getRateLimitResetSeconds,
+} from "@/lib/security/rateLimit";
 
 // ─── Role → Landing Page Map ──────────────────────────────────────────────────
 
@@ -31,6 +37,21 @@ export async function loginAction(
   _prevState: LoginFormState,
   formData: FormData
 ): Promise<LoginFormState> {
+  // 0. Get client IP for rate limiting
+  const headersList = await headers();
+  const forwardedFor = headersList.get("x-forwarded-for");
+  const clientIp = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+
+  // 0.1 Check rate limit before processing
+  if (isLoginRateLimited(clientIp)) {
+    const resetSeconds = getRateLimitResetSeconds(clientIp);
+    const resetMinutes = Math.ceil(resetSeconds / 60);
+    logger.warn("[auth] Rate limit exceeded", { ip: clientIp });
+    return {
+      message: `Too many login attempts. Please try again in ${resetMinutes} minute${resetMinutes !== 1 ? "s" : ""}.`,
+    };
+  }
+
   // 1. Validate inputs with Zod
   const parsed = LoginSchema.safeParse({
     username: formData.get("username"),
@@ -113,6 +134,9 @@ export async function loginAction(
     targetEntity: "users",
     targetId: user.id,
   });
+
+  // 5.1 Reset rate limit on successful login
+  resetLoginRateLimit(clientIp);
 
   // 6. Redirect to role landing page
   // redirect() throws internally — must be called outside try/catch

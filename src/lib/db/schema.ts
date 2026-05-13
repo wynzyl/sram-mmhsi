@@ -129,6 +129,7 @@ export const sessions = pgTable(
   (t) => [
     uniqueIndex("sessions_token_idx").on(t.token),
     index("sessions_user_idx").on(t.userId),
+    index("sessions_expires_idx").on(t.expiresAt), // For session cleanup queries
   ]
 );
 
@@ -266,7 +267,10 @@ export const parentsGuardians = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     updatedBy: uuid("updated_by").references(() => users.id),
   },
-  (t) => [index("pg_name_idx").on(t.lastName, t.firstName)]
+  (t) => [
+    index("pg_name_idx").on(t.lastName, t.firstName),
+    index("pg_email_idx").on(t.email), // For portal login lookups
+  ]
 );
 
 export const studentGuardianLinks = pgTable(
@@ -505,6 +509,7 @@ export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
 }, (t) => [
   uniqueIndex("fso_schedule_item_uidx").on(t.scheduleId, t.feeTemplateItemId),
   index("fso_schedule_idx").on(t.scheduleId),
+  index("fso_template_item_idx").on(t.feeTemplateItemId), // For reverse lookups
 ]);
 
 // ─── Assessments (Billing) ────────────────────────────────────────────────────
@@ -780,6 +785,7 @@ export const auditLogs = pgTable(
     index("audit_actor_idx").on(t.actor),
     index("audit_entity_idx").on(t.targetEntity, t.targetId),
     index("audit_created_idx").on(t.createdAt),
+    index("audit_action_idx").on(t.action), // For compliance reporting queries
   ]
 );
 
