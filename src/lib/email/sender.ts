@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { logger } from "@/lib/observability/logger";
 
 const GMAIL_USER = process.env.GMAIL_USER;
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
@@ -23,9 +24,7 @@ type SendInvoiceEmailOptions = {
 export async function sendInvoiceEmail({ to, subject, html }: SendInvoiceEmailOptions) {
   if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
     if (process.env.NODE_ENV === "development") {
-      console.warn("⚠️ GMAIL_USER or GMAIL_APP_PASSWORD is not set.");
-      console.log("📨 Mocking email send to:", to);
-      console.log("📝 Subject:", subject);
+      logger.warn("[email] GMAIL credentials not set, mocking email send", { to, subject });
       // Mock delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
       return { success: true, message: "Mock email sent successfully (check console)" };
@@ -41,9 +40,13 @@ export async function sendInvoiceEmail({ to, subject, html }: SendInvoiceEmailOp
       subject,
       html,
     });
+    logger.info("[email] Invoice email sent", { to, messageId: info.messageId });
     return { success: true, message: `Email sent: ${info.messageId}` };
   } catch (error) {
-    console.error("Failed to send email:", error);
+    logger.error("[email] Failed to send email", {
+      to,
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw new Error("Failed to send invoice email.");
   }
 }

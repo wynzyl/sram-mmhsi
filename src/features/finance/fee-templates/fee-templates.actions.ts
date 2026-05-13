@@ -70,7 +70,7 @@ export async function createFeeTemplateAction(
     targetEntity: "fee_templates",
     targetId: template.id,
     newState: { name: parsed.data.name, band: parsed.data.assessmentBand },
-  });
+  }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-templates");
 
@@ -137,7 +137,7 @@ export async function addFeeTemplateItemAction(
     targetId: item.id,
     context: parsed.data.feeTemplateId,
     newState: { feeType: feeType?.name, amount: parsed.data.defaultAmount },
-  });
+  }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-templates");
 
@@ -179,7 +179,7 @@ export async function removeFeeTemplateItemAction(
     targetEntity: "fee_template_items",
     targetId: parsed.data.id,
     context: item.feeTemplateId,
-  });
+  }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-templates");
 
@@ -247,7 +247,7 @@ export async function assignTemplateToSchoolYearAction(
       band: parsed.data.assessmentBand,
       templateId: parsed.data.feeTemplateId,
     },
-  });
+  }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-schedules");
 
@@ -287,7 +287,7 @@ export async function deactivateFeeScheduleAction(
     action: "fee_schedule_deactivated",
     targetEntity: "school_year_fee_schedules",
     targetId: parsed.data.scheduleId,
-  });
+  }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-schedules");
   revalidatePath(`/staff/finance/fee-schedules/${parsed.data.scheduleId}`);
@@ -328,7 +328,7 @@ export async function activateFeeScheduleAction(
     action: "fee_schedule_activated",
     targetEntity: "school_year_fee_schedules",
     targetId: parsed.data.scheduleId,
-  });
+  }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-schedules");
   revalidatePath(`/staff/finance/fee-schedules/${parsed.data.scheduleId}`);
@@ -395,7 +395,7 @@ export async function createFeeOverrideAction(
       amount: parsed.data.overrideAmount,
       reason: parsed.data.reason,
     },
-  });
+  }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-schedules");
 

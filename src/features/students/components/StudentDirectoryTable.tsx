@@ -28,7 +28,7 @@ export function StudentDirectoryTable({
       <table className="data-table w-full text-left text-sm" id="students-directory-table">
         <thead>
           <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Student</th>
+            <th className="pl-4 font-semibold tracking-wide text-[var(--color-text-2)]">Student</th>
             <th className="font-semibold tracking-wide text-[var(--color-text-2)]">ID number</th>
             <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Grade</th>
             <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Address</th>
@@ -53,7 +53,7 @@ export function StudentDirectoryTable({
                   key={s.enrollmentId}
                   className="border-b border-[var(--color-border)] last:border-b-0 transition-colors hover:bg-[var(--color-surface-2)]/80"
                 >
-                  <td className="align-middle py-3 pr-4">
+                  <td className="align-middle py-3 pl-4 pr-4">
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_14%,var(--color-surface))] font-display text-sm font-bold text-[var(--color-primary)]"

@@ -3,10 +3,12 @@
 import { useState, useActionState } from "react";
 import Link from "next/link";
 import { updateEnrollmentStatusAction } from "../enrollments.actions";
+import CancelEnrollmentForm from "./CancelEnrollmentForm";
+import type { EnrollmentStatus } from "./CancelEnrollmentForm";
 
 interface Enrollment {
   id: string;
-  status: string;
+  status: EnrollmentStatus;
   studentName: string;
   referenceNumber: string;
   studentId: string;
@@ -42,166 +44,33 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: "badge-danger",
 };
 
-const OUTSTANDING_PAYMENT_EPSILON = 0.009;
-
-function formatPhp(amount: number): string {
-  return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amount);
-}
-
-function CancelInline({
-  enrollmentId,
-  status,
-  assessmentId,
-  assessmentTotalPaid,
-  canCancelWithBalance,
-}: {
-  enrollmentId: string;
-  status: string;
-  assessmentId: string | null;
-  assessmentTotalPaid: number | null;
-  canCancelWithBalance: boolean;
-}) {
-  const [state, action, pending] = useActionState(updateEnrollmentStatusAction, {});
-  const [show, setShow] = useState(false);
-
-  const paid = assessmentTotalPaid ?? 0;
-  const financeStatuses = status === "assessed" || status === "enrolled";
-  const hasCollected = financeStatuses && paid > OUTSTANDING_PAYMENT_EPSILON;
-  const cancelBlockedByPayments = hasCollected && !canCancelWithBalance;
-
-  const remarksError = state.errors?.cancelRemarks?.[0];
-
-  if (state.success) {
-    return (
-      <span className="text-muted" style={{ fontSize: "0.75rem" }}>
-        ✓ {state.message}
-      </span>
-    );
-  }
-
-  return (
-    <div style={{ marginTop: "0.125rem", maxWidth: "min(100%, 22rem)" }}>
-      {!show ? (
-        <button
-          type="button"
-          className="btn-ghost btn-sm"
-          style={{ color: "var(--color-error)" }}
-          onClick={() => setShow(true)}
-        >
-          Cancel enrollment
-        </button>
-      ) : (
-        <form
-          action={action}
-          style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}
-        >
-          <input type="hidden" name="enrollmentId" value={enrollmentId} />
-          <input type="hidden" name="action" value="cancel" />
-          {financeStatuses && assessmentId && (
-            <Link
-              href={`/staff/assessments/${assessmentId}`}
-              className="btn-ghost btn-sm"
-              style={{ alignSelf: "flex-start", fontSize: "0.72rem" }}
-            >
-              Open assessment ledger
-            </Link>
-          )}
-          {hasCollected && (
-            <p
-              style={{
-                fontSize: "0.72rem",
-                margin: 0,
-                color: cancelBlockedByPayments ? "var(--color-error)" : "var(--color-warning, #b45309)",
-              }}
-            >
-              {cancelBlockedByPayments ? (
-                <>
-                  Ledger shows {formatPhp(paid)} collected. Void posted payments (Cashier) first,
-                  then cancel. Ask an admin only if policy requires cancelling without voiding in the
-                  system.
-                </>
-              ) : (
-                <>
-                  Ledger shows {formatPhp(paid)} collected. Prefer voiding payments before cancel.
-                  As admin you may proceed with a detailed audit reason (≥15 characters); this does
-                  not replace proper voiding for accounting.
-                </>
-              )}
-            </p>
-          )}
-          <textarea
-            name="cancelRemarks"
-            className="form-control"
-            rows={hasCollected && canCancelWithBalance ? 4 : 2}
-            placeholder={
-              hasCollected && canCancelWithBalance
-                ? "Detailed audit reason (required, ≥15 characters)…"
-                : "Reason for cancellation…"
-            }
-            style={{ padding: "0.35rem 0.45rem", fontSize: "0.75rem", width: "100%" }}
-          />
-          <div style={{ display: "flex", gap: "0.25rem", alignItems: "center", flexWrap: "wrap" }}>
-            <button
-              type="submit"
-              className="btn-danger btn-sm"
-              disabled={pending || cancelBlockedByPayments}
-            >
-              {pending ? "…" : "Confirm"}
-            </button>
-            <button type="button" className="btn-ghost btn-sm" onClick={() => setShow(false)}>
-              ✕
-            </button>
-          </div>
-        </form>
-      )}
-      {remarksError && (
-        <p style={{ fontSize: "0.72rem", color: "var(--color-error)", marginTop: "0.2rem" }}>
-          {remarksError}
-        </p>
-      )}
-      {state.message && !state.success && (
-        <p style={{ fontSize: "0.72rem", color: "var(--color-error)", marginTop: "0.2rem" }}>
-          {state.message}
-        </p>
-      )}
-    </div>
-  );
-}
-
 function OverrideEnrollBlock({ enrollmentId, sections }: { enrollmentId: string; sections: Section[] }) {
   const [state, action, pending] = useActionState(updateEnrollmentStatusAction, {});
   const [showPick, setShowPick] = useState(false);
 
   if (state.success) {
     return (
-      <span className="text-muted" style={{ fontSize: "0.72rem" }}>
-        ✓ {state.message}
+      <span className="text-muted text-[11px]">
+        {state.message}
       </span>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+    <div className="flex flex-col gap-1">
       {state.message && !state.success && (
-        <p style={{ fontSize: "0.72rem", color: "var(--color-error)" }}>{state.message}</p>
+        <p className="text-[11px] text-[var(--color-error)]">{state.message}</p>
       )}
       {!showPick ? (
         <button type="button" className="btn-secondary btn-sm" onClick={() => setShowPick(true)}>
           Override: mark enrolled (no payment)
         </button>
       ) : (
-        <form
-          action={action}
-          style={{ display: "flex", gap: "0.25rem", alignItems: "center", flexWrap: "wrap" }}
-        >
+        <form action={action} className="flex flex-wrap items-center gap-1">
           <input type="hidden" name="enrollmentId" value={enrollmentId} />
           <input type="hidden" name="action" value="override_enroll" />
-          <select
-            name="sectionId"
-            className="form-control"
-            style={{ padding: "0.2rem 0.4rem", fontSize: "0.72rem" }}
-          >
-            <option value="">Section…</option>
+          <select name="sectionId" className="form-control px-1.5 py-0.5 text-[11px]">
+            <option value="">Section...</option>
             {sections.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -212,7 +81,7 @@ function OverrideEnrollBlock({ enrollmentId, sections }: { enrollmentId: string;
             Confirm
           </button>
           <button type="button" className="btn-ghost btn-sm" onClick={() => setShowPick(false)}>
-            ✕
+            Cancel
           </button>
         </form>
       )}
@@ -230,8 +99,8 @@ function EnrolledActions({
   canCancelWithBalance: boolean;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-      <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", alignItems: "center" }}>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <Link href={`/staff/students/${en.studentId}`} className="btn-ghost btn-sm">
           Student
         </Link>
@@ -240,12 +109,13 @@ function EnrolledActions({
         </Link>
       </div>
       {canCancel && (
-        <CancelInline
+        <CancelEnrollmentForm
           enrollmentId={en.id}
           status={en.status}
           assessmentId={en.assessmentId}
           assessmentTotalPaid={en.assessmentTotalPaid}
           canCancelWithBalance={canCancelWithBalance}
+          variant="table"
         />
       )}
     </div>
@@ -275,7 +145,7 @@ function EnrollmentActionsCell({
 
   if (en.status === "cancelled") {
     return (
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+      <div className="flex flex-wrap items-center gap-2">
         {viewStudent}
         {canManage && (
           <Link
@@ -301,23 +171,24 @@ function EnrollmentActionsCell({
 
   if (en.status === "pending") {
     if (!canManage) {
-      return <div style={{ display: "flex", gap: "0.35rem" }}>{viewStudent}</div>;
+      return <div className="flex gap-1.5">{viewStudent}</div>;
     }
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-        <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           <Link href={`/staff/assessments/new/${en.id}`} className="btn-secondary btn-sm">
             Build assessment
           </Link>
           {viewStudent}
         </div>
         {canCancel && (
-          <CancelInline
+          <CancelEnrollmentForm
             enrollmentId={en.id}
             status={en.status}
             assessmentId={en.assessmentId}
             assessmentTotalPaid={en.assessmentTotalPaid}
             canCancelWithBalance={canCancelWithBalance}
+            variant="table"
           />
         )}
       </div>
@@ -326,14 +197,14 @@ function EnrollmentActionsCell({
 
   if (en.status === "assessed") {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-        <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", alignItems: "center" }}>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {en.assessmentId ? (
             <Link href={`/staff/assessments/${en.assessmentId}`} className="btn-primary btn-sm">
               Ledger / pay
             </Link>
           ) : (
-            <span className="text-muted" style={{ fontSize: "0.72rem" }}>
+            <span className="text-muted text-[11px]">
               Missing ledger row
             </span>
           )}
@@ -341,19 +212,20 @@ function EnrollmentActionsCell({
         </div>
         {canOverrideEnrolled && <OverrideEnrollBlock enrollmentId={en.id} sections={sections} />}
         {canCancel && (
-          <CancelInline
+          <CancelEnrollmentForm
             enrollmentId={en.id}
             status={en.status}
             assessmentId={en.assessmentId}
             assessmentTotalPaid={en.assessmentTotalPaid}
             canCancelWithBalance={canCancelWithBalance}
+            variant="table"
           />
         )}
       </div>
     );
   }
 
-  return <div style={{ display: "flex", gap: "0.35rem" }}>{viewStudent}</div>;
+  return <div className="flex gap-1.5">{viewStudent}</div>;
 }
 
 export default function EnrollmentsTable({

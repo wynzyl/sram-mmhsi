@@ -9,71 +9,141 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-dvh w-full flex-col lg:flex-row">
-      <div className="relative min-h-[36vh] w-full shrink-0 overflow-hidden lg:min-h-0 lg:w-1/2 lg:flex-1">
-        <Image
-          src="/Hero.png"
-          alt="Merryland Montessori & High School — Where Excellent Foundation Begins"
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="(min-width: 1024px) 50vw, 100vw"
-        />
-      </div>
+    <main className="editorial-login">
+      {/* Decorative grain + paper texture layer */}
+      <div className="editorial-grain" aria-hidden="true" />
 
-      <div
-        className="flex w-full flex-1 flex-col items-center justify-center gap-8 px-6 py-10 sm:px-10 lg:w-1/2 lg:px-12 lg:py-12"
-        style={{
-          background:
-            "linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 92%, var(--color-primary) 4%) 0%, var(--color-surface-2) 100%)",
-        }}
-      >
-        <div className="flex w-full max-w-md flex-col items-center gap-8">
-          <div className="flex w-full items-center gap-4">
-            <div className="shrink-0">
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                <rect width="40" height="40" rx="8" fill="var(--color-primary)" />
-                <path
-                  d="M10 28 L20 12 L30 28"
-                  stroke="var(--color-surface)"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M14 22 H26"
-                  stroke="var(--color-surface)"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <div>
-              <h1 className="font-display text-xl font-bold text-[var(--color-text)]">
-                Merryland Montessori & High School
-              </h1>
-              <p className="mt-0.5 max-w-[350px] text-sm text-[var(--color-text-muted)]">
-                School Registration &amp; Accounts Monitoring System
-              </p>
-            </div>
-          </div>
-
-          <div className="w-full rounded-xl border border-[var(--color-ops-line)] bg-[var(--color-ops-panel)] p-8 shadow-[var(--shadow-lg)]">
-            <h2 className="mb-1 font-display text-lg font-bold text-[var(--color-text)]">
-              Sign in to your account
-            </h2>
-            <p className="mb-6 text-sm text-[var(--color-text-muted)]">
-              Enter your credentials to access the system.
-            </p>
-
-            <LoginForm />
-
-            <p className="mt-5 text-center text-xs text-[var(--color-text-muted)]">
-              Having trouble? Contact your system administrator.
-            </p>
-          </div>
+      {/* Top masthead — runs across the full page like a journal header */}
+      <header className="editorial-masthead">
+        <div className="editorial-masthead-left">
+          <span className="editorial-masthead-mark">M.M.H.S.I.</span>
+          <span className="editorial-rule-h" aria-hidden="true" />
+          <span className="editorial-masthead-meta">
+            Est. MCMXCVIII · Urdaneta City
+          </span>
         </div>
+        <div className="editorial-masthead-right">
+          <span className="editorial-masthead-meta">
+            Folio &nbsp;<span className="editorial-folio">001 / α</span>
+          </span>
+        </div>
+      </header>
+
+      <div className="editorial-grid">
+        {/* ── Left: Archival plate ─────────────────────────── */}
+        <section className="editorial-plate" aria-label="Institution">
+          <div className="editorial-plate-frame" aria-hidden="true">
+            <Image
+              src="/Hero.png"
+              alt=""
+              fill
+              priority
+              sizes="(min-width: 1024px) 46vw, 100vw"
+              className="editorial-plate-img"
+            />
+            <span className="editorial-plate-tag">Plate I.</span>
+          </div>
+
+          <figcaption className="editorial-caption">
+            <span className="editorial-caption-num">i.</span>
+            <p>
+              <span className="editorial-caption-title">
+                Merryland Montessori &amp; High School, Inc.
+              </span>{" "}
+              — a record of registration, accounts, and the quiet
+              arithmetic of a school year. Photograph held in the
+              registrar&rsquo;s archive.
+            </p>
+          </figcaption>
+
+          {/* Vertical sidebar marks running down the plate */}
+          <div className="editorial-plate-side" aria-hidden="true">
+            <span>S</span>
+            <span>R</span>
+            <span>A</span>
+            <span>M</span>
+            <span>S</span>
+          </div>
+        </section>
+
+        {/* ── Right: Sign-in folio ─────────────────────────── */}
+        <section className="editorial-folio-pane">
+          <article className="editorial-article animate-editorial-rise">
+            {/* Section eyebrow */}
+            <div className="editorial-eyebrow">
+              <span className="editorial-eyebrow-num">§ I.</span>
+              <span className="editorial-eyebrow-text">Identification</span>
+              <span className="editorial-rule-h editorial-rule-grow" aria-hidden="true" />
+            </div>
+
+            {/* Display headline with drop cap */}
+            <h1 className="editorial-headline">
+              <span className="editorial-dropcap">W</span>
+              elcome back to the operations desk of{" "}
+              <span className="editorial-italic">
+                Merryland Montessori &amp; High School
+              </span>
+              <span className="editorial-period">.</span>
+            </h1>
+
+            <p className="editorial-deck">
+              Please present your credentials. The system records every
+              entry, every receipt, and every grade encoded — therein lies
+              its discipline, and yours.
+            </p>
+
+            {/* Form block */}
+            <div className="editorial-form-block">
+              <div className="editorial-form-rule" aria-hidden="true">
+                <span className="editorial-form-rule-mark">§ II.</span>
+                <span className="editorial-form-rule-label">
+                  Credentials
+                </span>
+              </div>
+
+              <LoginForm />
+            </div>
+
+            {/* Foot matter */}
+            <footer className="editorial-footmatter">
+              <div className="editorial-footmatter-row">
+                <span className="editorial-footmatter-key">Volume</span>
+                <span className="editorial-footmatter-val">XII</span>
+              </div>
+              <div className="editorial-footmatter-row">
+                <span className="editorial-footmatter-key">Build</span>
+                <span className="editorial-footmatter-val">
+                  26.05.13 · v2.1
+                </span>
+              </div>
+              <div className="editorial-footmatter-row">
+                <span className="editorial-footmatter-key">Custodian</span>
+                <span className="editorial-footmatter-val">
+                  Office of the Registrar
+                </span>
+              </div>
+
+              <p className="editorial-colophon">
+                Difficulty signing in? Address your administrator at the
+                Registrar&rsquo;s Office, or write to{" "}
+                <span className="editorial-mono">
+                  it@mmhsi.edu.ph
+                </span>
+                . — <em>Fin.</em>
+              </p>
+            </footer>
+          </article>
+        </section>
       </div>
+
+      {/* Bottom rule — page foot */}
+      <footer className="editorial-pagefoot">
+        <span>SRAMS</span>
+        <span className="editorial-rule-h editorial-rule-grow" aria-hidden="true" />
+        <span>—</span>
+        <span className="editorial-rule-h editorial-rule-grow" aria-hidden="true" />
+        <span className="editorial-mono">001</span>
+      </footer>
     </main>
   );
 }
