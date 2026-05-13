@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, FileText, UserPlus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -83,16 +83,9 @@ export default function ReadyToEnrollTable({
       {
         accessorKey: "studentType",
         header: "Type",
-        cell: ({ row }) => {
-          const type = row.original.studentType;
-          const variants: Record<string, { variant: "secondary" | "info" | "success"; label: string }> = {
-            new_student: { variant: "info", label: "New" },
-            transferee: { variant: "secondary", label: "Transferee" },
-            old_student: { variant: "success", label: "Returning" },
-          };
-          const config = variants[type] ?? { variant: "secondary", label: type };
-          return <Badge variant={config.variant}>{config.label}</Badge>;
-        },
+        cell: ({ row }) => (
+          <StatusBadge status={row.original.studentType} type="studentType" />
+        ),
       },
       {
         id: "gradeLevel",

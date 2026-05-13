@@ -9,8 +9,13 @@ import {
   getEnrollmentQueueData,
   getEnrollmentQueueCounts,
   type TabKey,
+  type ReadyToEnrollStudent,
+  type PendingEnrollment,
+  type AssessedEnrollment,
+  type EnrolledStudent,
+  type CancelledEnrollment,
 } from "@/features/enrollments/enrollments-queue.queries";
-import type { PaginationParams } from "@/lib/types/pagination";
+import type { PaginationParams, PaginatedResult } from "@/lib/types/pagination";
 import { unstable_cache } from "next/cache";
 import { EnrollmentQueueTabs } from "@/features/enrollments";
 import { EnrollmentGlobalFilters } from "@/features/enrollments";
@@ -22,7 +27,7 @@ import {
   CancelledEnrollmentsTable,
 } from "@/features/enrollments";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, FileText } from "lucide-react";
+import { RefreshCw, FileText } from "lucide-react";
 
 type EnrollmentQueuePageProps = {
   searchParams: Promise<{
@@ -75,7 +80,8 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
 
   // Permissions
   const canCreate = hasPermission(session.role, "enrollments:create");
-  const canConfirm = hasPermission(session.role, "enrollments:confirm" as any) || canCreate;
+  // canConfirm will be used for enrollment actions in table (future use)
+  const _canConfirm = hasPermission(session.role, "enrollments:confirm") || canCreate;
 
   // Fetch active school year
   const [activeSchoolYear] = await db
@@ -148,7 +154,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       case "ready-to-enroll":
         return (
           <ReadyToEnrollTableClient
-            paginatedData={queueData as any} // Type assertion for now (will update component next)
+            paginatedData={queueData as PaginatedResult<ReadyToEnrollStudent>}
             schoolYearId={activeSchoolYear.id}
             sections={allSections.map((s) => ({ id: s.id, name: s.name }))}
             gradeLevels={allGradeLevels}
@@ -161,7 +167,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       case "pending":
         return (
           <PendingEnrollmentsTable
-            paginatedData={queueData as any}
+            paginatedData={queueData as PaginatedResult<PendingEnrollment>}
             basePath={staffBasePath}
             searchQuery={searchQuery}
             gradeLevelFilter={gradeLevelFilter}
@@ -172,7 +178,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       case "assessed":
         return (
           <AssessedEnrollmentsTable
-            paginatedData={queueData as any}
+            paginatedData={queueData as PaginatedResult<AssessedEnrollment>}
             basePath={staffBasePath}
             searchQuery={searchQuery}
             gradeLevelFilter={gradeLevelFilter}
@@ -183,7 +189,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       case "enrolled":
         return (
           <EnrolledStudentsTable
-            paginatedData={queueData as any}
+            paginatedData={queueData as PaginatedResult<EnrolledStudent>}
             basePath={staffBasePath}
             searchQuery={searchQuery}
             gradeLevelFilter={gradeLevelFilter}
@@ -194,7 +200,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       case "cancelled":
         return (
           <CancelledEnrollmentsTable
-            paginatedData={queueData as any}
+            paginatedData={queueData as PaginatedResult<CancelledEnrollment>}
             basePath={staffBasePath}
             searchQuery={searchQuery}
             gradeLevelFilter={gradeLevelFilter}
