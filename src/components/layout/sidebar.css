@@ -64,11 +64,15 @@
   padding: 0.4rem 1rem;
   font-size: 0.825rem;
   font-weight: 500;
-  color: var(--color-text-2);
+  color: #1F2937; /* gray-800: darker nav text in light mode */
   text-decoration: none;
   border-radius: 0.6rem;
   margin: 0 0.45rem;
   transition: background 0.15s, color 0.15s;
+}
+
+.dark .nav-link {
+  color: var(--color-text-2); /* preserve original token in dark mode */
 }
 
 .nav-link:hover {

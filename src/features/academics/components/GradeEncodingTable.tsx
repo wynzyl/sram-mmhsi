@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, memo } from "react";
+import { useActionState, useState, memo, useTransition } from "react";
 import { saveGradesAction, submitGradesAction } from "@/features/academics/grades/grades.actions";
 
 type StudentData = {
@@ -79,6 +79,7 @@ export default function GradeEncodingTable({
 }) {
   const [saveState, saveAction, isSaving] = useActionState(saveGradesAction, {});
   const [submitState, submitAction, isSubmitting] = useActionState(submitGradesAction, {});
+  const [, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<"Q1" | "Q2" | "Q3" | "Q4">("Q1");
 
   // Format form data before submission to send complex JSON structure
@@ -103,15 +104,13 @@ export default function GradeEncodingTable({
     actionData.append("schoolYearId", schoolYearId);
     actionData.append("grades", JSON.stringify(gradesToSave));
     
-    // We can't directly call action in Next 15 with custom FormData if we use formAction directly on the form.
-    // Instead, we use React.startTransition if we wanted to call the action directly, but since we are
-    // using useActionState, we can dispatch it.
-    // Wait, useActionState returned dispatch function takes FormData.
     const formToSubmit = new FormData();
     formToSubmit.append("assignmentId", assignmentId);
     formToSubmit.append("schoolYearId", schoolYearId);
     formToSubmit.append("grades", JSON.stringify(gradesToSave));
-    saveAction(formToSubmit);
+    startTransition(() => {
+      saveAction(formToSubmit);
+    });
   };
 
   const currentStatus = students[0]?.grades[activeTab]?.status || "draft";

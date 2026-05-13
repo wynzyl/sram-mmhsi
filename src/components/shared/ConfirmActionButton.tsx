@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useEffect, useTransition } from "react";
 import type { BaseFormState } from "@/lib/validators/common-schemas";
 import {
   AlertDialog,
@@ -65,11 +65,13 @@ export function ConfirmActionButton({
 }: ConfirmActionButtonProps) {
   const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(action, {});
+  const [, startTransition] = useTransition();
 
-  // Call onSuccess callback if action succeeded
-  if (state.success && onSuccess) {
-    onSuccess();
-  }
+  useEffect(() => {
+    if (state.success && onSuccess) {
+      onSuccess();
+    }
+  }, [state.success, onSuccess]);
 
   const variantClasses = {
     danger: "text-destructive hover:text-destructive/80",
@@ -84,7 +86,9 @@ export function ConfirmActionButton({
     Object.entries(hiddenFields).forEach(([key, value]) => {
       formData.append(key, value);
     });
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
     setOpen(false);
   };
 
@@ -177,17 +181,22 @@ export function BlockConfirmButton({
 }: ConfirmActionButtonProps) {
   const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(action, {});
+  const [, startTransition] = useTransition();
 
-  if (state.success && onSuccess) {
-    onSuccess();
-  }
+  useEffect(() => {
+    if (state.success && onSuccess) {
+      onSuccess();
+    }
+  }, [state.success, onSuccess]);
 
   const handleConfirm = () => {
     const formData = new FormData();
     Object.entries(hiddenFields).forEach(([key, value]) => {
       formData.append(key, value);
     });
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
     setOpen(false);
   };
 

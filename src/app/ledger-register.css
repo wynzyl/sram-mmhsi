@@ -1,0 +1,518 @@
+/* ============================================================
+   Billing Ledger · Cashier View
+   Styles the AssessmentLedgerRegister component classes
+   (.ledger-register-* and .cashier-modal-*). Uses existing
+   theme tokens so light/dark mode track automatically.
+   ============================================================ */
+
+.ledger-register {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 3rem;
+  color: var(--foreground);
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* ── Header card ─────────────────────────────────────────── */
+.ledger-register-top {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "identity actions"
+    "tiles    tiles";
+  gap: 1.5rem 2rem;
+  padding: 1.5rem 1.75rem 1.75rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ledger-register-top::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary, var(--primary)) 0%,
+    color-mix(in srgb, var(--color-primary, var(--primary)) 60%, transparent) 70%,
+    transparent 100%
+  );
+}
+
+.ledger-register-top-main {
+  grid-area: identity;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.ledger-register-eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ops-muted, var(--muted-foreground));
+}
+
+.ledger-register-title {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+  color: var(--foreground);
+}
+
+.ledger-register-meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 13px;
+  color: var(--color-ops-muted, var(--muted-foreground));
+}
+
+.ledger-register-meta-sep {
+  opacity: 0.55;
+}
+
+.ledger-register-student-link {
+  color: var(--color-primary, var(--primary));
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px dashed
+    color-mix(in srgb, var(--color-primary, var(--primary)) 45%, transparent);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.ledger-register-student-link:hover {
+  color: color-mix(in srgb, var(--color-primary, var(--primary)) 80%, white);
+  border-bottom-color: currentColor;
+}
+.ledger-register-student-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── Action buttons ──────────────────────────────────────── */
+.ledger-register-actions {
+  grid-area: actions;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ledger-register-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 38px;
+  padding: 0 0.95rem;
+  background: var(--color-primary, var(--primary));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  border: 1px solid
+    color-mix(in srgb, var(--color-primary, var(--primary)) 80%, black);
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 0
+    color-mix(in srgb, var(--color-primary, var(--primary)) 30%, transparent);
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+.ledger-register-btn-primary:hover {
+  background: color-mix(in srgb, var(--color-primary, var(--primary)) 88%, black);
+}
+.ledger-register-btn-primary:active {
+  transform: translateY(1px);
+}
+.ledger-register-btn-primary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.ledger-register-btn-primary svg {
+  opacity: 0.95;
+}
+
+/* ── KPI tiles + progress bar ────────────────────────────── */
+.ledger-register-tiles-wrap {
+  grid-area: tiles;
+  display: flex;
+  flex-direction: column;
+}
+
+.ledger-register-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.875rem;
+}
+
+.ledger-register-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.875rem 1.05rem;
+  background: color-mix(in srgb, var(--muted) 55%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  min-width: 0;
+}
+
+.ledger-register-tile-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ops-muted, var(--muted-foreground));
+}
+
+.ledger-register-tile-value {
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.012em;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.ledger-register-tile-paid .ledger-register-tile-value {
+  color: var(--color-ops-positive, #22c55e);
+}
+
+.ledger-register-tile-owe .ledger-register-tile-value,
+.ledger-register-tile-owe .ledger-register-tile-balance-num {
+  color: var(--color-primary, var(--primary));
+}
+
+/* ── Stacked body (single column, two rows) ──────────────── */
+.ledger-register-column {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.ledger-register-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ledger-register-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.95rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
+}
+
+.ledger-register-section-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+}
+
+/* ── Fees table ──────────────────────────────────────────── */
+.ledger-register-table-wrap {
+  overflow-x: auto;
+}
+
+.ledger-register-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.ledger-register-table thead th {
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ops-muted, var(--muted-foreground));
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--muted) 25%, transparent);
+}
+
+.ledger-register-table tbody td {
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border) 60%, transparent);
+  color: var(--foreground);
+  vertical-align: middle;
+}
+
+.ledger-register-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ledger-register-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--color-primary, var(--primary)) 4%, transparent);
+}
+
+.ledger-register-th-num,
+.ledger-register-td-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ledger-register-discount {
+  color: var(--color-ops-positive, #22c55e);
+  font-weight: 500;
+}
+
+.ledger-register-empty {
+  text-align: center;
+  padding: 2rem 1rem !important;
+  color: var(--color-ops-muted, var(--muted-foreground));
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* Footer row */
+.ledger-register-table tfoot .ledger-register-foot-row th,
+.ledger-register-table tfoot .ledger-register-foot-row td {
+  padding: 0.85rem 1.25rem;
+  font-size: 14px;
+  font-weight: 700;
+  border-top: 2px solid
+    color-mix(in srgb, var(--color-primary, var(--primary)) 55%, transparent);
+  background: color-mix(in srgb, var(--color-primary, var(--primary)) 5%, transparent);
+  color: var(--foreground);
+}
+.ledger-register-foot-row th {
+  text-align: left;
+  letter-spacing: 0.02em;
+}
+.ledger-register-foot-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary, var(--primary));
+}
+.ledger-register-foot-sub td {
+  padding: 0.5rem 1.25rem 0.75rem !important;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--color-ops-warning, #f59e0b);
+  background: color-mix(in srgb, var(--color-ops-warning, #f59e0b) 8%, transparent);
+  border-top: none !important;
+}
+
+/* ── Payments column ─────────────────────────────────────── */
+.ledger-register-payments-body {
+  padding: 0;
+}
+
+.ledger-register-payments-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.95rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--muted) 25%, transparent);
+}
+
+.ledger-register-foot-inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.ledger-register-foot-inline-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ops-muted, var(--muted-foreground));
+}
+.ledger-register-foot-inline-value {
+  font-size: 16px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ops-positive, #22c55e);
+}
+.ledger-register-foot-hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--color-ops-muted, var(--muted-foreground));
+}
+
+/* ── Cashier modal ───────────────────────────────────────── */
+.cashier-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 4rem 1.25rem 2rem;
+  background: rgba(8, 4, 4, 0.62);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: ledger-fade-in 0.18s ease-out;
+}
+
+.cashier-modal-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  max-height: calc(100vh - 6rem);
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 24px 64px -24px rgba(0, 0, 0, 0.55),
+    0 2px 6px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  animation: ledger-rise 0.22s ease-out;
+}
+
+.cashier-modal-dialog::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--color-primary, var(--primary));
+}
+
+.cashier-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.cashier-modal-kicker {
+  margin: 0 0 0.35rem 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary, var(--primary));
+}
+
+.cashier-modal-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.cashier-modal-sub {
+  margin: 0.4rem 0 0 0;
+  font-size: 12.5px;
+  color: var(--color-ops-muted, var(--muted-foreground));
+}
+
+.cashier-modal-close {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-ops-muted, var(--muted-foreground));
+  font-size: 22px;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.cashier-modal-close:hover {
+  background: color-mix(in srgb, var(--color-primary, var(--primary)) 10%, transparent);
+  color: var(--color-primary, var(--primary));
+  border-color: color-mix(in srgb, var(--color-primary, var(--primary)) 30%, transparent);
+}
+.cashier-modal-close:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.cashier-modal-body {
+  padding: 1.25rem 1.5rem 1.5rem;
+  overflow-y: auto;
+}
+
+@keyframes ledger-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes ledger-rise {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .ledger-register-top {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "identity"
+      "actions"
+      "tiles";
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
+  .ledger-register-actions {
+    justify-content: flex-start;
+  }
+  .ledger-register-tiles {
+    grid-template-columns: 1fr;
+  }
+  .ledger-register-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .ledger-register {
+    padding: 1rem 0.875rem 2.5rem;
+  }
+  .ledger-register-title {
+    font-size: 22px;
+  }
+  .ledger-register-tile-value {
+    font-size: 19px;
+  }
+  .cashier-modal-backdrop {
+    padding: 1.5rem 0.75rem;
+  }
+  .cashier-modal-header,
+  .cashier-modal-body {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cashier-modal-backdrop,
+  .cashier-modal-dialog {
+    animation: none;
+  }
+}
