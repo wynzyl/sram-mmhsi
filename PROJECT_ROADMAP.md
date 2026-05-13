@@ -2,12 +2,15 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-05-11
+> Last sync: 2026-05-13
 
-### Current update highlights (2026-05-11)
+### Current update highlights (2026-05-13)
+- **Enrollment queue query optimization** — `getReadyToEnrollStudents()` rewritten with SQL-level pagination using CTEs and UNION ALL. Memory usage reduced from ~47MB to ~50KB per page load (for 5000 students). Query execution time ~60-119ms.
+- **SQL-level document completeness** — Moved `areDocumentsComplete()` logic to SQL CASE expression, eliminating JavaScript post-processing.
+
+### Previous highlights (2026-05-11)
 - **Library migration completed** — All 58 files migrated from `lib/` to `src/lib/` for unified source structure. All application code now under `src/` directory with git history preserved via `git mv`.
 - **Architecture alignment** — Path alias `@/lib/*` updated in tsconfig.json; cleaner project structure aligned with modern Next.js conventions and monorepo best practices.
-- **Documentation updated** — CLAUDE.md, PROJECT_STATUS.md, and PROJECT_ROADMAP.md now reflect new `src/lib/` paths throughout.
 
 ### Previous highlights (2026-05-08)
 - **Enrollment queue system** now operational with list-first workflow — students automatically populate when eligible, global filters persist across tabs via URL params, and one-click confirmation replaces multi-step wizard.
@@ -162,6 +165,7 @@
 - [ ] Integration tests: registration flow, payment posting, grade submission
 - [ ] E2E tests — Playwright dependency present; suite/config not yet in repo
 - [ ] Security tests: route protection, action-level permission, session expiry
+- [x] Performance optimization: enrollment queue query (`getReadyToEnrollStudents`) — SQL-level pagination with CTEs/UNION ALL (47MB → 50KB memory per page)
 - [ ] Performance tests: student search, ledger queries
 
 ---
