@@ -19,7 +19,7 @@ export default function LoginPage() {
           <span className="editorial-masthead-mark">M.M.H.S.I.</span>
           <span className="editorial-rule-h" aria-hidden="true" />
           <span className="editorial-masthead-meta">
-            Est. MCMXCVIII · Pasig City
+            Est. MCMXCVIII · Urdaneta City
           </span>
         </div>
         <div className="editorial-masthead-right">
