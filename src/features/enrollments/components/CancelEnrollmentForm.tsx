@@ -6,7 +6,9 @@ import { X } from "lucide-react";
 import { updateEnrollmentStatusAction } from "../enrollments.actions";
 import { formatCurrency } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
+
 import { buttonVariants } from "@/components/ui/button";
+import { OUTSTANDING_PAYMENT_EPSILON } from "@/lib/constants/payments";
 
 export type EnrollmentStatus = "pending" | "assessed" | "enrolled" | "cancelled";
 
@@ -24,7 +26,7 @@ export interface CancelEnrollmentFormProps {
   variant?: "card" | "table";
 }
 
-const OUTSTANDING_PAYMENT_EPSILON = 0.009;
+
 
 /**
  * Shared cancel enrollment form component.

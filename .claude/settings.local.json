@@ -74,7 +74,10 @@
       "mcp__plugin_playwright_playwright__browser_fill_form",
       "mcp__plugin_playwright_playwright__browser_wait_for",
       "Bash(docker compose exec:*)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(npm search:*)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "Bash(npm show:*)"
     ]
   }
 }
