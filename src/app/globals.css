@@ -1760,7 +1760,7 @@
   --ed-mono:  var(--font-ibm-mono), "IBM Plex Mono", ui-monospace, monospace;
 
   position: relative;
-  min-height: 100dvh;
+  height: 100dvh;
   width: 100%;
   background-color: var(--ed-paper);
   background-image:
@@ -1778,6 +1778,8 @@
   color: var(--ed-ink);
   font-family: var(--ed-serif);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .dark .editorial-login {
@@ -1833,13 +1835,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 1.25rem 2rem 1rem;
+  padding: 0.75rem 2rem;
   border-bottom: 1px solid var(--ed-rule);
   font-family: var(--ed-sans);
   font-size: 0.6875rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--ed-ink-2);
+  flex-shrink: 0;
 }
 
 .editorial-masthead-left,
@@ -1892,7 +1895,9 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 0;
-  min-height: calc(100dvh - 7.5rem);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @media (min-width: 1024px) {
@@ -1907,13 +1912,15 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem 1.25rem;
   border-bottom: 1px solid var(--ed-rule);
+  overflow: hidden;
+  min-height: 0;
 }
 
 @media (min-width: 1024px) {
   .editorial-plate {
-    padding: 3.5rem 2.5rem 3rem 3rem;
+    padding: 2rem 2rem 1.5rem 2.5rem;
     border-bottom: 0;
     border-right: 1px solid var(--ed-rule);
   }
@@ -1923,7 +1930,7 @@
   position: relative;
   flex: 1;
   width: 100%;
-  min-height: 24rem;
+  min-height: 0;
   border: 1px solid var(--ed-ink);
   outline: 1px solid var(--ed-rule);
   outline-offset: 0.625rem;
@@ -1961,15 +1968,7 @@
 }
 
 .editorial-caption {
-  margin: 1.25rem 0 0 0;
-  display: flex;
-  gap: 0.875rem;
-  align-items: flex-start;
-  max-width: 38rem;
-  font-family: var(--ed-serif);
-  font-size: 0.9375rem;
-  line-height: 1.55;
-  color: var(--ed-ink-2);
+  display: none; /* Hidden to fit viewport */
 }
 
 .editorial-caption p {
@@ -2022,12 +2021,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 1.5rem 3rem;
+  padding: 1.5rem 1.25rem;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 @media (min-width: 1024px) {
   .editorial-folio-pane {
-    padding: 3.5rem 3.5rem 3.5rem 3.5rem;
+    padding: 2rem 3rem;
   }
 }
 
@@ -2377,12 +2378,7 @@
 /* Foot matter */
 
 .editorial-footmatter {
-  margin-top: 2.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--ed-rule);
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
+  display: none; /* Hidden to fit viewport */
 }
 
 .editorial-footmatter-row {
@@ -2437,18 +2433,7 @@
 /* Page foot */
 
 .editorial-pagefoot {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 2rem 1.25rem;
-  border-top: 1px solid var(--ed-rule);
-  font-family: var(--ed-sans);
-  font-size: 0.6875rem;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: var(--ed-ink-soft);
+  display: none; /* Hidden to fit viewport */
 }
 
 @media (prefers-reduced-motion: reduce) {
