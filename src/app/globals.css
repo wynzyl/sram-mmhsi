@@ -1,54 +1,6 @@
-/**
- * SRAMS Global Styles
- * ===================
- *
- * Table of Contents:
- * ------------------
- * 1. Design Tokens (@layer tokens)
- *    - Color System (Primary, Accent, Warning, Semantic, Surfaces, Text, Borders)
- *    - Shadow System
- *    - Border Radius System
- *    - Spacing System
- *    - Typography System
- *    - Motion System
- *    - Dark Mode Overrides
- *
- * 2. Base Styles (@layer base)
- *    - Typography Defaults (body, headings, code)
- *    - Background Gradients (light/dark mode)
- *
- * 3. Layout Components (@layer components)
- *    - Page Container, Header, Title
- *    - Form Grid Layouts
- *
- * 4. UI Components (@layer components)
- *    - Unified Button System (.btn, .btn-primary, .btn-icon)
- *    - Unified Panel System (.panel, .panel-head, .panel-body)
- *    - Unified Modal System (.modal-backdrop, .modal-dialog)
- *    - Unified Callout System (.callout, .callout-warn)
- *    - Unified Empty State System (.empty-state)
- *    - Unified Table System (.table, .table-container)
- *    - Form Controls (.form-control, .form-label, .form-error)
- *    - Badge System (.badge, .badge-success)
- *    - Alert System (.alert, .alert-error)
- *
- * 5. Feature Components (@layer components)
- *    - Operations Shell (.ops-shell, .ops-panel, .ops-input, .ops-kpi-*)
- *    - Finance Feature (.fin-page, .fin-panel, .fin-table, .fin-schedule-*, .fin-modal-*)
- *    - Ledger Register (.ledger-register-*, all 42 classes)
- *    - Cashier Modal (.cashier-modal-*)
- *    - Backward Compatibility Aliases
- *
- * 6. Animation Utilities (@layer utilities)
- *    - Keyframes (reveal-stagger, slide-in-soft, badge-pulse, shake, checkmark, ring-fill)
- *    - Animation Classes (.animate-*, .stagger-delay-*)
- *    - Motion Utilities (.hover-lift, .hover-elevate, .transition-smooth)
- *    - Typography Utilities (.font-display, .text-ops-ink)
- *    - Color Utilities (.text-accent-*, .bg-accent-*)
- *    - Reference Code (.reference-code)
- */
-
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /* ========================================================================
    LAYER 1: DESIGN TOKENS
@@ -298,7 +250,6 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    color: var(--color-charcoal);
     color: var(--color-text);
   }
 
@@ -727,24 +678,15 @@
     background: var(--color-ops-panel-muted);
   }
 
-  /* Backward compatibility aliases */
-  .fin-panel {
-    @apply rounded-2xl border overflow-hidden;
-    border-color: var(--color-ops-line);
-    background: var(--color-ops-panel);
-    box-shadow: var(--shadow-sm);
-  }
-
+  /* Backward compatibility: .fin-panel and .ops-panel mirror .panel styles */
+  .fin-panel,
   .ops-panel {
     @apply rounded-2xl border overflow-hidden;
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel);
     box-shadow: var(--shadow-sm);
   }
-
-  .ops-panel-muted {
-    background: var(--color-ops-panel-muted);
-  }
+  .ops-panel-muted { background: var(--color-ops-panel-muted); }
 
   /* ==================== UNIFIED MODAL SYSTEM ==================== */
   /*
@@ -795,6 +737,10 @@
     max-width: 48rem;
   }
 
+  .modal-dialog-xl {
+    max-width: 64rem;
+  }
+
   .modal-header {
     @apply flex items-start justify-between gap-4 px-6 py-5 border-b flex-shrink-0;
     border-color: var(--color-ops-line);
@@ -811,29 +757,8 @@
     background: var(--color-ops-panel-muted);
   }
 
-  /* Backward compatibility aliases */
-  .fin-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    background: color-mix(in srgb, var(--color-ops-ink) 55%, transparent);
-    backdrop-filter: blur(4px);
-  }
-
-  .fin-modal-dialog {
-    @apply w-full rounded-2xl border overflow-hidden flex flex-col;
-    max-width: 36rem;
-    max-height: calc(100dvh - 2rem);
-    border-color: var(--color-ops-line);
-    background: var(--color-ops-panel);
-    box-shadow: var(--shadow-lg);
-    animation: modal-in 0.22s ease-out both;
-  }
-
+  /* Backward compatibility: modal aliases mirror base modal styles */
+  .fin-modal-backdrop,
   .cashier-modal-backdrop {
     position: fixed;
     inset: 0;
@@ -845,10 +770,18 @@
     background: color-mix(in srgb, var(--color-ops-ink) 55%, transparent);
     backdrop-filter: blur(4px);
   }
-
+  .fin-modal-dialog {
+    @apply w-full rounded-2xl border overflow-hidden flex flex-col;
+    max-width: 36rem;
+    max-height: calc(100dvh - 2rem);
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel);
+    box-shadow: var(--shadow-lg);
+    animation: modal-in 0.22s ease-out both;
+  }
   .cashier-modal-dialog {
     @apply w-full rounded-2xl border overflow-hidden flex flex-col;
-    max-width: 48rem; /* Cashier modals are typically larger */
+    max-width: 48rem;
     max-height: calc(100dvh - 2rem);
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel);
@@ -893,19 +826,17 @@
     background: color-mix(in srgb, var(--color-error) 8%, var(--color-ops-panel));
   }
 
-  /* Backward compatibility aliases */
+  /* Backward compatibility: .fin-callout mirrors .callout styles */
   .fin-callout {
     @apply flex gap-3 rounded-xl border p-4;
     border-color: color-mix(in srgb, var(--color-info) 25%, transparent);
     background: color-mix(in srgb, var(--color-info) 6%, var(--color-ops-panel));
   }
-
   .fin-callout-warn {
     @apply flex gap-3 rounded-xl border p-4;
     border-color: color-mix(in srgb, var(--color-ops-warning) 30%, transparent);
     background: color-mix(in srgb, var(--color-ops-warning) 8%, var(--color-ops-panel));
   }
-
   .fin-callout-success {
     @apply flex gap-3 rounded-xl border p-4;
     border-color: color-mix(in srgb, var(--color-ops-positive) 30%, transparent);
@@ -929,11 +860,10 @@
     opacity: 0.5;
   }
 
-  /* Backward compatibility aliases */
+  /* Backward compatibility: .fin-empty mirrors .empty-state styles */
   .fin-empty {
     @apply flex flex-col items-center justify-center gap-4 px-6 py-12 text-center;
   }
-
   .fin-empty-text {
     @apply text-sm;
     color: var(--color-ops-muted);
@@ -1037,42 +967,17 @@
     @apply px-4 py-10 text-center text-sm text-[var(--color-text-muted)];
   }
 
-  /* Backward compatibility aliases */
+  /* Backward compatibility: .table-wrapper and .data-table mirror unified table */
   .table-wrapper {
     @apply overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow)];
   }
-
-  .data-table {
-    @apply w-full border-collapse text-sm;
-  }
-
-  .data-table thead tr {
-    @apply border-b border-[var(--color-border)];
-  }
-
-  .data-table thead th {
-    @apply bg-[var(--color-surface-3)] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)];
-  }
-
-  .data-table tbody tr {
-    @apply border-b border-[var(--color-border)]/70 transition-colors;
-  }
-
-  .data-table tbody tr:last-child {
-    border-bottom: none;
-  }
-
-  .data-table tbody tr:hover {
-    @apply bg-[var(--color-surface-3)]/65;
-  }
-
-  .data-table tbody td {
-    @apply px-4 py-3 text-[var(--color-text-2)];
-  }
-
-  .table-row-hover {
-    /* Already handled by .table tbody tr:hover */
-  }
+  .data-table { @apply w-full border-collapse text-sm; }
+  .data-table thead tr { @apply border-b border-[var(--color-border)]; }
+  .data-table thead th { @apply bg-[var(--color-surface-3)] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]; }
+  .data-table tbody tr { @apply border-b border-[var(--color-border)]/70 transition-colors; }
+  .data-table tbody tr:last-child { border-bottom: none; }
+  .data-table tbody tr:hover { @apply bg-[var(--color-surface-3)]/65; }
+  .data-table tbody td { @apply px-4 py-3 text-[var(--color-text-2)]; }
 
   .text-muted {
     @apply text-[var(--color-text-muted)];
@@ -1129,15 +1034,13 @@
     color: var(--color-ops-muted);
   }
 
+  /* .ops-panel extends .panel with padding and stronger shadow */
   .ops-panel {
-    @apply rounded-2xl border p-5 shadow-[var(--shadow-md)];
+    @apply rounded-2xl border overflow-hidden p-5;
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel);
+    box-shadow: var(--shadow-md);
     color: var(--color-ops-ink);
-  }
-
-  .ops-panel-muted {
-    background: var(--color-ops-panel-muted);
   }
 
   .ops-label {
@@ -1245,11 +1148,6 @@
   @keyframes ledger-fade-up {
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes ledger-modal-in {
-    from { opacity: 0; transform: scale(0.97) translateY(12px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
   }
 
   .ledger-register {
@@ -1551,33 +1449,19 @@
     color: var(--color-ops-muted);
   }
 
-  /* ── Cashier Payment Modal ── */
-
-  .cashier-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    background: color-mix(in srgb, var(--color-ops-ink) 55%, transparent);
-    backdrop-filter: blur(4px);
-  }
-
-  .cashier-modal-dialog {
-    @apply w-full max-w-3xl rounded-2xl border overflow-hidden;
-
-    border-color: var(--color-ops-line);
-    background: var(--color-ops-panel);
-    box-shadow: var(--shadow-lg);
-    max-height: calc(100dvh - 2rem);
-    display: flex;
-    flex-direction: column;
-    animation: ledger-modal-in 0.25s ease-out both;
-  }
+  /* ── Cashier Payment Modal (feature-specific elements) ── */
+  /* Base .cashier-modal-backdrop and .cashier-modal-dialog are aliased in unified modal section */
 
   .cashier-modal-header {
+    @apply flex items-start justify-between gap-4 px-6 py-5 border-b flex-shrink-0;
+    border-color: var(--color-ops-line);
+    background: var(--color-ops-panel-muted);
+  }
+  .cashier-modal-body {
+    @apply overflow-y-auto p-6 flex-1;
+  }
+
+  .cashier-modal-kicker {
     @apply flex items-start justify-between gap-4 px-6 py-5 border-b flex-shrink-0;
 
     border-color: var(--color-ops-line);
@@ -1613,10 +1497,6 @@
   .cashier-modal-close:hover {
     background: color-mix(in srgb, var(--color-ops-line) 50%, transparent);
     color: var(--color-ops-ink);
-  }
-
-  .cashier-modal-body {
-    @apply overflow-y-auto p-6 flex-1;
   }
 
   /* ── Finance Feature (Fee Schedules, Templates, Items) ── */
@@ -1708,27 +1588,13 @@
     font-weight: 500;
   }
 
-  /* ── Callout / Info box ── */
-  .fin-callout {
-    @apply flex gap-3 rounded-xl border p-4;
-
-    border-color: color-mix(in srgb, var(--color-info) 25%, transparent);
-    background: color-mix(in srgb, var(--color-info) 6%, var(--color-ops-panel));
-  }
-
-  .fin-callout-warn {
-    border-color: color-mix(in srgb, var(--color-ops-warning) 30%, transparent);
-    background: color-mix(in srgb, var(--color-ops-warning) 8%, var(--color-ops-panel));
-  }
+  /* ── Callout / Info box (feature-specific elements) ── */
+  /* Base .fin-callout is aliased in unified callout section */
 
   .fin-callout-muted {
+    @apply flex gap-3 rounded-xl border p-4;
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
-  }
-
-  .fin-callout-success {
-    border-color: color-mix(in srgb, var(--color-ops-positive) 30%, transparent);
-    background: color-mix(in srgb, var(--color-ops-positive) 8%, var(--color-ops-panel));
   }
 
   .fin-callout-icon {
@@ -1782,13 +1648,7 @@
     @apply space-y-5;
   }
 
-  .fin-panel {
-    @apply rounded-2xl border overflow-hidden;
-
-    border-color: var(--color-ops-line);
-    background: var(--color-ops-panel);
-    box-shadow: var(--shadow-sm);
-  }
+  /* .fin-panel is aliased in unified panel section */
 
   .fin-panel-head {
     @apply flex items-center justify-between gap-3 px-5 py-3.5 border-b;
@@ -1822,16 +1682,7 @@
     @apply p-6;
   }
 
-  /* ── Empty state ── */
-  .fin-empty {
-    @apply flex flex-col items-center justify-center gap-4 px-6 py-12 text-center;
-  }
-
-  .fin-empty-text {
-    @apply text-sm;
-
-    color: var(--color-ops-muted);
-  }
+  /* .fin-empty and .fin-empty-text are aliased in unified empty state section */
 
   /* ── Badges ── */
   .fin-badge {
@@ -2251,41 +2102,16 @@
     min-width: 1.1em;
   }
 
-  /* ── Finance Modal ── */
-
-  @keyframes fin-modal-in {
-    from { opacity: 0; transform: scale(0.97) translateY(10px); }
-    to   { opacity: 1; transform: scale(1)    translateY(0); }
-  }
-
-  .fin-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    background: color-mix(in srgb, var(--color-ops-ink) 55%, transparent);
-    backdrop-filter: blur(4px);
-  }
-
-  .fin-modal-dialog {
-    @apply w-full rounded-2xl border overflow-hidden flex flex-col;
-
-    max-width: 36rem;
-    max-height: calc(100dvh - 2rem);
-    border-color: var(--color-ops-line);
-    background: var(--color-ops-panel);
-    box-shadow: var(--shadow-lg);
-    animation: fin-modal-in 0.22s ease-out both;
-  }
+  /* ── Finance Modal (feature-specific elements) ── */
+  /* Base modal classes (.fin-modal-backdrop, .fin-modal-dialog) are aliased in unified modal section */
 
   .fin-modal-header {
     @apply flex items-start justify-between gap-4 px-6 py-5 border-b flex-shrink-0;
-
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel-muted);
+  }
+  .fin-modal-body {
+    @apply overflow-y-auto p-6 flex-1;
   }
 
   .fin-modal-kicker {
@@ -2319,11 +2145,6 @@
     color: var(--color-ops-ink);
   }
 
-  .fin-modal-body {
-    @apply overflow-y-auto p-6 flex-1;
-
-  }
-
   /* ── Fee Template Detail Modal ── */
 
   .fin-detail-modal-dialog {
@@ -2334,7 +2155,7 @@
     border-color: var(--color-ops-line);
     background: var(--color-ops-panel);
     box-shadow: var(--shadow-lg);
-    animation: fin-modal-in 0.22s ease-out both;
+    animation: modal-in 0.22s ease-out both;
   }
 
   .fin-detail-modal-header {
