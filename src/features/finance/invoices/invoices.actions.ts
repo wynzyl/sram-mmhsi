@@ -94,7 +94,7 @@ export async function generateInvoiceAction(
     await logCreateAction(session, "invoices", newInvoice.id, {
       invoiceNumber: invoiceNum,
       amountDue: assessment.balance,
-    });
+    }, { throwOnFail: true });
 
     revalidatePath("/staff/finance/invoices");
     revalidatePath(`/staff/assessments/${assessmentId}`);
@@ -191,7 +191,7 @@ export async function sendInvoiceAction(
       amountDue: invoice.amountDue,
       studentName: `${invoice.studentFirstName} ${invoice.studentLastName}`,
       // avoid logging raw email; omit or hash if audit policy requires recipient tracing
-    });
+    }, { throwOnFail: true });
     revalidatePath("/staff/finance/invoices");
     revalidatePath(`/staff/finance/invoices/${invoiceId}`);
 

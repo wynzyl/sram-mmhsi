@@ -93,7 +93,7 @@ export async function createSchoolYearAction(
     await logCreateAction(session, "school_years", newSchoolYear.id, {
       label: schoolYearData.label,
       isActive: schoolYearData.isActive,
-    });
+    }, { throwOnFail: true });
 
     logger.info("[school_years] School year created", {
       schoolYearId: newSchoolYear.id,
@@ -212,7 +212,8 @@ export async function updateSchoolYearAction(
         endDate: existingSchoolYear.endDate,
         isActive: existingSchoolYear.isActive,
       },
-      updateData
+      updateData,
+      { throwOnFail: true }
     );
 
     logger.info("[school_years] School year updated", {
@@ -303,7 +304,8 @@ export async function toggleSchoolYearStatusAction(
       "school_years",
       schoolYearId,
       { isActive: existingSchoolYear.isActive },
-      { isActive }
+      { isActive },
+      { throwOnFail: true }
     );
 
     logger.info("[school_years] School year status changed", {
@@ -409,7 +411,8 @@ export async function deleteSchoolYearAction(
       session,
       "school_years",
       schoolYearId,
-      `Deleted school year: ${existingSchoolYear.label}`
+      `Deleted school year: ${existingSchoolYear.label}`,
+      { throwOnFail: true }
     );
 
     logger.info("[school_years] School year deleted", {

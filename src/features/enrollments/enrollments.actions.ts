@@ -476,7 +476,8 @@ export async function updateEnrollmentStatusAction(
         ...(assessmentForCancel && action === "cancel"
           ? { assessmentId: assessmentForCancel.id }
           : {}),
-      }
+      },
+      { throwOnFail: true }
     );
 
     logger.info("[enrollments] Status updated", {
