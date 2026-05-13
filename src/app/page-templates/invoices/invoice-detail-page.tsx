@@ -3,7 +3,7 @@ import { invoices, students, studentGuardianLinks, parentsGuardians } from "@/li
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import Link from "next/link";
 import SendInvoiceDialog from "@/features/finance/components/invoices/SendInvoiceDialog";
 import PrintInvoiceButton from "@/features/finance/components/invoices/PrintInvoiceButton";
@@ -93,14 +93,20 @@ export async function InternalInvoiceDetailPage(props: {
     );
   }
 
-  const [primaryGuardianLink] = await db
+  const [guardianContact] = await db
     .select({ email: parentsGuardians.email })
     .from(studentGuardianLinks)
     .innerJoin(parentsGuardians, eq(studentGuardianLinks.guardianId, parentsGuardians.id))
-    .where(and(eq(studentGuardianLinks.studentId, invoice.studentId), eq(studentGuardianLinks.isPrimary, true)))
+    .where(
+      and(
+        eq(studentGuardianLinks.studentId, invoice.studentId),
+        isNull(studentGuardianLinks.deletedAt),
+      ),
+    )
+    .orderBy(desc(studentGuardianLinks.isPrimary), studentGuardianLinks.createdAt)
     .limit(1);
 
-  const defaultEmail = primaryGuardianLink?.email || "";
+  const defaultEmail = guardianContact?.email ?? "";
   const status = STATUS_CONFIG[invoice.status] ?? STATUS_CONFIG.draft;
   const invoiceDisplay = invoice.invoiceNumber.replace(/^INV-/, "");
   const studentName = [invoice.studentFirstName, invoice.studentMiddleName, invoice.studentLastName]
