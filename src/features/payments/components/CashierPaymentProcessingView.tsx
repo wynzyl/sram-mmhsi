@@ -52,50 +52,48 @@ export function CashierPaymentProcessingView({
   const router = useRouter();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-3 md:p-4">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/35 p-2 sm:items-center sm:p-3 md:p-4">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="cashier-payment-modal-title"
-        className="w-full max-w-3xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-lg md:p-4"
+        className="flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg max-h-[100dvh] sm:max-h-[calc(100dvh-1.5rem)] md:max-h-[calc(100dvh-2rem)]"
       >
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm md:flex-row md:items-center md:justify-between">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-                Payment processing
-              </p>
-              <h1
-                id="cashier-payment-modal-title"
-                className="mt-1 font-display text-xl font-extrabold text-charcoal"
-              >
-                {studentName}
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <ReferenceCode code={referenceNumber} />
-                <span className="text-sm text-[var(--color-text-2)]">{gradeLevel}</span>
-                <span className="text-sm text-[var(--color-text-muted)]" aria-hidden>
-                  ·
-                </span>
-                <span className="text-sm text-[var(--color-text-2)]">{schoolYear}</span>
-              </div>
-              <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Close this form only by posting payment, Cancel, or Back.
-              </p>
-            </div>
-
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => router.push("/staff/payments")}
-              >
-                Back to queue
-              </Button>
+        <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Payment processing
+            </p>
+            <h1
+              id="cashier-payment-modal-title"
+              className="mt-0.5 font-display text-lg font-extrabold text-charcoal md:text-xl"
+            >
+              {studentName}
+            </h1>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <ReferenceCode code={referenceNumber} />
+              <span className="text-xs text-[var(--color-text-2)] md:text-sm">{gradeLevel}</span>
+              <span className="text-xs text-[var(--color-text-muted)] md:text-sm" aria-hidden>
+                ·
+              </span>
+              <span className="text-xs text-[var(--color-text-2)] md:text-sm">{schoolYear}</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => router.push("/staff/payments")}
+            >
+              Back to queue
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-3 py-3 md:px-4 md:py-4">
+          <div className="grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-12">
             <Card className="lg:col-span-8">
               <CardHeader className="pb-3">
                 <CardTitle>Payment details</CardTitle>
@@ -188,4 +186,5 @@ export function CashierPaymentProcessingView({
     </div>
   );
 }
+
 

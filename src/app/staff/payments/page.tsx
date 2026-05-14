@@ -219,6 +219,7 @@ export default async function CashierQueuePage() {
                           {new Date(p.paymentDate).toLocaleTimeString("en-PH", {
                             hour: "numeric",
                             minute: "2-digit",
+                            timeZone: "Asia/Manila",
                           })}
                         </p>
                       </div>
