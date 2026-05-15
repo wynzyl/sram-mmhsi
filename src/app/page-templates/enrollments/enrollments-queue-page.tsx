@@ -80,8 +80,6 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
 
   // Permissions
   const canCreate = hasPermission(session.role, "enrollments:create");
-  // Permissions
-  const canCreate = hasPermission(session.role, "enrollments:create");
   // Fetch active school year
   const [activeSchoolYear] = await db
     .select({ id: schoolYears.id, label: schoolYears.label })
