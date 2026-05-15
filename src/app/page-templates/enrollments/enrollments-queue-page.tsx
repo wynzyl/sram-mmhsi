@@ -80,9 +80,8 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
 
   // Permissions
   const canCreate = hasPermission(session.role, "enrollments:create");
-  // canConfirm will be used for enrollment actions in table (future use)
-  const _canConfirm = hasPermission(session.role, "enrollments:confirm") || canCreate;
-
+  // Permissions
+  const canCreate = hasPermission(session.role, "enrollments:create");
   // Fetch active school year
   const [activeSchoolYear] = await db
     .select({ id: schoolYears.id, label: schoolYears.label })
@@ -218,7 +217,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       {/* Page Header */}
       <header className="mb-6 flex items-start justify-between">
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-primary)]">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-(--color-primary)">
             Enrollment Management
           </p>
           <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-charcoal">
