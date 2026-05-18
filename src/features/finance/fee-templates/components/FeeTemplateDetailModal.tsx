@@ -222,7 +222,7 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
                         </div>
 
                         <div className="fin-detail-item-list">
-                          {items.map((item, idx) => (
+                          {items.map((item) => (
                             <div key={item.id} className="fin-detail-item-row">
                               <span className="fin-detail-item-order">
                                 {item.order}
