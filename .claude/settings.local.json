@@ -86,7 +86,8 @@
       "Bash(ls components.json postcss.config.* tailwind.config.*)",
       "Bash(ls src/components/ui/)",
       "Bash(docker exec sram-mmhsi-db-1 *)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "mcp__plugin_context7_context7__query-docs"
     ]
   }
 }
