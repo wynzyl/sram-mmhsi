@@ -20,6 +20,7 @@ import type {
   ToggleUserStatusFormState,
 } from "./users.schema";
 import { logger } from "@/lib/observability/logger";
+import { isAdminActionRateLimited, getAdminActionResetSeconds } from "@/lib/security/rateLimit";
 import bcrypt from "bcryptjs";
 
 // ─── Create User Action ───────────────────────────────────────────────────────
@@ -32,6 +33,17 @@ export async function createUserAction(
   const session = await requireSession();
   if (!hasPermission(session.role, "users:manage")) {
     return { message: "You do not have permission to create users." };
+  }
+
+  // 1.1 Rate limit check (prevent abuse)
+  if (isAdminActionRateLimited(session.userId)) {
+    const resetSeconds = getAdminActionResetSeconds(session.userId);
+    logger.warn("[users] Rate limit exceeded for user creation", {
+      userId: session.userId,
+    });
+    return {
+      message: `Too many requests. Please wait ${resetSeconds} second${resetSeconds !== 1 ? "s" : ""}.`,
+    };
   }
 
   // 2. Validate

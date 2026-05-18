@@ -11,7 +11,7 @@ import {
   feeScheduleOverrides,
   feeItemTypes,
 } from "@/lib/db/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, isNull } from "drizzle-orm";
 import type { FeeAssessmentBand } from "@/lib/constants/assessment-bands";
 import {
   type PaginationParams,
@@ -164,7 +164,10 @@ export async function resolveFeeScheduleForAssessment(
   // ─── Step 2: Load Template Items with Fee Type Details ───────────────────
 
   const templateItems = await executor.query.feeTemplateItems.findMany({
-    where: eq(feeTemplateItems.feeTemplateId, schedule.feeTemplateId),
+    where: and(
+      eq(feeTemplateItems.feeTemplateId, schedule.feeTemplateId),
+      isNull(feeTemplateItems.deletedAt)
+    ),
     with: {
       feeItemType: true, // Join with fee_item_types to get name/description
     },

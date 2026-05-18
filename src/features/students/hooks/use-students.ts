@@ -65,17 +65,17 @@ async function fetchStudents(
  * - Automatic refetch on filter changes
  */
 export function useStudents(filters: StudentFilters = {}) {
-  // Normalize filters for consistent cache keys
-  const normalizedFilters: Record<string, unknown> = {
+  // Normalize filters for consistent cache keys AND fetch requests
+  const normalizedFilters: StudentFilters = {
     q: filters.q?.trim() || "",
     page: filters.page || 1,
-    schoolYearId: filters.schoolYearId || null,
-    gradeLevelId: filters.gradeLevelId || null,
+    schoolYearId: filters.schoolYearId || undefined,
+    gradeLevelId: filters.gradeLevelId || undefined,
   };
 
   return useQuery({
     queryKey: queryKeys.students.list(normalizedFilters),
-    queryFn: () => fetchStudents(filters),
+    queryFn: () => fetchStudents(normalizedFilters),
     // Keep previous data during refetch (smooth pagination experience)
     placeholderData: keepPreviousData,
     // 30 second stale time (frequent updates may happen)

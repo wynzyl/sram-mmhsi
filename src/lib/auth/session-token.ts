@@ -6,6 +6,7 @@ export type SessionPayload = {
   userId: string;
   role: Role;
   expiresAt: Date;
+  forcePasswordChange?: boolean;
 };
 
 /** HttpOnly cookie name — shared by server session helpers and `proxy.ts`. */
@@ -32,6 +33,7 @@ export async function encryptSessionJwt(payload: SessionPayload): Promise<string
     userId: payload.userId,
     role: payload.role,
     expiresAt: payload.expiresAt.toISOString(),
+    forcePasswordChange: payload.forcePasswordChange ?? false,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -53,6 +55,7 @@ export async function decryptSessionJwt(
       userId: payload.userId as string,
       role: payload.role as Role,
       expiresAt: new Date(payload.expiresAt as string),
+      forcePasswordChange: payload.forcePasswordChange as boolean | undefined,
     };
   } catch {
     return null;

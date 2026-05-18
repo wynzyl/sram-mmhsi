@@ -48,7 +48,7 @@ export async function decryptSession(
 export async function createSession(
   userId: string,
   role: Role,
-  meta: { ipAddress?: string; userAgent?: string } = {}
+  meta: { ipAddress?: string; userAgent?: string; forcePasswordChange?: boolean } = {}
 ): Promise<void> {
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
 
@@ -67,7 +67,13 @@ export async function createSession(
   const sessionId = row.id;
 
   // 2. Build signed JWT containing the session ID
-  const jwt = await encryptSession({ sessionId, userId, role, expiresAt });
+  const jwt = await encryptSession({
+    sessionId,
+    userId,
+    role,
+    expiresAt,
+    forcePasswordChange: meta.forcePasswordChange ?? false,
+  });
 
   // 3. Update DB row with the actual token (used for server-side revocation)
   await db

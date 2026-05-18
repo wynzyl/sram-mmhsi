@@ -15,6 +15,13 @@
       "when": 1778653081750,
       "tag": "0001_add_performance_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779078929757,
+      "tag": "0002_add_soft_delete_to_fee_template_items",
+      "breakpoints": true
     }
   ]
 }
