@@ -31,10 +31,16 @@ export type Permission =
   | "assessments:create"
   | "assessments:update"
   /** Reverse a payment transfer between assessments — admin-only; requires detailed remarks. */
-  | "assessments:reverse_transfer"  // Payments
+  | "assessments:reverse_transfer"
+  // Payments
   | "payments:read"
   | "payments:post"
+  /** @deprecated Use payments:void_request instead. Kept for backward compatibility. */
   | "payments:void"
+  /** Request a void (cashier, registrar, admin, super_admin). Creates a pending void request for approval. */
+  | "payments:void_request"
+  /** Approve or reject void requests (admin, super_admin only). */
+  | "payments:void_approve"
   // Invoices
   | "invoices:read"
   | "invoices:send"
@@ -67,7 +73,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "enrollments:cancel_with_balance",
     "enrollments:override_enroll",
     "assessments:read", "assessments:create", "assessments:update", "assessments:reverse_transfer",
-    "payments:read", "payments:post", "payments:void",
+    "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
     "booklets:manage",
@@ -86,7 +92,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "enrollments:cancel_with_balance",
     "enrollments:override_enroll",
     "assessments:read", "assessments:create", "assessments:update", "assessments:reverse_transfer",
-    "payments:read", "payments:post", "payments:void",
+    "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
     "booklets:manage",
@@ -99,7 +105,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "registrations:read", "registrations:create", "registrations:review",
     "enrollments:read", "enrollments:create", "enrollments:update", "enrollments:confirm", "enrollments:cancel",
     "assessments:read", "assessments:create",
-    "payments:read", "payments:post", "payments:void",
+    "payments:read", "payments:post", "payments:void", "payments:void_request",
     "grades:read",
     "reports:academic",
     "sections:manage", "school_years:manage",
@@ -115,7 +121,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   cashier: [
     "students:read",
     "assessments:read",
-    "payments:read", "payments:post", "payments:void",
+    "payments:read", "payments:post", "payments:void", "payments:void_request",
     "invoices:read",
     "reports:finance",
   ],

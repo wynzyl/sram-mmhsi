@@ -11,6 +11,7 @@ import {
   index,
   check,
   jsonb,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import { FEE_ASSESSMENT_BANDS } from "@/lib/constants/assessment-bands";
@@ -50,7 +51,9 @@ export const enrollmentStudentTypeEnum = pgEnum("enrollment_student_type", [
 export const paymentStatusEnum = pgEnum("payment_status", [
   "pending_confirmation",
   "posted",
-  "voided",
+  "voided",      // Keep for backward compatibility
+  "reversed",    // Original payment reversed via approval
+  "reversal",    // Offsetting negative entry
 ]);
 
 export const invoiceStatusEnum = pgEnum("invoice_status", [
@@ -78,6 +81,15 @@ export const orStatusEnum = pgEnum("or_status", [
   "consumed",
   "voided",
 ]);
+
+export const voidRequestStatusEnum = pgEnum("void_request_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "cancelled",
+]);
+
+export const paymentKindEnum = pgEnum("payment_kind", ["payment", "reversal"]);
 
 /** Assessment ledger: balance-driven, or cancelled when enrollment is cancelled. */
 export const assessmentBillingStatusEnum = pgEnum("assessment_billing_status", [
@@ -625,14 +637,60 @@ export const receiptBooklets = pgTable(
   ]
 );
 
+// ─── Void Requests (Approval-based payment voiding) ───────────────────────────
+
+/**
+ * Void requests capture requests to void/reverse a posted payment.
+ * Cashiers/registrars create requests; admins approve/reject.
+ * Approved requests create a reversal payment entry (offsetting negative amount).
+ */
+export const voidRequests = pgTable(
+  "void_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** The payment being requested to void */
+    paymentId: uuid("payment_id").notNull(), // FK added after payments table defined
+    /** Reason provided by the requester */
+    requestReason: text("request_reason").notNull(),
+    status: voidRequestStatusEnum("status").notNull().default("pending"),
+    /** User who submitted the void request */
+    requestedBy: uuid("requested_by").notNull().references(() => users.id),
+    requestedAt: timestamp("requested_at").notNull().defaultNow(),
+    /** Admin who approved/rejected */
+    decidedBy: uuid("decided_by").references(() => users.id),
+    decidedAt: timestamp("decided_at"),
+    /** Remarks from the approver/rejecter */
+    decisionRemarks: text("decision_remarks"),
+    /** When the requester cancelled their own request */
+    cancelledAt: timestamp("cancelled_at"),
+    /** The reversal payment created upon approval */
+    reversalPaymentId: uuid("reversal_payment_id"), // FK added after payments table defined
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // Only one pending request per payment at a time
+    uniqueIndex("void_requests_payment_pending_uidx")
+      .on(t.paymentId)
+      .where(sql`${t.status} = 'pending'`),
+    index("void_requests_status_idx").on(t.status),
+    index("void_requests_payment_idx").on(t.paymentId),
+    index("void_requests_requested_by_idx").on(t.requestedBy),
+    index("void_requests_pending_status_idx")
+      .on(t.status)
+      .where(sql`${t.status} = 'pending'`), // PERFORMANCE: Admin inbox queries
+  ]
+);
+
 export const payments = pgTable(
   "payments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     studentId: uuid("student_id").notNull().references(() => students.id),
     assessmentId: uuid("assessment_id").references(() => assessments.id),
-    bookletId: uuid("booklet_id").notNull().references(() => receiptBooklets.id),
-    orNumber: text("or_number").notNull(),
+    // Booklet and OR number are nullable for reversal entries (reversals don't consume an OR)
+    bookletId: uuid("booklet_id").references(() => receiptBooklets.id),
+    orNumber: text("or_number"),
     orStatus: orStatusEnum("or_status").notNull().default("consumed"),
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
     paymentMethod: text("payment_method").notNull(),  // cash, check, gcash, etc.
@@ -640,9 +698,19 @@ export const payments = pgTable(
     paymentDate: timestamp("payment_date").notNull(),
     status: paymentStatusEnum("status").notNull().default("pending_confirmation"),
     remarks: text("remarks"),
+    // Void-related fields (legacy direct void - kept for backward compatibility)
     voidedAt: timestamp("voided_at"),
     voidedBy: uuid("voided_by").references(() => users.id),
     voidReason: text("void_reason"),
+    // Reversal workflow fields (new approval-based system)
+    kind: paymentKindEnum("kind").notNull().default("payment"),
+    /** For reversal rows: points to the original payment being offset */
+    reversesPaymentId: uuid("reverses_payment_id").references((): AnyPgColumn => payments.id),
+    /** For original payments: when it was reversed via approval */
+    reversedAt: timestamp("reversed_at"),
+    reversedBy: uuid("reversed_by").references(() => users.id),
+    /** Links to the void request that triggered this reversal */
+    reversedByRequestId: uuid("reversed_by_request_id"), // FK added after voidRequests table
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -654,7 +722,10 @@ export const payments = pgTable(
       "payments_or_number_required_when_consumed",
       sql`(${t.orStatus} <> 'consumed' OR ${t.orNumber} IS NOT NULL)`,
     ),
-    uniqueIndex("payments_or_number_idx").on(t.orNumber),
+    // Unique OR number index - partial to exclude NULL (reversal rows have no OR number)
+    uniqueIndex("payments_or_number_idx")
+      .on(t.orNumber)
+      .where(sql`${t.orNumber} IS NOT NULL`),
     uniqueIndex("payments_reference_number_unique_idx")
       .on(t.referenceNumber)
       .where(sql`${t.referenceNumber} is not null`),
@@ -663,6 +734,8 @@ export const payments = pgTable(
     index("payments_date_idx").on(t.paymentDate),
     index("payments_student_date_idx").on(t.studentId, t.paymentDate), // PERFORMANCE: Student payment history queries
     index("payments_assessment_status_idx").on(t.assessmentId, t.status), // PERFORMANCE: Assessment reconciliation
+    index("payments_reverses_payment_idx").on(t.reversesPaymentId), // PERFORMANCE: Reversal lookups
+    index("payments_kind_idx").on(t.kind), // PERFORMANCE: Filter payment vs reversal
   ]
 );
 
@@ -862,4 +935,58 @@ export const assessmentsRelations = relations(assessments, ({ one, many }) => ({
 
 export const schoolYearsRelations = relations(schoolYears, ({ many }) => ({
   feeSchedules: many(schoolYearFeeSchedules),
+}));
+
+// Void Request Relations
+export const voidRequestsRelations = relations(voidRequests, ({ one }) => ({
+  payment: one(payments, {
+    fields: [voidRequests.paymentId],
+    references: [payments.id],
+    relationName: "voidRequest_payment",
+  }),
+  requestedByUser: one(users, {
+    fields: [voidRequests.requestedBy],
+    references: [users.id],
+    relationName: "voidRequest_requester",
+  }),
+  decidedByUser: one(users, {
+    fields: [voidRequests.decidedBy],
+    references: [users.id],
+    relationName: "voidRequest_decider",
+  }),
+  reversalPayment: one(payments, {
+    fields: [voidRequests.reversalPaymentId],
+    references: [payments.id],
+    relationName: "voidRequest_reversalPayment",
+  }),
+}));
+
+// Payment Relations (for reversal tracking)
+export const paymentsRelations = relations(payments, ({ one, many }) => ({
+  student: one(students, {
+    fields: [payments.studentId],
+    references: [students.id],
+  }),
+  assessment: one(assessments, {
+    fields: [payments.assessmentId],
+    references: [assessments.id],
+  }),
+  booklet: one(receiptBooklets, {
+    fields: [payments.bookletId],
+    references: [receiptBooklets.id],
+  }),
+  /** For reversal rows: the original payment this reverses */
+  reversedPayment: one(payments, {
+    fields: [payments.reversesPaymentId],
+    references: [payments.id],
+    relationName: "payment_reversal",
+  }),
+  /** For original payments: the reversal row(s) that offset this payment */
+  reversals: many(payments, {
+    relationName: "payment_reversal",
+  }),
+  /** Void requests targeting this payment */
+  voidRequests: many(voidRequests, {
+    relationName: "voidRequest_payment",
+  }),
 }));
