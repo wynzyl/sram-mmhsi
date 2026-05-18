@@ -1418,6 +1418,230 @@
   color: var(--warning, #f59e0b);
 }
 
+/* Detail modal (wider variant used by Fee Template details) */
+.fin-detail-modal-dialog {
+  width: 100%;
+  max-width: 44rem;
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.fin-detail-modal-header {
+  padding: 1.25rem 1.5rem;
+  background-color: var(--muted);
+}
+
+.fin-detail-modal-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fin-detail-modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.fin-detail-modal-body {
+  padding: 0;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.fin-detail-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background-color: var(--card);
+}
+
+/* KPI strip */
+.fin-detail-kpi-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0.875rem 1.5rem;
+  background-color: color-mix(in srgb, var(--primary) 4%, var(--card));
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.fin-detail-kpi-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 1.25rem;
+  flex: 1 1 auto;
+  min-width: 7rem;
+}
+
+.fin-detail-kpi-item:first-child {
+  padding-left: 0;
+}
+
+.fin-detail-kpi-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.fin-detail-kpi-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-detail-kpi-secondary {
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.fin-detail-kpi-discount {
+  color: var(--success, #22c55e);
+}
+
+.fin-detail-kpi-divider {
+  width: 1px;
+  background-color: var(--border);
+  margin: 0.125rem 0;
+}
+
+/* Items breakdown */
+.fin-detail-items-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.fin-detail-category-group {
+  border-bottom: 1px solid var(--border);
+}
+
+.fin-detail-category-group:last-of-type {
+  border-bottom: none;
+}
+
+.fin-detail-category-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.fin-detail-category-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.fin-detail-category-label {
+  flex: 1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--foreground);
+}
+
+.fin-detail-category-subtotal {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-detail-item-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.fin-detail-item-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8125rem;
+}
+
+.fin-detail-item-row:last-child {
+  border-bottom: none;
+}
+
+.fin-detail-item-order {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-detail-item-name {
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.fin-detail-item-amount {
+  font-weight: 600;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fin-detail-item-amount-disc {
+  color: var(--success, #22c55e);
+}
+
+.fin-minus {
+  margin-right: 0.125rem;
+}
+
+.fin-detail-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: color-mix(in srgb, var(--primary) 6%, var(--card));
+  border-top: 1px solid var(--border);
+}
+
+.fin-detail-total-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--foreground);
+}
+
+.fin-detail-total-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    OPERATIONS PANEL UTILITIES
    Used by booklet management, payments, and operational views
