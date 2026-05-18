@@ -1,16 +1,17 @@
 services:
-  # PostgreSQL database
+  # PostgreSQL database (use profile to optionally run containerized DB)
   db:
     image: postgres:15-alpine
     restart: unless-stopped
+    profiles:
+      - with-db
     env_file:
       - .env.local
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-722811}
-      POSTGRES_DB: ${POSTGRES_DB:-SRAMS_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      # Exposed on host port 5432 so host-side tools (drizzle-kit, seed scripts) keep working
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
@@ -20,7 +21,7 @@ services:
       timeout: 5s
       retries: 10
 
-  # Next.js Application (development)
+  # Next.js Application (development) - connects to host PostgreSQL
   app:
     build:
       context: .
@@ -30,12 +31,11 @@ services:
     env_file:
       - .env.local
     environment:
-      NODE_ENV: development
-      # Inside the compose network, reach Postgres via the service name.
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
-    depends_on:
-      db:
-        condition: service_healthy
+      # Connect to PostgreSQL running on host machine via host.docker.internal
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@host.docker.internal:5432/${POSTGRES_DB}
+    # Enable host.docker.internal on Linux (already works on Windows/Mac)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     develop:
       watch:
         # Sync source files for hot reload

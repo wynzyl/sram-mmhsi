@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { logoutAction } from "@/features/auth";
@@ -194,11 +195,14 @@ export function Sidebar({ role, username }: SidebarProps) {
     <aside className="sidebar">
       {/* Brand */}
       <div className="sidebar-brand">
-        <svg width="28" height="28" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-          <rect width="40" height="40" rx="8" fill="var(--color-primary)" />
-          <path d="M10 28 L20 12 L30 28" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M14 22 H26" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
+        <Image
+          src="/MLAND LOGO.png"
+          alt="Merryland logo"
+          width={28}
+          height={28}
+          priority
+          className="sidebar-brand-logo"
+        />
         <div>
           <p className="sidebar-brand-name">MERRYLAND</p>
           <p className="sidebar-brand-portal">{portalLabel(resolvedRole)}</p>
