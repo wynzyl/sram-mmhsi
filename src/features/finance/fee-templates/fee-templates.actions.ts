@@ -16,6 +16,7 @@ import {
   schoolYearFeeSchedules,
   feeScheduleOverrides,
   feeItemTypes,
+  assessmentItems,
 } from "@/lib/db/schema";
 import {
   CreateFeeTemplateSchema,
@@ -168,6 +169,32 @@ export async function removeFeeTemplateItemAction(
 
   if (!item) {
     return { message: "Item not found" };
+  }
+
+  // Check if used in any assessment items
+  const usedInAssessment = await db.query.assessmentItems.findFirst({
+    where: eq(assessmentItems.feeTemplateItemId, parsed.data.id),
+    columns: { id: true },
+  });
+
+  if (usedInAssessment) {
+    return {
+      message:
+        "This fee item is used in student assessments and cannot be removed. The assessment records must retain the historical fee reference.",
+    };
+  }
+
+  // Check if used in any fee schedule overrides
+  const usedInOverride = await db.query.feeScheduleOverrides.findFirst({
+    where: eq(feeScheduleOverrides.feeTemplateItemId, parsed.data.id),
+    columns: { id: true },
+  });
+
+  if (usedInOverride) {
+    return {
+      message:
+        "This fee item has overrides defined in fee schedules. Remove the overrides first before removing the template item.",
+    };
   }
 
   await db.delete(feeTemplateItems).where(eq(feeTemplateItems.id, parsed.data.id));
