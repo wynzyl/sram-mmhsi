@@ -30,7 +30,7 @@ import {
   type AssignTemplateFormState,
   type CreateFeeOverrideFormState,
 } from "./fee-templates.schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 // ─── Template CRUD ────────────────────────────────────────────────────────
@@ -164,7 +164,10 @@ export async function removeFeeTemplateItemAction(
   }
 
   const item = await db.query.feeTemplateItems.findFirst({
-    where: eq(feeTemplateItems.id, parsed.data.id),
+    where: and(
+      eq(feeTemplateItems.id, parsed.data.id),
+      isNull(feeTemplateItems.deletedAt)
+    ),
   });
 
   if (!item) {
@@ -197,7 +200,14 @@ export async function removeFeeTemplateItemAction(
     };
   }
 
-  await db.delete(feeTemplateItems).where(eq(feeTemplateItems.id, parsed.data.id));
+  // Soft delete instead of hard delete
+  await db
+    .update(feeTemplateItems)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: session.userId,
+    })
+    .where(eq(feeTemplateItems.id, parsed.data.id));
 
   await logAudit({
     actor: session.userId,
