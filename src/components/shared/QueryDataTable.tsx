@@ -1,6 +1,11 @@
 "use client";
 
-import { useQuery, type QueryKey, type UseQueryOptions } from "@tanstack/react-query";
+import {
+  useQuery,
+  type QueryKey,
+  type UseQueryOptions,
+  type QueryFunctionContext,
+} from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./DataTable";
 import { Spinner } from "@/components/ui/spinner";
@@ -30,8 +35,9 @@ export interface QueryDataTableProps<TData> {
   /**
    * Async function that fetches table data.
    * Should return `{ data: TData[], pagination?: PaginationMeta }`
+   * Receives QueryFunctionContext with `signal` for request cancellation.
    */
-  queryFn: () => Promise<QueryDataTableResult<TData>>;
+  queryFn: (context: QueryFunctionContext) => Promise<QueryDataTableResult<TData>>;
 
   /**
    * Column definitions for TanStack Table.
