@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { reportClientError } from "@/lib/errors/client-reporting";
 
 export default function AdminError({
   error,
@@ -11,7 +12,8 @@ export default function AdminError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[AdminError]", error);
+    // Report error to monitoring
+    reportClientError(error, { source: "admin" });
   }, [error]);
 
   return (
