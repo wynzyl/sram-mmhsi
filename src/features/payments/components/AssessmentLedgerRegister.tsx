@@ -28,6 +28,16 @@ export type LedgerPaymentRow = {
   referenceNumber: string | null;
   /** Cashier / user who posted the payment (`payments.created_by`). */
   processedBy: string | null;
+  /** Payment kind: 'payment' (original) or 'reversal' (offsetting entry) */
+  kind?: string;
+  /** For reversal rows: links to the original payment */
+  reversesPaymentId?: string | null;
+};
+
+export type PendingVoidRequestInfo = {
+  requestId: string;
+  requestedBy: string;
+  requestedByUsername: string;
 };
 
 type ActiveBooklet = {
@@ -52,12 +62,18 @@ export type AssessmentLedgerRegisterProps = {
     balance: string;
     billingStatus: string;
     transferredAt: string | null;
-    transferredToAssessmentId: string | null;  };
+    transferredToAssessmentId: string | null;
+  };
   items: LedgerLineItem[];
   payments: LedgerPaymentRow[];
   activeBooklets: ActiveBooklet[];
   canPost: boolean;
-  canVoid: boolean;
+  /** Whether user can request voids (replaces legacy canVoid) */
+  canRequestVoid: boolean;
+  /** Map of paymentId -> pending void request info */
+  pendingVoidByPaymentId?: Record<string, PendingVoidRequestInfo>;
+  /** Current user ID (for cancel button visibility) */
+  currentUserId?: string;
   balanceForwardTypeId: string | null;
 };
 
@@ -79,7 +95,9 @@ export default function AssessmentLedgerRegister({
   payments,
   activeBooklets,
   canPost,
-  canVoid,
+  canRequestVoid,
+  pendingVoidByPaymentId = {},
+  currentUserId,
   balanceForwardTypeId,
 }: AssessmentLedgerRegisterProps) {
   const router = useRouter();
@@ -167,7 +185,7 @@ export default function AssessmentLedgerRegister({
               Receive payment
             </button>
           )}
-          <GenerateInvoiceButton assessmentId={assessment.id} />
+          <GenerateInvoiceButton assessmentId={assessment.id} balance={balanceNum} />
         </div>
 
         {/* Bottom: KPI tiles + progress bar */}
@@ -435,7 +453,13 @@ export default function AssessmentLedgerRegister({
             </span>
           </div>
           <div className="ledger-register-payments-body">
-            <PaymentsHistoryTable payments={payUiRows} canVoid={canVoid} embedded />
+            <PaymentsHistoryTable
+              payments={payUiRows}
+              canRequestVoid={canRequestVoid}
+              pendingVoidByPaymentId={pendingVoidByPaymentId}
+              currentUserId={currentUserId}
+              embedded
+            />
           </div>
           <div className="ledger-register-payments-footer">
             <div className="ledger-register-foot-inline">

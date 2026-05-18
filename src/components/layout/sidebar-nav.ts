@@ -16,7 +16,8 @@ export type NavIconName =
   | "payments"
   | "invoices"
   | "finance"
-  | "fee-item-types";
+  | "fee-item-types"
+  | "void-requests";
 
 /** One level of nested links (e.g. Register Student). Deeper nesting is not rendered. */
 export type NavItem = {
@@ -40,6 +41,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Overview",
       items: [{ href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" }],
+    },
+    {
+      label: "Finance",
+      items: [
+        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
+      ],
     },
     {
       label: "System",
@@ -77,6 +84,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
         { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
+        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
       ],
     },
@@ -123,6 +131,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
         { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
+        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
       ],
     },
     {
@@ -157,6 +166,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Cashier",
       items: [
         { href: "/staff/payments", label: "Payments", icon: "payments" },
+        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
       ],
     },
