@@ -12,8 +12,6 @@
       "Bash(pkill:*)",
       "Bash(npm run dev:*)",
       "Bash(git diff:*)",
-      "Bash(npm run db:generate:*)",
-      "Bash(npm run db:migrate:*)",
       "Bash(node -e:*)",
       "Bash(node check-db.js:*)",
       "Bash(node apply-migration.js:*)",
@@ -87,7 +85,8 @@
       "mcp__plugin_playwright_playwright__browser_evaluate",
       "Bash(ls components.json postcss.config.* tailwind.config.*)",
       "Bash(ls src/components/ui/)",
-      "Bash(docker exec sram-mmhsi-db-1 *)"
+      "Bash(docker exec sram-mmhsi-db-1 *)",
+      "Bash(docker exec:*)"
     ]
   }
 }
