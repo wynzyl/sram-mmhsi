@@ -1,6 +1,11 @@
 "use client";
 
-import { useQuery, type QueryKey, type UseQueryOptions } from "@tanstack/react-query";
+import {
+  useQuery,
+  type QueryKey,
+  type UseQueryOptions,
+  type QueryFunctionContext,
+} from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./DataTable";
 import { Spinner } from "@/components/ui/spinner";
@@ -30,8 +35,9 @@ export interface QueryDataTableProps<TData> {
   /**
    * Async function that fetches table data.
    * Should return `{ data: TData[], pagination?: PaginationMeta }`
+   * Receives QueryFunctionContext with `signal` for request cancellation.
    */
-  queryFn: () => Promise<QueryDataTableResult<TData>>;
+  queryFn: (context: QueryFunctionContext) => Promise<QueryDataTableResult<TData>>;
 
   /**
    * Column definitions for TanStack Table.
@@ -178,6 +184,14 @@ export function QueryDataTable<TData>({
 
   // Error state
   if (isError) {
+    // Log error details for debugging (not shown to users in production)
+    console.error("[QueryDataTable] Query error:", error);
+
+    const isDev = process.env.NODE_ENV === "development";
+    const errorMessage = isDev && error instanceof Error
+      ? error.message
+      : "Something went wrong while loading data. Please try again.";
+
     return (
       errorComponent ?? (
         <div className={cn("flex items-center justify-center py-12", className)}>
@@ -200,7 +214,7 @@ export function QueryDataTable<TData>({
               Failed to load data
             </p>
             <p className="text-xs text-[var(--color-text-muted)] max-w-xs">
-              {error instanceof Error ? error.message : "An unexpected error occurred"}
+              {errorMessage}
             </p>
           </div>
         </div>

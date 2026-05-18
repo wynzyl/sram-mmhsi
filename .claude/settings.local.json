@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npx drizzle-kit generate:*)",
       "Bash(npx drizzle-kit migrate:*)",
-      
+      "Bash(dir:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run build:*)",
+      "Bash(ls:*)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
       "mcp__plugin_playwright_playwright__browser_snapshot",
       "mcp__plugin_playwright_playwright__browser_type",
       "mcp__plugin_playwright_playwright__browser_click",

@@ -7,6 +7,7 @@ import { ROLES, STAFF_ROLES, PORTAL_ROLES, normalizeRole } from "@/lib/constants
 const CORRELATION_ID_HEADER = "x-correlation-id";
 
 const PUBLIC_ROUTES = ["/login"];
+const PASSWORD_CHANGE_ROUTE = "/change-password";
 
 const STAFF_PREFIXES = ["/admin", "/staff"];
 
@@ -83,6 +84,17 @@ export async function proxy(req: NextRequest) {
   ) {
     const landing = ROLE_LANDING[role] ?? "/login";
     return NextResponse.redirect(new URL(landing, req.nextUrl));
+  }
+
+  // SECURITY: Force password change gate - redirect users who need to change password
+  // Allow access to change-password page and logout action, redirect everything else
+  if (
+    isAuthenticated &&
+    session?.forcePasswordChange &&
+    pathname !== PASSWORD_CHANGE_ROUTE &&
+    !pathname.startsWith("/api/auth/logout")
+  ) {
+    return NextResponse.redirect(new URL(PASSWORD_CHANGE_ROUTE, req.nextUrl));
   }
 
   // Add correlation ID to response headers for tracing
