@@ -22,6 +22,13 @@
       "when": 1779078929757,
       "tag": "0002_add_soft_delete_to_fee_template_items",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779093704326,
+      "tag": "0003_add_void_requests_and_reversal",
+      "breakpoints": true
     }
   ]
 }
