@@ -459,6 +459,8 @@ export const feeTemplateItems = pgTable("fee_template_items", {
   createdBy: uuid("created_by").references(() => users.id),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: uuid("updated_by").references(() => users.id),
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: uuid("deleted_by").references(() => users.id),
 }, (t) => [
   index("fee_template_items_template_idx").on(t.feeTemplateId),
   index("fee_template_items_type_idx").on(t.feeItemTypeId),

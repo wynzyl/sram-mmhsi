@@ -39,7 +39,17 @@ export function FeeItemTypesView({ initialData }: Props) {
     );
   }
 
-  if (isError) {
+  // Only show full error UI when there's no data to display
+  // If we have cached/SSR data, continue showing it despite refetch errors
+  if (isError && feeTypes.length === 0) {
+    // Log error for debugging
+    console.error("[FeeItemTypesView] Query error:", error);
+
+    const isDev = process.env.NODE_ENV === "development";
+    const errorMessage = isDev && error instanceof Error
+      ? error.message
+      : "Something went wrong. Please try again.";
+
     return (
       <div className="fin-error">
         <div className="fin-error-icon" aria-hidden>
@@ -57,11 +67,14 @@ export function FeeItemTypesView({ initialData }: Props) {
           </svg>
         </div>
         <p className="fin-error-title">Failed to load fee types</p>
-        <p className="fin-error-message">
-          {error instanceof Error ? error.message : "An unexpected error occurred"}
-        </p>
+        <p className="fin-error-message">{errorMessage}</p>
       </div>
     );
+  }
+
+  // Log background refetch errors but continue showing cached data
+  if (isError && feeTypes.length > 0) {
+    console.error("[FeeItemTypesView] Background refetch failed:", error);
   }
 
   return <FeeItemTypesList feeTypes={feeTypes} canManage={canManage} />;
