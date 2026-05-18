@@ -22,11 +22,13 @@ import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
 import {
   CreateEnrollmentSchema,
   UpdateEnrollmentStatusSchema,
+  UpdateIntakeDocumentsSchema,
 } from "./enrollments.schema";
 import type {
   CreateEnrollmentInput,
   EnrollmentFormState,
   UpdateEnrollmentFormState,
+  UpdateIntakeDocumentsFormState,
 } from "./enrollments.schema";
 import { logger } from "@/lib/observability/logger";
 import { validateGradeProgression } from "@/lib/utils/enrollment-grade";
@@ -501,6 +503,106 @@ export async function updateEnrollmentStatusAction(
     };
   } catch (err) {
     logger.error("[enrollments] Failed to update status", { error: String(err) });
+    return { message: "An unexpected error occurred. Please try again." };
+  }
+}
+
+// ─── Update Intake Documents Action ──────────────────────────────────────────
+
+export async function updateIntakeDocumentsAction(
+  _prevState: UpdateIntakeDocumentsFormState,
+  formData: FormData
+): Promise<UpdateIntakeDocumentsFormState> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "enrollments:update")) {
+    return { message: "You do not have permission to update enrollment documents." };
+  }
+
+  const parsed = UpdateIntakeDocumentsSchema.safeParse({
+    enrollmentId: formData.get("enrollmentId"),
+    intakeForm138: parseIntakeDocumentStatus(formData.get("intakeForm138")),
+    intakeBirthCertificatePsa: parseIntakeDocumentStatus(formData.get("intakeBirthCertificatePsa")),
+    intakeGoodMoralCharacter: parseIntakeDocumentStatus(formData.get("intakeGoodMoralCharacter")),
+    intakeQualifiedVoucher: parseIntakeDocumentStatus(formData.get("intakeQualifiedVoucher")),
+    intakeEscCertificate: parseIntakeDocumentStatus(formData.get("intakeEscCertificate")),
+  });
+
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors as UpdateIntakeDocumentsFormState["errors"] };
+  }
+
+  const {
+    enrollmentId,
+    intakeForm138,
+    intakeBirthCertificatePsa,
+    intakeGoodMoralCharacter,
+    intakeQualifiedVoucher,
+    intakeEscCertificate,
+  } = parsed.data;
+
+  const enrollment = await db.query.enrollments.findFirst({
+    where: eq(enrollments.id, enrollmentId),
+    columns: {
+      id: true,
+      studentId: true,
+      studentType: true,
+      status: true,
+      intakeDocuments: true,
+    },
+  });
+
+  if (!enrollment) {
+    return { message: "Enrollment not found." };
+  }
+
+  if (enrollment.status === "cancelled") {
+    return { message: "Cannot update intake documents for a cancelled enrollment." };
+  }
+
+  if (enrollment.studentType === "old_student") {
+    return { message: "Intake documents are only applicable for new students and transferees." };
+  }
+
+  const previousDocuments = enrollment.intakeDocuments;
+  const newDocuments: EnrollmentIntakeDocuments = {
+    form138: intakeForm138,
+    birthCertificatePsa: intakeBirthCertificatePsa,
+    goodMoralCharacter: intakeGoodMoralCharacter,
+    qualifiedVoucher: intakeQualifiedVoucher,
+    escCertificate: intakeEscCertificate,
+  };
+
+  try {
+    await db
+      .update(enrollments)
+      .set({
+        intakeDocuments: newDocuments,
+        updatedAt: new Date(),
+        updatedBy: session.userId,
+      })
+      .where(eq(enrollments.id, enrollmentId));
+
+    await logUpdateAction(
+      session,
+      "enrollments",
+      enrollmentId,
+      { intakeDocuments: previousDocuments },
+      { intakeDocuments: newDocuments },
+      { throwOnFail: false }
+    );
+
+    logger.info("[enrollments] Intake documents updated", {
+      enrollmentId,
+      actorId: session.userId,
+    });
+
+    revalidatePath("/staff/enrollments");
+    revalidatePath(`/staff/students/${enrollment.studentId}`);
+
+    return { success: true, message: "Intake documents updated successfully." };
+  } catch (err) {
+    logger.error("[enrollments] Failed to update intake documents", { error: String(err) });
     return { message: "An unexpected error occurred. Please try again." };
   }
 }

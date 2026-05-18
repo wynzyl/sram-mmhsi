@@ -41,6 +41,7 @@ export async function InternalStudentProfilePage(props: {
   const canEnroll = hasPermission(session.role, "enrollments:create");
   const canEditStudent = hasPermission(session.role, "students:update");
   const canPostPayments = hasPermission(session.role, "payments:post");
+  const canUpdateEnrollment = hasPermission(session.role, "enrollments:update");
 
   const studentRow = await db.query.students.findFirst({
     where: eq(students.id, id),
@@ -207,6 +208,7 @@ export async function InternalStudentProfilePage(props: {
     canEnroll,
     canEditStudent,
     canPostPayments,
+    canUpdateEnrollment,
   };
 
   return (

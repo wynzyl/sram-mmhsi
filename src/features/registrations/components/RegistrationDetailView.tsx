@@ -21,10 +21,12 @@ import type {
 import type { StudentRequirementsSnapshot } from "@/features/registrations/registrations.queries";
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import {
+  enrollmentIntakeDocumentsToPreserved,
   intakeFieldStatusDisplay,
   isIntakeDocumentsComplete,
   registrationStudentTypeLabel,
 } from "@/lib/utils/intake-documents";
+import EditIntakeDocumentsDialog from "@/features/enrollments/components/EditIntakeDocumentsDialog";
 import { cn } from "@/lib/utils/cn";
 import {
   CalendarDays,
@@ -592,6 +594,11 @@ export function RegistrationDetailView({
               const progress = countIntakeComplete(snap.intakeDocuments);
               const complete =
                 snap.intakeDocuments != null && isIntakeDocumentsComplete(snap.intakeDocuments);
+              const canEditIntake =
+                flags.canUpdateEnrollment &&
+                snap.enrollmentStatus !== "cancelled" &&
+                (snap.studentType === "new_student" || snap.studentType === "transferee") &&
+                snap.intakeDocuments != null;
               return (
                 <DataCard key={snap.enrollmentId} className="p-6">
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -607,7 +614,17 @@ export function RegistrationDetailView({
                           day: "numeric",
                         })}
                       </p>
-                      <StatusBadge status={snap.enrollmentStatus} type="enrollment" />
+                      <div className="flex items-center gap-3">
+                        <StatusBadge status={snap.enrollmentStatus} type="enrollment" />
+                        {canEditIntake && (
+                          <EditIntakeDocumentsDialog
+                            enrollmentId={snap.enrollmentId}
+                            schoolYear={snap.schoolYear}
+                            gradeLevel={snap.gradeLevel}
+                            preserved={enrollmentIntakeDocumentsToPreserved(snap.intakeDocuments!)}
+                          />
+                        )}
+                      </div>
                     </div>
                     <DocumentProgressRing completed={progress.done} total={progress.total} size="lg" />
                   </div>
