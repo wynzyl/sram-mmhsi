@@ -18,6 +18,7 @@ export type Permission =
   // Enrollments
   | "enrollments:read"
   | "enrollments:create"
+  | "enrollments:update"
   /** Confirm enrollment from the ready-to-enroll queue (list-first workflow). */
   | "enrollments:confirm"
   | "enrollments:cancel"
@@ -60,6 +61,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "registrations:read", "registrations:create", "registrations:review",
     "enrollments:read",
     "enrollments:create",
+    "enrollments:update",
     "enrollments:confirm",
     "enrollments:cancel",
     "enrollments:cancel_with_balance",
@@ -78,6 +80,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "registrations:read", "registrations:create", "registrations:review",
     "enrollments:read",
     "enrollments:create",
+    "enrollments:update",
     "enrollments:confirm",
     "enrollments:cancel",
     "enrollments:cancel_with_balance",
@@ -94,7 +97,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   registrar: [
     "students:read", "students:create", "students:update",
     "registrations:read", "registrations:create", "registrations:review",
-    "enrollments:read", "enrollments:create", "enrollments:confirm", "enrollments:cancel",
+    "enrollments:read", "enrollments:create", "enrollments:update", "enrollments:confirm", "enrollments:cancel",
     "assessments:read", "assessments:create",
     "payments:read", "payments:post", "payments:void",
     "grades:read",
