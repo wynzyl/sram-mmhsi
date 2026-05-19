@@ -29,6 +29,27 @@
       "when": 1779093704326,
       "tag": "0003_add_void_requests_and_reversal",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779172359452,
+      "tag": "0004_add_balance_forward_payment_kind_and_billing_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779259200000,
+      "tag": "0005_add_student_ref_sequence",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779345600000,
+      "tag": "0006_add_bfx_reference_sequence",
+      "breakpoints": true
     }
   ]
 }

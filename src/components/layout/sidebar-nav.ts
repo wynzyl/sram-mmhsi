@@ -17,7 +17,8 @@ export type NavIconName =
   | "invoices"
   | "finance"
   | "fee-item-types"
-  | "void-requests";
+  | "void-requests"
+  | "reports";
 
 /** One level of nested links (e.g. Register Student). Deeper nesting is not rendered. */
 export type NavItem = {
@@ -89,6 +90,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       ],
     },
     {
+      label: "Reports",
+      items: [
+        { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
+      ],
+    },
+    {
       label: "System",
       items: [
         { href: "/staff/school-years", label: "School Years", icon: "school-years" },
@@ -153,6 +160,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
         { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
+      ],
+    },
+    {
+      label: "Reports",
+      items: [
+        { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
       ],
     },
   ],

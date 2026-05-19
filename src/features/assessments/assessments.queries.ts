@@ -27,7 +27,7 @@ export type AssessmentListItem = {
   totalAmount: number;
   totalPaid: number;
   balance: number;
-  billingStatus: "outstanding" | "fully_paid" | "cancelled";
+  billingStatus: "outstanding" | "fully_paid" | "cancelled" | "balance_forwarded";
   transferredAt: Date | null;
 };
 
