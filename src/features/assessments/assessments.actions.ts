@@ -9,6 +9,7 @@ import {
   gradeLevels,
   schoolYears,
   feeItemTypes,
+  payments,
 } from "@/lib/db/schema";
 import { eq, and, ne, isNotNull, isNull, desc, asc } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "./assessments.queries";
@@ -21,6 +22,7 @@ import {
 import type { AssessmentFormState } from "./assessments.schema";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { generateNextBfxNumber } from "@/lib/utils/reference";
 
 export async function createAssessmentFromEnrollmentAction(
   _prevState: AssessmentFormState,
@@ -300,12 +302,38 @@ export async function createAssessmentFromEnrollmentAction(
         }))
       );
 
-      // ─── Mark Source Assessments as Transferred (Close Prior Years) ─────────────
+      // ─── Mark Source Assessments as Transferred & Create BFX Receipts ─────────────
       for (const bfItem of balanceForwardItems) {
+        // 1. Generate BFX number
+        const bfxNumber = await generateNextBfxNumber(tx);
+
+        // 2. Create BFX receipt in SOURCE assessment (negative amount = transferred out)
+        const [bfxPayment] = await tx
+          .insert(payments)
+          .values({
+            studentId: enrollmentRow.studentId,
+            assessmentId: bfItem.sourceAssessmentId,
+            bookletId: null,         // BFX doesn't use booklet
+            orNumber: null,          // BFX doesn't have OR number
+            orStatus: "voided",      // Not consumed (no actual OR)
+            amount: String((Number(bfItem.amount) * -1).toFixed(2)), // Negative (transferred out)
+            paymentMethod: "balance_forward",
+            referenceNumber: bfxNumber,
+            paymentDate: new Date(),
+            status: "balance_forward",
+            kind: "balance_forward",
+            remarks: `Balance forwarded to SY ${enrollmentRow.schoolYearId} - Assessment ${newAssessment.id}`,
+            createdBy: session.userId,
+            updatedBy: session.userId,
+          })
+          .returning({ id: payments.id });
+
+        // 3. Update source assessment (close balance, set billing status to balance_forwarded)
         await tx
           .update(assessments)
           .set({
             balance: "0.00", // Close out the balance
+            billingStatus: "balance_forwarded", // NOT "fully_paid"
             transferredAt: new Date(),
             transferredBy: session.userId,
             transferredToAssessmentId: newAssessment.id,
@@ -315,7 +343,7 @@ export async function createAssessmentFromEnrollmentAction(
           })
           .where(eq(assessments.id, bfItem.sourceAssessmentId));
 
-        // Audit log each transfer
+        // 4. Audit log each transfer with BFX details
         await logAudit({
           actor: session.userId,
           actorRole: session.role,
@@ -328,6 +356,8 @@ export async function createAssessmentFromEnrollmentAction(
             transferredAmount: bfItem.amount,
             sourceSchoolYear: bfItem.schoolYearLabel,
             targetEnrollmentId: enrollmentId,
+            bfxReceiptId: bfxPayment.id,
+            bfxNumber: bfxNumber,
           },
         }, { throwOnFail: true });
       }
@@ -458,7 +488,7 @@ export async function reverseBalanceTransferAction(
         throw new Error("No balance forward items found to reverse.");
       }
 
-      // 5. For each source assessment, restore the transferred balance
+      // 5. For each source assessment, restore balance and delete BFX receipt
       for (const bfItem of balanceForwardItems) {
         if (!bfItem.sourceAssessmentId) continue;
 
@@ -471,11 +501,43 @@ export async function reverseBalanceTransferAction(
           continue;
         }
 
-        // Restore source assessment balance
+        // 5a. Find and delete BFX receipt(s) associated with this source assessment
+        const bfxReceipts = await tx.query.payments.findMany({
+          where: and(
+            eq(payments.assessmentId, bfItem.sourceAssessmentId),
+            eq(payments.kind, "balance_forward"),
+            eq(payments.status, "balance_forward")
+          ),
+          columns: { id: true, referenceNumber: true },
+        });
+
+        for (const bfxReceipt of bfxReceipts) {
+          await tx
+            .delete(payments)
+            .where(eq(payments.id, bfxReceipt.id));
+
+          // Audit log BFX deletion
+          await logAudit({
+            actor: session.userId,
+            actorRole: session.role,
+            action: "bfx_receipt_deleted",
+            targetEntity: "payments",
+            targetId: bfxReceipt.id,
+            context: bfItem.sourceAssessmentId,
+            newState: {
+              bfxNumber: bfxReceipt.referenceNumber,
+              reason: "balance_transfer_reversed",
+              sourceAssessmentId: bfItem.sourceAssessmentId,
+            },
+          }, { throwOnFail: true });
+        }
+
+        // 5b. Restore source assessment balance and billing status
         await tx
           .update(assessments)
           .set({
             balance: bfItem.amount, // Restore the transferred amount
+            billingStatus: "outstanding", // Restore to outstanding
             transferredAt: null,
             transferredBy: null,
             transferredToAssessmentId: null,
@@ -485,7 +547,7 @@ export async function reverseBalanceTransferAction(
           })
           .where(eq(assessments.id, bfItem.sourceAssessmentId));
 
-        // Audit log restoration
+        // 5c. Audit log restoration
         await logAudit({
           actor: session.userId,
           actorRole: session.role,
@@ -497,6 +559,7 @@ export async function reverseBalanceTransferAction(
             restoredBalance: bfItem.amount,
             reversedFromAssessmentId: assessmentId,
             reversedBy: session.userId,
+            deletedBfxCount: bfxReceipts.length,
           },
         }, { throwOnFail: true });
       }

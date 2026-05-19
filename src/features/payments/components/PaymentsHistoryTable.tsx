@@ -87,12 +87,21 @@ export default function PaymentsHistoryTable({
         cell: ({ row }) => {
           const payment = row.original;
           const isReversal = payment.kind === "reversal";
+          const isBalanceForward = payment.kind === "balance_forward";
 
           if (isReversal) {
             return (
               <span className="text-[var(--color-text-muted)] italic text-sm">
                 Reversal
               </span>
+            );
+          }
+
+          if (isBalanceForward) {
+            return (
+              <Badge variant="info" className="bg-blue-100 text-blue-800 border-blue-200">
+                BFX
+              </Badge>
             );
           }
 
@@ -160,6 +169,16 @@ export default function PaymentsHistoryTable({
           const payment = row.original;
           const pendingRequest = pendingVoidByPaymentId[payment.id];
           const isReversal = payment.kind === "reversal";
+          const isBalanceForward = payment.kind === "balance_forward";
+
+          // Balance Forward entry
+          if (isBalanceForward || payment.status === "balance_forward") {
+            return (
+              <Badge variant="info" className="bg-blue-100 text-blue-800 border-blue-200">
+                TRANSFERRED
+              </Badge>
+            );
+          }
 
           // Reversal entry
           if (isReversal || payment.status === "reversal") {
@@ -208,9 +227,15 @@ export default function PaymentsHistoryTable({
           const payment = row.original;
           const pendingRequest = pendingVoidByPaymentId[payment.id];
           const isReversal = payment.kind === "reversal";
+          const isBalanceForward = payment.kind === "balance_forward";
 
           // No actions for reversal rows
           if (isReversal || payment.status === "reversal") {
+            return null;
+          }
+
+          // No actions for balance forward rows (cannot void BFX receipts)
+          if (isBalanceForward || payment.status === "balance_forward") {
             return null;
           }
 
