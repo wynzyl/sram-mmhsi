@@ -145,7 +145,7 @@ export function StudentDirectoryView({
           name="schoolYearId"
           defaultValue={schoolYearId ?? ""}
           aria-label="Filter by school year"
-          className="input-editorial min-h-11 min-w-0 shrink-0 sm:min-w-[11rem] sm:max-w-[14rem]"
+          className="form-control min-h-11 min-w-0 shrink-0 sm:min-w-44 sm:max-w-56 bg-(--color-surface-2) text-(--color-text) [&>option]:bg-(--color-surface) [&>option]:text-(--color-text)"
         >
           <option value="">All school years</option>
           {schoolYearOptions.map((y) => (
@@ -159,7 +159,7 @@ export function StudentDirectoryView({
           name="gradeLevelId"
           defaultValue={gradeLevelId ?? ""}
           aria-label="Filter by grade level"
-          className="input-editorial min-h-11 min-w-0 shrink-0 sm:min-w-[10rem] sm:max-w-[12rem]"
+          className="form-control min-h-11 min-w-0 shrink-0 sm:min-w-40 sm:max-w-48 bg-(--color-surface-2) text-(--color-text) [&>option]:bg-(--color-surface) [&>option]:text-(--color-text)"
         >
           <option value="">All grades</option>
           {gradeLevelOptions.map((g) => (

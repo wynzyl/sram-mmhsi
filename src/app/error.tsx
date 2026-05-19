@@ -38,7 +38,7 @@ export default function GlobalError({
           </div>
         </div>
 
-        <h1 className="mb-2 font-display text-2xl font-bold text-[var(--color-text)]">
+        <h1 className="mb-2 font-display text-2xl font-bold text-(--color-text)">
           Something went wrong
         </h1>
         <p className="mb-6 text-[var(--color-text-muted)]">
