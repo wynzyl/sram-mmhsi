@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
     // Enable filesystem caching for `next dev`
     turbopackFileSystemCacheForDev: true,
     // Enable filesystem caching for `next build`
-    turbopackFileSystemCacheForBuild: true,
+    // turbopackFileSystemCacheForBuild: true,
   },
 
   // Fallback webpack config for when using --webpack flag

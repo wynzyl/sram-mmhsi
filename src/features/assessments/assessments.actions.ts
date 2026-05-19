@@ -56,9 +56,23 @@ export async function createAssessmentFromEnrollmentAction(
 
   const { enrollmentId, remarks, items } = parsed.data;
 
-  const enrollmentRow = await db.query.enrollments.findFirst({
-    where: eq(enrollments.id, enrollmentId),
-  });
+  // Fetch enrollment with school year label for readable remarks
+  const enrollmentResult = await db
+    .select({
+      id: enrollments.id,
+      studentId: enrollments.studentId,
+      schoolYearId: enrollments.schoolYearId,
+      gradeLevelId: enrollments.gradeLevelId,
+      studentType: enrollments.studentType,
+      status: enrollments.status,
+      schoolYearLabel: schoolYears.label,
+    })
+    .from(enrollments)
+    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .where(eq(enrollments.id, enrollmentId))
+    .limit(1);
+
+  const enrollmentRow = enrollmentResult[0];
 
   if (!enrollmentRow) {
     return { message: "Enrollment not found." };
@@ -290,7 +304,7 @@ export async function createAssessmentFromEnrollmentAction(
             transferredAt: new Date(),
             transferredBy: session.userId,
             transferredToAssessmentId: newAssessment.id,
-            transferRemarks: `Balance of ${bfItem.amount} transferred to ${enrollmentRow.schoolYearId}`,
+            transferRemarks: `Balance of ${bfItem.amount} transferred to ${enrollmentRow.schoolYearLabel}`,
             updatedBy: session.userId,
             updatedAt: new Date(),
           })
@@ -324,7 +338,7 @@ export async function createAssessmentFromEnrollmentAction(
             paymentDate: new Date(),
             status: "balance_forward",
             kind: "balance_forward",
-            remarks: `Balance forwarded to SY ${enrollmentRow.schoolYearId} - Assessment ${newAssessment.id}`,
+            remarks: `Balance forwarded to ${enrollmentRow.schoolYearLabel}`,
             createdBy: session.userId,
             updatedBy: session.userId,
           })
