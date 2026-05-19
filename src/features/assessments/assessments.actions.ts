@@ -245,32 +245,6 @@ export async function createAssessmentFromEnrollmentAction(
         throw new Error("FEE_SCHEDULE_CHANGED");
       }
 
-      // ─── Validate Source Assessments Still Untransferred (Race Condition Check) ───
-      if (balanceForwardItems.length > 0) {
-        const sourceAssessmentIds = balanceForwardItems.map(bf => bf.sourceAssessmentId);
-        const sourceAssessments = await tx
-          .select({ id: assessments.id, transferredAt: assessments.transferredAt })
-          .from(assessments)
-          .where(
-            and(
-              eq(assessments.id, sourceAssessmentIds[0]),
-              // Check all source assessments in a single query would be ideal, but for simplicity check each
-            )
-          );
-
-        // Verify none have been transferred in a concurrent transaction
-        for (const sourceId of sourceAssessmentIds) {
-          const sourceCheck = await tx.query.assessments.findFirst({
-            where: eq(assessments.id, sourceId),
-            columns: { id: true, transferredAt: true },
-          });
-
-          if (sourceCheck?.transferredAt) {
-            throw new Error("SOURCE_ASSESSMENT_ALREADY_TRANSFERRED");
-          }
-        }
-      }
-
       const [newAssessment] = await tx
         .insert(assessments)
         .values({
@@ -304,10 +278,38 @@ export async function createAssessmentFromEnrollmentAction(
 
       // ─── Mark Source Assessments as Transferred & Create BFX Receipts ─────────────
       for (const bfItem of balanceForwardItems) {
-        // 1. Generate BFX number
+        // 1. Atomically claim the source assessment. Conditional UPDATE with
+        //    transferredAt IS NULL prevents two concurrent transfers from both
+        //    reading null and producing duplicate BFX receipts. If no row is
+        //    returned, another transaction beat us to it.
+        const claimed = await tx
+          .update(assessments)
+          .set({
+            balance: "0.00",
+            billingStatus: "balance_forwarded",
+            transferredAt: new Date(),
+            transferredBy: session.userId,
+            transferredToAssessmentId: newAssessment.id,
+            transferRemarks: `Balance of ${bfItem.amount} transferred to ${enrollmentRow.schoolYearId}`,
+            updatedBy: session.userId,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(assessments.id, bfItem.sourceAssessmentId),
+              isNull(assessments.transferredAt)
+            )
+          )
+          .returning({ id: assessments.id });
+
+        if (claimed.length === 0) {
+          throw new Error("SOURCE_ASSESSMENT_ALREADY_TRANSFERRED");
+        }
+
+        // 2. Generate BFX number (atomic via bfx_reference_seq)
         const bfxNumber = await generateNextBfxNumber(tx);
 
-        // 2. Create BFX receipt in SOURCE assessment (negative amount = transferred out)
+        // 3. Create BFX receipt in SOURCE assessment (negative amount = transferred out)
         const [bfxPayment] = await tx
           .insert(payments)
           .values({
@@ -327,21 +329,6 @@ export async function createAssessmentFromEnrollmentAction(
             updatedBy: session.userId,
           })
           .returning({ id: payments.id });
-
-        // 3. Update source assessment (close balance, set billing status to balance_forwarded)
-        await tx
-          .update(assessments)
-          .set({
-            balance: "0.00", // Close out the balance
-            billingStatus: "balance_forwarded", // NOT "fully_paid"
-            transferredAt: new Date(),
-            transferredBy: session.userId,
-            transferredToAssessmentId: newAssessment.id,
-            transferRemarks: `Balance of ${bfItem.amount} transferred to ${enrollmentRow.schoolYearId}`,
-            updatedBy: session.userId,
-            updatedAt: new Date(),
-          })
-          .where(eq(assessments.id, bfItem.sourceAssessmentId));
 
         // 4. Audit log each transfer with BFX details
         await logAudit({

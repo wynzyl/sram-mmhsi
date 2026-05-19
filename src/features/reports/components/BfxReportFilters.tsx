@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { TextInputField } from "@/components/forms/TextInputField";
+import { SelectField } from "@/components/forms/SelectField";
 
 interface SchoolYear {
   id: string;
@@ -54,59 +55,34 @@ export function BfxReportFilters({
 
   return (
     <div className="flex flex-wrap items-end gap-4 p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="startDate"
-          className="text-sm font-medium text-[var(--color-text-muted)]"
-        >
-          Start Date
-        </label>
-        <Input
-          type="date"
-          id="startDate"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="w-40"
-        />
-      </div>
+      <TextInputField
+        label="Start Date"
+        name="startDate"
+        type="date"
+        value={startDate}
+        onChange={setStartDate}
+        className="w-40"
+      />
 
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="endDate"
-          className="text-sm font-medium text-[var(--color-text-muted)]"
-        >
-          End Date
-        </label>
-        <Input
-          type="date"
-          id="endDate"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="w-40"
-        />
-      </div>
+      <TextInputField
+        label="End Date"
+        name="endDate"
+        type="date"
+        value={endDate}
+        onChange={setEndDate}
+        className="w-40"
+      />
 
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="schoolYearId"
-          className="text-sm font-medium text-[var(--color-text-muted)]"
-        >
-          Source School Year
-        </label>
-        <select
-          id="schoolYearId"
-          value={schoolYearId}
-          onChange={(e) => setSchoolYearId(e.target.value)}
-          className="h-9 px-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
-        >
-          <option value="">All Years</option>
-          {schoolYears.map((sy) => (
-            <option key={sy.id} value={sy.id}>
-              {sy.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Source School Year"
+        name="schoolYearId"
+        value={schoolYearId}
+        onChange={setSchoolYearId}
+        options={[
+          { value: "", label: "All Years" },
+          ...schoolYears.map((sy) => ({ value: sy.id, label: sy.label })),
+        ]}
+      />
 
       <div className="flex gap-2">
         <Button type="button" onClick={handleApply}>

@@ -107,6 +107,12 @@ export async function getBfxSummary(params: {
 
   const result = await db
     .select({
+      // Raw SQL is used here because Drizzle's count()/sum() helpers cannot
+      // cleanly express the required shape:
+      //   - totalTransfers: COUNT(*) for exact row-count semantics (cast to int).
+      //   - totalAmount: COALESCE(SUM(ABS(payments.amount))) with an explicit
+      //     ::numeric cast so BFX reversal entries (stored as negatives) are
+      //     summed by absolute value and NULL (no rows) becomes 0.
       totalTransfers: sql<number>`COUNT(*)::int`,
       totalAmount: sql<number>`COALESCE(SUM(ABS(${payments.amount}::numeric)), 0)::numeric`,
     })

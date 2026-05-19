@@ -113,9 +113,11 @@ export default function AssessmentLedgerRegister({
   const canOpenPay = canPost && !isFullyPaid && !isCancelledEnrollment && !isTransferred && balanceNum > 0;
 
   const feesRunning = items.reduce((sum, row) => sum + lineSignedAmount(row), 0);
-  const paymentsRecorded = payments
-    .filter((p) => p.status !== "voided")
-    .reduce((sum, p) => sum + Number(p.amount), 0);
+  const postedPayments = payments.filter((p) => p.status === "posted");
+  const paymentsRecorded = postedPayments.reduce(
+    (sum, p) => sum + Number(p.amount),
+    0,
+  );
 
   const percent = paidPercent(paidNum, totalNum);
 
@@ -451,7 +453,7 @@ export default function AssessmentLedgerRegister({
                 fontVariantNumeric: "tabular-nums",
               }}
             >
-              {payments.filter((p) => p.status !== "voided").length} posted
+              {postedPayments.length} posted
             </span>
           </div>
           <div className="ledger-register-payments-body">
