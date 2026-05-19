@@ -51,9 +51,10 @@ export const enrollmentStudentTypeEnum = pgEnum("enrollment_student_type", [
 export const paymentStatusEnum = pgEnum("payment_status", [
   "pending_confirmation",
   "posted",
-  "voided",      // Keep for backward compatibility
-  "reversed",    // Original payment reversed via approval
-  "reversal",    // Offsetting negative entry
+  "voided",           // Keep for backward compatibility
+  "reversed",         // Original payment reversed via approval
+  "reversal",         // Offsetting negative entry
+  "balance_forward",  // BFX receipt: balance transferred to new school year
 ]);
 
 export const invoiceStatusEnum = pgEnum("invoice_status", [
@@ -89,13 +90,14 @@ export const voidRequestStatusEnum = pgEnum("void_request_status", [
   "cancelled",
 ]);
 
-export const paymentKindEnum = pgEnum("payment_kind", ["payment", "reversal"]);
+export const paymentKindEnum = pgEnum("payment_kind", ["payment", "reversal", "balance_forward"]);
 
 /** Assessment ledger: balance-driven, or cancelled when enrollment is cancelled. */
 export const assessmentBillingStatusEnum = pgEnum("assessment_billing_status", [
   "outstanding",
   "fully_paid",
   "cancelled",
+  "balance_forwarded",  // Balance transferred to new school year via BFX receipt
 ]);
 
 /** Groups grade levels for fee catalogs: Casa, elem, JHS, SHS (one schedule per band per school year). */

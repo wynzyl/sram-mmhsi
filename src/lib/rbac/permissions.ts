@@ -52,6 +52,7 @@ export type Permission =
   // Receipts
   | "booklets:manage"
   // Reports
+  | "reports:view"
   | "reports:finance"
   | "reports:academic"
   // Admin
@@ -77,7 +78,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
     "booklets:manage",
-    "reports:finance", "reports:academic",
+    "reports:view", "reports:finance", "reports:academic",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage",
   ],
@@ -98,7 +99,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "booklets:manage",
     "fee_schedules:manage",
     "school_years:manage",
-    "reports:finance", "reports:academic",
+    "reports:view", "reports:finance", "reports:academic",
   ],
   registrar: [
     "students:read", "students:create", "students:update",
@@ -116,14 +117,14 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "payments:read",
     "invoices:read", "invoices:send",
     "booklets:manage", "fee_schedules:manage",
-    "reports:finance",
+    "reports:view", "reports:finance",
   ],
   cashier: [
     "students:read",
     "assessments:read",
     "payments:read", "payments:post", "payments:void", "payments:void_request",
     "invoices:read",
-    "reports:finance",
+    "reports:view", "reports:finance",
   ],
   teacher: [
     "students:read",
