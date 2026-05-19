@@ -248,12 +248,14 @@ export default function AssessmentLedgerRegister({
 
             {/* Balance due */}
             <div
-              className={`ledger-register-tile ledger-register-tile-balance${!isFullyPaid && !isCancelledEnrollment && balanceNum > 0 ? " ledger-register-tile-owe" : ""}`}
+              className={`ledger-register-tile ledger-register-tile-balance${!isFullyPaid && !isCancelledEnrollment && !isTransferred && balanceNum > 0 ? " ledger-register-tile-owe" : ""}`}
             >
               <span className="ledger-register-tile-label">Balance due</span>
               <span className="ledger-register-tile-value ledger-register-tile-balance-num">
                 {isCancelledEnrollment ? (
                   <StatusBadge type="billing" status="cancelled" />
+                ) : isTransferred ? (
+                  <StatusBadge type="billing" status="balance_forwarded" />
                 ) : isFullyPaid ? (
                   <StatusBadge type="billing" status="fully_paid" />
                 ) : (
