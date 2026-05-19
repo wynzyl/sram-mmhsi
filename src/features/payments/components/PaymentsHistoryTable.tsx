@@ -151,13 +151,16 @@ export default function PaymentsHistoryTable({
         cell: ({ row }) => {
           const payment = row.original;
           const amount = Number(payment.amount);
-          const isNegative = amount < 0;
+          const isBalanceForward = payment.kind === "balance_forward";
+          // BFX amounts are stored as negative but should display as positive
+          const displayAmount = isBalanceForward ? Math.abs(amount) : amount;
+          const isNegative = displayAmount < 0;
 
           return (
             <span className={isNegative ? "text-red-600" : ""}>
               {isNegative && "-"}
               <CurrencyDisplay
-                amount={Math.abs(amount)}
+                amount={Math.abs(displayAmount)}
                 className="font-medium"
               />
             </span>

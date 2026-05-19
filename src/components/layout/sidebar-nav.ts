@@ -50,6 +50,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       ],
     },
     {
+      label: "Reports",
+      items: [
+        { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
+      ],
+    },
+    {
       label: "System",
       items: [
         { href: "/admin/users", label: "Users", icon: "users" },
@@ -139,6 +145,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
         { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
         { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
+      ],
+    },
+    {
+      label: "Reports",
+      items: [
+        { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
       ],
     },
     {

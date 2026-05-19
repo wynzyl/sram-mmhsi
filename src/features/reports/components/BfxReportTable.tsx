@@ -88,7 +88,7 @@ export function BfxReportTable({ data }: BfxReportTableProps) {
         accessorKey: "remarks",
         cell: ({ row }) =>
           row.original.remarks ? (
-            <span className="text-sm text-[var(--color-text-muted)] truncate max-w-[200px] block">
+            <span className="text-sm text-[var(--color-text-muted)] truncate max-w-[280px] block">
               {row.original.remarks}
             </span>
           ) : (
