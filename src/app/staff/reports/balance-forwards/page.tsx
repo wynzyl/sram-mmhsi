@@ -35,12 +35,18 @@ export default async function BalanceForwardsReportPage({
   const thirtyDaysAgo = new Date(today);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const startDate = params.startDate
+  const parsedStartDate = params.startDate
     ? new Date(params.startDate)
-    : thirtyDaysAgo;
-  const endDate = params.endDate ? new Date(params.endDate) : today;
+    : null;
+  const startDate =
+    parsedStartDate && !isNaN(parsedStartDate.getTime())
+      ? parsedStartDate
+      : thirtyDaysAgo;
+  startDate.setHours(0, 0, 0, 0);
 
-  // Ensure end date includes the entire day
+  const parsedEndDate = params.endDate ? new Date(params.endDate) : null;
+  const endDate =
+    parsedEndDate && !isNaN(parsedEndDate.getTime()) ? parsedEndDate : today;
   endDate.setHours(23, 59, 59, 999);
 
   const schoolYearId = params.schoolYearId || undefined;

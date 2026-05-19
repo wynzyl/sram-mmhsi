@@ -87,7 +87,9 @@ export default function PaymentsHistoryTable({
         cell: ({ row }) => {
           const payment = row.original;
           const isReversal = payment.kind === "reversal";
-          const isBalanceForward = payment.kind === "balance_forward";
+          const isBalanceForward =
+            payment.kind === "balance_forward" ||
+            payment.status === "balance_forward";
 
           if (isReversal) {
             return (
