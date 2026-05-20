@@ -443,6 +443,84 @@ export async function getStudentDiscountsByAssessment(
 }
 
 /**
+ * Get all discount requests for a student across all enrollments
+ */
+export async function getDiscountRequestsByStudent(
+  studentId: string
+): Promise<DiscountRequestView[]> {
+  const requestedByUser = db.$with("requested_by_user").as(
+    db.select({ id: users.id, username: users.username }).from(users)
+  );
+  const decidedByUser = db.$with("decided_by_user").as(
+    db.select({ id: users.id, username: users.username }).from(users)
+  );
+
+  const rows = await db
+    .select({
+      id: discountRequests.id,
+      studentId: discountRequests.studentId,
+      studentFirstName: students.firstName,
+      studentLastName: students.lastName,
+      studentRef: students.referenceNumber,
+      enrollmentId: discountRequests.enrollmentId,
+      gradeLevelName: gradeLevels.name,
+      schoolYearLabel: schoolYears.label,
+      discountTypeId: discountRequests.discountTypeId,
+      discountTypeCode: discountTypes.code,
+      discountTypeName: discountTypes.name,
+      calculationType: discountTypes.calculationType,
+      baseType: discountTypes.baseType,
+      defaultValue: discountTypes.defaultValue,
+      requestReason: discountRequests.requestReason,
+      status: discountRequests.status,
+      requestedBy: discountRequests.requestedBy,
+      requestedByName: users.username,
+      requestedAt: discountRequests.requestedAt,
+      decidedBy: discountRequests.decidedBy,
+      decidedAt: discountRequests.decidedAt,
+      decisionRemarks: discountRequests.decisionRemarks,
+      overrideValue: discountRequests.overrideValue,
+      overrideReason: discountRequests.overrideReason,
+    })
+    .from(discountRequests)
+    .innerJoin(students, eq(discountRequests.studentId, students.id))
+    .innerJoin(enrollments, eq(discountRequests.enrollmentId, enrollments.id))
+    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .innerJoin(discountTypes, eq(discountRequests.discountTypeId, discountTypes.id))
+    .innerJoin(users, eq(discountRequests.requestedBy, users.id))
+    .where(eq(discountRequests.studentId, studentId))
+    .orderBy(desc(discountRequests.requestedAt));
+
+  return rows.map((r) => ({
+    id: r.id,
+    studentId: r.studentId,
+    studentName: `${r.studentLastName}, ${r.studentFirstName}`,
+    studentRef: r.studentRef,
+    enrollmentId: r.enrollmentId,
+    gradeLevelName: r.gradeLevelName,
+    schoolYearLabel: r.schoolYearLabel,
+    discountTypeId: r.discountTypeId,
+    discountTypeCode: r.discountTypeCode,
+    discountTypeName: r.discountTypeName,
+    calculationType: r.calculationType,
+    baseType: r.baseType,
+    defaultValue: r.defaultValue,
+    requestReason: r.requestReason,
+    status: r.status,
+    requestedBy: r.requestedBy,
+    requestedByName: r.requestedByName,
+    requestedAt: r.requestedAt,
+    decidedBy: r.decidedBy,
+    decidedByName: null,
+    decidedAt: r.decidedAt,
+    decisionRemarks: r.decisionRemarks,
+    overrideValue: r.overrideValue,
+    overrideReason: r.overrideReason,
+  }));
+}
+
+/**
  * Get assessment items with fee type codes (for discount calculation)
  */
 export async function getAssessmentItemsWithFeeTypes(
