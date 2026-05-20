@@ -9,6 +9,7 @@ import {
   gradeLevels,
   schoolYears,
   feeItemTypes,
+  payments,
 } from "@/lib/db/schema";
 import { eq, and, ne, isNotNull, isNull, desc, asc } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "./assessments.queries";
@@ -21,6 +22,11 @@ import {
 import type { AssessmentFormState } from "./assessments.schema";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { generateNextBfxNumber } from "@/lib/utils/reference";
+import {
+  hasPendingDiscountRequests,
+  applyApprovedDiscountsToAssessment,
+} from "@/features/discounts";
 
 export async function createAssessmentFromEnrollmentAction(
   _prevState: AssessmentFormState,
@@ -54,9 +60,23 @@ export async function createAssessmentFromEnrollmentAction(
 
   const { enrollmentId, remarks, items } = parsed.data;
 
-  const enrollmentRow = await db.query.enrollments.findFirst({
-    where: eq(enrollments.id, enrollmentId),
-  });
+  // Fetch enrollment with school year label for readable remarks
+  const enrollmentResult = await db
+    .select({
+      id: enrollments.id,
+      studentId: enrollments.studentId,
+      schoolYearId: enrollments.schoolYearId,
+      gradeLevelId: enrollments.gradeLevelId,
+      studentType: enrollments.studentType,
+      status: enrollments.status,
+      schoolYearLabel: schoolYears.label,
+    })
+    .from(enrollments)
+    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .where(eq(enrollments.id, enrollmentId))
+    .limit(1);
+
+  const enrollmentRow = enrollmentResult[0];
 
   if (!enrollmentRow) {
     return { message: "Enrollment not found." };
@@ -73,6 +93,15 @@ export async function createAssessmentFromEnrollmentAction(
   if (enrollmentRow.status !== "pending") {
     return {
       message: `Assessment can only be created when enrollment is Pending (current: ${enrollmentRow.status}).`,
+    };
+  }
+
+  // ─── Check for Pending Discount Requests ──────────────────────────────────
+  const hasPendingDiscounts = await hasPendingDiscountRequests(enrollmentId);
+  if (hasPendingDiscounts) {
+    return {
+      message:
+        "This enrollment has pending discount requests. All discount requests must be approved or rejected before creating an assessment.",
     };
   }
 
@@ -175,6 +204,7 @@ export async function createAssessmentFromEnrollmentAction(
     isDiscount: boolean;
     feeTemplateItemId: string | null; // Allow null for balance forward items
     feeItemTypeId: string;
+    feeItemTypeCode: string | null; // For discount base calculation
     sourceAssessmentId?: string; // For balance forward items only
   }[] = [];
   for (const line of items) {
@@ -182,6 +212,7 @@ export async function createAssessmentFromEnrollmentAction(
     resolvedLines.push({
       feeTemplateItemId: template.feeTemplateItemId,
       feeItemTypeId: template.feeItemTypeId,
+      feeItemTypeCode: template.feeItemTypeCode, // For discount base calculation
       description: template.description,
       amount: line.amount,
       isDiscount: template.isDiscount,
@@ -208,6 +239,7 @@ export async function createAssessmentFromEnrollmentAction(
       resolvedLines.unshift({
         feeTemplateItemId: null, // Not from template
         feeItemTypeId: balanceForwardType.id,
+        feeItemTypeCode: "BALANCE_FORWARD", // Balance forward type code
         description: bfItem.description,
         amount: Number(bfItem.amount),
         isDiscount: false,
@@ -243,32 +275,6 @@ export async function createAssessmentFromEnrollmentAction(
         throw new Error("FEE_SCHEDULE_CHANGED");
       }
 
-      // ─── Validate Source Assessments Still Untransferred (Race Condition Check) ───
-      if (balanceForwardItems.length > 0) {
-        const sourceAssessmentIds = balanceForwardItems.map(bf => bf.sourceAssessmentId);
-        const sourceAssessments = await tx
-          .select({ id: assessments.id, transferredAt: assessments.transferredAt })
-          .from(assessments)
-          .where(
-            and(
-              eq(assessments.id, sourceAssessmentIds[0]),
-              // Check all source assessments in a single query would be ideal, but for simplicity check each
-            )
-          );
-
-        // Verify none have been transferred in a concurrent transaction
-        for (const sourceId of sourceAssessmentIds) {
-          const sourceCheck = await tx.query.assessments.findFirst({
-            where: eq(assessments.id, sourceId),
-            columns: { id: true, transferredAt: true },
-          });
-
-          if (sourceCheck?.transferredAt) {
-            throw new Error("SOURCE_ASSESSMENT_ALREADY_TRANSFERRED");
-          }
-        }
-      }
-
       const [newAssessment] = await tx
         .insert(assessments)
         .values({
@@ -300,22 +306,61 @@ export async function createAssessmentFromEnrollmentAction(
         }))
       );
 
-      // ─── Mark Source Assessments as Transferred (Close Prior Years) ─────────────
+      // ─── Mark Source Assessments as Transferred & Create BFX Receipts ─────────────
       for (const bfItem of balanceForwardItems) {
-        await tx
+        // 1. Atomically claim the source assessment. Conditional UPDATE with
+        //    transferredAt IS NULL prevents two concurrent transfers from both
+        //    reading null and producing duplicate BFX receipts. If no row is
+        //    returned, another transaction beat us to it.
+        const claimed = await tx
           .update(assessments)
           .set({
-            balance: "0.00", // Close out the balance
+            balance: "0.00",
+            billingStatus: "balance_forwarded",
             transferredAt: new Date(),
             transferredBy: session.userId,
             transferredToAssessmentId: newAssessment.id,
-            transferRemarks: `Balance of ${bfItem.amount} transferred to ${enrollmentRow.schoolYearId}`,
+            transferRemarks: `Balance of ${bfItem.amount} transferred to ${enrollmentRow.schoolYearLabel}`,
             updatedBy: session.userId,
             updatedAt: new Date(),
           })
-          .where(eq(assessments.id, bfItem.sourceAssessmentId));
+          .where(
+            and(
+              eq(assessments.id, bfItem.sourceAssessmentId),
+              isNull(assessments.transferredAt)
+            )
+          )
+          .returning({ id: assessments.id });
 
-        // Audit log each transfer
+        if (claimed.length === 0) {
+          throw new Error("SOURCE_ASSESSMENT_ALREADY_TRANSFERRED");
+        }
+
+        // 2. Generate BFX number (atomic via bfx_reference_seq)
+        const bfxNumber = await generateNextBfxNumber(tx);
+
+        // 3. Create BFX receipt in SOURCE assessment (negative amount = transferred out)
+        const [bfxPayment] = await tx
+          .insert(payments)
+          .values({
+            studentId: enrollmentRow.studentId,
+            assessmentId: bfItem.sourceAssessmentId,
+            bookletId: null,         // BFX doesn't use booklet
+            orNumber: null,          // BFX doesn't have OR number
+            orStatus: "voided",      // Not consumed (no actual OR)
+            amount: String((Number(bfItem.amount) * -1).toFixed(2)), // Negative (transferred out)
+            paymentMethod: "balance_forward",
+            referenceNumber: bfxNumber,
+            paymentDate: new Date(),
+            status: "balance_forward",
+            kind: "balance_forward",
+            remarks: `Balance forwarded to ${enrollmentRow.schoolYearLabel}`,
+            createdBy: session.userId,
+            updatedBy: session.userId,
+          })
+          .returning({ id: payments.id });
+
+        // 4. Audit log each transfer with BFX details
         await logAudit({
           actor: session.userId,
           actorRole: session.role,
@@ -328,6 +373,54 @@ export async function createAssessmentFromEnrollmentAction(
             transferredAmount: bfItem.amount,
             sourceSchoolYear: bfItem.schoolYearLabel,
             targetEnrollmentId: enrollmentId,
+            bfxReceiptId: bfxPayment.id,
+            bfxNumber: bfxNumber,
+          },
+        }, { throwOnFail: true });
+      }
+
+      // ─── Apply Approved Discounts ────────────────────────────────────────────
+      // Apply any approved discount requests as negative line items
+      // Pass resolved lines and transaction to avoid isolation issues
+      const discountResult = await applyApprovedDiscountsToAssessment(
+        newAssessment.id,
+        enrollmentId,
+        session.userId,
+        resolvedLines.map((line) => ({
+          amount: line.amount,
+          isDiscount: line.isDiscount,
+          feeItemTypeCode: line.feeItemTypeCode,
+        })),
+        tx // Pass transaction for consistent context
+      );
+
+      // If discounts were applied, recalculate assessment totals
+      if (discountResult.totalDiscounts > 0) {
+        const netTotal = assessmentTotalAmount - discountResult.totalDiscounts;
+
+        await tx
+          .update(assessments)
+          .set({
+            // totalAmount should be the NET total (sum of all line items)
+            // This ensures it matches the calculated line sum in the ledger display
+            totalAmount: String(netTotal.toFixed(2)),
+            totalDiscounts: String(discountResult.totalDiscounts.toFixed(2)),
+            balance: String(netTotal.toFixed(2)),
+            updatedBy: session.userId,
+            updatedAt: new Date(),
+          })
+          .where(eq(assessments.id, newAssessment.id));
+
+        await logAudit({
+          actor: session.userId,
+          actorRole: session.role,
+          action: "assessment_discounts_applied",
+          targetEntity: "assessments",
+          targetId: newAssessment.id,
+          newState: {
+            discountsApplied: discountResult.appliedCount,
+            totalDiscounts: discountResult.totalDiscounts,
+            netTotal,
           },
         }, { throwOnFail: true });
       }
@@ -353,11 +446,13 @@ export async function createAssessmentFromEnrollmentAction(
         newState: {
           enrollmentId,
           totalAmount: assessmentTotalAmount,
-          lineCount: resolvedLines.length,
+          totalDiscounts: discountResult.totalDiscounts,
+          lineCount: resolvedLines.length + discountResult.appliedCount,
           feeScheduleId: scheduleResolution.scheduleId,
           balanceForwardCount: balanceForwardItems.length,
           balanceForwardTotal: balanceForwardItems.reduce((sum, bf) => sum + Number(bf.amount), 0),
           transferredAssessments: balanceForwardItems.map(bf => bf.sourceAssessmentId),
+          discountsApplied: discountResult.appliedCount,
         },
       }, { throwOnFail: true });
     });
@@ -370,6 +465,7 @@ export async function createAssessmentFromEnrollmentAction(
 
     revalidatePath("/staff/assessments");
     revalidatePath("/staff/enrollments");
+    revalidatePath("/staff/finance/discount-requests");
     revalidatePath(`/staff/students/${enrollmentRow.studentId}`);
     if (newAssessmentId) {
       revalidatePath(`/staff/assessments/${newAssessmentId}`);
@@ -458,7 +554,7 @@ export async function reverseBalanceTransferAction(
         throw new Error("No balance forward items found to reverse.");
       }
 
-      // 5. For each source assessment, restore the transferred balance
+      // 5. For each source assessment, restore balance and delete BFX receipt
       for (const bfItem of balanceForwardItems) {
         if (!bfItem.sourceAssessmentId) continue;
 
@@ -471,11 +567,43 @@ export async function reverseBalanceTransferAction(
           continue;
         }
 
-        // Restore source assessment balance
+        // 5a. Find and delete BFX receipt(s) associated with this source assessment
+        const bfxReceipts = await tx.query.payments.findMany({
+          where: and(
+            eq(payments.assessmentId, bfItem.sourceAssessmentId),
+            eq(payments.kind, "balance_forward"),
+            eq(payments.status, "balance_forward")
+          ),
+          columns: { id: true, referenceNumber: true },
+        });
+
+        for (const bfxReceipt of bfxReceipts) {
+          await tx
+            .delete(payments)
+            .where(eq(payments.id, bfxReceipt.id));
+
+          // Audit log BFX deletion
+          await logAudit({
+            actor: session.userId,
+            actorRole: session.role,
+            action: "bfx_receipt_deleted",
+            targetEntity: "payments",
+            targetId: bfxReceipt.id,
+            context: bfItem.sourceAssessmentId,
+            newState: {
+              bfxNumber: bfxReceipt.referenceNumber,
+              reason: "balance_transfer_reversed",
+              sourceAssessmentId: bfItem.sourceAssessmentId,
+            },
+          }, { throwOnFail: true });
+        }
+
+        // 5b. Restore source assessment balance and billing status
         await tx
           .update(assessments)
           .set({
             balance: bfItem.amount, // Restore the transferred amount
+            billingStatus: "outstanding", // Restore to outstanding
             transferredAt: null,
             transferredBy: null,
             transferredToAssessmentId: null,
@@ -485,7 +613,7 @@ export async function reverseBalanceTransferAction(
           })
           .where(eq(assessments.id, bfItem.sourceAssessmentId));
 
-        // Audit log restoration
+        // 5c. Audit log restoration
         await logAudit({
           actor: session.userId,
           actorRole: session.role,
@@ -497,6 +625,7 @@ export async function reverseBalanceTransferAction(
             restoredBalance: bfItem.amount,
             reversedFromAssessmentId: assessmentId,
             reversedBy: session.userId,
+            deletedBfxCount: bfxReceipts.length,
           },
         }, { throwOnFail: true });
       }

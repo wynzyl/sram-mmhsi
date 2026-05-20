@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { reportClientError } from "@/lib/errors/client-reporting";
 
 export default function GlobalError({
   error,
@@ -11,8 +12,8 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log error to monitoring service (e.g., Sentry)
-    console.error("[GlobalError]", error);
+    // Report error to monitoring
+    reportClientError(error, { source: "global" });
   }, [error]);
 
   return (
@@ -37,7 +38,7 @@ export default function GlobalError({
           </div>
         </div>
 
-        <h1 className="mb-2 font-display text-2xl font-bold text-[var(--color-text)]">
+        <h1 className="mb-2 font-display text-2xl font-bold text-(--color-text)">
           Something went wrong
         </h1>
         <p className="mb-6 text-[var(--color-text-muted)]">

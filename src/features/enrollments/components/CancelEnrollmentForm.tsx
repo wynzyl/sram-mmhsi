@@ -4,7 +4,9 @@ import { useState, useActionState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { updateEnrollmentStatusAction } from "../enrollments.actions";
-import { formatCurrency } from "@/lib/utils/currency";
+import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { TextAreaField } from "@/components/forms/TextInputField";
 import { cn } from "@/lib/utils/cn";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -47,37 +49,26 @@ export default function CancelEnrollmentForm({
 }: CancelEnrollmentFormProps) {
   const [state, action, pending] = useActionState(updateEnrollmentStatusAction, {});
   const [show, setShow] = useState(false);
+  const [cancelRemarks, setCancelRemarks] = useState("");
 
   const paid = assessmentTotalPaid ?? 0;
   const financeStatuses = status === "assessed" || status === "enrolled";
   const hasCollected = financeStatuses && paid > OUTSTANDING_PAYMENT_EPSILON;
   const cancelBlockedByPayments = hasCollected && !canCancelWithBalance;
-  const remarksError = state.errors?.cancelRemarks?.[0];
 
-  // Success state
-  if (state.success) {
-    if (variant === "table") {
-      return (
-        <span className="text-xs text-gray-500">
-          {state.message}
-        </span>
-      );
-    }
-    return (
-      <p className="rounded-md border border-[var(--color-accent-emerald)]/30 bg-[var(--color-accent-emerald)]/5 px-3 py-2 text-xs text-[var(--color-accent-emerald)]">
-        {state.message}
-      </p>
-    );
+  // Success/Error state
+  if (state.success || (state.message && !show)) {
+    return <FormStateAlert state={state} />;
   }
 
   // Table variant (compact)
   if (variant === "table") {
     return (
-      <div className="mt-0.5 max-w-[22rem]">
+      <div className="mt-0.5 max-w-88">
         {!show ? (
           <button
             type="button"
-            className="btn-ghost btn-sm text-[var(--color-error)]"
+            className="btn-ghost btn-sm text-(--color-error)"
             onClick={() => setShow(true)}
           >
             Cancel enrollment
@@ -101,19 +92,19 @@ export default function CancelEnrollmentForm({
                 className={cn(
                   "m-0 text-[11px]",
                   cancelBlockedByPayments
-                    ? "text-[var(--color-error)]"
-                    : "text-[var(--color-warning,#b45309)]"
+                    ? "text-(--color-error)"
+                    : "text-(--color-warning,#b45309)"
                 )}
               >
                 {cancelBlockedByPayments ? (
                   <>
-                    Ledger shows {formatCurrency(paid)} collected. Void posted payments (Cashier) first,
+                    Ledger shows <CurrencyDisplay amount={paid} /> collected. Void posted payments (Cashier) first,
                     then cancel. Ask an admin only if policy requires cancelling without voiding in the
                     system.
                   </>
                 ) : (
                   <>
-                    Ledger shows {formatCurrency(paid)} collected. Prefer voiding payments before cancel.
+                    Ledger shows <CurrencyDisplay amount={paid} /> collected. Prefer voiding payments before cancel.
                     As admin you may proceed with a detailed audit reason (&ge;15 characters); this does
                     not replace proper voiding for accounting.
                   </>
@@ -121,15 +112,20 @@ export default function CancelEnrollmentForm({
               </p>
             )}
 
-            <textarea
+            <TextAreaField
+              label="Cancellation reason"
               name="cancelRemarks"
-              className="form-control w-full px-2 py-1 text-xs"
+              required={hasCollected && canCancelWithBalance}
+              value={cancelRemarks}
+              onChange={setCancelRemarks}
+              error={state.errors?.cancelRemarks}
               rows={hasCollected && canCancelWithBalance ? 4 : 2}
               placeholder={
                 hasCollected && canCancelWithBalance
                   ? "Detailed audit reason (required, \u226515 characters)..."
                   : "Reason for cancellation..."
               }
+              className="w-full px-2 py-1 text-xs"
             />
 
             <div className="flex flex-wrap items-center gap-1">
@@ -151,12 +147,7 @@ export default function CancelEnrollmentForm({
           </form>
         )}
 
-        {remarksError && (
-          <p className="mt-1 text-[11px] text-[var(--color-error)]">{remarksError}</p>
-        )}
-        {state.message && !state.success && (
-          <p className="mt-1 text-[11px] text-(--color-error)">{state.message}</p>
-        )}
+        <FormStateAlert state={state} />
       </div>
     );
   }
@@ -188,7 +179,7 @@ export default function CancelEnrollmentForm({
           {financeStatuses && assessmentId && (
             <Link
               href={`/staff/assessments/${assessmentId}`}
-              className="inline-flex items-center gap-1 text-[11px] text-[var(--color-primary)] underline"
+              className="inline-flex items-center gap-1 text-[11px] text-(--color-primary) underline"
             >
               Open assessment ledger first
             </Link>
@@ -200,25 +191,30 @@ export default function CancelEnrollmentForm({
                 "rounded-md p-2 text-[11px] leading-relaxed",
                 cancelBlockedByPayments
                   ? "bg-red-100/60 text-red-800"
-                  : "bg-[var(--color-accent-amber)]/15 text-[var(--color-accent-amber)]"
+                  : "bg-(--color-accent-amber)/15 text-(--color-accent-amber)"
               )}
             >
               {cancelBlockedByPayments ? (
                 <>
-                  Ledger shows <strong>{formatCurrency(paid)}</strong> collected. Void posted payments via
+                  Ledger shows <strong><CurrencyDisplay amount={paid} /></strong> collected. Void posted payments via
                   the cashier first, then cancel.
                 </>
               ) : (
                 <>
-                  Ledger shows <strong>{formatCurrency(paid)}</strong> collected. Prefer voiding payments
+                  Ledger shows <strong><CurrencyDisplay amount={paid} /></strong> collected. Prefer voiding payments
                   before cancel; admin reason &ge;15 chars required.
                 </>
               )}
             </p>
           )}
 
-          <textarea
+          <TextAreaField
+            label="Cancellation reason"
             name="cancelRemarks"
+            required={hasCollected && canCancelWithBalance}
+            value={cancelRemarks}
+            onChange={setCancelRemarks}
+            error={state.errors?.cancelRemarks}
             rows={hasCollected && canCancelWithBalance ? 4 : 2}
             placeholder={
               hasCollected && canCancelWithBalance
@@ -228,12 +224,7 @@ export default function CancelEnrollmentForm({
             className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-ops-ink outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-red-500/15"
           />
 
-          {remarksError && (
-            <p className="text-[11px] text-red-700">{remarksError}</p>
-          )}
-          {state.message && !state.success && (
-            <p className="text-[11px] text-red-700">{state.message}</p>
-          )}
+          <FormStateAlert state={state} />
 
           <div className="flex items-center gap-2">
             <button

@@ -28,6 +28,16 @@ export type LedgerPaymentRow = {
   referenceNumber: string | null;
   /** Cashier / user who posted the payment (`payments.created_by`). */
   processedBy: string | null;
+  /** Payment kind: 'payment' (original) or 'reversal' (offsetting entry) */
+  kind?: string;
+  /** For reversal rows: links to the original payment */
+  reversesPaymentId?: string | null;
+};
+
+export type PendingVoidRequestInfo = {
+  requestId: string;
+  requestedBy: string;
+  requestedByUsername: string;
 };
 
 type ActiveBooklet = {
@@ -52,12 +62,18 @@ export type AssessmentLedgerRegisterProps = {
     balance: string;
     billingStatus: string;
     transferredAt: string | null;
-    transferredToAssessmentId: string | null;  };
+    transferredToAssessmentId: string | null;
+  };
   items: LedgerLineItem[];
   payments: LedgerPaymentRow[];
   activeBooklets: ActiveBooklet[];
   canPost: boolean;
-  canVoid: boolean;
+  /** Whether user can request voids (replaces legacy canVoid) */
+  canRequestVoid: boolean;
+  /** Map of paymentId -> pending void request info */
+  pendingVoidByPaymentId?: Record<string, PendingVoidRequestInfo>;
+  /** Current user ID (for cancel button visibility) */
+  currentUserId?: string;
   balanceForwardTypeId: string | null;
 };
 
@@ -79,7 +95,9 @@ export default function AssessmentLedgerRegister({
   payments,
   activeBooklets,
   canPost,
-  canVoid,
+  canRequestVoid,
+  pendingVoidByPaymentId = {},
+  currentUserId,
   balanceForwardTypeId,
 }: AssessmentLedgerRegisterProps) {
   const router = useRouter();
@@ -95,9 +113,11 @@ export default function AssessmentLedgerRegister({
   const canOpenPay = canPost && !isFullyPaid && !isCancelledEnrollment && !isTransferred && balanceNum > 0;
 
   const feesRunning = items.reduce((sum, row) => sum + lineSignedAmount(row), 0);
-  const paymentsRecorded = payments
-    .filter((p) => p.status !== "voided")
-    .reduce((sum, p) => sum + Number(p.amount), 0);
+  const postedPayments = payments.filter((p) => p.status === "posted");
+  const paymentsRecorded = postedPayments.reduce(
+    (sum, p) => sum + Number(p.amount),
+    0,
+  );
 
   const percent = paidPercent(paidNum, totalNum);
 
@@ -167,7 +187,7 @@ export default function AssessmentLedgerRegister({
               Receive payment
             </button>
           )}
-          <GenerateInvoiceButton assessmentId={assessment.id} />
+          <GenerateInvoiceButton assessmentId={assessment.id} balance={balanceNum} />
         </div>
 
         {/* Bottom: KPI tiles + progress bar */}
@@ -230,12 +250,14 @@ export default function AssessmentLedgerRegister({
 
             {/* Balance due */}
             <div
-              className={`ledger-register-tile ledger-register-tile-balance${!isFullyPaid && !isCancelledEnrollment && balanceNum > 0 ? " ledger-register-tile-owe" : ""}`}
+              className={`ledger-register-tile ledger-register-tile-balance${!isFullyPaid && !isCancelledEnrollment && !isTransferred && balanceNum > 0 ? " ledger-register-tile-owe" : ""}`}
             >
               <span className="ledger-register-tile-label">Balance due</span>
               <span className="ledger-register-tile-value ledger-register-tile-balance-num">
                 {isCancelledEnrollment ? (
                   <StatusBadge type="billing" status="cancelled" />
+                ) : isTransferred ? (
+                  <StatusBadge type="billing" status="balance_forwarded" />
                 ) : isFullyPaid ? (
                   <StatusBadge type="billing" status="fully_paid" />
                 ) : (
@@ -431,11 +453,17 @@ export default function AssessmentLedgerRegister({
                 fontVariantNumeric: "tabular-nums",
               }}
             >
-              {payments.filter((p) => p.status !== "voided").length} posted
+              {postedPayments.length} posted
             </span>
           </div>
           <div className="ledger-register-payments-body">
-            <PaymentsHistoryTable payments={payUiRows} canVoid={canVoid} embedded />
+            <PaymentsHistoryTable
+              payments={payUiRows}
+              canRequestVoid={canRequestVoid}
+              pendingVoidByPaymentId={pendingVoidByPaymentId}
+              currentUserId={currentUserId}
+              embedded
+            />
           </div>
           <div className="ledger-register-payments-footer">
             <div className="ledger-register-foot-inline">

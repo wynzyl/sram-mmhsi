@@ -27,6 +27,7 @@ export async function getAllFeeTemplates() {
   return await db.query.feeTemplates.findMany({
     with: {
       items: {
+        where: (items, { isNull }) => isNull(items.deletedAt),
         with: {
           feeItemType: true,
         },
@@ -59,6 +60,7 @@ export async function getFeeTemplatesPaginated(
   const templates = await db.query.feeTemplates.findMany({
     with: {
       items: {
+        where: (items, { isNull }) => isNull(items.deletedAt),
         with: { feeItemType: true },
         orderBy: (items, { asc }) => [asc(items.order)],
       },
@@ -103,6 +105,7 @@ export async function getFeeTemplateById(id: string) {
     where: eq(feeTemplates.id, id),
     with: {
       items: {
+        where: (items, { isNull }) => isNull(items.deletedAt),
         with: {
           feeItemType: true,
         },
@@ -120,6 +123,7 @@ export async function getActiveFeeTemplatesByBand(assessmentBand: string) {
     ),
     with: {
       items: {
+        where: (items, { isNull }) => isNull(items.deletedAt),
         with: {
           feeItemType: true,
         },
@@ -139,6 +143,7 @@ export async function getSchoolYearFeeSchedules(schoolYearId: string) {
       feeTemplate: {
         with: {
           items: {
+            where: (items, { isNull }) => isNull(items.deletedAt),
             with: {
               feeItemType: true,
             },
@@ -159,6 +164,7 @@ export async function getFeeScheduleById(id: string) {
       feeTemplate: {
         with: {
           items: {
+            where: (items, { isNull }) => isNull(items.deletedAt),
             with: {
               feeItemType: true,
             },

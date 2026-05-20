@@ -1,5 +1,6 @@
 import { requireSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { db } from "@/lib/db";
@@ -89,6 +90,7 @@ export default async function CashierQueuePage() {
       orNumber: payments.orNumber,
       amount: payments.amount,
       paymentDate: payments.paymentDate,
+      assessmentId: payments.assessmentId,
       studentFirstName: students.firstName,
       studentLastName: students.lastName,
     })
@@ -204,28 +206,30 @@ export default async function CashierQueuePage() {
               ) : (
                 <ul className="max-h-48 space-y-2 overflow-y-auto pr-1">
                   {recentCollections.map((p) => (
-                    <li
-                      key={p.paymentId}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2) px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[var(--color-text)">
-                          Receipt {p.orNumber ? <ReferenceCode code={p.orNumber} /> : "#—"}
-                        </p>
-                        <p className="mt-1 truncate text-xs text-[var(--color-text-muted)">
-                          {p.studentLastName}, {p.studentFirstName}
-                        </p>
-                        <p className="mt-1 truncate text-[11px] text-[var(--color-text-muted)">
-                          {new Date(p.paymentDate).toLocaleTimeString("en-PH", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            timeZone: "Asia/Manila",
-                          })}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-sm font-semibold text-[var(--color-success)]">
-                        <CurrencyDisplay amount={Number(p.amount)} />
-                      </div>
+                    <li key={p.paymentId}>
+                      <Link
+                        href={p.assessmentId ? `/staff/assessments/${p.assessmentId}` : "#"}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 transition-colors hover:bg-[var(--color-surface-3)] hover:border-[var(--color-primary)]"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-[var(--color-text)]">
+                            Receipt {p.orNumber ? <ReferenceCode code={p.orNumber} /> : "#—"}
+                          </p>
+                          <p className="mt-1 truncate text-xs text-[var(--color-text-muted)]">
+                            {p.studentLastName}, {p.studentFirstName}
+                          </p>
+                          <p className="mt-1 truncate text-[11px] text-[var(--color-text-muted)]">
+                            {new Date(p.paymentDate).toLocaleTimeString("en-PH", {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              timeZone: "Asia/Manila",
+                            })}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-sm font-semibold text-[var(--color-success)]">
+                          <CurrencyDisplay amount={Number(p.amount)} />
+                        </div>
+                      </Link>
                     </li>
                   ))}
                 </ul>

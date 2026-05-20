@@ -1,12 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import {
-  DataCard,
-  DataCardHeader,
-  DataCardBody,
-} from "@/components/ui/editorial/DataCard";
-import { cn } from "@/lib/utils/cn";
 
 export interface PendingEnrollmentRow {
   enrollmentId: string;
@@ -25,91 +19,99 @@ interface PendingAssessmentsQueueProps {
   assessmentsBasePath?: string;
 }
 
+function initials(name: string): string {
+  const parts = name.split(",").map((s) => s.trim());
+  if (parts.length >= 2) {
+    // "Last, First" format
+    const last = parts[0].charAt(0);
+    const first = parts[1].charAt(0);
+    return `${first}${last}`.toUpperCase() || "?";
+  }
+  // Fallback for other formats
+  const words = name.trim().split(/\s+/);
+  if (words.length >= 2) {
+    return `${words[0].charAt(0)}${words[1].charAt(0)}`.toUpperCase();
+  }
+  return name.charAt(0).toUpperCase() || "?";
+}
+
 export default function PendingAssessmentsQueue({
   rows,
   canCreate,
   assessmentsBasePath = "/staff/assessments",
 }: PendingAssessmentsQueueProps) {
-  const count = rows.length;
+  const colSpan = canCreate ? 6 : 5;
 
   return (
-    <DataCard className="animate-reveal-stagger stagger-delay-1">
-      <DataCardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-lg font-bold text-charcoal">Fee assessment queue</h2>
-        <span
-          className={cn(
-            "rounded-md px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
-            count > 0
-              ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-              : "bg-[var(--color-surface-2)] text-warm-gray"
-          )}
-          aria-live="polite"
-        >
-          {count === 0 ? "No pending" : `${count} pending`}
-        </span>
-      </DataCardHeader>
-      <DataCardBody className="space-y-4">
-        <p className="text-sm text-warm-gray">
-          Each row is a <strong className="text-charcoal">pending</strong> enrollment. Open the fee
-          assessment to build the one-time charge snapshot from your fee catalog; saving moves the
-          enrollment to <strong className="text-charcoal">Assessed</strong>. Payments are tracked on
-          the billing ledger afterward.
-        </p>
-
-        {!canCreate && (
-          <p className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm text-charcoal">
-            You can view this queue. Contact an administrator or registrar with assessment permission
-            to open fee assessments.
-          </p>
-        )}
-
-        {count === 0 ? (
-          <div
-            className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)]/50 px-6 py-10 text-center"
-            role="status"
-          >
-            <p className="font-display text-base font-semibold text-charcoal">
-              No enrollments are waiting for assessment.
-            </p>
-            <p className="mt-2 text-sm text-warm-gray">
-              New rows appear here when an enrollment is still <strong>Pending</strong> and has not
-              yet received its fee assessment.
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-3" aria-label="Pending enrollments awaiting fee assessment">
-            {rows.map((r) => (
-              <li
+    <div className="table-wrapper rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)] overflow-hidden">
+      <table className="data-table w-full text-left text-sm" id="pending-assessments-table">
+        <thead>
+          <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+            <th className="pl-4 font-semibold tracking-wide text-[var(--color-text-2)]">Student</th>
+            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Reference</th>
+            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Grade Level</th>
+            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">School Year</th>
+            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Queued</th>
+            {canCreate && (
+              <th className="w-px text-right font-semibold tracking-wide text-[var(--color-text-2)]" aria-label="Actions" />
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={colSpan} className="table-empty px-6 py-12 text-center text-[var(--color-text-muted)]">
+                No enrollments are waiting for assessment.
+              </td>
+            </tr>
+          ) : (
+            rows.map((r) => (
+              <tr
                 key={r.enrollmentId}
-                className="flex flex-col gap-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition-colors hover:bg-[var(--color-surface-2)]/40 sm:flex-row sm:items-center sm:justify-between"
+                className="border-b border-[var(--color-border)] last:border-b-0 transition-colors hover:bg-[var(--color-surface-2)]/80"
               >
-                <div className="min-w-0 flex-1 space-y-1">
-                  <p className="font-display text-lg font-bold text-charcoal">{r.studentName}</p>
-                  <p className="font-mono text-sm text-warm-gray">{r.referenceNumber}</p>
-                  <p className="text-sm text-charcoal">
-                    <span className="text-warm-gray">School year:</span> {r.schoolYear}
-                    <span className="mx-2 text-warm-gray" aria-hidden>
-                      ·
-                    </span>
-                    <span className="text-warm-gray">Grade:</span> {r.gradeLevel}
-                  </p>
-                  <p className="text-xs text-warm-gray">Queued {r.queuedAtLabel}</p>
-                </div>
-                {canCreate ? (
-                  <div className="shrink-0 sm:pl-4">
+                <td className="align-middle py-3 pl-4 pr-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_14%,var(--color-surface))] font-display text-sm font-bold text-[var(--color-primary)]"
+                      aria-hidden
+                    >
+                      {initials(r.studentName)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-[var(--color-text)]">
+                        {r.studentName}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                <td className="align-middle py-3">
+                  <code className="reference-code text-[0.8rem]">#{r.referenceNumber}</code>
+                </td>
+                <td className="align-middle py-3 text-[var(--color-text)]">
+                  {r.gradeLevel}
+                </td>
+                <td className="align-middle py-3 text-[var(--color-text)]">
+                  {r.schoolYear}
+                </td>
+                <td className="align-middle py-3 text-[var(--color-text-muted)] text-sm">
+                  {r.queuedAtLabel}
+                </td>
+                {canCreate && (
+                  <td className="align-middle py-3 text-right pr-4">
                     <Link
                       href={`${assessmentsBasePath}/new/${r.enrollmentId}`}
-                      className="inline-flex w-full items-center justify-center rounded-md bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-95 sm:w-auto"
+                      className="inline-flex items-center justify-center rounded-md bg-[var(--color-primary)] px-3 py-1 text-xs font-semibold text-white hover:opacity-95 transition-opacity"
                     >
-                      Open fee assessment
+                      Assessment
                     </Link>
-                  </div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </DataCardBody>
-    </DataCard>
+                  </td>
+                )}
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }

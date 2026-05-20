@@ -160,3 +160,22 @@ export type QuickConfirmEnrollmentInput = z.infer<typeof QuickConfirmEnrollmentS
 export type QuickConfirmEnrollmentFormState = BaseFormState<QuickConfirmEnrollmentInput> & {
   enrollmentId?: string;
 };
+
+// ─── Update Intake Documents Schema ──────────────────────────────────────────
+
+/**
+ * Schema for updating intake documents on an existing enrollment.
+ * Only applicable for new_student and transferee enrollment types.
+ */
+export const UpdateIntakeDocumentsSchema = z.object({
+  enrollmentId: z.string().uuid("Enrollment ID is required."),
+  intakeForm138: z.preprocess(preprocessIntakeRadio, intakeDocumentStatusSchema),
+  intakeBirthCertificatePsa: z.preprocess(preprocessIntakeRadio, intakeDocumentStatusSchema),
+  intakeGoodMoralCharacter: z.preprocess(preprocessIntakeRadio, intakeDocumentStatusSchema),
+  intakeQualifiedVoucher: z.preprocess(preprocessIntakeRadio, intakeDocumentStatusSchema),
+  intakeEscCertificate: z.preprocess(preprocessIntakeRadio, intakeDocumentStatusSchema),
+});
+
+export type UpdateIntakeDocumentsInput = z.infer<typeof UpdateIntakeDocumentsSchema>;
+
+export type UpdateIntakeDocumentsFormState = BaseFormState<UpdateIntakeDocumentsInput>;

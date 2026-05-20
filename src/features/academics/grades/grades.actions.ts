@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { gradeRecords } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { gradeRecords, teacherAssignments } from "@/lib/db/schema";
+import { eq, and, sql, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -50,6 +50,29 @@ export async function saveGradesAction(
   }
 
   const { assignmentId, schoolYearId, grades } = parsed.data;
+
+  // SECURITY: Verify teacher owns this assignment (prevents IDOR attacks)
+  const assignment = await db.query.teacherAssignments.findFirst({
+    where: and(
+      eq(teacherAssignments.id, assignmentId),
+      isNull(teacherAssignments.deletedAt)
+    ),
+    columns: { id: true, teacherId: true },
+  });
+
+  if (!assignment) {
+    return { message: "Assignment not found." };
+  }
+
+  // For teachers, verify ownership - admins can encode for any assignment
+  if (session.role === "teacher" && assignment.teacherId !== session.userId) {
+    logger.warn("[grades] Unauthorized grade save attempt", {
+      userId: session.userId,
+      assignmentId,
+      assignmentOwnerId: assignment.teacherId,
+    });
+    return { message: "You are not authorized to encode grades for this assignment." };
+  }
 
   try {
     await db.transaction(async (tx) => {
@@ -178,6 +201,29 @@ export async function submitGradesAction(
   }
 
   const { assignmentId, gradingPeriod } = parsed.data;
+
+  // SECURITY: Verify teacher owns this assignment (prevents IDOR attacks)
+  const assignment = await db.query.teacherAssignments.findFirst({
+    where: and(
+      eq(teacherAssignments.id, assignmentId),
+      isNull(teacherAssignments.deletedAt)
+    ),
+    columns: { id: true, teacherId: true },
+  });
+
+  if (!assignment) {
+    return { message: "Assignment not found." };
+  }
+
+  // For teachers, verify ownership - admins can submit for any assignment
+  if (session.role === "teacher" && assignment.teacherId !== session.userId) {
+    logger.warn("[grades] Unauthorized grade submit attempt", {
+      userId: session.userId,
+      assignmentId,
+      assignmentOwnerId: assignment.teacherId,
+    });
+    return { message: "You are not authorized to submit grades for this assignment." };
+  }
 
   try {
     await db.transaction(async (tx) => {

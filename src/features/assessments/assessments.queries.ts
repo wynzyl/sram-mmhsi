@@ -11,7 +11,7 @@ import {
   feeScheduleOverrides,
   feeItemTypes,
 } from "@/lib/db/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, isNull } from "drizzle-orm";
 import type { FeeAssessmentBand } from "@/lib/constants/assessment-bands";
 import {
   type PaginationParams,
@@ -27,7 +27,7 @@ export type AssessmentListItem = {
   totalAmount: number;
   totalPaid: number;
   balance: number;
-  billingStatus: "outstanding" | "fully_paid" | "cancelled";
+  billingStatus: "outstanding" | "fully_paid" | "cancelled" | "balance_forwarded";
   transferredAt: Date | null;
 };
 
@@ -94,6 +94,7 @@ type DbQuery = typeof db.query;
 export type ResolvedFeeItem = {
   feeTemplateItemId: string;
   feeItemTypeId: string; // For populating assessment_items.fee_item_type_id
+  feeItemTypeCode: string; // For discount base calculation (e.g., 'TUITION')
   description: string; // From fee_item_types.name
   amount: string;
   isDiscount: boolean; // From fee_item_types.is_discount
@@ -164,7 +165,10 @@ export async function resolveFeeScheduleForAssessment(
   // ─── Step 2: Load Template Items with Fee Type Details ───────────────────
 
   const templateItems = await executor.query.feeTemplateItems.findMany({
-    where: eq(feeTemplateItems.feeTemplateId, schedule.feeTemplateId),
+    where: and(
+      eq(feeTemplateItems.feeTemplateId, schedule.feeTemplateId),
+      isNull(feeTemplateItems.deletedAt)
+    ),
     with: {
       feeItemType: true, // Join with fee_item_types to get name/description
     },
@@ -190,6 +194,7 @@ export async function resolveFeeScheduleForAssessment(
   const resolvedItems: ResolvedFeeItem[] = templateItems.map((item) => ({
     feeTemplateItemId: item.id,
     feeItemTypeId: item.feeItemTypeId, // For assessment_items reporting
+    feeItemTypeCode: item.feeItemType.code, // For discount base calculation
     description: item.feeItemType.name, // Get name from fee_item_types
     amount: overrideMap.has(item.id)
       ? String(overrideMap.get(item.id))

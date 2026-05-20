@@ -14,6 +14,7 @@ import { eq, desc, asc, and, lte } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentLedgerRegister from "@/features/payments/components/AssessmentLedgerRegister";
+import { getPendingVoidRequestsForPayments } from "@/features/payments/void-requests.queries";
 
 export async function InternalAssessmentLedgerPage(props: {
   assessmentId: string;
@@ -79,6 +80,8 @@ export async function InternalAssessmentLedgerPage(props: {
       status: payments.status,
       referenceNumber: payments.referenceNumber,
       processedByUsername: users.username,
+      kind: payments.kind,
+      reversesPaymentId: payments.reversesPaymentId,
     })
     .from(payments)
     .leftJoin(users, eq(payments.createdBy, users.id))
@@ -86,7 +89,27 @@ export async function InternalAssessmentLedgerPage(props: {
     .orderBy(desc(payments.createdAt));
 
   const canPost = hasPermission(session.role, "payments:post");
-  const canVoid = hasPermission(session.role, "payments:void");
+  const canRequestVoid = hasPermission(session.role, "payments:void_request");
+
+  // Fetch pending void requests for displayed payments
+  const paymentIds = paymentRecords.map((p) => p.id);
+  const pendingVoidMap = paymentIds.length > 0
+    ? await getPendingVoidRequestsForPayments(paymentIds)
+    : new Map();
+
+  // Convert map to record for serialization
+  const pendingVoidByPaymentId: Record<string, {
+    requestId: string;
+    requestedBy: string;
+    requestedByUsername: string;
+  }> = {};
+  for (const [paymentId, request] of pendingVoidMap) {
+    pendingVoidByPaymentId[paymentId] = {
+      requestId: request.requestId,
+      requestedBy: request.requestedBy,
+      requestedByUsername: request.requestedByUsername,
+    };
+  }
 
   let activeBooklets: {
     id: string;
@@ -123,6 +146,8 @@ export async function InternalAssessmentLedgerPage(props: {
     status: p.status,
     referenceNumber: p.referenceNumber,
     processedBy: p.processedByUsername ?? null,
+    kind: p.kind,
+    reversesPaymentId: p.reversesPaymentId,
   }));
 
   return (
@@ -146,7 +171,9 @@ export async function InternalAssessmentLedgerPage(props: {
         payments={ledgerPayments}
         activeBooklets={activeBooklets}
         canPost={canPost}
-        canVoid={canVoid}
+        canRequestVoid={canRequestVoid}
+        pendingVoidByPaymentId={pendingVoidByPaymentId}
+        currentUserId={session.userId}
         balanceForwardTypeId={balanceForwardType?.id ?? null}
       />
     </div>

@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { getQueryClient } from "@/lib/query/query-client";
+import { queryKeys } from "@/lib/query/keys";
 import { parseUuidSearchParam } from "@/lib/utils/query-params";
 import { studentDirectoryListHref } from "@/lib/utils/student-directory-href";
 import type { StudentDirectoryBasePath } from "@/lib/utils/student-directory-href";
@@ -66,23 +69,43 @@ export async function InternalStudentDirectoryPage(props: {
   const canCreate = hasPermission(session.role, "students:create");
   const emptyMessage = getStudentDirectoryEmptyMessage(q, schoolYearId, gradeLevelId);
 
+  // Hydrate query cache for SSR
+  const queryClient = getQueryClient();
+  const normalizedFilters = {
+    q: q.trim() || "",
+    page: currentPageRaw,
+    schoolYearId: schoolYearId || null,
+    gradeLevelId: gradeLevelId || null,
+  };
+
+  await queryClient.prefetchQuery({
+    queryKey: queryKeys.students.list(normalizedFilters),
+    queryFn: async () => ({
+      ...data,
+      emptyMessage,
+      canCreate,
+    }),
+  });
+
   return (
-    <StudentDirectoryView
-      basePath={basePath}
-      registerHref={registerHref}
-      canCreate={canCreate}
-      title={title}
-      q={q}
-      schoolYearId={schoolYearId}
-      gradeLevelId={gradeLevelId}
-      schoolYearOptions={data.schoolYearOptions}
-      gradeLevelOptions={data.gradeLevelOptions}
-      rows={data.rows}
-      emptyMessage={emptyMessage}
-      totalCount={data.totalCount}
-      totalPages={data.totalPages}
-      currentPage={data.currentPage}
-      quickLinks={quickLinks}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <StudentDirectoryView
+        basePath={basePath}
+        registerHref={registerHref}
+        canCreate={canCreate}
+        title={title}
+        q={q}
+        schoolYearId={schoolYearId}
+        gradeLevelId={gradeLevelId}
+        schoolYearOptions={data.schoolYearOptions}
+        gradeLevelOptions={data.gradeLevelOptions}
+        rows={data.rows}
+        emptyMessage={emptyMessage}
+        totalCount={data.totalCount}
+        totalPages={data.totalPages}
+        currentPage={data.currentPage}
+        quickLinks={quickLinks}
+      />
+    </HydrationBoundary>
   );
 }

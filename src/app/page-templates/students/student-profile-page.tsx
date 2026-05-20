@@ -25,6 +25,7 @@ import {
 } from "@/features/students/components/StudentRecordProfile";
 import { RegistrationDetailView } from "@/features/registrations/components/RegistrationDetailView";
 import { getStudentRequirementsSnapshots } from "@/features/registrations/registrations.queries";
+import { getDiscountRequestsByStudent, getActiveDiscountTypes } from "@/features/discounts/discounts.queries";
 
 /** Caller must have verified `students:read` before render (thin route pages use `redirect` when missing). */
 export async function InternalStudentProfilePage(props: {
@@ -41,6 +42,10 @@ export async function InternalStudentProfilePage(props: {
   const canEnroll = hasPermission(session.role, "enrollments:create");
   const canEditStudent = hasPermission(session.role, "students:update");
   const canPostPayments = hasPermission(session.role, "payments:post");
+  const canUpdateEnrollment = hasPermission(session.role, "enrollments:update");
+  const canReadDiscounts = hasPermission(session.role, "discounts:read");
+  const canRequestDiscounts = hasPermission(session.role, "discounts:request");
+  const canManageDiscounts = hasPermission(session.role, "discounts:manage");
 
   const studentRow = await db.query.students.findFirst({
     where: eq(students.id, id),
@@ -139,7 +144,7 @@ export async function InternalStudentProfilePage(props: {
     }
   }
 
-  const [assessmentSummariesRaw, invoicesRaw, requirementsSnapshots] = await Promise.all([
+  const [assessmentSummariesRaw, invoicesRaw, requirementsSnapshots, discountRequests, discountTypes] = await Promise.all([
     canReadAssessments
       ? db
           .select({
@@ -188,6 +193,8 @@ export async function InternalStudentProfilePage(props: {
           }[]
         ),
     getStudentRequirementsSnapshots(id),
+    canReadDiscounts ? getDiscountRequestsByStudent(id) : Promise.resolve([]),
+    canRequestDiscounts ? getActiveDiscountTypes() : Promise.resolve([]),
   ]);
 
   const assessmentSummaries: AssessmentSummaryRow[] = assessmentSummariesRaw;
@@ -207,7 +214,17 @@ export async function InternalStudentProfilePage(props: {
     canEnroll,
     canEditStudent,
     canPostPayments,
+    canUpdateEnrollment,
+    canReadDiscounts,
+    canRequestDiscounts,
+    canManageDiscounts,
   };
+
+  // Find pending enrollment (no assessment yet) for discount requests
+  // Discount requests are only allowed before assessment is created
+  const pendingEnrollmentForDiscount = enrollmentRows.find(
+    (e) => e.schoolYearIsActive && e.status === "pending" && !e.assessmentId
+  );
 
   return (
     <RegistrationDetailView
@@ -218,6 +235,9 @@ export async function InternalStudentProfilePage(props: {
       placement={placement}
       assessmentSummaries={assessmentSummaries}
       invoices={invoiceRows}
+      discountRequests={discountRequests}
+      discountTypes={discountTypes}
+      activeEnrollmentId={pendingEnrollmentForDiscount?.id}
       flags={flags}
       backHref={backHref}
       backLabel="Back to registrations"

@@ -7,6 +7,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **SRAMS (School Registration and Accounts Monitoring System)** — A production-grade K-12 school management system for managing student enrollment, fee assessments, Official Receipt (OR) tracking, payment processing, and grade encoding.
 
 **Stack:** Next.js 16 (App Router) · PostgreSQL · Drizzle ORM · Tailwind CSS 4 · Zod 4 · React Hook Form · JWT (jose)
+  
+  #Tanstack Query 
+  -Correct architecture:
+
+      Client Component
+        ↓
+      TanStack Query
+        ↓
+      API Route / Server Action / RPC function
+        ↓
+      Drizzle ORM
+        ↓
+      Database
+
+  -Wrong architecture:
+
+      Client Component
+        ↓
+      Drizzle ORM directly
+        ↓
+      Database
+
+     
+  TanStack Table  = table logic: columns, sorting, filtering, pagination
+  TanStack Query  = server data: fetch, cache, refetch, sync
+  shadcn/ui       = visual components: Table, Button, Card, Badge
+
+  #Rules
+    Drizzle ORM        = gets data from database
+    Server Action/API  = exposes data safely
+    TanStack Query     = fetches/caches data in client (Use TanStack Query for server state)
+    shadcn Table       = displays the data
 
 **Critical Business Feature:** Official Receipt (OR) booklet management is a first-class accounting control feature — every payment must consume a serialized OR number from an active booklet.
 

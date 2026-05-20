@@ -10,7 +10,7 @@ type FeeItemType = {
   isDiscount: boolean;
   displayOrder: number;
   isActive: boolean;
-  createdAt: Date;
+  createdAt: Date | string;
 };
 
 type Props = {

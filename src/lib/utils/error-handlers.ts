@@ -1,6 +1,30 @@
 import "server-only";
 
 /**
+ * @deprecated This file is deprecated. Import from "@/lib/errors" instead.
+ *
+ * Migration guide:
+ * - extractUniqueConstraint → use extractConstraintName from "@/lib/errors"
+ * - isUniqueConstraintError → use isPostgresError type guard from "@/lib/errors"
+ * - getFormErrorFromDbError → use toFormState(transformError(err)) from "@/lib/errors"
+ * - extractErrorMessage → still available here for backward compatibility
+ *
+ * Example:
+ * ```typescript
+ * // Old:
+ * import { extractUniqueConstraint, getFormErrorFromDbError } from "@/lib/utils/error-handlers";
+ *
+ * // New:
+ * import { transformError, toFormState, extractConstraintName } from "@/lib/errors";
+ * ```
+ */
+
+// Re-export from new module for backward compatibility
+export { extractConstraintName as extractUniqueConstraint } from "@/lib/errors/transform";
+
+/**
+ * @deprecated Use extractConstraintName from "@/lib/errors" instead.
+ *
  * Extracts PostgreSQL unique constraint name from error.
  * Handles nested error causes and prevents infinite loops.
  *
@@ -19,7 +43,7 @@ import "server-only";
  * }
  * ```
  */
-export function extractUniqueConstraint(err: unknown): string | undefined {
+function _extractUniqueConstraint(err: unknown): string | undefined {
   let e: unknown = err;
   const seen = new Set<unknown>();
 
@@ -39,6 +63,8 @@ export function extractUniqueConstraint(err: unknown): string | undefined {
 }
 
 /**
+ * @deprecated Use isPostgresError type guard from "@/lib/errors" instead.
+ *
  * Checks if error is a PostgreSQL unique constraint violation,
  * optionally matching a specific constraint name.
  *
@@ -58,13 +84,15 @@ export function extractUniqueConstraint(err: unknown): string | undefined {
  * ```
  */
 export function isUniqueConstraintError(err: unknown, constraint?: string): boolean {
-  const extracted = extractUniqueConstraint(err);
+  const extracted = _extractUniqueConstraint(err);
   if (!extracted) return false;
   if (!constraint) return true;
   return extracted === constraint;
 }
 
 /**
+ * @deprecated Use toFormState(transformError(err)) from "@/lib/errors" instead.
+ *
  * Converts database error to form error format.
  * Returns null if error is not a known DB constraint violation.
  *
@@ -73,17 +101,26 @@ export function isUniqueConstraintError(err: unknown, constraint?: string): bool
  *
  * @example
  * ```typescript
+ * // Old:
  * try {
  *   await db.insert(students).values(data);
  * } catch (err) {
  *   const formError = getFormErrorFromDbError(err);
  *   if (formError) return formError;
- *   throw err; // Unknown error, re-throw
+ *   throw err;
+ * }
+ *
+ * // New:
+ * import { transformError, toFormState } from "@/lib/errors";
+ * try {
+ *   await db.insert(students).values(data);
+ * } catch (err) {
+ *   return toFormState(transformError(err));
  * }
  * ```
  */
 export function getFormErrorFromDbError(err: unknown): { errors?: Record<string, string[]> } | null {
-  const constraint = extractUniqueConstraint(err);
+  const constraint = _extractUniqueConstraint(err);
   if (!constraint) return null;
 
   // Map known constraints to field errors

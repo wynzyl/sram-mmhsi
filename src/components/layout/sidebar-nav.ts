@@ -16,7 +16,10 @@ export type NavIconName =
   | "payments"
   | "invoices"
   | "finance"
-  | "fee-item-types";
+  | "fee-item-types"
+  | "void-requests"
+  | "reports"
+  | "discounts";
 
 /** One level of nested links (e.g. Register Student). Deeper nesting is not rendered. */
 export type NavItem = {
@@ -40,6 +43,18 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Overview",
       items: [{ href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" }],
+    },
+    {
+      label: "Finance",
+      items: [
+        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
+      ],
+    },
+    {
+      label: "Reports",
+      items: [
+        { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
+      ],
     },
     {
       label: "System",
@@ -70,6 +85,8 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/finance/fee-schedules", label: "Fee Schedules", icon: "fee-schedules" },
         { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
         { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
+        { href: "/staff/finance/discount-types", label: "Discount Types", icon: "discounts" },
+        { href: "/staff/finance/discount-requests", label: "Discount Requests", icon: "discounts" },
       ],
     },
     {
@@ -77,7 +94,14 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
         { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
+        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
+      ],
+    },
+    {
+      label: "Reports",
+      items: [
+        { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
       ],
     },
     {
@@ -123,6 +147,13 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
         { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
+        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
+      ],
+    },
+    {
+      label: "Reports",
+      items: [
+        { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
       ],
     },
     {
@@ -143,7 +174,15 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/finance/fee-schedules", label: "Fee Schedules", icon: "fee-schedules" },
         { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
         { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
+        { href: "/staff/finance/discount-types", label: "Discount Types", icon: "discounts" },
+        { href: "/staff/finance/discount-requests", label: "Discount Requests", icon: "discounts" },
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
+      ],
+    },
+    {
+      label: "Reports",
+      items: [
+        { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
       ],
     },
   ],
@@ -157,6 +196,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Cashier",
       items: [
         { href: "/staff/payments", label: "Payments", icon: "payments" },
+        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
       ],
     },

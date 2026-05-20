@@ -91,6 +91,14 @@ export type StudentRecordFlags = {
   canEditStudent: boolean;
   /** Cashier / admin — post payments from assessment ledger. */
   canPostPayments: boolean;
+  /** Registrar / admin — update enrollment intake documents. */
+  canUpdateEnrollment: boolean;
+  /** Finance / admin / registrar — view discount requests. */
+  canReadDiscounts?: boolean;
+  /** Registrar / admin — request discounts for students. */
+  canRequestDiscounts?: boolean;
+  /** Finance / admin — manage/reverse discounts. */
+  canManageDiscounts?: boolean;
 };
 
 function computeAge(dob: Date): number {

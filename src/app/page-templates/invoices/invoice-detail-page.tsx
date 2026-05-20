@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { invoices, students, studentGuardianLinks, parentsGuardians } from "@/lib/db/schema";
+import { invoices, students, studentGuardianLinks, parentsGuardians, assessments } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
@@ -71,9 +71,11 @@ export async function InternalInvoiceDetailPage(props: {
       studentMiddleName: students.middleName,
       studentLastName: students.lastName,
       studentReferenceNumber: students.referenceNumber,
+      currentBalance: assessments.balance,
     })
     .from(invoices)
     .innerJoin(students, eq(invoices.studentId, students.id))
+    .leftJoin(assessments, eq(invoices.assessmentId, assessments.id))
     .where(eq(invoices.id, invoiceId))
     .limit(1);
 
@@ -281,18 +283,52 @@ export async function InternalInvoiceDetailPage(props: {
           {/* AMOUNT DUE */}
           <div style={{
             display: "flex",
-            alignItems: "baseline",
+            flexDirection: "column",
             gap: "0.75rem",
             marginBottom: "1.75rem",
             paddingBottom: "1.5rem",
             borderBottom: "1px dashed var(--color-border)",
           }}>
-            <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", fontWeight: 500 }}>
-              Amount Due
-            </span>
-            <span style={{ fontSize: "2rem", fontWeight: 700, color: "#c70000", lineHeight: 1 }}>
-              {formatCurrency(Number(invoice.amountDue))}
-            </span>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem" }}>
+              <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", fontWeight: 500 }}>
+                Original Amount Billed
+              </span>
+              <span style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--color-text)", lineHeight: 1 }}>
+                {formatCurrency(Number(invoice.amountDue))}
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem" }}>
+              <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", fontWeight: 500 }}>
+                Current Balance
+              </span>
+              <span style={{
+                fontSize: "2rem",
+                fontWeight: 700,
+                color: invoice.currentBalance && Number(invoice.currentBalance) > 0 ? "#c70000" : "#16a34a",
+                lineHeight: 1,
+              }}>
+                {invoice.currentBalance != null
+                  ? formatCurrency(Number(invoice.currentBalance))
+                  : formatCurrency(Number(invoice.amountDue))}
+              </span>
+              {invoice.currentBalance != null && Number(invoice.currentBalance) <= 0 && (
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "2px 8px",
+                  borderRadius: "999px",
+                  fontSize: "0.68rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  color: "#16a34a",
+                  background: "rgba(22,163,74,0.12)",
+                  border: "1px solid rgba(22,163,74,0.3)",
+                }}>
+                  Fully Paid
+                </span>
+              )}
+            </div>
           </div>
 
           {/* PAYMENT INSTRUCTION */}
