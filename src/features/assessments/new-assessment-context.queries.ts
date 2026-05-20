@@ -11,10 +11,16 @@ import {
 import { eq, asc, desc } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "./assessments.queries";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
+import {
+  calculateDiscountBase,
+  calculateDiscountAmount,
+} from "@/features/discounts/utils/discount-calculations";
+import type { DiscountRequestView } from "@/features/discounts/discounts.schema";
 
 export type NewAssessmentFeeCatalogEntry = {
   feeTemplateItemId: string; // Changed from feeScheduleItemId
   feeItemTypeId: string;     // New: For reporting
+  feeItemTypeCode: string;   // New: For discount base calculation (e.g., 'TUITION')
   description: string;
   defaultAmount: string;
   isDiscount: boolean;
@@ -47,6 +53,67 @@ export type NewAssessmentPageBlockedContext = {
   status: "not_pending";
   reason: "not_pending";
 };
+
+/** Pre-calculated discount amount for display in the assessment draft */
+export type CalculatedDiscountPreview = {
+  discountRequestId: string;
+  discountTypeName: string;
+  calculationType: "fixed_amount" | "percentage";
+  displayValue: string; // e.g., "15%" or "9000"
+  baseAmount: number;
+  calculatedAmount: number;
+};
+
+/** Summary of expected discounts for the assessment draft */
+export type ExpectedDiscountsSummary = {
+  items: CalculatedDiscountPreview[];
+  totalExpectedDiscounts: number;
+};
+
+/**
+ * Calculate expected discount amounts for approved discount requests.
+ * This is called on the server to avoid business logic in UI components.
+ */
+export function calculateExpectedDiscounts(
+  feeCatalog: NewAssessmentFeeCatalogEntry[],
+  approvedRequests: DiscountRequestView[]
+): ExpectedDiscountsSummary {
+  // Build items for discount calculation
+  const itemsForCalc = feeCatalog.map((item) => ({
+    id: item.feeTemplateItemId,
+    amount: Number(item.defaultAmount),
+    isDiscount: item.isDiscount,
+    feeItemTypeCode: item.feeItemTypeCode,
+  }));
+
+  const items: CalculatedDiscountPreview[] = [];
+  let totalExpectedDiscounts = 0;
+
+  for (const req of approvedRequests) {
+    const baseAmount = calculateDiscountBase(itemsForCalc, req.baseType);
+    const discountValue = req.overrideValue
+      ? Number(req.overrideValue)
+      : Number(req.defaultValue);
+    const calculatedAmount = calculateDiscountAmount(
+      baseAmount,
+      req.calculationType,
+      discountValue
+    );
+
+    items.push({
+      discountRequestId: req.id,
+      discountTypeName: req.discountTypeName,
+      calculationType: req.calculationType,
+      displayValue: req.overrideValue ?? req.defaultValue,
+      baseAmount,
+      calculatedAmount,
+    });
+
+    totalExpectedDiscounts += calculatedAmount;
+  }
+
+  return { items, totalExpectedDiscounts };
+}
 
 /**
  * Loads enrollment, fee catalog, and optional primary guardian for the new-assessment page.
@@ -115,6 +182,7 @@ export async function loadNewAssessmentPageContext(
     feeCatalog = feeResolution.items.map((item) => ({
       feeTemplateItemId: item.feeTemplateItemId, // Changed from feeScheduleItemId
       feeItemTypeId: item.feeItemTypeId,         // New: For reporting
+      feeItemTypeCode: item.feeItemTypeCode,     // New: For discount base calculation
       description: item.description,
       defaultAmount: item.amount,
       isDiscount: item.isDiscount,
