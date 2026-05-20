@@ -1,0 +1,1 @@
+CREATE INDEX "ai_student_discount_idx" ON "assessment_items" USING btree ("student_discount_id");

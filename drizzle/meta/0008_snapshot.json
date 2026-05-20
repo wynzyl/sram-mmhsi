@@ -1,6 +1,6 @@
 {
-  "id": "383f1fc7-80b2-4e2d-b429-9ce33b7c41c2",
-  "prevId": "a1b2c3d4-e5f6-4789-9012-3456789abcde",
+  "id": "d289cc00-2690-4081-9eff-9842d6a54976",
+  "prevId": "383f1fc7-80b2-4e2d-b429-9ce33b7c41c2",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -157,6 +157,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "ai_student_discount_idx": {
+          "name": "ai_student_discount_idx",
+          "columns": [
+            {
+              "expression": "student_discount_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -293,15 +308,15 @@
           "primaryKey": false,
           "notNull": true
         },
-        "total_discounts": {
-          "name": "total_discounts",
+        "total_paid": {
+          "name": "total_paid",
           "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
-        "total_paid": {
-          "name": "total_paid",
+        "total_discounts": {
+          "name": "total_discounts",
           "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true,

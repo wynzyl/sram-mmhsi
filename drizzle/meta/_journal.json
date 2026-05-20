@@ -50,6 +50,20 @@
       "when": 1779345600000,
       "tag": "0006_add_bfx_reference_sequence",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779432000000,
+      "tag": "0007_add_discount_system",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779518400000,
+      "tag": "0008_add_student_discount_index",
+      "breakpoints": true
     }
   ]
 }

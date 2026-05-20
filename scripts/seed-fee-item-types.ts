@@ -48,28 +48,7 @@ async function seedFeeItemTypes() {
       isDiscount: false,
       displayOrder: 3,
     },
-    {
-      code: "LABORATORY",
-      name: "Laboratory Fee",
-      category: "fees" as const,
-      isDiscount: false,
-      displayOrder: 4,
-    },
-    {
-      code: "LIBRARY",
-      name: "Library Fee",
-      category: "fees" as const,
-      isDiscount: false,
-      displayOrder: 5,
-    },
-    {
-      code: "COMPUTER",
-      name: "Computer Fee",
-      category: "fees" as const,
-      isDiscount: false,
-      displayOrder: 6,
-    },
-
+   
     // Materials
     {
       code: "BOOKS",
@@ -78,44 +57,7 @@ async function seedFeeItemTypes() {
       isDiscount: false,
       displayOrder: 7,
     },
-    {
-      code: "ID",
-      name: "ID and School Supplies",
-      category: "materials" as const,
-      isDiscount: false,
-      displayOrder: 8,
-    },
-    {
-      code: "UNIFORM",
-      name: "Uniform",
-      category: "materials" as const,
-      isDiscount: false,
-      displayOrder: 9,
-    },
-
-    // Discounts
-    {
-      code: "SIBLING_DISC",
-      name: "Sibling Discount",
-      category: "discount" as const,
-      isDiscount: true,
-      displayOrder: 10,
-    },
-    {
-      code: "EARLY_BIRD",
-      name: "Early Bird Discount",
-      category: "discount" as const,
-      isDiscount: true,
-      displayOrder: 11,
-    },
-    {
-      code: "SCHOLARSHIP",
-      name: "Scholarship Grant",
-      category: "discount" as const,
-      isDiscount: true,
-      displayOrder: 12,
-    },
-
+   
     // Other
     {
       code: "BALANCE_FORWARD",

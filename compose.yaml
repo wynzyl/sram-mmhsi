@@ -1,71 +1,124 @@
-# Production Docker Compose configuration for SRAMS
-# Usage: docker compose up --build -d
+# Development Docker Compose for SRAMS
+# Runs PostgreSQL + Next.js (dev mode w/ hot reload) together.
+# Usage:
+#   docker compose up --build
+#   docker compose watch                # sync file changes + auto-rebuild on dep changes
+#   docker compose run --rm seed        # optional: seed system config
+#   docker compose run --rm seed-data   # optional: seed sample data
 
 services:
-  # Database migrations - run with: docker compose run --rm migrate
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: build  # Use build stage which has all dependencies
-    working_dir: /app
-    environment:
-      - DATABASE_URL=postgresql://postgres:722811@db:5432/SRAMS_DB
-    depends_on:
-      db:
-        condition: service_healthy
-    command: ["npm", "run", "db:migrate"]
-    profiles:
-      - tools  # Only runs when explicitly called
-
-  # Database seeding - run with: docker compose run --rm seed
-  seed:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: build
-    working_dir: /app
-    environment:
-      - DATABASE_URL=postgresql://postgres:722811@db:5432/SRAMS_DB
-    depends_on:
-      db:
-        condition: service_healthy
-    command: ["npm", "run", "db:seed"]
-    profiles:
-      - tools
-
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:722811@db:5432/SRAMS_DB
-      - AUTH_SECRET=${AUTH_SECRET:-change-this-secret-in-production}
-      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:3000}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-
   db:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 722811
-      POSTGRES_DB: SRAMS_DB
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-722811}
+      POSTGRES_DB: ${POSTGRES_DB:-SRAMS_DB}
     ports:
-      - "5432:5432"
+      # Expose on 5434 to avoid clashing with a local Postgres on 5432
+      - "5434:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d SRAMS_DB"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+
+  # One-shot: apply Drizzle migrations before the app starts
+  migrate:
+    build:
+      context: .
+      target: dev
+    env_file:
+      - .env.local
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["npx", "tsx", "scripts/migrate.ts"]
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      # Keep container-managed node_modules + .next so they aren't shadowed by the host
+      - /app/node_modules
+      - /app/.next
+    develop:
+      watch:
+        # Sync application source into the running container
+        - action: sync
+          path: ./src
+          target: /app/src
+        - action: sync
+          path: ./public
+          target: /app/public
+        - action: sync
+          path: ./drizzle
+          target: /app/drizzle
+        - action: sync
+          path: ./scripts
+          target: /app/scripts
+        # Top-level config files: sync and restart Next.js to pick up changes
+        - action: sync+restart
+          path: ./next.config.ts
+          target: /app/next.config.ts
+        - action: sync+restart
+          path: ./tsconfig.json
+          target: /app/tsconfig.json
+        - action: sync+restart
+          path: ./drizzle.config.ts
+          target: /app/drizzle.config.ts
+        # Dependency changes require a full image rebuild
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./package-lock.json
+
+  # Optional helpers — run with: docker compose run --rm seed
+  seed:
+    build:
+      context: .
+      target: dev
+    env_file:
+      - .env.local
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["npm", "run", "db:seed-config"]
+    profiles: ["tools"]
+
+  seed-data:
+    build:
+      context: .
+      target: dev
+    env_file:
+      - .env.local
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["npm", "run", "db:seed"]
+    profiles: ["tools"]
 
 volumes:
-  postgres_data:
+  db-data:

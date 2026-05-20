@@ -4,7 +4,7 @@ FROM node:24-alpine AS dev
 WORKDIR /app
 ENV NODE_ENV=development
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
