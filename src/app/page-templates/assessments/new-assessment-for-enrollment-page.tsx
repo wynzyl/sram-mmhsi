@@ -3,7 +3,8 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentDraftForm from "@/features/assessments/components/AssessmentDraftForm";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
-import { loadNewAssessmentPageContext } from "@/features/assessments";
+import { loadNewAssessmentPageContext, calculateExpectedDiscounts } from "@/features/assessments";
+import { getDiscountRequestsByEnrollment } from "@/features/discounts";
 
 export async function InternalNewAssessmentForEnrollmentPage(props: {
   enrollmentId: string;
@@ -23,6 +24,16 @@ export async function InternalNewAssessmentForEnrollmentPage(props: {
 
   const { enrollment: e, catalogBandLabel, primaryGuardianLabel, feeCatalog, submitBlockedReason } =
     ctx;
+
+  // Fetch existing discount requests for this enrollment
+  const existingDiscountRequests = await getDiscountRequestsByEnrollment(enrollmentId);
+
+  // Check if user can review/approve discounts
+  const canReviewDiscounts = hasPermission(session.role, "discounts:review");
+
+  // Calculate expected discounts on the server (business logic stays server-side)
+  const approvedRequests = existingDiscountRequests.filter((r) => r.status === "approved");
+  const expectedDiscounts = calculateExpectedDiscounts(feeCatalog, approvedRequests);
 
   return (
     <div className="page-container max-w-7xl">
@@ -57,6 +68,9 @@ export async function InternalNewAssessmentForEnrollmentPage(props: {
         submitBlockedReason={submitBlockedReason}
         assessmentsBasePath={assessmentsBasePath}
         feeSchedulesPath="/staff/finance/fee-schedules"
+        existingDiscountRequests={existingDiscountRequests}
+        canReviewDiscounts={canReviewDiscounts}
+        expectedDiscounts={expectedDiscounts}
       />
     </div>
   );
