@@ -5,6 +5,7 @@
 #   docker compose watch                # sync file changes + auto-rebuild on dep changes
 #   docker compose run --rm seed        # optional: seed system config
 #   docker compose run --rm seed-data   # optional: seed sample data
+#  docker compose exec app              # get a shell inside the running app container
 
 services:
   db:
