@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createAssessmentFromEnrollmentAction } from "../assessments.actions";
 import { computeAssessmentTotals } from "../assessments.schema";
 import type { AssessmentFormState } from "../assessments.schema";
-import type { NewAssessmentFeeCatalogEntry } from "../new-assessment-context.queries";
+import type { NewAssessmentFeeCatalogEntry, ExpectedDiscountsSummary } from "../new-assessment-context.queries";
 import { FormStateAlert } from "@/components/forms/FormStateAlert";
 import { TextAreaField } from "@/components/forms/TextInputField";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -17,6 +17,7 @@ import {
   DataCardFooter,
 } from "@/components/ui/editorial/DataCard";
 import { StatusIndicator } from "@/components/ui/editorial/StatusIndicator";
+import type { DiscountRequestView } from "@/features/discounts/discounts.schema";
 
 export type FeeCatalogEntry = NewAssessmentFeeCatalogEntry;
 
@@ -47,6 +48,12 @@ interface AssessmentDraftFormProps {
   assessmentsBasePath: string;
   /** Route to fee schedule setup page (e.g. `/staff/finance/fee-schedules`). */
   feeSchedulesPath?: string;
+  /** Existing discount requests for this enrollment */
+  existingDiscountRequests: DiscountRequestView[];
+  /** Whether user can review/approve discounts */
+  canReviewDiscounts: boolean;
+  /** Pre-calculated expected discounts (calculated on server) */
+  expectedDiscounts: ExpectedDiscountsSummary;
 }
 
 const initialAssessmentState: AssessmentFormState = {};
@@ -88,6 +95,9 @@ export default function AssessmentDraftForm({
   submitBlockedReason,
   assessmentsBasePath,
   feeSchedulesPath = "/staff/finance/fee-schedules",
+  existingDiscountRequests,
+  canReviewDiscounts,
+  expectedDiscounts,
 }: AssessmentDraftFormProps) {
   const router = useRouter();
   const [state, action, pending] = useActionState(
@@ -102,6 +112,25 @@ export default function AssessmentDraftForm({
 
   const [remarks, setRemarks] = useState("");
 
+  // Separate discount requests by status
+  const pendingRequests = existingDiscountRequests.filter((r) => r.status === "pending");
+  const approvedRequests = existingDiscountRequests.filter((r) => r.status === "approved");
+  const rejectedRequests = existingDiscountRequests.filter((r) => r.status === "rejected");
+
+  // Format discount value for display
+  const formatDiscountValue = (
+    calculationType: "fixed_amount" | "percentage",
+    value: string
+  ) => {
+    if (calculationType === "percentage") {
+      return `${value}%`;
+    }
+    return `₱${Number(value).toLocaleString("en-PH")}`;
+  };
+
+  // Check if there are pending discounts that block assessment
+  const hasPendingDiscounts = pendingRequests.length > 0;
+
   const itemsJson = useMemo(
     () =>
       JSON.stringify(
@@ -114,6 +143,8 @@ export default function AssessmentDraftForm({
     [rows]
   );
 
+  // Calculate totals using pre-calculated expected discounts from server
+  // (business logic for discount calculation stays on server)
   const { grossCharges, discountSum, netAssessed } = useMemo(() => {
     const parsed = rows.map((r) => ({
       amount: Number.parseFloat(r.amount),
@@ -124,10 +155,18 @@ export default function AssessmentDraftForm({
       isDiscount: r.isDiscount,
     }));
     const gross = safe.filter((r) => !r.isDiscount).reduce((a, r) => a + r.amount, 0);
-    const disc = safe.filter((r) => r.isDiscount).reduce((a, r) => a + r.amount, 0);
-    const net = computeAssessmentTotals(safe);
-    return { grossCharges: gross, discountSum: disc, netAssessed: net };
-  }, [rows]);
+    const catalogDisc = safe.filter((r) => r.isDiscount).reduce((a, r) => a + r.amount, 0);
+
+    // Use pre-calculated expected discounts from server
+    const totalDisc = catalogDisc + expectedDiscounts.totalExpectedDiscounts;
+    const net = gross - totalDisc;
+
+    return {
+      grossCharges: gross,
+      discountSum: totalDisc,
+      netAssessed: net,
+    };
+  }, [rows, expectedDiscounts.totalExpectedDiscounts]);
 
   useEffect(() => {
     if (state.success && state.assessmentId) {
@@ -283,28 +322,169 @@ export default function AssessmentDraftForm({
             )}
           </DataCard>
 
-          {/* Adjustments & notes */}
+          {/* Discount Requests Queue */}
           <DataCard className="animate-reveal-stagger stagger-delay-3">
-            <DataCardHeader>
+            <DataCardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-lg font-bold text-charcoal">
-                Adjustments &amp; notes
+                Discount requests
               </h2>
+              {hasPendingDiscounts && (
+                <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                  {pendingRequests.length} pending
+                </span>
+              )}
             </DataCardHeader>
-            <DataCardBody className="space-y-3">
-              <p className="text-sm text-warm-gray">
-                Scholarships and fee reductions are modeled as <strong>discount</strong> lines from
-                your fee catalog—not as a separate percent field. Add or edit those lines in{" "}
-                <strong>Current charges</strong>.
-              </p>
+            <DataCardBody className="space-y-4">
+              {/* Pending discount requests - needs review */}
+              {pendingRequests.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                    Awaiting approval
+                  </p>
+                  <div className="space-y-2">
+                    {pendingRequests.map((req) => (
+                      <div
+                        key={req.id}
+                        className="rounded-lg border border-amber-200 bg-amber-50 p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-charcoal">
+                                {req.discountTypeName}
+                              </span>
+                              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+                                {formatDiscountValue(req.calculationType, req.defaultValue)}
+                              </span>
+                              <span
+                                className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                  req.baseType === "tuition_only"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-purple-100 text-purple-700"
+                                }`}
+                              >
+                                {req.baseType === "tuition_only" ? "Tuition" : "Full"}
+                              </span>
+                            </div>
+                            {req.requestReason && (
+                              <p className="mt-1 text-xs text-warm-gray">
+                                Reason: {req.requestReason}
+                              </p>
+                            )}
+                            <p className="mt-1 text-xs text-warm-gray">
+                              Requested by {req.requestedByName} on{" "}
+                              {new Date(req.requestedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          {canReviewDiscounts && (
+                            <div className="flex shrink-0 gap-1">
+                              <a
+                                href={`/staff/finance/discount-requests?highlight=${req.id}`}
+                                className="rounded bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700"
+                              >
+                                Review
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    <strong>⚠️ Assessment blocked:</strong> All discount requests must be
+                    approved or rejected before creating an assessment.
+                    {canReviewDiscounts && (
+                      <a
+                        href="/staff/finance/discount-requests"
+                        className="ml-2 font-semibold underline hover:no-underline"
+                      >
+                        Go to Discount Queue →
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Approved discounts - will be applied */}
+              {approvedRequests.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-green-700">
+                    Approved (will be applied)
+                  </p>
+                  <ul className="space-y-1.5">
+                    {expectedDiscounts.items.map((discountPreview) => (
+                      <li
+                        key={discountPreview.discountRequestId}
+                        className="flex items-center justify-between rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-charcoal">
+                            {discountPreview.discountTypeName}
+                          </span>
+                          <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
+                            {formatDiscountValue(discountPreview.calculationType, discountPreview.displayValue)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CurrencyDisplay
+                            amount={-discountPreview.calculatedAmount}
+                            className="font-semibold text-green-800"
+                          />
+                          <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+                            Approved
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-green-700">
+                    ✓ These discounts will be applied as negative line items when the assessment is saved.
+                  </p>
+                </div>
+              )}
+
+              {/* Rejected discounts - informational */}
+              {rejectedRequests.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-warm-gray">
+                    Rejected
+                  </p>
+                  <ul className="space-y-1">
+                    {rejectedRequests.map((req) => (
+                      <li
+                        key={req.id}
+                        className="flex items-center justify-between rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm opacity-60"
+                      >
+                        <span className="font-medium text-charcoal line-through">
+                          {req.discountTypeName}
+                        </span>
+                        <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                          Rejected
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* No discount requests */}
+              {existingDiscountRequests.length === 0 && (
+                <p className="text-sm text-warm-gray">
+                  No discount requests for this enrollment. Discounts can be requested during
+                  enrollment or from the student profile page.
+                </p>
+              )}
+
+              {/* Remarks */}
               <TextAreaField
                 label="Registrar remarks (optional)"
                 name="remarks"
                 variant="editorial"
-                rows={4}
+                rows={3}
                 value={remarks}
                 onChange={setRemarks}
-                disabled={blocked}
-                placeholder="Reason for waivers, ESC context, or other assessment notes…"
+                disabled={blocked || hasPendingDiscounts}
+                placeholder="ESC context, scholarship notes, or other assessment remarks…"
               />
             </DataCardBody>
           </DataCard>
