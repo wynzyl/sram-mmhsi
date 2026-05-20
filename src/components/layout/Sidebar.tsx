@@ -135,6 +135,13 @@ const ICONS: Record<NavIconName, React.ReactNode> = {
       <line x1="9" y1="15" x2="15" y2="15" />
     </svg>
   ),
+  discounts: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="9" cy="9" r="2" />
+      <circle cx="15" cy="15" r="2" />
+      <line x1="7" y1="17" x2="17" y2="7" />
+    </svg>
+  ),
 };
 
 // ─── Portal label helper ───────────────────────────────────────────────────────

@@ -49,7 +49,7 @@ export async function createDiscountTypeAction(
   formData: FormData
 ): Promise<CreateDiscountTypeFormState> {
   const session = await requireSession();
-  if (!hasPermission(session.role, "discount_types:manage")) {
+  if (!hasPermission(session.role, "discounts:manage")) {
     return { message: "You do not have permission to manage discount types." };
   }
 
@@ -133,7 +133,7 @@ export async function updateDiscountTypeAction(
   formData: FormData
 ): Promise<UpdateDiscountTypeFormState> {
   const session = await requireSession();
-  if (!hasPermission(session.role, "discount_types:manage")) {
+  if (!hasPermission(session.role, "discounts:manage")) {
     return { message: "You do not have permission to manage discount types." };
   }
 
@@ -216,7 +216,7 @@ export async function deleteDiscountTypeAction(
   discountTypeId: string
 ): Promise<{ success: boolean; message: string }> {
   const session = await requireSession();
-  if (!hasPermission(session.role, "discount_types:manage")) {
+  if (!hasPermission(session.role, "discounts:manage")) {
     return {
       success: false,
       message: "You do not have permission to manage discount types.",
@@ -766,7 +766,7 @@ export async function reverseDiscountAction(
   formData: FormData
 ): Promise<ReverseDiscountFormState> {
   const session = await requireSession();
-  if (!hasPermission(session.role, "discounts:reverse")) {
+  if (!hasPermission(session.role, "discounts:manage")) {
     return { message: "You do not have permission to reverse discounts." };
   }
 

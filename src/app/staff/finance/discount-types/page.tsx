@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default async function DiscountTypesPage() {
   const session = await requireSession();
 
-  if (!hasPermission(session.role, "discount_types:manage")) {
+  if (!hasPermission(session.role, "discounts:manage")) {
     redirect("/staff/finance");
   }
 

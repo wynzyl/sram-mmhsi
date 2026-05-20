@@ -55,6 +55,11 @@ export type Permission =
   | "reports:view"
   | "reports:finance"
   | "reports:academic"
+  // Discounts
+  | "discounts:read"
+  | "discounts:request"
+  | "discounts:review"
+  | "discounts:manage"
   // Admin
   | "users:manage"
   | "school_years:manage"
@@ -78,6 +83,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
     "booklets:manage",
+    "discounts:read", "discounts:request", "discounts:review", "discounts:manage",
     "reports:view", "reports:finance", "reports:academic",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage",
@@ -97,6 +103,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
     "booklets:manage",
+    "discounts:read", "discounts:request", "discounts:review", "discounts:manage",
     "fee_schedules:manage",
     "school_years:manage",
     "reports:view", "reports:finance", "reports:academic",
@@ -107,6 +114,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "enrollments:read", "enrollments:create", "enrollments:update", "enrollments:confirm", "enrollments:cancel",
     "assessments:read", "assessments:create",
     "payments:read", "payments:post", "payments:void", "payments:void_request",
+    "discounts:read", "discounts:request",
     "grades:read",
     "reports:view", "reports:academic",
     "sections:manage", "school_years:manage",
@@ -117,6 +125,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "payments:read",
     "invoices:read", "invoices:send",
     "booklets:manage", "fee_schedules:manage",
+    "discounts:read", "discounts:review", "discounts:manage",
     "reports:view", "reports:finance",
   ],
   cashier: [
