@@ -7,8 +7,9 @@ import {
   payments,
   assessments,
   enrollments,
+  invoices,
 } from "@/lib/db/schema";
-import { eq, and, lte, gte, sql } from "drizzle-orm";
+import { eq, and, lte, gte, ne, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -26,7 +27,10 @@ import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { assertEnrollmentAllowsPayment } from "@/lib/utils/enrollment-payment";
-import { assessmentBillingStatusFromState } from "@/lib/utils/assessment-billing";
+import {
+  assessmentBillingStatusFromState,
+  ASSESSMENT_BALANCE_FULLY_PAID_EPSILON,
+} from "@/lib/utils/assessment-billing";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -283,6 +287,24 @@ export async function postPaymentAction(
         })
         .where(eq(assessments.id, assessmentId));
 
+      // 5b. Auto-settle linked invoice if balance reaches zero
+      if (newBalance <= ASSESSMENT_BALANCE_FULLY_PAID_EPSILON) {
+        await tx
+          .update(invoices)
+          .set({
+            status: "settled",
+            settledAt: new Date(),
+            updatedAt: new Date(),
+            updatedBy: session.userId,
+          })
+          .where(
+            and(
+              eq(invoices.assessmentId, assessmentId),
+              ne(invoices.status, "settled")
+            )
+          );
+      }
+
       // 6. Check and Update Enrollment Status
       if (assessment.enrollmentId) {
         const enrollmentRows = await tx.execute(
@@ -325,6 +347,7 @@ export async function postPaymentAction(
     });
 
     revalidatePath(`/staff/assessments/${assessmentId}`);
+    revalidatePath("/staff/finance/invoices");
     return { success: true, message: `Payment posted successfully. OR Number: ${orNumberToAssign}` };
   } catch (error: unknown) {
     logger.error("[cashier] Failed to post payment", { error: String(error) });

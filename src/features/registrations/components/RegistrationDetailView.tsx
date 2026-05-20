@@ -21,10 +21,12 @@ import type {
 import type { StudentRequirementsSnapshot } from "@/features/registrations/registrations.queries";
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import {
+  enrollmentIntakeDocumentsToPreserved,
   intakeFieldStatusDisplay,
   isIntakeDocumentsComplete,
   registrationStudentTypeLabel,
 } from "@/lib/utils/intake-documents";
+import EditIntakeDocumentsDialog from "@/features/enrollments/components/EditIntakeDocumentsDialog";
 import { cn } from "@/lib/utils/cn";
 import {
   CalendarDays,
@@ -37,8 +39,11 @@ import {
   Pencil,
   Phone,
   Printer,
+  Tag,
   Zap,
 } from "lucide-react";
+import type { DiscountRequestView, DiscountTypeView } from "@/features/discounts/discounts.schema";
+import DiscountRequestForm from "@/features/discounts/components/DiscountRequestForm";
 
 function enrollmentTypeLabel(studentType: string): string {
   if (studentType === "new_student") return "New";
@@ -163,6 +168,12 @@ export type RegistrationDetailViewProps = {
   placement: CurrentPlacement;
   assessmentSummaries: AssessmentSummaryRow[];
   invoices: InvoiceSummaryRow[];
+  /** Discount requests for this student */
+  discountRequests?: DiscountRequestView[];
+  /** Available discount types for requesting */
+  discountTypes?: DiscountTypeView[];
+  /** Active enrollment ID for new discount requests */
+  activeEnrollmentId?: string;
   flags: StudentRecordFlags;
   backHref: string;
   backLabel?: string;
@@ -180,12 +191,15 @@ export function RegistrationDetailView({
   placement,
   assessmentSummaries,
   invoices,
+  discountRequests = [],
+  discountTypes = [],
+  activeEnrollmentId,
   flags,
   backHref,
   backLabel = "Back to queue",
 }: RegistrationDetailViewProps) {
   const [tab, setTab] = useState<
-    "overview" | "documents" | "history" | "billing" | "invoices"
+    "overview" | "documents" | "history" | "billing" | "invoices" | "discounts"
   >("overview");
 
   const fullName = [student.firstName, student.middleName, student.lastName, student.suffix]
@@ -214,6 +228,7 @@ export function RegistrationDetailView({
   ];
   if (flags.canReadAssessments) tabs.push({ id: "billing", label: "Billing" });
   if (flags.canReadInvoices) tabs.push({ id: "invoices", label: "Invoices" });
+  if (flags.canReadDiscounts) tabs.push({ id: "discounts", label: "Discounts" });
 
   return (
     <div className="page-container space-y-8 print:space-y-4">
@@ -592,6 +607,11 @@ export function RegistrationDetailView({
               const progress = countIntakeComplete(snap.intakeDocuments);
               const complete =
                 snap.intakeDocuments != null && isIntakeDocumentsComplete(snap.intakeDocuments);
+              const canEditIntake =
+                flags.canUpdateEnrollment &&
+                snap.enrollmentStatus !== "cancelled" &&
+                (snap.studentType === "new_student" || snap.studentType === "transferee") &&
+                snap.intakeDocuments != null;
               return (
                 <DataCard key={snap.enrollmentId} className="p-6">
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -607,7 +627,17 @@ export function RegistrationDetailView({
                           day: "numeric",
                         })}
                       </p>
-                      <StatusBadge status={snap.enrollmentStatus} type="enrollment" />
+                      <div className="flex items-center gap-3">
+                        <StatusBadge status={snap.enrollmentStatus} type="enrollment" />
+                        {canEditIntake && (
+                          <EditIntakeDocumentsDialog
+                            enrollmentId={snap.enrollmentId}
+                            schoolYear={snap.schoolYear}
+                            gradeLevel={snap.gradeLevel}
+                            preserved={enrollmentIntakeDocumentsToPreserved(snap.intakeDocuments!)}
+                          />
+                        )}
+                      </div>
                     </div>
                     <DocumentProgressRing completed={progress.done} total={progress.total} size="lg" />
                   </div>
@@ -811,6 +841,141 @@ export function RegistrationDetailView({
             </div>
           )}
         </DataCard>
+      )}
+
+      {tab === "discounts" && flags.canReadDiscounts && (
+        <div className="space-y-6">
+          {/* Request New Discount Form */}
+          {flags.canRequestDiscounts && activeEnrollmentId && discountTypes.length > 0 && (
+            <DataCard className="p-6">
+              <h2 className="flex items-center gap-2 font-display text-xl font-bold text-[var(--color-text)] mb-4">
+                <Tag className="h-5 w-5 text-[var(--color-primary)]" aria-hidden />
+                Request Discount
+              </h2>
+              <p className="text-sm text-[var(--color-text-muted)] mb-4">
+                Submit a discount request for approval by finance.
+              </p>
+              <DiscountRequestForm
+                studentId={student.id}
+                enrollmentId={activeEnrollmentId}
+                discountTypes={discountTypes}
+              />
+            </DataCard>
+          )}
+
+          {/* No eligible enrollment warning */}
+          {flags.canRequestDiscounts && !activeEnrollmentId && (
+            <DataCard className="p-6 border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5">
+              <p className="text-sm text-[var(--color-warning)]">
+                Discount requests are only allowed for pending enrollments before an assessment is created.
+                Once enrolled or assessed, discounts cannot be requested.
+              </p>
+            </DataCard>
+          )}
+
+          {/* Discount Requests List */}
+          <DataCard className="overflow-hidden">
+            <div className="p-6 border-b border-[var(--color-border)]">
+              <h2 className="font-display text-xl font-bold text-[var(--color-text)]">
+                Discount Requests
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                History of discount requests for this student
+              </p>
+            </div>
+            {discountRequests.length === 0 ? (
+              <p className="p-6 text-[var(--color-text-muted)]">No discount requests for this student.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[800px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)] font-mono text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
+                      <th className="px-4 py-3">School Year</th>
+                      <th className="px-4 py-3">Grade</th>
+                      <th className="px-4 py-3">Discount</th>
+                      <th className="px-4 py-3">Value</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Requested</th>
+                      <th className="px-4 py-3">Decision</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {discountRequests.map((req) => (
+                      <tr key={req.id} className="border-b border-[var(--color-border)]">
+                        <td className="px-4 py-3">{req.schoolYearLabel}</td>
+                        <td className="px-4 py-3">{req.gradeLevelName}</td>
+                        <td className="px-4 py-3">
+                          <div className="font-medium">{req.discountTypeName}</div>
+                          <div className="text-xs text-[var(--color-text-muted)]">{req.discountTypeCode}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant="secondary" className="text-xs">
+                            {req.calculationType === "percentage"
+                              ? `${Number(req.overrideValue ?? req.defaultValue)}%`
+                              : <CurrencyDisplay amount={Number(req.overrideValue ?? req.defaultValue)} className="inline" />}
+                          </Badge>
+                          <div className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                            {req.baseType === "tuition_only" ? "Tuition" : "Full"}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {req.status === "pending" && (
+                            <Badge variant="warning" className="text-xs">Pending</Badge>
+                          )}
+                          {req.status === "approved" && (
+                            <Badge variant="success" className="text-xs">Approved</Badge>
+                          )}
+                          {req.status === "rejected" && (
+                            <Badge variant="danger" className="text-xs">Rejected</Badge>
+                          )}
+                          {req.status === "cancelled" && (
+                            <Badge variant="secondary" className="text-xs">Cancelled</Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)]">
+                          <div>
+                            {new Date(req.requestedAt).toLocaleDateString("en-PH", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </div>
+                          <div className="text-xs">by {req.requestedByName}</div>
+                          {req.requestReason && (
+                            <div className="text-xs italic mt-1 max-w-[150px] truncate" title={req.requestReason}>
+                              {req.requestReason}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)]">
+                          {req.decidedAt ? (
+                            <>
+                              <div>
+                                {new Date(req.decidedAt).toLocaleDateString("en-PH", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </div>
+                              {req.decidedByName && <div className="text-xs">by {req.decidedByName}</div>}
+                              {req.decisionRemarks && (
+                                <div className="text-xs italic mt-1 max-w-[150px] truncate" title={req.decisionRemarks}>
+                                  {req.decisionRemarks}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-xs">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </DataCard>
+        </div>
       )}
 
     </div>

@@ -18,6 +18,7 @@ export type Permission =
   // Enrollments
   | "enrollments:read"
   | "enrollments:create"
+  | "enrollments:update"
   /** Confirm enrollment from the ready-to-enroll queue (list-first workflow). */
   | "enrollments:confirm"
   | "enrollments:cancel"
@@ -30,10 +31,16 @@ export type Permission =
   | "assessments:create"
   | "assessments:update"
   /** Reverse a payment transfer between assessments — admin-only; requires detailed remarks. */
-  | "assessments:reverse_transfer"  // Payments
+  | "assessments:reverse_transfer"
+  // Payments
   | "payments:read"
   | "payments:post"
+  /** @deprecated Use payments:void_request instead. Kept for backward compatibility. */
   | "payments:void"
+  /** Request a void (cashier, registrar, admin, super_admin). Creates a pending void request for approval. */
+  | "payments:void_request"
+  /** Approve or reject void requests (admin, super_admin only). */
+  | "payments:void_approve"
   // Invoices
   | "invoices:read"
   | "invoices:send"
@@ -45,8 +52,14 @@ export type Permission =
   // Receipts
   | "booklets:manage"
   // Reports
+  | "reports:view"
   | "reports:finance"
   | "reports:academic"
+  // Discounts
+  | "discounts:read"
+  | "discounts:request"
+  | "discounts:review"
+  | "discounts:manage"
   // Admin
   | "users:manage"
   | "school_years:manage"
@@ -60,16 +73,18 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "registrations:read", "registrations:create", "registrations:review",
     "enrollments:read",
     "enrollments:create",
+    "enrollments:update",
     "enrollments:confirm",
     "enrollments:cancel",
     "enrollments:cancel_with_balance",
     "enrollments:override_enroll",
     "assessments:read", "assessments:create", "assessments:update", "assessments:reverse_transfer",
-    "payments:read", "payments:post", "payments:void",
+    "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
     "booklets:manage",
-    "reports:finance", "reports:academic",
+    "discounts:read", "discounts:request", "discounts:review", "discounts:manage",
+    "reports:view", "reports:finance", "reports:academic",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage",
   ],
@@ -78,27 +93,30 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "registrations:read", "registrations:create", "registrations:review",
     "enrollments:read",
     "enrollments:create",
+    "enrollments:update",
     "enrollments:confirm",
     "enrollments:cancel",
     "enrollments:cancel_with_balance",
     "enrollments:override_enroll",
     "assessments:read", "assessments:create", "assessments:update", "assessments:reverse_transfer",
-    "payments:read", "payments:post", "payments:void",
+    "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
     "booklets:manage",
+    "discounts:read", "discounts:request", "discounts:review", "discounts:manage",
     "fee_schedules:manage",
     "school_years:manage",
-    "reports:finance", "reports:academic",
+    "reports:view", "reports:finance", "reports:academic",
   ],
   registrar: [
     "students:read", "students:create", "students:update",
     "registrations:read", "registrations:create", "registrations:review",
-    "enrollments:read", "enrollments:create", "enrollments:confirm", "enrollments:cancel",
+    "enrollments:read", "enrollments:create", "enrollments:update", "enrollments:confirm", "enrollments:cancel",
     "assessments:read", "assessments:create",
-    "payments:read", "payments:post", "payments:void",
+    "payments:read", "payments:post", "payments:void", "payments:void_request",
+    "discounts:read", "discounts:request",
     "grades:read",
-    "reports:academic",
+    "reports:view", "reports:academic",
     "sections:manage", "school_years:manage",
   ],
   finance_officer: [
@@ -107,14 +125,15 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "payments:read",
     "invoices:read", "invoices:send",
     "booklets:manage", "fee_schedules:manage",
-    "reports:finance",
+    "discounts:read", "discounts:review", "discounts:manage",
+    "reports:view", "reports:finance",
   ],
   cashier: [
     "students:read",
     "assessments:read",
-    "payments:read", "payments:post", "payments:void",
+    "payments:read", "payments:post", "payments:void", "payments:void_request",
     "invoices:read",
-    "reports:finance",
+    "reports:view", "reports:finance",
   ],
   teacher: [
     "students:read",

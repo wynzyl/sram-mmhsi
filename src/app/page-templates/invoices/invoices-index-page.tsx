@@ -4,7 +4,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import InvoiceListTable from "@/features/finance/components/invoices/InvoiceListTable";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, ne } from "drizzle-orm";
 
 type InvoiceListRoute = "/staff/finance/invoices";
 
@@ -31,6 +31,7 @@ export async function InternalInvoicesListPage(props: {
     })
     .from(invoices)
     .innerJoin(students, eq(invoices.studentId, students.id))
+    .where(ne(invoices.status, "settled"))
     .orderBy(desc(invoices.createdAt));
 
   const formattedInvoices = rawInvoices.map((inv) => ({

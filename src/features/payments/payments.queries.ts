@@ -1,0 +1,186 @@
+import "server-only";
+import { db } from "@/lib/db";
+import {
+  assessments,
+  enrollments,
+  gradeLevels,
+  payments,
+  schoolYears,
+  students,
+} from "@/lib/db/schema";
+import { and, desc, eq, sql } from "drizzle-orm";
+
+// ─────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────
+
+export type CashierQueueRow = {
+  assessmentId: string;
+  studentName: string;
+  referenceNumber: string;
+  gradeLevel: string;
+  schoolYear: string;
+  billingStatus: string;
+  balance: number;
+  totalPaid: number;
+};
+
+export type CashierStats = {
+  totalCollectedToday: number;
+  pendingPaymentsCount: number;
+  studentsAssessed: number;
+  totalCollectibles: number;
+};
+
+export type RecentCollection = {
+  paymentId: string;
+  orNumber: string | null;
+  amount: number;
+  paymentDate: Date;
+  studentFirstName: string;
+  studentLastName: string;
+};
+
+export type CashierQueueData = {
+  queue: CashierQueueRow[];
+  stats: CashierStats;
+  recentCollections: RecentCollection[];
+};
+
+// ─────────────────────────────────────────────────────────────────
+// Queries
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Fetch all data needed for the cashier queue page.
+ */
+export async function fetchCashierQueueData(): Promise<CashierQueueData> {
+  const [
+    todayTotalRow,
+    totalCollectiblesRow,
+    studentAssessedRow,
+    rows,
+    recentCollections,
+  ] = await Promise.all([
+    // Today's total collections
+    db
+      .select({
+        total: sql<string>`COALESCE(SUM(${payments.amount}::numeric), 0)`,
+      })
+      .from(payments)
+      .where(
+        and(
+          eq(payments.status, "posted"),
+          sql`DATE(${payments.paymentDate}) = CURRENT_DATE`
+        )
+      )
+      .then((r) => r[0]),
+
+    // Total collectibles (outstanding balances)
+    db
+      .select({
+        total: sql<string>`COALESCE(SUM(${assessments.balance}::numeric), 0)`,
+      })
+      .from(assessments)
+      .where(
+        and(
+          eq(assessments.billingStatus, "outstanding"),
+          sql`${assessments.balance}::numeric > 0`
+        )
+      )
+      .then((r) => r[0]),
+
+    // Total students assessed
+    db
+      .select({
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(assessments)
+      .where(sql`${assessments.billingStatus} != 'cancelled'`)
+      .then((r) => r[0]),
+
+    // Queue of pending payments
+    db
+      .select({
+        assessmentId: assessments.id,
+        balance: assessments.balance,
+        totalPaid: assessments.totalPaid,
+        billingStatus: assessments.billingStatus,
+        schoolYear: schoolYears.label,
+        gradeLevel: gradeLevels.name,
+        referenceNumber: students.referenceNumber,
+        studentFirstName: students.firstName,
+        studentLastName: students.lastName,
+        updatedAt: assessments.updatedAt,
+        createdAt: assessments.createdAt,
+      })
+      .from(assessments)
+      .innerJoin(students, eq(assessments.studentId, students.id))
+      .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
+      .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .where(
+        and(
+          eq(assessments.billingStatus, "outstanding"),
+          sql`${assessments.balance}::numeric > 0`
+        )
+      )
+      .orderBy(desc(assessments.updatedAt), desc(assessments.createdAt)),
+
+    // Recent collections today
+    db
+      .select({
+        paymentId: payments.id,
+        orNumber: payments.orNumber,
+        amount: payments.amount,
+        paymentDate: payments.paymentDate,
+        studentFirstName: students.firstName,
+        studentLastName: students.lastName,
+      })
+      .from(payments)
+      .innerJoin(students, eq(payments.studentId, students.id))
+      .where(
+        and(
+          eq(payments.status, "posted"),
+          sql`DATE(${payments.paymentDate}) = CURRENT_DATE`
+        )
+      )
+      .orderBy(desc(payments.paymentDate), desc(payments.createdAt))
+      .limit(20),
+  ]);
+
+  const queue: CashierQueueRow[] = rows.map((r) => ({
+    assessmentId: r.assessmentId,
+    studentName: `${r.studentLastName}, ${r.studentFirstName}`,
+    referenceNumber: r.referenceNumber,
+    gradeLevel: r.gradeLevel,
+    schoolYear: r.schoolYear,
+    billingStatus: r.billingStatus,
+    balance: Number(r.balance),
+    totalPaid: Number(r.totalPaid),
+  }));
+
+  const stats: CashierStats = {
+    totalCollectedToday: Number(todayTotalRow?.total ?? 0),
+    pendingPaymentsCount: queue.length,
+    studentsAssessed: Number(studentAssessedRow?.count ?? 0),
+    totalCollectibles: Number(totalCollectiblesRow?.total ?? 0),
+  };
+
+  const formattedRecentCollections: RecentCollection[] = recentCollections.map(
+    (p) => ({
+      paymentId: p.paymentId,
+      orNumber: p.orNumber,
+      amount: Number(p.amount),
+      paymentDate: p.paymentDate,
+      studentFirstName: p.studentFirstName,
+      studentLastName: p.studentLastName,
+    })
+  );
+
+  return {
+    queue,
+    stats,
+    recentCollections: formattedRecentCollections,
+  };
+}

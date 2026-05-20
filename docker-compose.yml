@@ -1,27 +1,28 @@
 services:
-  # PostgreSQL database
+  # PostgreSQL database (use profile to optionally run containerized DB)
   db:
     image: postgres:15-alpine
     restart: unless-stopped
+    profiles:
+      - with-db
     env_file:
-      - .env
-    # environment:
-    #   POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required in .env.local}
-    #   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env.local}
-    #   POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required in .env.local}
+      - .env.local
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      # Exposed on host port 5434 so host-side tools (drizzle-kit, seed scripts) keep working
+      # Host port 5434 avoids clashing with a local Postgres on 5432 (drizzle-kit, seeds)
       - "5434:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-    containername: SRAMS_DB
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # Next.js Application (development)
+  # Next.js Application (development) - connects to host PostgreSQL by default
   app:
     build:
       context: .
@@ -29,14 +30,13 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - .env
+      - .env.local
     environment:
       NODE_ENV: development
-      # Inside the compose network, reach Postgres via the service name.
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-    depends_on:
-      db:
-        condition: service_healthy
+      # Host Postgres on 5432, or container mapped to host 5434 when using --profile with-db
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@host.docker.internal:5432/${POSTGRES_DB}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     develop:
       watch:
         # Sync source files for hot reload

@@ -144,9 +144,7 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
                   )}
                 </div>
                 {template.description && (
-                  <p className="fin-modal-sub" style={{ marginTop: "0.375rem" }}>
-                    {template.description}
-                  </p>
+                  <p className="fin-modal-sub">{template.description}</p>
                 )}
               </div>
               <button
@@ -196,23 +194,6 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
             <div className="fin-modal-body fin-detail-modal-body">
               {sortedItems.length === 0 ? (
                 <div className="fin-empty">
-                  <div
-                    style={{
-                      width: "2.5rem",
-                      height: "2.5rem",
-                      borderRadius: "50%",
-                      background:
-                        "color-mix(in srgb, var(--color-ops-line) 60%, transparent)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1.1rem",
-                      color: "var(--color-ops-muted)",
-                    }}
-                    aria-hidden
-                  >
-                    ₱
-                  </div>
                   <p className="fin-empty-text">No fee items in this template.</p>
                 </div>
               ) : (
@@ -241,7 +222,7 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
                         </div>
 
                         <div className="fin-detail-item-list">
-                          {items.map((item, idx) => (
+                          {items.map((item) => (
                             <div key={item.id} className="fin-detail-item-row">
                               <span className="fin-detail-item-order">
                                 {item.order}
@@ -249,9 +230,7 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
                               <span className="fin-detail-item-name">
                                 {item.feeItemType.name}
                                 {item.feeItemType.isDiscount && (
-                                  <span className="fin-disc-tag" style={{ marginLeft: "0.4rem" }}>
-                                    DISC
-                                  </span>
+                                  <span className="fin-disc-tag">DISC</span>
                                 )}
                               </span>
                               <span

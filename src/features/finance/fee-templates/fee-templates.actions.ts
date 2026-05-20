@@ -16,6 +16,7 @@ import {
   schoolYearFeeSchedules,
   feeScheduleOverrides,
   feeItemTypes,
+  assessmentItems,
 } from "@/lib/db/schema";
 import {
   CreateFeeTemplateSchema,
@@ -29,7 +30,7 @@ import {
   type AssignTemplateFormState,
   type CreateFeeOverrideFormState,
 } from "./fee-templates.schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 // ─── Template CRUD ────────────────────────────────────────────────────────
@@ -163,14 +164,50 @@ export async function removeFeeTemplateItemAction(
   }
 
   const item = await db.query.feeTemplateItems.findFirst({
-    where: eq(feeTemplateItems.id, parsed.data.id),
+    where: and(
+      eq(feeTemplateItems.id, parsed.data.id),
+      isNull(feeTemplateItems.deletedAt)
+    ),
   });
 
   if (!item) {
     return { message: "Item not found" };
   }
 
-  await db.delete(feeTemplateItems).where(eq(feeTemplateItems.id, parsed.data.id));
+  // Check if used in any assessment items
+  const usedInAssessment = await db.query.assessmentItems.findFirst({
+    where: eq(assessmentItems.feeTemplateItemId, parsed.data.id),
+    columns: { id: true },
+  });
+
+  if (usedInAssessment) {
+    return {
+      message:
+        "This fee item is used in student assessments and cannot be removed. The assessment records must retain the historical fee reference.",
+    };
+  }
+
+  // Check if used in any fee schedule overrides
+  const usedInOverride = await db.query.feeScheduleOverrides.findFirst({
+    where: eq(feeScheduleOverrides.feeTemplateItemId, parsed.data.id),
+    columns: { id: true },
+  });
+
+  if (usedInOverride) {
+    return {
+      message:
+        "This fee item has overrides defined in fee schedules. Remove the overrides first before removing the template item.",
+    };
+  }
+
+  // Soft delete instead of hard delete
+  await db
+    .update(feeTemplateItems)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: session.userId,
+    })
+    .where(eq(feeTemplateItems.id, parsed.data.id));
 
   await logAudit({
     actor: session.userId,

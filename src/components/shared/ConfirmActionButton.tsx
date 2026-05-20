@@ -125,6 +125,11 @@ export function ConfirmActionButton({
           {state.errors._form[0]}
         </span>
       )}
+      {state.message && !state.success && (
+        <span className="mt-1 block text-xs text-destructive">
+          This item cannot be deleted!
+        </span>
+      )}
     </>
   );
 }
@@ -230,6 +235,11 @@ export function BlockConfirmButton({
       </AlertDialog>
       {state.errors?._form && (
         <p className="mt-2 text-sm text-destructive">{state.errors._form[0]}</p>
+      )}
+      {state.message && !state.success && (
+        <p className="mt-2 text-sm text-destructive">
+          This item cannot be deleted!
+        </p>
       )}
     </>
   );

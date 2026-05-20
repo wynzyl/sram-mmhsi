@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { logoutAction } from "@/features/auth";
@@ -119,6 +120,28 @@ const ICONS: Record<NavIconName, React.ReactNode> = {
       <line x1="9" y1="16" x2="13" y2="16" />
     </svg>
   ),
+  "void-requests": (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+    </svg>
+  ),
+  reports: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="12" y1="18" x2="12" y2="12" />
+      <line x1="9" y1="15" x2="15" y2="15" />
+    </svg>
+  ),
+  discounts: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="9" cy="9" r="2" />
+      <circle cx="15" cy="15" r="2" />
+      <line x1="7" y1="17" x2="17" y2="7" />
+    </svg>
+  ),
 };
 
 // ─── Portal label helper ───────────────────────────────────────────────────────
@@ -194,11 +217,14 @@ export function Sidebar({ role, username }: SidebarProps) {
     <aside className="sidebar">
       {/* Brand */}
       <div className="sidebar-brand">
-        <svg width="28" height="28" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-          <rect width="40" height="40" rx="8" fill="var(--color-primary)" />
-          <path d="M10 28 L20 12 L30 28" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M14 22 H26" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
+        <Image
+          src="/MLAND LOGO.png"
+          alt="Merryland logo"
+          width={28}
+          height={28}
+          priority
+          className="sidebar-brand-logo"
+        />
         <div>
           <p className="sidebar-brand-name">MERRYLAND</p>
           <p className="sidebar-brand-portal">{portalLabel(resolvedRole)}</p>
