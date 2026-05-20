@@ -23,6 +23,10 @@ import type { AssessmentFormState } from "./assessments.schema";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { generateNextBfxNumber } from "@/lib/utils/reference";
+import {
+  hasPendingDiscountRequests,
+  applyApprovedDiscountsToAssessment,
+} from "@/features/discounts";
 
 export async function createAssessmentFromEnrollmentAction(
   _prevState: AssessmentFormState,
@@ -89,6 +93,15 @@ export async function createAssessmentFromEnrollmentAction(
   if (enrollmentRow.status !== "pending") {
     return {
       message: `Assessment can only be created when enrollment is Pending (current: ${enrollmentRow.status}).`,
+    };
+  }
+
+  // ─── Check for Pending Discount Requests ──────────────────────────────────
+  const hasPendingDiscounts = await hasPendingDiscountRequests(enrollmentId);
+  if (hasPendingDiscounts) {
+    return {
+      message:
+        "This enrollment has pending discount requests. All discount requests must be approved or rejected before creating an assessment.",
     };
   }
 
@@ -191,6 +204,7 @@ export async function createAssessmentFromEnrollmentAction(
     isDiscount: boolean;
     feeTemplateItemId: string | null; // Allow null for balance forward items
     feeItemTypeId: string;
+    feeItemTypeCode: string | null; // For discount base calculation
     sourceAssessmentId?: string; // For balance forward items only
   }[] = [];
   for (const line of items) {
@@ -198,6 +212,7 @@ export async function createAssessmentFromEnrollmentAction(
     resolvedLines.push({
       feeTemplateItemId: template.feeTemplateItemId,
       feeItemTypeId: template.feeItemTypeId,
+      feeItemTypeCode: template.feeItemTypeCode, // For discount base calculation
       description: template.description,
       amount: line.amount,
       isDiscount: template.isDiscount,
@@ -224,6 +239,7 @@ export async function createAssessmentFromEnrollmentAction(
       resolvedLines.unshift({
         feeTemplateItemId: null, // Not from template
         feeItemTypeId: balanceForwardType.id,
+        feeItemTypeCode: "BALANCE_FORWARD", // Balance forward type code
         description: bfItem.description,
         amount: Number(bfItem.amount),
         isDiscount: false,
@@ -363,6 +379,52 @@ export async function createAssessmentFromEnrollmentAction(
         }, { throwOnFail: true });
       }
 
+      // ─── Apply Approved Discounts ────────────────────────────────────────────
+      // Apply any approved discount requests as negative line items
+      // Pass resolved lines and transaction to avoid isolation issues
+      const discountResult = await applyApprovedDiscountsToAssessment(
+        newAssessment.id,
+        enrollmentId,
+        session.userId,
+        resolvedLines.map((line) => ({
+          amount: line.amount,
+          isDiscount: line.isDiscount,
+          feeItemTypeCode: line.feeItemTypeCode,
+        })),
+        tx // Pass transaction for consistent context
+      );
+
+      // If discounts were applied, recalculate assessment totals
+      if (discountResult.totalDiscounts > 0) {
+        const netTotal = assessmentTotalAmount - discountResult.totalDiscounts;
+
+        await tx
+          .update(assessments)
+          .set({
+            // totalAmount should be the NET total (sum of all line items)
+            // This ensures it matches the calculated line sum in the ledger display
+            totalAmount: String(netTotal.toFixed(2)),
+            totalDiscounts: String(discountResult.totalDiscounts.toFixed(2)),
+            balance: String(netTotal.toFixed(2)),
+            updatedBy: session.userId,
+            updatedAt: new Date(),
+          })
+          .where(eq(assessments.id, newAssessment.id));
+
+        await logAudit({
+          actor: session.userId,
+          actorRole: session.role,
+          action: "assessment_discounts_applied",
+          targetEntity: "assessments",
+          targetId: newAssessment.id,
+          newState: {
+            discountsApplied: discountResult.appliedCount,
+            totalDiscounts: discountResult.totalDiscounts,
+            netTotal,
+          },
+        }, { throwOnFail: true });
+      }
+
       await tx
         .update(enrollments)
         .set({
@@ -384,11 +446,13 @@ export async function createAssessmentFromEnrollmentAction(
         newState: {
           enrollmentId,
           totalAmount: assessmentTotalAmount,
-          lineCount: resolvedLines.length,
+          totalDiscounts: discountResult.totalDiscounts,
+          lineCount: resolvedLines.length + discountResult.appliedCount,
           feeScheduleId: scheduleResolution.scheduleId,
           balanceForwardCount: balanceForwardItems.length,
           balanceForwardTotal: balanceForwardItems.reduce((sum, bf) => sum + Number(bf.amount), 0),
           transferredAssessments: balanceForwardItems.map(bf => bf.sourceAssessmentId),
+          discountsApplied: discountResult.appliedCount,
         },
       }, { throwOnFail: true });
     });
@@ -401,6 +465,7 @@ export async function createAssessmentFromEnrollmentAction(
 
     revalidatePath("/staff/assessments");
     revalidatePath("/staff/enrollments");
+    revalidatePath("/staff/finance/discount-requests");
     revalidatePath(`/staff/students/${enrollmentRow.studentId}`);
     if (newAssessmentId) {
       revalidatePath(`/staff/assessments/${newAssessmentId}`);

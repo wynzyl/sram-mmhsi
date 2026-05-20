@@ -94,6 +94,7 @@ type DbQuery = typeof db.query;
 export type ResolvedFeeItem = {
   feeTemplateItemId: string;
   feeItemTypeId: string; // For populating assessment_items.fee_item_type_id
+  feeItemTypeCode: string; // For discount base calculation (e.g., 'TUITION')
   description: string; // From fee_item_types.name
   amount: string;
   isDiscount: boolean; // From fee_item_types.is_discount
@@ -193,6 +194,7 @@ export async function resolveFeeScheduleForAssessment(
   const resolvedItems: ResolvedFeeItem[] = templateItems.map((item) => ({
     feeTemplateItemId: item.id,
     feeItemTypeId: item.feeItemTypeId, // For assessment_items reporting
+    feeItemTypeCode: item.feeItemType.code, // For discount base calculation
     description: item.feeItemType.name, // Get name from fee_item_types
     amount: overrideMap.has(item.id)
       ? String(overrideMap.get(item.id))
