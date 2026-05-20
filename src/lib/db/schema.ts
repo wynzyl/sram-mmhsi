@@ -103,6 +103,26 @@ export const assessmentBillingStatusEnum = pgEnum("assessment_billing_status", [
 /** Groups grade levels for fee catalogs: Casa, elem, JHS, SHS (one schedule per band per school year). */
 export const feeAssessmentBandEnum = pgEnum("fee_assessment_band", FEE_ASSESSMENT_BANDS);
 
+/** Discount base type: what amount the discount is calculated from */
+export const discountBaseTypeEnum = pgEnum("discount_base_type", [
+  "tuition_only",
+  "full_assessment",
+]);
+
+/** Discount calculation type: fixed amount or percentage */
+export const discountCalculationTypeEnum = pgEnum("discount_calculation_type", [
+  "fixed_amount",
+  "percentage",
+]);
+
+/** Discount request status workflow */
+export const discountRequestStatusEnum = pgEnum("discount_request_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "cancelled",
+]);
+
 // ─── Users & Sessions ─────────────────────────────────────────────────────────
 
 export const users = pgTable(
@@ -541,7 +561,9 @@ export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
       schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
       totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
       totalPaid: numeric("total_paid", { precision: 12, scale: 2 }).notNull().default("0"),
+      totalDiscounts: numeric("total_discounts", { precision: 12, scale: 2 }).notNull().default("0"),
       balance: numeric("balance", { precision: 12, scale: 2 }).notNull(),
+      hasDiscountsPending: boolean("has_discounts_pending").notNull().default(false),
       billingStatus: assessmentBillingStatusEnum("billing_status")
         .notNull()
         .default("outstanding"),
@@ -600,6 +622,8 @@ export const assessmentItems = pgTable(
     isDiscount: boolean("is_discount").notNull().default(false),
     /** Balance forward tracking: Links to the source assessment when this item is a "Balance Forward" line */
     sourceAssessmentId: uuid("source_assessment_id").references(() => assessments.id),
+    /** Links to the student discount record that generated this line item (for discount lines) */
+    studentDiscountId: uuid("student_discount_id"), // FK added after studentDiscounts table defined
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -610,6 +634,7 @@ export const assessmentItems = pgTable(
     index("ai_fee_item_type_idx").on(t.feeItemTypeId),
     index("ai_fee_template_item_idx").on(t.feeTemplateItemId),
     index("ai_source_assessment_idx").on(t.sourceAssessmentId), // PERFORMANCE: Reverse lookup for balance forward items
+    index("ai_student_discount_idx").on(t.studentDiscountId), // PERFORMANCE: Discount line lookups
   ]
 );
 
@@ -866,6 +891,134 @@ export const auditLogs = pgTable(
   ]
 );
 
+// ─── Discounts ────────────────────────────────────────────────────────────────
+
+/**
+ * Discount type definitions - reusable discount configurations
+ * Finance officers configure these; registrars can request them for enrollments.
+ */
+export const discountTypes = pgTable(
+  "discount_types",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: text("code").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    calculationType: discountCalculationTypeEnum("calculation_type").notNull(),
+    baseType: discountBaseTypeEnum("base_type").notNull().default("tuition_only"),
+    defaultValue: numeric("default_value", { precision: 12, scale: 2 }).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    requiresDocumentation: boolean("requires_documentation").notNull().default(true),
+    isStackable: boolean("is_stackable").notNull().default(true),
+    displayOrder: integer("display_order").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    uniqueIndex("discount_types_code_uidx")
+      .on(t.code)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("discount_types_active_idx")
+      .on(t.isActive)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+    index("discount_types_display_order_idx").on(t.displayOrder),
+  ]
+);
+
+/**
+ * Discount requests - requests for discounts on specific enrollments
+ * Created by registrars during enrollment, reviewed by finance officers.
+ */
+export const discountRequests = pgTable(
+  "discount_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentId: uuid("student_id").notNull().references(() => students.id),
+    enrollmentId: uuid("enrollment_id").notNull().references(() => enrollments.id),
+    assessmentId: uuid("assessment_id").references(() => assessments.id),
+    discountTypeId: uuid("discount_type_id").notNull().references(() => discountTypes.id),
+    requestReason: text("request_reason"),
+    /** Calculated base amount at time of request (for audit trail) */
+    baseAmount: numeric("base_amount", { precision: 12, scale: 2 }),
+    /** Calculated discount amount at time of request */
+    calculatedAmount: numeric("calculated_amount", { precision: 12, scale: 2 }),
+    /** Override value if approver modifies the discount */
+    overrideValue: numeric("override_value", { precision: 12, scale: 2 }),
+    overrideReason: text("override_reason"),
+    status: discountRequestStatusEnum("status").notNull().default("pending"),
+    requestedBy: uuid("requested_by").notNull().references(() => users.id),
+    requestedAt: timestamp("requested_at").notNull().defaultNow(),
+    decidedBy: uuid("decided_by").references(() => users.id),
+    decidedAt: timestamp("decided_at"),
+    decisionRemarks: text("decision_remarks"),
+    cancelledAt: timestamp("cancelled_at"),
+    cancelledBy: uuid("cancelled_by").references(() => users.id),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // Only one pending/approved request per enrollment + discount type
+    uniqueIndex("discount_requests_enrollment_type_uidx")
+      .on(t.enrollmentId, t.discountTypeId)
+      .where(sql`${t.status} IN ('pending', 'approved')`),
+    index("discount_requests_student_idx").on(t.studentId),
+    index("discount_requests_enrollment_idx").on(t.enrollmentId),
+    index("discount_requests_status_idx").on(t.status),
+    index("discount_requests_pending_idx")
+      .on(t.status)
+      .where(sql`${t.status} = 'pending'`),
+  ]
+);
+
+/**
+ * Student discounts - applied discounts on assessments
+ * Created when approved discount requests are applied to an assessment.
+ */
+export const studentDiscounts = pgTable(
+  "student_discounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentId: uuid("student_id").notNull().references(() => students.id),
+    assessmentId: uuid("assessment_id").notNull().references(() => assessments.id),
+    discountRequestId: uuid("discount_request_id").notNull().references(() => discountRequests.id),
+    /** Snapshot of discount type code for reporting */
+    discountTypeCode: text("discount_type_code").notNull(),
+    /** Snapshot of discount type name for display */
+    discountTypeName: text("discount_type_name").notNull(),
+    calculationType: discountCalculationTypeEnum("calculation_type").notNull(),
+    baseType: discountBaseTypeEnum("base_type").notNull(),
+    /** Base amount used for calculation */
+    baseAmount: numeric("base_amount", { precision: 12, scale: 2 }).notNull(),
+    /** Discount value (percentage or fixed amount) */
+    discountValue: numeric("discount_value", { precision: 12, scale: 2 }).notNull(),
+    /** Final calculated discount amount */
+    discountAmount: numeric("discount_amount", { precision: 12, scale: 2 }).notNull(),
+    /** Links to the assessment item created for this discount */
+    assessmentItemId: uuid("assessment_item_id").references(() => assessmentItems.id),
+    /** Reversal tracking */
+    reversedAt: timestamp("reversed_at"),
+    reversedBy: uuid("reversed_by").references(() => users.id),
+    reversalRemarks: text("reversal_remarks"),
+    reversalDiscountId: uuid("reversal_discount_id"), // Self-reference for reversal entries
+    appliedAt: timestamp("applied_at").notNull().defaultNow(),
+    appliedBy: uuid("applied_by").notNull().references(() => users.id),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("student_discounts_student_idx").on(t.studentId),
+    index("student_discounts_assessment_idx").on(t.assessmentId),
+    index("student_discounts_request_idx").on(t.discountRequestId),
+    // Only one active (non-reversed) discount per request
+    uniqueIndex("student_discounts_request_active_uidx")
+      .on(t.discountRequestId)
+      .where(sql`${t.reversedAt} IS NULL`),
+  ]
+);
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 // Fee Templates Relations
@@ -991,4 +1144,103 @@ export const paymentsRelations = relations(payments, ({ one, many }) => ({
   voidRequests: many(voidRequests, {
     relationName: "voidRequest_payment",
   }),
+}));
+
+// Discount Relations
+export const discountTypesRelations = relations(discountTypes, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [discountTypes.createdBy],
+    references: [users.id],
+    relationName: "discountType_creator",
+  }),
+  requests: many(discountRequests),
+}));
+
+export const discountRequestsRelations = relations(discountRequests, ({ one, many }) => ({
+  student: one(students, {
+    fields: [discountRequests.studentId],
+    references: [students.id],
+  }),
+  enrollment: one(enrollments, {
+    fields: [discountRequests.enrollmentId],
+    references: [enrollments.id],
+  }),
+  assessment: one(assessments, {
+    fields: [discountRequests.assessmentId],
+    references: [assessments.id],
+  }),
+  discountType: one(discountTypes, {
+    fields: [discountRequests.discountTypeId],
+    references: [discountTypes.id],
+  }),
+  requestedByUser: one(users, {
+    fields: [discountRequests.requestedBy],
+    references: [users.id],
+    relationName: "discountRequest_requester",
+  }),
+  decidedByUser: one(users, {
+    fields: [discountRequests.decidedBy],
+    references: [users.id],
+    relationName: "discountRequest_decider",
+  }),
+  studentDiscounts: many(studentDiscounts),
+}));
+
+export const studentDiscountsRelations = relations(studentDiscounts, ({ one }) => ({
+  student: one(students, {
+    fields: [studentDiscounts.studentId],
+    references: [students.id],
+  }),
+  assessment: one(assessments, {
+    fields: [studentDiscounts.assessmentId],
+    references: [assessments.id],
+  }),
+  discountRequest: one(discountRequests, {
+    fields: [studentDiscounts.discountRequestId],
+    references: [discountRequests.id],
+  }),
+  assessmentItem: one(assessmentItems, {
+    fields: [studentDiscounts.assessmentItemId],
+    references: [assessmentItems.id],
+  }),
+  appliedByUser: one(users, {
+    fields: [studentDiscounts.appliedBy],
+    references: [users.id],
+    relationName: "studentDiscount_applier",
+  }),
+}));
+
+export const enrollmentsRelations = relations(enrollments, ({ one, many }) => ({
+  student: one(students, {
+    fields: [enrollments.studentId],
+    references: [students.id],
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [enrollments.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  gradeLevel: one(gradeLevels, {
+    fields: [enrollments.gradeLevelId],
+    references: [gradeLevels.id],
+  }),
+  section: one(sections, {
+    fields: [enrollments.sectionId],
+    references: [sections.id],
+  }),
+  registration: one(registrations, {
+    fields: [enrollments.registrationId],
+    references: [registrations.id],
+  }),
+  assessments: many(assessments),
+  discountRequests: many(discountRequests),
+}));
+
+export const studentsRelations = relations(students, ({ one, many }) => ({
+  user: one(users, {
+    fields: [students.userId],
+    references: [users.id],
+  }),
+  enrollments: many(enrollments),
+  discountRequests: many(discountRequests),
+  studentDiscounts: many(studentDiscounts),
 }));
