@@ -28,9 +28,7 @@ services:
 
   # One-shot: apply Drizzle migrations before the app starts
   migrate:
-    build:
-      context: .
-      target: dev
+    image: sram-mmhsi-app:dev
     env_file:
       - .env.local
     environment:
@@ -42,6 +40,7 @@ services:
     restart: "no"
 
   app:
+    image: sram-mmhsi-app:dev
     build:
       context: .
       target: dev
@@ -59,8 +58,8 @@ services:
         condition: service_completed_successfully
     volumes:
       # Keep container-managed node_modules + .next so they aren't shadowed by the host
-      - /app/node_modules
-      - /app/.next
+      - app-node-modules:/app/node_modules
+      - app-next-cache:/app/.next
     develop:
       watch:
         # Sync application source into the running container
@@ -94,9 +93,7 @@ services:
 
   # Optional helpers — run with: docker compose run --rm seed
   seed:
-    build:
-      context: .
-      target: dev
+    image: sram-mmhsi-app:dev
     env_file:
       - .env.local
     environment:
@@ -108,9 +105,7 @@ services:
     profiles: ["tools"]
 
   seed-data:
-    build:
-      context: .
-      target: dev
+    image: sram-mmhsi-app:dev
     env_file:
       - .env.local
     environment:
@@ -123,3 +118,5 @@ services:
 
 volumes:
   db-data:
+  app-node-modules:
+  app-next-cache:
