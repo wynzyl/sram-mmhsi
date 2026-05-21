@@ -281,6 +281,9 @@ export const students = pgTable(
   (t) => [
     uniqueIndex("students_ref_idx").on(t.referenceNumber),
     index("students_name_idx").on(t.lastName, t.firstName),
+    // NOTE: Additional indexes created via migration 0010:
+    // - students_name_dob_active_uidx: UNIQUE(LOWER(first_name), LOWER(last_name), date_of_birth) WHERE deleted_at IS NULL
+    // - students_name_dob_lookup_idx: INDEX for duplicate detection queries
   ]
 );
 
@@ -358,6 +361,8 @@ export const registrations = pgTable(
     index("reg_student_sy_idx").on(t.studentId, t.schoolYearId),
     index("reg_status_idx").on(t.status),
     index("reg_sy_status_idx").on(t.schoolYearId, t.status), // MEMORY OPTIMIZATION: Composite index for enrollment queue
+    // NOTE: Additional constraint created via migration 0010:
+    // - registrations_student_sy_active_uidx: UNIQUE(student_id, school_year_id) WHERE status != 'rejected'
   ]
 );
 

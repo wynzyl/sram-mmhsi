@@ -327,12 +327,41 @@ export async function createStudentAction(
     const detail = collectPgErrorText(err);
     logger.error("[students] Failed to create student", { error: String(err), detail });
     const restore = buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]);
-    if (extractUniqueConstraint(err) === "students_lrn_unique") {
+    const constraint = extractUniqueConstraint(err);
+
+    // LRN uniqueness violation
+    if (constraint === "students_lrn_unique") {
       return {
         errors: { lrn: ["This LRN is already assigned to another student."] },
         fieldValues: restore,
       };
     }
+
+    // Name + DOB uniqueness violation (database-level defense-in-depth)
+    if (constraint === "students_name_dob_active_uidx" || detail.includes("students_name_dob_active_uidx")) {
+      const fullName = `${studentData.firstName} ${studentData.lastName}`;
+      return {
+        errors: {
+          _form: [
+            `A student named ${fullName} with this date of birth already exists. If this is a different person, verify the name spelling or date of birth.`,
+          ],
+        },
+        fieldValues: restore,
+      };
+    }
+
+    // Registration uniqueness violation (one active registration per student per school year)
+    if (constraint === "registrations_student_sy_active_uidx" || detail.includes("registrations_student_sy_active_uidx")) {
+      return {
+        errors: {
+          _form: [
+            "This student already has an active registration for the current school year. Check the Registrations list for existing records.",
+          ],
+        },
+        fieldValues: restore,
+      };
+    }
+
     if (isUndefinedColumnError(err)) {
       return {
         message:
@@ -539,10 +568,27 @@ export async function updateStudentAction(
     revalidatePath(`/staff/students/${studentId}`);
     return { success: true };
   } catch (err) {
-    logger.error("[students] Failed to update student", { error: String(err) });
-    if (extractUniqueConstraint(err) === "students_lrn_unique") {
+    const detail = collectPgErrorText(err);
+    logger.error("[students] Failed to update student", { error: String(err), detail });
+    const constraint = extractUniqueConstraint(err);
+
+    // LRN uniqueness violation
+    if (constraint === "students_lrn_unique") {
       return { errors: { lrn: ["This LRN is already assigned to another student."] } };
     }
+
+    // Name + DOB uniqueness violation (database-level defense-in-depth)
+    if (constraint === "students_name_dob_active_uidx" || detail.includes("students_name_dob_active_uidx")) {
+      const fullName = `${studentData.firstName} ${studentData.lastName}`;
+      return {
+        errors: {
+          _form: [
+            `Another student named ${fullName} with this date of birth already exists. If this is a different person, verify the name spelling or date of birth.`,
+          ],
+        },
+      };
+    }
+
     return { message: "An unexpected error occurred. Please try again." };
   }
 }
