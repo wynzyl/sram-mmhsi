@@ -7,7 +7,7 @@ import {
   assessments,
   voidRequests,
 } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -24,7 +24,13 @@ import type {
 } from "./void-requests.schema";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
-import { assessmentBillingStatusFromState } from "@/lib/utils/assessment-billing";
+import {
+  lockPayment,
+  lockAssessment,
+  lockVoidRequest,
+  lockAssessmentTransferStatus,
+} from "@/lib/utils/tx-helpers";
+import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 
 // ─── Request Void Action ───────────────────────────────────────────────────────
 
@@ -56,22 +62,11 @@ export async function requestVoidAction(
   try {
     await db.transaction(async (tx) => {
       // 1. Lock and fetch payment
-      const paymentRows = await tx.execute(
-        sql`SELECT * FROM "payments" WHERE "id" = ${paymentId} FOR UPDATE`
-      );
+      const payment = await lockPayment(tx, paymentId);
 
-      if (!Array.isArray(paymentRows) || paymentRows.length === 0) {
+      if (!payment) {
         throw new Error("Payment not found.");
       }
-
-      const payment = paymentRows[0] as {
-        id: string;
-        status: string;
-        kind: string;
-        assessment_id: string | null;
-        or_number: string | null;
-        amount: string;
-      };
 
       // 2. Validate payment state
       if (payment.kind !== "payment") {
@@ -83,18 +78,13 @@ export async function requestVoidAction(
       }
 
       // 3. Check if assessment is transferred
-      if (payment.assessment_id) {
-        const assessmentRows = await tx.execute(
-          sql`SELECT "transferred_at" FROM "assessments" WHERE "id" = ${payment.assessment_id}`
-        );
-        if (Array.isArray(assessmentRows) && assessmentRows.length > 0) {
-          const assessment = assessmentRows[0] as { transferred_at: Date | null };
-          if (assessment.transferred_at != null) {
-            throw new Error(
-              "VOID_BLOCKED: This payment's assessment balance was transferred to a newer school year. " +
-              "Voiding payments on transferred assessments is not allowed."
-            );
-          }
+      if (payment.assessmentId) {
+        const transferStatus = await lockAssessmentTransferStatus(tx, payment.assessmentId);
+        if (transferStatus?.transferredAt != null) {
+          throw new Error(
+            "VOID_BLOCKED: This payment's assessment balance was transferred to a newer school year. " +
+            "Voiding payments on transferred assessments is not allowed."
+          );
         }
       }
 
@@ -129,7 +119,7 @@ export async function requestVoidAction(
         targetId: newRequest.id,
         newState: {
           paymentId,
-          orNumber: payment.or_number,
+          orNumber: payment.orNumber,
           amount: payment.amount,
           reason: requestReason,
         },
@@ -177,21 +167,11 @@ export async function approveVoidRequestAction(
 
     await db.transaction(async (tx) => {
       // 1. Lock and fetch void request
-      const requestRows = await tx.execute(
-        sql`SELECT * FROM "void_requests" WHERE "id" = ${requestId} FOR UPDATE`
-      );
+      const request = await lockVoidRequest(tx, requestId);
 
-      if (!Array.isArray(requestRows) || requestRows.length === 0) {
+      if (!request) {
         throw new Error("Void request not found.");
       }
-
-      const request = requestRows[0] as {
-        id: string;
-        payment_id: string;
-        status: string;
-        requested_by: string;
-        request_reason: string;
-      };
 
       // 2. Validate request state
       if (request.status !== "pending") {
@@ -199,31 +179,16 @@ export async function approveVoidRequestAction(
       }
 
       // 3. Block self-approval
-      if (request.requested_by === session.userId) {
+      if (request.requestedBy === session.userId) {
         throw new Error("Self-approval is not allowed. Another administrator must approve this request.");
       }
 
       // 4. Lock and fetch original payment
-      const paymentRows = await tx.execute(
-        sql`SELECT * FROM "payments" WHERE "id" = ${request.payment_id} FOR UPDATE`
-      );
+      const originalPayment = await lockPayment(tx, request.paymentId);
 
-      if (!Array.isArray(paymentRows) || paymentRows.length === 0) {
+      if (!originalPayment) {
         throw new Error("Original payment not found.");
       }
-
-      const originalPayment = paymentRows[0] as {
-        id: string;
-        student_id: string;
-        assessment_id: string | null;
-        booklet_id: string | null;
-        or_number: string | null;
-        amount: string;
-        payment_method: string;
-        payment_date: Date;
-        status: string;
-        kind: string;
-      };
 
       // 5. Validate payment can still be reversed
       if (originalPayment.status !== "posted") {
@@ -235,19 +200,10 @@ export async function approveVoidRequestAction(
       }
 
       // 6. Check assessment transfer status again (could have changed since request was created)
-      if (originalPayment.assessment_id) {
-        const assessmentRows = await tx.execute(
-          sql`SELECT * FROM "assessments" WHERE "id" = ${originalPayment.assessment_id} FOR UPDATE`
-        );
-        if (Array.isArray(assessmentRows) && assessmentRows.length > 0) {
-          const assessment = assessmentRows[0] as {
-            id: string;
-            transferred_at: Date | null;
-            total_paid: string;
-            balance: string;
-            cancelled_at: Date | null;
-          };
-          if (assessment.transferred_at != null) {
+      if (originalPayment.assessmentId) {
+        const assessment = await lockAssessment(tx, originalPayment.assessmentId);
+        if (assessment) {
+          if (assessment.transferredAt != null) {
             throw new Error(
               "VOID_BLOCKED: Assessment balance was transferred since this request was created. Cannot approve."
             );
@@ -268,26 +224,26 @@ export async function approveVoidRequestAction(
             .where(eq(payments.id, originalPayment.id));
 
           // 8. Create reversal payment entry
-          const reversalReferenceNumber = originalPayment.or_number
-            ? `REV-${originalPayment.or_number}`
+          const reversalReferenceNumber = originalPayment.orNumber
+            ? `REV-${originalPayment.orNumber}`
             : `REV-${originalPayment.id.substring(0, 8)}`;
 
           const [reversalPayment] = await tx
             .insert(payments)
             .values({
-              studentId: originalPayment.student_id,
-              assessmentId: originalPayment.assessment_id,
+              studentId: originalPayment.studentId,
+              assessmentId: originalPayment.assessmentId,
               bookletId: null, // Reversals don't consume OR
               orNumber: null,  // Reversals don't have OR number
               orStatus: "available", // N/A for reversals
               amount: `-${originalPayment.amount}`, // Negative amount
-              paymentMethod: originalPayment.payment_method,
+              paymentMethod: originalPayment.paymentMethod,
               referenceNumber: reversalReferenceNumber,
               paymentDate: new Date(),
               status: "reversal",
               kind: "reversal",
               reversesPaymentId: originalPayment.id,
-              remarks: `Reversal of OR ${originalPayment.or_number ?? "N/A"} - ${request.request_reason}`,
+              remarks: `Reversal of OR ${originalPayment.orNumber ?? "N/A"} - ${request.requestReason}`,
               createdBy: session.userId,
               updatedBy: session.userId,
             })
@@ -295,22 +251,16 @@ export async function approveVoidRequestAction(
 
           // 9. Update assessment balance
           const originalAmount = Number(originalPayment.amount);
-          const newTotalPaid = Number(assessment.total_paid) - originalAmount;
-          const newBalance = Number(assessment.balance) + originalAmount;
-
-          await tx
-            .update(assessments)
-            .set({
-              totalPaid: String(newTotalPaid),
-              balance: String(newBalance),
-              billingStatus: assessmentBillingStatusFromState({
-                balance: newBalance,
-                cancelledAt: assessment.cancelled_at,
-              }),
-              updatedBy: session.userId,
-              updatedAt: new Date(),
-            })
-            .where(eq(assessments.id, originalPayment.assessment_id));
+          const previousTotalPaid = assessment.totalPaid;
+          const previousBalance = assessment.balance;
+          const { newTotalPaid, newBalance } = await applyAssessmentBalanceDelta(
+            tx,
+            originalPayment.assessmentId,
+            -originalAmount, // negative = reversal
+            assessment.cancelledAt,
+            assessment.transferredAt,
+            session.userId
+          );
 
           // 10. Update void request to approved
           await tx
@@ -334,7 +284,7 @@ export async function approveVoidRequestAction(
             newState: {
               reversalPaymentId: reversalPayment.id,
               originalPaymentId: originalPayment.id,
-              orNumber: originalPayment.or_number,
+              orNumber: originalPayment.orNumber,
               amount: originalPayment.amount,
             },
           }, { throwOnFail: true });
@@ -345,8 +295,8 @@ export async function approveVoidRequestAction(
             action: "payment_reversed",
             targetEntity: "payments",
             targetId: originalPayment.id,
-            context: `Reversal ID: ${reversalPayment.id}, OR: ${originalPayment.or_number}, Amount: ${originalPayment.amount}`,
-            previousState: { status: "posted", totalPaid: assessment.total_paid, balance: assessment.balance },
+            context: `Reversal ID: ${reversalPayment.id}, OR: ${originalPayment.orNumber}, Amount: ${originalPayment.amount}`,
+            previousState: { status: "posted", totalPaid: previousTotalPaid, balance: previousBalance },
             newState: { status: "reversed", totalPaid: String(newTotalPaid), balance: String(newBalance) },
           }, { throwOnFail: true });
         }
@@ -365,26 +315,26 @@ export async function approveVoidRequestAction(
           .where(eq(payments.id, originalPayment.id));
 
         // Create reversal entry
-        const reversalReferenceNumber = originalPayment.or_number
-          ? `REV-${originalPayment.or_number}`
+        const reversalReferenceNumber = originalPayment.orNumber
+          ? `REV-${originalPayment.orNumber}`
           : `REV-${originalPayment.id.substring(0, 8)}`;
 
         const [reversalPayment] = await tx
           .insert(payments)
           .values({
-            studentId: originalPayment.student_id,
+            studentId: originalPayment.studentId,
             assessmentId: null,
             bookletId: null,
             orNumber: null,
             orStatus: "available",
             amount: `-${originalPayment.amount}`,
-            paymentMethod: originalPayment.payment_method,
+            paymentMethod: originalPayment.paymentMethod,
             referenceNumber: reversalReferenceNumber,
             paymentDate: new Date(),
             status: "reversal",
             kind: "reversal",
             reversesPaymentId: originalPayment.id,
-            remarks: `Reversal of OR ${originalPayment.or_number ?? "N/A"} - ${request.request_reason}`,
+            remarks: `Reversal of OR ${originalPayment.orNumber ?? "N/A"} - ${request.requestReason}`,
             createdBy: session.userId,
             updatedBy: session.userId,
           })
@@ -410,7 +360,7 @@ export async function approveVoidRequestAction(
           newState: {
             reversalPaymentId: reversalPayment.id,
             originalPaymentId: originalPayment.id,
-            orNumber: originalPayment.or_number,
+            orNumber: originalPayment.orNumber,
             amount: originalPayment.amount,
           },
         }, { throwOnFail: true });
@@ -421,7 +371,7 @@ export async function approveVoidRequestAction(
           action: "payment_reversed",
           targetEntity: "payments",
           targetId: originalPayment.id,
-          context: `Reversal ID: ${reversalPayment.id}, OR: ${originalPayment.or_number}, Amount: ${originalPayment.amount}`,
+          context: `Reversal ID: ${reversalPayment.id}, OR: ${originalPayment.orNumber}, Amount: ${originalPayment.amount}`,
         }, { throwOnFail: true });
       }
     });
@@ -469,21 +419,11 @@ export async function rejectVoidRequestAction(
   try {
     await db.transaction(async (tx) => {
       // 1. Lock and fetch void request
-      const requestRows = await tx.execute(
-        sql`SELECT * FROM "void_requests" WHERE "id" = ${requestId} FOR UPDATE`
-      );
+      const request = await lockVoidRequest(tx, requestId);
 
-      if (!Array.isArray(requestRows) || requestRows.length === 0) {
+      if (!request) {
         throw new Error("Void request not found.");
       }
-
-      const request = requestRows[0] as {
-        id: string;
-        payment_id: string;
-        status: string;
-        requested_by: string;
-        request_reason: string;
-      };
 
       // 2. Validate request state
       if (request.status !== "pending") {
@@ -491,7 +431,7 @@ export async function rejectVoidRequestAction(
       }
 
       // 3. Block self-rejection (same user who requested)
-      if (request.requested_by === session.userId) {
+      if (request.requestedBy === session.userId) {
         throw new Error(
           "You cannot reject your own void request. Use the cancel option instead, or have another administrator review it."
         );
@@ -517,8 +457,8 @@ export async function rejectVoidRequestAction(
         targetEntity: "void_requests",
         targetId: requestId,
         newState: {
-          paymentId: request.payment_id,
-          reason: request.request_reason,
+          paymentId: request.paymentId,
+          reason: request.requestReason,
           rejectionRemarks: decisionRemarks,
         },
       }, { throwOnFail: true });
@@ -562,20 +502,11 @@ export async function cancelVoidRequestAction(
   try {
     await db.transaction(async (tx) => {
       // 1. Lock and fetch void request
-      const requestRows = await tx.execute(
-        sql`SELECT * FROM "void_requests" WHERE "id" = ${requestId} FOR UPDATE`
-      );
+      const request = await lockVoidRequest(tx, requestId);
 
-      if (!Array.isArray(requestRows) || requestRows.length === 0) {
+      if (!request) {
         throw new Error("Void request not found.");
       }
-
-      const request = requestRows[0] as {
-        id: string;
-        payment_id: string;
-        status: string;
-        requested_by: string;
-      };
 
       // 2. Validate request state
       if (request.status !== "pending") {
@@ -583,7 +514,7 @@ export async function cancelVoidRequestAction(
       }
 
       // 3. Only the original requester can cancel
-      if (request.requested_by !== session.userId) {
+      if (request.requestedBy !== session.userId) {
         throw new Error("You can only cancel your own void requests.");
       }
 
@@ -604,7 +535,7 @@ export async function cancelVoidRequestAction(
         action: "void_request_cancelled",
         targetEntity: "void_requests",
         targetId: requestId,
-        newState: { paymentId: request.payment_id },
+        newState: { paymentId: request.paymentId },
       }, { throwOnFail: true });
     });
 

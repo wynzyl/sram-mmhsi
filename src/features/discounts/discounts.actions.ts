@@ -18,6 +18,12 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
 import {
+  lockStudentDiscountReversalStatus,
+  lockDiscountRequest,
+  lockAssessmentByEnrollment,
+} from "@/lib/utils/tx-helpers";
+import { recalcAssessmentTotalsForDiscount } from "@/lib/utils/assessment-balance";
+import {
   createDiscountTypeSchema,
   updateDiscountTypeSchema,
   createDiscountRequestSchema,
@@ -809,52 +815,6 @@ export async function cancelDiscountRequestAction(
 
 // ─── Discount Reversal ────────────────────────────────────────────────────────
 
-type DiscountTotalsExecutor = Pick<typeof db, "select" | "update">;
-
-/**
- * Recompute assessments.totalAmount / totalDiscounts / balance after a single
- * discount is applied or reversed.
- *
- * totalAmount is stored as the NET line sum (already minus discounts), so
- * applying a discount lowers totalAmount and reversing raises it by the same
- * magnitude. balance is always (new totalAmount − totalPaid).
- */
-async function recalcAssessmentTotalsForDiscountChange(
-  executor: DiscountTotalsExecutor,
-  assessmentId: string,
-  amount: number,
-  direction: "apply" | "reverse",
-  userId: string
-): Promise<void> {
-  const [row] = await executor
-    .select({
-      totalAmount: assessments.totalAmount,
-      totalDiscounts: assessments.totalDiscounts,
-      totalPaid: assessments.totalPaid,
-    })
-    .from(assessments)
-    .where(eq(assessments.id, assessmentId))
-    .limit(1);
-
-  if (!row) return;
-
-  const sign = direction === "apply" ? -1 : 1;
-  const newTotalAmount = Number(row.totalAmount) + sign * amount;
-  const newTotalDiscounts = Number(row.totalDiscounts) - sign * amount;
-  const newBalance = newTotalAmount - Number(row.totalPaid);
-
-  await executor
-    .update(assessments)
-    .set({
-      totalAmount: newTotalAmount.toFixed(2),
-      totalDiscounts: newTotalDiscounts.toFixed(2),
-      balance: newBalance.toFixed(2),
-      updatedBy: userId,
-      updatedAt: new Date(),
-    })
-    .where(eq(assessments.id, assessmentId));
-}
-
 /**
  * Reverse an applied discount (creates offsetting positive entry)
  */
@@ -913,14 +873,9 @@ export async function reverseDiscountAction(
       // 0a. Lock the original studentDiscounts row and re-check reversal state
       //     (defense against concurrent double-reversal — the outer check above
       //      runs without a lock).
-      const lockedRows = await tx.execute(
-        sql`SELECT "reversed_at" FROM "student_discounts" WHERE "id" = ${parsed.data.studentDiscountId} FOR UPDATE`
-      );
-      if (Array.isArray(lockedRows) && lockedRows.length > 0) {
-        const locked = lockedRows[0] as { reversed_at: Date | null };
-        if (locked.reversed_at) {
-          throw new Error("This discount has already been reversed.");
-        }
+      const lockedDiscount = await lockStudentDiscountReversalStatus(tx, parsed.data.studentDiscountId);
+      if (lockedDiscount?.reversedAt) {
+        throw new Error("This discount has already been reversed.");
       }
 
       // 0b. Refuse if assessment balance was transferred forward to a new SY.
@@ -1026,7 +981,7 @@ export async function reverseDiscountAction(
 
       // 5. Recalculate assessment totals (totalAmount is NET, so it moves with
       //    the ledger when a discount is reversed).
-      await recalcAssessmentTotalsForDiscountChange(
+      await recalcAssessmentTotalsForDiscount(
         tx,
         appliedDiscount.assessmentId,
         Number(appliedDiscount.discountAmount),
@@ -1125,26 +1080,11 @@ export async function applyApprovedDiscountToExistingAssessment(
   try {
     return await db.transaction(async (tx) => {
       // 1. Lock the discount_requests row and confirm approved-but-unattached.
-      const requestRows = await tx.execute(
-        sql`SELECT "id", "student_id", "enrollment_id", "discount_type_id", "override_value", "status", "assessment_id"
-            FROM "discount_requests"
-            WHERE "id" = ${parsed.data.discountRequestId}
-            FOR UPDATE`
-      );
+      const request = await lockDiscountRequest(tx, parsed.data.discountRequestId);
 
-      if (!Array.isArray(requestRows) || requestRows.length === 0) {
+      if (!request) {
         throw new Error("Discount request not found.");
       }
-
-      const request = requestRows[0] as {
-        id: string;
-        student_id: string;
-        enrollment_id: string;
-        discount_type_id: string;
-        override_value: string | null;
-        status: string;
-        assessment_id: string | null;
-      };
 
       if (request.status !== "approved") {
         throw new Error(
@@ -1152,7 +1092,7 @@ export async function applyApprovedDiscountToExistingAssessment(
         );
       }
 
-      if (request.assessment_id) {
+      if (request.assessmentId) {
         throw new Error(
           "This discount request has already been applied to an assessment."
         );
@@ -1168,7 +1108,7 @@ export async function applyApprovedDiscountToExistingAssessment(
           defaultValue: discountTypes.defaultValue,
         })
         .from(discountTypes)
-        .where(eq(discountTypes.id, request.discount_type_id))
+        .where(eq(discountTypes.id, request.discountTypeId))
         .limit(1);
 
       if (!discountType) {
@@ -1176,34 +1116,20 @@ export async function applyApprovedDiscountToExistingAssessment(
       }
 
       // 3. Locate and lock the parent assessment via the enrollment.
-      const assessmentRows = await tx.execute(
-        sql`SELECT "id", "total_amount", "total_discounts", "total_paid", "transferred_at", "cancelled_at"
-            FROM "assessments"
-            WHERE "enrollment_id" = ${request.enrollment_id}
-            FOR UPDATE`
-      );
+      const assessment = await lockAssessmentByEnrollment(tx, request.enrollmentId);
 
-      if (!Array.isArray(assessmentRows) || assessmentRows.length === 0) {
+      if (!assessment) {
         throw new Error(
           "No assessment exists yet on this enrollment. Create the assessment first."
         );
       }
 
-      const assessment = assessmentRows[0] as {
-        id: string;
-        total_amount: string;
-        total_discounts: string;
-        total_paid: string;
-        transferred_at: Date | null;
-        cancelled_at: Date | null;
-      };
-
-      if (assessment.transferred_at) {
+      if (assessment.transferredAt) {
         throw new Error(
           "APPLY_BLOCKED: This assessment's balance was transferred to a new school year and is read-only."
         );
       }
-      if (assessment.cancelled_at) {
+      if (assessment.cancelledAt) {
         throw new Error(
           "APPLY_BLOCKED: This assessment is cancelled; discounts cannot be applied."
         );
@@ -1253,8 +1179,8 @@ export async function applyApprovedDiscountToExistingAssessment(
 
       // 6. Compute the discount line via the shared utility.
       const baseAmount = calculateDiscountBase(items, discountType.baseType);
-      const discountValue = request.override_value
-        ? Number(request.override_value)
+      const discountValue = request.overrideValue
+        ? Number(request.overrideValue)
         : Number(discountType.defaultValue);
       const discountAmount = calculateDiscountAmount(
         baseAmount,
@@ -1283,7 +1209,7 @@ export async function applyApprovedDiscountToExistingAssessment(
       const [studentDiscount] = await tx
         .insert(studentDiscounts)
         .values({
-          studentId: request.student_id,
+          studentId: request.studentId,
           assessmentId: assessment.id,
           discountRequestId: request.id,
           discountTypeCode: discountType.code,
@@ -1341,8 +1267,8 @@ export async function applyApprovedDiscountToExistingAssessment(
         )
         .where(
           and(
-            eq(discountRequests.enrollmentId, request.enrollment_id),
-            eq(discountRequests.discountTypeId, request.discount_type_id),
+            eq(discountRequests.enrollmentId, request.enrollmentId),
+            eq(discountRequests.discountTypeId, request.discountTypeId),
             eq(discountRequests.status, "reversed"),
             isNull(studentDiscounts.replacedByRequestId)
           )
@@ -1359,7 +1285,7 @@ export async function applyApprovedDiscountToExistingAssessment(
 
       // 12. Recompute assessment totals. totalAmount is stored as NET line
       //     sum, so applying a discount lowers it by discountAmount.
-      await recalcAssessmentTotalsForDiscountChange(
+      await recalcAssessmentTotalsForDiscount(
         tx,
         assessment.id,
         discountAmount,
