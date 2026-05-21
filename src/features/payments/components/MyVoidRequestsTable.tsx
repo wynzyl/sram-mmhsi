@@ -7,7 +7,7 @@ import type { PendingVoidRequest } from "../void-requests.queries";
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -26,6 +26,11 @@ export default function MyVoidRequestsTable({
     cancelVoidRequestAction,
     initialCancelState
   );
+
+  useFormToast(cancelState, {
+    successMessage: "Void request cancelled",
+    onSuccess: () => setCancellingId(null),
+  });
 
   const columns = useMemo<ColumnDef<PendingVoidRequest>[]>(
     () => [
@@ -152,17 +157,11 @@ export default function MyVoidRequestsTable({
   }
 
   return (
-    <div>
-      <div className="mx-4 mt-4">
-        <FormStateAlert state={cancelState} />
-      </div>
-
-      <DataTable
-        columns={columns}
-        data={requests}
-        searchable={false}
-        pageSize={20}
-      />
-    </div>
+    <DataTable
+      columns={columns}
+      data={requests}
+      searchable={false}
+      pageSize={20}
+    />
   );
 }

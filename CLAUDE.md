@@ -288,15 +288,20 @@ Authentication is JWT-based using `jose` library (NOT NextAuth). Session managem
 - `CurrencyDisplay` — Formats amounts in PHP locale (en-PH)
 - `ReferenceCode` — Displays student reference numbers
 
-**Forms (Refactored - Phase 3.2/3.3):**
+**Forms & Toast Notifications (Refactored - Phase 3.5):**
 
-- `FormStateAlert` — **USE THIS** for all error/success messages (replaces manual alert blocks)
-- `TextInputField` — Controlled text input with error display
-- `SelectField` — Controlled select dropdown with error display
+- `useFormToast` — **USE THIS** hook for form-level success/error messages (uses Sonner toasts)
+- `FormStateAlert` — **DEPRECATED** — Inline alert component, replaced by `useFormToast`
+- `TextInputField` — Controlled text input with inline field error display
+- `SelectField` — Controlled select dropdown with inline field error display
 - `CurrencyInputField` — Currency input with PHP formatting
 - `FormField` — Legacy form field wrapper (migrate to above)
 - `FormSection` — Form section with heading
 - `FormActions` — Form submit/cancel buttons
+
+**Toast Pattern (field vs form errors):**
+- **Field errors:** Keep inline below form fields (better UX for validation)
+- **Form-level errors/success:** Use toast notifications (non-blocking, bottom-right)
 
 **Actions (Refactored - Phase 3.4):**
 
@@ -422,30 +427,38 @@ type ActionResult<T> =
     };
 ```
 
-**Client Component Pattern (form submission) - REFACTORED:**
+**Client Component Pattern (form submission) - REFACTORED (Phase 3.5):**
 
 ```typescript
 // components/students/StudentForm.tsx
 "use client";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createStudent } from "@/actions/students";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";  // ✅ Phase 3.3
+import { useFormToast } from "@/hooks/useFormToast";  // ✅ Phase 3.5: Toast notifications
 import { TextInputField } from "@/components/forms/TextInputField";
 
 export function StudentForm() {
+  const router = useRouter();
   const [state, action, isPending] = useActionState(createStudent, {});
+  const [firstName, setFirstName] = useState("");
+
+  // ✅ Show toast for form-level success/errors (replaces FormStateAlert)
+  useFormToast(state, {
+    successMessage: "Student created successfully",
+    onSuccess: () => router.push(`/staff/students/${state.studentId}`),
+  });
 
   return (
     <form action={action}>
-      <FormStateAlert state={state} />  {/* ✅ Replaces manual alert blocks */}
-
+      {/* Field-level errors stay inline */}
       <TextInputField
         label="First Name"
         name="firstName"
         required
         value={firstName}
         onChange={setFirstName}
-        error={state.errors?.firstName}
+        error={state.errors?.firstName}  // ✅ Inline field error
       />
 
       <button type="submit" disabled={isPending}>

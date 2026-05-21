@@ -2,7 +2,26 @@ import type { BaseFormState } from "@/lib/validators/common-schemas";
 
 /**
  * Standardized alert component for displaying form state messages.
- * Replaces 20+ manual alert blocks across all forms.
+ *
+ * @deprecated Use `useFormToast` hook from `@/hooks/useFormToast` instead.
+ * This component renders inline alerts which block UI space. The new pattern
+ * uses Sonner toast notifications for form-level errors/success messages,
+ * while keeping field-level errors inline below form fields.
+ *
+ * Migration example:
+ * ```tsx
+ * // BEFORE
+ * import { FormStateAlert } from "@/components/forms/FormStateAlert";
+ * <FormStateAlert state={state} />
+ *
+ * // AFTER
+ * import { useFormToast } from "@/hooks/useFormToast";
+ * useFormToast(state, {
+ *   successMessage: "Operation completed successfully",
+ *   onSuccess: () => router.push('/next-page')
+ * });
+ * // No JSX needed - toast appears automatically
+ * ```
  *
  * @param state - Form state object with message, errors, and success flag
  */
@@ -80,6 +99,9 @@ export function FormStateAlert<T>({ state }: { state: BaseFormState<T> }) {
 /**
  * Variant for custom alert styles (e.g., cashier-specific layouts).
  * Allows custom className while preserving structure.
+ *
+ * @deprecated Use `useFormToast` hook from `@/hooks/useFormToast` instead.
+ * See FormStateAlert deprecation notice for migration details.
  *
  * @param state - Form state object
  * @param className - Custom CSS classes to apply

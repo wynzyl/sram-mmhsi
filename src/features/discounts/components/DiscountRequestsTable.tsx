@@ -17,7 +17,7 @@ import type {
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -64,6 +64,28 @@ export default function DiscountRequestsTable({
     applyApprovedDiscountToExistingAssessment,
     initialApplyState
   );
+
+  useFormToast(approveState, {
+    successMessage: "Discount request approved",
+    onSuccess: () => {
+      setApprovingId(null);
+      setOverrideValue("");
+    },
+  });
+
+  useFormToast(rejectState, {
+    successMessage: "Discount request rejected",
+    onSuccess: () => setRejectingId(null),
+  });
+
+  useFormToast(bulkState, {
+    successMessage: `${selectedIds.size} discount request(s) approved`,
+    onSuccess: () => setSelectedIds(new Set()),
+  });
+
+  useFormToast(applyState, {
+    successMessage: "Discount applied to assessment",
+  });
 
   const toggleSelection = (id: string) => {
     setSelectedIds((prev) => {
@@ -379,14 +401,6 @@ export default function DiscountRequestsTable({
 
   return (
     <div>
-      {/* Alert messages */}
-      <div className="mx-4 mt-4 space-y-2">
-        <FormStateAlert state={approveState} />
-        <FormStateAlert state={rejectState} />
-        <FormStateAlert state={bulkState} />
-        <FormStateAlert state={applyState} />
-      </div>
-
       {/* Bulk actions bar */}
       {enableBulkActions && selectedIds.size > 0 && (
         <div className="mx-4 mt-4 p-3 bg-[var(--color-surface-2)] rounded-lg flex items-center justify-between">

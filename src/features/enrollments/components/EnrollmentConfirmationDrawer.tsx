@@ -1,10 +1,10 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { X, CheckCircle2, AlertCircle, FileText, User, GraduationCap, Building2 } from "lucide-react";
+import { X, CheckCircle2, AlertCircle, FileText, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { confirmEnrollmentAction } from "../enrollment-confirmation.actions";
 import { formatCurrency } from "@/lib/utils/currency";
 import type { ConfirmEnrollmentFormState } from "../enrollments.schema";
@@ -32,13 +32,15 @@ export default function EnrollmentConfirmationDrawer({
   const [state, action, isPending] = useActionState(confirmEnrollmentAction, initialState);
   const [selectedSection, setSelectedSection] = useState<string>("");
 
-  // Handle successful enrollment
-  useEffect(() => {
-    if (state.success && state.enrollmentId) {
-      onSuccess?.(state.enrollmentId);
+  useFormToast(state, {
+    successMessage: "Enrollment confirmed successfully",
+    onSuccess: () => {
+      if (state.enrollmentId) {
+        onSuccess?.(state.enrollmentId);
+      }
       onClose();
-    }
-  }, [state.success, state.enrollmentId, onSuccess, onClose]);
+    },
+  });
 
   // Reset section when drawer opens
   useEffect(() => {
@@ -99,9 +101,6 @@ export default function EnrollmentConfirmationDrawer({
             {student.registrationId && (
               <input type="hidden" name="registrationId" value={student.registrationId} />
             )}
-
-            {/* Alert Messages */}
-            <FormStateAlert state={state} />
 
             {/* Student Type Badge */}
             <div className="mb-6">

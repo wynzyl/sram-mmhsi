@@ -6,7 +6,7 @@ import type {
   ReverseDiscountFormState,
   StudentDiscountView,
 } from "../discounts.schema";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -25,18 +25,14 @@ export default function DiscountReversalModal({
 
   const initialState: ReverseDiscountFormState = {};
   const [state, action, pending] = useActionState(
-    async (
-      prevState: ReverseDiscountFormState,
-      formData: FormData
-    ): Promise<ReverseDiscountFormState> => {
-      const result = await reverseDiscountAction(prevState, formData);
-      if (result.success) {
-        onClose();
-      }
-      return result;
-    },
+    reverseDiscountAction,
     initialState
   );
+
+  useFormToast(state, {
+    successMessage: "Discount reversed successfully",
+    onSuccess: onClose,
+  });
 
   // Handle escape key and click outside
   useEffect(() => {
@@ -61,8 +57,6 @@ export default function DiscountReversalModal({
             name="studentDiscountId"
             value={discount.id}
           />
-
-          <FormStateAlert state={state} />
 
           {/* Discount Details */}
           <div className="p-3 bg-[var(--color-surface-2)] rounded-lg space-y-2">

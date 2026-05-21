@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createFeeTemplateAction } from "../fee-templates.actions";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { TextInputField } from "@/components/forms/TextInputField";
 import { SelectField } from "@/components/forms/SelectField";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
@@ -14,9 +14,12 @@ export function FeeTemplateForm() {
   const [assessmentBand, setAssessmentBand] = useState("");
   const [description, setDescription] = useState("");
 
+  useFormToast(state, {
+    successMessage: "Fee template created successfully",
+  });
+
   return (
     <form action={action} className="space-y-6">
-      <FormStateAlert state={state} />
 
       <div className="space-y-4">
         <TextInputField
@@ -76,14 +79,6 @@ export function FeeTemplateForm() {
           Cancel
         </Button>
       </div>
-
-      {state.success && state.templateId && (
-        <div className="rounded-md bg-green-50 p-4">
-          <p className="text-sm text-green-800">
-            Template created successfully! You can now add fee items to it.
-          </p>
-        </div>
-      )}
     </form>
   );
 }

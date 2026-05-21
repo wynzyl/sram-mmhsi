@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { FileText, Home, User, Users } from "lucide-react";
 import { updateStudentAction } from "../students.actions";
 import type { UpdateStudentFormState, GuardianInput } from "../students.schema";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { DataCard } from "@/components/ui/editorial/DataCard";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
@@ -74,11 +74,10 @@ export default function EditStudentForm({
     initialGuardians.length > 0 ? initialGuardians : [{ ...emptyGuardian(), isPrimary: true }]
   );
 
-  useEffect(() => {
-    if (state.success) {
-      router.push(afterSaveRedirect ?? `/staff/students/${student.id}`);
-    }
-  }, [state.success, student.id, router, afterSaveRedirect]);
+  useFormToast(state, {
+    successMessage: "Student updated successfully",
+    onSuccess: () => router.push(afterSaveRedirect ?? `/staff/students/${student.id}`),
+  });
 
   const handleGuardianChange = (index: number, guardian: GuardianInput) => {
     setGuardians((prev) => {
@@ -111,8 +110,6 @@ export default function EditStudentForm({
     <form action={action} className="space-y-6" noValidate>
       <input type="hidden" name="studentId" value={student.id} />
       <input type="hidden" name="guardians" value={JSON.stringify(guardians)} />
-
-      <FormStateAlert state={state} />
 
       <DataCard className="p-6">
         <h2 className="mb-5 flex items-center gap-3 border-b border-[var(--color-border)] pb-4 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
