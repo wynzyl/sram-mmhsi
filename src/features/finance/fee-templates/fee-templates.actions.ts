@@ -101,7 +101,7 @@ export async function addFeeTemplateItemAction(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
-  // Check for duplicate fee type in this template
+  // Check for existing record (active or soft-deleted) with same template + fee type
   const existing = await db.query.feeTemplateItems.findFirst({
     where: and(
       eq(feeTemplateItems.feeTemplateId, parsed.data.feeTemplateId),
@@ -109,21 +109,43 @@ export async function addFeeTemplateItemAction(
     ),
   });
 
-  if (existing) {
+  // If active record exists, reject as duplicate
+  if (existing && !existing.deletedAt) {
     return { message: "This fee type is already in this template" };
   }
 
-  const [item] = await db
-    .insert(feeTemplateItems)
-    .values({
-      feeTemplateId: parsed.data.feeTemplateId,
-      feeItemTypeId: parsed.data.feeItemTypeId,
-      defaultAmount: parsed.data.defaultAmount.toString(),
-      order: parsed.data.order ?? 0,
-      createdBy: session.userId,
-      updatedBy: session.userId,
-    })
-    .returning({ id: feeTemplateItems.id });
+  let itemId: string;
+
+  if (existing && existing.deletedAt) {
+    // Restore soft-deleted record with new values
+    const [restored] = await db
+      .update(feeTemplateItems)
+      .set({
+        defaultAmount: parsed.data.defaultAmount.toString(),
+        order: parsed.data.order ?? 0,
+        deletedAt: null,
+        deletedBy: null,
+        updatedAt: new Date(),
+        updatedBy: session.userId,
+      })
+      .where(eq(feeTemplateItems.id, existing.id))
+      .returning({ id: feeTemplateItems.id });
+    itemId = restored.id;
+  } else {
+    // Insert new record
+    const [inserted] = await db
+      .insert(feeTemplateItems)
+      .values({
+        feeTemplateId: parsed.data.feeTemplateId,
+        feeItemTypeId: parsed.data.feeItemTypeId,
+        defaultAmount: parsed.data.defaultAmount.toString(),
+        order: parsed.data.order ?? 0,
+        createdBy: session.userId,
+        updatedBy: session.userId,
+      })
+      .returning({ id: feeTemplateItems.id });
+    itemId = inserted.id;
+  }
 
   // Load fee type name for audit log
   const feeType = await db.query.feeItemTypes.findFirst({
@@ -133,16 +155,16 @@ export async function addFeeTemplateItemAction(
   await logAudit({
     actor: session.userId,
     actorRole: session.role,
-    action: "fee_template_item_added",
+    action: existing ? "fee_template_item_restored" : "fee_template_item_added",
     targetEntity: "fee_template_items",
-    targetId: item.id,
+    targetId: itemId,
     context: parsed.data.feeTemplateId,
     newState: { feeType: feeType?.name, amount: parsed.data.defaultAmount },
   }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-templates");
 
-  return { success: true, itemId: item.id };
+  return { success: true, itemId };
 }
 
 export async function removeFeeTemplateItemAction(
