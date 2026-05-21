@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState, useState } from "react";
 import { addFeeTemplateItemAction } from "../fee-templates.actions";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { SelectField } from "@/components/forms/SelectField";
 import { CurrencyInputField } from "@/components/forms/CurrencyInputField";
 import { Button } from "@/components/ui/button";
@@ -31,29 +31,18 @@ export function AddFeeItemForm({
   const [defaultAmount, setDefaultAmount] = useState<number | string>("");
   const [order, setOrder] = useState("");
 
-  useEffect(() => {
-    if (state.success) {
-      onAdded();
-    }
-  }, [state.success, onAdded]);
+  useFormToast(state, {
+    successMessage: "Fee item added successfully",
+    onSuccess: onAdded,
+  });
 
   if (state.success) {
-    return (
-      <div className="fin-callout fin-callout-success">
-        <div className="fin-callout-icon" aria-hidden>✓</div>
-        <div>
-          <p className="fin-callout-title">Fee item added!</p>
-          <p className="fin-callout-body">The item has been added to this template.</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
     <form action={action} className="fin-form-stack">
       <input type="hidden" name="feeTemplateId" value={templateId} />
-
-      <FormStateAlert state={state} />
 
       <SelectField
         label="Fee Type"

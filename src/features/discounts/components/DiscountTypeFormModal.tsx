@@ -10,7 +10,7 @@ import type {
   UpdateDiscountTypeFormState,
   DiscountTypeView,
 } from "../discounts.schema";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -53,27 +53,16 @@ export default function DiscountTypeFormModal({
     {};
 
   const [state, action, pending] = useActionState(
-    async (
-      prevState: CreateDiscountTypeFormState | UpdateDiscountTypeFormState,
-      formData: FormData
-    ): Promise<CreateDiscountTypeFormState | UpdateDiscountTypeFormState> => {
-      const result = isEditing
-        ? await updateDiscountTypeAction(
-            prevState as UpdateDiscountTypeFormState,
-            formData
-          )
-        : await createDiscountTypeAction(
-            prevState as CreateDiscountTypeFormState,
-            formData
-          );
-
-      if (result.success) {
-        onClose();
-      }
-      return result;
-    },
+    isEditing ? updateDiscountTypeAction : createDiscountTypeAction,
     initialState
   );
+
+  useFormToast(state, {
+    successMessage: isEditing
+      ? "Discount type updated successfully"
+      : "Discount type created successfully",
+    onSuccess: onClose,
+  });
 
   // Handle escape key
   useEffect(() => {
@@ -95,8 +84,6 @@ export default function DiscountTypeFormModal({
           {isEditing && (
             <input type="hidden" name="id" value={discountType.id} />
           )}
-
-          <FormStateAlert state={state} />
 
           {/* Code */}
           <div className="space-y-2">

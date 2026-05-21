@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState, useMemo, useState, useEffect } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createAssessmentFromEnrollmentAction } from "../assessments.actions";
 import { computeAssessmentTotals } from "../assessments.schema";
 import type { AssessmentFormState } from "../assessments.schema";
 import type { NewAssessmentFeeCatalogEntry, ExpectedDiscountsSummary } from "../new-assessment-context.queries";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { TextAreaField } from "@/components/forms/TextInputField";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import {
@@ -168,19 +168,16 @@ export default function AssessmentDraftForm({
     };
   }, [rows, expectedDiscounts.totalExpectedDiscounts]);
 
-  useEffect(() => {
-    if (state.success && state.assessmentId) {
-      router.replace(`${assessmentsBasePath}/${state.assessmentId}`);
-    }
-  }, [state.success, state.assessmentId, router, assessmentsBasePath]);
+  useFormToast(state, {
+    successMessage: "Assessment created successfully",
+    onSuccess: () => router.replace(`${assessmentsBasePath}/${state.assessmentId}`),
+  });
 
   const blocked = !!submitBlockedReason;
   const formId = "enrollment-assessment-form";
 
   return (
     <div className="space-y-8">
-      <FormStateAlert state={state} />
-
       {submitBlockedReason && (
         <div
           className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"

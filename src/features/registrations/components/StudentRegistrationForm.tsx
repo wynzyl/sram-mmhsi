@@ -17,7 +17,7 @@ import {
 import { DataCard, DataCardBody } from "@/components/ui/editorial/DataCard";
 import GuardianForm from "@/features/students/components/GuardianForm";
 import IntakeRequirementsFieldset from "@/features/enrollments/components/IntakeRequirementsFieldset";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -200,19 +200,14 @@ export default function StudentRegistrationForm({
     setCurrentStep((prev) => Math.max(1, prev - 1) as FormStep);
   }, []);
 
-  useEffect(() => {
-    if (state.success && state.studentId) {
+  useFormToast(state, {
+    successMessage: "Student registered successfully",
+    onSuccess: () => {
       const next =
         successRedirectTo ?? registrationsQueuePath(afterCreateStudentBasePath);
       router.push(next);
-    }
-  }, [
-    state.success,
-    state.studentId,
-    router,
-    afterCreateStudentBasePath,
-    successRedirectTo,
-  ]);
+    },
+  });
 
   const clearGuardiansError = useCallback(() => {
     setStepErrors((prev) => {
@@ -292,8 +287,6 @@ export default function StudentRegistrationForm({
             <input type="hidden" name="registrationStudentType" value={lockedRegistrationType} />
           </>
         ) : null}
-
-        <FormStateAlert state={state} />
 
         {!currentSchoolYear && (
           <div

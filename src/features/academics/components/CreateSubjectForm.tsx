@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { createSubjectAction } from "../subjects/subjects.actions";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 
 export default function CreateSubjectForm({
   gradeLevels,
@@ -11,11 +11,13 @@ export default function CreateSubjectForm({
 }) {
   const [state, formAction, isPending] = useActionState(createSubjectAction, {});
 
+  useFormToast(state, {
+    successMessage: "Subject created successfully",
+  });
+
   return (
     <form action={formAction} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm mb-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Subject</h3>
-
-      <FormStateAlert state={state} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>

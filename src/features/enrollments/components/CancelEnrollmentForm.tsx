@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { updateEnrollmentStatusAction } from "../enrollments.actions";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { TextAreaField } from "@/components/forms/TextInputField";
 import { cn } from "@/lib/utils/cn";
 
@@ -51,14 +51,19 @@ export default function CancelEnrollmentForm({
   const [show, setShow] = useState(false);
   const [cancelRemarks, setCancelRemarks] = useState("");
 
+  useFormToast(state, {
+    successMessage: "Enrollment cancelled successfully",
+    onSuccess: () => setShow(false),
+  });
+
   const paid = assessmentTotalPaid ?? 0;
   const financeStatuses = status === "assessed" || status === "enrolled";
   const hasCollected = financeStatuses && paid > OUTSTANDING_PAYMENT_EPSILON;
   const cancelBlockedByPayments = hasCollected && !canCancelWithBalance;
 
-  // Success/Error state
-  if (state.success || (state.message && !show)) {
-    return <FormStateAlert state={state} />;
+  // Success state - hide the form
+  if (state.success) {
+    return null;
   }
 
   // Table variant (compact)
@@ -146,8 +151,6 @@ export default function CancelEnrollmentForm({
             </div>
           </form>
         )}
-
-        <FormStateAlert state={state} />
       </div>
     );
   }
@@ -223,8 +226,6 @@ export default function CancelEnrollmentForm({
             }
             className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-ops-ink outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-red-500/15"
           />
-
-          <FormStateAlert state={state} />
 
           <div className="flex items-center gap-2">
             <button

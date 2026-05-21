@@ -6,7 +6,7 @@ import type { RequestVoidFormState, CancelVoidRequestFormState } from "../void-r
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,16 @@ export default function PaymentsHistoryTable({
     cancelVoidRequestAction,
     initialCancelState
   );
+
+  useFormToast(requestState, {
+    successMessage: "Void request submitted successfully",
+    onSuccess: () => setRequestVoidId(null),
+  });
+
+  useFormToast(cancelState, {
+    successMessage: "Void request cancelled",
+    onSuccess: () => setCancelRequestId(null),
+  });
 
   const columns = useMemo<ColumnDef<Payment>[]>(() => {
     const baseColumns: ColumnDef<Payment>[] = [
@@ -358,11 +368,6 @@ export default function PaymentsHistoryTable({
 
   return (
     <div className={embedded ? undefined : "mt-6"}>
-      <div className="mx-4 mt-4 space-y-2">
-        <FormStateAlert state={requestState} />
-        <FormStateAlert state={cancelState} />
-      </div>
-
       <DataTable
         columns={columns}
         data={payments}

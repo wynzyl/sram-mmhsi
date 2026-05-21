@@ -3,7 +3,7 @@
 import { useActionState, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createFeeTemplateAction } from "../fee-templates.actions";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { TextInputField } from "@/components/forms/TextInputField";
 import { SelectField } from "@/components/forms/SelectField";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
@@ -20,15 +20,16 @@ export function CreateTemplateModal() {
   const openModal = useCallback(() => setOpen(true), []);
   const closeModal = useCallback(() => setOpen(false), []);
 
-  // On success redirect to the new template's detail page
-  useEffect(() => {
-    if (state.success && state.templateId) {
-      const t = window.setTimeout(() => {
-        router.push(`/staff/finance/fee-templates/${state.templateId}`);
-      }, 900);
-      return () => window.clearTimeout(t);
-    }
-  }, [state.success, state.templateId, router]);
+  useFormToast(state, {
+    successMessage: "Fee template created successfully",
+    onSuccess: () => {
+      if (state.templateId) {
+        setTimeout(() => {
+          router.push(`/staff/finance/fee-templates/${state.templateId}`);
+        }, 500);
+      }
+    },
+  });
 
   // Escape key closes
   useEffect(() => {
@@ -87,8 +88,6 @@ export function CreateTemplateModal() {
                 </div>
               ) : (
                 <form action={action} className="fin-form-stack">
-                  <FormStateAlert state={state} />
-
                   <TextInputField
                     label="Template Name"
                     name="name"

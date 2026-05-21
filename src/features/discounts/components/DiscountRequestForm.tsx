@@ -6,7 +6,7 @@ import type {
   CreateDiscountRequestFormState,
   DiscountTypeView,
 } from "../discounts.schema";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -52,21 +52,18 @@ export default function DiscountRequestForm({
 
   const initialState: CreateDiscountRequestFormState = {};
   const [state, action, pending] = useActionState(
-    async (
-      prevState: CreateDiscountRequestFormState,
-      formData: FormData
-    ): Promise<CreateDiscountRequestFormState> => {
-      const result = await createDiscountRequestAction(prevState, formData);
-      if (result.success && onSuccess) {
-        // Reset form and call success callback
-        setSelectedTypeId("");
-        setRequestReason("");
-        onSuccess();
-      }
-      return result;
-    },
+    createDiscountRequestAction,
     initialState
   );
+
+  useFormToast(state, {
+    successMessage: "Discount request submitted successfully",
+    onSuccess: () => {
+      setSelectedTypeId("");
+      setRequestReason("");
+      onSuccess?.();
+    },
+  });
 
   const selectedType = discountTypes.find((t) => t.id === selectedTypeId);
 
@@ -99,8 +96,6 @@ export default function DiscountRequestForm({
     <form action={action} className="space-y-4">
       <input type="hidden" name="studentId" value={studentId} />
       <input type="hidden" name="enrollmentId" value={enrollmentId} />
-
-      <FormStateAlert state={state} />
 
       {/* Discount Type Selection */}
       <div className="space-y-2">

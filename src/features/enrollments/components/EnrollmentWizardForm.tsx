@@ -15,7 +15,7 @@ import { createEnrollmentAction } from "../enrollments.actions";
 import type { EnrollmentFormState } from "../enrollments.schema";
 import { IntakeRequirementsFieldset } from "@/features/enrollments";
 import { DataCard, DataCardBody } from "@/components/ui/editorial/DataCard";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { editorialFieldClass } from "@/lib/utils/editorial-styles";
 import { enrollmentIntakeDocumentsToPreserved } from "@/lib/utils/intake-documents";
 import type { RegistrationEnrollmentContext } from "@/lib/types/registration-enrollment-context";
@@ -190,11 +190,10 @@ export default function EnrollmentWizardForm({
     }
   }, [state.errors]);
 
-  useEffect(() => {
-    if (state.success && state.enrollmentId) {
-      router.push(afterSuccessRedirect);
-    }
-  }, [state.success, state.enrollmentId, router, afterSuccessRedirect]);
+  useFormToast(state, {
+    successMessage: "Enrollment created successfully",
+    onSuccess: () => router.push(afterSuccessRedirect),
+  });
 
   const selectedStudent = useMemo(
     () => students.find((s) => s.id === studentId) ?? null,
@@ -334,8 +333,6 @@ export default function EnrollmentWizardForm({
           {studentType === "transferee" && !lockedToOldStudent && (
             <input type="hidden" name="previousSchool" value={previousSchool} />
           )}
-
-          <FormStateAlert state={state} />
 
           {!currentSchoolYear && (
             <div

@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createEnrollmentAction } from "../enrollments.actions";
 import type { EnrollmentFormState } from "../enrollments.schema";
 import { IntakeRequirementsFieldset } from "@/features/enrollments";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import type { RegistrationEnrollmentContext } from "@/lib/types/registration-enrollment-context";
 import { enrollmentIntakeDocumentsToPreserved } from "@/lib/utils/intake-documents";
 
@@ -127,11 +127,10 @@ export default function NewEnrollmentForm({
     )
   );
 
-  useEffect(() => {
-    if (state.success && state.enrollmentId) {
-      router.push(afterSuccessRedirect);
-    }
-  }, [state.success, state.enrollmentId, router, afterSuccessRedirect]);
+  useFormToast(state, {
+    successMessage: "Enrollment created successfully",
+    onSuccess: () => router.push(afterSuccessRedirect),
+  });
 
   const disableSubmit = !currentSchoolYear || pending;
   const promotionHint = studentId ? promotionByStudentId[studentId] : undefined;
@@ -144,8 +143,6 @@ export default function NewEnrollmentForm({
 
   return (
     <form action={action} className="student-form">
-      <FormStateAlert state={state} />
-
       {!currentSchoolYear && (
         <div className="alert alert-error" role="alert">
           No <strong>active</strong> school year is configured. Add or activate the current school year

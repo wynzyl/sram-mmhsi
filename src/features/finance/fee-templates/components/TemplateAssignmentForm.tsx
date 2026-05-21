@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { assignTemplateToSchoolYearAction } from "../fee-templates.actions";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { SelectField } from "@/components/forms/SelectField";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,10 @@ export function TemplateAssignmentForm({
   const [effectiveDate, setEffectiveDate] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
 
+  useFormToast(state, {
+    successMessage: "Template assigned successfully",
+  });
+
   const filteredTemplates = templates.filter(
     (t) => !assessmentBand || t.assessmentBand === assessmentBand
   );
@@ -77,8 +81,6 @@ export function TemplateAssignmentForm({
 
   return (
     <form action={action} className="fin-form-stack">
-      <FormStateAlert state={state} />
-
       <SelectField
         label="School Year"
         name="schoolYearId"
@@ -233,18 +235,6 @@ export function TemplateAssignmentForm({
           Cancel
         </Button>
       </div>
-
-      {state.success && state.scheduleId && (
-        <div className="fin-callout fin-callout-success">
-          <div className="fin-callout-icon" aria-hidden>✓</div>
-          <div>
-            <p className="fin-callout-title">Template assigned successfully!</p>
-            <p className="fin-callout-body">
-              The fee schedule is now active for the selected school year and band.
-            </p>
-          </div>
-        </div>
-      )}
     </form>
   );
 }

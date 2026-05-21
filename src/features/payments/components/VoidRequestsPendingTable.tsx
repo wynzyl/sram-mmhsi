@@ -13,7 +13,7 @@ import type { PendingVoidRequest } from "../void-requests.queries";
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { FormStateAlert } from "@/components/forms/FormStateAlert";
+import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -45,6 +45,16 @@ export default function VoidRequestsPendingTable({
     rejectVoidRequestAction,
     initialRejectState
   );
+
+  useFormToast(approveState, {
+    successMessage: "Void request approved successfully",
+    onSuccess: () => setApprovingId(null),
+  });
+
+  useFormToast(rejectState, {
+    successMessage: "Void request rejected",
+    onSuccess: () => setRejectingId(null),
+  });
 
   const columns = useMemo<ColumnDef<PendingVoidRequest>[]>(
     () => [
@@ -230,18 +240,11 @@ export default function VoidRequestsPendingTable({
   }
 
   return (
-    <div>
-      <div className="mx-4 mt-4 space-y-2">
-        <FormStateAlert state={approveState} />
-        <FormStateAlert state={rejectState} />
-      </div>
-
-      <DataTable
-        columns={columns}
-        data={requests}
-        searchable={false}
-        pageSize={20}
-      />
-    </div>
+    <DataTable
+      columns={columns}
+      data={requests}
+      searchable={false}
+      pageSize={20}
+    />
   );
 }
