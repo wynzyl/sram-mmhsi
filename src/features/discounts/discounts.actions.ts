@@ -270,14 +270,24 @@ export async function createDiscountRequestAction(
     return { message: "You do not have permission to request discounts." };
   }
 
-  const parsed = createDiscountRequestSchema.safeParse({
+  // Debug logging
+  const rawData = {
     studentId: formData.get("studentId"),
     enrollmentId: formData.get("enrollmentId"),
     discountTypeId: formData.get("discountTypeId"),
-    requestReason: formData.get("requestReason") || undefined,
+    requestReason: formData.get("requestReason"),
+  };
+  logger.info("[discounts] createDiscountRequestAction received:", { rawData });
+
+  const parsed = createDiscountRequestSchema.safeParse({
+    studentId: rawData.studentId,
+    enrollmentId: rawData.enrollmentId,
+    discountTypeId: rawData.discountTypeId,
+    requestReason: rawData.requestReason || undefined,
   });
 
   if (!parsed.success) {
+    logger.error("[discounts] Validation failed:", { errors: parsed.error.flatten() });
     return {
       errors: parsed.error.flatten()
         .fieldErrors as CreateDiscountRequestFormState["errors"],
@@ -385,22 +395,43 @@ export async function createDiscountRequestAction(
   }
 
   try {
-    const [newRequest] = await db
-      .insert(discountRequests)
-      .values({
-        studentId: parsed.data.studentId,
-        enrollmentId: parsed.data.enrollmentId,
-        discountTypeId: parsed.data.discountTypeId,
-        requestReason: parsed.data.requestReason,
-        status: "pending",
-        requestedBy: session.userId,
-        requestedAt: new Date(),
-      })
-      .returning({ id: discountRequests.id });
+    logger.info("[discounts] Step 1: Inserting discount request...");
+
+    // Use raw SQL to bypass potential Drizzle ORM issues in Next.js context
+    const requestReason = parsed.data.requestReason?.trim() || null;
+    const insertResult = await db.execute<{ id: string }>(sql`
+      INSERT INTO discount_requests (
+        student_id,
+        enrollment_id,
+        discount_type_id,
+        request_reason,
+        status,
+        requested_by,
+        requested_at,
+        created_at,
+        updated_at
+      ) VALUES (
+        ${parsed.data.studentId},
+        ${parsed.data.enrollmentId},
+        ${parsed.data.discountTypeId},
+        ${requestReason},
+        'pending',
+        ${session.userId},
+        NOW(),
+        NOW(),
+        NOW()
+      )
+      RETURNING id
+    `);
+    const newRequest = { id: (insertResult[0] as { id: string }).id };
+    logger.info("[discounts] Step 1 complete: Request ID =", { newRequestId: newRequest.id });
 
     // Update enrollment's hasDiscountsPending flag
+    logger.info("[discounts] Step 2: Updating enrollment discount pending flag...");
     await updateEnrollmentDiscountPendingFlag(parsed.data.enrollmentId);
+    logger.info("[discounts] Step 2 complete");
 
+    logger.info("[discounts] Step 3: Logging audit...");
     await logAudit({
       actor: session.userId,
       actorRole: session.role,
@@ -409,6 +440,7 @@ export async function createDiscountRequestAction(
       targetId: newRequest.id,
       newState: parsed.data,
     });
+    logger.info("[discounts] Step 3 complete");
 
     revalidatePath("/staff/registrar/enrollments");
     revalidatePath("/staff/finance/discount-requests");
@@ -418,8 +450,14 @@ export async function createDiscountRequestAction(
       discountRequestId: newRequest.id,
     };
   } catch (error) {
-    logger.error("[discounts] Failed to create discount request", { error });
-    return { message: "An unexpected error occurred. Please try again." };
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    logger.error("[discounts] Failed to create discount request", {
+      error: errorMsg,
+      stack: errorStack,
+      parsedData: parsed.data
+    });
+    return { message: `Failed: ${errorMsg}` };
   }
 }
 
@@ -920,7 +958,7 @@ export async function reverseDiscountAction(
 
       if (livePayments.length > 0) {
         throw new Error(
-          "REVERSE_BLOCKED: Void all payments on this assessment before reversing the discount."
+          "Can not reverse discount if payment has been made!"
         );
       }
 
@@ -1029,9 +1067,13 @@ export async function reverseDiscountAction(
         reversalDiscountId: reversalDiscount.id,
       };
     });
-  } catch (error) {
-    logger.error("[discounts] Failed to reverse discount", { error });
-    return { message: "An unexpected error occurred. Please try again." };
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "An unexpected error occurred. Please try again.";
+    logger.error("[discounts] Failed to reverse discount", { error: String(error) });
+    return { message };
   }
 }
 
