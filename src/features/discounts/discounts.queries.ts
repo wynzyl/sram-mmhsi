@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import {
   discountTypes,
@@ -16,6 +17,7 @@ import {
   payments,
 } from "@/lib/db/schema";
 import { eq, desc, and, isNull, sql, inArray, or, ilike } from "drizzle-orm";
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
   type PaginationParams,
   type PaginatedResult,
@@ -31,10 +33,7 @@ import type {
 
 // ─── Discount Types Queries ───────────────────────────────────────────────────
 
-/**
- * Get all active discount types for selection
- */
-export async function getActiveDiscountTypes(): Promise<DiscountTypeView[]> {
+async function _getActiveDiscountTypesUncached(): Promise<DiscountTypeView[]> {
   const rows = await db
     .select()
     .from(discountTypes)
@@ -58,9 +57,20 @@ export async function getActiveDiscountTypes(): Promise<DiscountTypeView[]> {
 }
 
 /**
- * Get all discount types (including inactive) for admin management
+ * Get all active discount types for selection.
+ * Cached for 1 hour; invalidated via revalidateTag(CACHE_TAGS.DISCOUNT_TYPES)
+ * when discount types are created/updated/deleted.
  */
-export async function getAllDiscountTypes(): Promise<DiscountTypeView[]> {
+export const getActiveDiscountTypes = unstable_cache(
+  _getActiveDiscountTypesUncached,
+  ["discount-types-active"],
+  {
+    revalidate: 3600,
+    tags: [CACHE_TAGS.DISCOUNT_TYPES],
+  }
+);
+
+async function _getAllDiscountTypesUncached(): Promise<DiscountTypeView[]> {
   const rows = await db
     .select()
     .from(discountTypes)
@@ -82,6 +92,20 @@ export async function getAllDiscountTypes(): Promise<DiscountTypeView[]> {
     createdAt: r.createdAt,
   }));
 }
+
+/**
+ * Get all discount types (including inactive) for admin management.
+ * Cached for 1 hour; invalidated via revalidateTag(CACHE_TAGS.DISCOUNT_TYPES)
+ * when discount types are created/updated/deleted.
+ */
+export const getAllDiscountTypes = unstable_cache(
+  _getAllDiscountTypesUncached,
+  ["discount-types-all"],
+  {
+    revalidate: 3600,
+    tags: [CACHE_TAGS.DISCOUNT_TYPES],
+  }
+);
 
 /**
  * Get a single discount type by ID

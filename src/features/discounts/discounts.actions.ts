@@ -126,6 +126,7 @@ export async function createDiscountTypeAction(
     });
 
     revalidatePath("/staff/finance/discount-types");
+    invalidateTag(CACHE_TAGS.DISCOUNT_TYPES);
     return {
       success: true,
       message: "Discount type created successfully.",
@@ -214,6 +215,7 @@ export async function updateDiscountTypeAction(
     });
 
     revalidatePath("/staff/finance/discount-types");
+    invalidateTag(CACHE_TAGS.DISCOUNT_TYPES);
     return { success: true, message: "Discount type updated successfully." };
   } catch (error) {
     logger.error("[discounts] Failed to update discount type", { error });
@@ -253,6 +255,7 @@ export async function deleteDiscountTypeAction(
     });
 
     revalidatePath("/staff/finance/discount-types");
+    invalidateTag(CACHE_TAGS.DISCOUNT_TYPES);
     return { success: true, message: "Discount type deleted successfully." };
   } catch (error) {
     logger.error("[discounts] Failed to delete discount type", { error });
@@ -451,8 +454,8 @@ export async function createDiscountRequestAction(
 
     revalidatePath("/staff/registrar/enrollments");
     revalidatePath("/staff/finance/discount-requests");
+    // Discount request flips enrollment's hasDiscountsPending flag (used by queue counts).
     invalidateTag(CACHE_TAGS.ENROLLMENTS);
-    invalidateTag(CACHE_TAGS.ASSESSMENTS);
     return {
       success: true,
       message: "Discount request submitted for approval.",
@@ -1021,7 +1024,7 @@ export async function reverseDiscountAction(
 
       revalidatePath("/staff/finance/assessments");
       revalidatePath("/staff/registrar/enrollments");
-      invalidateTag(CACHE_TAGS.ASSESSMENTS);
+      // Dashboard A/R figures shift when a discount is reversed.
       invalidateTag(CACHE_TAGS.DASHBOARD);
       return {
         success: true,
@@ -1320,7 +1323,7 @@ export async function applyApprovedDiscountToExistingAssessment(
       revalidatePath("/staff/finance/discount-requests");
       revalidatePath("/staff/finance/assessments");
       revalidatePath("/staff/registrar/enrollments");
-      invalidateTag(CACHE_TAGS.ASSESSMENTS);
+      // Dashboard A/R figures shift when a discount is applied.
       invalidateTag(CACHE_TAGS.DASHBOARD);
 
       return {

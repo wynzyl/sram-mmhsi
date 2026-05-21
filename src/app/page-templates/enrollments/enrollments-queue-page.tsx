@@ -16,7 +16,6 @@ import {
   type CancelledEnrollment,
 } from "@/features/enrollments/enrollments-queue.queries";
 import type { PaginationParams, PaginatedResult } from "@/lib/types/pagination";
-import { unstable_cache } from "next/cache";
 import { EnrollmentQueueTabs } from "@/features/enrollments";
 import { EnrollmentGlobalFilters } from "@/features/enrollments";
 import { ReadyToEnrollTableClient } from "@/features/enrollments";
@@ -101,15 +100,9 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
     );
   }
 
-  // Create cached version of counts (5-minute TTL)
-  const getCachedTabCounts = unstable_cache(
-    async () => getEnrollmentQueueCounts(),
-    ["enrollment-queue-counts", activeSchoolYear.id],
-    { revalidate: 300 } // 5 minutes
-  );
-
   // Fetch current tab data, sections, grade levels, and tab counts in parallel
   // MEMORY OPTIMIZATION: Only fetch data for the CURRENT tab, not all 5 tabs
+  // NOTE: getEnrollmentQueueCounts is already wrapped in unstable_cache (tag: 'enrollments')
   const [queueData, allSections, allGradeLevels, tabCountsData] = await Promise.all([
     getEnrollmentQueueData(currentTab, paginationParams),
     db
@@ -120,7 +113,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       .select({ id: gradeLevels.id, name: gradeLevels.name })
       .from(gradeLevels)
       .orderBy(gradeLevels.order),
-    getCachedTabCounts(),
+    getEnrollmentQueueCounts(),
   ]);
 
   if (!queueData) {

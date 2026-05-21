@@ -216,13 +216,15 @@ async function _getAdminDashboardMetricsUncached(): Promise<AdminDashboardMetric
 /**
  * Get admin dashboard metrics with caching.
  * Cache is revalidated every 60 seconds to ensure financial data freshness.
- * Cache can be manually invalidated using revalidateTag('dashboard').
+ * Cache can be manually invalidated using invalidateTag(CACHE_TAGS.DASHBOARD)
+ * from actions that materially change KPIs (payment post/void, enrollment
+ * confirmation, assessment creation, school year changes).
  */
 export const getAdminDashboardMetrics = unstable_cache(
   _getAdminDashboardMetricsUncached,
   ['admin-dashboard-metrics'],
   {
     revalidate: 60, // 60 seconds - reduced from 15 min for financial accuracy
-    tags: [CACHE_TAGS.DASHBOARD, CACHE_TAGS.ENROLLMENTS, CACHE_TAGS.PAYMENTS],
+    tags: [CACHE_TAGS.DASHBOARD],
   }
 );
