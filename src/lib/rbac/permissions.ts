@@ -60,6 +60,8 @@ export type Permission =
   | "discounts:request"
   | "discounts:review"
   | "discounts:manage"
+  /** Apply an approved discount request to an existing (already-finalized) assessment. */
+  | "discounts:apply"
   // Admin
   | "users:manage"
   | "school_years:manage"
@@ -83,7 +85,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
     "booklets:manage",
-    "discounts:read", "discounts:request", "discounts:review", "discounts:manage",
+    "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
     "reports:view", "reports:finance", "reports:academic",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage",
@@ -103,7 +105,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "invoices:read", "invoices:send",
     "grades:read", "grades:encode", "grades:submit", "grades:lock",
     "booklets:manage",
-    "discounts:read", "discounts:request", "discounts:review", "discounts:manage",
+    "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
     "fee_schedules:manage",
     "school_years:manage",
     "reports:view", "reports:finance", "reports:academic",
@@ -125,7 +127,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "payments:read",
     "invoices:read", "invoices:send",
     "booklets:manage", "fee_schedules:manage",
-    "discounts:read", "discounts:review", "discounts:manage",
+    "discounts:read", "discounts:review", "discounts:manage", "discounts:apply",
     "reports:view", "reports:finance",
   ],
   cashier: [

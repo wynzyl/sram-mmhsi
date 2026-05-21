@@ -64,6 +64,13 @@
       "when": 1779518400000,
       "tag": "0008_add_student_discount_index",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779604800000,
+      "tag": "0009_discount_reversal_status_and_replacement_link",
+      "breakpoints": true
     }
   ]
 }

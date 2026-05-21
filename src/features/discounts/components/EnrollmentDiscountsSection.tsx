@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type {
   DiscountRequestView,
   DiscountTypeView,
@@ -18,6 +19,11 @@ interface EnrollmentDiscountsSectionProps {
   discountTypes: DiscountTypeView[];
   /** Whether the current user can request discounts */
   canRequest?: boolean;
+  /**
+   * When the request flow is blocked by the gate (e.g., reversed-discount lock),
+   * this is the human-readable reason shown to the user in place of the button.
+   */
+  requestBlockReason?: string;
 }
 
 export default function EnrollmentDiscountsSection({
@@ -26,8 +32,38 @@ export default function EnrollmentDiscountsSection({
   discountRequests,
   discountTypes,
   canRequest = false,
+  requestBlockReason,
 }: EnrollmentDiscountsSectionProps) {
-  const [showForm, setShowForm] = useState(false);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Deep-link from a reversed-discount row uses
+  //   ?requestDiscount=1&discountTypeCode=<code>
+  // Auto-open the form pre-filled with that type, then strip the params so a
+  // browser refresh doesn't re-open it.
+  const requestDiscountParam = searchParams.get("requestDiscount");
+  const discountTypeCodeParam = searchParams.get("discountTypeCode");
+  const shouldAutoOpen =
+    canRequest && requestDiscountParam === "1" && !!discountTypeCodeParam;
+
+  const [showForm, setShowForm] = useState(shouldAutoOpen);
+  const [prefillCode, setPrefillCode] = useState<string | undefined>(
+    discountTypeCodeParam ?? undefined
+  );
+
+  // Strip the query params once they've been consumed so subsequent refreshes
+  // don't keep re-opening the form. Guarded by a ref to run exactly once.
+  const consumedRef = useRef(false);
+  useEffect(() => {
+    if (!shouldAutoOpen || consumedRef.current) return;
+    consumedRef.current = true;
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("requestDiscount");
+    next.delete("discountTypeCode");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [shouldAutoOpen, searchParams, router, pathname]);
 
   const pendingRequests = discountRequests.filter(
     (r) => r.status === "pending"
@@ -58,6 +94,12 @@ export default function EnrollmentDiscountsSection({
         )}
       </CardHeader>
       <CardContent className="space-y-4">
+        {requestBlockReason && !showForm && (
+          <p className="text-xs text-[var(--color-text-muted)] italic">
+            {requestBlockReason}
+          </p>
+        )}
+
         {/* Request Form */}
         {showForm && (
           <div className="p-4 border border-[var(--color-border)] rounded-lg">
@@ -66,8 +108,18 @@ export default function EnrollmentDiscountsSection({
               studentId={studentId}
               enrollmentId={enrollmentId}
               discountTypes={discountTypes}
-              onSuccess={() => setShowForm(false)}
-              onCancel={() => setShowForm(false)}
+              initialDiscountTypeCode={prefillCode}
+              initialRequestReason={
+                prefillCode ? "Replacement for reversed discount." : undefined
+              }
+              onSuccess={() => {
+                setShowForm(false);
+                setPrefillCode(undefined);
+              }}
+              onCancel={() => {
+                setShowForm(false);
+                setPrefillCode(undefined);
+              }}
             />
           </div>
         )}

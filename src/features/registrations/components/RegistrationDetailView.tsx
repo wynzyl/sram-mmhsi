@@ -845,6 +845,68 @@ export function RegistrationDetailView({
 
       {tab === "discounts" && flags.canReadDiscounts && (
         <div className="space-y-6">
+          {/* Status summary banner — surfaces counts by status so the reviewer
+              can see at a glance whether the student has any reversed,
+              pending, or rejected discount activity without scanning the
+              table. */}
+          {discountRequests.length > 0 && (() => {
+            const counts = discountRequests.reduce(
+              (acc, r) => {
+                acc[r.status] = (acc[r.status] ?? 0) + 1;
+                return acc;
+              },
+              {} as Record<string, number>
+            );
+            const reversedCount = counts.reversed ?? 0;
+            return (
+              <DataCard
+                className={
+                  reversedCount > 0
+                    ? "p-4 border-[var(--color-danger)]/40 bg-[var(--color-danger)]/5"
+                    : "p-4"
+                }
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium">
+                    Discount status:
+                  </span>
+                  {counts.pending ? (
+                    <Badge variant="warning" className="text-xs">
+                      {counts.pending} Pending
+                    </Badge>
+                  ) : null}
+                  {counts.approved ? (
+                    <Badge variant="success" className="text-xs">
+                      {counts.approved} Approved
+                    </Badge>
+                  ) : null}
+                  {counts.rejected ? (
+                    <Badge variant="danger" className="text-xs">
+                      {counts.rejected} Rejected
+                    </Badge>
+                  ) : null}
+                  {counts.cancelled ? (
+                    <Badge variant="secondary" className="text-xs">
+                      {counts.cancelled} Cancelled
+                    </Badge>
+                  ) : null}
+                  {reversedCount ? (
+                    <Badge variant="danger" className="text-xs">
+                      {reversedCount} Reversed
+                    </Badge>
+                  ) : null}
+                </div>
+                {reversedCount > 0 && (
+                  <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                    This student has reversed discount(s). New discount
+                    requests are locked on any assessment where payment
+                    activity has been recorded.
+                  </p>
+                )}
+              </DataCard>
+            );
+          })()}
+
           {/* Request New Discount Form */}
           {flags.canRequestDiscounts && activeEnrollmentId && discountTypes.length > 0 && (
             <DataCard className="p-6">
@@ -930,6 +992,9 @@ export function RegistrationDetailView({
                           )}
                           {req.status === "cancelled" && (
                             <Badge variant="secondary" className="text-xs">Cancelled</Badge>
+                          )}
+                          {req.status === "reversed" && (
+                            <Badge variant="danger" className="text-xs">Reversed</Badge>
                           )}
                         </td>
                         <td className="px-4 py-3 text-[var(--color-text-muted)]">

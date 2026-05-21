@@ -10,6 +10,7 @@ export {
   cancelDiscountRequestAction,
   reverseDiscountAction,
   applyApprovedDiscountsToAssessment,
+  applyApprovedDiscountToExistingAssessment,
 } from "./discounts.actions";
 
 // Queries
@@ -20,12 +21,16 @@ export {
   getPendingDiscountRequests,
   getDiscountRequestsByEnrollment,
   hasPendingDiscountRequests,
+  getDiscountRequestGate,
   getApprovedDiscountRequestsForEnrollment,
+  getApprovedUnappliedDiscountRequests,
   getStudentDiscountsByAssessment,
   getAssessmentItemsWithFeeTypes,
   getDiscountRequestCounts,
   getDiscountRequestsHistory,
 } from "./discounts.queries";
+
+export type { DiscountRequestGate } from "./discounts.queries";
 
 // Schemas
 export {
@@ -37,6 +42,7 @@ export {
   bulkApproveDiscountsSchema,
   cancelDiscountRequestSchema,
   reverseDiscountSchema,
+  applyApprovedDiscountSchema,
   discountRequestFiltersSchema,
   discountCalculationTypeSchema,
   discountBaseTypeSchema,
@@ -61,6 +67,8 @@ export type {
   CancelDiscountRequestFormState,
   ReverseDiscountInput,
   ReverseDiscountFormState,
+  ApplyApprovedDiscountInput,
+  ApplyApprovedDiscountFormState,
   DiscountRequestFilters,
   DiscountCalculationType,
   DiscountBaseType,

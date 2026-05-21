@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { getPendingDiscountRequests, getDiscountRequestCounts } from "@/features/discounts";
+import {
+  getPendingDiscountRequests,
+  getDiscountRequestCounts,
+  getApprovedUnappliedDiscountRequests,
+} from "@/features/discounts";
 import DiscountRequestsTable from "@/features/discounts/components/DiscountRequestsTable";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
@@ -29,7 +33,7 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
 
   const params = await searchParams;
 
-  const [pendingResult, counts] = await Promise.all([
+  const [pendingResult, counts, approvedUnapplied] = await Promise.all([
     getPendingDiscountRequests({
       page: params.page ? parseInt(params.page, 10) : 1,
       pageSize: 20,
@@ -38,6 +42,7 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
       searchQuery: params.search,
     }),
     getDiscountRequestCounts(),
+    getApprovedUnappliedDiscountRequests(),
   ]);
 
   return (
@@ -84,6 +89,27 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
           />
         </CardContent>
       </Card>
+
+      {/* Approved but not yet attached to an assessment — typically post-reversal replacements. */}
+      {approvedUnapplied.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Approved — Ready to Apply ({approvedUnapplied.length})
+            </CardTitle>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              These approved requests are waiting to be attached to their
+              parent assessment (e.g., after a payment void + discount reversal).
+            </p>
+          </CardHeader>
+          <CardContent className="p-0">
+            <DiscountRequestsTable
+              requests={approvedUnapplied}
+              enableBulkActions={false}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pagination info */}
       {pendingResult.pagination.totalPages > 1 && (

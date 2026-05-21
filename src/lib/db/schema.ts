@@ -121,6 +121,7 @@ export const discountRequestStatusEnum = pgEnum("discount_request_status", [
   "approved",
   "rejected",
   "cancelled",
+  "reversed",
 ]);
 
 // ─── Users & Sessions ─────────────────────────────────────────────────────────
@@ -957,6 +958,8 @@ export const discountRequests = pgTable(
     decisionRemarks: text("decision_remarks"),
     cancelledAt: timestamp("cancelled_at"),
     cancelledBy: uuid("cancelled_by").references(() => users.id),
+    reversedAt: timestamp("reversed_at"),
+    reversedBy: uuid("reversed_by").references(() => users.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -1004,6 +1007,10 @@ export const studentDiscounts = pgTable(
     reversedBy: uuid("reversed_by").references(() => users.id),
     reversalRemarks: text("reversal_remarks"),
     reversalDiscountId: uuid("reversal_discount_id"), // Self-reference for reversal entries
+    /** Links a reversed discount to the new request that supersedes it (audit chain) */
+    replacedByRequestId: uuid("replaced_by_request_id").references(
+      (): AnyPgColumn => discountRequests.id
+    ),
     appliedAt: timestamp("applied_at").notNull().defaultNow(),
     appliedBy: uuid("applied_by").notNull().references(() => users.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),

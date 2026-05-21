@@ -135,6 +135,8 @@ NODE_ENV="development"
 4. **Audit Everything Financial:** All payment posts, voids, and OR consumption must generate audit log entries
 5. **Role-Based Access Control (RBAC):** Enforce at 3 levels — route guard, server action validation, and audit logging
 6. **Soft Delete Only:** Use `deletedAt` / `deletedBy` fields — never hard delete records
+7. **Reusable Function - Always use resuable function and components, break code into smaller function for a readable and
+  maintainable code. 
 
 ### Layer Boundaries (Non-Negotiable)
 

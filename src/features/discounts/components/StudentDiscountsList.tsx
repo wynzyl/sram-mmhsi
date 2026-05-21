@@ -9,13 +9,63 @@ import DiscountReversalModal from "./DiscountReversalModal";
 
 interface StudentDiscountsListProps {
   discounts: StudentDiscountView[];
-  /** Whether the current user can reverse discounts */
+  /** Whether the current user can reverse discounts (discounts:manage) */
   canReverse?: boolean;
+  /** Whether the current user can request a replacement discount (discounts:request) */
+  canRequest?: boolean;
+  /**
+   * When the request flow is blocked by the gate, this is the human-readable
+   * reason shown next to reversed-discount rows so the user understands why
+   * the "Request replacement" link is missing.
+   */
+  requestBlockReason?: string;
 }
+
+/**
+ * A reversal counter row is a student_discounts entry stored with a NEGATIVE
+ * discountAmount; it offsets a previously-reversed original. It has
+ * reversedAt = null (so it sits in the Active bucket) and is not itself
+ * reversible.
+ */
+const isReversalCounter = (discount: StudentDiscountView) =>
+  Number(discount.discountAmount) < 0;
+
+/**
+ * Compute the math components behind the "Total Discounts" line so the user
+ * can see exactly how it was derived:
+ *
+ *   grossDiscounts    = sum of positive discountAmount rows (original deductions,
+ *                       including ones later reversed — the original line item
+ *                       still sits in the ledger)
+ *   reversalOffsets   = absolute sum of negative discountAmount rows (counter
+ *                       entries that add their amount back to the balance)
+ *   effectiveTotal    = grossDiscounts − reversalOffsets
+ *                       (equivalent to signed sum of all rows; this is what
+ *                       drops the balance)
+ */
+const computeDiscountTotals = (rows: StudentDiscountView[]) => {
+  let grossDiscounts = 0;
+  let reversalOffsets = 0;
+  for (const row of rows) {
+    const amount = Number(row.discountAmount);
+    if (amount >= 0) {
+      grossDiscounts += amount;
+    } else {
+      reversalOffsets += Math.abs(amount);
+    }
+  }
+  return {
+    grossDiscounts,
+    reversalOffsets,
+    effectiveTotal: grossDiscounts - reversalOffsets,
+  };
+};
 
 export default function StudentDiscountsList({
   discounts,
   canReverse = false,
+  canRequest = false,
+  requestBlockReason,
 }: StudentDiscountsListProps) {
   const [reversingDiscount, setReversingDiscount] =
     useState<StudentDiscountView | null>(null);
@@ -76,9 +126,18 @@ export default function StudentDiscountsList({
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-semibold text-[var(--color-success)]">
-                    -<CurrencyDisplay amount={Number(discount.discountAmount)} className="inline" />
+                    {isReversalCounter(discount) ? "+" : "−"}
+                    <CurrencyDisplay
+                      amount={Math.abs(Number(discount.discountAmount))}
+                      className="inline"
+                    />
                   </div>
-                  {canReverse && (
+                  {isReversalCounter(discount) && (
+                    <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                      added back to balance
+                    </div>
+                  )}
+                  {canReverse && !isReversalCounter(discount) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -105,27 +164,59 @@ export default function StudentDiscountsList({
             {reversedDiscounts.map((discount) => (
               <div
                 key={discount.id}
-                className="p-3 bg-[var(--color-surface)] rounded-lg opacity-60"
+                className="p-3 bg-[var(--color-surface)] rounded-lg opacity-70 flex justify-between items-start"
               >
-                <div className="flex items-center gap-2">
-                  <span className="font-medium line-through">
-                    {discount.discountTypeName}
-                  </span>
-                  <Badge variant="danger">Reversed</Badge>
-                </div>
-                <div className="text-sm text-[var(--color-text-muted)] mt-1 line-through">
-                  {formatDiscountValue(discount)} {formatBaseInfo(discount)}
-                </div>
-                <div className="text-xs text-[var(--color-text-muted)] mt-1">
-                  Reversed{" "}
-                  {new Date(discount.reversedAt!).toLocaleDateString("en-PH")}
-                  {discount.reversedByName && ` by ${discount.reversedByName}`}
-                </div>
-                {discount.reversalRemarks && (
-                  <div className="text-xs text-[var(--color-text-muted)] italic mt-1">
-                    Reason: {discount.reversalRemarks}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium line-through">
+                      {discount.discountTypeName}
+                    </span>
+                    <Badge variant="danger">Reversed</Badge>
                   </div>
-                )}
+                  <div className="text-sm text-[var(--color-text-muted)] mt-1 line-through">
+                    {formatDiscountValue(discount)} {formatBaseInfo(discount)}
+                  </div>
+                  <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                    Reversed{" "}
+                    {new Date(discount.reversedAt!).toLocaleDateString("en-PH")}
+                    {discount.reversedByName && ` by ${discount.reversedByName}`}
+                  </div>
+                  {discount.reversalRemarks && (
+                    <div className="text-xs text-[var(--color-text-muted)] italic mt-1">
+                      Reason: {discount.reversalRemarks}
+                    </div>
+                  )}
+                  {canRequest && !discount.hasReplacement && (
+                    <a
+                      href={`/staff/enrollments/${discount.enrollmentId}?requestDiscount=1&discountTypeCode=${encodeURIComponent(discount.discountTypeCode)}`}
+                      className="mt-2 inline-block text-xs font-medium text-[var(--color-primary)] hover:underline"
+                    >
+                      Request replacement →
+                    </a>
+                  )}
+                  {!canRequest && !discount.hasReplacement && requestBlockReason && (
+                    <div className="mt-2 text-xs text-[var(--color-text-muted)] italic">
+                      {requestBlockReason}
+                    </div>
+                  )}
+                  {discount.hasReplacement && (
+                    <div className="mt-2 text-xs text-[var(--color-success)]">
+                      Replacement request issued.
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-semibold text-[var(--color-success)] line-through">
+                    −
+                    <CurrencyDisplay
+                      amount={Math.abs(Number(discount.discountAmount))}
+                      className="inline"
+                    />
+                  </div>
+                  <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                    offset above
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -140,24 +231,52 @@ export default function StudentDiscountsList({
         />
       )}
 
-      {/* Total Summary */}
-      {activeDiscounts.length > 0 && (
-        <div className="pt-3 border-t border-[var(--color-border)]">
-          <div className="flex justify-between items-center">
-            <span className="font-medium">Total Discounts</span>
-            <span className="text-lg font-semibold text-[var(--color-success)]">
-              -
-              <CurrencyDisplay
-                amount={activeDiscounts.reduce(
-                  (sum, d) => sum + Number(d.discountAmount),
-                  0
-                )}
-                className="inline"
-              />
-            </span>
+      {/* Total Summary — show the gross deductions, the reversal offsets that
+          add back to the balance, and the effective Total so the math is
+          fully transparent. */}
+      {discounts.length > 0 && (() => {
+        const { grossDiscounts, reversalOffsets, effectiveTotal } =
+          computeDiscountTotals(discounts);
+        const hasReversalOffset = reversalOffsets > 0;
+        return (
+          <div className="pt-3 border-t border-[var(--color-border)] space-y-1">
+            {hasReversalOffset && (
+              <>
+                <div className="flex justify-between items-center text-sm text-[var(--color-text-muted)]">
+                  <span>Gross discounts</span>
+                  <span className="font-[family-name:var(--font-mono)]">
+                    −
+                    <CurrencyDisplay
+                      amount={grossDiscounts}
+                      className="inline"
+                    />
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-[var(--color-text-muted)]">
+                  <span>Reversal offsets</span>
+                  <span className="font-[family-name:var(--font-mono)]">
+                    +
+                    <CurrencyDisplay
+                      amount={reversalOffsets}
+                      className="inline"
+                    />
+                  </span>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between items-center pt-1 border-t border-[var(--color-border)]">
+              <span className="font-medium">Total Discounts</span>
+              <span className="text-lg font-semibold text-[var(--color-success)]">
+                −
+                <CurrencyDisplay
+                  amount={effectiveTotal}
+                  className="inline"
+                />
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -15,7 +15,7 @@ export type DiscountCalculationType = z.infer<typeof discountCalculationTypeSche
 export const discountBaseTypeSchema = z.enum(["tuition_only", "full_assessment"]);
 export type DiscountBaseType = z.infer<typeof discountBaseTypeSchema>;
 
-export const discountRequestStatusSchema = z.enum(["pending", "approved", "rejected", "cancelled"]);
+export const discountRequestStatusSchema = z.enum(["pending", "approved", "rejected", "cancelled", "reversed"]);
 export type DiscountRequestStatus = z.infer<typeof discountRequestStatusSchema>;
 
 // ─── Create Discount Type Schema ──────────────────────────────────────────────
@@ -150,6 +150,18 @@ export type ReverseDiscountFormState = BaseFormState<ReverseDiscountInput> & {
   reversalDiscountId?: string;
 };
 
+// ─── Apply Approved Discount To Existing Assessment Schema ────────────────────
+
+export const applyApprovedDiscountSchema = z.object({
+  discountRequestId: uuidSchema,
+});
+
+export type ApplyApprovedDiscountInput = z.infer<typeof applyApprovedDiscountSchema>;
+export type ApplyApprovedDiscountFormState = BaseFormState<ApplyApprovedDiscountInput> & {
+  studentDiscountId?: string;
+  discountAmount?: number;
+};
+
 // ─── Query/Filter Schemas ─────────────────────────────────────────────────────
 
 export const discountRequestFiltersSchema = z.object({
@@ -207,6 +219,10 @@ export interface DiscountRequestView {
   decisionRemarks: string | null;
   overrideValue: string | null;
   overrideReason: string | null;
+  /** Null until the discount has been applied to an assessment */
+  assessmentId: string | null;
+  /** Whether the parent enrollment already has a finalized assessment */
+  enrollmentHasAssessment: boolean;
 }
 
 /** Applied student discount for display */
@@ -214,6 +230,8 @@ export interface StudentDiscountView {
   id: string;
   studentId: string;
   assessmentId: string;
+  /** Parent enrollment id; used by UI to link back to the enrollment view. */
+  enrollmentId: string;
   discountRequestId: string;
   discountTypeCode: string;
   discountTypeName: string;
@@ -227,4 +245,6 @@ export interface StudentDiscountView {
   reversedAt: Date | null;
   reversedByName: string | null;
   reversalRemarks: string | null;
+  /** True if a replacement request has already been issued for this reversed row. */
+  hasReplacement: boolean;
 }

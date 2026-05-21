@@ -15,6 +15,14 @@ interface DiscountRequestFormProps {
   studentId: string;
   enrollmentId: string;
   discountTypes: DiscountTypeView[];
+  /**
+   * Pre-select the discount type whose `code` matches this value. Used by the
+   * post-reversal "Request replacement" deep link so the registrar lands on
+   * the form with the right type already chosen.
+   */
+  initialDiscountTypeCode?: string;
+  /** Optional default for the reason textbox (e.g., "Replacement for ..."). */
+  initialRequestReason?: string;
   /** Called after successful submission */
   onSuccess?: () => void;
   /** Called when user cancels */
@@ -25,11 +33,22 @@ export default function DiscountRequestForm({
   studentId,
   enrollmentId,
   discountTypes,
+  initialDiscountTypeCode,
+  initialRequestReason,
   onSuccess,
   onCancel,
 }: DiscountRequestFormProps) {
-  const [selectedTypeId, setSelectedTypeId] = useState<string>("");
-  const [requestReason, setRequestReason] = useState<string>("");
+  const initialType = initialDiscountTypeCode
+    ? discountTypes.find(
+        (t) => t.isActive && t.code === initialDiscountTypeCode
+      )
+    : undefined;
+  const [selectedTypeId, setSelectedTypeId] = useState<string>(
+    initialType?.id ?? ""
+  );
+  const [requestReason, setRequestReason] = useState<string>(
+    initialRequestReason ?? ""
+  );
 
   const initialState: CreateDiscountRequestFormState = {};
   const [state, action, pending] = useActionState(

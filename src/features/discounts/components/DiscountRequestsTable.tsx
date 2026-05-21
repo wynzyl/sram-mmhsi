@@ -5,11 +5,13 @@ import {
   approveDiscountRequestAction,
   rejectDiscountRequestAction,
   bulkApproveDiscountsAction,
+  applyApprovedDiscountToExistingAssessment,
 } from "../discounts.actions";
 import type {
   ApproveDiscountRequestFormState,
   RejectDiscountRequestFormState,
   BulkApproveDiscountsFormState,
+  ApplyApprovedDiscountFormState,
   DiscountRequestView,
 } from "../discounts.schema";
 import { DataTable } from "@/components/shared/DataTable";
@@ -55,6 +57,12 @@ export default function DiscountRequestsTable({
   const [bulkState, bulkAction, bulkPending] = useActionState(
     bulkApproveDiscountsAction,
     initialBulkState
+  );
+
+  const initialApplyState: ApplyApprovedDiscountFormState = {};
+  const [applyState, applyAction, applyPending] = useActionState(
+    applyApprovedDiscountToExistingAssessment,
+    initialApplyState
   );
 
   const toggleSelection = (id: string) => {
@@ -281,24 +289,61 @@ export default function DiscountRequestsTable({
             );
           }
 
-          // Default action buttons
+          // Approved-but-unapplied row (post-reversal replacement awaiting
+          // attachment to its parent assessment): show "Apply to Assessment".
+          if (
+            request.status === "approved" &&
+            !request.assessmentId &&
+            request.enrollmentHasAssessment
+          ) {
+            return (
+              <form action={applyAction} className="flex">
+                <input
+                  type="hidden"
+                  name="discountRequestId"
+                  value={request.id}
+                />
+                <Button
+                  type="submit"
+                  variant="success"
+                  size="sm"
+                  loading={applyPending}
+                >
+                  Apply to Assessment
+                </Button>
+              </form>
+            );
+          }
+
+          // Pending row: default approve/reject buttons.
+          if (request.status === "pending") {
+            return (
+              <div className="flex gap-2">
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={() => setApprovingId(request.id)}
+                >
+                  Approve
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => setRejectingId(request.id)}
+                >
+                  Reject
+                </Button>
+              </div>
+            );
+          }
+
+          // Terminal states (rejected, cancelled, reversed, applied) — read-only.
           return (
-            <div className="flex gap-2">
-              <Button
-                variant="success"
-                size="sm"
-                onClick={() => setApprovingId(request.id)}
-              >
-                Approve
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => setRejectingId(request.id)}
-              >
-                Reject
-              </Button>
-            </div>
+            <span className="text-xs text-[var(--color-text-muted)]">
+              {request.status === "approved" && request.assessmentId
+                ? "Applied"
+                : request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+            </span>
           );
         },
       },
@@ -314,6 +359,8 @@ export default function DiscountRequestsTable({
       approvePending,
       rejectAction,
       rejectPending,
+      applyAction,
+      applyPending,
     ]
   );
 
@@ -337,6 +384,7 @@ export default function DiscountRequestsTable({
         <FormStateAlert state={approveState} />
         <FormStateAlert state={rejectState} />
         <FormStateAlert state={bulkState} />
+        <FormStateAlert state={applyState} />
       </div>
 
       {/* Bulk actions bar */}
