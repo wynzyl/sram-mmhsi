@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   discountTypes,
@@ -450,6 +451,8 @@ export async function createDiscountRequestAction(
 
     revalidatePath("/staff/registrar/enrollments");
     revalidatePath("/staff/finance/discount-requests");
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
+    invalidateTag(CACHE_TAGS.ASSESSMENTS);
     return {
       success: true,
       message: "Discount request submitted for approval.",
@@ -547,6 +550,7 @@ export async function approveDiscountRequestAction(
 
     revalidatePath("/staff/finance/discount-requests");
     revalidatePath("/staff/registrar/enrollments");
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return {
       success: true,
       message: `Discount "${request.discountTypeName}" approved successfully.`,
@@ -628,6 +632,7 @@ export async function rejectDiscountRequestAction(
 
     revalidatePath("/staff/finance/discount-requests");
     revalidatePath("/staff/registrar/enrollments");
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return { success: true, message: "Discount request rejected." };
   } catch (error) {
     logger.error("[discounts] Failed to reject discount request", { error });
@@ -1016,6 +1021,8 @@ export async function reverseDiscountAction(
 
       revalidatePath("/staff/finance/assessments");
       revalidatePath("/staff/registrar/enrollments");
+      invalidateTag(CACHE_TAGS.ASSESSMENTS);
+      invalidateTag(CACHE_TAGS.DASHBOARD);
       return {
         success: true,
         message: `Discount "${appliedDiscount.discountTypeName}" reversed successfully.`,
@@ -1313,6 +1320,8 @@ export async function applyApprovedDiscountToExistingAssessment(
       revalidatePath("/staff/finance/discount-requests");
       revalidatePath("/staff/finance/assessments");
       revalidatePath("/staff/registrar/enrollments");
+      invalidateTag(CACHE_TAGS.ASSESSMENTS);
+      invalidateTag(CACHE_TAGS.DASHBOARD);
 
       return {
         success: true,

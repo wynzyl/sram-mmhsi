@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   receiptBooklets,
@@ -124,6 +125,7 @@ export async function createBookletAction(
     }, { throwOnFail: true });
 
     revalidatePath("/staff/finance/booklets");
+    invalidateTag(CACHE_TAGS.BOOKLETS);
     return { success: true, message: "Receipt booklet created successfully." };
   } catch (error) {
     logger.error("[cashier] Failed to create booklet", { error });
@@ -327,6 +329,10 @@ export async function postPaymentAction(
 
     revalidatePath(`/staff/assessments/${assessmentId}`);
     revalidatePath("/staff/finance/invoices");
+    invalidateTag(CACHE_TAGS.PAYMENTS);
+    invalidateTag(CACHE_TAGS.DASHBOARD);
+    invalidateTag(CACHE_TAGS.ASSESSMENTS);
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return { success: true, message: `Payment posted successfully. OR Number: ${orNumberToAssign}` };
   } catch (error: unknown) {
     logger.error("[cashier] Failed to post payment", { error: String(error) });
@@ -453,6 +459,9 @@ export async function voidPaymentAction(
       revalidatePath(`/staff/assessments/${link.assessmentId}`);
     }
     revalidatePath("/staff/assessments");
+    invalidateTag(CACHE_TAGS.PAYMENTS);
+    invalidateTag(CACHE_TAGS.DASHBOARD);
+    invalidateTag(CACHE_TAGS.ASSESSMENTS);
 
     return { success: true, message: "Payment voided successfully." };
   } catch (error: any) {

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import { schoolYears, enrollments, registrations } from "@/lib/db/schema";
 import { eq, and, ilike, isNull, sql } from "drizzle-orm";
@@ -102,6 +103,8 @@ export async function createSchoolYearAction(
     });
 
     revalidatePath("/staff/school-years");
+    invalidateTag(CACHE_TAGS.SCHOOL_YEARS);
+    invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, schoolYearId: newSchoolYear.id };
   } catch (err) {
@@ -223,6 +226,8 @@ export async function updateSchoolYearAction(
 
     revalidatePath("/staff/school-years");
     revalidatePath(`/staff/school-years/${schoolYearId}/edit`);
+    invalidateTag(CACHE_TAGS.SCHOOL_YEARS);
+    invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true };
   } catch (err) {
@@ -315,6 +320,8 @@ export async function toggleSchoolYearStatusAction(
     });
 
     revalidatePath("/staff/school-years");
+    invalidateTag(CACHE_TAGS.SCHOOL_YEARS);
+    invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true };
   } catch (err) {
@@ -421,6 +428,7 @@ export async function deleteSchoolYearAction(
     });
 
     revalidatePath("/staff/school-years");
+    invalidateTag(CACHE_TAGS.SCHOOL_YEARS);
 
     return { success: true };
   } catch (err) {

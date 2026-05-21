@@ -3,6 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { and, desc, eq, gt, gte, isNull, lt, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
   assessments,
   enrollments,
@@ -214,14 +215,14 @@ async function _getAdminDashboardMetricsUncached(): Promise<AdminDashboardMetric
 
 /**
  * Get admin dashboard metrics with caching.
- * Cache is revalidated every 15 minutes to balance freshness and performance.
- * Cache can be manually invalidated using revalidateTag('admin-dashboard').
+ * Cache is revalidated every 60 seconds to ensure financial data freshness.
+ * Cache can be manually invalidated using revalidateTag('dashboard').
  */
 export const getAdminDashboardMetrics = unstable_cache(
   _getAdminDashboardMetricsUncached,
   ['admin-dashboard-metrics'],
   {
-    revalidate: 900, // 15 minutes
-    tags: ['admin-dashboard', 'enrollments', 'payments'],
+    revalidate: 60, // 60 seconds - reduced from 15 min for financial accuracy
+    tags: [CACHE_TAGS.DASHBOARD, CACHE_TAGS.ENROLLMENTS, CACHE_TAGS.PAYMENTS],
   }
 );

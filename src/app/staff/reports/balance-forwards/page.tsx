@@ -15,6 +15,7 @@ interface PageProps {
     startDate?: string;
     endDate?: string;
     schoolYearId?: string;
+    page?: string;
   }>;
 }
 
@@ -50,13 +51,17 @@ export default async function BalanceForwardsReportPage({
   endDate.setHours(23, 59, 59, 999);
 
   const schoolYearId = params.schoolYearId || undefined;
+  const page = parseInt(params.page || "1", 10) || 1;
 
   // Fetch data
-  const [transfers, summary, schoolYears] = await Promise.all([
-    getBfxTransfersReport({ startDate, endDate, schoolYearId }),
+  const [transfersResult, summary, schoolYears] = await Promise.all([
+    getBfxTransfersReport({ startDate, endDate, schoolYearId, page, pageSize: 50 }),
     getBfxSummary({ startDate, endDate, schoolYearId }),
     getSchoolYearsForBfxReport(),
   ]);
+
+  const { rows: transfers, totalCount } = transfersResult;
+  const totalPages = Math.ceil(totalCount / 50);
 
   return (
     <div className="space-y-6">
@@ -120,7 +125,35 @@ export default async function BalanceForwardsReportPage({
           </p>
         </div>
       ) : (
-        <BfxReportTable data={transfers} />
+        <>
+          <BfxReportTable data={transfers} />
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+              <p className="text-sm text-[var(--color-text-muted)]">
+                Showing {(page - 1) * 50 + 1} - {Math.min(page * 50, totalCount)} of {totalCount} transfers
+              </p>
+              <div className="flex gap-2">
+                {page > 1 && (
+                  <a
+                    href={`?startDate=${params.startDate || ""}&endDate=${params.endDate || ""}&schoolYearId=${params.schoolYearId || ""}&page=${page - 1}`}
+                    className="px-3 py-1 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-surface-2)]"
+                  >
+                    Previous
+                  </a>
+                )}
+                {page < totalPages && (
+                  <a
+                    href={`?startDate=${params.startDate || ""}&endDate=${params.endDate || ""}&schoolYearId=${params.schoolYearId || ""}&page=${page + 1}`}
+                    className="px-3 py-1 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-surface-2)]"
+                  >
+                    Next
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

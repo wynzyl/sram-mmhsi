@@ -45,6 +45,12 @@ export type CashierQueueData = {
   queue: CashierQueueRow[];
   stats: CashierStats;
   recentCollections: RecentCollection[];
+  queueTotalCount: number;
+};
+
+export type CashierQueueParams = {
+  page?: number;
+  pageSize?: number;
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -53,12 +59,21 @@ export type CashierQueueData = {
 
 /**
  * Fetch all data needed for the cashier queue page.
+ * Includes pagination to prevent memory issues with large datasets.
+ * @param params.page - Page number (1-indexed), defaults to 1
+ * @param params.pageSize - Number of items per page, defaults to 50, max 100
  */
-export async function fetchCashierQueueData(): Promise<CashierQueueData> {
+export async function fetchCashierQueueData(
+  params: CashierQueueParams = {}
+): Promise<CashierQueueData> {
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
+  const offset = (page - 1) * pageSize;
   const [
     todayTotalRow,
     totalCollectiblesRow,
     studentAssessedRow,
+    queueCountRow,
     rows,
     recentCollections,
   ] = await Promise.all([
@@ -99,7 +114,21 @@ export async function fetchCashierQueueData(): Promise<CashierQueueData> {
       .where(sql`${assessments.billingStatus} != 'cancelled'`)
       .then((r) => r[0]),
 
-    // Queue of pending payments
+    // Count of outstanding assessments for pagination
+    db
+      .select({
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(assessments)
+      .where(
+        and(
+          eq(assessments.billingStatus, "outstanding"),
+          sql`${assessments.balance}::numeric > 0`
+        )
+      )
+      .then((r) => r[0]),
+
+    // Queue of pending payments (paginated)
     db
       .select({
         assessmentId: assessments.id,
@@ -125,7 +154,9 @@ export async function fetchCashierQueueData(): Promise<CashierQueueData> {
           sql`${assessments.balance}::numeric > 0`
         )
       )
-      .orderBy(desc(assessments.updatedAt), desc(assessments.createdAt)),
+      .orderBy(desc(assessments.updatedAt), desc(assessments.createdAt))
+      .limit(pageSize)
+      .offset(offset),
 
     // Recent collections today
     db
@@ -149,6 +180,8 @@ export async function fetchCashierQueueData(): Promise<CashierQueueData> {
       .limit(20),
   ]);
 
+  const queueTotalCount = Number(queueCountRow?.count ?? 0);
+
   const queue: CashierQueueRow[] = rows.map((r) => ({
     assessmentId: r.assessmentId,
     studentName: `${r.studentLastName}, ${r.studentFirstName}`,
@@ -162,7 +195,7 @@ export async function fetchCashierQueueData(): Promise<CashierQueueData> {
 
   const stats: CashierStats = {
     totalCollectedToday: Number(todayTotalRow?.total ?? 0),
-    pendingPaymentsCount: queue.length,
+    pendingPaymentsCount: queueTotalCount, // Use total count, not page count
     studentsAssessed: Number(studentAssessedRow?.count ?? 0),
     totalCollectibles: Number(totalCollectiblesRow?.total ?? 0),
   };
@@ -182,5 +215,6 @@ export async function fetchCashierQueueData(): Promise<CashierQueueData> {
     queue,
     stats,
     recentCollections: formattedRecentCollections,
+    queueTotalCount,
   };
 }

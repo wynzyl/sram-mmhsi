@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   students,
@@ -321,6 +322,9 @@ export async function createStudentAction(
 
     revalidatePath("/staff/students");
     revalidatePath("/staff/registrations");
+    invalidateTag(CACHE_TAGS.STUDENTS);
+    invalidateTag(CACHE_TAGS.REGISTRATIONS);
+    invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, studentId: newStudent.id };
   } catch (err) {
@@ -566,6 +570,7 @@ export async function updateStudentAction(
 
     revalidatePath("/staff/students");
     revalidatePath(`/staff/students/${studentId}`);
+    invalidateTag(CACHE_TAGS.STUDENTS);
     return { success: true };
   } catch (err) {
     const detail = collectPgErrorText(err);
