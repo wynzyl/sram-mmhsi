@@ -15,6 +15,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentLedgerRegister from "@/features/payments/components/AssessmentLedgerRegister";
 import { getPendingVoidRequestsForPayments } from "@/features/payments/void-requests.queries";
+import { getStudentDiscountsByAssessment } from "@/features/discounts";
 
 export async function InternalAssessmentLedgerPage(props: {
   assessmentId: string;
@@ -32,6 +33,7 @@ export async function InternalAssessmentLedgerPage(props: {
     .select({
       id: assessments.id,
       studentId: assessments.studentId,
+      enrollmentId: assessments.enrollmentId,
       totalAmount: assessments.totalAmount,
       totalPaid: assessments.totalPaid,
       balance: assessments.balance,
@@ -90,12 +92,17 @@ export async function InternalAssessmentLedgerPage(props: {
 
   const canPost = hasPermission(session.role, "payments:post");
   const canRequestVoid = hasPermission(session.role, "payments:void_request");
+  const canReverseDiscount = hasPermission(session.role, "discounts:manage");
+  const canRequestDiscount = hasPermission(session.role, "discounts:request");
 
-  // Fetch pending void requests for displayed payments
+  // Fetch pending void requests for displayed payments + applied discounts in parallel
   const paymentIds = paymentRecords.map((p) => p.id);
-  const pendingVoidMap = paymentIds.length > 0
-    ? await getPendingVoidRequestsForPayments(paymentIds)
-    : new Map();
+  const [pendingVoidMap, appliedDiscounts] = await Promise.all([
+    paymentIds.length > 0
+      ? getPendingVoidRequestsForPayments(paymentIds)
+      : Promise.resolve(new Map()),
+    getStudentDiscountsByAssessment(id),
+  ]);
 
   // Convert map to record for serialization
   const pendingVoidByPaymentId: Record<string, {
@@ -175,6 +182,10 @@ export async function InternalAssessmentLedgerPage(props: {
         pendingVoidByPaymentId={pendingVoidByPaymentId}
         currentUserId={session.userId}
         balanceForwardTypeId={balanceForwardType?.id ?? null}
+        enrollmentId={assessment.enrollmentId}
+        appliedDiscounts={appliedDiscounts}
+        canReverseDiscount={canReverseDiscount}
+        canRequestDiscount={canRequestDiscount}
       />
     </div>
   );

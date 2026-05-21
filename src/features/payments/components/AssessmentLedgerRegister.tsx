@@ -8,6 +8,8 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import GenerateInvoiceButton from "@/features/finance/components/invoices/GenerateInvoiceButton";
 import PostPaymentForm from "./PostPaymentForm";
 import PaymentsHistoryTable from "./PaymentsHistoryTable";
+import StudentDiscountsList from "@/features/discounts/components/StudentDiscountsList";
+import type { StudentDiscountView } from "@/features/discounts";
 
 export type LedgerLineItem = {
   id: string;
@@ -75,6 +77,14 @@ export type AssessmentLedgerRegisterProps = {
   /** Current user ID (for cancel button visibility) */
   currentUserId?: string;
   balanceForwardTypeId: string | null;
+  /** Parent enrollment id — backs the "Back to enrollment" link. */
+  enrollmentId: string;
+  /** Applied + reversed discount snapshots for this assessment. */
+  appliedDiscounts: StudentDiscountView[];
+  /** Gates the Reverse Discount button. `discounts:manage` (finance / admin). */
+  canReverseDiscount: boolean;
+  /** Gates the "Request replacement →" deep link. `discounts:request` (registrar / admin). */
+  canRequestDiscount: boolean;
 };
 
 function lineSignedAmount(item: LedgerLineItem): number {
@@ -99,6 +109,10 @@ export default function AssessmentLedgerRegister({
   pendingVoidByPaymentId = {},
   currentUserId,
   balanceForwardTypeId,
+  enrollmentId,
+  appliedDiscounts,
+  canReverseDiscount,
+  canRequestDiscount,
 }: AssessmentLedgerRegisterProps) {
   const router = useRouter();
   const [payOpen, setPayOpen] = useState(false);
@@ -165,6 +179,13 @@ export default function AssessmentLedgerRegister({
               className="ledger-register-student-link"
             >
               Open student record ↗
+            </Link>
+            <span className="ledger-register-meta-sep" aria-hidden>·</span>
+            <Link
+              href={`/staff/enrollments/${enrollmentId}`}
+              className="ledger-register-student-link"
+            >
+              ← Back to enrollment
             </Link>
           </p>
         </div>
@@ -479,6 +500,35 @@ export default function AssessmentLedgerRegister({
           </div>
         </section>
       </div>
+
+      {/* ── Discounts ── */}
+      <section
+        className="ledger-register-section"
+        aria-labelledby="ledger-discounts-heading"
+        style={{ marginTop: "1.5rem" }}
+      >
+        <div className="ledger-register-section-head">
+          <h2 id="ledger-discounts-heading" className="ledger-register-section-title">
+            Discounts
+          </h2>
+          <span
+            style={{
+              fontSize: "11px",
+              color: "var(--color-ops-muted)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {appliedDiscounts.length} record{appliedDiscounts.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+        <div style={{ padding: "1rem" }}>
+          <StudentDiscountsList
+            discounts={appliedDiscounts}
+            canReverse={canReverseDiscount}
+            canRequest={canRequestDiscount}
+          />
+        </div>
+      </section>
 
       {/* ── Payment modal ── */}
       {payOpen && (

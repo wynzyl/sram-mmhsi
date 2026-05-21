@@ -13,6 +13,7 @@ import {
   assessments,
   assessmentItems,
   feeItemTypes,
+  payments,
 } from "@/lib/db/schema";
 import { eq, desc, and, isNull, sql, inArray, or, ilike } from "drizzle-orm";
 import {
@@ -239,6 +240,8 @@ export async function getPendingDiscountRequests(
     decisionRemarks: r.decisionRemarks,
     overrideValue: r.overrideValue,
     overrideReason: r.overrideReason,
+    assessmentId: null, // Pending requests never have an assessment link.
+    enrollmentHasAssessment: false,
   }));
 
   return {
@@ -315,7 +318,101 @@ export async function getDiscountRequestsByEnrollment(
     decisionRemarks: r.decisionRemarks,
     overrideValue: r.overrideValue,
     overrideReason: r.overrideReason,
+    assessmentId: null,
+    enrollmentHasAssessment: false,
   }));
+}
+
+// ─── Discount Request Gate ────────────────────────────────────────────────────
+
+export type DiscountRequestGate =
+  | { allowed: true }
+  | {
+      allowed: false;
+      reason: string;
+      code: "PAYMENT_POSTED" | "DISCOUNT_REVERSED";
+    };
+
+/**
+ * Determines whether a new discount request can be created for the given
+ * enrollment. Single source of truth used by both
+ * `createDiscountRequestAction` (write-time enforcement) and the enrollment
+ * detail page (UI gating).
+ *
+ * Rules:
+ *   1. No assessment yet → allowed. (Pre-assessment path is governed by the
+ *      caller's enrollment.status === 'pending' check.)
+ *   2. Non-voided payment exists on the assessment → blocked (PAYMENT_POSTED).
+ *      Void the payment before requesting a replacement.
+ *   3. A prior discount_requests row has status='reversed' AND any payments
+ *      row exists on the assessment (voided or not) → blocked
+ *      (DISCOUNT_REVERSED). A reversal alone (no payment activity) is treated
+ *      as an admin correction and stays open.
+ *   4. Otherwise → allowed.
+ */
+export async function getDiscountRequestGate(
+  enrollmentId: string
+): Promise<DiscountRequestGate> {
+  const [assessment] = await db
+    .select({ id: assessments.id })
+    .from(assessments)
+    .where(eq(assessments.enrollmentId, enrollmentId))
+    .limit(1);
+
+  if (!assessment) {
+    return { allowed: true };
+  }
+
+  // "Live" = still consuming balance: only pending_confirmation/posted block.
+  // Voided/reversed/reversal/balance_forward payments have already released
+  // their hold on the assessment and must not block a new discount request.
+  const [livePaymentRow, anyPaymentRow, reversedRequestRow] = await Promise.all([
+    db
+      .select({ id: payments.id })
+      .from(payments)
+      .where(
+        and(
+          eq(payments.assessmentId, assessment.id),
+          inArray(payments.status, ["pending_confirmation", "posted"])
+        )
+      )
+      .limit(1),
+    db
+      .select({ id: payments.id })
+      .from(payments)
+      .where(eq(payments.assessmentId, assessment.id))
+      .limit(1),
+    db
+      .select({ id: discountRequests.id })
+      .from(discountRequests)
+      .where(
+        and(
+          eq(discountRequests.enrollmentId, enrollmentId),
+          eq(discountRequests.status, "reversed")
+        )
+      )
+      .limit(1),
+  ]);
+
+  if (livePaymentRow.length > 0) {
+    return {
+      allowed: false,
+      code: "PAYMENT_POSTED",
+      reason:
+        "Cannot request a new discount: a live payment exists on this assessment. Void the payment first.",
+    };
+  }
+
+  if (reversedRequestRow.length > 0 && anyPaymentRow.length > 0) {
+    return {
+      allowed: false,
+      code: "DISCOUNT_REVERSED",
+      reason:
+        "Cannot request a new discount: this assessment has a previously reversed discount and recorded payment activity. Discount changes are locked once payments have been posted against the assessment.",
+    };
+  }
+
+  return { allowed: true };
 }
 
 /**
@@ -404,6 +501,7 @@ export async function getStudentDiscountsByAssessment(
       id: studentDiscounts.id,
       studentId: studentDiscounts.studentId,
       assessmentId: studentDiscounts.assessmentId,
+      enrollmentId: assessments.enrollmentId,
       discountRequestId: studentDiscounts.discountRequestId,
       discountTypeCode: studentDiscounts.discountTypeCode,
       discountTypeName: studentDiscounts.discountTypeName,
@@ -416,9 +514,11 @@ export async function getStudentDiscountsByAssessment(
       appliedByUsername: users.username,
       reversedAt: studentDiscounts.reversedAt,
       reversalRemarks: studentDiscounts.reversalRemarks,
+      replacedByRequestId: studentDiscounts.replacedByRequestId,
     })
     .from(studentDiscounts)
     .innerJoin(users, eq(studentDiscounts.appliedBy, users.id))
+    .innerJoin(assessments, eq(studentDiscounts.assessmentId, assessments.id))
     .where(eq(studentDiscounts.assessmentId, assessmentId))
     .orderBy(studentDiscounts.appliedAt);
 
@@ -426,6 +526,7 @@ export async function getStudentDiscountsByAssessment(
     id: r.id,
     studentId: r.studentId,
     assessmentId: r.assessmentId,
+    enrollmentId: r.enrollmentId,
     discountRequestId: r.discountRequestId,
     discountTypeCode: r.discountTypeCode,
     discountTypeName: r.discountTypeName,
@@ -439,6 +540,7 @@ export async function getStudentDiscountsByAssessment(
     reversedAt: r.reversedAt,
     reversedByName: null, // Would need another join
     reversalRemarks: r.reversalRemarks,
+    hasReplacement: r.replacedByRequestId !== null,
   }));
 }
 
@@ -517,6 +619,8 @@ export async function getDiscountRequestsByStudent(
     decisionRemarks: r.decisionRemarks,
     overrideValue: r.overrideValue,
     overrideReason: r.overrideReason,
+    assessmentId: null,
+    enrollmentHasAssessment: false,
   }));
 }
 
@@ -704,10 +808,99 @@ export async function getDiscountRequestsHistory(
     decisionRemarks: r.decisionRemarks,
     overrideValue: r.overrideValue,
     overrideReason: r.overrideReason,
+    assessmentId: null,
+    enrollmentHasAssessment: false,
   }));
 
   return {
     data,
     pagination: calculatePagination(page, pageSize, totalRecords),
   };
+}
+
+/**
+ * Get approved discount requests that have not been applied yet AND whose
+ * parent enrollment already has a finalized assessment.
+ *
+ * This is the population that surfaces the "Apply to Assessment" action in
+ * the finance UI — typically used after a Void OR + Reverse Discount cycle
+ * where a replacement request was approved but never re-attached.
+ */
+export async function getApprovedUnappliedDiscountRequests(): Promise<
+  DiscountRequestView[]
+> {
+  const rows = await db
+    .select({
+      id: discountRequests.id,
+      studentId: discountRequests.studentId,
+      studentFirstName: students.firstName,
+      studentLastName: students.lastName,
+      studentRef: students.referenceNumber,
+      enrollmentId: discountRequests.enrollmentId,
+      gradeLevelName: gradeLevels.name,
+      schoolYearLabel: schoolYears.label,
+      discountTypeId: discountRequests.discountTypeId,
+      discountTypeCode: discountTypes.code,
+      discountTypeName: discountTypes.name,
+      calculationType: discountTypes.calculationType,
+      baseType: discountTypes.baseType,
+      defaultValue: discountTypes.defaultValue,
+      requestReason: discountRequests.requestReason,
+      status: discountRequests.status,
+      requestedBy: discountRequests.requestedBy,
+      requestedByName: users.username,
+      requestedAt: discountRequests.requestedAt,
+      decidedBy: discountRequests.decidedBy,
+      decidedAt: discountRequests.decidedAt,
+      decisionRemarks: discountRequests.decisionRemarks,
+      overrideValue: discountRequests.overrideValue,
+      overrideReason: discountRequests.overrideReason,
+      parentAssessmentId: assessments.id,
+    })
+    .from(discountRequests)
+    .innerJoin(students, eq(discountRequests.studentId, students.id))
+    .innerJoin(enrollments, eq(discountRequests.enrollmentId, enrollments.id))
+    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .innerJoin(discountTypes, eq(discountRequests.discountTypeId, discountTypes.id))
+    .innerJoin(users, eq(discountRequests.requestedBy, users.id))
+    .innerJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
+    .where(
+      and(
+        eq(discountRequests.status, "approved"),
+        isNull(discountRequests.assessmentId),
+        isNull(assessments.transferredAt),
+        isNull(assessments.cancelledAt)
+      )
+    )
+    .orderBy(desc(discountRequests.decidedAt));
+
+  return rows.map((r) => ({
+    id: r.id,
+    studentId: r.studentId,
+    studentName: `${r.studentLastName}, ${r.studentFirstName}`,
+    studentRef: r.studentRef,
+    enrollmentId: r.enrollmentId,
+    gradeLevelName: r.gradeLevelName,
+    schoolYearLabel: r.schoolYearLabel,
+    discountTypeId: r.discountTypeId,
+    discountTypeCode: r.discountTypeCode,
+    discountTypeName: r.discountTypeName,
+    calculationType: r.calculationType,
+    baseType: r.baseType,
+    defaultValue: r.defaultValue,
+    requestReason: r.requestReason,
+    status: r.status,
+    requestedBy: r.requestedBy,
+    requestedByName: r.requestedByName,
+    requestedAt: r.requestedAt,
+    decidedBy: r.decidedBy,
+    decidedByName: null,
+    decidedAt: r.decidedAt,
+    decisionRemarks: r.decisionRemarks,
+    overrideValue: r.overrideValue,
+    overrideReason: r.overrideReason,
+    assessmentId: null, // null = unapplied; parent assessment exists separately.
+    enrollmentHasAssessment: true,
+  }));
 }
