@@ -322,8 +322,7 @@ export async function createStudentAction(
 
     revalidatePath("/staff/students");
     revalidatePath("/staff/registrations");
-    invalidateTag(CACHE_TAGS.STUDENTS);
-    invalidateTag(CACHE_TAGS.REGISTRATIONS);
+    // Student onboarding writes an approved registration row -> feeds dashboard KPI.
     invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, studentId: newStudent.id };
@@ -570,7 +569,6 @@ export async function updateStudentAction(
 
     revalidatePath("/staff/students");
     revalidatePath(`/staff/students/${studentId}`);
-    invalidateTag(CACHE_TAGS.STUDENTS);
     return { success: true };
   } catch (err) {
     const detail = collectPgErrorText(err);

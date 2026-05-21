@@ -318,6 +318,8 @@ export async function confirmEnrollmentAction(
       revalidatePath("/staff/registrations");
     }
     invalidateTag(CACHE_TAGS.ENROLLMENTS); // PERFORMANCE: Invalidate enrollment counts cache
+    // Confirmation creates a new enrollment row — dashboard headcount KPIs change.
+    invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, enrollmentId: newEnrollmentId };
   } catch (err) {
