@@ -659,21 +659,33 @@ export async function getAssessmentItemsWithFeeTypes(
 // ─── Dashboard / Summary Queries ──────────────────────────────────────────────
 
 /**
- * Get discount request counts by status
+ * Get discount request counts by status, optionally filtered by school year
  */
-export async function getDiscountRequestCounts(): Promise<{
+export async function getDiscountRequestCounts(schoolYearId?: string): Promise<{
   pending: number;
   approved: number;
   rejected: number;
   total: number;
 }> {
-  const rows = await db
-    .select({
-      status: discountRequests.status,
-      count: sql<number>`COUNT(*)`,
-    })
-    .from(discountRequests)
-    .groupBy(discountRequests.status);
+  const baseQuery = schoolYearId
+    ? db
+        .select({
+          status: discountRequests.status,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(discountRequests)
+        .innerJoin(enrollments, eq(discountRequests.enrollmentId, enrollments.id))
+        .where(eq(enrollments.schoolYearId, schoolYearId))
+        .groupBy(discountRequests.status)
+    : db
+        .select({
+          status: discountRequests.status,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(discountRequests)
+        .groupBy(discountRequests.status);
+
+  const rows = await baseQuery;
 
   const counts = {
     pending: 0,
