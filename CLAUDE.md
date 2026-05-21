@@ -588,12 +588,19 @@ const band = assessment.enrollment.gradeLevel.assessmentBand;
 
 ### Reference Number Generation
 
-Use `src/lib/utils/reference.ts` for generating student reference numbers:
+Student reference numbers use the format `SRAMS-YYYY-NNNNN` where:
+- `YYYY` = Year of registration
+- `NNNNN` = Global incremental sequence (does NOT reset each year)
+
+The sequence is managed by PostgreSQL `student_ref_seq` for concurrency safety.
 
 ```typescript
-import { generateStudentReference } from "@/lib/utils/reference";
+import { generateStudentRef } from "@/lib/utils/reference";
 
-const referenceNumber = await generateStudentReference(); // e.g., "STU-2024-00001"
+// In students.actions.ts:
+const seq = await getNextStudentSequence(); // Uses nextval('student_ref_seq')
+const referenceNumber = generateStudentRef(new Date().getFullYear(), seq);
+// e.g., "SRAMS-2026-00001", "SRAMS-2026-00002", "SRAMS-2027-00100"
 ```
 
 ### Currency Formatting
