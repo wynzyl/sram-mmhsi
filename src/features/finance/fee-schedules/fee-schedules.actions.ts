@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   feeSchedules,
@@ -110,6 +111,7 @@ export async function createFeeScheduleAction(
     }, { throwOnFail: true });
 
     revalidatePath("/staff/finance/fee-schedules");
+    invalidateTag(CACHE_TAGS.FEE_SCHEDULES);
     return { success: true, message: "Fee schedule created successfully." };
   } catch (error) {
     logger.error("[finance] Failed to create fee schedule", { error });
@@ -200,6 +202,7 @@ export async function updateFeeScheduleAction(
 
     revalidatePath("/staff/finance/fee-schedules");
     revalidatePath(`/staff/finance/fee-schedules/${id}`);
+    invalidateTag(CACHE_TAGS.FEE_SCHEDULES);
     return { success: true, message: "Fee schedule updated successfully." };
   } catch (error) {
     logger.error("[finance] Failed to update fee schedule", { error });
@@ -254,6 +257,7 @@ export async function addFeeScheduleItemAction(
     }, { throwOnFail: true });
 
     revalidatePath(`/staff/finance/fee-schedules/${parsed.data.feeScheduleId}`);
+    invalidateTag(CACHE_TAGS.FEE_SCHEDULES);
     return { success: true, message: "Fee item added successfully." };
   } catch (error) {
     logger.error("[finance] Failed to add fee schedule item", { error });
@@ -309,6 +313,7 @@ export async function removeFeeScheduleItemAction(
     }, { throwOnFail: true });
 
     revalidatePath(`/staff/finance/fee-schedules/${feeScheduleId}`);
+    invalidateTag(CACHE_TAGS.FEE_SCHEDULES);
     return { success: true, message: "Fee item removed successfully." };
   } catch (error) {
     const cause =

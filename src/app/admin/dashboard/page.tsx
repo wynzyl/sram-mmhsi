@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { getAdminDashboardMetrics } from "@/lib/queries/admin-dashboard";
 import { formatCurrency } from "@/lib/utils/currency";
 import { StatCard } from "@/components/ui/stat-card";
+import { SkeletonStatCard } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";

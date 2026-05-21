@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   enrollments,
@@ -470,6 +471,9 @@ export async function createAssessmentFromEnrollmentAction(
     if (newAssessmentId) {
       revalidatePath(`/staff/assessments/${newAssessmentId}`);
     }
+    invalidateTag(CACHE_TAGS.ASSESSMENTS);
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
+    invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, assessmentId: newAssessmentId };
   } catch (err) {
@@ -683,6 +687,8 @@ export async function reverseBalanceTransferAction(
 
     revalidatePath("/staff/assessments");
     revalidatePath(`/staff/assessments/${assessmentId}`);
+    invalidateTag(CACHE_TAGS.ASSESSMENTS);
+    invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return {
       success: true,
