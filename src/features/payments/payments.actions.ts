@@ -9,7 +9,7 @@ import {
   enrollments,
   invoices,
 } from "@/lib/db/schema";
-import { eq, and, lte, gte, ne, sql } from "drizzle-orm";
+import { eq, and, lte, gte, ne } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -27,10 +27,14 @@ import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { assertEnrollmentAllowsPayment } from "@/lib/utils/enrollment-payment";
+import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
 import {
-  assessmentBillingStatusFromState,
-  ASSESSMENT_BALANCE_FULLY_PAID_EPSILON,
-} from "@/lib/utils/assessment-billing";
+  lockReceiptBooklet,
+  lockPayment,
+  lockAssessment,
+  lockEnrollment,
+} from "@/lib/utils/tx-helpers";
+import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -210,27 +214,15 @@ export async function postPaymentAction(
       }
 
       // 2. Fetch Selected Active Booklet (locking it for update to prevent race conditions on OR number)
-      // Note: Drizzle ORM does not support row-level locking natively in `query` builder yet without raw SQL,
-      // but for V1 we do a basic select/update. 
-      const activeBookletRows = await tx.execute(
-        sql`SELECT * FROM "receipt_booklets" WHERE "id" = ${bookletId} AND "status" = 'active' FOR UPDATE`
-      );
+      const activeBooklet = await lockReceiptBooklet(tx, bookletId, "active");
 
-      // In postgres driver, execute returns an array directly, not an object with a .rows property.
-      if (!Array.isArray(activeBookletRows) || activeBookletRows.length === 0) {
+      if (!activeBooklet) {
         throw new Error("The selected receipt booklet is either invalid or no longer active. Please refresh and select another.");
       }
 
-      const activeBooklet = activeBookletRows[0] as {
-        id: string;
-        prefix: string;
-        series: string;
-        next_number: number;
-        end_number: number;
-      };
       bookletIdToAssign = activeBooklet.id;
-      const currentNext = Number(activeBooklet.next_number);
-      const endNum = Number(activeBooklet.end_number);
+      const currentNext = activeBooklet.nextNumber;
+      const endNum = activeBooklet.endNumber;
       const bookletPrefix = String(activeBooklet.prefix ?? "").trim() || String(activeBooklet.series ?? "").trim();
 
       orNumberToAssign = formatStoredOrNumber(bookletPrefix, currentNext);
@@ -270,22 +262,14 @@ export async function postPaymentAction(
         .returning({ id: payments.id });
 
       // 5. Update Assessment Balance
-      const newTotalPaid = Number(assessment.totalPaid) + amount;
-      const newBalance = Number(assessment.balance) - amount;
-
-      await tx
-        .update(assessments)
-        .set({
-          totalPaid: String(newTotalPaid),
-          balance: String(newBalance),
-          billingStatus: assessmentBillingStatusFromState({
-            balance: newBalance,
-            cancelledAt: assessment.cancelledAt,
-          }),
-          updatedBy: session.userId,
-          updatedAt: new Date(),
-        })
-        .where(eq(assessments.id, assessmentId));
+      const { newBalance } = await applyAssessmentBalanceDelta(
+        tx,
+        assessmentId,
+        amount, // positive = payment
+        assessment.cancelledAt,
+        assessment.transferredAt,
+        session.userId
+      );
 
       // 5b. Auto-settle linked invoice if balance reaches zero
       if (newBalance <= ASSESSMENT_BALANCE_FULLY_PAID_EPSILON) {
@@ -307,31 +291,26 @@ export async function postPaymentAction(
 
       // 6. Check and Update Enrollment Status
       if (assessment.enrollmentId) {
-        const enrollmentRows = await tx.execute(
-          sql`SELECT "status" FROM "enrollments" WHERE "id" = ${assessment.enrollmentId} FOR UPDATE`
-        );
-        if (Array.isArray(enrollmentRows) && enrollmentRows.length > 0) {
-          const enrollment = enrollmentRows[0] as any;
-          if (enrollment.status === "assessed") {
-            await tx
-              .update(enrollments)
-              .set({
-                status: "enrolled",
-                enrolledAt: new Date(),
-                updatedBy: session.userId,
-                updatedAt: new Date(),
-              })
-              .where(eq(enrollments.id, assessment.enrollmentId));
-            
-            await logAudit({
-              actor: session.userId,
-              actorRole: session.role,
-              action: "enrollment_enrolled_via_payment",
-              targetEntity: "enrollments",
-              targetId: assessment.enrollmentId,
-              context: `Payment posted: OR ${orNumberToAssign}`,
-            }, { throwOnFail: true });
-          }
+        const enrollment = await lockEnrollment(tx, assessment.enrollmentId);
+        if (enrollment && enrollment.status === "assessed") {
+          await tx
+            .update(enrollments)
+            .set({
+              status: "enrolled",
+              enrolledAt: new Date(),
+              updatedBy: session.userId,
+              updatedAt: new Date(),
+            })
+            .where(eq(enrollments.id, assessment.enrollmentId));
+
+          await logAudit({
+            actor: session.userId,
+            actorRole: session.role,
+            action: "enrollment_enrolled_via_payment",
+            targetEntity: "enrollments",
+            targetId: assessment.enrollmentId,
+            context: `Payment posted: OR ${orNumberToAssign}`,
+          }, { throwOnFail: true });
         }
       }
 
@@ -406,15 +385,11 @@ export async function voidPaymentAction(
   try {
     await db.transaction(async (tx) => {
       // 1. Fetch Payment (FOR UPDATE to prevent concurrent voiding)
-      const paymentRows = await tx.execute(
-        sql`SELECT * FROM "payments" WHERE "id" = ${paymentId} FOR UPDATE`
-      );
+      const payment = await lockPayment(tx, paymentId);
 
-      if (!Array.isArray(paymentRows) || paymentRows.length === 0) {
+      if (!payment) {
         throw new Error("Payment not found.");
       }
-
-      const payment = paymentRows[0] as any;
 
       if (payment.status === "voided") {
         throw new Error("Payment is already voided.");
@@ -435,15 +410,11 @@ export async function voidPaymentAction(
         .where(eq(payments.id, paymentId));
 
       // 3. Revert Assessment Balance
-      if (payment.assessment_id) {
-        const assessmentRows = await tx.execute(
-          sql`SELECT * FROM "assessments" WHERE "id" = ${payment.assessment_id} FOR UPDATE`
-        );
-        if (Array.isArray(assessmentRows) && assessmentRows.length > 0) {
-          const assessment = assessmentRows[0] as any;
-
+      if (payment.assessmentId) {
+        const assessment = await lockAssessment(tx, payment.assessmentId);
+        if (assessment) {
           // Block voiding payments on transferred assessments
-          if (assessment.transferred_at != null) {
+          if (assessment.transferredAt != null) {
             throw new Error(
               "VOID_BLOCKED: This assessment's balance was transferred to a newer school year. Voiding this payment would affect a closed ledger, which is not allowed."
             );
@@ -451,22 +422,15 @@ export async function voidPaymentAction(
 
           const pAmount = Number(payment.amount);
 
-          const newTotalPaid = Number(assessment.total_paid) - pAmount;
-          const newBalance = Number(assessment.balance) + pAmount;
-
-          await tx
-            .update(assessments)
-            .set({
-              totalPaid: String(newTotalPaid),
-              balance: String(newBalance),
-              billingStatus: assessmentBillingStatusFromState({
-                balance: newBalance,
-                cancelledAt: assessment.cancelled_at ?? assessment.cancelledAt,
-              }),
-              updatedBy: session.userId,
-              updatedAt: new Date(),
-            })
-            .where(eq(assessments.id, payment.assessment_id));
+          // Apply negative delta (reversal)
+          await applyAssessmentBalanceDelta(
+            tx,
+            payment.assessmentId,
+            -pAmount, // negative = reversal
+            assessment.cancelledAt,
+            assessment.transferredAt,
+            session.userId
+          );
         }
       }
 
