@@ -364,8 +364,9 @@ export type DiscountRequestGate =
  * detail page (UI gating).
  *
  * Rules:
- *   1. No assessment yet → allowed. (Pre-assessment path is governed by the
- *      caller's enrollment.status === 'pending' check.)
+ *   1. No active assessment yet (cancelled assessments don't count) → allowed.
+ *      (Pre-assessment path is governed by the caller's
+ *      enrollment.status === 'pending' check.)
  *   2. Non-voided payment exists on the assessment → blocked (PAYMENT_POSTED).
  *      Void the payment before requesting a replacement.
  *   3. A prior discount_requests row has status='reversed' AND any payments
@@ -377,10 +378,16 @@ export type DiscountRequestGate =
 export async function getDiscountRequestGate(
   enrollmentId: string
 ): Promise<DiscountRequestGate> {
+  // Only consider non-cancelled assessments
   const [assessment] = await db
     .select({ id: assessments.id })
     .from(assessments)
-    .where(eq(assessments.enrollmentId, enrollmentId))
+    .where(
+      and(
+        eq(assessments.enrollmentId, enrollmentId),
+        isNull(assessments.cancelledAt)
+      )
+    )
     .limit(1);
 
   if (!assessment) {

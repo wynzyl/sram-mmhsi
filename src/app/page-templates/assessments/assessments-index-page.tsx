@@ -157,6 +157,7 @@ export async function AssessmentsIndexPage(props: {
   const offset = (currentPage - 1) * PAGE_SIZE;
 
   const canCreate = hasPermission(session.role, "assessments:create");
+  const canCancel = hasPermission(session.role, "enrollments:cancel");
 
   // Get total count for pending enrollments
   const pendingCountResult = await db
@@ -243,6 +244,7 @@ export async function AssessmentsIndexPage(props: {
           <PendingAssessmentsQueue
             rows={pendingData}
             canCreate={canCreate}
+            canCancel={canCancel}
             assessmentsBasePath={assessmentsBasePath}
           />
           <AssessmentsPagination

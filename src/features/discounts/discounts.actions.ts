@@ -378,11 +378,16 @@ export async function createDiscountRequestAction(
     };
   }
 
-  // Branch on whether the enrollment already has an assessment.
+  // Branch on whether the enrollment already has an active (non-cancelled) assessment.
   const [existingAssessment] = await db
     .select({ id: assessments.id })
     .from(assessments)
-    .where(eq(assessments.enrollmentId, parsed.data.enrollmentId))
+    .where(
+      and(
+        eq(assessments.enrollmentId, parsed.data.enrollmentId),
+        isNull(assessments.cancelledAt)
+      )
+    )
     .limit(1);
 
   if (existingAssessment) {
@@ -762,15 +767,18 @@ export async function cancelDiscountRequestAction(
     };
   }
 
-  // Get the request
+  // Get the request with enrollment status
   const [request] = await db
     .select({
       id: discountRequests.id,
       status: discountRequests.status,
       enrollmentId: discountRequests.enrollmentId,
+      assessmentId: discountRequests.assessmentId,
       requestedBy: discountRequests.requestedBy,
+      enrollmentStatus: enrollments.status,
     })
     .from(discountRequests)
+    .innerJoin(enrollments, eq(discountRequests.enrollmentId, enrollments.id))
     .where(eq(discountRequests.id, parsed.data.discountRequestId))
     .limit(1);
 
@@ -786,7 +794,20 @@ export async function cancelDiscountRequestAction(
     return { message: "You do not have permission to cancel this request." };
   }
 
-  if (request.status !== "pending") {
+  // Allow cancelling:
+  // 1. "pending" requests (normal flow)
+  // 2. "approved" requests that are NOT yet applied to an assessment
+  //    AND the enrollment is still "pending" (assessment was cancelled, user wants to remove discount before reassessing)
+  const canCancelPending = request.status === "pending";
+  const canCancelApprovedUnapplied =
+    request.status === "approved" &&
+    request.assessmentId === null &&
+    request.enrollmentStatus === "pending";
+
+  if (!canCancelPending && !canCancelApprovedUnapplied) {
+    if (request.status === "approved" && request.assessmentId !== null) {
+      return { message: "Cannot cancel a discount that is already applied to an assessment. Reverse the discount instead." };
+    }
     return { message: `Cannot cancel a request that is already ${request.status}.` };
   }
 
