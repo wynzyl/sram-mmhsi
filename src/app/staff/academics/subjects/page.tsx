@@ -5,8 +5,11 @@ import {
   getGradeLevelsForDropdown,
   getSubjectsList,
 } from "@/features/academics/subjects/subjects.queries";
+import { requireSession } from "@/lib/auth/session";
 
 export default async function StaffSubjectManagementPage() {
+  await requireSession();
+
   const [gradeLevelsList, subjectsList] = await Promise.all([
     getGradeLevelsForDropdown(),
     getSubjectsList(),

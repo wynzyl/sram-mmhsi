@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import {
   students,
   enrollments,
+  registrations,
   schoolYears,
   gradeLevels,
   sections,
@@ -348,9 +349,10 @@ export async function getReadyToEnrollStudents(
       )
 
     -- Final paginated output with SQL-level sorting and pagination
+    -- Include student_id as tie-breaker for deterministic pagination
     SELECT *
     FROM combined
-    ORDER BY last_name, first_name
+    ORDER BY last_name, first_name, student_id
     LIMIT ${params.pageSize}
     OFFSET ${offset}
   `);
@@ -1085,9 +1087,10 @@ export async function getReadyToEnrollList(
       )
 
     -- Final paginated output with SQL-level sorting and pagination
+    -- Include student_id as tie-breaker for deterministic pagination
     SELECT *
     FROM combined
-    ORDER BY last_name, first_name
+    ORDER BY last_name, first_name, student_id
     LIMIT ${params.pageSize}
     OFFSET ${offset}
   `);
@@ -1190,23 +1193,23 @@ export async function getReadyToEnrollDetail(
   // First, check if this is a new/transferee (has registration) or old student
   const [registration] = await db
     .select({
-      id: sql`r.id`,
+      id: registrations.id,
       studentRef: students.referenceNumber,
       firstName: students.firstName,
       lastName: students.lastName,
-      studentType: sql`r.student_type`,
-      gradeLevelId: sql`r.grade_level_id`,
+      studentType: registrations.studentType,
+      gradeLevelId: registrations.gradeLevelId,
       gradeName: gradeLevels.name,
-      intakeDocuments: sql`r.intake_documents`,
+      intakeDocuments: registrations.intakeDocuments,
     })
-    .from(sql`registrations r`)
-    .innerJoin(students, eq(students.id, sql`r.student_id`))
-    .innerJoin(gradeLevels, eq(gradeLevels.id, sql`r.grade_level_id`))
+    .from(registrations)
+    .innerJoin(students, eq(students.id, registrations.studentId))
+    .innerJoin(gradeLevels, eq(gradeLevels.id, registrations.gradeLevelId))
     .where(
       and(
-        sql`r.student_id = ${studentId}`,
-        sql`r.school_year_id = ${activeSchoolYearId}`,
-        sql`r.status = 'approved'`
+        eq(registrations.studentId, studentId),
+        eq(registrations.schoolYearId, activeSchoolYearId),
+        eq(registrations.status, 'approved')
       )
     )
     .limit(1);

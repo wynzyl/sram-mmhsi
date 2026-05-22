@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { X, CheckCircle2, AlertCircle, FileText, GraduationCap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +11,9 @@ import {
   fetchReadyToEnrollDetailAction,
 } from "../enrollment-confirmation.actions";
 import { formatCurrency } from "@/lib/utils/currency";
+import { queryKeys } from "@/lib/query/keys";
 import type { ConfirmEnrollmentFormState } from "../enrollments.schema";
-import type { ReadyToEnrollListRow, ReadyToEnrollDetail } from "../enrollments-queue.queries";
+import type { ReadyToEnrollListRow } from "../enrollments-queue.queries";
 
 type EnrollmentConfirmationDrawerProps = {
   student: ReadyToEnrollListRow;
@@ -34,9 +36,6 @@ export default function EnrollmentConfirmationDrawer({
 }: EnrollmentConfirmationDrawerProps) {
   const [state, action, isPending] = useActionState(confirmEnrollmentAction, initialState);
   const [selectedSection, setSelectedSection] = useState<string>("");
-  const [studentDetail, setStudentDetail] = useState<ReadyToEnrollDetail | null>(null);
-  const [isLoadingDetail, startLoadingDetail] = useTransition();
-  const [detailError, setDetailError] = useState<string | null>(null);
 
   useFormToast(state, {
     successMessage: "Enrollment confirmed successfully",
@@ -48,28 +47,25 @@ export default function EnrollmentConfirmationDrawer({
     },
   });
 
-  // Lazy-load full details (including intakeDocuments) when drawer opens
-  useEffect(() => {
-    if (isOpen && student.studentId) {
-      setSelectedSection("");
-      setStudentDetail(null);
-      setDetailError(null);
+  // Only fetch detail for new/transferee students who have intakeDocuments
+  const needsDetail =
+    student.studentType === "new_student" || student.studentType === "transferee";
 
-      // Only fetch detail for new/transferee students who have intakeDocuments
-      const needsDetail = student.studentType === "new_student" || student.studentType === "transferee";
+  const {
+    data: studentDetail,
+    error: detailQueryError,
+    isLoading: isLoadingDetail,
+  } = useQuery({
+    queryKey: queryKeys.enrollments.detail(student.studentId),
+    queryFn: async () => {
+      const result = await fetchReadyToEnrollDetailAction(student.studentId);
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    enabled: isOpen && needsDetail && Boolean(student.studentId),
+  });
 
-      if (needsDetail) {
-        startLoadingDetail(async () => {
-          const result = await fetchReadyToEnrollDetailAction(student.studentId);
-          if (result.success) {
-            setStudentDetail(result.data);
-          } else {
-            setDetailError(result.error);
-          }
-        });
-      }
-    }
-  }, [isOpen, student.studentId, student.studentType]);
+  const detailError = detailQueryError ? detailQueryError.message : null;
 
   if (!isOpen) return null;
 
@@ -203,7 +199,7 @@ export default function EnrollmentConfirmationDrawer({
                       <div key={label} className="flex items-center justify-between text-sm">
                         <span className="text-[var(--color-text)]">{label}</span>
                         {status === "received" && (
-                          <div className="flex items-center gap-1.5 text-green-700">
+                          <div className="flex items-center gap-1.5 text-[var(--color-success)]">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             <span className="text-xs font-medium">Received</span>
                           </div>
@@ -212,7 +208,7 @@ export default function EnrollmentConfirmationDrawer({
                           <span className="text-xs text-[var(--color-text-muted)]">N/A</span>
                         )}
                         {status === "to_follow" && (
-                          <div className="flex items-center gap-1.5 text-amber-600">
+                          <div className="flex items-center gap-1.5 text-[var(--color-warning-700)]">
                             <AlertCircle className="h-3.5 w-3.5" />
                             <span className="text-xs font-medium">To Follow</span>
                           </div>
