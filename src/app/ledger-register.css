@@ -146,6 +146,69 @@
   opacity: 0.95;
 }
 
+.ledger-register-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 38px;
+  padding: 0 0.95rem;
+  background: transparent;
+  color: var(--color-ops-body, #374151);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  border: 1px solid var(--color-ops-line, #d1d5db);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+.ledger-register-btn-secondary:hover {
+  background: color-mix(in srgb, var(--color-ops-line, #d1d5db) 30%, transparent);
+  border-color: var(--color-ops-muted, #9ca3af);
+}
+.ledger-register-btn-secondary:active {
+  transform: translateY(1px);
+}
+.ledger-register-btn-secondary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.ledger-register-btn-secondary svg {
+  opacity: 0.85;
+}
+
+/* Danger variant - for destructive actions */
+.ledger-register-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 38px;
+  padding: 0 0.95rem;
+  background: transparent;
+  color: var(--color-destructive, #dc2626);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  border: 1px solid var(--color-destructive, #dc2626);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.05s ease;
+}
+.ledger-register-btn-danger:hover {
+  background: var(--color-destructive, #dc2626);
+  color: #fff;
+}
+.ledger-register-btn-danger:active {
+  transform: translateY(1px);
+}
+.ledger-register-btn-danger:focus-visible {
+  outline: 2px solid var(--color-destructive, #dc2626);
+  outline-offset: 2px;
+}
+.ledger-register-btn-danger svg {
+  opacity: 0.9;
+}
+
 /* ── KPI tiles + progress bar ────────────────────────────── */
 .ledger-register-tiles-wrap {
   grid-area: tiles;

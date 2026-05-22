@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type {
   DiscountRequestView,
   DiscountTypeView,
 } from "../discounts.schema";
+import { cancelDiscountRequestAction } from "../discounts.actions";
 import { Badge } from "@/components/ui/badge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useFormToast } from "@/hooks/useFormToast";
 import DiscountRequestForm from "./DiscountRequestForm";
 
 interface EnrollmentDiscountsSectionProps {
   studentId: string;
   enrollmentId: string;
+  enrollmentStatus: string;
   discountRequests: DiscountRequestView[];
   discountTypes: DiscountTypeView[];
   /** Whether the current user can request discounts */
@@ -29,6 +32,7 @@ interface EnrollmentDiscountsSectionProps {
 export default function EnrollmentDiscountsSection({
   studentId,
   enrollmentId,
+  enrollmentStatus,
   discountRequests,
   discountTypes,
   canRequest = false,
@@ -37,6 +41,15 @@ export default function EnrollmentDiscountsSection({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
+
+  // Cancel discount request action state
+  const [cancelState, cancelAction, isCancelling] = useActionState(
+    cancelDiscountRequestAction,
+    {}
+  );
+  useFormToast(cancelState, {
+    successMessage: "Discount request cancelled.",
+  });
 
   // Deep-link from a reversed-discount row uses
   //   ?requestDiscount=1&discountTypeCode=<code>
@@ -166,30 +179,56 @@ export default function EnrollmentDiscountsSection({
               Approved ({approvedRequests.length})
             </h4>
             <div className="space-y-2">
-              {approvedRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="p-3 bg-[var(--color-accent-100)] border border-[var(--color-accent)] rounded-lg"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium">{request.discountTypeName}</div>
-                      <div className="text-sm text-[var(--color-text-muted)]">
-                        {formatDiscountValue(request)} -{" "}
-                        {request.baseType === "tuition_only"
-                          ? "Tuition Only"
-                          : "Full Assessment"}
-                      </div>
-                      {request.overrideValue && request.overrideReason && (
-                        <div className="text-xs text-[var(--color-text-muted)] mt-1">
-                          Override: {request.overrideReason}
+              {approvedRequests.map((request) => {
+                // Can cancel if: not applied to assessment AND enrollment is pending
+                const canCancelApproved =
+                  request.assessmentId === null && enrollmentStatus === "pending";
+
+                return (
+                  <div
+                    key={request.id}
+                    className="p-3 bg-[var(--color-accent-100)] border border-[var(--color-accent)] rounded-lg"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-medium">{request.discountTypeName}</div>
+                        <div className="text-sm text-[var(--color-text-muted)]">
+                          {formatDiscountValue(request)} -{" "}
+                          {request.baseType === "tuition_only"
+                            ? "Tuition Only"
+                            : "Full Assessment"}
                         </div>
-                      )}
+                        {request.overrideValue && request.overrideReason && (
+                          <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                            Override: {request.overrideReason}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {canCancelApproved && (
+                          <form action={cancelAction}>
+                            <input
+                              type="hidden"
+                              name="discountRequestId"
+                              value={request.id}
+                            />
+                            <Button
+                              type="submit"
+                              variant="ghost"
+                              size="sm"
+                              disabled={isCancelling}
+                              className="text-[var(--color-danger)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-100)]"
+                            >
+                              {isCancelling ? "Cancelling..." : "Cancel"}
+                            </Button>
+                          </form>
+                        )}
+                        <Badge variant="success">Approved</Badge>
+                      </div>
                     </div>
-                    <Badge variant="success">Approved</Badge>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

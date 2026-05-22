@@ -236,6 +236,7 @@ export async function InternalEnrollmentDetailPage(props: {
       <EnrollmentDiscountsSection
         studentId={enrollment.studentId}
         enrollmentId={enrollment.id}
+        enrollmentStatus={enrollment.status}
         discountRequests={discountRequests}
         discountTypes={discountTypes}
         canRequest={canRequest}

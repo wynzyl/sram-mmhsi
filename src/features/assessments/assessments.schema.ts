@@ -46,3 +46,20 @@ export function computeAssessmentTotals(
     0
   );
 }
+
+// ─── Cancel Assessment Schema ─────────────────────────────────────────────────
+
+export const CancelAssessmentSchema = z.object({
+  assessmentId: z.string().uuid(),
+  remarks: z
+    .string()
+    .trim()
+    .min(1, "Cancellation reason is required.")
+    .max(500, "Cancellation reason must be 500 characters or less."),
+});
+
+export type CancelAssessmentInput = z.infer<typeof CancelAssessmentSchema>;
+
+export type CancelAssessmentFormState = BaseFormState<CancelAssessmentInput> & {
+  assessmentId?: string;
+};

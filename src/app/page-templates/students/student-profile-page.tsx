@@ -11,7 +11,7 @@ import {
   assessments,
   invoices,
 } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -115,7 +115,13 @@ export async function InternalStudentProfilePage(props: {
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .leftJoin(sections, eq(enrollments.sectionId, sections.id))
-    .leftJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
+    .leftJoin(
+      assessments,
+      and(
+        eq(assessments.enrollmentId, enrollments.id),
+        isNull(assessments.cancelledAt) // Exclude cancelled assessments
+      )
+    )
     .where(eq(enrollments.studentId, id))
     .orderBy(desc(enrollments.createdAt));
 

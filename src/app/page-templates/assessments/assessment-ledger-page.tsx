@@ -9,6 +9,7 @@ import {
   receiptBooklets,
   users,
   feeItemTypes,
+  enrollments,
 } from "@/lib/db/schema";
 import { eq, desc, asc, and, lte } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
@@ -43,10 +44,12 @@ export async function InternalAssessmentLedgerPage(props: {
       studentName: students.lastName,
       studentFirstName: students.firstName,
       schoolYear: schoolYears.label,
+      enrollmentStatus: enrollments.status,
     })
     .from(assessments)
     .innerJoin(students, eq(assessments.studentId, students.id))
     .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
+    .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
     .where(eq(assessments.id, id))
     .limit(1)
     .then((res) => res[0]);
@@ -94,6 +97,7 @@ export async function InternalAssessmentLedgerPage(props: {
   const canRequestVoid = hasPermission(session.role, "payments:void_request");
   const canReverseDiscount = hasPermission(session.role, "discounts:manage");
   const canRequestDiscount = hasPermission(session.role, "discounts:request");
+  const canCancel = hasPermission(session.role, "assessments:cancel");
 
   // Fetch pending void requests for displayed payments + applied discounts in parallel
   const paymentIds = paymentRecords.map((p) => p.id);
@@ -101,7 +105,8 @@ export async function InternalAssessmentLedgerPage(props: {
     paymentIds.length > 0
       ? getPendingVoidRequestsForPayments(paymentIds)
       : Promise.resolve(new Map()),
-    getStudentDiscountsByAssessment(id),
+    // Gracefully handle missing student_discounts table (migrations may not be applied)
+    getStudentDiscountsByAssessment(id).catch(() => []),
   ]);
 
   // Convert map to record for serialization
@@ -173,6 +178,7 @@ export async function InternalAssessmentLedgerPage(props: {
           billingStatus: assessment.billingStatus,
           transferredAt: assessment.transferredAt?.toISOString() ?? null,
           transferredToAssessmentId: assessment.transferredToAssessmentId,
+          enrollmentStatus: assessment.enrollmentStatus,
         }}
         items={items}
         payments={ledgerPayments}
@@ -186,6 +192,7 @@ export async function InternalAssessmentLedgerPage(props: {
         appliedDiscounts={appliedDiscounts}
         canReverseDiscount={canReverseDiscount}
         canRequestDiscount={canRequestDiscount}
+        canCancel={canCancel}
       />
     </div>
   );

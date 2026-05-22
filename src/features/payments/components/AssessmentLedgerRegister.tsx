@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useActionState } from "react";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import GenerateInvoiceButton from "@/features/finance/components/invoices/GenerateInvoiceButton";
@@ -10,6 +10,9 @@ import PostPaymentForm from "./PostPaymentForm";
 import PaymentsHistoryTable from "./PaymentsHistoryTable";
 import StudentDiscountsList from "@/features/discounts/components/StudentDiscountsList";
 import type { StudentDiscountView } from "@/features/discounts";
+import { cancelAssessmentAction } from "@/features/assessments/assessments.actions";
+import { useFormToast } from "@/hooks/useFormToast";
+import { TextAreaField } from "@/components/forms/TextInputField";
 
 export type LedgerLineItem = {
   id: string;
@@ -65,6 +68,8 @@ export type AssessmentLedgerRegisterProps = {
     billingStatus: string;
     transferredAt: string | null;
     transferredToAssessmentId: string | null;
+    /** Enrollment status - needed for cancel button visibility */
+    enrollmentStatus: "pending" | "assessed" | "enrolled" | "cancelled";
   };
   items: LedgerLineItem[];
   payments: LedgerPaymentRow[];
@@ -85,6 +90,8 @@ export type AssessmentLedgerRegisterProps = {
   canReverseDiscount: boolean;
   /** Gates the "Request replacement →" deep link. `discounts:request` (registrar / admin). */
   canRequestDiscount: boolean;
+  /** Gates the Cancel Assessment button. `assessments:cancel` (finance_officer / admin). */
+  canCancel?: boolean;
 };
 
 function lineSignedAmount(item: LedgerLineItem): number {
@@ -113,18 +120,55 @@ export default function AssessmentLedgerRegister({
   appliedDiscounts,
   canReverseDiscount,
   canRequestDiscount,
+  canCancel = false,
 }: AssessmentLedgerRegisterProps) {
   const router = useRouter();
   const [payOpen, setPayOpen] = useState(false);
   const [formNonce, setFormNonce] = useState(0);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelRemarks, setCancelRemarks] = useState("");
+  const [cancelState, cancelAction, cancelPending] = useActionState(cancelAssessmentAction, {});
+
+  useFormToast(cancelState, {
+    successMessage: "Assessment cancelled successfully",
+    onSuccess: () => {
+      setCancelOpen(false);
+      setCancelRemarks("");
+      router.refresh();
+    },
+  });
 
   const totalNum  = Number(assessment.totalAmount);
   const paidNum   = Number(assessment.totalPaid);
   const balanceNum = Number(assessment.balance);
   const isFullyPaid = assessment.billingStatus === "fully_paid";
-  const isCancelledEnrollment = assessment.billingStatus === "cancelled";
+  const isCancelled = assessment.billingStatus === "cancelled";
   const isTransferred = assessment.transferredAt != null;
-  const canOpenPay = canPost && !isFullyPaid && !isCancelledEnrollment && !isTransferred && balanceNum > 0;
+  const canOpenPay = canPost && !isFullyPaid && !isCancelled && !isTransferred && balanceNum > 0;
+
+  // Check for balance forward items (visual indicator only - action handles reversal)
+  const hasBalanceForwardItems = items.some(
+    (item) => balanceForwardTypeId && item.feeItemTypeId === balanceForwardTypeId
+  );
+
+  // Cancel button visibility logic (per CANCELLATION.md spec)
+  // Requirements:
+  // 1. billingStatus === 'outstanding'
+  // 2. enrollment.status === 'assessed'
+  // 3. No posted payments (hard block, no admin override)
+  const hasPostedPayments = paidNum > 0.009; // OUTSTANDING_PAYMENT_EPSILON
+  const isEnrollmentAssessed = assessment.enrollmentStatus === "assessed";
+  const isOutstanding = assessment.billingStatus === "outstanding";
+
+  // Cancellation is blocked if any payments exist (no override allowed per spec)
+  const cancelBlockedByPayments = hasPostedPayments;
+
+  // Show cancel button only when all conditions are met
+  const canShowCancelButton =
+    canCancel &&
+    isOutstanding &&
+    isEnrollmentAssessed &&
+    !cancelBlockedByPayments;
 
   const feesRunning = items.reduce((sum, row) => sum + lineSignedAmount(row), 0);
   const postedPayments = payments.filter((p) => p.status === "posted");
@@ -209,6 +253,21 @@ export default function AssessmentLedgerRegister({
             </button>
           )}
           <GenerateInvoiceButton assessmentId={assessment.id} balance={balanceNum} />
+          {canShowCancelButton && !cancelOpen && (
+            <button
+              type="button"
+              className="ledger-register-btn-danger"
+              onClick={() => setCancelOpen(true)}
+            >
+              {/* X icon */}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              Cancel Assessment
+            </button>
+          )}
         </div>
 
         {/* Bottom: KPI tiles + progress bar */}
@@ -271,11 +330,11 @@ export default function AssessmentLedgerRegister({
 
             {/* Balance due */}
             <div
-              className={`ledger-register-tile ledger-register-tile-balance${!isFullyPaid && !isCancelledEnrollment && !isTransferred && balanceNum > 0 ? " ledger-register-tile-owe" : ""}`}
+              className={`ledger-register-tile ledger-register-tile-balance${!isFullyPaid && !isCancelled && !isTransferred && balanceNum > 0 ? " ledger-register-tile-owe" : ""}`}
             >
               <span className="ledger-register-tile-label">Balance due</span>
               <span className="ledger-register-tile-value ledger-register-tile-balance-num">
-                {isCancelledEnrollment ? (
+                {isCancelled ? (
                   <StatusBadge type="billing" status="cancelled" />
                 ) : isTransferred ? (
                   <StatusBadge type="billing" status="balance_forwarded" />
@@ -342,6 +401,123 @@ export default function AssessmentLedgerRegister({
                   </>
                 )}
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cancel Assessment Form ── */}
+      {cancelOpen && canShowCancelButton && (
+        <div
+          style={{
+            padding: "1rem 1.25rem",
+            marginBottom: "1.5rem",
+            borderRadius: "6px",
+            border: "1px solid color-mix(in srgb, var(--color-destructive, #dc2626) 30%, transparent)",
+            background: "color-mix(in srgb, var(--color-destructive, #dc2626) 5%, transparent)",
+          }}
+        >
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-destructive, #dc2626)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ flexShrink: 0, marginTop: "2px" }}
+              aria-hidden
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontWeight: 600, marginBottom: "0.5rem", color: "var(--color-destructive, #dc2626)" }}>
+                Cancel Assessment
+              </p>
+
+              {/* Information about what cancellation will do */}
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  lineHeight: "1.6",
+                  marginBottom: "0.75rem",
+                  padding: "0.5rem 0.75rem",
+                  borderRadius: "4px",
+                  background: "color-mix(in srgb, var(--color-ops-warning) 10%, transparent)",
+                  color: "rgb(120, 53, 15)",
+                }}
+              >
+                <p style={{ fontWeight: 600, marginBottom: "0.25rem" }}>This action will:</p>
+                <ul style={{ margin: 0, paddingLeft: "1.25rem" }}>
+                  <li>Mark the assessment as cancelled</li>
+                  <li>Revert enrollment status from "assessed" to "pending"</li>
+                  {hasBalanceForwardItems && (
+                    <li>Reverse all balance forwards (restore prior year balances)</li>
+                  )}
+                  {appliedDiscounts.length > 0 && (
+                    <li>Remove {appliedDiscounts.length} applied discount{appliedDiscounts.length !== 1 ? "s" : ""} (must re-request)</li>
+                  )}
+                </ul>
+              </div>
+
+              <form action={cancelAction}>
+                <input type="hidden" name="assessmentId" value={assessment.id} />
+
+                <TextAreaField
+                  label="Cancellation reason"
+                  name="remarks"
+                  required
+                  value={cancelRemarks}
+                  onChange={setCancelRemarks}
+                  error={cancelState.errors?.remarks}
+                  rows={3}
+                  placeholder="Enter reason for cancellation (required)..."
+                  className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-ops-ink outline-none transition focus:border-gray-400"
+                />
+
+                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+                  <button
+                    type="submit"
+                    disabled={cancelPending}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      borderRadius: "6px",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "#fff",
+                      background: "var(--color-destructive, #dc2626)",
+                      border: "none",
+                      cursor: cancelPending ? "not-allowed" : "pointer",
+                      opacity: cancelPending ? 0.5 : 1,
+                      transition: "opacity 0.15s",
+                    }}
+                  >
+                    {cancelPending ? "Cancelling..." : "Confirm Cancellation"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCancelOpen(false);
+                      setCancelRemarks("");
+                    }}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      borderRadius: "6px",
+                      fontSize: "0.875rem",
+                      color: "var(--color-ops-muted)",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
