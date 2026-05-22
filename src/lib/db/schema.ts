@@ -589,7 +589,9 @@ export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
     },
     (t) => [
       index("assessment_student_sy_idx").on(t.studentId, t.schoolYearId),
-      uniqueIndex("assessments_enrollment_id_uidx").on(t.enrollmentId),
+      uniqueIndex("assessments_enrollment_id_uidx")
+      .on(t.enrollmentId)
+      .where(sql`cancelled_at IS NULL`),
       index("assessments_billing_status_idx").on(t.billingStatus), // PERFORMANCE: Outstanding balance queries
       index("assessments_student_billing_idx").on(t.studentId, t.billingStatus), // PERFORMANCE: Student balance lookups
       index("assessments_transferred_at_idx").on(t.transferredAt), // PERFORMANCE: Filter active assessments (WHERE transferredAt IS NULL)

@@ -11,16 +11,20 @@ import {
   schoolYears,
   feeItemTypes,
   payments,
+  studentDiscounts,
+  discountRequests,
 } from "@/lib/db/schema";
-import { eq, and, ne, isNotNull, isNull, desc, asc } from "drizzle-orm";
+import { eq, and, ne, isNotNull, isNull, desc, asc, inArray } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "./assessments.queries";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   CreateAssessmentFromEnrollmentSchema,
+  CancelAssessmentSchema,
   computeAssessmentTotals,
 } from "./assessments.schema";
-import type { AssessmentFormState } from "./assessments.schema";
+import type { AssessmentFormState, CancelAssessmentFormState } from "./assessments.schema";
+import { formatCurrency } from "@/lib/utils/currency";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { generateNextBfxNumber } from "@/lib/utils/reference";
@@ -153,7 +157,10 @@ export async function createAssessmentFromEnrollmentAction(
   }
 
   const existing = await db.query.assessments.findFirst({
-    where: eq(assessments.enrollmentId, enrollmentId),
+    where: and(
+      eq(assessments.enrollmentId, enrollmentId),
+      isNull(assessments.cancelledAt)
+    ),
     columns: { id: true },
   });
   if (existing) {
@@ -483,7 +490,7 @@ export async function createAssessmentFromEnrollmentAction(
           "The fee schedule changed while saving. Refresh this page and submit again.",
       };
     }
-    logger.error("[assessments] Failed to create assessment", { error: String(err) });
+    logger.error("[assessments] Failed to create assessment", { error: String(err), stack: err instanceof Error ? err.stack : undefined });
     return { message: "An unexpected error occurred. Please try again." };
   }
 }
@@ -700,5 +707,379 @@ export async function reverseBalanceTransferAction(
     }
     logger.error("[assessments] Failed to reverse balance transfer", { error: String(err) });
     return { message: "An unexpected error occurred while reversing the transfer. Please try again." };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cancel Assessment (Complete Cancellation per CANCELLATION.md)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const OUTSTANDING_PAYMENT_EPSILON = 0.009;
+
+/**
+ * Cancels an assessment with full reversal of related entities.
+ *
+ * Per docs/ASSESSMENT/CANCELLATION.md specification:
+ *
+ * Validation rules:
+ * 1. User role: Admin or Finance (`assessments:cancel` permission)
+ * 2. Assessment exists
+ * 3. Assessment billingStatus is `outstanding` (not already cancelled/paid)
+ * 4. Enrollment status is `assessed`
+ * 5. **No posted payments exist** (hard block, no admin override)
+ * 6. Cancellation reason **required**
+ *
+ * Transaction steps:
+ * 1. Mark assessment as `cancelled`
+ * 2. If balance was forwarded INTO this assessment:
+ *    - Reverse balance forward (restore source assessment balance)
+ *    - Delete BFX receipts
+ * 3. Revert applied discounts:
+ *    - Delete `studentDiscounts` records
+ *    - Set `discountRequests` status to `rejected`
+ *    - Delete discount line items from `assessmentItems`
+ * 4. Change enrollment: `assessed` → `pending`
+ * 5. Create audit log entry
+ * 6. Commit transaction
+ *
+ * **No partial cancellation - rollback everything on failure.**
+ */
+export async function cancelAssessmentAction(
+  _prevState: CancelAssessmentFormState,
+  formData: FormData
+): Promise<CancelAssessmentFormState> {
+  const session = await requireSession();
+
+  // 1. Permission check
+  if (!hasPermission(session.role, "assessments:cancel")) {
+    return {
+      message: "You do not have permission to cancel assessments.",
+    };
+  }
+
+  // 2. Parse and validate input (remarks is now required in schema)
+  const parsed = CancelAssessmentSchema.safeParse({
+    assessmentId: formData.get("assessmentId"),
+    remarks: formData.get("remarks"),
+  });
+
+  if (!parsed.success) {
+    return {
+      errors: parsed.error.flatten().fieldErrors as CancelAssessmentFormState["errors"],
+    };
+  }
+
+  const { assessmentId, remarks } = parsed.data;
+
+  // 3. Fetch assessment with enrollment info
+  const assessment = await db.query.assessments.findFirst({
+    where: eq(assessments.id, assessmentId),
+    columns: {
+      id: true,
+      enrollmentId: true,
+      studentId: true,
+      billingStatus: true,
+      totalPaid: true,
+      totalAmount: true,
+      balance: true,
+      transferredAt: true,
+      cancelledAt: true,
+    },
+    with: {
+      enrollment: {
+        columns: {
+          id: true,
+          status: true,
+        },
+      },
+    },
+  });
+
+  if (!assessment) {
+    return { message: "Assessment not found." };
+  }
+
+  // 4. Validate assessment billingStatus is 'outstanding'
+  if (assessment.cancelledAt || assessment.billingStatus === "cancelled") {
+    return { message: "This assessment has already been cancelled." };
+  }
+
+  if (assessment.billingStatus === "fully_paid") {
+    return {
+      message: "Cannot cancel a fully paid assessment.",
+    };
+  }
+
+  if (assessment.billingStatus === "balance_forwarded") {
+    return {
+      message:
+        "Cannot cancel a transferred assessment. The balance has already been forwarded to a newer school year.",
+    };
+  }
+
+  if (assessment.billingStatus !== "outstanding") {
+    return {
+      message: `Cannot cancel an assessment with status '${assessment.billingStatus}'. Only outstanding assessments can be cancelled.`,
+    };
+  }
+
+  // 5. Validate enrollment status is 'assessed'
+  if (assessment.enrollment?.status !== "assessed") {
+    return {
+      message: `Cannot cancel: enrollment status is '${assessment.enrollment?.status ?? "unknown"}'. Only assessments with enrollment status 'assessed' can be cancelled.`,
+    };
+  }
+
+  // 6. HARD BLOCK: No posted payments allowed (per spec, no admin override)
+  const totalPaid = Number(assessment.totalPaid);
+  if (totalPaid > OUTSTANDING_PAYMENT_EPSILON) {
+    return {
+      message: `Cannot cancel: this assessment has ${formatCurrency(totalPaid)} in posted payments. Void all payments first, then cancel.`,
+    };
+  }
+
+  // 7. Execute complete cancellation transaction
+  try {
+    await db.transaction(async (tx) => {
+      // ─── 7a. Handle Balance Forward Items (if any) ───────────────────────────
+      const balanceForwardItems = await tx.query.assessmentItems.findMany({
+        where: and(
+          eq(assessmentItems.assessmentId, assessmentId),
+          isNotNull(assessmentItems.sourceAssessmentId)
+        ),
+      });
+
+      for (const bfItem of balanceForwardItems) {
+        if (!bfItem.sourceAssessmentId) continue;
+
+        // Find and delete BFX receipt(s) from source assessment
+        const bfxReceipts = await tx.query.payments.findMany({
+          where: and(
+            eq(payments.assessmentId, bfItem.sourceAssessmentId),
+            eq(payments.kind, "balance_forward"),
+            eq(payments.status, "balance_forward")
+          ),
+          columns: { id: true, referenceNumber: true },
+        });
+
+        for (const bfxReceipt of bfxReceipts) {
+          await tx.delete(payments).where(eq(payments.id, bfxReceipt.id));
+
+          await logAudit(
+            {
+              actor: session.userId,
+              actorRole: session.role,
+              action: "bfx_receipt_deleted",
+              targetEntity: "payments",
+              targetId: bfxReceipt.id,
+              context: bfItem.sourceAssessmentId,
+              newState: {
+                bfxNumber: bfxReceipt.referenceNumber,
+                reason: "assessment_cancellation",
+                sourceAssessmentId: bfItem.sourceAssessmentId,
+                cancelledAssessmentId: assessmentId,
+              },
+            },
+            { throwOnFail: true }
+          );
+        }
+
+        // Restore source assessment balance and billing status
+        await tx
+          .update(assessments)
+          .set({
+            balance: bfItem.amount, // Restore the transferred amount
+            billingStatus: "outstanding",
+            transferredAt: null,
+            transferredBy: null,
+            transferredToAssessmentId: null,
+            transferRemarks: null,
+            updatedBy: session.userId,
+            updatedAt: new Date(),
+          })
+          .where(eq(assessments.id, bfItem.sourceAssessmentId));
+
+        await logAudit(
+          {
+            actor: session.userId,
+            actorRole: session.role,
+            action: "assessment_transfer_reversed",
+            targetEntity: "assessments",
+            targetId: bfItem.sourceAssessmentId,
+            context: assessmentId,
+            newState: {
+              restoredBalance: bfItem.amount,
+              reversedFromAssessmentId: assessmentId,
+              reason: "assessment_cancellation",
+              deletedBfxCount: bfxReceipts.length,
+            },
+          },
+          { throwOnFail: true }
+        );
+      }
+
+      // Delete balance forward line items from this assessment
+      if (balanceForwardItems.length > 0) {
+        await tx
+          .delete(assessmentItems)
+          .where(
+            and(
+              eq(assessmentItems.assessmentId, assessmentId),
+              isNotNull(assessmentItems.sourceAssessmentId)
+            )
+          );
+      }
+
+      // ─── 7b. Handle Applied Discounts ────────────────────────────────────────
+      const appliedDiscounts = await tx.query.studentDiscounts.findMany({
+        where: and(
+          eq(studentDiscounts.assessmentId, assessmentId),
+          isNull(studentDiscounts.reversedAt) // Only non-reversed discounts
+        ),
+        columns: {
+          id: true,
+          discountRequestId: true,
+          assessmentItemId: true,
+          discountAmount: true,
+          discountTypeName: true,
+        },
+      });
+
+      if (appliedDiscounts.length > 0) {
+        // Collect discount request IDs and assessment item IDs for batch operations
+        const discountRequestIds = appliedDiscounts
+          .map((d) => d.discountRequestId)
+          .filter((id): id is string => id != null);
+
+        const discountItemIds = appliedDiscounts
+          .map((d) => d.assessmentItemId)
+          .filter((id): id is string => id != null);
+
+        // Delete studentDiscounts records
+        await tx
+          .delete(studentDiscounts)
+          .where(eq(studentDiscounts.assessmentId, assessmentId));
+
+        // Reset discountRequests to "unapplied" state (keep approved status)
+        // so they can be re-applied when a new assessment is created
+        if (discountRequestIds.length > 0) {
+          await tx
+            .update(discountRequests)
+            .set({
+              assessmentId: null,       // Detach from cancelled assessment
+              baseAmount: null,         // Will be recalculated on re-apply
+              calculatedAmount: null,   // Will be recalculated on re-apply
+              updatedAt: new Date(),
+            })
+            .where(inArray(discountRequests.id, discountRequestIds));
+        }
+
+        // Delete discount line items from assessmentItems
+        if (discountItemIds.length > 0) {
+          await tx
+            .delete(assessmentItems)
+            .where(inArray(assessmentItems.id, discountItemIds));
+        }
+
+        await logAudit(
+          {
+            actor: session.userId,
+            actorRole: session.role,
+            action: "discounts_reset_for_reapplication",
+            targetEntity: "assessments",
+            targetId: assessmentId,
+            newState: {
+              discountsResetForReapplication: appliedDiscounts.length,
+              resetDiscountRequestIds: discountRequestIds,
+              deletedItemIds: discountItemIds,
+              reason: "assessment_cancellation",
+            },
+          },
+          { throwOnFail: true }
+        );
+      }
+
+      // ─── 7c. Mark Assessment as Cancelled ────────────────────────────────────
+      await tx
+        .update(assessments)
+        .set({
+          billingStatus: "cancelled",
+          cancelledAt: new Date(),
+          cancelledBy: session.userId,
+          updatedAt: new Date(),
+          updatedBy: session.userId,
+        })
+        .where(eq(assessments.id, assessmentId));
+
+      // ─── 7d. Revert Enrollment to Pending ────────────────────────────────────
+      await tx
+        .update(enrollments)
+        .set({
+          status: "pending",
+          updatedBy: session.userId,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(enrollments.id, assessment.enrollmentId),
+            eq(enrollments.status, "assessed")
+          )
+        );
+
+      // ─── 7e. Audit Log Entry ─────────────────────────────────────────────────
+      await logAudit(
+        {
+          actor: session.userId,
+          actorRole: session.role,
+          action: "assessment_cancelled",
+          targetEntity: "assessments",
+          targetId: assessmentId,
+          context: assessment.enrollmentId,
+          newState: {
+            billingStatus: "cancelled",
+            cancelledAt: new Date().toISOString(),
+            remarks,
+            enrollmentRevertedToPending: true,
+            balanceForwardsReversed: balanceForwardItems.length,
+            discountsResetForReapplication: appliedDiscounts.length,
+          },
+        },
+        { throwOnFail: true }
+      );
+    });
+
+    logger.info("[assessments] Assessment cancelled with full reversal", {
+      assessmentId,
+      studentId: assessment.studentId,
+      enrollmentId: assessment.enrollmentId,
+      actorId: session.userId,
+    });
+
+    revalidatePath("/staff/assessments");
+    revalidatePath(`/staff/assessments/${assessmentId}`);
+    revalidatePath(`/staff/students/${assessment.studentId}`);
+    revalidatePath("/staff/enrollments");
+    if (assessment.enrollmentId) {
+      revalidatePath(`/staff/enrollments/${assessment.enrollmentId}`);
+    }
+    revalidatePath("/staff/finance/discount-requests");
+    invalidateTag(CACHE_TAGS.DASHBOARD);
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
+
+    return {
+      success: true,
+      assessmentId,
+      message:
+        "Assessment cancelled successfully. Enrollment has been reverted to pending status.",
+    };
+  } catch (err) {
+    logger.error("[assessments] Failed to cancel assessment", {
+      assessmentId,
+      error: String(err),
+    });
+    return {
+      message:
+        "An unexpected error occurred while cancelling the assessment. Please try again.",
+    };
   }
 }
