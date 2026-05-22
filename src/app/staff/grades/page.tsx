@@ -1,16 +1,15 @@
 import { requireSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { eq, and, isNull } from "drizzle-orm";
-import { teacherAssignments, schoolYears, subjects, sections } from "@/lib/db/schema";
 import Link from "next/link";
+import {
+  getActiveSchoolYear,
+  getTeacherAssignments,
+} from "@/features/academics/grades/grades.queries";
 
 export default async function TeacherDashboardPage() {
   const session = await requireSession();
 
   // Find active school year
-  const activeSY = await db.query.schoolYears.findFirst({
-    where: eq(schoolYears.isActive, true),
-  });
+  const activeSY = await getActiveSchoolYear();
 
   if (!activeSY) {
     return (
@@ -21,26 +20,7 @@ export default async function TeacherDashboardPage() {
   }
 
   // Fetch teacher's assignments for the active school year
-  const assignments = await db.select({
-    id: teacherAssignments.id,
-    subject: {
-      name: subjects.name,
-      code: subjects.code,
-    },
-    section: {
-      name: sections.name,
-    },
-  }).from(teacherAssignments)
-    .leftJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
-    .leftJoin(sections, eq(teacherAssignments.sectionId, sections.id))
-    .where(
-      and(
-        eq(teacherAssignments.teacherId, session.userId),
-        eq(teacherAssignments.schoolYearId, activeSY.id),
-        isNull(teacherAssignments.deletedAt),
-        isNull(subjects.deletedAt)
-      )
-    );
+  const assignments = await getTeacherAssignments(session.userId, activeSY.id);
 
   return (
     <div className="space-y-6">

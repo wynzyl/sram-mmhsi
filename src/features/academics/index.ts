@@ -6,6 +6,15 @@ export * from "./subjects/subjects.schema";
 export * from "./grades/grades.actions";
 export * from "./grades/grades.schema";
 
+// Query types (functions must be imported directly from query files in server components)
+export type {
+  TeacherAssignmentCard,
+} from "./grades/grades.queries";
+export type {
+  SubjectListRow,
+  GradeLevelDropdownOption,
+} from "./subjects/subjects.queries";
+
 // Components
 export { default as AssignTeacherForm } from "./components/AssignTeacherForm";
 export { default as CreateSubjectForm } from "./components/CreateSubjectForm";

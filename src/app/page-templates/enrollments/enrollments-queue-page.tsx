@@ -9,7 +9,7 @@ import {
   getEnrollmentQueueData,
   getEnrollmentQueueCounts,
   type TabKey,
-  type ReadyToEnrollStudent,
+  type ReadyToEnrollListRow,
   type PendingEnrollment,
   type AssessedEnrollment,
   type EnrolledStudent,
@@ -151,7 +151,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       case "ready-to-enroll":
         return (
           <ReadyToEnrollTableClient
-            paginatedData={queueData as PaginatedResult<ReadyToEnrollStudent>}
+            paginatedData={queueData as PaginatedResult<ReadyToEnrollListRow>}
             schoolYearId={activeSchoolYear.id}
             sections={allSections.map((s) => ({ id: s.id, name: s.name }))}
             gradeLevels={allGradeLevels}
