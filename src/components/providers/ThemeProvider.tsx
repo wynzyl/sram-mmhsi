@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 
 type Theme = "light" | "dark" | "system";
 
@@ -11,43 +17,59 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+function getResolvedTheme(theme: Theme): "light" | "dark" {
+  if (theme === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+  return theme;
+}
+
 /**
  * Theme provider for managing light/dark mode
- * Supports system preference detection and localStorage persistence
+ *
+ * The inline script in layout.tsx handles initial DOM state (no flash).
+ * This provider syncs React state with localStorage and handles user changes.
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("system");
-  const [mounted, setMounted] = useState(false);
+  // Lazy initializer reads localStorage synchronously on first render
+  // This matches what the inline script read, avoiding state mismatch
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system";
+    return (localStorage.getItem("theme") as Theme) || "system";
+  });
 
-  useEffect(() => {
-    setMounted(true);
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored) setTheme(stored);
-  }, []);
+  // User-triggered theme change: update DOM, localStorage, and React state
+  const setTheme = useCallback((newTheme: Theme) => {
+    setThemeState(newTheme);
 
-  useEffect(() => {
-    if (!mounted) return;
-
-    const root = window.document.documentElement;
-    const resolved =
-      theme === "system"
-        ? window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light"
-        : theme;
+    const root = document.documentElement;
+    const resolved = getResolvedTheme(newTheme);
 
     root.classList.remove("light", "dark");
     root.classList.add(resolved);
-    // Keep native UI (scrollbars, form controls) in sync — matches the inline
-    // boot script in app/layout.tsx so we never disagree across boot/runtime.
     root.style.colorScheme = resolved;
+    localStorage.setItem("theme", newTheme);
+  }, []);
 
-    localStorage.setItem("theme", theme);
-  }, [theme, mounted]);
+  // Listen for system preference changes when theme is "system"
+  useEffect(() => {
+    if (theme !== "system") return;
 
-  // The context must ALWAYS be provided — including during SSR and the first
-  // client render — otherwise descendants that call useTheme() will throw.
-  // Side-effects (DOM class + localStorage) are gated by `mounted` above.
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => {
+      const resolved = mediaQuery.matches ? "dark" : "light";
+      const root = document.documentElement;
+      root.classList.remove("light", "dark");
+      root.classList.add(resolved);
+      root.style.colorScheme = resolved;
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [theme]);
+
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
       {children}

@@ -73,8 +73,9 @@ export default function ReadyToEnrollTableClient({
 
       <PaginationControls pagination={paginatedData.pagination} basePath={basePath} />
 
-      {selectedStudent && (
+      {selectedStudent && isDrawerOpen && (
         <EnrollmentConfirmationDrawer
+          key={selectedStudent.studentId}
           student={selectedStudent}
           schoolYearId={schoolYearId}
           isOpen={isDrawerOpen}
