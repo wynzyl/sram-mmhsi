@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, FileText, UserPlus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
-import type { ReadyToEnrollStudent } from "../enrollments-queue.queries";
+import type { ReadyToEnrollListRow } from "../enrollments-queue.queries";
 
 type GradeLevel = {
   id: string;
@@ -15,8 +15,8 @@ type GradeLevel = {
 };
 
 type ReadyToEnrollTableProps = {
-  students: ReadyToEnrollStudent[];
-  onConfirmEnrollment: (student: ReadyToEnrollStudent) => void;
+  students: ReadyToEnrollListRow[];
+  onConfirmEnrollment: (student: ReadyToEnrollListRow) => void;
   gradeLevels?: GradeLevel[];
   searchQuery?: string;
   gradeLevelFilter?: string;
@@ -58,7 +58,7 @@ export default function ReadyToEnrollTable({
     return filtered;
   }, [students, searchQuery, gradeLevelFilter]);
 
-  const columns = useMemo<ColumnDef<ReadyToEnrollStudent>[]>(
+  const columns = useMemo<ColumnDef<ReadyToEnrollListRow>[]>(
     () => [
       {
         accessorKey: "studentRef",

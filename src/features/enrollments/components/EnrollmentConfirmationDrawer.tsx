@@ -1,17 +1,22 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { X, CheckCircle2, AlertCircle, FileText, GraduationCap } from "lucide-react";
+import { useActionState, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { X, CheckCircle2, AlertCircle, FileText, GraduationCap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useFormToast } from "@/hooks/useFormToast";
-import { confirmEnrollmentAction } from "../enrollment-confirmation.actions";
+import {
+  confirmEnrollmentAction,
+  fetchReadyToEnrollDetailAction,
+} from "../enrollment-confirmation.actions";
 import { formatCurrency } from "@/lib/utils/currency";
+import { queryKeys } from "@/lib/query/keys";
 import type { ConfirmEnrollmentFormState } from "../enrollments.schema";
-import type { ReadyToEnrollStudent } from "../enrollments-queue.queries";
+import type { ReadyToEnrollListRow } from "../enrollments-queue.queries";
 
 type EnrollmentConfirmationDrawerProps = {
-  student: ReadyToEnrollStudent;
+  student: ReadyToEnrollListRow;
   schoolYearId: string;
   isOpen: boolean;
   onClose: () => void;
@@ -42,12 +47,25 @@ export default function EnrollmentConfirmationDrawer({
     },
   });
 
-  // Reset section when drawer opens
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedSection("");
-    }
-  }, [isOpen]);
+  // Only fetch detail for new/transferee students who have intakeDocuments
+  const needsDetail =
+    student.studentType === "new_student" || student.studentType === "transferee";
+
+  const {
+    data: studentDetail,
+    error: detailQueryError,
+    isLoading: isLoadingDetail,
+  } = useQuery({
+    queryKey: queryKeys.enrollments.detail(student.studentId),
+    queryFn: async () => {
+      const result = await fetchReadyToEnrollDetailAction(student.studentId);
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    enabled: isOpen && needsDetail && Boolean(student.studentId),
+  });
+
+  const detailError = detailQueryError ? detailQueryError.message : null;
 
   if (!isOpen) return null;
 
@@ -154,42 +172,53 @@ export default function EnrollmentConfirmationDrawer({
               </div>
             </div>
 
-            {/* Document Status (for new/transferee) */}
-            {isNewOrTransferee && student.intakeDocuments && (
+            {/* Document Status (for new/transferee) - Lazy loaded */}
+            {isNewOrTransferee && (
               <div className="mb-6 space-y-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
                 <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[var(--color-text-2)]">
                   <FileText className="h-4 w-4" />
                   Document Checklist
                 </h3>
 
-                <div className="space-y-2">
-                  {Object.entries({
-                    "Form 138": student.intakeDocuments.form138,
-                    "Birth Certificate (PSA)": student.intakeDocuments.birthCertificatePsa,
-                    "Good Moral Character": student.intakeDocuments.goodMoralCharacter,
-                    "Qualified Voucher": student.intakeDocuments.qualifiedVoucher,
-                    "ESC Certificate": student.intakeDocuments.escCertificate,
-                  }).map(([label, status]) => (
-                    <div key={label} className="flex items-center justify-between text-sm">
-                      <span className="text-[var(--color-text)]">{label}</span>
-                      {status === "received" && (
-                        <div className="flex items-center gap-1.5 text-green-700">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span className="text-xs font-medium">Received</span>
-                        </div>
-                      )}
-                      {status === "not_applicable" && (
-                        <span className="text-xs text-[var(--color-text-muted)]">N/A</span>
-                      )}
-                      {status === "to_follow" && (
-                        <div className="flex items-center gap-1.5 text-amber-600">
-                          <AlertCircle className="h-3.5 w-3.5" />
-                          <span className="text-xs font-medium">To Follow</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                {isLoadingDetail ? (
+                  <div className="flex items-center justify-center py-4 text-[var(--color-text-muted)]">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    <span className="text-sm">Loading documents...</span>
+                  </div>
+                ) : detailError ? (
+                  <div className="text-sm text-amber-600">{detailError}</div>
+                ) : studentDetail?.intakeDocuments ? (
+                  <div className="space-y-2">
+                    {Object.entries({
+                      "Form 138": studentDetail.intakeDocuments.form138,
+                      "Birth Certificate (PSA)": studentDetail.intakeDocuments.birthCertificatePsa,
+                      "Good Moral Character": studentDetail.intakeDocuments.goodMoralCharacter,
+                      "Qualified Voucher": studentDetail.intakeDocuments.qualifiedVoucher,
+                      "ESC Certificate": studentDetail.intakeDocuments.escCertificate,
+                    }).map(([label, status]) => (
+                      <div key={label} className="flex items-center justify-between text-sm">
+                        <span className="text-[var(--color-text)]">{label}</span>
+                        {status === "received" && (
+                          <div className="flex items-center gap-1.5 text-[var(--color-success)]">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span className="text-xs font-medium">Received</span>
+                          </div>
+                        )}
+                        {status === "not_applicable" && (
+                          <span className="text-xs text-[var(--color-text-muted)]">N/A</span>
+                        )}
+                        {status === "to_follow" && (
+                          <div className="flex items-center gap-1.5 text-[var(--color-warning-700)]">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            <span className="text-xs font-medium">To Follow</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-[var(--color-text-muted)]">No documents available</div>
+                )}
               </div>
             )}
 

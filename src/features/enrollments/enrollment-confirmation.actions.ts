@@ -392,3 +392,46 @@ export async function quickConfirmEnrollmentAction(
 
   return result;
 }
+
+// ─── Fetch Ready-to-Enroll Detail (Lazy Load) ─────────────────────────────────
+
+import {
+  getReadyToEnrollDetail,
+  getActiveSchoolYearId,
+  type ReadyToEnrollDetail,
+} from "./enrollments-queue.queries";
+
+/**
+ * Fetch full detail for a student (including intakeDocuments) for the drawer.
+ *
+ * This is a server action wrapper around the query function, allowing
+ * client components to lazy-load heavy data only when needed.
+ *
+ * Returns ReadyToEnrollDetail or null if not found.
+ */
+export async function fetchReadyToEnrollDetailAction(
+  studentId: string
+): Promise<{ success: true; data: ReadyToEnrollDetail } | { success: false; error: string }> {
+  try {
+    const session = await requireSession();
+
+    if (!hasPermission(session.role, "enrollments:read")) {
+      return { success: false, error: "You do not have permission to view enrollment details." };
+    }
+
+    const activeSchoolYearId = await getActiveSchoolYearId();
+    if (!activeSchoolYearId) {
+      return { success: false, error: "No active school year configured." };
+    }
+
+    const detail = await getReadyToEnrollDetail(studentId, activeSchoolYearId);
+    if (!detail) {
+      return { success: false, error: "Student not found in enrollment queue." };
+    }
+
+    return { success: true, data: detail };
+  } catch (err) {
+    logger.error("[enrollment-confirmation] Failed to fetch detail", { studentId, error: err });
+    return { success: false, error: "Failed to load student details." };
+  }
+}
