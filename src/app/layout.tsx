@@ -43,10 +43,10 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        {/* Theme initialization script - runs during HTML parsing, before first paint */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("theme");var r=t;if(!t||t==="system"){r=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.classList.add(r);document.documentElement.style.colorScheme=r}catch(e){}})()`,
+            __html:
+              "(function(){try{var s=localStorage.getItem('theme');var r=s;if(!s||s==='system'){r=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.classList.remove('light','dark');document.documentElement.classList.add(r);document.documentElement.style.colorScheme=r;}catch(_){}})();",
           }}
         />
       </head>

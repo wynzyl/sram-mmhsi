@@ -210,7 +210,7 @@ export const getAllFeeItemTypes = unstable_cache(
   ["fee-item-types-list"],
   {
     revalidate: 600, // 10 minutes
-    tags: [CACHE_TAGS.FEE_TEMPLATES], // Same tag since they're related config
+    tags: [CACHE_TAGS.FEE_ITEM_TYPES],
   }
 );
 

@@ -15,6 +15,7 @@ import {
 } from "./fee-item-types.schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 
 const REVALIDATE = "/staff/finance/fee-item-types";
 
@@ -68,6 +69,7 @@ export async function createFeeItemTypeAction(
   }, { throwOnFail: true });
 
   revalidatePath(REVALIDATE);
+  invalidateTag(CACHE_TAGS.FEE_ITEM_TYPES);
 
   return { success: true, typeId: type.id };
 }
@@ -124,6 +126,7 @@ export async function updateFeeItemTypeAction(
   }, { throwOnFail: true });
 
   revalidatePath(REVALIDATE);
+  invalidateTag(CACHE_TAGS.FEE_ITEM_TYPES);
 
   return { success: true, typeId: parsed.data.id };
 }
@@ -165,6 +168,7 @@ export async function toggleFeeItemTypeAction(
   }, { throwOnFail: true });
 
   revalidatePath(REVALIDATE);
+  invalidateTag(CACHE_TAGS.FEE_ITEM_TYPES);
 
   return { success: true };
 }
