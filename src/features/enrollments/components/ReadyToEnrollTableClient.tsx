@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import ReadyToEnrollTable from "./ReadyToEnrollTable";
 import EnrollmentConfirmationDrawer from "./EnrollmentConfirmationDrawer";
 import { PaginationControls } from "@/components/shared/PaginationControls";
-import type { ReadyToEnrollStudent } from "../enrollments-queue.queries";
+import type { ReadyToEnrollListRow } from "../enrollments-queue.queries";
 import type { PaginatedResult } from "@/lib/types/pagination";
 
 type ReadyToEnrollTableClientProps = {
-  paginatedData: PaginatedResult<ReadyToEnrollStudent>;
+  paginatedData: PaginatedResult<ReadyToEnrollListRow>;
   schoolYearId: string;
   sections?: Array<{ id: string; name: string }>;
   gradeLevels?: Array<{ id: string; name: string }>;
@@ -23,6 +23,7 @@ type ReadyToEnrollTableClientProps = {
  *
  * This component manages the state for the enrollment confirmation workflow:
  * - Opens drawer when "Enroll" button is clicked
+ * - Lazy-loads full student details (including intakeDocuments) when drawer opens
  * - Handles successful enrollment (refresh page)
  * - Provides sections for optional assignment
  * - Uses global filters from URL params
@@ -37,10 +38,10 @@ export default function ReadyToEnrollTableClient({
   basePath,
 }: ReadyToEnrollTableClientProps) {
   const router = useRouter();
-  const [selectedStudent, setSelectedStudent] = useState<ReadyToEnrollStudent | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<ReadyToEnrollListRow | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const handleConfirmEnrollment = (student: ReadyToEnrollStudent) => {
+  const handleConfirmEnrollment = (student: ReadyToEnrollListRow) => {
     setSelectedStudent(student);
     setIsDrawerOpen(true);
   };

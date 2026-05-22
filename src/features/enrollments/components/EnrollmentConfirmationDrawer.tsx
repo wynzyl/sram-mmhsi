@@ -1,17 +1,20 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { X, CheckCircle2, AlertCircle, FileText, GraduationCap } from "lucide-react";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { X, CheckCircle2, AlertCircle, FileText, GraduationCap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useFormToast } from "@/hooks/useFormToast";
-import { confirmEnrollmentAction } from "../enrollment-confirmation.actions";
+import {
+  confirmEnrollmentAction,
+  fetchReadyToEnrollDetailAction,
+} from "../enrollment-confirmation.actions";
 import { formatCurrency } from "@/lib/utils/currency";
 import type { ConfirmEnrollmentFormState } from "../enrollments.schema";
-import type { ReadyToEnrollStudent } from "../enrollments-queue.queries";
+import type { ReadyToEnrollListRow, ReadyToEnrollDetail } from "../enrollments-queue.queries";
 
 type EnrollmentConfirmationDrawerProps = {
-  student: ReadyToEnrollStudent;
+  student: ReadyToEnrollListRow;
   schoolYearId: string;
   isOpen: boolean;
   onClose: () => void;
@@ -31,6 +34,9 @@ export default function EnrollmentConfirmationDrawer({
 }: EnrollmentConfirmationDrawerProps) {
   const [state, action, isPending] = useActionState(confirmEnrollmentAction, initialState);
   const [selectedSection, setSelectedSection] = useState<string>("");
+  const [studentDetail, setStudentDetail] = useState<ReadyToEnrollDetail | null>(null);
+  const [isLoadingDetail, startLoadingDetail] = useTransition();
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   useFormToast(state, {
     successMessage: "Enrollment confirmed successfully",
@@ -42,12 +48,28 @@ export default function EnrollmentConfirmationDrawer({
     },
   });
 
-  // Reset section when drawer opens
+  // Lazy-load full details (including intakeDocuments) when drawer opens
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && student.studentId) {
       setSelectedSection("");
+      setStudentDetail(null);
+      setDetailError(null);
+
+      // Only fetch detail for new/transferee students who have intakeDocuments
+      const needsDetail = student.studentType === "new_student" || student.studentType === "transferee";
+
+      if (needsDetail) {
+        startLoadingDetail(async () => {
+          const result = await fetchReadyToEnrollDetailAction(student.studentId);
+          if (result.success) {
+            setStudentDetail(result.data);
+          } else {
+            setDetailError(result.error);
+          }
+        });
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, student.studentId, student.studentType]);
 
   if (!isOpen) return null;
 
@@ -154,42 +176,53 @@ export default function EnrollmentConfirmationDrawer({
               </div>
             </div>
 
-            {/* Document Status (for new/transferee) */}
-            {isNewOrTransferee && student.intakeDocuments && (
+            {/* Document Status (for new/transferee) - Lazy loaded */}
+            {isNewOrTransferee && (
               <div className="mb-6 space-y-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
                 <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[var(--color-text-2)]">
                   <FileText className="h-4 w-4" />
                   Document Checklist
                 </h3>
 
-                <div className="space-y-2">
-                  {Object.entries({
-                    "Form 138": student.intakeDocuments.form138,
-                    "Birth Certificate (PSA)": student.intakeDocuments.birthCertificatePsa,
-                    "Good Moral Character": student.intakeDocuments.goodMoralCharacter,
-                    "Qualified Voucher": student.intakeDocuments.qualifiedVoucher,
-                    "ESC Certificate": student.intakeDocuments.escCertificate,
-                  }).map(([label, status]) => (
-                    <div key={label} className="flex items-center justify-between text-sm">
-                      <span className="text-[var(--color-text)]">{label}</span>
-                      {status === "received" && (
-                        <div className="flex items-center gap-1.5 text-green-700">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span className="text-xs font-medium">Received</span>
-                        </div>
-                      )}
-                      {status === "not_applicable" && (
-                        <span className="text-xs text-[var(--color-text-muted)]">N/A</span>
-                      )}
-                      {status === "to_follow" && (
-                        <div className="flex items-center gap-1.5 text-amber-600">
-                          <AlertCircle className="h-3.5 w-3.5" />
-                          <span className="text-xs font-medium">To Follow</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                {isLoadingDetail ? (
+                  <div className="flex items-center justify-center py-4 text-[var(--color-text-muted)]">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    <span className="text-sm">Loading documents...</span>
+                  </div>
+                ) : detailError ? (
+                  <div className="text-sm text-amber-600">{detailError}</div>
+                ) : studentDetail?.intakeDocuments ? (
+                  <div className="space-y-2">
+                    {Object.entries({
+                      "Form 138": studentDetail.intakeDocuments.form138,
+                      "Birth Certificate (PSA)": studentDetail.intakeDocuments.birthCertificatePsa,
+                      "Good Moral Character": studentDetail.intakeDocuments.goodMoralCharacter,
+                      "Qualified Voucher": studentDetail.intakeDocuments.qualifiedVoucher,
+                      "ESC Certificate": studentDetail.intakeDocuments.escCertificate,
+                    }).map(([label, status]) => (
+                      <div key={label} className="flex items-center justify-between text-sm">
+                        <span className="text-[var(--color-text)]">{label}</span>
+                        {status === "received" && (
+                          <div className="flex items-center gap-1.5 text-green-700">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span className="text-xs font-medium">Received</span>
+                          </div>
+                        )}
+                        {status === "not_applicable" && (
+                          <span className="text-xs text-[var(--color-text-muted)]">N/A</span>
+                        )}
+                        {status === "to_follow" && (
+                          <div className="flex items-center gap-1.5 text-amber-600">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            <span className="text-xs font-medium">To Follow</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-[var(--color-text-muted)]">No documents available</div>
+                )}
               </div>
             )}
 

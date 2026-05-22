@@ -4,6 +4,10 @@ export * from "./enrollment-confirmation.actions";
 
 // Queries - Export types only (functions are server-only, import directly from query files)
 export type {
+  // New lean DTOs (Phase 1: Query Optimization)
+  ReadyToEnrollListRow,
+  ReadyToEnrollDetail,
+  // Legacy type (deprecated, use above)
   ReadyToEnrollStudent,
   PendingEnrollment,
   AssessedEnrollment,
