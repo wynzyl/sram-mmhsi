@@ -32,6 +32,7 @@ import {
 } from "./fee-templates.schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 
 // ─── Template CRUD ────────────────────────────────────────────────────────
 
@@ -74,6 +75,7 @@ export async function createFeeTemplateAction(
   }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-templates");
+  invalidateTag(CACHE_TAGS.FEE_TEMPLATES);
 
   return { success: true, templateId: template.id };
 }
@@ -163,6 +165,7 @@ export async function addFeeTemplateItemAction(
   }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-templates");
+  invalidateTag(CACHE_TAGS.FEE_TEMPLATES);
 
   return { success: true, itemId };
 }
@@ -241,6 +244,7 @@ export async function removeFeeTemplateItemAction(
   }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-templates");
+  invalidateTag(CACHE_TAGS.FEE_TEMPLATES);
 
   return { success: true };
 }

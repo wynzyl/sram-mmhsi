@@ -471,7 +471,7 @@ export async function createAssessmentFromEnrollmentAction(
     if (newAssessmentId) {
       revalidatePath(`/staff/assessments/${newAssessmentId}`);
     }
-    invalidateTag(CACHE_TAGS.ASSESSMENTS);
+    // Assessment creation flips enrollment status (pending → assessed) and feeds dashboard KPIs.
     invalidateTag(CACHE_TAGS.ENROLLMENTS);
     invalidateTag(CACHE_TAGS.DASHBOARD);
 
@@ -687,7 +687,7 @@ export async function reverseBalanceTransferAction(
 
     revalidatePath("/staff/assessments");
     revalidatePath(`/staff/assessments/${assessmentId}`);
-    invalidateTag(CACHE_TAGS.ASSESSMENTS);
+    // Dashboard A/R figures shift when transfers are reversed.
     invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return {
