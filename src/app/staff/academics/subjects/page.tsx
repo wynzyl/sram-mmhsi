@@ -1,30 +1,19 @@
-import { db } from "@/lib/db";
-import { eq, isNull } from "drizzle-orm";
-import { subjects, gradeLevels } from "@/lib/db/schema";
 import { CreateSubjectForm } from "@/features/academics";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
 import { deleteSubjectAction } from "@/features/academics";
+import {
+  getGradeLevelsForDropdown,
+  getSubjectsList,
+} from "@/features/academics/subjects/subjects.queries";
+import { requireSession } from "@/lib/auth/session";
 
 export default async function StaffSubjectManagementPage() {
-  const gradeLevelsList = await db.query.gradeLevels.findMany({
-    columns: { id: true, name: true },
-    orderBy: (gl, { asc }) => [asc(gl.order)],
-  });
+  await requireSession();
 
-  const subjectsList = await db
-    .select({
-      id: subjects.id,
-      name: subjects.name,
-      code: subjects.code,
-      gradeLevel: {
-        name: gradeLevels.name,
-      },
-      createdAt: subjects.createdAt,
-    })
-    .from(subjects)
-    .leftJoin(gradeLevels, eq(subjects.gradeLevelId, gradeLevels.id))
-    .where(isNull(subjects.deletedAt))
-    .orderBy(subjects.name);
+  const [gradeLevelsList, subjectsList] = await Promise.all([
+    getGradeLevelsForDropdown(),
+    getSubjectsList(),
+  ]);
 
   return (
     <div className="space-y-6">

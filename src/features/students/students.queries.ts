@@ -19,7 +19,6 @@ export type StudentDirectoryRow = {
   id: string;
   referenceNumber: string;
   firstName: string;
-  middleName: string | null;
   lastName: string;
   address: string | null;
   telNumber: string | null;
@@ -94,7 +93,6 @@ export async function fetchStudentDirectoryPage(params: {
         id: students.id,
         referenceNumber: students.referenceNumber,
         firstName: students.firstName,
-        middleName: students.middleName,
         lastName: students.lastName,
         address: students.address,
         telNumber: students.mobileNumber,
@@ -136,7 +134,6 @@ export async function fetchStudentDirectoryPage(params: {
     id: r.id,
     referenceNumber: r.referenceNumber,
     firstName: r.firstName,
-    middleName: r.middleName,
     lastName: r.lastName,
     address: r.address,
     telNumber: r.telNumber,
