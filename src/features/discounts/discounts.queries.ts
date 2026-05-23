@@ -630,7 +630,13 @@ export async function getDiscountRequestsByStudent(
     .innerJoin(discountTypes, eq(discountRequests.discountTypeId, discountTypes.id))
     .innerJoin(users, eq(discountRequests.requestedBy, users.id))
     .leftJoin(assessments, eq(discountRequests.assessmentId, assessments.id))
-    .leftJoin(studentDiscounts, eq(discountRequests.id, studentDiscounts.discountRequestId))
+    .leftJoin(
+      studentDiscounts,
+      and(
+        eq(discountRequests.id, studentDiscounts.discountRequestId),
+        isNull(studentDiscounts.reversedAt)
+      )
+    )
     .where(
       and(
         eq(discountRequests.studentId, studentId),
@@ -853,7 +859,13 @@ export async function getDiscountRequestsHistory(
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
     .innerJoin(discountTypes, eq(discountRequests.discountTypeId, discountTypes.id))
     .innerJoin(users, eq(discountRequests.requestedBy, users.id))
-    .leftJoin(studentDiscounts, eq(discountRequests.id, studentDiscounts.discountRequestId))
+    .leftJoin(
+      studentDiscounts,
+      and(
+        eq(discountRequests.id, studentDiscounts.discountRequestId),
+        isNull(studentDiscounts.reversedAt)
+      )
+    )
     .where(and(...conditions))
     .orderBy(desc(discountRequests.decidedAt))
     .limit(pageSize)

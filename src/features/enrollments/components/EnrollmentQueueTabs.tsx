@@ -68,17 +68,14 @@ export default function EnrollmentQueueTabs({ counts, currentTab, basePath }: En
   const handleTabChange = (tabKey: TabKey) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tabKey);
-    // Use startTransition for smooth navigation with loading state
     startTransition(() => {
-      // Push to new URL and refresh to ensure fresh server data
       router.push(`${basePath}?${params.toString()}`);
-      router.refresh();
     });
   };
 
   return (
     <div className="border-b border-[var(--color-border)]">
-      <nav className={cn("-mb-px flex gap-1", isPending && "opacity-70")} aria-label="Enrollment tabs">
+      <nav className="-mb-px flex gap-1" aria-label="Enrollment tabs">
         {TABS.map((tab) => {
           const isActive = currentTab === tab.key;
           const count = counts[tab.countKey];
@@ -87,7 +84,6 @@ export default function EnrollmentQueueTabs({ counts, currentTab, basePath }: En
             <button
               key={tab.key}
               onClick={() => handleTabChange(tab.key)}
-              disabled={isPending}
               className={cn(
                 "group relative inline-flex items-center gap-2 border-b-2 px-4 py-3 font-mono text-xs font-semibold uppercase tracking-wide transition-all duration-150",
                 isActive

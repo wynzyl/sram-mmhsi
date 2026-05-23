@@ -930,7 +930,7 @@ export async function cancelAssessmentAction(
       // ─── 7b. Reject Linked Discounts ────────────────────────────────────────
       // When an assessment is cancelled, reject its linked discount requests
       // so they don't appear as available and are excluded from discount reports.
-      // Users must create new discount requests for any re-assessment.
+      // Skip already-rejected rows so prior rejection metadata is preserved.
       await tx
         .update(discountRequests)
         .set({
@@ -940,7 +940,12 @@ export async function cancelAssessmentAction(
           decisionRemarks: "Auto-rejected: linked assessment was cancelled",
           updatedAt: new Date(),
         })
-        .where(eq(discountRequests.assessmentId, assessmentId));
+        .where(
+          and(
+            eq(discountRequests.assessmentId, assessmentId),
+            ne(discountRequests.status, "rejected")
+          )
+        );
 
       // ─── 7c. Mark Assessment as Cancelled ──────────────────────────────────
       // Totals are preserved as-is (discounts remain applied)
