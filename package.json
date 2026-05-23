@@ -18,7 +18,8 @@
     "db:seed-discounts": "npx tsx scripts/seed-discount-types.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:fix-sequence": "node scripts/fix-missing-sequence.mjs"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",
