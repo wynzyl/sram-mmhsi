@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-05-13
+> Last updated: 2026-05-23
 
 ## Current phase
 
@@ -8,7 +8,35 @@
 
 **Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, executive/reporting dashboards, formal OR **receipt** print view, **E2E** tests, and wiring **rate limit** + mandatory **password-change** gate.
 
-## Latest updates (2026-05-13)
+## Latest updates (2026-05-23)
+
+- [x] **Assessment cancellation & reassessment** — Students can now receive a new assessment after their previous assessment is cancelled. Fixed logic that previously blocked re-assessment.
+- [x] **Discount rejection on cancellation** — When an assessment is cancelled, any linked discount requests are automatically rejected with appropriate status updates.
+- [x] **Applied discounts visibility** — Student profile now displays applied discounts from their current assessment.
+- [x] **Client-side navigation fix** — Fixed blank screen issue on `/staff/students` caused by redirect-to-add-default-param pattern. Replaced with direct value usage to ensure Next.js 16+ client-side navigation works correctly.
+- [x] **Codebase audit** — Audited 14 page templates for problematic redirect patterns; only 1 instance found and fixed.
+
+### Best Practice Documented: Redirect Patterns in Server Components
+
+When a page needs a default URL parameter:
+- **DO:** Fetch the default and use it directly in the query
+- **DON'T:** Redirect to inject it into the URL (breaks client-side navigation in Next.js 16+)
+
+```typescript
+// ✅ CORRECT: Use default value directly
+if (!schoolYearId) {
+  const activeId = await fetchActiveSchoolYearId();
+  if (activeId) schoolYearId = activeId;
+}
+
+// ❌ WRONG: Redirect to add default param
+if (!schoolYearId) {
+  const activeId = await fetchActiveSchoolYearId();
+  if (activeId) redirect(`/page?schoolYearId=${activeId}`);
+}
+```
+
+## Previous updates (2026-05-13)
 
 - [x] **Enrollment queue query optimization** — `getReadyToEnrollStudents()` in `src/features/enrollments/enrollments-queue.queries.ts` rewritten with SQL-level pagination using CTEs and UNION ALL. Applies LIMIT/OFFSET at database level instead of loading all records into memory.
 - [x] **Performance improvement** — Memory usage reduced from ~47MB to ~50KB per page load (5000 students scenario). Query response time ~60-119ms.
@@ -78,7 +106,7 @@
 - [x] **Registrations list + intake visibility** — paginated approved-registration queues for `admin` and `staff` (`admin/registrations`, `staff/registrations`)
 - [x] **Registration creation on student onboarding** — student creation now inserts an approved `registrations` row in the same transaction (`actions/students.ts`)
 - [x] **Enrollments** — queue-based list-first workflow with automatic eligibility detection, global search/grade filters, one-click confirmation drawer, status transitions (pending → assessed → enrolled), and cancellation (`src/lib/queries/enrollment-queue.ts`, `actions/enrollment-confirmation.ts`, `components/enrollments/EnrollmentConfirmationDrawer.tsx`, `/staff/enrollments`)
-- [x] **Fee schedules & assessments** — schedules, per-enrollment assessments, items, balances, and refreshed assessment draft UX (`actions/finance.ts`, `actions/assessments.ts`, `admin/finance/*`, `admin/assessments/*`, `components/assessments/AssessmentDraftForm.tsx`)
+- [x] **Fee schedules & assessments** — schedules, per-enrollment assessments, items, balances, refreshed assessment draft UX, assessment cancellation with re-assessment support, discount requests with auto-rejection on cancellation (`actions/finance.ts`, `actions/assessments.ts`, `admin/finance/*`, `admin/assessments/*`, `components/assessments/AssessmentDraftForm.tsx`, `src/features/discounts/`)
 - [x] **Cashier & OR** — booklet setup, post/void payment, allocations, and shared internal ledger composition (`actions/cashier.ts`, booklet pages, payment UI on **assessment** ledger, `src/app/_internal/pages/assessment-ledger-page.tsx`)
 - [x] **Invoices** — generate, send (Nodemailer/Gmail), status (`actions/invoices.ts`, `admin/finance/invoices/*`)
 - [x] **Academics & grades** — subjects, assignments, teacher grade encoding and lock (`actions/academics.ts`, `actions/teacher.ts`, `/staff/grades/*`, admin assignment pages)
@@ -90,6 +118,7 @@
 
 - [x] Vitest unit tests — `src/lib/validators/assessment.test.ts`, `src/lib/utils/enrollment-grade.test.ts`, `src/lib/utils/enrollment-payment.test.ts`
 - [x] Scripts — `npm run test`, `npm run test:watch`; Playwright listed as `test:e2e` but no committed E2E suite yet
+- [x] Codebase audit — redirect patterns in 14 page templates audited; best practice documented for Next.js 16+
 
 ---
 

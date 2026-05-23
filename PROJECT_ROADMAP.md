@@ -2,9 +2,15 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-05-13
+> Last sync: 2026-05-23
 
-### Current update highlights (2026-05-13)
+### Current update highlights (2026-05-23)
+- **Assessment cancellation & reassessment** — Fixed re-assessment blocking issue; students can now receive new assessments after cancellation.
+- **Discount auto-rejection** — Linked discount requests are automatically rejected when assessments are cancelled.
+- **Applied discounts in profile** — Student profile now shows discounts applied to current assessment.
+- **Client-side navigation fix** — Resolved blank screen on `/staff/students` by replacing redirect-to-add-default-param pattern with direct value usage. Audited 14 page templates; documented best practice for Next.js 16+ redirect patterns.
+
+### Previous highlights (2026-05-13)
 - **Enrollment queue query optimization** — `getReadyToEnrollStudents()` rewritten with SQL-level pagination using CTEs and UNION ALL. Memory usage reduced from ~47MB to ~50KB per page load (for 5000 students). Query execution time ~60-119ms.
 - **SQL-level document completeness** — Moved `areDocumentsComplete()` logic to SQL CASE expression, eliminating JavaScript post-processing.
 
@@ -93,6 +99,9 @@
 - [x] Assessment item CRUD (tuition, fees, discounts)
 - [x] Assessment balance calculation
 - [x] Assessment draft creation UX refresh (student context + fee-catalog line visibility + computed net summary)
+- [x] Assessment cancellation with re-assessment support (students can receive new assessment after cancellation)
+- [x] Discount request workflow with auto-rejection on assessment cancellation
+- [x] Applied discounts visibility in student profile
 - [x] Audit events: assessment created/revised; cancellation metadata (migration `0008`)
 
 ---
@@ -166,6 +175,7 @@
 - [ ] E2E tests — Playwright dependency present; suite/config not yet in repo
 - [ ] Security tests: route protection, action-level permission, session expiry
 - [x] Performance optimization: enrollment queue query (`getReadyToEnrollStudents`) — SQL-level pagination with CTEs/UNION ALL (47MB → 50KB memory per page)
+- [x] **Client-side navigation audit** — Audited 14 page templates for redirect patterns; documented best practice for Next.js 16+ (avoid redirect-to-add-default-param; use direct value instead)
 - [ ] Performance tests: student search, ledger queries
 
 ---
