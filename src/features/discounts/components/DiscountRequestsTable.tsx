@@ -6,12 +6,14 @@ import {
   rejectDiscountRequestAction,
   bulkApproveDiscountsAction,
   applyApprovedDiscountToExistingAssessment,
+  cancelDiscountRequestAction,
 } from "../discounts.actions";
 import type {
   ApproveDiscountRequestFormState,
   RejectDiscountRequestFormState,
   BulkApproveDiscountsFormState,
   ApplyApprovedDiscountFormState,
+  CancelDiscountRequestFormState,
   DiscountRequestView,
 } from "../discounts.schema";
 import { DataTable } from "@/components/shared/DataTable";
@@ -65,6 +67,12 @@ export default function DiscountRequestsTable({
     initialApplyState
   );
 
+  const initialCancelState: CancelDiscountRequestFormState = {};
+  const [cancelState, cancelAction, cancelPending] = useActionState(
+    cancelDiscountRequestAction,
+    initialCancelState
+  );
+
   useFormToast(approveState, {
     successMessage: "Discount request approved",
     onSuccess: () => {
@@ -85,6 +93,10 @@ export default function DiscountRequestsTable({
 
   useFormToast(applyState, {
     successMessage: "Discount applied to assessment",
+  });
+
+  useFormToast(cancelState, {
+    successMessage: "Discount request cancelled",
   });
 
   const toggleSelection = (id: string) => {
@@ -188,6 +200,19 @@ export default function DiscountRequestsTable({
         cell: ({ row }) => (
           <div className="text-sm font-medium">
             {formatDiscountValue(row.original)}
+          </div>
+        ),
+      },
+      {
+        header: "Discount Amount",
+        accessorKey: "appliedDiscountAmount",
+        cell: ({ row }) => (
+          <div className="text-sm font-medium">
+            {row.original.appliedDiscountAmount ? (
+              <CurrencyDisplay amount={Number(row.original.appliedDiscountAmount)} />
+            ) : (
+              <span className="text-[var(--color-text-muted)]">-</span>
+            )}
           </div>
         ),
       },
@@ -311,29 +336,49 @@ export default function DiscountRequestsTable({
             );
           }
 
-          // Approved-but-unapplied row (post-reversal replacement awaiting
-          // attachment to its parent assessment): show "Apply to Assessment".
-          if (
-            request.status === "approved" &&
-            !request.assessmentId &&
-            request.enrollmentHasAssessment
-          ) {
+          // Approved-but-unapplied row: show actions based on state
+          if (request.status === "approved" && !request.assessmentId) {
+            // Case 1: Enrollment has assessment - show "Apply to Assessment"
+            // Case 2: Enrollment is pending (no assessment) - show "Cancel" if canCancel
             return (
-              <form action={applyAction} className="flex">
-                <input
-                  type="hidden"
-                  name="discountRequestId"
-                  value={request.id}
-                />
-                <Button
-                  type="submit"
-                  variant="success"
-                  size="sm"
-                  loading={applyPending}
-                >
-                  Apply to Assessment
-                </Button>
-              </form>
+              <div className="flex gap-2">
+                {/* Apply button when enrollment has an active assessment */}
+                {request.enrollmentHasAssessment && (
+                  <form action={applyAction}>
+                    <input
+                      type="hidden"
+                      name="discountRequestId"
+                      value={request.id}
+                    />
+                    <Button
+                      type="submit"
+                      variant="success"
+                      size="sm"
+                      loading={applyPending}
+                    >
+                      Apply
+                    </Button>
+                  </form>
+                )}
+                {/* Cancel button when discount is cancellable (approved, not applied, enrollment pending) */}
+                {request.canCancel && (
+                  <form action={cancelAction}>
+                    <input
+                      type="hidden"
+                      name="discountRequestId"
+                      value={request.id}
+                    />
+                    <Button
+                      type="submit"
+                      variant="danger"
+                      size="sm"
+                      loading={cancelPending}
+                    >
+                      Cancel
+                    </Button>
+                  </form>
+                )}
+              </div>
             );
           }
 
@@ -383,6 +428,8 @@ export default function DiscountRequestsTable({
       rejectPending,
       applyAction,
       applyPending,
+      cancelAction,
+      cancelPending,
     ]
   );
 

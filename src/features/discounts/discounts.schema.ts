@@ -227,6 +227,8 @@ export interface DiscountRequestView {
   appliedDiscountAmount?: string | null;
   /** Assessment billing status (null if not yet applied) */
   assessmentBillingStatus?: string | null;
+  /** Whether this approved request can be cancelled (approved but not applied, enrollment pending) */
+  canCancel?: boolean;
 }
 
 /** Applied student discount for display */
