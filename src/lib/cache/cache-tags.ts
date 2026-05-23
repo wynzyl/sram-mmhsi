@@ -1,13 +1,18 @@
-import { revalidateTag as nextRevalidateTag } from "next/cache";
+import {
+  revalidateTag as nextRevalidateTag,
+  updateTag as nextUpdateTag,
+} from "next/cache";
 
 /**
  * Centralized cache tag definitions for consistent tag-based revalidation.
  *
- * Usage:
- * - In queries with unstable_cache: tags: [CACHE_TAGS.DASHBOARD]
- * - In actions after mutations: invalidateTag(CACHE_TAGS.DASHBOARD)
+ * CACHING STRATEGY (per CACHING-FIX-PLAN.md):
+ * - Use `forceUpdateTag()` for read-your-own-writes (enrollments, assessments, payments)
+ * - Use `invalidateTag()` for dashboard summaries (stale-while-revalidate)
+ * - Do NOT cache transaction-heavy pages aggressively
  *
  * @see https://nextjs.org/docs/app/api-reference/functions/revalidateTag
+ * @see https://nextjs.org/docs/app/api-reference/functions/updateTag
  */
 /**
  * Only add a tag here once a query is wrapped in `unstable_cache(...)` with
@@ -77,7 +82,7 @@ export function invalidateTag(tag: CacheTag): void {
 }
 
 /**
- * Invalidate multiple cache tags at once.
+ * Invalidate multiple cache tags at once (stale-while-revalidate).
  *
  * @example
  * invalidateTags(CACHE_TAGS.DASHBOARD, CACHE_TAGS.ENROLLMENTS)
@@ -85,5 +90,41 @@ export function invalidateTag(tag: CacheTag): void {
 export function invalidateTags(...tags: CacheTag[]): void {
   for (const tag of tags) {
     nextRevalidateTag(tag, "max");
+  }
+}
+
+/**
+ * Force immediate cache invalidation for read-your-own-writes scenarios.
+ *
+ * Uses Next.js 16's `updateTag()` which is a BLOCKING operation that
+ * expires the cache entry instantly. The very next render will see fresh data.
+ *
+ * USE THIS FOR:
+ * - Enrollment status changes (pending → assessed → enrolled)
+ * - Assessment mutations (create, cancel)
+ * - Payment posting
+ * - Discount application
+ *
+ * DO NOT USE FOR:
+ * - Dashboard summaries (use invalidateTag instead)
+ * - Reference data (fee schedules, grade levels)
+ *
+ * @example
+ * // After cancelling assessment, enrollment status changes
+ * forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
+ */
+export function forceUpdateTag(tag: CacheTag): void {
+  nextUpdateTag(tag);
+}
+
+/**
+ * Force immediate cache invalidation for multiple tags.
+ *
+ * @example
+ * forceUpdateTags(CACHE_TAGS.ENROLLMENTS, CACHE_TAGS.DASHBOARD);
+ */
+export function forceUpdateTags(...tags: CacheTag[]): void {
+  for (const tag of tags) {
+    nextUpdateTag(tag);
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTransition } from "react";
 import { cn } from "@/lib/utils/cn";
 
 type TabKey = "ready-to-enroll" | "pending" | "assessed" | "enrolled" | "cancelled";
@@ -62,11 +63,14 @@ type EnrollmentQueueTabsProps = {
 export default function EnrollmentQueueTabs({ counts, currentTab, basePath }: EnrollmentQueueTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   const handleTabChange = (tabKey: TabKey) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tabKey);
-    router.push(`${basePath}?${params.toString()}`);
+    startTransition(() => {
+      router.push(`${basePath}?${params.toString()}`);
+    });
   };
 
   return (
@@ -84,7 +88,8 @@ export default function EnrollmentQueueTabs({ counts, currentTab, basePath }: En
                 "group relative inline-flex items-center gap-2 border-b-2 px-4 py-3 font-mono text-xs font-semibold uppercase tracking-wide transition-all duration-150",
                 isActive
                   ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-                  : "border-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border-2)] hover:text-[var(--color-text)]"
+                  : "border-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border-2)] hover:text-[var(--color-text)]",
+                isPending && "cursor-wait"
               )}
               aria-current={isActive ? "page" : undefined}
               title={tab.description}

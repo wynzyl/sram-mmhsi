@@ -223,6 +223,12 @@ export interface DiscountRequestView {
   assessmentId: string | null;
   /** Whether the parent enrollment already has a finalized assessment */
   enrollmentHasAssessment: boolean;
+  /** Applied discount amount (null if not yet applied) */
+  appliedDiscountAmount?: string | null;
+  /** Assessment billing status (null if not yet applied) */
+  assessmentBillingStatus?: string | null;
+  /** Whether this approved request can be cancelled (approved but not applied, enrollment pending) */
+  canCancel?: boolean;
 }
 
 /** Applied student discount for display */

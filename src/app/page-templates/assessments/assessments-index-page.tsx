@@ -10,7 +10,7 @@ import PendingAssessmentsQueue from "@/features/assessments/components/PendingAs
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
 import { getAssessmentsList } from "@/features/assessments";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 const dateQueued = (d: Date) =>
   d.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" });

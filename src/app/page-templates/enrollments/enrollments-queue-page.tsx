@@ -26,7 +26,8 @@ import {
   CancelledEnrollmentsTable,
 } from "@/features/enrollments";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
+import { RefreshButton } from "@/components/shared/RefreshButton";
 
 type EnrollmentQueuePageProps = {
   searchParams: Promise<{
@@ -220,13 +221,8 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Refresh Button */}
-          <form>
-            <Button variant="secondary" size="sm" type="submit" className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
-            </Button>
-          </form>
+          {/* Refresh Button - uses router.refresh() to clear client cache */}
+          <RefreshButton />
 
           {/* Manual Entry Link (for edge cases) */}
           {canCreate && (

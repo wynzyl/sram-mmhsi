@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
+import { CACHE_TAGS, invalidateTag, forceUpdateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   enrollments,
@@ -317,7 +317,8 @@ export async function confirmEnrollmentAction(
     if (registrationId) {
       revalidatePath("/staff/registrations");
     }
-    invalidateTag(CACHE_TAGS.ENROLLMENTS); // PERFORMANCE: Invalidate enrollment counts cache
+    // Use forceUpdateTag for enrollments (read-your-own-writes - immediate consistency)
+    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
     // Confirmation creates a new enrollment row — dashboard headcount KPIs change.
     invalidateTag(CACHE_TAGS.DASHBOARD);
 

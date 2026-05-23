@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
+import { CACHE_TAGS, invalidateTag, forceUpdateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   enrollments,
@@ -11,7 +11,6 @@ import {
   schoolYears,
   feeItemTypes,
   payments,
-  studentDiscounts,
   discountRequests,
 } from "@/lib/db/schema";
 import { eq, and, ne, isNotNull, isNull, desc, asc, inArray } from "drizzle-orm";
@@ -479,7 +478,8 @@ export async function createAssessmentFromEnrollmentAction(
       revalidatePath(`/staff/assessments/${newAssessmentId}`);
     }
     // Assessment creation flips enrollment status (pending → assessed) and feeds dashboard KPIs.
-    invalidateTag(CACHE_TAGS.ENROLLMENTS);
+    // Use forceUpdateTag for enrollments (read-your-own-writes - immediate consistency)
+    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
     invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, assessmentId: newAssessmentId };
@@ -734,10 +734,7 @@ const OUTSTANDING_PAYMENT_EPSILON = 0.009;
  * 2. If balance was forwarded INTO this assessment:
  *    - Reverse balance forward (restore source assessment balance)
  *    - Delete BFX receipts
- * 3. Revert applied discounts:
- *    - Delete `studentDiscounts` records
- *    - Set `discountRequests` status to `rejected`
- *    - Delete discount line items from `assessmentItems`
+ * 3. Preserve discounts (discounts are managed independently via Finance workflows)
  * 4. Change enrollment: `assessed` → `pending`
  * 5. Create audit log entry
  * 6. Commit transaction
@@ -930,76 +927,28 @@ export async function cancelAssessmentAction(
           );
       }
 
-      // ─── 7b. Handle Applied Discounts ────────────────────────────────────────
-      const appliedDiscounts = await tx.query.studentDiscounts.findMany({
-        where: and(
-          eq(studentDiscounts.assessmentId, assessmentId),
-          isNull(studentDiscounts.reversedAt) // Only non-reversed discounts
-        ),
-        columns: {
-          id: true,
-          discountRequestId: true,
-          assessmentItemId: true,
-          discountAmount: true,
-          discountTypeName: true,
-        },
-      });
-
-      if (appliedDiscounts.length > 0) {
-        // Collect discount request IDs and assessment item IDs for batch operations
-        const discountRequestIds = appliedDiscounts
-          .map((d) => d.discountRequestId)
-          .filter((id): id is string => id != null);
-
-        const discountItemIds = appliedDiscounts
-          .map((d) => d.assessmentItemId)
-          .filter((id): id is string => id != null);
-
-        // Delete studentDiscounts records
-        await tx
-          .delete(studentDiscounts)
-          .where(eq(studentDiscounts.assessmentId, assessmentId));
-
-        // Reset discountRequests to "unapplied" state (keep approved status)
-        // so they can be re-applied when a new assessment is created
-        if (discountRequestIds.length > 0) {
-          await tx
-            .update(discountRequests)
-            .set({
-              assessmentId: null,       // Detach from cancelled assessment
-              baseAmount: null,         // Will be recalculated on re-apply
-              calculatedAmount: null,   // Will be recalculated on re-apply
-              updatedAt: new Date(),
-            })
-            .where(inArray(discountRequests.id, discountRequestIds));
-        }
-
-        // Delete discount line items from assessmentItems
-        if (discountItemIds.length > 0) {
-          await tx
-            .delete(assessmentItems)
-            .where(inArray(assessmentItems.id, discountItemIds));
-        }
-
-        await logAudit(
-          {
-            actor: session.userId,
-            actorRole: session.role,
-            action: "discounts_reset_for_reapplication",
-            targetEntity: "assessments",
-            targetId: assessmentId,
-            newState: {
-              discountsResetForReapplication: appliedDiscounts.length,
-              resetDiscountRequestIds: discountRequestIds,
-              deletedItemIds: discountItemIds,
-              reason: "assessment_cancellation",
-            },
-          },
-          { throwOnFail: true }
+      // ─── 7b. Reject Linked Discounts ────────────────────────────────────────
+      // When an assessment is cancelled, reject its linked discount requests
+      // so they don't appear as available and are excluded from discount reports.
+      // Skip already-rejected rows so prior rejection metadata is preserved.
+      await tx
+        .update(discountRequests)
+        .set({
+          status: "rejected",
+          decidedBy: session.userId,
+          decidedAt: new Date(),
+          decisionRemarks: "Auto-rejected: linked assessment was cancelled",
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(discountRequests.assessmentId, assessmentId),
+            ne(discountRequests.status, "rejected")
+          )
         );
-      }
 
-      // ─── 7c. Mark Assessment as Cancelled ────────────────────────────────────
+      // ─── 7c. Mark Assessment as Cancelled ──────────────────────────────────
+      // Totals are preserved as-is (discounts remain applied)
       await tx
         .update(assessments)
         .set({
@@ -1041,7 +990,7 @@ export async function cancelAssessmentAction(
             remarks,
             enrollmentRevertedToPending: true,
             balanceForwardsReversed: balanceForwardItems.length,
-            discountsResetForReapplication: appliedDiscounts.length,
+            discountsRejected: true,
           },
         },
         { throwOnFail: true }
@@ -1063,8 +1012,10 @@ export async function cancelAssessmentAction(
       revalidatePath(`/staff/enrollments/${assessment.enrollmentId}`);
     }
     revalidatePath("/staff/finance/discount-requests");
+    // Use forceUpdateTag for enrollments (read-your-own-writes - immediate consistency)
+    // Use invalidateTag for dashboard (stale-while-revalidate is acceptable)
+    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
     invalidateTag(CACHE_TAGS.DASHBOARD);
-    invalidateTag(CACHE_TAGS.ENROLLMENTS);
 
     return {
       success: true,

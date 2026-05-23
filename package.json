@@ -15,6 +15,7 @@
     "db:seed-teacher": "npx tsx scripts/seed-teacher.ts",
     "db:seed-fee-item": "npx tsx scripts/seed-fee-item-types.ts",
     "db:seed-registrations": "npx tsx scripts/seed-registrations.ts",
+    "db:seed-discounts": "npx tsx scripts/seed-discount-types.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
