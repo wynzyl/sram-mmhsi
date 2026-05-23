@@ -261,10 +261,20 @@ export function RegistrationDetailView({
                   <span
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide",
-                      student.isActive
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                        : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
+                      !student.isActive &&
+                        "border-(--color-border) bg-(--color-surface-2) text-(--color-text-muted)"
                     )}
+                    style={
+                      student.isActive
+                        ? {
+                            backgroundColor:
+                              "color-mix(in srgb, var(--color-success) 10%, var(--card))",
+                            borderColor:
+                              "color-mix(in srgb, var(--color-success) 30%, var(--border))",
+                            color: "var(--color-success)",
+                          }
+                        : undefined
+                    }
                   >
                     <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
                     {student.isActive ? "Active" : "Inactive"}
@@ -483,7 +493,7 @@ export function RegistrationDetailView({
           <aside className="space-y-6 print:hidden">
             <DataCard className="p-5">
               <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-[var(--color-text)]">
-                <Zap className="h-5 w-5 text-amber-500" aria-hidden />
+                <Zap className="h-5 w-5 text-(--color-primary)" aria-hidden />
                 Quick actions
               </h2>
               <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">

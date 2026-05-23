@@ -692,7 +692,7 @@ function TypeRadioCard({
         "focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/15",
         checked
           ? "border-[var(--color-primary)] bg-[var(--color-primary)]/[0.04] shadow-sm"
-          : "border-gray-200 bg-white hover:border-gray-300"
+          : "border-(--color-border) bg-(--color-surface) hover:border-(--color-border-2) hover:bg-(--color-surface-2)"
       )}
     >
       <div className="flex w-full items-center justify-between">
