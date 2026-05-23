@@ -1,7 +1,4 @@
 import { redirect } from "next/navigation";
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { getQueryClient } from "@/lib/query/query-client";
-import { queryKeys } from "@/lib/query/keys";
 import { parseUuidSearchParam } from "@/lib/utils/query-params";
 import { studentDirectoryListHref } from "@/lib/utils/student-directory-href";
 import type { StudentDirectoryBasePath } from "@/lib/utils/student-directory-href";
@@ -25,70 +22,53 @@ export async function InternalStudentDirectoryPage(props: {
   title: string;
   quickLinks: StudentDirectoryQuickLink[];
 }) {
-  const { searchParams, basePath, registerHref, deniedRedirect, title, quickLinks } = props;
-  const session = await requireSession();
-  if (!hasPermission(session.role, "students:read")) redirect(deniedRedirect);
+  try {
+    const { searchParams, basePath, registerHref, deniedRedirect, title, quickLinks } = props;
+    const session = await requireSession();
+    if (!hasPermission(session.role, "students:read")) redirect(deniedRedirect);
 
-  const {
-    q = "",
-    page = "1",
-    schoolYearId: schoolYearIdRaw,
-    gradeLevelId: gradeLevelIdRaw,
-  } = await searchParams;
-  const gradeLevelId = parseUuidSearchParam(gradeLevelIdRaw);
-  let schoolYearId = parseUuidSearchParam(schoolYearIdRaw);
+    const {
+      q = "",
+      page = "1",
+      schoolYearId: schoolYearIdRaw,
+      gradeLevelId: gradeLevelIdRaw,
+    } = await searchParams;
+    const gradeLevelId = parseUuidSearchParam(gradeLevelIdRaw);
+    let schoolYearId = parseUuidSearchParam(schoolYearIdRaw);
 
-  // Default to the active school year when none is specified in the URL.
-  if (!schoolYearId) {
-    const activeId = await fetchActiveSchoolYearId();
-    if (activeId) {
-      redirect(studentDirectoryListHref(basePath, { q: q.trim() || undefined, schoolYearId: activeId, gradeLevelId }));
+    // Default to the active school year when none is specified in the URL.
+    // Use the active year directly instead of redirecting to avoid client-side navigation issues.
+    if (!schoolYearId) {
+      const activeId = await fetchActiveSchoolYearId();
+      if (activeId) {
+        schoolYearId = activeId;
+      }
     }
-  }
 
-  const currentPageRaw = Math.max(1, parseInt(page, 10) || 1);
+    const currentPageRaw = Math.max(1, parseInt(page, 10) || 1);
 
-  const data = await fetchStudentDirectoryPage({
-    q,
-    page: currentPageRaw,
-    schoolYearId,
-    gradeLevelId,
-  });
+    const data = await fetchStudentDirectoryPage({
+      q,
+      page: currentPageRaw,
+      schoolYearId,
+      gradeLevelId,
+    });
 
-  if (data.totalCount > 0 && currentPageRaw > data.totalPages) {
-    redirect(
-      studentDirectoryListHref(basePath, {
-        q: q.trim() || undefined,
-        schoolYearId,
-        gradeLevelId,
-        page: data.totalPages,
-      })
-    );
-  }
+    if (data.totalCount > 0 && currentPageRaw > data.totalPages) {
+      redirect(
+        studentDirectoryListHref(basePath, {
+          q: q.trim() || undefined,
+          schoolYearId,
+          gradeLevelId,
+          page: data.totalPages,
+        })
+      );
+    }
 
-  const canCreate = hasPermission(session.role, "students:create");
-  const emptyMessage = getStudentDirectoryEmptyMessage(q, schoolYearId, gradeLevelId);
+    const canCreate = hasPermission(session.role, "students:create");
+    const emptyMessage = getStudentDirectoryEmptyMessage(q, schoolYearId, gradeLevelId);
 
-  // Hydrate query cache for SSR
-  const queryClient = getQueryClient();
-  const normalizedFilters = {
-    q: q.trim() || "",
-    page: currentPageRaw,
-    schoolYearId: schoolYearId || null,
-    gradeLevelId: gradeLevelId || null,
-  };
-
-  await queryClient.prefetchQuery({
-    queryKey: queryKeys.students.list(normalizedFilters),
-    queryFn: async () => ({
-      ...data,
-      emptyMessage,
-      canCreate,
-    }),
-  });
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
+    return (
       <StudentDirectoryView
         basePath={basePath}
         registerHref={registerHref}
@@ -106,6 +86,18 @@ export async function InternalStudentDirectoryPage(props: {
         currentPage={data.currentPage}
         quickLinks={quickLinks}
       />
-    </HydrationBoundary>
-  );
+    );
+  } catch (error) {
+    // Next.js redirect() throws a special error - don't log these
+    const isRedirect =
+      error instanceof Error &&
+      "digest" in error &&
+      typeof (error as { digest?: string }).digest === "string" &&
+      (error as { digest: string }).digest.startsWith("NEXT_REDIRECT");
+
+    if (!isRedirect) {
+      console.error("[students-directory-page] Render error:", error);
+    }
+    throw error; // Re-throw to let Next.js handle redirects or trigger error boundary
+  }
 }
