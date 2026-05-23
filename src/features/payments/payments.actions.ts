@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
+import { CACHE_TAGS, invalidateTag, forceUpdateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   receiptBooklets,
@@ -330,7 +330,8 @@ export async function postPaymentAction(
     revalidatePath("/staff/finance/invoices");
     // Dashboard KPIs reflect collections; an enrollment can flip to "enrolled" via payment.
     invalidateTag(CACHE_TAGS.DASHBOARD);
-    invalidateTag(CACHE_TAGS.ENROLLMENTS);
+    // Use forceUpdateTag for enrollments (read-your-own-writes - immediate consistency)
+    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
     return { success: true, message: `Payment posted successfully. OR Number: ${orNumberToAssign}` };
   } catch (error: unknown) {
     logger.error("[cashier] Failed to post payment", { error: String(error) });
