@@ -834,6 +834,17 @@ export async function getDiscountRequestsHistory(
       decisionRemarks: discountRequests.decisionRemarks,
       overrideValue: discountRequests.overrideValue,
       overrideReason: discountRequests.overrideReason,
+      // Applied discount amount (from studentDiscounts if applied)
+      appliedDiscountAmount: studentDiscounts.discountAmount,
+      // For canCancel calculation
+      assessmentId: discountRequests.assessmentId,
+      enrollmentStatus: enrollments.status,
+      // Check if an active (non-cancelled) assessment exists for the enrollment
+      hasActiveAssessment: sql<boolean>`EXISTS (
+        SELECT 1 FROM assessments a
+        WHERE a.enrollment_id = ${enrollments.id}
+        AND a.cancelled_at IS NULL
+      )`,
     })
     .from(discountRequests)
     .innerJoin(students, eq(discountRequests.studentId, students.id))
@@ -842,6 +853,7 @@ export async function getDiscountRequestsHistory(
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
     .innerJoin(discountTypes, eq(discountRequests.discountTypeId, discountTypes.id))
     .innerJoin(users, eq(discountRequests.requestedBy, users.id))
+    .leftJoin(studentDiscounts, eq(discountRequests.id, studentDiscounts.discountRequestId))
     .where(and(...conditions))
     .orderBy(desc(discountRequests.decidedAt))
     .limit(pageSize)
@@ -872,8 +884,15 @@ export async function getDiscountRequestsHistory(
     decisionRemarks: r.decisionRemarks,
     overrideValue: r.overrideValue,
     overrideReason: r.overrideReason,
-    assessmentId: null,
-    enrollmentHasAssessment: false,
+    assessmentId: r.assessmentId,
+    enrollmentHasAssessment: r.hasActiveAssessment,
+    appliedDiscountAmount: r.appliedDiscountAmount,
+    // canCancel: approved, not applied to assessment, enrollment still pending (no assessment)
+    canCancel:
+      r.status === "approved" &&
+      r.assessmentId === null &&
+      r.enrollmentStatus === "pending" &&
+      !r.hasActiveAssessment,
   }));
 
   return {
