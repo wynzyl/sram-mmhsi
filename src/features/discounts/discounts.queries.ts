@@ -314,7 +314,15 @@ export async function getDiscountRequestsByEnrollment(
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
     .innerJoin(discountTypes, eq(discountRequests.discountTypeId, discountTypes.id))
     .innerJoin(users, eq(discountRequests.requestedBy, users.id))
-    .where(eq(discountRequests.enrollmentId, enrollmentId))
+    .where(
+      and(
+        eq(discountRequests.enrollmentId, enrollmentId),
+        // Exclude discounts already applied to any assessment (active or cancelled)
+        // Only show pending-to-apply discounts (assessmentId IS NULL)
+        // This aligns with applyApprovedDiscountsToAssessment() logic
+        isNull(discountRequests.assessmentId)
+      )
+    )
     .orderBy(desc(discountRequests.requestedAt));
 
   return rows.map((r) => ({
@@ -576,18 +584,12 @@ export async function getStudentDiscountsByAssessment(
 }
 
 /**
- * Get all discount requests for a student across all enrollments
+ * Get all discount requests for a student across all enrollments.
+ * Shows pending, approved, and applied discounts (excludes rejected/cancelled).
  */
 export async function getDiscountRequestsByStudent(
   studentId: string
 ): Promise<DiscountRequestView[]> {
-  const requestedByUser = db.$with("requested_by_user").as(
-    db.select({ id: users.id, username: users.username }).from(users)
-  );
-  const decidedByUser = db.$with("decided_by_user").as(
-    db.select({ id: users.id, username: users.username }).from(users)
-  );
-
   const rows = await db
     .select({
       id: discountRequests.id,
@@ -614,6 +616,11 @@ export async function getDiscountRequestsByStudent(
       decisionRemarks: discountRequests.decisionRemarks,
       overrideValue: discountRequests.overrideValue,
       overrideReason: discountRequests.overrideReason,
+      // Assessment info (null if not yet applied)
+      assessmentId: discountRequests.assessmentId,
+      assessmentBillingStatus: assessments.billingStatus,
+      // Applied discount amount (null if not yet applied)
+      appliedDiscountAmount: studentDiscounts.discountAmount,
     })
     .from(discountRequests)
     .innerJoin(students, eq(discountRequests.studentId, students.id))
@@ -622,7 +629,24 @@ export async function getDiscountRequestsByStudent(
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
     .innerJoin(discountTypes, eq(discountRequests.discountTypeId, discountTypes.id))
     .innerJoin(users, eq(discountRequests.requestedBy, users.id))
-    .where(eq(discountRequests.studentId, studentId))
+    .leftJoin(assessments, eq(discountRequests.assessmentId, assessments.id))
+    .leftJoin(
+      studentDiscounts,
+      and(
+        eq(discountRequests.id, studentDiscounts.discountRequestId),
+        isNull(studentDiscounts.reversedAt)
+      )
+    )
+    .where(
+      and(
+        eq(discountRequests.studentId, studentId),
+        // Show all non-rejected/non-cancelled discounts:
+        // - pending: waiting for approval
+        // - approved: ready to apply (or already applied)
+        // Excludes: rejected, cancelled, reversed
+        inArray(discountRequests.status, ["pending", "approved"])
+      )
+    )
     .orderBy(desc(discountRequests.requestedAt));
 
   return rows.map((r) => ({
@@ -650,8 +674,11 @@ export async function getDiscountRequestsByStudent(
     decisionRemarks: r.decisionRemarks,
     overrideValue: r.overrideValue,
     overrideReason: r.overrideReason,
-    assessmentId: null,
-    enrollmentHasAssessment: false,
+    assessmentId: r.assessmentId,
+    enrollmentHasAssessment: r.assessmentId !== null,
+    // Additional fields for display (extend type if needed)
+    appliedDiscountAmount: r.appliedDiscountAmount,
+    assessmentBillingStatus: r.assessmentBillingStatus,
   }));
 }
 
@@ -813,6 +840,17 @@ export async function getDiscountRequestsHistory(
       decisionRemarks: discountRequests.decisionRemarks,
       overrideValue: discountRequests.overrideValue,
       overrideReason: discountRequests.overrideReason,
+      // Applied discount amount (from studentDiscounts if applied)
+      appliedDiscountAmount: studentDiscounts.discountAmount,
+      // For canCancel calculation
+      assessmentId: discountRequests.assessmentId,
+      enrollmentStatus: enrollments.status,
+      // Check if an active (non-cancelled) assessment exists for the enrollment
+      hasActiveAssessment: sql<boolean>`EXISTS (
+        SELECT 1 FROM assessments a
+        WHERE a.enrollment_id = ${enrollments.id}
+        AND a.cancelled_at IS NULL
+      )`,
     })
     .from(discountRequests)
     .innerJoin(students, eq(discountRequests.studentId, students.id))
@@ -821,6 +859,13 @@ export async function getDiscountRequestsHistory(
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
     .innerJoin(discountTypes, eq(discountRequests.discountTypeId, discountTypes.id))
     .innerJoin(users, eq(discountRequests.requestedBy, users.id))
+    .leftJoin(
+      studentDiscounts,
+      and(
+        eq(discountRequests.id, studentDiscounts.discountRequestId),
+        isNull(studentDiscounts.reversedAt)
+      )
+    )
     .where(and(...conditions))
     .orderBy(desc(discountRequests.decidedAt))
     .limit(pageSize)
@@ -851,8 +896,15 @@ export async function getDiscountRequestsHistory(
     decisionRemarks: r.decisionRemarks,
     overrideValue: r.overrideValue,
     overrideReason: r.overrideReason,
-    assessmentId: null,
-    enrollmentHasAssessment: false,
+    assessmentId: r.assessmentId,
+    enrollmentHasAssessment: r.hasActiveAssessment,
+    appliedDiscountAmount: r.appliedDiscountAmount,
+    // canCancel: approved, not applied to assessment, enrollment still pending (no assessment)
+    canCancel:
+      r.status === "approved" &&
+      r.assessmentId === null &&
+      r.enrollmentStatus === "pending" &&
+      !r.hasActiveAssessment,
   }));
 
   return {
