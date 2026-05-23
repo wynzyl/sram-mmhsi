@@ -137,8 +137,19 @@ export function PendingEnrollmentsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
-        <p className="text-sm text-amber-800">
+      <div
+        className="rounded-md border p-4"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--warning, #f59e0b) 10%, var(--card))",
+          borderColor:
+            "color-mix(in srgb, var(--warning, #f59e0b) 30%, var(--border))",
+        }}
+      >
+        <p
+          className="text-sm"
+          style={{ color: "var(--warning, #f59e0b)" }}
+        >
           <strong>Pending Enrollments:</strong> These students have been enrolled but are awaiting fee
           assessment. Finance officers should create assessments to move them to the next stage.
         </p>
@@ -241,7 +252,10 @@ export function AssessedEnrollmentsTable({
         accessorKey: "totalPaid",
         header: "Paid",
         cell: ({ row }) => (
-          <span className="font-mono text-sm text-green-700">
+          <span
+            className="font-mono text-sm"
+            style={{ color: "var(--color-success)" }}
+          >
             {formatCurrency(Number(row.original.totalPaid))}
           </span>
         ),
@@ -253,9 +267,13 @@ export function AssessedEnrollmentsTable({
           const balance = Number(row.original.balance);
           return (
             <span
-              className={`font-mono text-sm font-semibold ${
-                balance > 0.01 ? "text-amber-600" : "text-green-700"
-              }`}
+              className="font-mono text-sm font-semibold"
+              style={{
+                color:
+                  balance > 0.01
+                    ? "var(--warning, #f59e0b)"
+                    : "var(--color-success)",
+              }}
             >
               {formatCurrency(balance)}
             </span>
@@ -294,8 +312,19 @@ export function AssessedEnrollmentsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
-        <p className="text-sm text-blue-800">
+      <div
+        className="rounded-md border p-4"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--color-primary) 10%, var(--card))",
+          borderColor:
+            "color-mix(in srgb, var(--color-primary) 30%, var(--border))",
+        }}
+      >
+        <p
+          className="text-sm"
+          style={{ color: "var(--color-primary)" }}
+        >
           <strong>Assessed Enrollments:</strong> Students with completed fee assessments awaiting payment.
           Cashiers should post payments to move them to enrolled status.
         </p>
@@ -423,8 +452,19 @@ export function EnrolledStudentsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-green-200 bg-green-50 p-4">
-        <p className="text-sm text-green-800">
+      <div
+        className="rounded-md border p-4"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--color-success) 10%, var(--card))",
+          borderColor:
+            "color-mix(in srgb, var(--color-success) 30%, var(--border))",
+        }}
+      >
+        <p
+          className="text-sm"
+          style={{ color: "var(--color-success)" }}
+        >
           <strong>Enrolled Students:</strong> Fully enrolled students for the current school year.
         </p>
       </div>
@@ -551,8 +591,19 @@ export function CancelledEnrollmentsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-red-200 bg-red-50 p-4">
-        <p className="text-sm text-red-800">
+      <div
+        className="rounded-md border p-4"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--destructive, #ef4444) 10%, var(--card))",
+          borderColor:
+            "color-mix(in srgb, var(--destructive, #ef4444) 30%, var(--border))",
+        }}
+      >
+        <p
+          className="text-sm"
+          style={{ color: "var(--destructive, #ef4444)" }}
+        >
           <strong>Cancelled Enrollments:</strong> Enrollments that were cancelled for this school year.
         </p>
       </div>

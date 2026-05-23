@@ -326,7 +326,14 @@ export default function AssessmentDraftForm({
                 Discount requests
               </h2>
               {hasPendingDiscounts && (
-                <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                <span
+                  className="rounded-md px-2 py-0.5 text-xs font-semibold"
+                  style={{
+                    backgroundColor:
+                      "color-mix(in srgb, var(--warning, #f59e0b) 18%, transparent)",
+                    color: "var(--warning, #f59e0b)",
+                  }}
+                >
                   {pendingRequests.length} pending
                 </span>
               )}
@@ -335,14 +342,23 @@ export default function AssessmentDraftForm({
               {/* Pending discount requests - needs review */}
               {pendingRequests.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                  <p
+                    className="text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: "var(--warning, #f59e0b)" }}
+                  >
                     Awaiting approval
                   </p>
                   <div className="space-y-2">
                     {pendingRequests.map((req) => (
                       <div
                         key={req.id}
-                        className="rounded-lg border border-amber-200 bg-amber-50 p-3"
+                        className="rounded-lg border p-3"
+                        style={{
+                          backgroundColor:
+                            "color-mix(in srgb, var(--warning, #f59e0b) 10%, var(--card))",
+                          borderColor:
+                            "color-mix(in srgb, var(--warning, #f59e0b) 30%, var(--border))",
+                        }}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -350,7 +366,14 @@ export default function AssessmentDraftForm({
                               <span className="font-semibold text-charcoal">
                                 {req.discountTypeName}
                               </span>
-                              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+                              <span
+                                className="rounded px-1.5 py-0.5 text-xs font-medium"
+                                style={{
+                                  backgroundColor:
+                                    "color-mix(in srgb, var(--warning, #f59e0b) 18%, transparent)",
+                                  color: "var(--warning, #f59e0b)",
+                                }}
+                              >
                                 {formatDiscountValue(req.calculationType, req.defaultValue)}
                               </span>
                               <span
@@ -387,7 +410,16 @@ export default function AssessmentDraftForm({
                       </div>
                     ))}
                   </div>
-                  <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  <div
+                    className="rounded-md border px-3 py-2 text-sm"
+                    style={{
+                      backgroundColor:
+                        "color-mix(in srgb, var(--warning, #f59e0b) 12%, var(--card))",
+                      borderColor:
+                        "color-mix(in srgb, var(--warning, #f59e0b) 40%, var(--border))",
+                      color: "var(--warning, #f59e0b)",
+                    }}
+                  >
                     <strong>⚠️ Assessment blocked:</strong> All discount requests must be
                     approved or rejected before creating an assessment.
                     {canReviewDiscounts && (
@@ -405,36 +437,65 @@ export default function AssessmentDraftForm({
               {/* Approved discounts - will be applied */}
               {approvedRequests.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-green-700">
+                  <p
+                    className="text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: "var(--color-success)" }}
+                  >
                     Approved (will be applied)
                   </p>
                   <ul className="space-y-1.5">
                     {expectedDiscounts.items.map((discountPreview) => (
                       <li
                         key={discountPreview.discountRequestId}
-                        className="flex items-center justify-between rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm"
+                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                        style={{
+                          backgroundColor:
+                            "color-mix(in srgb, var(--color-success) 10%, var(--card))",
+                          borderColor:
+                            "color-mix(in srgb, var(--color-success) 30%, var(--border))",
+                        }}
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-charcoal">
                             {discountPreview.discountTypeName}
                           </span>
-                          <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
+                          <span
+                            className="rounded px-1.5 py-0.5 text-xs font-medium"
+                            style={{
+                              backgroundColor:
+                                "color-mix(in srgb, var(--color-success) 18%, transparent)",
+                              color: "var(--color-success)",
+                            }}
+                          >
                             {formatDiscountValue(discountPreview.calculationType, discountPreview.displayValue)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div
+                          className="flex items-center gap-2"
+                          style={{ color: "var(--color-success)" }}
+                        >
                           <CurrencyDisplay
                             amount={-discountPreview.calculatedAmount}
-                            className="font-semibold text-green-800"
+                            className="font-semibold"
                           />
-                          <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+                          <span
+                            className="rounded px-2 py-0.5 text-xs font-semibold"
+                            style={{
+                              backgroundColor:
+                                "color-mix(in srgb, var(--color-success) 18%, transparent)",
+                              color: "var(--color-success)",
+                            }}
+                          >
                             Approved
                           </span>
                         </div>
                       </li>
                     ))}
                   </ul>
-                  <p className="text-xs text-green-700">
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--color-success)" }}
+                  >
                     ✓ These discounts will be applied as negative line items when the assessment is saved.
                   </p>
                 </div>

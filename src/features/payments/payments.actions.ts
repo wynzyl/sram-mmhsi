@@ -428,7 +428,7 @@ export async function voidPaymentAction(
           const pAmount = Number(payment.amount);
 
           // Apply negative delta (reversal)
-          await applyAssessmentBalanceDelta(
+          const { newTotalPaid } = await applyAssessmentBalanceDelta(
             tx,
             payment.assessmentId,
             -pAmount, // negative = reversal
@@ -436,6 +436,36 @@ export async function voidPaymentAction(
             assessment.transferredAt,
             session.userId
           );
+
+          // 3b. Revert enrollment status to "assessed" if total paid becomes zero
+          if (
+            newTotalPaid <= ASSESSMENT_BALANCE_FULLY_PAID_EPSILON &&
+            assessment.enrollmentId
+          ) {
+            const enrollment = await lockEnrollment(tx, assessment.enrollmentId);
+            if (enrollment && enrollment.status === "enrolled") {
+              await tx
+                .update(enrollments)
+                .set({
+                  status: "assessed",
+                  enrolledAt: null,
+                  updatedBy: session.userId,
+                  updatedAt: new Date(),
+                })
+                .where(eq(enrollments.id, assessment.enrollmentId));
+
+              await logAudit({
+                actor: session.userId,
+                actorRole: session.role,
+                action: "enrollment_reverted_via_void",
+                targetEntity: "enrollments",
+                targetId: assessment.enrollmentId,
+                context: `Total paid reverted to zero after voiding payment`,
+                previousState: { status: "enrolled" },
+                newState: { status: "assessed" },
+              }, { throwOnFail: true });
+            }
+          }
         }
       }
 
@@ -460,6 +490,8 @@ export async function voidPaymentAction(
     revalidatePath("/staff/assessments");
     // Dashboard KPIs reflect voided collection totals.
     invalidateTag(CACHE_TAGS.DASHBOARD);
+    // Enrollment status may have reverted to "assessed" if all payments were voided.
+    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
 
     return { success: true, message: "Payment voided successfully." };
   } catch (error: any) {

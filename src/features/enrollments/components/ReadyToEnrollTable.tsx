@@ -193,12 +193,31 @@ export default function ReadyToEnrollTable({
   return (
     <div className="space-y-4">
       {/* Info Banner */}
-      <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
+      <div
+        className="rounded-md border p-4"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--color-success) 10%, var(--card))",
+          borderColor:
+            "color-mix(in srgb, var(--color-success) 30%, var(--border))",
+        }}
+      >
         <div className="flex items-start gap-3">
-          <FileText className="mt-0.5 h-5 w-5 text-blue-600" />
+          <FileText
+            className="mt-0.5 h-5 w-5"
+            style={{ color: "var(--color-success)" }}
+          />
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-blue-900">Ready to Enroll Queue</h3>
-            <p className="mt-1 text-sm text-blue-700">
+            <h3
+              className="text-sm font-semibold"
+              style={{ color: "var(--color-success)" }}
+            >
+              Ready to Enroll Queue
+            </h3>
+            <p
+              className="mt-1 text-sm"
+              style={{ color: "var(--color-success)" }}
+            >
               Students in this list are eligible for enrollment confirmation. Review their details and click{" "}
               <strong>Enroll</strong> or <strong>Re-Enroll</strong> to create a pending enrollment record.
             </p>

@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, invalidateTag, forceUpdateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   payments,
   assessments,
+  enrollments,
   voidRequests,
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -27,10 +29,12 @@ import { logAudit } from "@/lib/utils/audit-logger";
 import {
   lockPayment,
   lockAssessment,
+  lockEnrollment,
   lockVoidRequest,
   lockAssessmentTransferStatus,
 } from "@/lib/utils/tx-helpers";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
+import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
 
 // ─── Request Void Action ───────────────────────────────────────────────────────
 
@@ -262,6 +266,36 @@ export async function approveVoidRequestAction(
             session.userId
           );
 
+          // 9b. Revert enrollment status to "assessed" if total paid becomes zero
+          if (
+            newTotalPaid <= ASSESSMENT_BALANCE_FULLY_PAID_EPSILON &&
+            assessment.enrollmentId
+          ) {
+            const enrollment = await lockEnrollment(tx, assessment.enrollmentId);
+            if (enrollment && enrollment.status === "enrolled") {
+              await tx
+                .update(enrollments)
+                .set({
+                  status: "assessed",
+                  enrolledAt: null,
+                  updatedBy: session.userId,
+                  updatedAt: new Date(),
+                })
+                .where(eq(enrollments.id, assessment.enrollmentId));
+
+              await logAudit({
+                actor: session.userId,
+                actorRole: session.role,
+                action: "enrollment_reverted_via_void",
+                targetEntity: "enrollments",
+                targetId: assessment.enrollmentId,
+                context: `Total paid reverted to zero after approving void request`,
+                previousState: { status: "enrolled" },
+                newState: { status: "assessed" },
+              }, { throwOnFail: true });
+            }
+          }
+
           // 10. Update void request to approved
           await tx
             .update(voidRequests)
@@ -381,6 +415,10 @@ export async function approveVoidRequestAction(
       revalidatePath(`/staff/assessments/${assessmentIdForRevalidation}`);
     }
     revalidatePath("/staff/assessments");
+    // Dashboard KPIs reflect reversed collection totals.
+    invalidateTag(CACHE_TAGS.DASHBOARD);
+    // Enrollment status may have reverted to "assessed" if all payments were reversed.
+    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
     return { success: true, message: "Void request approved. Payment has been reversed." };
   } catch (error: unknown) {
     logger.error("[void-request] Failed to approve void request", { error: String(error) });
