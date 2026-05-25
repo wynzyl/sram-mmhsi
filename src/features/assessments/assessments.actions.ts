@@ -136,7 +136,9 @@ export async function createAssessmentFromEnrollmentAction(
           ne(enrollments.schoolYearId, enrollmentRow.schoolYearId), // Different year
           eq(enrollments.status, "enrolled"), // Only fully enrolled
           isNotNull(assessments.id), // Has assessment
-          isNull(assessments.transferredAt) // Not yet transferred
+          isNull(assessments.transferredAt), // Not yet transferred
+          isNull(assessments.cancelledAt), // Exclude cancelled assessments
+          ne(assessments.billingStatus, "cancelled") // Belt-and-suspenders check
         )
       )
       .orderBy(asc(schoolYears.startDate)); // Oldest first (chronological order)
