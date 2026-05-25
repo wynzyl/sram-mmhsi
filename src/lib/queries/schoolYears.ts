@@ -1,14 +1,20 @@
 import { cache } from "react";
+import { cacheLife, cacheTag } from "next/cache";
 import { desc, eq, and, isNull } from "drizzle-orm";
-import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { schoolYears } from "@/lib/db/schema";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 
 /**
- * Internal uncached function to fetch school years.
+ * Get all school years with caching.
+ * School years rarely change, so 1 hour cache is safe.
+ * Invalidated via revalidateTag('school-years') when school years are modified.
  */
-async function _getSchoolYearsUncached() {
+export async function getSchoolYears() {
+  "use cache";
+  cacheTag(CACHE_TAGS.SCHOOL_YEARS);
+  cacheLife("hours"); // 1 hour revalidate
+
   return db
     .select({
       id: schoolYears.id,
@@ -18,20 +24,6 @@ async function _getSchoolYearsUncached() {
     .from(schoolYears)
     .orderBy(desc(schoolYears.startDate));
 }
-
-/**
- * Get all school years with caching.
- * School years rarely change, so 1 hour cache is safe.
- * Invalidated via revalidateTag('school-years') when school years are modified.
- */
-export const getSchoolYears = unstable_cache(
-  _getSchoolYearsUncached,
-  ["school-years-list"],
-  {
-    revalidate: 3600, // 1 hour
-    tags: [CACHE_TAGS.SCHOOL_YEARS],
-  }
-);
 
 /**
  * Get the active school year.

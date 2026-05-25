@@ -5,7 +5,7 @@
  */
 
 import "server-only";
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/lib/db";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
@@ -83,9 +83,14 @@ export async function getFeeTemplatesPaginated(
 }
 
 /**
- * Internal function for dropdown query
+ * Get lightweight fee templates for dropdowns (PERFORMANCE: No nested relations)
+ * Cached for 10 minutes since templates rarely change during active use.
  */
-async function _getFeeTemplatesForDropdownUncached() {
+export async function getFeeTemplatesForDropdown() {
+  "use cache";
+  cacheTag(CACHE_TAGS.FEE_TEMPLATES);
+  cacheLife("fee-templates"); // Custom 10-min profile
+
   return await db
     .select({
       id: feeTemplates.id,
@@ -101,19 +106,6 @@ async function _getFeeTemplatesForDropdownUncached() {
     )
     .orderBy(asc(feeTemplates.assessmentBand), asc(feeTemplates.name));
 }
-
-/**
- * Get lightweight fee templates for dropdowns (PERFORMANCE: No nested relations)
- * Cached for 10 minutes since templates rarely change during active use.
- */
-export const getFeeTemplatesForDropdown = unstable_cache(
-  _getFeeTemplatesForDropdownUncached,
-  ["fee-templates-dropdown"],
-  {
-    revalidate: 600, // 10 minutes
-    tags: [CACHE_TAGS.FEE_TEMPLATES],
-  }
-);
 
 export async function getFeeTemplateById(id: string) {
   return await db.query.feeTemplates.findFirst({
@@ -194,25 +186,20 @@ export async function getFeeScheduleById(id: string) {
 
 // ─── Fee Item Types ───────────────────────────────────────────────────────
 
-async function _getAllFeeItemTypesUncached() {
+/**
+ * Get all fee item types with caching.
+ * Fee item types are static configuration, so 10 minute cache is safe.
+ */
+export async function getAllFeeItemTypes() {
+  "use cache";
+  cacheTag(CACHE_TAGS.FEE_ITEM_TYPES);
+  cacheLife("fee-templates"); // Custom 10-min profile
+
   return await db.query.feeItemTypes.findMany({
     where: eq(feeItemTypes.isActive, true),
     orderBy: (t, { asc }) => [asc(t.displayOrder), asc(t.name)],
   });
 }
-
-/**
- * Get all fee item types with caching.
- * Fee item types are static configuration, so 10 minute cache is safe.
- */
-export const getAllFeeItemTypes = unstable_cache(
-  _getAllFeeItemTypesUncached,
-  ["fee-item-types-list"],
-  {
-    revalidate: 600, // 10 minutes
-    tags: [CACHE_TAGS.FEE_ITEM_TYPES],
-  }
-);
 
 export async function getFeeItemTypesByCategory(category: string) {
   return await db.query.feeItemTypes.findMany({

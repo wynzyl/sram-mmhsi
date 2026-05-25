@@ -733,6 +733,7 @@ export async function bulkApproveDiscountsAction(
 
     revalidatePath("/staff/finance/discount-requests");
     revalidatePath("/staff/registrar/enrollments");
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return {
       success: true,
       message: `${pendingRequests.length} discount request(s) approved.`,
@@ -835,6 +836,7 @@ export async function cancelDiscountRequestAction(
 
     revalidatePath("/staff/finance/discount-requests");
     revalidatePath("/staff/registrar/enrollments");
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return { success: true, message: "Discount request cancelled." };
   } catch (error) {
     logger.error("[discounts] Failed to cancel discount request", { error });

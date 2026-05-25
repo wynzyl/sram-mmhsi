@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/lib/db";
 import { gradeLevels } from "@/lib/db/schema";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
@@ -11,9 +11,15 @@ export type GradeLevelOption = {
 };
 
 /**
- * Internal uncached function to fetch grade levels.
+ * Get all grade levels with caching.
+ * Grade levels are static configuration, so 1 hour cache is safe.
+ * Invalidated via revalidateTag('grade-levels') when grade levels are modified.
  */
-async function _getGradeLevelsUncached(): Promise<GradeLevelOption[]> {
+export async function getGradeLevels(): Promise<GradeLevelOption[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.GRADE_LEVELS);
+  cacheLife("hours"); // 1 hour revalidate
+
   return db
     .select({
       id: gradeLevels.id,
@@ -23,20 +29,6 @@ async function _getGradeLevelsUncached(): Promise<GradeLevelOption[]> {
     .from(gradeLevels)
     .orderBy(gradeLevels.order);
 }
-
-/**
- * Get all grade levels with caching.
- * Grade levels are static configuration, so 1 hour cache is safe.
- * Invalidated via revalidateTag('grade-levels') when grade levels are modified.
- */
-export const getGradeLevels = unstable_cache(
-  _getGradeLevelsUncached,
-  ["grade-levels-list"],
-  {
-    revalidate: 3600, // 1 hour
-    tags: [CACHE_TAGS.GRADE_LEVELS],
-  }
-);
 
 /**
  * Get grade levels as a map for quick lookup by ID.

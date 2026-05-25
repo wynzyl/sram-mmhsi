@@ -7,7 +7,6 @@ import { StatCard } from "@/components/ui/stat-card";
 import { SkeletonStatCard } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = { title: "Dashboard" };
-export const dynamic = "force-dynamic";
 
 function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;

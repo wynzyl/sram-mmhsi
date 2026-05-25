@@ -1,6 +1,6 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/lib/db";
 import {
   discountTypes,
@@ -33,7 +33,16 @@ import type {
 
 // ─── Discount Types Queries ───────────────────────────────────────────────────
 
-async function _getActiveDiscountTypesUncached(): Promise<DiscountTypeView[]> {
+/**
+ * Get all active discount types for selection.
+ * Cached for 1 hour; invalidated via revalidateTag(CACHE_TAGS.DISCOUNT_TYPES)
+ * when discount types are created/updated/deleted.
+ */
+export async function getActiveDiscountTypes(): Promise<DiscountTypeView[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.DISCOUNT_TYPES);
+  cacheLife("hours"); // 1 hour revalidate
+
   const rows = await db
     .select()
     .from(discountTypes)
@@ -57,20 +66,15 @@ async function _getActiveDiscountTypesUncached(): Promise<DiscountTypeView[]> {
 }
 
 /**
- * Get all active discount types for selection.
+ * Get all discount types (including inactive) for admin management.
  * Cached for 1 hour; invalidated via revalidateTag(CACHE_TAGS.DISCOUNT_TYPES)
  * when discount types are created/updated/deleted.
  */
-export const getActiveDiscountTypes = unstable_cache(
-  _getActiveDiscountTypesUncached,
-  ["discount-types-active"],
-  {
-    revalidate: 3600,
-    tags: [CACHE_TAGS.DISCOUNT_TYPES],
-  }
-);
+export async function getAllDiscountTypes(): Promise<DiscountTypeView[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.DISCOUNT_TYPES);
+  cacheLife("hours"); // 1 hour revalidate
 
-async function _getAllDiscountTypesUncached(): Promise<DiscountTypeView[]> {
   const rows = await db
     .select()
     .from(discountTypes)
@@ -92,20 +96,6 @@ async function _getAllDiscountTypesUncached(): Promise<DiscountTypeView[]> {
     createdAt: r.createdAt,
   }));
 }
-
-/**
- * Get all discount types (including inactive) for admin management.
- * Cached for 1 hour; invalidated via revalidateTag(CACHE_TAGS.DISCOUNT_TYPES)
- * when discount types are created/updated/deleted.
- */
-export const getAllDiscountTypes = unstable_cache(
-  _getAllDiscountTypesUncached,
-  ["discount-types-all"],
-  {
-    revalidate: 3600,
-    tags: [CACHE_TAGS.DISCOUNT_TYPES],
-  }
-);
 
 /**
  * Get a single discount type by ID

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { connection } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -7,6 +8,7 @@ import {
 } from "@/features/students/students.queries";
 
 export async function GET(request: NextRequest) {
+  await connection(); // Requires auth - exclude from prerendering
   try {
     const user = await getCurrentUser();
 
