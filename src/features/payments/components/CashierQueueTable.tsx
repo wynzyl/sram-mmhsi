@@ -27,7 +27,7 @@ interface CashierQueueTableProps {
 }
 
 export function CashierQueueTable({ rows }: CashierQueueTableProps) {
-  const [filterMode, setFilterMode] = useState<"all" | "newly_assessed" | "with_balance">("all");
+  const [filterMode, setFilterMode] = useState<"all" | "newly_assessed" | "with_balance">("newly_assessed");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredRows = useMemo(() => {

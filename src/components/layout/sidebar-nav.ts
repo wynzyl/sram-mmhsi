@@ -82,6 +82,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Finance",
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
+        { href: "/staff/student-ledgers", label: "Student Ledger", icon: "assessments" },
         { href: "/staff/finance/fee-schedules", label: "Fee Schedules", icon: "fee-schedules" },
         { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
         { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
@@ -139,6 +140,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Finance",
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
+        { href: "/staff/student-ledgers", label: "Student Ledger", icon: "assessments" },
         { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
       ],
     },
@@ -171,6 +173,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Finance",
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
+        { href: "/staff/student-ledgers", label: "Student Ledger", icon: "assessments" },
         { href: "/staff/finance/fee-schedules", label: "Fee Schedules", icon: "fee-schedules" },
         { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
         { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
@@ -196,6 +199,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Cashier",
       items: [
         { href: "/staff/payments", label: "Payments", icon: "payments" },
+        { href: "/staff/student-ledgers", label: "Student Ledger", icon: "assessments" },
         { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
       ],
