@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // output: 'standalone',
+  cacheComponents: true,
   allowedDevOrigins: [
     'http://localhost:3000',
     ...(process.env.APP_BASE_URL
