@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -93,56 +94,56 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-semibold">Discount Requests</h1>
-        <p className="text-[var(--color-text-muted)]">
+        <p className="text-(--color-text-muted)">
           Review and approve discount requests from registrars
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className={counts.pending > 0 ? "border-[var(--color-warning)]" : ""}>
+        <Card className={counts.pending > 0 ? "border-(--color-warning)" : ""}>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{counts.pending}</div>
-            <p className="text-xs text-[var(--color-text-muted)]">Pending Requests</p>
+            <p className="text-xs text-(--color-text-muted)">Pending Requests</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-[var(--color-success)]">{counts.approved}</div>
-            <p className="text-xs text-[var(--color-text-muted)]">Approved</p>
+            <div className="text-2xl font-bold text-(--color-success)">{counts.approved}</div>
+            <p className="text-xs text-(--color-text-muted)">Approved</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{counts.rejected}</div>
-            <p className="text-xs text-[var(--color-text-muted)]">Rejected</p>
+            <p className="text-xs text-(--color-text-muted)">Rejected</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Tab Navigation */}
       <div className="mb-6">
-        <nav className="flex gap-1 border-b border-[var(--color-border)]" aria-label="Tabs">
-          <a href="/staff/finance/discount-requests?tab=pending" className={tabClass(tab === "pending")}>
+        <nav className="flex gap-1 border-b border-(--color-border)" aria-label="Tabs">
+          <Link href="/staff/finance/discount-requests?tab=pending" className={tabClass(tab === "pending")}> 
             Pending
             {counts.pending > 0 && (
               <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
                 {counts.pending}
               </span>
             )}
-          </a>
-          <a href="/staff/finance/discount-requests?tab=approved" className={tabClass(tab === "approved")}>
+          </Link>
+          <Link href="/staff/finance/discount-requests?tab=approved" className={tabClass(tab === "approved")}> 
             Approved
             <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-green-100 text-green-800">
               {counts.approved}
             </span>
-          </a>
-          <a href="/staff/finance/discount-requests?tab=rejected" className={tabClass(tab === "rejected")}>
+          </Link>
+          <Link href="/staff/finance/discount-requests?tab=rejected" className={tabClass(tab === "rejected")}> 
             Rejected
             <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-gray-100 text-gray-800">
               {counts.rejected}
             </span>
-          </a>
+          </Link>
         </nav>
       </div>
 
@@ -169,7 +170,7 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
                 <CardTitle>
                   Approved — Ready to Apply ({approvedUnapplied.length})
                 </CardTitle>
-                <p className="text-sm text-[var(--color-text-muted)]">
+                <p className="text-sm text-(--color-text-muted)">
                   These approved requests are waiting to be attached to their
                   parent assessment (e.g., after a payment void + discount reversal).
                 </p>
@@ -185,7 +186,7 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
 
           {/* Pagination info */}
           {pendingResult.pagination.totalPages > 1 && (
-            <div className="text-sm text-[var(--color-text-muted)] text-center">
+            <div className="text-sm text-(--color-text-muted) text-center">
               Page {pendingResult.pagination.page} of{" "}
               {pendingResult.pagination.totalPages} ({pendingResult.pagination.totalRecords}{" "}
               total records)
@@ -206,7 +207,7 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
             />
           </CardContent>
           {approvedResult.pagination.totalPages > 1 && (
-            <div className="text-sm text-[var(--color-text-muted)] text-center py-4">
+            <div className="text-sm text-(--color-text-muted) text-center py-4">
               Page {approvedResult.pagination.page} of{" "}
               {approvedResult.pagination.totalPages} ({approvedResult.pagination.totalRecords}{" "}
               total records)
@@ -227,7 +228,7 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
             />
           </CardContent>
           {rejectedResult.pagination.totalPages > 1 && (
-            <div className="text-sm text-[var(--color-text-muted)] text-center py-4">
+            <div className="text-sm text-(--color-text-muted) text-center py-4">
               Page {rejectedResult.pagination.page} of{" "}
               {rejectedResult.pagination.totalPages} ({rejectedResult.pagination.totalRecords}{" "}
               total records)

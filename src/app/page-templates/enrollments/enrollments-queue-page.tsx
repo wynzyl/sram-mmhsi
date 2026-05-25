@@ -209,8 +209,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       {/* Page Header */}
       <header className="mb-6 flex items-start justify-between">
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-(--color-primary)">
-            Enrollment Management
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-primary)]">            Enrollment Management
           </p>
           <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-charcoal">
             Enrollment Queue
