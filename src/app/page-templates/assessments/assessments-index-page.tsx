@@ -36,7 +36,7 @@ const TABS: {
   countKey?: keyof Awaited<ReturnType<typeof getAssessmentTabCounts>>;
 }[] = [
   { view: "pending", label: "Fee Assessment Queue" },
-  { view: "unpaid", label: "Assessment Queue", countKey: "unpaid" },
+  { view: "unpaid", label: "Assessed", countKey: "unpaid" },
   { view: "outstanding", label: "Outstanding", countKey: "outstanding" },
   { view: "paid", label: "Fully Paid", countKey: "paid" },
   { view: "cancelled", label: "Cancelled", countKey: "cancelled" },
