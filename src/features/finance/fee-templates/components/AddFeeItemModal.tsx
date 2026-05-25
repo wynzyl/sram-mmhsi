@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Modal, ModalHeader, ModalBody } from "@/components/shared/Modal";
 import { AddFeeItemForm } from "./AddFeeItemForm";
 
 type FeeItemType = {
@@ -50,15 +51,6 @@ export function AddFeeItemModal({
     }, 700);
   }, [router]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeModal();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, closeModal]);
-
   return (
     <>
       <Button
@@ -69,52 +61,30 @@ export function AddFeeItemModal({
         + Add Fee Item
       </Button>
 
-      {open && (
-        <div
-          className="fin-modal-backdrop"
-          role="presentation"
-          onClick={(e) => e.target === e.currentTarget && closeModal()}
+      <Modal
+        open={open}
+        onClose={closeModal}
+        aria-labelledby="add-fee-item-title"
+      >
+        <ModalHeader
+          onClose={closeModal}
+          kicker="Fee Template · Line Items"
+          subtitle={`${availableOptions.length} fee type${availableOptions.length !== 1 ? "s" : ""} available to add`}
         >
-          <div
-            className="fin-modal-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="add-fee-item-title"
-          >
-            <div className="fin-modal-header">
-              <div>
-                <p className="fin-modal-kicker">Fee Template · Line Items</p>
-                <h2 id="add-fee-item-title" className="fin-modal-title">
-                  Add Fee Item
-                </h2>
-                <p className="fin-modal-sub">
-                  {availableOptions.length} fee type
-                  {availableOptions.length !== 1 ? "s" : ""} available to add
-                </p>
-              </div>
-              <button
-                type="button"
-                className="fin-modal-close"
-                onClick={closeModal}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
+          <h2 id="add-fee-item-title">Add Fee Item</h2>
+        </ModalHeader>
 
-            <div className="fin-modal-body">
-              {/* key forces full remount → fresh useActionState on every open */}
-              <AddFeeItemForm
-                key={formKey}
-                templateId={templateId}
-                availableOptions={availableOptions}
-                onCancel={closeModal}
-                onAdded={onAdded}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+        <ModalBody>
+          {/* key forces full remount → fresh useActionState on every open */}
+          <AddFeeItemForm
+            key={formKey}
+            templateId={templateId}
+            availableOptions={availableOptions}
+            onCancel={closeModal}
+            onAdded={onAdded}
+          />
+        </ModalBody>
+      </Modal>
     </>
   );
 }

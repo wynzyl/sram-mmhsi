@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useActionState } from "react";
+import { useState, useCallback, useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Modal, ModalHeader, ModalBody } from "@/components/shared/Modal";
+import { useFormToast } from "@/hooks/useFormToast";
 import { updateFeeItemTypeAction } from "../fee-item-types.actions";
 import { FEE_ITEM_CATEGORIES_LIST, FEE_ITEM_CATEGORY_LABELS, type UpdateFeeItemTypeFormState } from "../fee-item-types.schema";
 
@@ -35,24 +37,13 @@ export function EditFeeItemTypeModal({ feeType }: Props) {
 
   const closeModal = useCallback(() => setOpen(false), []);
 
-  useEffect(() => {
-    if (state.success) {
-      const t = window.setTimeout(() => {
-        setOpen(false);
-        router.refresh();
-      }, 600);
-      return () => window.clearTimeout(t);
-    }
-  }, [state.success, router]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeModal();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, closeModal]);
+  useFormToast(state, {
+    successMessage: "Changes saved successfully",
+    onSuccess: () => {
+      setOpen(false);
+      router.refresh();
+    },
+  });
 
   return (
     <>
@@ -64,49 +55,21 @@ export function EditFeeItemTypeModal({ feeType }: Props) {
         Edit
       </button>
 
-      {open && (
-        <div
-          className="fin-modal-backdrop"
-          role="presentation"
-          onClick={(e) => e.target === e.currentTarget && closeModal()}
+      <Modal
+        open={open}
+        onClose={closeModal}
+        aria-labelledby="edit-fit-title"
+      >
+        <ModalHeader
+          onClose={closeModal}
+          kicker="Finance · Fee Item Types"
         >
-          <div
-            className="fin-modal-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-fit-title"
-          >
-            <div className="fin-modal-header">
-              <div>
-                <p className="fin-modal-kicker">Finance · Fee Item Types</p>
-                <h2 id="edit-fit-title" className="fin-modal-title">
-                  Edit Fee Type
-                </h2>
-                <p className="fin-modal-sub">
-                  <span className="fit-code-pill">{feeType.code}</span>
-                </p>
-              </div>
-              <button
-                type="button"
-                className="fin-modal-close"
-                onClick={closeModal}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
+          <h2 id="edit-fit-title">Edit Fee Type</h2>
+          <span className="fit-code-pill mt-1">{feeType.code}</span>
+        </ModalHeader>
 
-            <div className="fin-modal-body">
-              {state.success ? (
-                <div className="fin-callout fin-callout-success">
-                  <span className="fin-callout-icon">✓</span>
-                  <div>
-                    <p className="fin-callout-title">Changes saved</p>
-                    <p className="fin-callout-body">Closing…</p>
-                  </div>
-                </div>
-              ) : (
-                <form action={formAction} className="fin-form-stack">
+        <ModalBody>
+          <form action={formAction} className="fin-form-stack">
                   <input type="hidden" name="id" value={feeType.id} />
 
                   {state.message && (
@@ -206,20 +169,17 @@ export function EditFeeItemTypeModal({ feeType }: Props) {
                     </div>
                   </div>
 
-                  <div className="fin-form-actions fin-form-actions-border">
-                    <Button type="button" variant="secondary" onClick={closeModal}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isPending}>
-                      {isPending ? "Saving…" : "Save Changes"}
-                    </Button>
-                  </div>
-                </form>
-              )}
+            <div className="fin-form-actions fin-form-actions-border">
+              <Button type="button" variant="secondary" onClick={closeModal}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving…" : "Save Changes"}
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </form>
+        </ModalBody>
+      </Modal>
     </>
   );
 }

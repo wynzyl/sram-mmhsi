@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState, useState } from "react";
 import {
   createDiscountTypeAction,
   updateDiscountTypeAction,
@@ -10,6 +10,7 @@ import type {
   UpdateDiscountTypeFormState,
   DiscountTypeView,
 } from "../discounts.schema";
+import { Modal, ModalHeader, ModalBody } from "@/components/shared/Modal";
 import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,22 +65,19 @@ export default function DiscountTypeFormModal({
     onSuccess: onClose,
   });
 
-  // Handle escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[var(--color-surface)] rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-4">
+    <Modal
+      open={true}
+      onClose={onClose}
+      aria-labelledby="discount-type-modal-title"
+    >
+      <ModalHeader onClose={onClose} kicker="Finance · Discounts">
+        <h2 id="discount-type-modal-title">
           {isEditing ? "Edit Discount Type" : "Create Discount Type"}
         </h2>
+      </ModalHeader>
 
+      <ModalBody>
         <form action={action} className="space-y-4">
           {isEditing && (
             <input type="hidden" name="id" value={discountType.id} />
@@ -303,7 +301,7 @@ export default function DiscountTypeFormModal({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </ModalBody>
+    </Modal>
   );
 }
