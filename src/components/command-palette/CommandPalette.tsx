@@ -68,6 +68,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`, {
           signal: controller.signal,
+          cache: 'no-store',  // Always fetch fresh data after transactions
         });
         if (res.ok) {
           const data = await res.json();
