@@ -8,9 +8,60 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentsTable from "@/features/finance/components/AssessmentsTable";
 import PendingAssessmentsQueue from "@/features/assessments/components/PendingAssessmentsQueue";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
-import { getAssessmentsList } from "@/features/assessments";
+import {
+  getAssessmentsList,
+  getAssessmentTabCounts,
+  type AssessmentBillingFilter,
+} from "@/features/assessments";
 
 const PAGE_SIZE = 20;
+
+/**
+ * Valid view parameter values for assessments page.
+ */
+type AssessmentView =
+  | "pending"
+  | "unpaid"
+  | "outstanding"
+  | "paid"
+  | "cancelled"
+  | "forwarded";
+
+/**
+ * Tab configuration for assessments page navigation.
+ */
+const TABS: {
+  view: AssessmentView;
+  label: string;
+  countKey?: keyof Awaited<ReturnType<typeof getAssessmentTabCounts>>;
+}[] = [
+  { view: "pending", label: "Fee Assessment Queue" },
+  { view: "unpaid", label: "Assessment Queue", countKey: "unpaid" },
+  { view: "outstanding", label: "Outstanding", countKey: "outstanding" },
+  { view: "paid", label: "Fully Paid", countKey: "paid" },
+  { view: "cancelled", label: "Cancelled", countKey: "cancelled" },
+  { view: "forwarded", label: "Forwarded Balance", countKey: "forwarded" },
+];
+
+/**
+ * Subtitles for each tab view.
+ */
+const SUBTITLES: Record<AssessmentView, React.ReactNode> = {
+  pending: (
+    <>
+      <strong>Step 1:</strong> pick a student below, then complete the one-time fee assessment.
+      <span className="mt-1 block text-sm text-warm-gray">
+        <strong>Step 2:</strong> on the fee form, confirm catalog lines and save—the enrollment becomes{" "}
+        <strong>Assessed</strong>. Use other tabs to track payments and balances.
+      </span>
+    </>
+  ),
+  unpaid: "Students assessed but awaiting first payment.",
+  outstanding: "Students with partial payments and remaining balance.",
+  paid: "Students who have completed all payments.",
+  cancelled: "Cancelled assessments.",
+  forwarded: "Balances forwarded to the next school year.",
+};
 
 const dateQueued = (d: Date) =>
   d.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" });
@@ -56,7 +107,7 @@ function AssessmentsPagination({
   label,
 }: {
   basePath: string;
-  view: "pending" | "ledgers";
+  view: AssessmentView;
   currentPage: number;
   totalPages: number;
   totalCount: number;
@@ -138,6 +189,44 @@ function AssessmentsPagination({
   );
 }
 
+/**
+ * Parse and validate view parameter.
+ */
+function parseViewParam(view?: string): AssessmentView {
+  const validViews: AssessmentView[] = [
+    "pending",
+    "unpaid",
+    "outstanding",
+    "paid",
+    "cancelled",
+    "forwarded",
+  ];
+  if (view && validViews.includes(view as AssessmentView)) {
+    return view as AssessmentView;
+  }
+  return "pending"; // Default to pending (Fee Assessment Queue)
+}
+
+/**
+ * Map view to billing filter for assessments query.
+ */
+function viewToBillingFilter(view: AssessmentView): AssessmentBillingFilter | undefined {
+  switch (view) {
+    case "unpaid":
+      return "unpaid";
+    case "outstanding":
+      return "outstanding";
+    case "paid":
+      return "paid";
+    case "cancelled":
+      return "cancelled";
+    case "forwarded":
+      return "forwarded";
+    default:
+      return undefined;
+  }
+}
+
 export async function AssessmentsIndexPage(props: {
   searchParams: Promise<{ view?: string; page?: string }>;
   assessmentsBasePath: "/staff/assessments";
@@ -151,13 +240,16 @@ export async function AssessmentsIndexPage(props: {
   }
 
   const params = await searchParams;
-  const { view, page: pageParam } = params;
-  const tab = view === "ledgers" ? "ledgers" : "pending";
+  const { view: viewParam, page: pageParam } = params;
+  const currentView = parseViewParam(viewParam);
   const currentPage = Math.max(1, parseInt(pageParam || "1", 10));
   const offset = (currentPage - 1) * PAGE_SIZE;
 
   const canCreate = hasPermission(session.role, "assessments:create");
   const canCancel = hasPermission(session.role, "enrollments:cancel");
+
+  // Get counts for all tabs (single query)
+  const tabCounts = await getAssessmentTabCounts();
 
   // Get total count for pending enrollments
   const pendingCountResult = await db
@@ -167,40 +259,56 @@ export async function AssessmentsIndexPage(props: {
   const pendingTotalCount = Number(pendingCountResult[0]?.count ?? 0);
   const pendingTotalPages = Math.ceil(pendingTotalCount / PAGE_SIZE);
 
-  // Get paginated pending rows
-  const pendingRows = await db
-    .select({
-      enrollmentId: enrollments.id,
-      enrollmentCreatedAt: enrollments.createdAt,
-      referenceNumber: students.referenceNumber,
-      firstName: students.firstName,
-      lastName: students.lastName,
-      schoolYear: schoolYears.label,
-      gradeLevel: gradeLevels.name,
-    })
-    .from(enrollments)
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
-    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .where(eq(enrollments.status, "pending"))
-    .orderBy(desc(enrollments.createdAt))
-    .limit(PAGE_SIZE)
-    .offset(offset);
+  // Get paginated pending rows (only if on pending tab)
+  let pendingData: {
+    enrollmentId: string;
+    referenceNumber: string;
+    studentName: string;
+    schoolYear: string;
+    gradeLevel: string;
+    queuedAtLabel: string;
+  }[] = [];
 
-  const pendingData = pendingRows.map((r) => ({
-    enrollmentId: r.enrollmentId,
-    referenceNumber: r.referenceNumber,
-    studentName: `${r.lastName}, ${r.firstName}`,
-    schoolYear: r.schoolYear,
-    gradeLevel: r.gradeLevel,
-    queuedAtLabel: dateQueued(r.enrollmentCreatedAt),
-  }));
+  if (currentView === "pending") {
+    const pendingRows = await db
+      .select({
+        enrollmentId: enrollments.id,
+        enrollmentCreatedAt: enrollments.createdAt,
+        referenceNumber: students.referenceNumber,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        schoolYear: schoolYears.label,
+        gradeLevel: gradeLevels.name,
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .where(eq(enrollments.status, "pending"))
+      .orderBy(desc(enrollments.createdAt))
+      .limit(PAGE_SIZE)
+      .offset(offset);
 
-  // Use paginated query for assessments ledgers
-  const assessmentsResult = await getAssessmentsList({
-    page: currentPage,
-    pageSize: PAGE_SIZE,
-  });
+    pendingData = pendingRows.map((r) => ({
+      enrollmentId: r.enrollmentId,
+      referenceNumber: r.referenceNumber,
+      studentName: `${r.lastName}, ${r.firstName}`,
+      schoolYear: r.schoolYear,
+      gradeLevel: r.gradeLevel,
+      queuedAtLabel: dateQueued(r.enrollmentCreatedAt),
+    }));
+  }
+
+  // Get assessments list (only if not on pending tab)
+  const billingFilter = viewToBillingFilter(currentView);
+  const assessmentsResult =
+    currentView !== "pending"
+      ? await getAssessmentsList({
+          page: currentPage,
+          pageSize: PAGE_SIZE,
+          billingFilter,
+        })
+      : null;
 
   return (
     <div className="page-container space-y-6">
@@ -208,38 +316,31 @@ export async function AssessmentsIndexPage(props: {
         size="md"
         accent
         title="Assessments"
-        subtitle={
-          tab === "pending" ? (
-            <>
-              <strong>Step 1:</strong> pick a student below, then complete the one-time fee assessment.
-              <span className="mt-1 block text-sm text-warm-gray">
-                <strong>Step 2:</strong> on the fee form, confirm catalog lines and save—the enrollment becomes{" "}
-                <strong>Assessed</strong>. Use <strong>Assessment ledgers</strong> for payments and balances.
-              </span>
-            </>
-          ) : (
-            "Open a ledger to post payments, view OR history, and track outstanding balances after fee assessment."
-          )
-        }
+        subtitle={SUBTITLES[currentView]}
       />
 
-      <nav className="tab-nav mb-6" aria-label="Assessment views">
-        <Link
-          href={`${assessmentsBasePath}?view=pending`}
-          className={`tab-link ${tab === "pending" ? "tab-link-active" : ""}`}
-        >
-          Fee assessment queue
-          {pendingTotalCount > 0 ? ` (${pendingTotalCount})` : ""}
-        </Link>
-        <Link
-          href={`${assessmentsBasePath}?view=ledgers`}
-          className={`tab-link ${tab === "ledgers" ? "tab-link-active" : ""}`}
-        >
-          Assessment ledgers
-        </Link>
+      <nav className="tab-nav mb-6 flex flex-wrap gap-1" aria-label="Assessment views">
+        {TABS.map((tab) => {
+          const count =
+            tab.view === "pending"
+              ? pendingTotalCount
+              : tab.countKey
+                ? tabCounts[tab.countKey]
+                : 0;
+          return (
+            <Link
+              key={tab.view}
+              href={`${assessmentsBasePath}?view=${tab.view}`}
+              className={`tab-link ${currentView === tab.view ? "tab-link-active" : ""}`}
+            >
+              {tab.label}
+              {count > 0 ? ` (${count})` : ""}
+            </Link>
+          );
+        })}
       </nav>
 
-      {tab === "pending" ? (
+      {currentView === "pending" ? (
         <>
           <PendingAssessmentsQueue
             rows={pendingData}
@@ -257,12 +358,15 @@ export async function AssessmentsIndexPage(props: {
             label="enrollments"
           />
         </>
-      ) : (
+      ) : assessmentsResult ? (
         <>
-          <AssessmentsTable assessments={assessmentsResult.data} assessmentsBasePath={assessmentsBasePath} />
+          <AssessmentsTable
+            assessments={assessmentsResult.data}
+            assessmentsBasePath={assessmentsBasePath}
+          />
           <AssessmentsPagination
             basePath={assessmentsBasePath}
-            view="ledgers"
+            view={currentView}
             currentPage={assessmentsResult.pagination.page}
             totalPages={assessmentsResult.pagination.totalPages}
             totalCount={assessmentsResult.pagination.totalRecords}
@@ -270,7 +374,7 @@ export async function AssessmentsIndexPage(props: {
             label="assessments"
           />
         </>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 interface Assessment {
   id: string;
   studentName: string;
+  gradeLevel: string;
   schoolYear: string;
   totalAmount: number;
   totalPaid: number;
@@ -40,7 +41,7 @@ export default function AssessmentsTable({
   assessments,
   assessmentsBasePath = "/staff/assessments",
 }: AssessmentsTableProps) {
-  const colSpan = 7;
+  const colSpan = 8;
 
   return (
     <div className="table-wrapper rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)] overflow-hidden">
@@ -48,10 +49,11 @@ export default function AssessmentsTable({
         <thead>
           <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
             <th className="pl-4 font-semibold tracking-wide text-[var(--color-text-2)]">Student</th>
+            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Grade Level</th>
             <th className="font-semibold tracking-wide text-[var(--color-text-2)]">School Year</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)] text-right">Total Assessed</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)] text-right">Total Paid</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)] text-right">Balance</th>
+            <th className="pr-4 text-right font-semibold tracking-wide text-[var(--color-text-2)]">Total Assessed</th>
+            <th className="pr-4 text-right font-semibold tracking-wide text-[var(--color-text-2)]">Total Paid</th>
+            <th className="pr-4 text-right font-semibold tracking-wide text-[var(--color-text-2)]">Balance</th>
             <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Status</th>
             <th className="w-px text-right font-semibold tracking-wide text-[var(--color-text-2)]" aria-label="Actions" />
           </tr>
@@ -85,15 +87,18 @@ export default function AssessmentsTable({
                   </div>
                 </td>
                 <td className="align-middle py-3 text-[var(--color-text)]">
+                  {assessment.gradeLevel}
+                </td>
+                <td className="align-middle py-3 text-[var(--color-text)]">
                   {assessment.schoolYear}
                 </td>
-                <td className="align-middle py-3 text-right text-[var(--color-text)]">
+                <td className="align-middle py-3 pr-4 text-right text-[var(--color-text)]">
                   <CurrencyDisplay amount={assessment.totalAmount} />
                 </td>
-                <td className="align-middle py-3 text-right text-[var(--color-success)]">
+                <td className="align-middle py-3 pr-4 text-right text-[var(--color-success)]">
                   <CurrencyDisplay amount={assessment.totalPaid} />
                 </td>
-                <td className={`align-middle py-3 text-right font-bold ${assessment.balance > 0 ? "text-[var(--color-error)]" : "text-[var(--color-text)]"}`}>
+                <td className={`align-middle py-3 pr-4 text-right font-bold ${assessment.balance > 0 ? "text-[var(--color-error)]" : "text-[var(--color-text)]"}`}>
                   <CurrencyDisplay amount={assessment.balance} />
                 </td>
                 <td className="align-middle py-3">
