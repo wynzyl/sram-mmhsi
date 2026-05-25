@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { StudentDiscountView } from "../discounts.schema";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { Badge } from "@/components/ui/badge";
@@ -70,8 +70,17 @@ export default function StudentDiscountsList({
   const [reversingDiscount, setReversingDiscount] =
     useState<StudentDiscountView | null>(null);
 
-  const activeDiscounts = discounts.filter((d) => !d.reversedAt);
-  const reversedDiscounts = discounts.filter((d) => d.reversedAt);
+  // Memoize filtered discount arrays to prevent re-computation on every render
+  const { activeDiscounts, reversedDiscounts } = useMemo(() => ({
+    activeDiscounts: discounts.filter((d) => !d.reversedAt),
+    reversedDiscounts: discounts.filter((d) => d.reversedAt),
+  }), [discounts]);
+
+  // Memoize discount totals computation (was previously an IIFE in JSX)
+  const discountTotals = useMemo(
+    () => computeDiscountTotals(discounts),
+    [discounts]
+  );
 
   if (discounts.length === 0) {
     return (
@@ -233,50 +242,45 @@ export default function StudentDiscountsList({
 
       {/* Total Summary — show the gross deductions, the reversal offsets that
           add back to the balance, and the effective Total so the math is
-          fully transparent. */}
-      {discounts.length > 0 && (() => {
-        const { grossDiscounts, reversalOffsets, effectiveTotal } =
-          computeDiscountTotals(discounts);
-        const hasReversalOffset = reversalOffsets > 0;
-        return (
-          <div className="pt-3 border-t border-[var(--color-border)] space-y-1">
-            {hasReversalOffset && (
-              <>
-                <div className="flex justify-between items-center text-sm text-[var(--color-text-muted)]">
-                  <span>Gross discounts</span>
-                  <span className="font-[family-name:var(--font-mono)]">
-                    −
-                    <CurrencyDisplay
-                      amount={grossDiscounts}
-                      className="inline"
-                    />
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm text-[var(--color-text-muted)]">
-                  <span>Reversal offsets</span>
-                  <span className="font-[family-name:var(--font-mono)]">
-                    +
-                    <CurrencyDisplay
-                      amount={reversalOffsets}
-                      className="inline"
-                    />
-                  </span>
-                </div>
-              </>
-            )}
-            <div className="flex justify-between items-center pt-1 border-t border-[var(--color-border)]">
-              <span className="font-medium">Total Discounts</span>
-              <span className="text-lg font-semibold text-[var(--color-success)]">
-                −
-                <CurrencyDisplay
-                  amount={effectiveTotal}
-                  className="inline"
-                />
-              </span>
-            </div>
+          fully transparent. Uses memoized discountTotals computed above. */}
+      {discounts.length > 0 && (
+        <div className="pt-3 border-t border-[var(--color-border)] space-y-1">
+          {discountTotals.reversalOffsets > 0 && (
+            <>
+              <div className="flex justify-between items-center text-sm text-[var(--color-text-muted)]">
+                <span>Gross discounts</span>
+                <span className="font-[family-name:var(--font-mono)]">
+                  −
+                  <CurrencyDisplay
+                    amount={discountTotals.grossDiscounts}
+                    className="inline"
+                  />
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm text-[var(--color-text-muted)]">
+                <span>Reversal offsets</span>
+                <span className="font-[family-name:var(--font-mono)]">
+                  +
+                  <CurrencyDisplay
+                    amount={discountTotals.reversalOffsets}
+                    className="inline"
+                  />
+                </span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between items-center pt-1 border-t border-[var(--color-border)]">
+            <span className="font-medium">Total Discounts</span>
+            <span className="text-lg font-semibold text-[var(--color-success)]">
+              −
+              <CurrencyDisplay
+                amount={discountTotals.effectiveTotal}
+                className="inline"
+              />
+            </span>
           </div>
-        );
-      })()}
+        </div>
+      )}
     </div>
   );
 }

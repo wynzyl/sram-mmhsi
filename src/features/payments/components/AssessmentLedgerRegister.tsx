@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, useActionState } from "react";
+import { useCallback, useEffect, useState, useActionState, useMemo } from "react";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import GenerateInvoiceButton from "@/features/finance/components/invoices/GenerateInvoiceButton";
@@ -200,10 +200,14 @@ export default function AssessmentLedgerRegister({
     return () => window.removeEventListener("keydown", onKey);
   }, [payOpen]);
 
-  const payUiRows = payments.map((p) => ({
-    ...p,
-    paymentDate: new Date(p.paymentDate),
-  }));
+  // Memoize payment row transformation to prevent new Date objects on every render
+  const payUiRows = useMemo(
+    () => payments.map((p) => ({
+      ...p,
+      paymentDate: new Date(p.paymentDate),
+    })),
+    [payments]
+  );
 
   return (
     <div className="ledger-register">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Search } from "lucide-react";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
@@ -11,6 +11,7 @@ import { StudentRowActionsMenu } from "@/features/students/components/StudentRow
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import { registrationStudentTypeLabel } from "@/lib/utils/intake-documents";
 import { cn } from "@/lib/utils/cn";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export interface RegistrationRow {
   id: string;
@@ -77,19 +78,22 @@ export default function RegistrationsListView({
   emptyMessage = "No registrations found.",
   studentBasePath = "/staff/students",
 }: RegistrationsListViewProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 300);
   const queueTotal = totalCount ?? registrations.length;
 
-  // Client-side search filtering
-  const filteredRegistrations = registrations.filter((reg) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      reg.studentName.toLowerCase().includes(query) ||
-      reg.referenceNumber.toLowerCase().includes(query) ||
-      reg.gradeLevel.toLowerCase().includes(query)
-    );
-  });
+  // Client-side search filtering with debounced value
+  const filteredRegistrations = useMemo(() => {
+    if (!debouncedSearch) return registrations;
+    const query = debouncedSearch.toLowerCase();
+    return registrations.filter((reg) => {
+      return (
+        reg.studentName.toLowerCase().includes(query) ||
+        reg.referenceNumber.toLowerCase().includes(query) ||
+        reg.gradeLevel.toLowerCase().includes(query)
+      );
+    });
+  }, [registrations, debouncedSearch]);
 
   return (
     <div className="space-y-6">
@@ -102,7 +106,7 @@ export default function RegistrationsListView({
       ) : (
         <p className="font-mono text-sm text-[var(--color-text-muted)]">
           {queueTotal.toLocaleString()} in queue
-          {searchQuery
+          {debouncedSearch
             ? ` · showing ${filteredRegistrations.length} on this page after search`
             : null}
         </p>
@@ -114,8 +118,8 @@ export default function RegistrationsListView({
         <input
           type="text"
           placeholder="Search by name, reference, or grade level..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] py-3 pl-10 pr-4
                      text-[var(--color-text)] shadow-[var(--shadow-sm)] focus:border-[var(--color-border-2)] focus:outline-none focus:ring-2 focus:ring-(--color-border-2)/40
                      transition-all duration-150"
@@ -225,7 +229,7 @@ export default function RegistrationsListView({
       )}
 
       {/* Results count */}
-      {searchQuery && (
+      {debouncedSearch && (
         <p className="text-center text-sm text-[var(--color-text-muted)]">
           Showing {filteredRegistrations.length} of {registrations.length} registrations
         </p>
