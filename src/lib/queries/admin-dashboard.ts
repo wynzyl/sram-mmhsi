@@ -1,6 +1,6 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { and, desc, eq, gt, gte, isNull, lt, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
@@ -37,10 +37,16 @@ function toNumber(value: unknown): number {
 }
 
 /**
- * Internal function to fetch admin dashboard metrics (uncached).
- * Use the cached wrapper `getAdminDashboardMetrics()` instead.
+ * Get admin dashboard metrics with caching.
+ * Cache is revalidated every 60 seconds to ensure financial data freshness.
+ * Cache can be manually invalidated using invalidateTag(CACHE_TAGS.DASHBOARD)
+ * from actions that materially change KPIs (payment post/void, enrollment
+ * confirmation, assessment creation, school year changes).
  */
-async function _getAdminDashboardMetricsUncached(): Promise<AdminDashboardMetrics> {
+export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics> {
+  "use cache";
+  cacheTag(CACHE_TAGS.DASHBOARD);
+  cacheLife("minutes"); // 1 min revalidate (close to 60s)
   // Parallelize school year queries (optimization: avoid waterfall)
   const schoolYearsData = await db
     .select({
@@ -212,19 +218,3 @@ async function _getAdminDashboardMetricsUncached(): Promise<AdminDashboardMetric
     overdueAccountsAmount,
   };
 }
-
-/**
- * Get admin dashboard metrics with caching.
- * Cache is revalidated every 60 seconds to ensure financial data freshness.
- * Cache can be manually invalidated using invalidateTag(CACHE_TAGS.DASHBOARD)
- * from actions that materially change KPIs (payment post/void, enrollment
- * confirmation, assessment creation, school year changes).
- */
-export const getAdminDashboardMetrics = unstable_cache(
-  _getAdminDashboardMetricsUncached,
-  ['admin-dashboard-metrics'],
-  {
-    revalidate: 60, // 60 seconds - reduced from 15 min for financial accuracy
-    tags: [CACHE_TAGS.DASHBOARD],
-  }
-);

@@ -6,11 +6,8 @@ import { PORTAL_ROLES } from "@/lib/constants/roles";
 import { Sidebar } from "@/components/layout/Sidebar";
 import type { Role } from "@/lib/constants/roles";
 
-export default async function PortalLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// Authenticated layout content - wrapped in Suspense at the page level
+async function PortalLayoutContent({ children }: { children: React.ReactNode }) {
   const session = await requireSession();
 
   if (!PORTAL_ROLES.includes(session.role)) {
@@ -22,11 +19,7 @@ export default async function PortalLayout({
 
   return (
     <div className="app-shell">
-      <Suspense
-        fallback={<aside className="sidebar" style={{ width: 220, flexShrink: 0 }} aria-hidden />}
-      >
-        <Sidebar role={user.role as Role} username={user.username} />
-      </Suspense>
+      <Sidebar role={user.role as Role} username={user.username} />
       <main className="app-main">{children}</main>
       <style>{`
         .app-shell {
@@ -42,5 +35,35 @@ export default async function PortalLayout({
         }
       `}</style>
     </div>
+  );
+}
+
+export default function PortalLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  // Wrap the entire authenticated layout in Suspense to defer to request time
+  return (
+    <Suspense
+      fallback={
+        <div className="app-shell">
+          <aside className="sidebar" style={{ width: 220, flexShrink: 0 }} aria-hidden />
+          <main className="app-main" style={{ flex: 1, overflow: "auto", padding: "1.5rem 2rem" }}>
+            <div className="animate-pulse" style={{ height: "100%" }} />
+          </main>
+          <style>{`
+            .app-shell {
+              display: flex;
+              height: 100vh;
+              overflow: hidden;
+              background: var(--color-surface-2);
+            }
+          `}</style>
+        </div>
+      }
+    >
+      <PortalLayoutContent>{children}</PortalLayoutContent>
+    </Suspense>
   );
 }

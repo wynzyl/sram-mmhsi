@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { fetchCashierQueueData } from "@/features/payments/payments.queries";
 
 export async function GET() {
+  await connection(); // Requires auth - exclude from prerendering
   try {
     const user = await getCurrentUser();
 

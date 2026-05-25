@@ -4,9 +4,6 @@ import { staffHomePathForRole } from "@/lib/utils/staff-home";
 import type { Role } from "@/lib/constants/roles";
 import { requireSession } from "@/lib/auth/session";
 
-// Force dynamic rendering - disable router cache for this page
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Master List",
   description: "Enrolled students master list (staff).",

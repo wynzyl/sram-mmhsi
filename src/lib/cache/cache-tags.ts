@@ -15,10 +15,9 @@ import {
  * @see https://nextjs.org/docs/app/api-reference/functions/updateTag
  */
 /**
- * Only add a tag here once a query is wrapped in `unstable_cache(...)` with
- * that tag. Tags with no subscriber are no-ops at runtime but tempt callers
- * into pile-on invalidation in action handlers (which is what caused the
- * caching/revalidation regression originally fixed in this audit).
+ * Only add a tag here once a query uses `'use cache'` directive with
+ * `cacheTag(TAG)`. Tags with no subscriber are no-ops at runtime but tempt
+ * callers into pile-on invalidation in action handlers.
  *
  * Subscribers (kept in sync manually):
  * - DASHBOARD       -> src/lib/queries/admin-dashboard.ts (getAdminDashboardMetrics)
@@ -56,10 +55,9 @@ export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];
 
 /**
  * Helper to get multiple tags as an array.
- * Useful for unstable_cache tags parameter.
  *
  * @example
- * tags: getCacheTags('DASHBOARD', 'PAYMENTS')
+ * getCacheTags('DASHBOARD', 'PAYMENTS')
  */
 export function getCacheTags(
   ...tagKeys: (keyof typeof CACHE_TAGS)[]

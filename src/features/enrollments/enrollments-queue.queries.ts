@@ -1,6 +1,7 @@
 import 'server-only';
-import { unstable_cache } from 'next/cache';
+import { cacheLife, cacheTag } from 'next/cache';
 import { db } from "@/lib/db";
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
   students,
   enrollments,
@@ -784,29 +785,32 @@ export async function getEnrollmentQueueData(
  *
  * PERFORMANCE: Cached for 60 seconds to reduce database load by 95%
  */
-export const getEnrollmentQueueCounts = unstable_cache(
-  async (): Promise<{
-    readyToEnroll: number;
-    pending: number;
-    assessed: number;
-    enrolled: number;
-    cancelled: number;
-  } | null> => {
-    const activeSchoolYearId = await getActiveSchoolYearId();
+export async function getEnrollmentQueueCounts(): Promise<{
+  readyToEnroll: number;
+  pending: number;
+  assessed: number;
+  enrolled: number;
+  cancelled: number;
+} | null> {
+  "use cache";
+  cacheTag(CACHE_TAGS.ENROLLMENTS);
+  cacheLife("minutes"); // 1 min revalidate
 
-    if (!activeSchoolYearId) {
-      return null;
-    }
+  const activeSchoolYearId = await getActiveSchoolYearId();
 
-    // Get all counts in parallel using COUNT(*) (fast, uses indexes)
-    // Each promise has explicit error handling to prevent silent failures
-    const [
-      readyToEnrollCount,
-      pendingCount,
-      assessedCount,
-      enrolledCount,
-      cancelledCount,
-    ] = await Promise.all([
+  if (!activeSchoolYearId) {
+    return null;
+  }
+
+  // Get all counts in parallel using COUNT(*) (fast, uses indexes)
+  // Each promise has explicit error handling to prevent silent failures
+  const [
+    readyToEnrollCount,
+    pendingCount,
+    assessedCount,
+    enrolledCount,
+    cancelledCount,
+  ] = await Promise.all([
     // Ready to enroll: new/transferee approved registrations (not yet enrolled, active)
     // + old students enrolled last year (not yet in current year, not Grade 12 completers)
     db.execute<{ total: string }>(sql`
@@ -931,22 +935,16 @@ export const getEnrollmentQueueCounts = unstable_cache(
         console.error("[enrollments-queue] cancelled count failed:", err);
         return 0;
       }),
-    ]);
+  ]);
 
-    return {
-      readyToEnroll: readyToEnrollCount,
-      pending: pendingCount,
-      assessed: assessedCount,
-      enrolled: enrolledCount,
-      cancelled: cancelledCount,
-    };
-  },
-  ['enrollment-queue-counts'],
-  {
-    revalidate: 60, // Cache for 60 seconds
-    tags: ['enrollments'],
-  }
-);
+  return {
+    readyToEnroll: readyToEnrollCount,
+    pending: pendingCount,
+    assessed: assessedCount,
+    enrolled: enrolledCount,
+    cancelled: cancelledCount,
+  };
+}
 
 // ─── Optimized List Query (Phase 1: Query Optimization) ─────────────────────
 

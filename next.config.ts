@@ -3,6 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // output: 'standalone',
   cacheComponents: true,
+  cacheLife: {
+    // Custom profile for fee-templates (10-minute cache)
+    "fee-templates": {
+      stale: 300, // 5 minutes client cache
+      revalidate: 600, // 10 minutes server revalidate
+      expire: 3600, // 1 hour max
+    },
+  },
   allowedDevOrigins: [
     'http://localhost:3000',
     ...(process.env.APP_BASE_URL
