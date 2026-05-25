@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useState, useEffect, useRef } from "react";
+import { useActionState, useState } from "react";
 import { reverseDiscountAction } from "../discounts.actions";
 import type {
   ReverseDiscountFormState,
   StudentDiscountView,
 } from "../discounts.schema";
+import { Modal, ModalHeader, ModalBody } from "@/components/shared/Modal";
 import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,6 @@ export default function DiscountReversalModal({
   onClose,
 }: DiscountReversalModalProps) {
   const [remarks, setRemarks] = useState("");
-  const dialogRef = useRef<HTMLDivElement>(null);
 
   const initialState: ReverseDiscountFormState = {};
   const [state, action, pending] = useActionState(
@@ -34,23 +34,18 @@ export default function DiscountReversalModal({
     onSuccess: onClose,
   });
 
-  // Handle escape key and click outside
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div
-        ref={dialogRef}
-        className="bg-[var(--color-surface)] rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
-      >
-        <h2 className="text-lg font-semibold mb-4">Reverse Discount</h2>
+    <Modal
+      open={true}
+      onClose={onClose}
+      size="sm"
+      aria-labelledby="reverse-discount-title"
+    >
+      <ModalHeader onClose={onClose} kicker="Finance · Discounts">
+        <h2 id="reverse-discount-title">Reverse Discount</h2>
+      </ModalHeader>
 
+      <ModalBody>
         <form action={action} className="space-y-4">
           <input
             type="hidden"
@@ -125,7 +120,7 @@ export default function DiscountReversalModal({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </ModalBody>
+    </Modal>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useActionState } from "react";
+import { useState, useCallback, useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Modal, ModalHeader, ModalBody } from "@/components/shared/Modal";
+import { useFormToast } from "@/hooks/useFormToast";
 import { createFeeItemTypeAction } from "../fee-item-types.actions";
 import { FEE_ITEM_CATEGORIES_LIST, FEE_ITEM_CATEGORY_LABELS, type CreateFeeItemTypeFormState } from "../fee-item-types.schema";
 
@@ -17,72 +19,33 @@ export function CreateFeeItemTypeModal() {
   const openModal = useCallback(() => setOpen(true), []);
   const closeModal = useCallback(() => setOpen(false), []);
 
-  useEffect(() => {
-    if (state.success) {
-      const t = window.setTimeout(() => {
-        setOpen(false);
-        router.refresh();
-      }, 600);
-      return () => window.clearTimeout(t);
-    }
-  }, [state.success, router]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeModal();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, closeModal]);
+  useFormToast(state, {
+    successMessage: "Fee type created successfully",
+    onSuccess: () => {
+      setOpen(false);
+      router.refresh();
+    },
+  });
 
   return (
     <>
       <Button onClick={openModal}>+ New Fee Type</Button>
 
-      {open && (
-        <div
-          className="fin-modal-backdrop"
-          role="presentation"
-          onClick={(e) => e.target === e.currentTarget && closeModal()}
+      <Modal
+        open={open}
+        onClose={closeModal}
+        aria-labelledby="create-fit-title"
+      >
+        <ModalHeader
+          onClose={closeModal}
+          kicker="Finance · Fee Item Types"
+          subtitle="Define a reusable fee type for use in templates"
         >
-          <div
-            className="fin-modal-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-fit-title"
-          >
-            <div className="fin-modal-header">
-              <div>
-                <p className="fin-modal-kicker">Finance · Fee Item Types</p>
-                <h2 id="create-fit-title" className="fin-modal-title">
-                  New Fee Type
-                </h2>
-                <p className="fin-modal-sub">
-                  Define a reusable fee type for use in templates
-                </p>
-              </div>
-              <button
-                type="button"
-                className="fin-modal-close"
-                onClick={closeModal}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
+          <h2 id="create-fit-title">New Fee Type</h2>
+        </ModalHeader>
 
-            <div className="fin-modal-body">
-              {state.success ? (
-                <div className="fin-callout fin-callout-success">
-                  <span className="fin-callout-icon">✓</span>
-                  <div>
-                    <p className="fin-callout-title">Fee type created</p>
-                    <p className="fin-callout-body">Closing…</p>
-                  </div>
-                </div>
-              ) : (
-                <form action={formAction} className="fin-form-stack">
+        <ModalBody>
+          <form action={formAction} className="fin-form-stack">
                   {state.message && (
                     <div className="fin-callout fin-callout-warn">
                       <span className="fin-callout-icon">!</span>
@@ -189,20 +152,17 @@ export function CreateFeeItemTypeModal() {
                     </div>
                   </div>
 
-                  <div className="fin-form-actions fin-form-actions-border">
-                    <Button type="button" variant="secondary" onClick={closeModal}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isPending}>
-                      {isPending ? "Creating…" : "Create Fee Type"}
-                    </Button>
-                  </div>
-                </form>
-              )}
+            <div className="fin-form-actions fin-form-actions-border">
+              <Button type="button" variant="secondary" onClick={closeModal}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Creating…" : "Create Fee Type"}
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </form>
+        </ModalBody>
+      </Modal>
     </>
   );
 }

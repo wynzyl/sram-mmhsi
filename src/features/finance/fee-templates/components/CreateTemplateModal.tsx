@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState, useEffect, useCallback } from "react";
+import { useActionState, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createFeeTemplateAction } from "../fee-templates.actions";
+import { Modal, ModalHeader, ModalBody } from "@/components/shared/Modal";
 import { useFormToast } from "@/hooks/useFormToast";
 import { TextInputField } from "@/components/forms/TextInputField";
 import { SelectField } from "@/components/forms/SelectField";
@@ -31,63 +32,25 @@ export function CreateTemplateModal() {
     },
   });
 
-  // Escape key closes
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeModal(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, closeModal]);
-
   return (
     <>
       <Button onClick={openModal}>Create Template</Button>
 
-      {open && (
-        <div
-          className="fin-modal-backdrop"
-          role="presentation"
-          onClick={(e) => e.target === e.currentTarget && closeModal()}
+      <Modal
+        open={open}
+        onClose={closeModal}
+        aria-labelledby="create-template-title"
+      >
+        <ModalHeader
+          onClose={closeModal}
+          kicker="Finance · Fee Management"
+          subtitle="Define a reusable fee structure for an assessment band."
         >
-          <div
-            className="fin-modal-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-template-title"
-          >
-            {/* Header */}
-            <div className="fin-modal-header">
-              <div>
-                <p className="fin-modal-kicker">Finance · Fee Management</p>
-                <h2 id="create-template-title" className="fin-modal-title">
-                  Create Fee Template
-                </h2>
-                <p className="fin-modal-sub">
-                  Define a reusable fee structure for an assessment band.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="fin-modal-close"
-                onClick={closeModal}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
+          <h2 id="create-template-title">Create Fee Template</h2>
+        </ModalHeader>
 
-            {/* Body */}
-            <div className="fin-modal-body">
-              {state.success && state.templateId ? (
-                <div className="fin-callout fin-callout-success">
-                  <div className="fin-callout-icon" aria-hidden>✓</div>
-                  <div>
-                    <p className="fin-callout-title">Template created!</p>
-                    <p className="fin-callout-body">Redirecting to fee items…</p>
-                  </div>
-                </div>
-              ) : (
-                <form action={action} className="fin-form-stack">
+        <ModalBody>
+          <form action={action} className="fin-form-stack">
                   <TextInputField
                     label="Template Name"
                     name="name"
@@ -147,20 +110,17 @@ export function CreateTemplateModal() {
                     </div>
                   </div>
 
-                  <div className="fin-form-actions fin-form-actions-border">
-                    <Button type="submit" disabled={isPending}>
-                      {isPending ? "Creating…" : "Create Template"}
-                    </Button>
-                    <Button type="button" variant="secondary" onClick={closeModal}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              )}
+            <div className="fin-form-actions fin-form-actions-border">
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Creating…" : "Create Template"}
+              </Button>
+              <Button type="button" variant="secondary" onClick={closeModal}>
+                Cancel
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </form>
+        </ModalBody>
+      </Modal>
     </>
   );
 }
