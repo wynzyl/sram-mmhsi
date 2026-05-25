@@ -135,9 +135,9 @@ function AssessmentsPagination({
     >
       <p className="text-sm text-[var(--color-text-muted)]">
         Showing{" "}
-        <span className="font-medium text-[var(--color-text)]">{start}</span> to{" "}
-        <span className="font-medium text-[var(--color-text)]">{end}</span> of{" "}
-        <span className="font-medium text-[var(--color-text)]">{totalCount.toLocaleString()}</span>{" "}
+        <span className="font-medium text-(--color-text)">{start}</span> to{" "}
+        <span className="font-medium text-(--color-text)">{end}</span> of{" "}
+        <span className="font-medium text-(--color-text)">{totalCount.toLocaleString()}</span>{" "}
         {label.toLowerCase()}
       </p>
 

@@ -13,6 +13,7 @@ import {
 } from "@/features/enrollments";
 import { editorialFieldClass } from "@/lib/utils/editorial-styles";
 import { cn } from "@/lib/utils/cn";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const STAGGER_CLASSES = [
   "stagger-delay-1",
@@ -72,7 +73,8 @@ export default function EnrollmentsListView({
   canCancelWithBalance,
   canOverrideEnrolled,
 }: EnrollmentsListViewProps) {
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 300);
 
   const totalAll = useMemo(
     () =>
@@ -85,7 +87,7 @@ export default function EnrollmentsListView({
   const totalActive = (countMap.pending ?? 0) + (countMap.assessed ?? 0);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     if (!q) return enrollments;
     return enrollments.filter((en) => {
       return (
@@ -94,7 +96,7 @@ export default function EnrollmentsListView({
         en.gradeLevel.toLowerCase().includes(q)
       );
     });
-  }, [enrollments, search]);
+  }, [enrollments, debouncedSearch]);
 
   const subtitle = (
     <span className="font-mono text-sm text-ops-muted">
@@ -215,8 +217,8 @@ export default function EnrollmentsListView({
         />
         <input
           type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by name, reference (STU-…), or grade level"
           className={editorialFieldClass({ className: "pl-10 font-mono text-sm" })}
         />
@@ -229,13 +231,13 @@ export default function EnrollmentsListView({
             No enrollments match this view.
           </p>
           <p className="mt-2 text-sm text-ops-muted">
-            {search
-              ? `Nothing in this status matches "${search}".`
+            {debouncedSearch
+              ? `Nothing in this status matches "${debouncedSearch}".`
               : filterStatus === "all"
               ? "Create the first enrollment of the school year to get started."
               : `No enrollments are currently ${filterStatus}.`}
           </p>
-          {canCreate && filterStatus === "all" && !search && (
+          {canCreate && filterStatus === "all" && !debouncedSearch && (
             <Link
               href={newEnrollmentHref}
               className="mt-6 inline-flex items-center gap-2 rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
@@ -268,7 +270,7 @@ export default function EnrollmentsListView({
         </div>
       )}
 
-      {search && (
+      {debouncedSearch && (
         <p className="text-center font-mono text-xs text-ops-muted">
           Showing {filtered.length.toLocaleString()} of {enrollments.length.toLocaleString()} on this
           page after search

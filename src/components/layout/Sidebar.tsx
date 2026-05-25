@@ -7,6 +7,7 @@ import { logoutAction } from "@/features/auth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ROLE_LABELS, normalizeRole, ROLES } from "@/lib/constants/roles";
 import { NAV_CONFIG } from "./sidebar-nav";
+import { useCommandPalette } from "@/components/command-palette";
 import type { Role } from "@/lib/constants/roles";
 import type { NavIconName, NavItem } from "./sidebar-nav";
 import "./sidebar.css";
@@ -207,6 +208,7 @@ interface SidebarProps {
 export function Sidebar({ role, username }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { open: openCommandPalette } = useCommandPalette();
   const normalizedRole = normalizeRole(role);
   const resolvedRole = normalizedRole ?? ROLES.ADMIN;
   const sections = normalizedRole ? NAV_CONFIG[normalizedRole] ?? [] : [];
@@ -230,6 +232,21 @@ export function Sidebar({ role, username }: SidebarProps) {
           <p className="sidebar-brand-portal">{portalLabel(resolvedRole)}</p>
         </div>
       </div>
+
+      {/* Search button */}
+      <button
+        type="button"
+        onClick={openCommandPalette}
+        className="sidebar-search-btn"
+        aria-label="Open search"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+        <span className="sidebar-search-text">Search...</span>
+        <kbd className="sidebar-search-kbd">Ctrl+K</kbd>
+      </button>
 
       {/* Navigation */}
       <nav className="sidebar-nav" aria-label="Main navigation">

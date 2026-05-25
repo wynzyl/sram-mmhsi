@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Filter, Search } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type GradeLevel = {
   id: string;
@@ -25,6 +27,23 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
   const currentSearch = searchParams.get("search") || "";
   const currentGradeLevel = searchParams.get("gradeLevel") || "all";
   const currentTab = searchParams.get("tab") || "ready-to-enroll";
+
+  // Local input state for immediate UI feedback
+  const [searchInput, setSearchInput] = useState(currentSearch);
+  const debouncedSearch = useDebounce(searchInput, 300);
+
+  // Sync URL when debounced value changes
+  useEffect(() => {
+    if (debouncedSearch !== currentSearch) {
+      updateFilters({ search: debouncedSearch });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  // Keep local state in sync if URL changes externally (e.g., clear filters)
+  useEffect(() => {
+    setSearchInput(currentSearch);
+  }, [currentSearch]);
 
   const updateFilters = (updates: { search?: string; gradeLevel?: string }) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -51,7 +70,7 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
   };
 
   const handleSearchChange = (value: string) => {
-    updateFilters({ search: value });
+    setSearchInput(value);
   };
 
   const handleGradeLevelChange = (value: string) => {
@@ -74,7 +93,7 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
           <Input
             type="search"
-            value={currentSearch}
+            value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by name or student ID..."
             className="max-w-md pl-9"

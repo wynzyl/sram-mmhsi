@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Search, X } from "lucide-react";
 import { editorialFieldClass } from "@/lib/utils/editorial-styles";
 import { cn } from "@/lib/utils/cn";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export interface StudentPickerOption {
   id: string;
@@ -40,6 +41,7 @@ export default function StudentPicker({
   placeholder = "Search by name or reference (e.g. STU-2026-…)",
 }: StudentPickerProps) {
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 200);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,7 +71,7 @@ export default function StudentPicker({
   }, [open]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = debouncedQuery.trim().toLowerCase();
     const all = q
       ? students.filter((s) => {
           const haystack = `${s.lastName} ${s.firstName} ${s.referenceNumber}`.toLowerCase();
@@ -77,11 +79,11 @@ export default function StudentPicker({
         })
       : students;
     return all.slice(0, MAX_VISIBLE);
-  }, [students, query]);
+  }, [students, debouncedQuery]);
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [filtered.length, query]);
+  }, [filtered.length, debouncedQuery]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!open && (e.key === "ArrowDown" || e.key === "Enter")) {

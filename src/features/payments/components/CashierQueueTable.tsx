@@ -10,6 +10,7 @@ import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export type CashierQueueRow = {
   assessmentId: string;
@@ -28,10 +29,11 @@ interface CashierQueueTableProps {
 
 export function CashierQueueTable({ rows }: CashierQueueTableProps) {
   const [filterMode, setFilterMode] = useState<"all" | "newly_assessed" | "with_balance">("newly_assessed");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 300);
 
   const filteredRows = useMemo(() => {
-    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const normalizedSearch = debouncedSearch.trim().toLowerCase();
     if (filterMode === "newly_assessed") {
       return rows.filter(
         (row) =>
@@ -50,7 +52,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
     return rows.filter((row) =>
       (`${row.studentName} ${row.referenceNumber}`).toLowerCase().includes(normalizedSearch)
     );
-  }, [filterMode, rows, searchQuery]);
+  }, [filterMode, rows, debouncedSearch]);
 
   const columns: ColumnDef<CashierQueueRow>[] = [
     {
@@ -111,8 +113,8 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
       <div className="flex items-center gap-2">
         <Input
           type="search"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
           placeholder="Search student name / reference number..."
           className="max-w-sm"
         />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useMemo } from "react";
+import { useActionState, useState, useMemo, memo } from "react";
 import { requestVoidAction, cancelVoidRequestAction } from "../void-requests.actions";
 import type { RequestVoidFormState, CancelVoidRequestFormState } from "../void-requests.schema";
 import { DataTable } from "@/components/shared/DataTable";
@@ -33,6 +33,161 @@ interface PendingVoidRequest {
   requestedByUsername: string;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// VoidActionsCell - Extracted to prevent column regeneration on state changes
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface VoidActionsCellProps {
+  payment: Payment;
+  pendingRequest?: PendingVoidRequest;
+  currentUserId?: string;
+}
+
+/**
+ * Memoized cell component for void request/cancel actions.
+ * Extracted from column definition to prevent entire column array from
+ * regenerating when form state changes (requestVoidId, cancelRequestId, etc.).
+ */
+const VoidActionsCell = memo(function VoidActionsCell({
+  payment,
+  pendingRequest,
+  currentUserId,
+}: VoidActionsCellProps) {
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  const initialRequestState: RequestVoidFormState = {};
+  const [requestState, requestAction, requestPending] = useActionState(
+    requestVoidAction,
+    initialRequestState
+  );
+
+  const initialCancelState: CancelVoidRequestFormState = {};
+  const [cancelState, cancelAction, cancelPending] = useActionState(
+    cancelVoidRequestAction,
+    initialCancelState
+  );
+
+  useFormToast(requestState, {
+    successMessage: "Void request submitted successfully",
+    onSuccess: () => setShowRequestForm(false),
+  });
+
+  useFormToast(cancelState, {
+    successMessage: "Void request cancelled",
+    onSuccess: () => setShowCancelConfirm(false),
+  });
+
+  const isReversal = payment.kind === "reversal";
+  const isBalanceForward = payment.kind === "balance_forward";
+
+  // No actions for reversal rows
+  if (isReversal || payment.status === "reversal") {
+    return null;
+  }
+
+  // No actions for balance forward rows (cannot void BFX receipts)
+  if (isBalanceForward || payment.status === "balance_forward") {
+    return null;
+  }
+
+  // No actions for already voided/reversed
+  if (payment.status === "voided" || payment.status === "reversed") {
+    return null;
+  }
+
+  // If there's a pending request
+  if (pendingRequest) {
+    // Show cancel button if current user is the requester
+    if (currentUserId && pendingRequest.requestedBy === currentUserId) {
+      if (showCancelConfirm) {
+        return (
+          <form action={cancelAction} className="flex gap-2 items-center">
+            <input type="hidden" name="requestId" value={pendingRequest.requestId} />
+            <span className="text-xs text-[var(--color-text-muted)]">Cancel?</span>
+            <Button
+              type="submit"
+              variant="danger"
+              size="sm"
+              loading={cancelPending}
+            >
+              Yes
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCancelConfirm(false)}
+            >
+              No
+            </Button>
+          </form>
+        );
+      }
+
+      return (
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setShowCancelConfirm(true)}
+        >
+          Cancel Request
+        </Button>
+      );
+    }
+
+    // Show who requested it (for other users)
+    return (
+      <span className="text-xs text-[var(--color-text-muted)]">
+        Requested by {pendingRequest.requestedByUsername}
+      </span>
+    );
+  }
+
+  // Show request void form
+  if (showRequestForm) {
+    return (
+      <form action={requestAction} className="flex gap-2">
+        <input type="hidden" name="paymentId" value={payment.id} />
+        <Input
+          type="text"
+          name="requestReason"
+          placeholder="Reason for void"
+          required
+          className="w-40 h-8 text-xs"
+        />
+        <Button
+          type="submit"
+          variant="danger"
+          size="sm"
+          loading={requestPending}
+        >
+          Submit
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowRequestForm(false)}
+        >
+          Cancel
+        </Button>
+      </form>
+    );
+  }
+
+  // Show request void button
+  return (
+    <Button
+      variant="danger"
+      size="sm"
+      onClick={() => setShowRequestForm(true)}
+    >
+      Request Void
+    </Button>
+  );
+});
+
 interface PaymentsHistoryTableProps {
   payments: Payment[];
   /** Whether the current user can request voids (replaces legacy canVoid) */
@@ -52,34 +207,7 @@ export default function PaymentsHistoryTable({
   currentUserId,
   embedded = false,
 }: PaymentsHistoryTableProps) {
-  // State for which payment's void request form is open
-  const [requestVoidId, setRequestVoidId] = useState<string | null>(null);
-  // State for which cancel request is pending confirmation
-  const [cancelRequestId, setCancelRequestId] = useState<string | null>(null);
-
-  // Form states
-  const initialRequestState: RequestVoidFormState = {};
-  const [requestState, requestAction, requestPending] = useActionState(
-    requestVoidAction,
-    initialRequestState
-  );
-
-  const initialCancelState: CancelVoidRequestFormState = {};
-  const [cancelState, cancelAction, cancelPending] = useActionState(
-    cancelVoidRequestAction,
-    initialCancelState
-  );
-
-  useFormToast(requestState, {
-    successMessage: "Void request submitted successfully",
-    onSuccess: () => setRequestVoidId(null),
-  });
-
-  useFormToast(cancelState, {
-    successMessage: "Void request cancelled",
-    onSuccess: () => setCancelRequestId(null),
-  });
-
+  // Columns are now stable - action state moved to VoidActionsCell component
   const columns = useMemo<ColumnDef<Payment>[]>(() => {
     const baseColumns: ColumnDef<Payment>[] = [
       {
@@ -233,7 +361,7 @@ export default function PaymentsHistoryTable({
       },
     ];
 
-    // Actions column (for void request/cancel)
+    // Actions column - uses memoized VoidActionsCell to isolate state changes
     if (canRequestVoid) {
       baseColumns.push({
         header: "Actions",
@@ -241,130 +369,19 @@ export default function PaymentsHistoryTable({
         cell: ({ row }) => {
           const payment = row.original;
           const pendingRequest = pendingVoidByPaymentId[payment.id];
-          const isReversal = payment.kind === "reversal";
-          const isBalanceForward = payment.kind === "balance_forward";
-
-          // No actions for reversal rows
-          if (isReversal || payment.status === "reversal") {
-            return null;
-          }
-
-          // No actions for balance forward rows (cannot void BFX receipts)
-          if (isBalanceForward || payment.status === "balance_forward") {
-            return null;
-          }
-
-          // No actions for already voided/reversed
-          if (payment.status === "voided" || payment.status === "reversed") {
-            return null;
-          }
-
-          // If there's a pending request
-          if (pendingRequest) {
-            // Show cancel button if current user is the requester
-            if (currentUserId && pendingRequest.requestedBy === currentUserId) {
-              if (cancelRequestId === pendingRequest.requestId) {
-                return (
-                  <form action={cancelAction} className="flex gap-2 items-center">
-                    <input type="hidden" name="requestId" value={pendingRequest.requestId} />
-                    <span className="text-xs text-[var(--color-text-muted)]">Cancel?</span>
-                    <Button
-                      type="submit"
-                      variant="danger"
-                      size="sm"
-                      loading={cancelPending}
-                    >
-                      Yes
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCancelRequestId(null)}
-                    >
-                      No
-                    </Button>
-                  </form>
-                );
-              }
-
-              return (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setCancelRequestId(pendingRequest.requestId)}
-                >
-                  Cancel Request
-                </Button>
-              );
-            }
-
-            // Show who requested it (for other users)
-            return (
-              <span className="text-xs text-[var(--color-text-muted)]">
-                Requested by {pendingRequest.requestedByUsername}
-              </span>
-            );
-          }
-
-          // Show request void form
-          if (requestVoidId === payment.id) {
-            return (
-              <form action={requestAction} className="flex gap-2">
-                <input type="hidden" name="paymentId" value={payment.id} />
-                <Input
-                  type="text"
-                  name="requestReason"
-                  placeholder="Reason for void"
-                  required
-                  className="w-40 h-8 text-xs"
-                />
-                <Button
-                  type="submit"
-                  variant="danger"
-                  size="sm"
-                  loading={requestPending}
-                >
-                  Submit
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setRequestVoidId(null)}
-                >
-                  Cancel
-                </Button>
-              </form>
-            );
-          }
-
-          // Show request void button
           return (
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setRequestVoidId(payment.id)}
-            >
-              Request Void
-            </Button>
+            <VoidActionsCell
+              payment={payment}
+              pendingRequest={pendingRequest}
+              currentUserId={currentUserId}
+            />
           );
         },
       });
     }
 
     return baseColumns;
-  }, [
-    canRequestVoid,
-    requestVoidId,
-    cancelRequestId,
-    pendingVoidByPaymentId,
-    currentUserId,
-    requestAction,
-    requestPending,
-    cancelAction,
-    cancelPending,
-  ]);
+  }, [canRequestVoid, pendingVoidByPaymentId, currentUserId]);
 
   return (
     <div className={embedded ? undefined : "mt-6"}>
