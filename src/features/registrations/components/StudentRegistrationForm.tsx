@@ -22,6 +22,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { editorialFieldClass } from "@/lib/utils/editorial-styles";
+import { formatPhoneInput, stripPhoneFormat } from "@/lib/utils/phone";
 
 const emptyGuardian = (): GuardianInput => ({
   firstName: "",
@@ -483,14 +484,19 @@ export default function StudentRegistrationForm({
                   </label>
                   <input
                     id="mobileNumber"
-                    name="mobileNumber"
                     type="tel"
+                    inputMode="numeric"
                     autoComplete="tel"
-                    placeholder="09171234567"
-                    value={draft.mobileNumber ?? ""}
-                    onChange={(e) => updateDraft("mobileNumber", e.target.value)}
-                    className={editorialFieldClass({ invalid: !!getError("mobileNumber") })}
+                    placeholder="0917-010-0098"
+                    value={formatPhoneInput(draft.mobileNumber ?? "")}
+                    onChange={(e) => {
+                      const formatted = formatPhoneInput(e.target.value);
+                      updateDraft("mobileNumber", stripPhoneFormat(formatted));
+                    }}
+                    className={editorialFieldClass({ invalid: !!getError("mobileNumber"), className: "font-mono" })}
                   />
+                  {/* Hidden input with raw value for form submission */}
+                  <input type="hidden" name="mobileNumber" value={draft.mobileNumber ?? ""} />
                   {getError("mobileNumber") && (
                     <p className="mt-1 text-sm text-red-600">{getError("mobileNumber")}</p>
                   )}

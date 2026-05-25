@@ -28,6 +28,7 @@ import {
 } from "@/lib/utils/intake-documents";
 import EditIntakeDocumentsDialog from "@/features/enrollments/components/EditIntakeDocumentsDialog";
 import { cn } from "@/lib/utils/cn";
+import { formatPhoneNumber } from "@/lib/utils/phone";
 import {
   CalendarDays,
   ClipboardList,
@@ -409,7 +410,7 @@ export function RegistrationDetailView({
                   </li>
                   <li className="flex gap-3">
                     <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
-                    <span className="text-[var(--color-text)]">{student.mobileNumber?.trim() || "—"}</span>
+                    <span className="font-mono text-[var(--color-text)]">{student.mobileNumber?.trim() ? formatPhoneNumber(student.mobileNumber) : "—"}</span>
                   </li>
                   <li className="flex gap-3">
                     <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-text-muted)]" aria-hidden />

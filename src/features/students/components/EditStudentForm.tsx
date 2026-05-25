@@ -10,6 +10,7 @@ import { useFormToast } from "@/hooks/useFormToast";
 import { DataCard } from "@/components/ui/editorial/DataCard";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
+import { formatPhoneInput, stripPhoneFormat } from "@/lib/utils/phone";
 import GuardianForm from "./GuardianForm";
 
 interface StudentData {
@@ -73,6 +74,9 @@ export default function EditStudentForm({
   const [guardians, setGuardians] = useState<GuardianInput[]>(
     initialGuardians.length > 0 ? initialGuardians : [{ ...emptyGuardian(), isPrimary: true }]
   );
+  // Phone number state for formatting
+  const [mobileNumber, setMobileNumber] = useState(() => student.mobileNumber || "");
+  const [mobileDisplay, setMobileDisplay] = useState(() => formatPhoneInput(student.mobileNumber || ""));
 
   useFormToast(state, {
     successMessage: "Student updated successfully",
@@ -266,13 +270,20 @@ export default function EditStudentForm({
             </label>
             <input
               id="mobileNumber"
-              name="mobileNumber"
               type="tel"
-              className={`form-control ${state.errors?.mobileNumber ? "form-control-error" : ""}`}
-              defaultValue={student.mobileNumber || ""}
-              placeholder="09171234567"
+              inputMode="numeric"
+              className={`form-control font-mono ${state.errors?.mobileNumber ? "form-control-error" : ""}`}
+              value={mobileDisplay}
+              onChange={(e) => {
+                const formatted = formatPhoneInput(e.target.value);
+                setMobileDisplay(formatted);
+                setMobileNumber(stripPhoneFormat(formatted));
+              }}
+              placeholder="0917-010-0098"
               autoComplete="tel"
             />
+            {/* Hidden input with raw value for form submission */}
+            <input type="hidden" name="mobileNumber" value={mobileNumber} />
             {state.errors?.mobileNumber && (
               <p className="form-error">{state.errors.mobileNumber[0]}</p>
             )}

@@ -10,6 +10,7 @@ import type {
 } from "../students.schema";
 import type { StudentDirectoryBasePath } from "@/lib/utils/student-directory-href";
 import GuardianForm from "./GuardianForm";
+import { PhoneInput } from "@/components/forms/PhoneInput";
 import IntakeRequirementsFieldset from "@/features/enrollments/components/IntakeRequirementsFieldset";
 
 const emptyGuardian = (): GuardianInput => ({
@@ -284,24 +285,13 @@ export default function StudentForm({
             {state.errors?.lrn && <p className="form-error">{state.errors.lrn[0]}</p>}
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="mobileNumber">
-              Mobile Number
-            </label>
-            <input
-              id="mobileNumber"
-              name="mobileNumber"
-              type="tel"
-              className={`form-control ${state.errors?.mobileNumber ? "form-control-error" : ""}`}
-              placeholder="09171234567"
-              autoComplete="tel"
-              value={draft.mobileNumber ?? ""}
-              onChange={(e) => setDraft((d) => ({ ...d, mobileNumber: e.target.value }))}
-            />
-            {state.errors?.mobileNumber && (
-              <p className="form-error">{state.errors.mobileNumber[0]}</p>
-            )}
-          </div>
+          <PhoneInput
+            label="Mobile Number"
+            name="mobileNumber"
+            value={draft.mobileNumber ?? ""}
+            onChange={(val) => setDraft((d) => ({ ...d, mobileNumber: val }))}
+            error={state.errors?.mobileNumber}
+          />
 
           <div className="form-group">
             <label className="form-label" htmlFor="email">
