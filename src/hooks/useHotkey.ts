@@ -34,9 +34,13 @@ export function useHotkey({
   enabled = true,
 }: UseHotkeyOptions): void {
   useEffect(() => {
-    if (!enabled) return;
+    // Early return if key is not provided or hook is disabled
+    if (!enabled || !key) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Guard against undefined event.key (edge case in some browsers)
+      if (!event.key) return;
+
       // Check if the pressed key matches (case-insensitive)
       if (event.key.toLowerCase() !== key.toLowerCase()) return;
 
