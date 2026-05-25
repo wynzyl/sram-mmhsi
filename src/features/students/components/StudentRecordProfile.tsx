@@ -11,6 +11,7 @@ import {
   isIntakeDocumentsComplete,
   registrationStudentTypeLabel,
 } from "@/lib/utils/intake-documents";
+import { formatPhoneNumber } from "@/lib/utils/phone";
 
 export type StudentRecordStudent = {
   id: string;
@@ -304,7 +305,7 @@ export function StudentRecordProfile({
           </div>
           <div className="student-record-dl-row">
             <dt>Mobile</dt>
-            <dd>{student.mobileNumber ?? "—"}</dd>
+            <dd className="font-mono">{student.mobileNumber ? formatPhoneNumber(student.mobileNumber) : "—"}</dd>
           </div>
           <div className="student-record-dl-row">
             <dt>Email</dt>
@@ -375,7 +376,7 @@ export function StudentRecordProfile({
                   </div>
                   <div className="student-record-dl-row">
                     <dt>Contact</dt>
-                    <dd>{g.contactNumber?.trim() ? g.contactNumber : "—"}</dd>
+                    <dd className="font-mono">{g.contactNumber?.trim() ? formatPhoneNumber(g.contactNumber) : "—"}</dd>
                   </div>
                   <div className="student-record-dl-row">
                     <dt>Email</dt>

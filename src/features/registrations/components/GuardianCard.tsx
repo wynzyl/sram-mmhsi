@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils/cn";
+import { formatPhoneNumber, stripPhoneFormat } from "@/lib/utils/phone";
 import { Star } from "lucide-react";
 
 interface Guardian {
@@ -77,10 +78,10 @@ export function GuardianCard({
               <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Tel Number</p>
               {guardian.contactNumber?.trim() ? (
                 <a
-                  href={`tel:${guardian.contactNumber}`}
+                  href={`tel:${stripPhoneFormat(guardian.contactNumber)}`}
                   className="font-mono text-[var(--color-text) transition-colors hover:text-[var(--color-primary)]"
                 >
-                  {guardian.contactNumber}
+                  {formatPhoneNumber(guardian.contactNumber)}
                 </a>
               ) : (
                 <p className="text-[var(--color-text)">—</p>

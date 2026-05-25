@@ -3,6 +3,7 @@
 import type { GuardianInput } from "../students.schema";
 import { cn } from "@/lib/utils/cn";
 import { editorialFieldClass } from "@/lib/utils/editorial-styles";
+import { formatPhoneInput, stripPhoneFormat } from "@/lib/utils/phone";
 
 interface GuardianFormProps {
   index: number;
@@ -156,9 +157,11 @@ export default function GuardianForm({
           <input
             id={`guardian-${index}-contactNumber`}
             type="tel"
+            inputMode="numeric"
             className={editorialFieldClass({ className: "font-mono" })}
-            value={guardian.contactNumber ?? ""}
-            onChange={(e) => update("contactNumber", e.target.value)}
+            value={formatPhoneInput(guardian.contactNumber ?? "")}
+            onChange={(e) => update("contactNumber", stripPhoneFormat(formatPhoneInput(e.target.value)))}
+            placeholder="0917-010-0098"
             required
             autoComplete="tel"
           />
