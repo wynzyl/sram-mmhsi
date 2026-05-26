@@ -21,33 +21,33 @@ export default async function FeeTemplatesPage() {
   const templates = await getAllFeeTemplates();
 
   return (
-    <div className="fin-page">
+    <div className="px-8 py-6 max-w-[1200px] mx-auto">
       {/* Header */}
-      <div className="fin-page-header">
-        <div className="fin-page-header-main">
-          <p className="fin-eyebrow">Finance · Fee Management</p>
-          <h1 className="fin-title">Fee Templates</h1>
-          <p className="fin-subtitle">
+      <div className="flex justify-between items-start gap-6 mb-6">
+        <div className="flex-1 min-w-[280px]">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">Finance · Fee Management</p>
+          <h1 className="text-2xl font-bold text-foreground">Fee Templates</h1>
+          <p className="text-sm text-muted-foreground mt-2">
             Create reusable fee structures for each assessment band. Templates can be
             assigned to multiple school years.
           </p>
         </div>
-        <div className="fin-page-header-actions">
+        <div className="flex gap-2 shrink-0">
           <CreateTemplateModal />
         </div>
       </div>
 
       {/* Info callout */}
-      <div className="fin-callout">
-        <div className="fin-callout-icon" aria-hidden>ℹ</div>
+      <div className="flex gap-3 p-4 bg-muted border border-border rounded-md mb-6">
+        <div className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground" aria-hidden>ℹ</div>
         <div>
-          <p className="fin-callout-title">How Templates Work</p>
-          <ul className="fin-callout-list">
+          <p className="text-[0.8125rem] font-semibold text-foreground">How Templates Work</p>
+          <ul className="m-0 pl-5 text-[0.8125rem] text-muted-foreground list-disc">
             <li>Create one template per assessment band (Casa, Lower Elem, etc.)</li>
             <li>Add fee items (tuition, fees, materials, discounts) to each template</li>
             <li>
               Assign templates to school years under{" "}
-              <Link href="/staff/finance/fee-schedules" className="fin-callout-link">
+              <Link href="/staff/finance/fee-schedules" className="text-primary no-underline font-medium hover:underline">
                 Fee Schedules
               </Link>
             </li>

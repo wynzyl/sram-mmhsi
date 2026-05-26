@@ -50,7 +50,7 @@ export function CreateTemplateModal() {
         </ModalHeader>
 
         <ModalBody>
-          <form action={action} className="fin-form-stack">
+          <form action={action} className="flex flex-col gap-4">
                   <TextInputField
                     label="Template Name"
                     name="name"
@@ -79,7 +79,7 @@ export function CreateTemplateModal() {
                   <div className="form-group">
                     <label htmlFor="description" className="form-label">
                       Description{" "}
-                      <span style={{ color: "var(--color-ops-muted)", fontWeight: 400 }}>
+                      <span className="text-gray-400 dark:text-gray-500 font-normal">
                         (optional)
                       </span>
                     </label>
@@ -98,11 +98,11 @@ export function CreateTemplateModal() {
                   </div>
 
                   {/* Next steps hint */}
-                  <div className="fin-callout fin-callout-muted">
-                    <div className="fin-callout-icon" aria-hidden>📋</div>
+                  <div className="flex gap-3 p-4 bg-muted border border-border rounded-md">
+                    <div className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground" aria-hidden>📋</div>
                     <div>
-                      <p className="fin-callout-title">Next steps after creating</p>
-                      <ol className="fin-callout-ol">
+                      <p className="text-[0.8125rem] font-semibold text-foreground">Next steps after creating</p>
+                      <ol className="m-0 pl-5 text-[0.8125rem] text-muted-foreground list-decimal">
                         <li>Add fee items (tuition, materials, discounts) to the template</li>
                         <li>Assign the template to a school year under Fee Schedules</li>
                         <li>Optionally add year-specific overrides when amounts change</li>
@@ -110,7 +110,7 @@ export function CreateTemplateModal() {
                     </div>
                   </div>
 
-            <div className="fin-form-actions fin-form-actions-border">
+            <div className="flex justify-end gap-2 mt-2 pt-4 border-t border-border">
               <Button type="submit" disabled={isPending}>
                 {isPending ? "Creating…" : "Create Template"}
               </Button>

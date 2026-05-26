@@ -266,10 +266,10 @@ export default function StudentRegistrationForm({
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="font-mono text-warm-gray">
+          <span className="font-mono text-muted-foreground">
             Step {currentStep} of 4
           </span>
-          <span className="font-medium text-charcoal">{stepTitles[currentStep]}</span>
+          <span className="font-medium text-foreground">{stepTitles[currentStep]}</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
           <div
@@ -314,15 +314,15 @@ export default function StudentRegistrationForm({
             {/* Step 1 */}
             <div className={cn("space-y-6", currentStep !== 1 && "hidden")}>
               <div className="border-l-4 border-[var(--color-primary)] pl-6">
-                <h2 className="mb-2 font-display text-2xl font-bold text-charcoal">
+                <h2 className="mb-2 font-display text-2xl font-bold text-foreground">
                   Student Information
                 </h2>
-                <p className="text-warm-gray">Legal name, demographics, and address.</p>
+                <p className="text-muted-foreground">Legal name, demographics, and address.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label htmlFor="firstName" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="firstName" className="mb-1.5 block text-sm font-medium text-foreground">
                     First Name <span className="text-red-600">*</span>
                   </label>
                   <input
@@ -340,7 +340,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div>
-                  <label htmlFor="middleName" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="middleName" className="mb-1.5 block text-sm font-medium text-foreground">
                     Middle Name
                   </label>
                   <input
@@ -354,7 +354,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div>
-                  <label htmlFor="lastName" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="lastName" className="mb-1.5 block text-sm font-medium text-foreground">
                     Last Name <span className="text-red-600">*</span>
                   </label>
                   <input
@@ -372,7 +372,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div>
-                  <label htmlFor="suffix" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="suffix" className="mb-1.5 block text-sm font-medium text-foreground">
                     Suffix
                   </label>
                   <select
@@ -392,7 +392,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div>
-                  <label htmlFor="dateOfBirth" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="dateOfBirth" className="mb-1.5 block text-sm font-medium text-foreground">
                     Date of Birth <span className="text-red-600">*</span>
                   </label>
                   <input
@@ -410,7 +410,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div>
-                  <label htmlFor="gender" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="gender" className="mb-1.5 block text-sm font-medium text-foreground">
                     Gender <span className="text-red-600">*</span>
                   </label>
                   <select
@@ -435,7 +435,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label htmlFor="address" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="address" className="mb-1.5 block text-sm font-medium text-foreground">
                     Address
                   </label>
                   <textarea
@@ -453,15 +453,15 @@ export default function StudentRegistrationForm({
             {/* Step 2 */}
             <div className={cn("space-y-6", currentStep !== 2 && "hidden")}>
               <div className="border-l-4 border-[var(--color-primary)] pl-6">
-                <h2 className="mb-2 font-display text-2xl font-bold text-charcoal">
+                <h2 className="mb-2 font-display text-2xl font-bold text-foreground">
                   Contact, Notes & Application
                 </h2>
-                <p className="text-warm-gray">Reachable contacts, transfer notes, and grade placement.</p>
+                <p className="text-muted-foreground">Reachable contacts, transfer notes, and grade placement.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
-                  <label htmlFor="lrn" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="lrn" className="mb-1.5 block text-sm font-medium text-foreground">
                     LRN
                   </label>
                   <input
@@ -479,7 +479,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div>
-                  <label htmlFor="mobileNumber" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="mobileNumber" className="mb-1.5 block text-sm font-medium text-foreground">
                     Mobile
                   </label>
                   <input
@@ -503,7 +503,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
                     Email
                   </label>
                   <input
@@ -521,7 +521,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div>
-                  <label htmlFor="nationality" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="nationality" className="mb-1.5 block text-sm font-medium text-foreground">
                     Nationality
                   </label>
                   <input
@@ -535,7 +535,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div>
-                  <label htmlFor="bloodType" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="bloodType" className="mb-1.5 block text-sm font-medium text-foreground">
                     Blood Type
                   </label>
                   <select
@@ -558,7 +558,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div>
-                  <label htmlFor="religion" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="religion" className="mb-1.5 block text-sm font-medium text-foreground">
                     Religion
                   </label>
                   <input
@@ -572,7 +572,7 @@ export default function StudentRegistrationForm({
                 </div>
 
                 <div className="md:col-span-3">
-                  <label htmlFor="previousSchool" className="mb-1.5 block text-sm font-medium text-charcoal">
+                  <label htmlFor="previousSchool" className="mb-1.5 block text-sm font-medium text-foreground">
                     Previous school{lockedRegistrationType === "transferee" ? " " : " (transferees)"}
                     {lockedRegistrationType === "transferee" && (
                       <span className="text-red-600">*</span>
@@ -594,7 +594,7 @@ export default function StudentRegistrationForm({
                 <div className="md:col-span-3">
                   <label
                     htmlFor="submittedDocumentsNotes"
-                    className="mb-1.5 block text-sm font-medium text-charcoal"
+                    className="mb-1.5 block text-sm font-medium text-foreground"
                   >
                     Submitted documents (notes)
                   </label>
@@ -620,7 +620,7 @@ export default function StudentRegistrationForm({
               {currentSchoolYear ? (
                 <div className="grid grid-cols-1 gap-4 border-t border-[var(--color-border)] pt-6 md:grid-cols-2">
                   <div>
-                    <span className="mb-1.5 block text-sm font-medium text-charcoal">
+                    <span className="mb-1.5 block text-sm font-medium text-foreground">
                       School year <span className="text-red-600">*</span>
                     </span>
                     <div
@@ -639,7 +639,7 @@ export default function StudentRegistrationForm({
                   </div>
 
                   <div>
-                    <label htmlFor="gradeLevelId" className="mb-1.5 block text-sm font-medium text-charcoal">
+                    <label htmlFor="gradeLevelId" className="mb-1.5 block text-sm font-medium text-foreground">
                       Grade level <span className="text-red-600">*</span>
                     </label>
                     <select
@@ -663,7 +663,7 @@ export default function StudentRegistrationForm({
                   </div>
 
                   <div className="md:col-span-2">
-                    <span className="mb-1.5 block text-sm font-medium text-charcoal">Enrollment type</span>
+                    <span className="mb-1.5 block text-sm font-medium text-foreground">Enrollment type</span>
                     <div
                       className={editorialFieldClass({
                         invalid: !!getError("registrationStudentType"),
@@ -690,8 +690,8 @@ export default function StudentRegistrationForm({
             {/* Step 3 */}
             <div className={cn("space-y-6", currentStep !== 3 && "hidden")}>
               <div className="border-l-4 border-[var(--color-primary)] pl-6">
-                <h2 className="mb-2 font-display text-2xl font-bold text-charcoal">Guardians</h2>
-                <p className="text-warm-gray">
+                <h2 className="mb-2 font-display text-2xl font-bold text-foreground">Guardians</h2>
+                <p className="text-muted-foreground">
                   At least one guardian with a complete name is required before submission.
                 </p>
               </div>
@@ -704,7 +704,7 @@ export default function StudentRegistrationForm({
                 <button
                   type="button"
                   onClick={addGuardian}
-                  className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-charcoal transition-colors hover:bg-[var(--color-surface-3)]"
+                  className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-[var(--color-surface-3)]"
                 >
                   + Add guardian
                 </button>
@@ -727,10 +727,10 @@ export default function StudentRegistrationForm({
             {/* Step 4 */}
             <div className={cn("space-y-6", currentStep !== 4 && "hidden")}>
               <div className="border-l-4 border-[var(--color-primary)] pl-6">
-                <h2 className="mb-2 font-display text-2xl font-bold text-charcoal">
+                <h2 className="mb-2 font-display text-2xl font-bold text-foreground">
                   Documents & Requirements
                 </h2>
-                <p className="text-warm-gray">Intake checklist for this registration.</p>
+                <p className="text-muted-foreground">Intake checklist for this registration.</p>
               </div>
 
               <IntakeRequirementsFieldset
@@ -765,7 +765,7 @@ export default function StudentRegistrationForm({
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-warm-gray transition-colors hover:text-charcoal"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   Back

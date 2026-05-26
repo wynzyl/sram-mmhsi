@@ -211,7 +211,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
         <div>
           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-(--color-primary)">            Enrollment Management
           </p>
-          <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-charcoal">
+          <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-foreground">
             Enrollment Queue
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-(--color-text-muted)">

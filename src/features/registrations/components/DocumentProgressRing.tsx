@@ -70,7 +70,7 @@ export function DocumentProgressRing({
             cy={config.dimension / 2}
             r={config.radius}
             fill="none"
-            stroke="var(--color-light-gray)"
+            stroke="#e5e7eb"
             strokeWidth={config.strokeWidth}
           />
 
@@ -96,15 +96,15 @@ export function DocumentProgressRing({
           className="absolute inset-0 flex flex-col items-center justify-center"
           aria-label={`${completed} of ${total} documents complete`}
         >
-          <span className={cn("font-display font-bold text-charcoal", config.fontSize)}>
+          <span className={cn("font-display font-bold text-foreground", config.fontSize)}>
             {completed}
           </span>
-          <span className="text-[0.6em] text-warm-gray font-mono">of {total}</span>
+          <span className="text-[0.6em] text-muted-foreground font-mono">of {total}</span>
         </div>
       </div>
 
       {showLabel && (
-        <span className="text-xs text-warm-gray font-medium">
+        <span className="text-xs text-muted-foreground font-medium">
           {percentage === 100 ? "Complete" : "Documents"}
         </span>
       )}

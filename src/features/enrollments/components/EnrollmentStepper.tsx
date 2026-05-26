@@ -79,7 +79,7 @@ export default function EnrollmentStepper({
                   "font-mono text-[10px] font-semibold uppercase tracking-[0.18em]",
                   status === "active" && "text-[var(--color-primary)]",
                   status === "complete" && "text-[var(--color-accent-emerald)]",
-                  status === "upcoming" && "text-warm-gray"
+                  status === "upcoming" && "text-muted-foreground"
                 )}
               >
                 Step {String(step.index).padStart(2, "0")}
@@ -87,12 +87,12 @@ export default function EnrollmentStepper({
               <p
                 className={cn(
                   "mt-1 font-display text-lg font-bold leading-tight",
-                  status === "upcoming" ? "text-warm-gray" : "text-charcoal"
+                  status === "upcoming" ? "text-muted-foreground" : "text-foreground"
                 )}
               >
                 {step.title}
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-warm-gray">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 {step.description}
               </p>
             </button>
@@ -121,7 +121,7 @@ function StepCircle({
         status === "active" &&
           "bg-[var(--color-primary)] text-white shadow-[0_0_0_4px_rgba(199,0,0,0.12)]",
         status === "upcoming" &&
-          "border border-gray-300 bg-white text-warm-gray"
+          "border border-gray-300 bg-white text-muted-foreground"
       )}
     >
       {status === "complete" ? (

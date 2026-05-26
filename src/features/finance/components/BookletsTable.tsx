@@ -72,14 +72,14 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
   const w = orNumberPadWidth();
 
   return (
-    <div className="ops-panel p-0">
-      <div className="flex items-center justify-between border-b border-[var(--color-ops-line)] px-5 py-4">
-        <h2 className="font-display text-3xl text-[var(--color-ops-ink)]">Active Booklets</h2>
+    <div className="bg-card border border-border rounded-md p-0">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <h2 className="font-display text-3xl text-foreground">Active Booklets</h2>
         <div className="flex items-center gap-2">
-          <button type="button" className="ops-icon-btn" aria-label="Filter">
+          <button type="button" className="flex items-center justify-center w-8 h-8 text-muted-foreground bg-transparent border-none rounded-md cursor-pointer transition-colors hover:text-foreground hover:bg-muted" aria-label="Filter">
             <SlidersHorizontal className="h-4 w-4" />
           </button>
-          <button type="button" className="ops-icon-btn" aria-label="Download">
+          <button type="button" className="flex items-center justify-center w-8 h-8 text-muted-foreground bg-transparent border-none rounded-md cursor-pointer transition-colors hover:text-foreground hover:bg-muted" aria-label="Download">
             <Download className="h-4 w-4" />
           </button>
         </div>
@@ -88,7 +88,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px]">
           <thead>
-            <tr className="ops-table-head">
+            <tr className="bg-transparent border-b border-border [&_th]:text-left [&_th]:text-xs [&_th]:font-medium [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
               <th className="px-4 py-3 font-medium">Booklet ID</th>
               <th className="px-4 py-3 font-medium">Range</th>
               <th className="px-4 py-3 font-medium">Current</th>
@@ -99,33 +99,33 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
           <tbody>
             {booklets.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-sm text-[var(--color-ops-muted)]">
+                <td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">
                   No receipt booklets found.
                 </td>
               </tr>
             ) : (
               booklets.map((booklet) => (
-                <tr key={booklet.id} className="ops-table-row">
-                  <td className="ops-table-cell">
-                    <p className="font-semibold tracking-wide text-[var(--color-ops-ink)]">{booklet.prefix}</p>
-                    <p className="mt-1 font-mono text-[13px] text-[var(--color-ops-muted)]">{booklet.series}</p>
+                <tr key={booklet.id} className="border-b border-border transition-colors hover:bg-muted last:border-b-0">
+                  <td className="p-4 align-middle">
+                    <p className="font-semibold tracking-wide text-foreground">{booklet.prefix}</p>
+                    <p className="mt-1 font-mono text-[13px] text-muted-foreground">{booklet.series}</p>
                   </td>
-                  <td className="ops-table-cell font-mono text-[var(--color-ops-ink)]">
+                  <td className="p-4 align-middle font-mono text-foreground">
                     <span>{String(booklet.startNumber).padStart(w, "0")}</span>
-                    <span className="text-[var(--color-ops-muted)]"> – {String(booklet.endNumber).padStart(w, "0")}</span>
+                    <span className="text-muted-foreground"> – {String(booklet.endNumber).padStart(w, "0")}</span>
                   </td>
-                  <td className="ops-table-cell">
-                    <span className="inline-flex min-w-[92px] items-center justify-center border border-[var(--color-ops-line)] bg-[var(--color-ops-field)] px-2 py-1 font-mono text-[13px] text-[var(--color-ops-field-text)]">
+                  <td className="p-4 align-middle">
+                    <span className="inline-flex min-w-[92px] items-center justify-center border border-border bg-muted px-2 py-1 font-mono text-[13px] text-foreground">
                       {booklet.status === "active" ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber) : "--"}
                     </span>
                   </td>
-                  <td className="ops-table-cell">
+                  <td className="p-4 align-middle">
                     <span className={`inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium capitalize ${getReceiptStatusClasses(booklet.status)}`}>
                       {booklet.status}
                     </span>
                   </td>
-                  <td className="ops-table-cell text-right">
-                    <button type="button" className="ops-icon-btn">
+                  <td className="p-4 align-middle text-right">
+                    <button type="button" className="flex items-center justify-center w-8 h-8 text-muted-foreground bg-transparent border-none rounded-md cursor-pointer transition-colors hover:text-foreground hover:bg-muted">
                       <Pencil className="h-4 w-4" />
                     </button>
                   </td>

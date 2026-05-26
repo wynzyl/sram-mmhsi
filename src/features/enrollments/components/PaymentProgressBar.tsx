@@ -30,7 +30,7 @@ export default function PaymentProgressBar({
   return (
     <div className={cn("w-full space-y-1.5", className)}>
       <div
-        className="relative h-1.5 w-full overflow-hidden rounded-full bg-light-gray"
+        className="relative h-1.5 w-full overflow-hidden rounded-full bg-gray-100"
         role="progressbar"
         aria-valuenow={Math.round(percentage)}
         aria-valuemin={0}
@@ -51,14 +51,14 @@ export default function PaymentProgressBar({
       </div>
 
       {!compact && (
-        <div className="flex items-baseline justify-between gap-3 font-mono text-[11px] text-ops-muted">
+        <div className="flex items-baseline justify-between gap-3 font-mono text-[11px] text-muted-foreground">
           <span>
             <span
               className={cn(
                 "font-semibold",
                 isComplete
                   ? "text-[var(--color-accent-emerald)]"
-                  : "text-ops-ink"
+                  : "text-foreground"
               )}
             >
               {formatCurrency(safePaid)}

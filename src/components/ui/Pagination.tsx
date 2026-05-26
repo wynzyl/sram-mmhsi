@@ -38,7 +38,7 @@ export function Pagination({ currentPage, totalPages, baseUrl }: PaginationProps
       {pageNumbers.map((pageNum, index) => {
         if (pageNum === "...") {
           return (
-            <span key={`ellipsis-${index}`} className="px-2 text-warm-gray">
+            <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
               ...
             </span>
           );

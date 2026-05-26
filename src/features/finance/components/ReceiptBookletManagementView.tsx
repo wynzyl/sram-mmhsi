@@ -44,11 +44,11 @@ export function ReceiptBookletManagementView({
   const progress = receiptProgressPercent(averageUsage);
 
   return (
-    <div className="ops-shell">
-      <div className="ops-container">
+    <div className="min-h-screen p-6">
+      <div className="max-w-[1400px] mx-auto flex flex-col gap-6">
         <div>
-          <h1 className="ops-title">Receipt Booklet Management</h1>
-          <p className="ops-subtitle">
+          <h1 className="text-xl font-semibold text-foreground">Receipt Booklet Management</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Register and oversee physical receipt booklets for institutional
             manual payment recording.
           </p>
@@ -63,52 +63,52 @@ export function ReceiptBookletManagementView({
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="ops-panel">
+          <div className="bg-card border border-border rounded-md p-4">
             <div className="flex items-center gap-4">
-              <div className="rounded-xl bg-[var(--color-ops-panel-muted)] p-3 text-[var(--color-primary-300)]">
+              <div className="rounded-xl bg-primary/15 p-3 text-primary">
                 <Layers3 className="h-6 w-6" />
               </div>
               <div>
-                <p className="ops-kpi-label">Total Active Booklets</p>
-                <p className="ops-kpi-value">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Active Booklets</p>
+                <p className="text-3xl font-bold text-foreground">
                   {activeCount.toString().padStart(2, "0")}
                 </p>
-                <p className="ops-kpi-sub">Across all desks</p>
+                <p className="text-xs text-muted-foreground">Across all desks</p>
               </div>
             </div>
           </div>
 
-          <div className="ops-panel">
+          <div className="bg-card border border-border rounded-md p-4">
             <div className="flex items-center justify-between">
-              <p className="ops-kpi-label">Consumption Rate</p>
-              <Gauge className="h-4 w-4 text-[var(--color-ops-positive)]" />
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Consumption Rate</p>
+              <Gauge className="h-4 w-4 text-green-500 dark:text-green-400" />
             </div>
-            <p className="mt-1 text-3xl font-semibold text-[var(--color-ops-positive)]">
+            <p className="mt-1 text-3xl font-semibold text-green-500 dark:text-green-400">
               {averageUsage}%
             </p>
-            <div className="mt-3 h-2 rounded-full bg-[var(--color-ops-field)]">
+            <div className="mt-3 h-2 rounded-full bg-muted dark:bg-[#1f2328]">
               <div
-                className="h-2 rounded-full bg-[var(--color-primary-300)]"
+                className="h-2 rounded-full bg-primary"
                 style={{ width: `${progress}%` }}
               />
             </div>
           </div>
 
-          <div className="ops-panel">
+          <div className="bg-card border border-border rounded-md p-4">
             <div className="flex items-center justify-between">
-              <p className="ops-kpi-label">Low Stock Alert</p>
-              <TriangleAlert className="h-4 w-4 text-[var(--color-ops-danger)]" />
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Low Stock Alert</p>
+              <TriangleAlert className="h-4 w-4 text-red-500 dark:text-red-400" />
             </div>
-            <p className="mt-1 text-3xl font-semibold text-[var(--color-ops-danger)]">
+            <p className="mt-1 text-3xl font-semibold text-red-500 dark:text-red-400">
               {lowStockCount.toString().padStart(2, "0")}
             </p>
-            <p className="ops-kpi-sub">
+            <p className="text-xs text-muted-foreground">
               Rerender required for near-exhausted booklets
             </p>
           </div>
         </div>
 
-        <div className="hidden items-center gap-2 text-xs text-[var(--color-ops-muted)] md:flex">
+        <div className="hidden items-center gap-2 text-xs text-gray-400 dark:text-gray-500 md:flex">
           <ClipboardList className="h-3.5 w-3.5" />
           {footerNote}
         </div>

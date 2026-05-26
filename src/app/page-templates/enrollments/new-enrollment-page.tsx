@@ -122,25 +122,25 @@ export async function InternalNewEnrollmentPage(props: {
     <div className="page-container">
       <nav
         aria-label="Breadcrumb"
-        className="mb-4 flex items-center gap-1.5 font-mono text-xs text-warm-gray"
+        className="mb-4 flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
       >
-        <Link href={enrollmentsListPath} className="hover:text-charcoal">
+        <Link href={enrollmentsListPath} className="hover:text-foreground">
           Enrollments
         </Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-charcoal">New enrollment</span>
+        <span className="text-foreground">New enrollment</span>
       </nav>
 
       <header className="mb-8 max-w-3xl">
         <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-primary)]">
           Enrollment Workflow
         </p>
-        <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-charcoal">
+        <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-foreground">
           Place a student
         </h1>
-        <p className="mt-3 max-w-2xl text-base leading-relaxed text-warm-gray">
-          Enrollments use the <strong className="text-charcoal">current active school year</strong>{" "}
-          only. The record begins as <strong className="text-charcoal">Pending</strong> until the
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">
+          Enrollments use the <strong className="text-foreground">current active school year</strong>{" "}
+          only. The record begins as <strong className="text-foreground">Pending</strong> until the
           finance officer assesses fees.
         </p>
       </header>

@@ -95,7 +95,7 @@ export default function PlacementPreviewCard({
             />
 
             {contextHint && (
-              <p className="mt-1 border-l-2 border-[var(--color-primary)]/30 pl-3 text-xs leading-relaxed text-warm-gray">
+              <p className="mt-1 border-l-2 border-[var(--color-primary)]/30 pl-3 text-xs leading-relaxed text-muted-foreground">
                 {contextHint}
               </p>
             )}
@@ -115,7 +115,7 @@ function NameplateBlock({
 }) {
   return (
     <div className="space-y-1.5">
-      <h3 className="font-display text-[1.65rem] font-bold uppercase leading-[1.1] tracking-tight text-charcoal">
+      <h3 className="font-display text-[1.65rem] font-bold uppercase leading-[1.1] tracking-tight text-foreground">
         {studentName}
       </h3>
       {referenceNumber ? (
@@ -123,7 +123,7 @@ function NameplateBlock({
           {referenceNumber}
         </code>
       ) : (
-        <span className="block text-xs italic text-warm-gray">No reference on record</span>
+        <span className="block text-xs italic text-muted-foreground">No reference on record</span>
       )}
     </div>
   );
@@ -148,14 +148,14 @@ function PlacementRow({
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-gray">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           {label}
         </p>
         <p
           className={cn(
-            "mt-0.5 truncate text-sm font-medium leading-snug text-charcoal",
+            "mt-0.5 truncate text-sm font-medium leading-snug text-foreground",
             valueIsMono && "font-mono",
-            dim && "italic text-warm-gray"
+            dim && "italic text-muted-foreground"
           )}
         >
           {value}
@@ -170,7 +170,7 @@ function EmptyState() {
     <div className="flex flex-col items-start gap-2 py-2">
       <div className="h-12 w-32 rounded-sm border border-dashed border-[var(--color-primary)]/30" />
       <div className="h-3 w-20 rounded-sm bg-[var(--color-primary)]/8" />
-      <p className="mt-3 max-w-[20rem] text-xs leading-relaxed text-warm-gray">
+      <p className="mt-3 max-w-[20rem] text-xs leading-relaxed text-muted-foreground">
         Pick a student and the placement record forms here in real time —
         ready to confirm before the enrollment is created.
       </p>

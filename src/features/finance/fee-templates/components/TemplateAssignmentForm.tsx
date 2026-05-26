@@ -80,7 +80,7 @@ export function TemplateAssignmentForm({
     : 0;
 
   return (
-    <form action={action} className="fin-form-stack">
+    <form action={action} className="flex flex-col gap-4">
       <SelectField
         label="School Year"
         name="schoolYearId"
@@ -134,7 +134,7 @@ export function TemplateAssignmentForm({
       />
 
       {/* Date range */}
-      <div className="fin-date-grid">
+      <div className="grid grid-cols-2 gap-4">
         <div className="form-group">
           <label htmlFor="effectiveDate" className="form-label">
             Effective Date <span className="required">*</span>
@@ -148,7 +148,7 @@ export function TemplateAssignmentForm({
             onChange={(e) => setEffectiveDate(e.target.value)}
             className="form-control"
           />
-          <p className="fin-field-hint">When this schedule becomes active</p>
+          <p className="text-xs text-muted-foreground mt-1">When this schedule becomes active</p>
           {state.errors?.effectiveDate && (
             <p className="form-error">{state.errors.effectiveDate[0]}</p>
           )}
@@ -157,7 +157,7 @@ export function TemplateAssignmentForm({
         <div className="form-group">
           <label htmlFor="expiryDate" className="form-label">
             Expiry Date{" "}
-            <span style={{ color: "var(--color-ops-muted)", fontWeight: 400 }}>
+            <span className="text-gray-400 dark:text-gray-500 font-normal">
               (optional)
             </span>
           </label>
@@ -169,7 +169,7 @@ export function TemplateAssignmentForm({
             onChange={(e) => setExpiryDate(e.target.value)}
             className="form-control"
           />
-          <p className="fin-field-hint">Leave blank for no expiry</p>
+          <p className="text-xs text-muted-foreground mt-1">Leave blank for no expiry</p>
           {state.errors?.expiryDate && (
             <p className="form-error">{state.errors.expiryDate[0]}</p>
           )}
@@ -178,24 +178,24 @@ export function TemplateAssignmentForm({
 
       {/* Template preview */}
       {selectedTemplate && (
-        <div className="fin-preview-panel">
-          <div className="fin-preview-head">
-            <span className="fin-preview-label">Template Preview</span>
-            <span className="fin-preview-name">{selectedTemplate.name}</span>
+        <div className="border border-border rounded-md overflow-hidden">
+          <div className="flex justify-between items-center px-4 py-3 bg-muted/50 border-b border-border">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Template Preview</span>
+            <span className="text-sm font-semibold text-foreground">{selectedTemplate.name}</span>
           </div>
 
-          <div className="fin-preview-body">
+          <div className="divide-y divide-border">
             {selectedTemplate.items
               .sort((a, b) => a.id.localeCompare(b.id))
               .map((item) => (
-                <div key={item.id} className="fin-preview-row">
-                  <span className="fin-preview-row-name">
+                <div key={item.id} className="flex justify-between items-center px-4 py-2.5">
+                  <span className="text-sm text-foreground">
                     {item.feeItemType.name}
                     {item.feeItemType.isDiscount && (
-                      <span className="fin-disc-tag">DISC</span>
+                      <span className="inline-flex ml-2 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-green-500 bg-green-500/10 rounded">DISC</span>
                     )}
                   </span>
-                  <span className={`fin-preview-row-amount${item.feeItemType.isDiscount ? " fin-preview-row-discount" : ""}`}>
+                  <span className={`text-sm font-medium tabular-nums ${item.feeItemType.isDiscount ? "text-green-500" : "text-foreground"}`}>
                     {item.feeItemType.isDiscount && "−"}
                     {new Intl.NumberFormat("en-PH", {
                       style: "currency",
@@ -206,9 +206,9 @@ export function TemplateAssignmentForm({
               ))}
           </div>
 
-          <div className="fin-preview-total-row">
-            <span className="fin-preview-total-label">Total</span>
-            <span className="fin-preview-total-value">
+          <div className="flex justify-between items-center px-4 py-3 bg-muted/50 border-t border-border">
+            <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
+            <span className="text-lg font-bold text-primary">
               {new Intl.NumberFormat("en-PH", {
                 style: "currency",
                 currency: "PHP",
@@ -216,14 +216,14 @@ export function TemplateAssignmentForm({
             </span>
           </div>
 
-          <p className="fin-preview-hint">
+          <p className="px-4 py-2 text-xs text-muted-foreground bg-muted/30">
             You can add overrides for specific items after assigning this template.
           </p>
         </div>
       )}
 
       {/* Actions */}
-      <div className="fin-form-actions fin-form-actions-border">
+      <div className="flex justify-end gap-2 mt-2 pt-4 border-t border-border">
         <Button type="submit" disabled={isPending}>
           {isPending ? "Assigning..." : "Assign Template"}
         </Button>

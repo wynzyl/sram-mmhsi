@@ -30,18 +30,18 @@ export default async function StaffFeeSchedulesPage() {
   });
 
   return (
-    <div className="fin-page">
+    <div className="px-8 py-6 max-w-[1200px] mx-auto">
       {/* Page header */}
-      <div className="fin-page-header">
-        <div className="fin-page-header-main">
-          <p className="fin-eyebrow">Finance · Fee Management</p>
-          <h1 className="fin-title">Fee Schedules</h1>
-          <p className="fin-subtitle">
+      <div className="flex justify-between items-start gap-6 mb-6">
+        <div className="flex-1 min-w-[280px]">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">Finance · Fee Management</p>
+          <h1 className="text-2xl font-bold text-foreground">Fee Schedules</h1>
+          <p className="text-sm text-muted-foreground mt-2">
             Assign fee templates to school years. Each assessment band can have one
             active fee schedule per school year.
           </p>
         </div>
-        <div className="fin-page-header-actions">
+        <div className="flex gap-2 shrink-0">
           <Link href="/staff/finance/fee-schedules/new">
             <Button>Assign Template</Button>
           </Link>
@@ -49,14 +49,14 @@ export default async function StaffFeeSchedulesPage() {
       </div>
 
       {/* Info callout */}
-      <div className="fin-callout">
-        <div className="fin-callout-icon" aria-hidden>ℹ</div>
+      <div className="flex gap-3 p-4 bg-muted border border-border rounded-md mb-6">
+        <div className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground" aria-hidden>ℹ</div>
         <div>
-          <p className="fin-callout-title">How It Works</p>
-          <ul className="fin-callout-list">
+          <p className="text-[0.8125rem] font-semibold text-foreground">How It Works</p>
+          <ul className="m-0 pl-5 text-[0.8125rem] text-muted-foreground list-disc">
             <li>
               Create reusable templates under{" "}
-              <Link href="/staff/finance/fee-templates" className="fin-callout-link">
+              <Link href="/staff/finance/fee-templates" className="text-primary no-underline font-medium hover:underline">
                 Fee Templates
               </Link>
             </li>
@@ -68,36 +68,36 @@ export default async function StaffFeeSchedulesPage() {
       </div>
 
       {/* School years */}
-      <div className="fin-stack">
+      <div className="flex flex-col gap-6">
         {allSchoolYears.map(async (schoolYear) => {
           const schedules = await getSchoolYearFeeSchedules(schoolYear.id);
 
           return (
-            <div key={schoolYear.id} className="fin-panel">
-              <div className="fin-panel-head">
-                <div className="fin-panel-head-left">
-                  <h2 className="fin-panel-title">{schoolYear.label}</h2>
+            <div key={schoolYear.id} className="bg-card border border-border rounded-md">
+              <div className="flex justify-between items-center gap-4 px-5 py-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-base font-semibold text-foreground">{schoolYear.label}</h2>
                   {schoolYear.isActive && (
-                    <span className="fin-badge fin-badge-active">Active Year</span>
+                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-green-500/15 text-green-500">Active Year</span>
                   )}
                 </div>
-                <span className="fin-panel-meta">
+                <span className="text-xs text-muted-foreground">
                   {new Date(schoolYear.startDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
                   {" – "}
                   {new Date(schoolYear.endDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
                 </span>
               </div>
 
-              <div className="fin-panel-body">
+              <div className="p-5">
                 {schedules.length === 0 ? (
-                  <div className="fin-empty">
-                    <p className="fin-empty-text">No fee schedules assigned yet.</p>
+                  <div className="p-8 text-center">
+                    <p className="text-sm text-muted-foreground mb-2">No fee schedules assigned yet.</p>
                     <Link href="/staff/finance/fee-schedules/new">
                       <Button variant="secondary" size="sm">Assign Template</Button>
                     </Link>
                   </div>
                 ) : (
-                  <div className="fin-schedule-grid">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
                     {schedules.map((schedule) => {
                       const totalAmount = schedule.feeTemplate.items.reduce(
                         (sum, item) => {
@@ -111,17 +111,17 @@ export default async function StaffFeeSchedulesPage() {
                       );
 
                       return (
-                        <div key={schedule.id} className={`fin-schedule-card${!schedule.isActive ? " fin-schedule-card-inactive" : ""}`}>
-                          <div className="fin-schedule-card-top">
-                            <div className="fin-schedule-card-meta">
-                              <span className="fin-band-pill">
+                        <div key={schedule.id} className={`bg-background border border-border rounded-md p-4${!schedule.isActive ? " opacity-60" : ""}`}>
+                          <div className="flex justify-between items-start gap-4 mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-primary bg-primary/10 rounded">
                                 {FEE_ASSESSMENT_BAND_LABELS[schedule.assessmentBand as keyof typeof FEE_ASSESSMENT_BAND_LABELS]}
                               </span>
                               {!schedule.isActive && (
-                                <span className="fin-badge fin-badge-muted">Inactive</span>
+                                <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground">Inactive</span>
                               )}
                             </div>
-                            <div className="fin-schedule-card-actions">
+                            <div className="flex gap-2 shrink-0">
                               <Link href={`/staff/finance/fee-schedules/${schedule.id}`}>
                                 <Button variant="secondary" size="sm">View Details</Button>
                               </Link>
@@ -138,24 +138,24 @@ export default async function StaffFeeSchedulesPage() {
                             </div>
                           </div>
 
-                          <p className="fin-schedule-card-name">{schedule.feeTemplate.name}</p>
+                          <p className="text-[0.9375rem] font-semibold text-foreground mb-2">{schedule.feeTemplate.name}</p>
 
-                          <div className="fin-schedule-card-stats">
-                            <span className="fin-stat-item">
+                          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-2">
+                            <span>
                               {schedule.feeTemplate.items.length} item{schedule.feeTemplate.items.length !== 1 ? "s" : ""}
                             </span>
                             {schedule.overrides.length > 0 && (
-                              <span className="fin-stat-item fin-stat-override">
+                              <span className="text-amber-500">
                                 {schedule.overrides.length} override{schedule.overrides.length !== 1 ? "s" : ""}
                               </span>
                             )}
-                            <span className="fin-stat-date">
+                            <span>
                               Effective: {new Date(schedule.effectiveDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
                               {schedule.expiryDate && ` – ${new Date(schedule.expiryDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`}
                             </span>
                           </div>
 
-                          <div className="fin-schedule-card-total">
+                          <div className="text-lg font-bold text-foreground">
                             {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(totalAmount)}
                           </div>
                         </div>
@@ -169,9 +169,9 @@ export default async function StaffFeeSchedulesPage() {
         })}
 
         {allSchoolYears.length === 0 && (
-          <div className="fin-panel">
-            <div className="fin-empty">
-              <p className="fin-empty-text">No school years configured. Set up school years first.</p>
+          <div className="bg-card border border-border rounded-md">
+            <div className="p-8 text-center">
+              <p className="text-sm text-muted-foreground mb-2">No school years configured. Set up school years first.</p>
             </div>
           </div>
         )}

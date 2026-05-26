@@ -200,45 +200,45 @@ export default function AssessmentDraftForm({
           {/* Student context */}
           <DataCard className="animate-reveal-stagger stagger-delay-1">
             <DataCardHeader>
-              <h2 className="font-display text-lg font-bold text-charcoal">Student</h2>
+              <h2 className="font-display text-lg font-bold text-foreground">Student</h2>
             </DataCardHeader>
             <DataCardBody className="space-y-4">
               <div className="flex gap-4">
                 <div
-                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-[var(--color-border)] bg-[var(--color-surface-2)] font-display text-lg font-bold text-charcoal"
+                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-[var(--color-border)] bg-[var(--color-surface-2)] font-display text-lg font-bold text-foreground"
                   aria-hidden
                 >
                   {studentInitials(studentFirstName, studentLastName)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="truncate font-display text-xl font-bold text-charcoal">
+                    <h3 className="truncate font-display text-xl font-bold text-foreground">
                       {studentLastName}, {studentFirstName}
                     </h3>
                     {enrollmentStatus === "pending" && (
                       <StatusIndicator status="pending" size="sm" pulse={false} />
                     )}
                   </div>
-                  <p className="mt-1 font-mono text-sm text-warm-gray">{referenceNumber}</p>
+                  <p className="mt-1 font-mono text-sm text-muted-foreground">{referenceNumber}</p>
                 </div>
               </div>
               <dl className="grid gap-2 text-sm">
                 <div className="flex justify-between gap-4 border-t border-[var(--color-border)] pt-3">
-                  <dt className="text-warm-gray">Grade</dt>
-                  <dd className="text-right font-medium text-charcoal">{gradeLabel}</dd>
+                  <dt className="text-muted-foreground">Grade</dt>
+                  <dd className="text-right font-medium text-foreground">{gradeLabel}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-warm-gray">School year</dt>
-                  <dd className="text-right font-medium text-charcoal">{schoolYearLabel}</dd>
+                  <dt className="text-muted-foreground">School year</dt>
+                  <dd className="text-right font-medium text-foreground">{schoolYearLabel}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-warm-gray">Fee band</dt>
-                  <dd className="text-right font-medium text-charcoal">{catalogBandLabel}</dd>
+                  <dt className="text-muted-foreground">Fee band</dt>
+                  <dd className="text-right font-medium text-foreground">{catalogBandLabel}</dd>
                 </div>
                 {primaryGuardianLabel ? (
                   <div className="flex justify-between gap-4">
-                    <dt className="text-warm-gray">Parent / guardian</dt>
-                    <dd className="text-right font-medium text-charcoal">{primaryGuardianLabel}</dd>
+                    <dt className="text-muted-foreground">Parent / guardian</dt>
+                    <dd className="text-right font-medium text-foreground">{primaryGuardianLabel}</dd>
                   </div>
                 ) : null}
               </dl>
@@ -248,19 +248,19 @@ export default function AssessmentDraftForm({
           {/* Charges */}
           <DataCard className="animate-reveal-stagger stagger-delay-2">
             <DataCardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
-              <h2 className="font-display text-lg font-bold text-charcoal">Current charges</h2>
+              <h2 className="font-display text-lg font-bold text-foreground">Current charges</h2>
               <span className="rounded-md bg-[var(--color-primary)]/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-primary)]">
                 Draft
               </span>
             </DataCardHeader>
             <DataCardBody className="space-y-4">
-              <p className="text-sm text-warm-gray">
+              <p className="text-sm text-muted-foreground">
                 Lines come from Finance → Fee schedules for this band. This list is read-only on this
                 page.
               </p>
 
               {rows.length === 0 ? (
-                <div className="space-y-2 text-sm text-warm-gray">
+                <div className="space-y-2 text-sm text-muted-foreground">
                   <p>
                     {blocked
                       ? "Fix the warning above before lines can be generated."
@@ -268,7 +268,7 @@ export default function AssessmentDraftForm({
                   </p>
                   <Link
                     href={feeSchedulesPath}
-                    className="inline-flex rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-semibold text-charcoal hover:bg-[var(--color-surface-2)]"
+                    className="inline-flex rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-[var(--color-surface-2)]"
                   >
                     Go to fee setup
                   </Link>
@@ -277,7 +277,7 @@ export default function AssessmentDraftForm({
                 <div className="overflow-x-auto rounded-md border border-[var(--color-border)]">
                   <table className="w-full min-w-md text-sm">
                     <thead>
-                      <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)] text-left text-xs font-semibold uppercase tracking-wide text-warm-gray">
+                      <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)] text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         <th className="px-3 py-2">Description</th>
                         <th className="px-3 py-2 text-right">Amount (PHP)</th>
                         <th className="px-3 py-2 text-center">Type</th>
@@ -290,14 +290,14 @@ export default function AssessmentDraftForm({
                             key={row.rowKey}
                             className="border-b border-[var(--color-border)] last:border-b-0"
                           >
-                            <td className="px-3 py-2 align-middle font-medium text-charcoal">
+                            <td className="px-3 py-2 align-middle font-medium text-foreground">
                               {row.description}
                             </td>
-                            <td className="px-3 py-2 text-right align-middle tabular-nums text-charcoal">
+                            <td className="px-3 py-2 text-right align-middle tabular-nums text-foreground">
                               <CurrencyDisplay amount={Number.parseFloat(row.amount) || 0} />
                             </td>
                             <td className="px-3 py-2 text-center align-middle">
-                              <span className="inline-block rounded bg-[var(--color-surface-2)] px-2 py-0.5 text-xs font-medium text-charcoal">
+                              <span className="inline-block rounded bg-[var(--color-surface-2)] px-2 py-0.5 text-xs font-medium text-foreground">
                                 {row.isDiscount ? "Discount" : "Charge"}
                               </span>
                             </td>
@@ -312,8 +312,8 @@ export default function AssessmentDraftForm({
             {rows.length > 0 && (
               <DataCardFooter>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-charcoal">Gross charges</span>
-                  <CurrencyDisplay amount={grossCharges} className="font-semibold text-charcoal" />
+                  <span className="font-semibold text-foreground">Gross charges</span>
+                  <CurrencyDisplay amount={grossCharges} className="font-semibold text-foreground" />
                 </div>
               </DataCardFooter>
             )}
@@ -322,7 +322,7 @@ export default function AssessmentDraftForm({
           {/* Discount Requests Queue */}
           <DataCard className="animate-reveal-stagger stagger-delay-3">
             <DataCardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
-              <h2 className="font-display text-lg font-bold text-charcoal">
+              <h2 className="font-display text-lg font-bold text-foreground">
                 Discount requests
               </h2>
               {hasPendingDiscounts && (
@@ -363,7 +363,7 @@ export default function AssessmentDraftForm({
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-charcoal">
+                              <span className="font-semibold text-foreground">
                                 {req.discountTypeName}
                               </span>
                               <span
@@ -387,11 +387,11 @@ export default function AssessmentDraftForm({
                               </span>
                             </div>
                             {req.requestReason && (
-                              <p className="mt-1 text-xs text-warm-gray">
+                              <p className="mt-1 text-xs text-muted-foreground">
                                 Reason: {req.requestReason}
                               </p>
                             )}
-                            <p className="mt-1 text-xs text-warm-gray">
+                            <p className="mt-1 text-xs text-muted-foreground">
                               Requested by {req.requestedByName} on{" "}
                               {new Date(req.requestedAt).toLocaleDateString()}
                             </p>
@@ -456,7 +456,7 @@ export default function AssessmentDraftForm({
                         }}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-charcoal">
+                          <span className="font-medium text-foreground">
                             {discountPreview.discountTypeName}
                           </span>
                           <span
@@ -504,7 +504,7 @@ export default function AssessmentDraftForm({
               {/* Rejected discounts - informational */}
               {rejectedRequests.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-warm-gray">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Rejected
                   </p>
                   <ul className="space-y-1">
@@ -513,7 +513,7 @@ export default function AssessmentDraftForm({
                         key={req.id}
                         className="flex items-center justify-between rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm opacity-60"
                       >
-                        <span className="font-medium text-charcoal line-through">
+                        <span className="font-medium text-foreground line-through">
                           {req.discountTypeName}
                         </span>
                         <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
@@ -527,7 +527,7 @@ export default function AssessmentDraftForm({
 
               {/* No discount requests */}
               {existingDiscountRequests.length === 0 && (
-                <p className="text-sm text-warm-gray">
+                <p className="text-sm text-muted-foreground">
                   No discount requests for this enrollment. Discounts can be requested during
                   enrollment or from the student profile page.
                 </p>
@@ -550,30 +550,30 @@ export default function AssessmentDraftForm({
           {/* Summary */}
           <DataCard className="animate-reveal-stagger stagger-delay-4 border-[var(--color-primary)]/20 bg-[var(--color-surface-2)]/80">
             <DataCardHeader>
-              <h2 className="font-display text-lg font-bold text-charcoal">Assessment summary</h2>
+              <h2 className="font-display text-lg font-bold text-foreground">Assessment summary</h2>
             </DataCardHeader>
             <DataCardBody className="space-y-4">
               <ul className="space-y-2 text-sm">
                 <li className="flex justify-between gap-4">
-                  <span className="text-warm-gray">Gross charges</span>
+                  <span className="text-muted-foreground">Gross charges</span>
                   <CurrencyDisplay amount={grossCharges} />
                 </li>
                 <li className="flex justify-between gap-4">
-                  <span className="text-warm-gray">Discount lines</span>
+                  <span className="text-muted-foreground">Discount lines</span>
                   <CurrencyDisplay
                     amount={-discountSum}
                     className={discountSum > 0 ? "text-blue-700" : undefined}
                   />
                 </li>
                 <li className="flex justify-between gap-4 border-t border-dashed border-[var(--color-border)] pt-3">
-                  <span className="font-display font-bold text-charcoal">Net assessed balance</span>
+                  <span className="font-display font-bold text-foreground">Net assessed balance</span>
                   <CurrencyDisplay
                     amount={netAssessed}
                     className="font-display text-lg font-bold text-[var(--color-primary)]"
                   />
                 </li>
               </ul>
-              <p className="text-xs text-warm-gray">
+              <p className="text-xs text-muted-foreground">
                 After saving, open the assessment ledger from this enrollment to post payments. Manage
                 invoices under Finance when your office uses that workflow.
               </p>
@@ -581,7 +581,7 @@ export default function AssessmentDraftForm({
             <DataCardFooter className="flex flex-wrap items-center justify-between gap-3">
               <Link
                 href={assessmentsBasePath}
-                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-charcoal hover:bg-[var(--color-surface-2)]"
+                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-foreground hover:bg-[var(--color-surface-2)]"
               >
                 Back
               </Link>
@@ -605,11 +605,11 @@ export default function AssessmentDraftForm({
       >
         <h2
           id="assessment-audit-heading"
-          className="font-display text-sm font-bold uppercase tracking-wider text-warm-gray"
+          className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground"
         >
           Assessment audit
         </h2>
-        <p className="mt-2 text-sm text-charcoal">
+        <p className="mt-2 text-sm text-foreground">
           This screen is the <strong>only</strong> time an assessment is created for this enrollment.
           When you save, the system records an audit entry (<code className="rounded bg-[var(--color-surface-2)] px-1 font-mono text-xs">assessment_created_and_enrollment_assessed</code>),
           locks in the line items you confirmed, and sets the enrollment to <strong>Assessed</strong>.
