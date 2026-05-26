@@ -406,7 +406,7 @@ export default function EditStudentForm({
               type="checkbox"
               defaultChecked={student.isActive}
               disabled={isActiveLocked}
-              className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 dark:border-gray-700 text-primary focus:ring-[var(--color-primary)]/30 disabled:cursor-not-allowed"
+              className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-primary focus:ring-primary/30 disabled:cursor-not-allowed dark:border-gray-700"
             />
             <div className="min-w-0">
               <label className="form-label m-0 cursor-pointer" htmlFor="isActive">

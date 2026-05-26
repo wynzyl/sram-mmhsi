@@ -245,7 +245,7 @@ export function StudentDirectoryView({
         />
       </section>
 
-      <p className="text-center text-[0.7rem] text-gray-400 pb-2">
+      <p className="text-center text-[0.7rem] text-muted-foreground pb-2">
         Confidential institutional data. Authorized access only.
       </p>
     </div>
