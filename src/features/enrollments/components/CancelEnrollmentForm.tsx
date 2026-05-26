@@ -224,7 +224,7 @@ export default function CancelEnrollmentForm({
                 ? "Detailed audit reason (\u226515 characters)..."
                 : "Reason for cancellation..."
             }
-            className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-ops-ink outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-red-500/15"
+            className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-red-500/15"
           />
 
           <div className="flex items-center gap-2">
@@ -241,7 +241,7 @@ export default function CancelEnrollmentForm({
             <button
               type="button"
               onClick={() => setShow(false)}
-              className="rounded-md px-2 py-1.5 text-xs text-ops-muted hover:text-ops-ink"
+              className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
             >
               Dismiss
             </button>

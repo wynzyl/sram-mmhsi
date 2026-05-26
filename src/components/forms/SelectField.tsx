@@ -77,7 +77,7 @@ export function SelectField({
   return (
     <div className={cn(!isEditorial && "form-group")}>
       <label
-        className={isEditorial ? "mb-1.5 block text-sm font-medium text-charcoal" : "form-label"}
+        className={isEditorial ? "mb-1.5 block text-sm font-medium text-foreground" : "form-label"}
         htmlFor={name}
       >
         {label}
@@ -171,7 +171,7 @@ export function SelectFieldGrouped({
   return (
     <div className={cn(!isEditorial && "form-group")}>
       <label
-        className={isEditorial ? "mb-1.5 block text-sm font-medium text-charcoal" : "form-label"}
+        className={isEditorial ? "mb-1.5 block text-sm font-medium text-foreground" : "form-label"}
         htmlFor={name}
       >
         {label}

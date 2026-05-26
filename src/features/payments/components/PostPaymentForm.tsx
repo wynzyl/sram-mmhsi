@@ -64,7 +64,7 @@ export default function PostPaymentForm({
   if (state.success) {
     return (
       <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
-        <p className="font-display text-xl font-extrabold text-charcoal">Payment posted</p>
+        <p className="font-display text-xl font-extrabold text-foreground">Payment posted</p>
         <p className="mt-1 text-sm text-[var(--color-text-2)]">{state.message}</p>
         {onCancel && (
           <Button type="button" variant="secondary" className="mt-4" onClick={onCancel}>

@@ -50,7 +50,7 @@ const SUBTITLES: Record<AssessmentView, React.ReactNode> = {
   pending: (
     <>
       <strong>Step 1:</strong> pick a student below, then complete the one-time fee assessment.
-      <span className="mt-1 block text-sm text-warm-gray">
+      <span className="mt-1 block text-sm text-muted-foreground">
         <strong>Step 2:</strong> on the fee form, confirm catalog lines and save—the enrollment becomes{" "}
         <strong>Assessed</strong>. Use other tabs to track payments and balances.
       </span>

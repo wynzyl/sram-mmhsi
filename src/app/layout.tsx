@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Crimson_Pro, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { RootProviders } from "@/components/providers/RootProviders";
 import "./globals.css";
-import "./ledger-register.css";
 
 const crimsonPro = Crimson_Pro({
   variable: "--font-crimson",

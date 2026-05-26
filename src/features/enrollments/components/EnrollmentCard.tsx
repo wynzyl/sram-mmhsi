@@ -146,7 +146,7 @@ export default function EnrollmentCard({
           {/* Left: identity + meta */}
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex flex-wrap items-center gap-3">
-              <h3 className="font-display text-xl font-bold uppercase leading-tight tracking-tight text-ops-ink">
+              <h3 className="font-display text-xl font-bold uppercase leading-tight tracking-tight text-foreground">
                 {en.studentName}
               </h3>
               <StatusIndicator
@@ -161,23 +161,23 @@ export default function EnrollmentCard({
               <code className="rounded bg-[var(--color-surface-3)] px-2 py-0.5 font-mono text-[12px] text-[var(--color-text)]">
                 {en.referenceNumber}
               </code>
-              <span className="text-ops-muted">·</span>
-              <span className="font-medium text-ops-ink">{en.gradeLevel}</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="font-medium text-foreground">{en.gradeLevel}</span>
               {en.section && (
                 <>
-                  <span className="text-ops-muted">·</span>
-                  <span className="text-ops-muted">Section {en.section}</span>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="text-muted-foreground">Section {en.section}</span>
                 </>
               )}
-              <span className="text-ops-muted">·</span>
-              <span className="text-ops-muted">{en.schoolYear}</span>
-              <span className="text-ops-muted">·</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">{en.schoolYear}</span>
+              <span className="text-muted-foreground">·</span>
               <span className="rounded-full bg-[var(--color-primary)]/8 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
                 {TYPE_LABEL[en.studentType]}
               </span>
             </div>
 
-            <p className="text-xs text-ops-muted">
+            <p className="text-xs text-muted-foreground">
               {en.status === "enrolled" && en.enrolledAt
                 ? `Enrolled ${formatDate(en.enrolledAt)}`
                 : `Created ${formatDate(en.createdAt)}`}
@@ -203,7 +203,7 @@ export default function EnrollmentCard({
             <PrimaryAction enrollment={en} canManage={canManage} />
             <Link
               href={`/staff/students/${en.studentId}`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-ops-ink transition-colors hover:bg-light-gray"
+              className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-gray-100"
             >
               <User className="h-3.5 w-3.5" />
               Student profile
@@ -212,7 +212,7 @@ export default function EnrollmentCard({
               <button
                 type="button"
                 onClick={() => setActionsOpen((o) => !o)}
-                className="inline-flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-[11px] font-medium text-ops-muted transition-colors hover:bg-light-gray hover:text-ops-ink"
+                className="inline-flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground"
                 aria-expanded={actionsOpen}
               >
                 {actionsOpen ? (
@@ -326,10 +326,10 @@ function IntakeRingBlock({
     <div className="flex items-center gap-3">
       <DocumentProgressRing completed={completed} total={total} size="sm" showLabel={false} />
       <div>
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ops-muted">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           Intake
         </p>
-        <p className="mt-0.5 text-sm font-medium text-ops-ink">
+        <p className="mt-0.5 text-sm font-medium text-foreground">
           {completed === total
             ? "All documents in"
             : completed === 0
@@ -344,7 +344,7 @@ function IntakeRingBlock({
 function FinanceProgress({ paid, total }: { paid: number; total: number }) {
   return (
     <div className="w-full">
-      <p className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ops-muted">
+      <p className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
         Tuition
       </p>
       <PaymentProgressBar paid={paid} total={total} />
@@ -354,7 +354,7 @@ function FinanceProgress({ paid, total }: { paid: number; total: number }) {
 
 function CancelledBlock() {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-dashed border-gray-200 px-3 py-2 text-xs text-ops-muted">
+    <div className="flex items-center gap-2 rounded-md border border-dashed border-gray-200 px-3 py-2 text-xs text-muted-foreground">
       <X className="h-3.5 w-3.5" />
       Enrollment cancelled
     </div>
@@ -401,7 +401,7 @@ function OverrideEnrollBlock({
           <input type="hidden" name="action" value="override_enroll" />
           <select
             name="sectionId"
-            className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-ops-ink outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-[var(--color-primary)]/15"
+            className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-foreground outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-[var(--color-primary)]/15"
           >
             <option value="">Section (optional)…</option>
             {sections.map((s) => (
@@ -426,7 +426,7 @@ function OverrideEnrollBlock({
             <button
               type="button"
               onClick={() => setShow(false)}
-              className="rounded-md px-2 py-1.5 text-xs text-ops-muted hover:text-ops-ink"
+              className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
             >
               Dismiss
             </button>

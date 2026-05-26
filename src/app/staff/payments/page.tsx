@@ -143,7 +143,7 @@ export default async function CashierQueuePage() {
               <CardTitle className="text-sm">Pending Payments</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="font-display text-xl font-black text-charcoal">
+              <div className="font-display text-xl font-black text-foreground">
                 {pendingPaymentsCount}
               </div>
             </CardContent>
@@ -154,7 +154,7 @@ export default async function CashierQueuePage() {
               <CardTitle className="text-sm">Students Assessed</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="font-display text-xl font-black text-charcoal">
+              <div className="font-display text-xl font-black text-foreground">
                 {studentsAssessed}
               </div>
             </CardContent>
@@ -165,7 +165,7 @@ export default async function CashierQueuePage() {
               <CardTitle className="text-sm">Total Collectibles</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="font-display text-xl font-black text-charcoal">
+              <div className="font-display text-xl font-black text-foreground">
                 <CurrencyDisplay amount={totalCollectibles} />
               </div>
             </CardContent>
@@ -184,7 +184,7 @@ export default async function CashierQueuePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <h3 className="font-display text-2xl font-extrabold text-charcoal">
+              <h3 className="font-display text-2xl font-extrabold text-foreground">
                 Daily Reconciliation Reminder
               </h3>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-text-2)">

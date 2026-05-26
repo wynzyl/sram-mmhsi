@@ -66,7 +66,7 @@ export function CashierPaymentProcessingView({
             </p>
             <h1
               id="cashier-payment-modal-title"
-              className="mt-0.5 font-display text-lg font-extrabold text-charcoal md:text-xl"
+              className="mt-0.5 font-display text-lg font-extrabold text-foreground md:text-xl"
             >
               {studentName}
             </h1>

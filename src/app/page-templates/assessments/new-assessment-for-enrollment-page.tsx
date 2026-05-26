@@ -46,7 +46,7 @@ export async function InternalNewAssessmentForEnrollmentPage(props: {
             One-time fee snapshot for this enrollment. Saving creates the assessment and moves the
             enrollment to <strong>Assessed</strong>. Adjust catalog lines and amounts below; discounts
             come from fee schedule lines marked as discount.
-            <span className="mt-2 block text-sm text-warm-gray">
+            <span className="mt-2 block text-sm text-muted-foreground">
               Academic period: <strong>{e.syLabel}</strong> · Fee band:{" "}
               <strong>{catalogBandLabel}</strong>
             </span>
