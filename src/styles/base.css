@@ -1,7 +1,7 @@
 /* Base Styles & Visual Polish */
 @layer base {
   body {
-    @apply bg-[var(--color-surface-2)] font-[family-name:var(--font-sans)] text-[var(--color-text)];
+    @apply bg-muted font-[family-name:var(--font-sans)] text-foreground;
 
     /* Subtle texture pattern for light mode */
     background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='4' height='4' fill='%23f9fafb'/><path d='M0 0h1v1H0zM2 2h1v1H2z' fill='%23e5e7eb' opacity='0.15'/></svg>");
@@ -19,19 +19,19 @@
 
   /* Better focus indicators */
   *:focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid hsl(var(--primary));
     outline-offset: 2px;
   }
 
   /* Selection color */
   ::selection {
-    background-color: var(--color-primary);
+    background-color: hsl(var(--primary));
     color: white;
   }
 
   .dark ::selection {
-    background-color: var(--color-primary-400);
-    color: var(--color-text);
+    background-color: hsl(var(--primary));
+    color: hsl(var(--foreground));
   }
 
   /* Prevent FOUC (Flash of Unstyled Content) */
@@ -50,20 +50,20 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--color-border-2);
+    background: hsl(var(--border));
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text-muted);
+    background: hsl(var(--muted-foreground));
   }
 
   .dark ::-webkit-scrollbar-thumb {
-    background: var(--color-border);
+    background: hsl(var(--border));
   }
 
   .dark ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-border-2);
+    background: hsl(var(--muted-foreground));
   }
 
   /* Print styles */
@@ -122,7 +122,7 @@
 
   .skeleton {
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    background: var(--color-surface-3);
+    background: hsl(var(--muted));
     border-radius: var(--radius);
   }
 

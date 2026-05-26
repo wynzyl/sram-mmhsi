@@ -41,7 +41,7 @@ export default function MyVoidRequestsTable({
           row.original.orNumber ? (
             <ReferenceCode code={row.original.orNumber} />
           ) : (
-            <span className="text-[var(--color-text-muted)]">-</span>
+            <span className="text-muted-foreground">-</span>
           ),
       },
       {
@@ -60,7 +60,7 @@ export default function MyVoidRequestsTable({
         cell: ({ row }) => (
           <div>
             <div className="font-medium">{row.original.studentName}</div>
-            <div className="text-xs text-[var(--color-text-muted)]">
+            <div className="text-xs text-muted-foreground">
               {row.original.studentRef}
             </div>
           </div>
@@ -83,7 +83,7 @@ export default function MyVoidRequestsTable({
           return (
             <div className="text-sm">
               <div>{date.toLocaleDateString("en-PH")}</div>
-              <div className="text-xs text-[var(--color-text-muted)]">
+              <div className="text-xs text-muted-foreground">
                 {date.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>
@@ -109,7 +109,7 @@ export default function MyVoidRequestsTable({
             return (
               <form action={cancelAction} className="flex gap-2 items-center">
                 <input type="hidden" name="requestId" value={request.id} />
-                <span className="text-xs text-[var(--color-text-muted)]">Cancel request?</span>
+                <span className="text-xs text-muted-foreground">Cancel request?</span>
                 <Button
                   type="submit"
                   variant="danger"
@@ -148,8 +148,8 @@ export default function MyVoidRequestsTable({
   if (requests.length === 0) {
     return (
       <div className="p-8 text-center">
-        <div className="text-[var(--color-text-muted)] mb-2">No pending void requests</div>
-        <p className="text-sm text-[var(--color-text-muted)]">
+        <div className="text-muted-foreground mb-2">No pending void requests</div>
+        <p className="text-sm text-muted-foreground">
           Your submitted void requests awaiting approval will appear here.
         </p>
       </div>

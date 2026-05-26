@@ -11,7 +11,7 @@ export default function AssessmentDetailLoading() {
       </div>
 
       {/* Header Card */}
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6">
+      <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex items-start justify-between">
           <div>
             <Skeleton className="h-6 w-48 mb-2" />
@@ -44,13 +44,13 @@ export default function AssessmentDetailLoading() {
       {/* Two column layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Assessment Items */}
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <Skeleton className="h-5 w-32 mb-4" />
           <SkeletonTable rows={6} columns={3} />
         </div>
 
         {/* Payment History */}
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <Skeleton className="h-5 w-32 mb-4" />
           <SkeletonTable rows={4} columns={4} />
         </div>

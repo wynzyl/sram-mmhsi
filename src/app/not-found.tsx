@@ -6,13 +6,13 @@ export default function NotFound() {
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
       <div className="mx-auto max-w-md text-center">
         <div className="mb-6 flex justify-center">
-          <div className="rounded-full bg-[var(--color-surface-2)] p-4">
+          <div className="rounded-full bg-muted p-4">
             <svg
               width="48"
               height="48"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--color-text-muted)"
+              className="stroke-muted-foreground"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -24,10 +24,10 @@ export default function NotFound() {
           </div>
         </div>
 
-        <h1 className="mb-2 font-display text-2xl font-bold text-[var(--color-text)]">
+        <h1 className="mb-2 font-display text-2xl font-bold text-foreground">
           Page not found
         </h1>
-        <p className="mb-6 text-[var(--color-text-muted)]">
+        <p className="mb-6 text-muted-foreground">
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>
 

@@ -132,7 +132,7 @@ export default async function CashierQueuePage() {
               <CardTitle className="text-sm">Total Collection (Today)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="font-display text-xl font-black text-[var(--color-primary)]">
+              <div className="font-display text-xl font-black text-primary">
                 <CurrencyDisplay amount={totalCollectedToday} />
               </div>
             </CardContent>
@@ -143,7 +143,7 @@ export default async function CashierQueuePage() {
               <CardTitle className="text-sm">Pending Payments</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="font-display text-xl font-black text-charcoal">
+              <div className="font-display text-xl font-black text-foreground">
                 {pendingPaymentsCount}
               </div>
             </CardContent>
@@ -154,7 +154,7 @@ export default async function CashierQueuePage() {
               <CardTitle className="text-sm">Students Assessed</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="font-display text-xl font-black text-charcoal">
+              <div className="font-display text-xl font-black text-foreground">
                 {studentsAssessed}
               </div>
             </CardContent>
@@ -165,7 +165,7 @@ export default async function CashierQueuePage() {
               <CardTitle className="text-sm">Total Collectibles</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="font-display text-xl font-black text-charcoal">
+              <div className="font-display text-xl font-black text-foreground">
                 <CurrencyDisplay amount={totalCollectibles} />
               </div>
             </CardContent>
@@ -179,15 +179,15 @@ export default async function CashierQueuePage() {
         <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-12">
           <Card className="lg:col-span-8">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm uppercase tracking-wide text-[var(--color-text-muted)">
+              <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">
                 Cashier Policy
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <h3 className="font-display text-2xl font-extrabold text-charcoal">
+              <h3 className="font-display text-2xl font-extrabold text-foreground">
                 Daily Reconciliation Reminder
               </h3>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-text-2)">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-400">
                 All cash and check transactions must be reconciled and closed before 4:30 PM.
                 Ensure physical receipts match the digital ledger entries to avoid audit
                 discrepancies. Contact your supervisor for partial-payment overrides and exception
@@ -202,23 +202,23 @@ export default async function CashierQueuePage() {
             </CardHeader>
             <CardContent>
               {recentCollections.length === 0 ? (
-                <p className="text-sm text-[var(--color-text-muted)">No posted payments yet.</p>
+                <p className="text-sm text-muted-foreground">No posted payments yet.</p>
               ) : (
                 <ul className="max-h-48 space-y-2 overflow-y-auto pr-1">
                   {recentCollections.map((p) => (
                     <li key={p.paymentId}>
                       <Link
                         href={p.assessmentId ? `/staff/assessments/${p.assessmentId}` : "#"}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 transition-colors hover:bg-[var(--color-surface-3)] hover:border-[var(--color-primary)]"
+                        className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-3 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 hover:border-primary"
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-[var(--color-text)]">
+                          <p className="truncate text-sm font-semibold text-foreground">
                             Receipt {p.orNumber ? <ReferenceCode code={p.orNumber} /> : "#—"}
                           </p>
-                          <p className="mt-1 truncate text-xs text-[var(--color-text-muted)]">
+                          <p className="mt-1 truncate text-xs text-muted-foreground">
                             {p.studentLastName}, {p.studentFirstName}
                           </p>
-                          <p className="mt-1 truncate text-[11px] text-[var(--color-text-muted)]">
+                          <p className="mt-1 truncate text-[11px] text-muted-foreground">
                             {new Date(p.paymentDate).toLocaleTimeString("en-PH", {
                               hour: "numeric",
                               minute: "2-digit",
@@ -226,7 +226,7 @@ export default async function CashierQueuePage() {
                             })}
                           </p>
                         </div>
-                        <div className="shrink-0 text-sm font-semibold text-[var(--color-success)]">
+                        <div className="shrink-0 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                           <CurrencyDisplay amount={Number(p.amount)} />
                         </div>
                       </Link>

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Crimson_Pro, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { RootProviders } from "@/components/providers/RootProviders";
 import "./globals.css";
-import "./ledger-register.css";
 
 const crimsonPro = Crimson_Pro({
   variable: "--font-crimson",
@@ -46,7 +45,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var s=localStorage.getItem('theme');var r=s;if(!s||s==='system'){r=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.classList.remove('light','dark');document.documentElement.classList.add(r);document.documentElement.style.colorScheme=r;}catch(_){}})();",
+              "(function(){try{var s=localStorage.getItem('theme');var r=s;if(!s||s==='system'){r=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.classList.remove('light','dark');document.documentElement.classList.add(r);document.documentElement.style.colorScheme=r;document.documentElement.classList.add('hydrated');}catch(_){}})();",
           }}
         />
       </head>

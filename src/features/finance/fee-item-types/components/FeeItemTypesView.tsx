@@ -32,9 +32,9 @@ export function FeeItemTypesView({ initialData }: Props) {
   // Show loading state only if no initial data
   if (isLoading && !initialData) {
     return (
-      <div className="fin-loading">
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
         <Spinner size="lg" />
-        <p className="fin-loading-text">Loading fee types...</p>
+        <p className="text-sm text-muted-foreground">Loading fee types...</p>
       </div>
     );
   }
@@ -51,8 +51,8 @@ export function FeeItemTypesView({ initialData }: Props) {
       : "Something went wrong. Please try again.";
 
     return (
-      <div className="fin-error">
-        <div className="fin-error-icon" aria-hidden>
+      <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+        <div className="text-destructive" aria-hidden>
           <svg
             width="20"
             height="20"
@@ -66,8 +66,8 @@ export function FeeItemTypesView({ initialData }: Props) {
             <line x1="9" y1="9" x2="15" y2="15" />
           </svg>
         </div>
-        <p className="fin-error-title">Failed to load fee types</p>
-        <p className="fin-error-message">{errorMessage}</p>
+        <p className="text-base font-semibold text-foreground">Failed to load fee types</p>
+        <p className="text-sm text-muted-foreground">{errorMessage}</p>
       </div>
     );
   }

@@ -162,7 +162,7 @@ export default function DiscountRequestsTable({
         cell: ({ row }) => (
           <div>
             <div className="font-medium">{row.original.studentName}</div>
-            <div className="text-xs text-[var(--color-text-muted)]">
+            <div className="text-xs text-muted-foreground">
               <ReferenceCode code={row.original.studentRef} />
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function DiscountRequestsTable({
         cell: ({ row }) => (
           <div className="text-sm">
             <div>{row.original.gradeLevelName}</div>
-            <div className="text-xs text-[var(--color-text-muted)]">
+            <div className="text-xs text-muted-foreground">
               {row.original.schoolYearLabel}
             </div>
           </div>
@@ -186,7 +186,7 @@ export default function DiscountRequestsTable({
         cell: ({ row }) => (
           <div>
             <div className="font-medium">{row.original.discountTypeName}</div>
-            <div className="text-xs text-[var(--color-text-muted)]">
+            <div className="text-xs text-muted-foreground">
               {row.original.baseType === "tuition_only"
                 ? "Tuition Only"
                 : "Full Assessment"}
@@ -211,7 +211,7 @@ export default function DiscountRequestsTable({
             {row.original.appliedDiscountAmount ? (
               <CurrencyDisplay amount={Number(row.original.appliedDiscountAmount)} />
             ) : (
-              <span className="text-[var(--color-text-muted)]">-</span>
+              <span className="text-muted-foreground">-</span>
             )}
           </div>
         ),
@@ -236,7 +236,7 @@ export default function DiscountRequestsTable({
           return (
             <div className="text-sm">
               <div>{date.toLocaleDateString("en-PH")}</div>
-              <div className="text-xs text-[var(--color-text-muted)]">
+              <div className="text-xs text-muted-foreground">
                 by {row.original.requestedByName}
               </div>
             </div>
@@ -297,7 +297,7 @@ export default function DiscountRequestsTable({
                   value={request.id}
                 />
                 <div className="flex gap-1 items-center">
-                  <span className="text-xs text-[var(--color-text-muted)]">
+                  <span className="text-xs text-muted-foreground">
                     Override:
                   </span>
                   <Input
@@ -406,7 +406,7 @@ export default function DiscountRequestsTable({
 
           // Terminal states (rejected, cancelled, reversed, applied) — read-only.
           return (
-            <span className="text-xs text-[var(--color-text-muted)]">
+            <span className="text-xs text-muted-foreground">
               {request.status === "approved" && request.assessmentId
                 ? "Applied"
                 : request.status.charAt(0).toUpperCase() + request.status.slice(1)}
@@ -436,10 +436,10 @@ export default function DiscountRequestsTable({
   if (requests.length === 0) {
     return (
       <div className="p-8 text-center">
-        <div className="text-[var(--color-text-muted)] mb-2">
+        <div className="text-muted-foreground mb-2">
           No pending discount requests
         </div>
-        <p className="text-sm text-[var(--color-text-muted)]">
+        <p className="text-sm text-muted-foreground">
           Discount requests from registrars will appear here for review.
         </p>
       </div>
@@ -450,7 +450,7 @@ export default function DiscountRequestsTable({
     <div>
       {/* Bulk actions bar */}
       {enableBulkActions && selectedIds.size > 0 && (
-        <div className="mx-4 mt-4 p-3 bg-[var(--color-surface-2)] rounded-lg flex items-center justify-between">
+        <div className="mx-4 mt-4 p-3 bg-muted rounded-lg flex items-center justify-between">
           <span className="text-sm">
             {selectedIds.size} request{selectedIds.size > 1 ? "s" : ""} selected
           </span>

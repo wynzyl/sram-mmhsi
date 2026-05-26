@@ -11,7 +11,7 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        "animate-pulse rounded-md bg-[var(--color-surface-2)]",
+        "animate-pulse rounded-md bg-muted",
         className
       )}
       {...props}
@@ -49,7 +49,7 @@ export function SkeletonStatCard({
   return (
     <div
       className={cn(
-        "p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)]",
+        "p-4 rounded-xl border border-border bg-card",
         className
       )}
       {...props}
@@ -70,7 +70,7 @@ export function SkeletonTableRow({
 }: React.HTMLAttributes<HTMLDivElement> & { columns?: number }) {
   return (
     <div
-      className={cn("flex items-center gap-4 p-4 border-b border-[var(--color-border)]", className)}
+      className={cn("flex items-center gap-4 p-4 border-b border-border", className)}
       {...props}
     >
       {Array.from({ length: columns }).map((_, i) => (
@@ -92,13 +92,13 @@ export function SkeletonTable({
   return (
     <div
       className={cn(
-        "rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] overflow-hidden",
+        "rounded-xl border border-border bg-card overflow-hidden",
         className
       )}
       {...props}
     >
       {/* Header */}
-      <div className="flex items-center gap-4 p-4 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+      <div className="flex items-center gap-4 p-4 bg-card border-b border-border">
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton key={i} className={cn("h-4 flex-1", i === 0 && "w-24 flex-none")} />
         ))}

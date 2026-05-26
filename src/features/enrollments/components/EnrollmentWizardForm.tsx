@@ -445,18 +445,18 @@ function StepHeader({
   icon: React.ReactNode;
 }) {
   return (
-    <header className="mb-6 flex items-start gap-4 border-l-4 border-[var(--color-primary)] pl-5">
-      <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+    <header className="mb-6 flex items-start gap-4 border-l-4 border-primary pl-5">
+      <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
         {icon}
       </span>
       <div>
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-primary)]">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
           {eyebrow}
         </p>
-        <h2 className="mt-1 font-display text-2xl font-bold leading-tight text-charcoal">
+        <h2 className="mt-1 font-display text-2xl font-bold leading-tight text-foreground">
           {title}
         </h2>
-        <p className="mt-1 text-sm text-warm-gray">{description}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
     </header>
   );
@@ -485,7 +485,7 @@ function StepStudent({
       <div className="space-y-2">
         <label
           htmlFor="studentId"
-          className="mb-1.5 block text-sm font-medium text-charcoal"
+          className="mb-1.5 block text-sm font-medium text-foreground"
         >
           Student <span className="text-red-600">*</span>
         </label>
@@ -496,9 +496,9 @@ function StepStudent({
           invalid={Boolean(errors?.studentId)}
           errorMessage={errors?.studentId?.[0]}
         />
-        <p className="text-xs leading-relaxed text-warm-gray">
+        <p className="text-xs leading-relaxed text-muted-foreground">
           Only active students appear. To enroll a new arrival, register them first under{" "}
-          <strong className="text-charcoal">Registrations</strong>.
+          <strong className="text-foreground">Registrations</strong>.
         </p>
       </div>
     </div>
@@ -551,23 +551,23 @@ function StepPlacement({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <span className="mb-1.5 block text-sm font-medium text-charcoal">
+          <span className="mb-1.5 block text-sm font-medium text-foreground">
             School Year <span className="text-red-600">*</span>
           </span>
           <div
             className={editorialFieldClass({
               invalid: Boolean(errors?.schoolYearId),
-              className: "bg-light-gray",
+              className: "bg-gray-100",
             })}
             aria-live="polite"
           >
             {currentSchoolYear ? (
               <>
-                <strong className="text-charcoal">{currentSchoolYear.label}</strong>
-                <span className="ml-2 text-xs text-warm-gray">(active year only)</span>
+                <strong className="text-foreground">{currentSchoolYear.label}</strong>
+                <span className="ml-2 text-xs text-muted-foreground">(active year only)</span>
               </>
             ) : (
-              <span className="text-warm-gray">—</span>
+              <span className="text-muted-foreground">—</span>
             )}
           </div>
           {errors?.schoolYearId && (
@@ -578,7 +578,7 @@ function StepPlacement({
         <div>
           <label
             htmlFor="gradeLevelIdSelect"
-            className="mb-1.5 block text-sm font-medium text-charcoal"
+            className="mb-1.5 block text-sm font-medium text-foreground"
           >
             Grade Level <span className="text-red-600">*</span>
           </label>
@@ -600,13 +600,13 @@ function StepPlacement({
             <p className="mt-1 text-sm text-red-600">{errors.gradeLevelId[0]}</p>
           )}
           {promotionMessage && (
-            <p className="mt-1 text-xs leading-relaxed text-warm-gray">{promotionMessage}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{promotionMessage}</p>
           )}
         </div>
       </div>
 
       <div className="space-y-2">
-        <span className="mb-1.5 block text-sm font-medium text-charcoal">
+        <span className="mb-1.5 block text-sm font-medium text-foreground">
           Enrollment Type <span className="text-red-600">*</span>
         </span>
 
@@ -614,11 +614,11 @@ function StepPlacement({
           <div
             className={editorialFieldClass({
               invalid: Boolean(errors?.studentType),
-              className: "bg-light-gray",
+              className: "bg-gray-100",
             })}
           >
-            <strong className="text-charcoal">Returning</strong>
-            <span className="ml-2 text-xs text-warm-gray">(prior enrollment on file — fixed)</span>
+            <strong className="text-foreground">Returning</strong>
+            <span className="ml-2 text-xs text-muted-foreground">(prior enrollment on file — fixed)</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -647,7 +647,7 @@ function StepPlacement({
         <div>
           <label
             htmlFor="previousSchoolInput"
-            className="mb-1.5 block text-sm font-medium text-charcoal"
+            className="mb-1.5 block text-sm font-medium text-foreground"
           >
             Previous school <span className="text-red-600">*</span>
           </label>
@@ -689,28 +689,28 @@ function TypeRadioCard({
       aria-pressed={checked}
       className={cn(
         "group flex flex-col items-start gap-1 rounded-lg border p-4 text-left transition-all",
-        "focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/15",
+        "focus:outline-none focus:ring-2 focus:ring-primary/15",
         checked
-          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/[0.04] shadow-sm"
-          : "border-(--color-border) bg-(--color-surface) hover:border-(--color-border-2) hover:bg-(--color-surface-2)"
+          ? "border-primary bg-primary/[0.04] shadow-sm"
+          : "border-border bg-card hover:border-gray-300 hover:bg-muted dark:hover:border-gray-700"
       )}
     >
       <div className="flex w-full items-center justify-between">
         <span
           className={cn(
             "font-display text-base font-bold",
-            checked ? "text-[var(--color-primary)]" : "text-charcoal"
+            checked ? "text-primary" : "text-foreground"
           )}
         >
           {label}
         </span>
         {suggested && (
-          <span className="rounded-full bg-[var(--color-accent-amber)]/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--color-accent-amber)]">
+          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-amber-500">
             Suggested
           </span>
         )}
       </div>
-      <span className="text-xs leading-relaxed text-warm-gray">{caption}</span>
+      <span className="text-xs leading-relaxed text-muted-foreground">{caption}</span>
     </button>
   );
 }
@@ -760,9 +760,9 @@ function StepIntakeAndReview({
           }
         />
       ) : (
-        <div className="rounded-lg border border-gray-200 bg-light-gray/50 p-5">
-          <p className="text-sm text-warm-gray">
-            <strong className="text-charcoal">Returning learners</strong> reuse intake records from
+        <div className="rounded-lg border border-gray-200 bg-gray-100/50 p-5">
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Returning learners</strong> reuse intake records from
             their original registration — no new checklist required.
           </p>
         </div>
@@ -777,9 +777,9 @@ function StepIntakeAndReview({
         previousSchool={previousSchool}
       />
 
-      <div className="flex items-start gap-3 rounded-lg border border-[var(--color-accent-amber)]/30 bg-[var(--color-accent-amber)]/[0.06] p-4 text-sm">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-accent-amber)]" />
-        <p className="text-charcoal">
+      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-4 text-sm">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+        <p className="text-foreground">
           The enrollment will be created as <strong>Pending</strong>. The next step in the workflow is
           building the assessment — fees and the official receipt are recorded separately by the
           finance officer and cashier.
@@ -818,8 +818,8 @@ function ReviewSummary({
   return (
     <div className="rounded-lg border border-gray-200 bg-white">
       <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
-        <CheckCircle2 className="h-4 w-4 text-[var(--color-accent-emerald)]" />
-        <h3 className="font-display text-base font-bold text-charcoal">
+        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+        <h3 className="font-display text-base font-bold text-foreground">
           Confirm placement before saving
         </h3>
       </div>
@@ -829,12 +829,12 @@ function ReviewSummary({
             key={row.label}
             className="grid grid-cols-3 gap-4 px-5 py-3 text-sm"
           >
-            <dt className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-gray">
+            <dt className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               {row.label}
             </dt>
             <dd
               className={cn(
-                "col-span-2 text-charcoal",
+                "col-span-2 text-foreground",
                 row.label === "Reference" && "font-mono",
                 row.label === "Student" && "font-display text-base font-semibold uppercase"
               )}
@@ -874,7 +874,7 @@ function WizardFooter({
           type="button"
           onClick={onBack}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-warm-gray transition-colors hover:bg-light-gray hover:text-charcoal disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground disabled:opacity-50"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -884,7 +884,7 @@ function WizardFooter({
           type="button"
           onClick={onCancel}
           disabled={pending}
-          className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-warm-gray transition-colors hover:bg-light-gray hover:text-charcoal disabled:opacity-50"
+          className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground disabled:opacity-50"
         >
           Cancel
         </button>
@@ -896,7 +896,7 @@ function WizardFooter({
           disabled={disableSubmit}
           className={cn(
             "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
-            "bg-[var(--color-primary)] hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30",
+            "bg-primary hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
             "disabled:cursor-not-allowed disabled:opacity-60"
           )}
         >
@@ -922,7 +922,7 @@ function WizardFooter({
           disabled={!canContinue || pending}
           className={cn(
             "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
-            "bg-[var(--color-primary)] hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30",
+            "bg-primary hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
             "disabled:cursor-not-allowed disabled:opacity-60"
           )}
         >

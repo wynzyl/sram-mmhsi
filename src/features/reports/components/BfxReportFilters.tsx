@@ -54,7 +54,7 @@ export function BfxReportFilters({
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-4 p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+    <div className="flex flex-wrap items-end gap-4 p-4 bg-card border border-border rounded-lg">
       <TextInputField
         label="Start Date"
         name="startDate"

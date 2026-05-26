@@ -108,14 +108,14 @@ export default function EnrollmentDiscountsSection({
       </CardHeader>
       <CardContent className="space-y-4">
         {requestBlockReason && !showForm && (
-          <p className="text-xs text-[var(--color-text-muted)] italic">
+          <p className="text-xs text-muted-foreground italic">
             {requestBlockReason}
           </p>
         )}
 
         {/* Request Form */}
         {showForm && (
-          <div className="p-4 border border-[var(--color-border)] rounded-lg">
+          <div className="p-4 border border-border rounded-lg">
             <h4 className="text-sm font-medium mb-3">New Discount Request</h4>
             <DiscountRequestForm
               studentId={studentId}
@@ -140,26 +140,26 @@ export default function EnrollmentDiscountsSection({
         {/* Pending Requests */}
         {pendingRequests.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-[var(--color-warning)] mb-2">
+            <h4 className="text-sm font-medium text-amber-600 mb-2">
               Pending Approval ({pendingRequests.length})
             </h4>
             <div className="space-y-2">
               {pendingRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="p-3 bg-[var(--color-warning-100)] border border-[var(--color-warning)] rounded-lg"
+                  className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-500 rounded-lg"
                 >
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="font-medium">{request.discountTypeName}</div>
-                      <div className="text-sm text-[var(--color-text-muted)]">
+                      <div className="text-sm text-muted-foreground">
                         {formatDiscountValue(request)} -{" "}
                         {request.baseType === "tuition_only"
                           ? "Tuition Only"
                           : "Full Assessment"}
                       </div>
                       {request.requestReason && (
-                        <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {request.requestReason}
                         </div>
                       )}
@@ -175,7 +175,7 @@ export default function EnrollmentDiscountsSection({
         {/* Approved Requests */}
         {approvedRequests.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-[var(--color-success)] mb-2">
+            <h4 className="text-sm font-medium text-emerald-600 mb-2">
               Approved ({approvedRequests.length})
             </h4>
             <div className="space-y-2">
@@ -187,19 +187,19 @@ export default function EnrollmentDiscountsSection({
                 return (
                   <div
                     key={request.id}
-                    className="p-3 bg-[var(--color-accent-100)] border border-[var(--color-accent)] rounded-lg"
+                    className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-500 rounded-lg"
                   >
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="font-medium">{request.discountTypeName}</div>
-                        <div className="text-sm text-[var(--color-text-muted)]">
+                        <div className="text-sm text-muted-foreground">
                           {formatDiscountValue(request)} -{" "}
                           {request.baseType === "tuition_only"
                             ? "Tuition Only"
                             : "Full Assessment"}
                         </div>
                         {request.overrideValue && request.overrideReason && (
-                          <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                          <div className="text-xs text-muted-foreground mt-1">
                             Override: {request.overrideReason}
                           </div>
                         )}
@@ -217,7 +217,7 @@ export default function EnrollmentDiscountsSection({
                               variant="ghost"
                               size="sm"
                               disabled={isCancelling}
-                              className="text-[var(--color-danger)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-100)]"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
                               {isCancelling ? "Cancelling..." : "Cancel"}
                             </Button>
@@ -236,14 +236,14 @@ export default function EnrollmentDiscountsSection({
         {/* Rejected Requests */}
         {rejectedRequests.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-[var(--color-text-muted)] mb-2">
+            <h4 className="text-sm font-medium text-muted-foreground mb-2">
               Rejected ({rejectedRequests.length})
             </h4>
             <div className="space-y-2">
               {rejectedRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="p-3 bg-[var(--color-surface-2)] rounded-lg opacity-60"
+                  className="p-3 bg-muted rounded-lg opacity-60"
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -251,7 +251,7 @@ export default function EnrollmentDiscountsSection({
                         {request.discountTypeName}
                       </div>
                       {request.decisionRemarks && (
-                        <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           Reason: {request.decisionRemarks}
                         </div>
                       )}
@@ -266,7 +266,7 @@ export default function EnrollmentDiscountsSection({
 
         {/* Empty State */}
         {discountRequests.length === 0 && !showForm && (
-          <div className="text-center py-4 text-[var(--color-text-muted)]">
+          <div className="text-center py-4 text-muted-foreground">
             <p className="text-sm">No discount requests for this enrollment.</p>
             {canRequest && (
               <Button

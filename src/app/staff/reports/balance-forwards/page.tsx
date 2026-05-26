@@ -67,10 +67,10 @@ export default async function BalanceForwardsReportPage({
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-[var(--color-text)]">
+        <h1 className="text-2xl font-semibold text-foreground">
           Balance Forward Transfers
         </h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           BFX receipts showing balance transfers from prior school years
         </p>
       </div>
@@ -85,23 +85,23 @@ export default async function BalanceForwardsReportPage({
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
-          <p className="text-sm text-[var(--color-text-muted)]">
+        <div className="p-4 bg-card border border-border rounded-lg">
+          <p className="text-sm text-muted-foreground">
             Total Transfers
           </p>
-          <p className="text-2xl font-semibold text-[var(--color-text)] mt-1">
+          <p className="text-2xl font-semibold text-foreground mt-1">
             {summary.totalTransfers}
           </p>
         </div>
-        <div className="p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
-          <p className="text-sm text-[var(--color-text-muted)]">Total Amount</p>
-          <p className="text-2xl font-semibold text-[var(--color-text)] mt-1">
+        <div className="p-4 bg-card border border-border rounded-lg">
+          <p className="text-sm text-muted-foreground">Total Amount</p>
+          <p className="text-2xl font-semibold text-foreground mt-1">
             <CurrencyDisplay amount={summary.totalAmount} />
           </p>
         </div>
-        <div className="p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
-          <p className="text-sm text-[var(--color-text-muted)]">Period</p>
-          <p className="text-sm font-medium text-[var(--color-text)] mt-1">
+        <div className="p-4 bg-card border border-border rounded-lg">
+          <p className="text-sm text-muted-foreground">Period</p>
+          <p className="text-sm font-medium text-foreground mt-1">
             {startDate.toLocaleDateString("en-PH", {
               month: "short",
               day: "numeric",
@@ -119,8 +119,8 @@ export default async function BalanceForwardsReportPage({
 
       {/* Data Table */}
       {transfers.length === 0 ? (
-        <div className="p-8 text-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
-          <p className="text-[var(--color-text-muted)]">
+        <div className="p-8 text-center bg-card border border-border rounded-lg">
+          <p className="text-muted-foreground">
             No balance forward transfers found for the selected period.
           </p>
         </div>
@@ -129,15 +129,15 @@ export default async function BalanceForwardsReportPage({
           <BfxReportTable data={transfers} />
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
-              <p className="text-sm text-[var(--color-text-muted)]">
+            <div className="flex items-center justify-between px-4 py-3 bg-card border border-border rounded-lg">
+              <p className="text-sm text-muted-foreground">
                 Showing {(page - 1) * 50 + 1} - {Math.min(page * 50, totalCount)} of {totalCount} transfers
               </p>
               <div className="flex gap-2">
                 {page > 1 && (
                   <a
                     href={`?startDate=${params.startDate || ""}&endDate=${params.endDate || ""}&schoolYearId=${params.schoolYearId || ""}&page=${page - 1}`}
-                    className="px-3 py-1 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-surface-2)]"
+                    className="px-3 py-1 text-sm border border-border rounded hover:bg-muted"
                   >
                     Previous
                   </a>
@@ -145,7 +145,7 @@ export default async function BalanceForwardsReportPage({
                 {page < totalPages && (
                   <a
                     href={`?startDate=${params.startDate || ""}&endDate=${params.endDate || ""}&schoolYearId=${params.schoolYearId || ""}&page=${page + 1}`}
-                    className="px-3 py-1 text-sm border border-[var(--color-border)] rounded hover:bg-[var(--color-surface-2)]"
+                    className="px-3 py-1 text-sm border border-border rounded hover:bg-muted"
                   >
                     Next
                   </a>

@@ -90,7 +90,7 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
       <div className="flex items-center gap-3">
         {/* Search Input */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             value={searchInput}
@@ -102,11 +102,11 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
 
         {/* Grade Level Filter */}
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-[var(--color-text-muted)]" />
+          <Filter className="h-4 w-4 text-muted-foreground" />
           <select
             value={currentGradeLevel}
             onChange={(e) => handleGradeLevelChange(e.target.value)}
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] transition-colors focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="all">All Grade Levels</option>
             {gradeLevels.map((grade) => (
@@ -121,7 +121,7 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="text-sm font-medium text-[var(--color-primary)] hover:underline"
+            className="text-sm font-medium text-primary hover:underline"
           >
             Clear filters
           </button>
@@ -130,15 +130,15 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
 
       {/* Active Filters Summary */}
       {hasActiveFilters && (
-        <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Active filters:</span>
           {currentSearch && (
-            <span className="rounded bg-[var(--color-surface-3)] px-2 py-1 font-medium">
+            <span className="rounded bg-gray-200 px-2 py-1 font-medium dark:bg-gray-800">
               Search: "{currentSearch}"
             </span>
           )}
           {currentGradeLevel && currentGradeLevel !== "all" && (
-            <span className="rounded bg-[var(--color-surface-3)] px-2 py-1 font-medium">
+            <span className="rounded bg-gray-200 px-2 py-1 font-medium dark:bg-gray-800">
               Grade: {gradeLevels.find((g) => g.id === currentGradeLevel)?.name}
             </span>
           )}

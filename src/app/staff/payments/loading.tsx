@@ -31,7 +31,7 @@ export default function StaffPaymentsLoading() {
         </div>
 
         {/* Recent collections sidebar */}
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <Skeleton className="h-5 w-36 mb-4" />
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (

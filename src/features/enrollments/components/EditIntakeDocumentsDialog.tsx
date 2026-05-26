@@ -51,13 +51,13 @@ export default function EditIntakeDocumentsDialog({
 
       <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2 text-[var(--color-text)]">
-            <Pencil className="h-5 w-5 text-[var(--color-primary)]" aria-hidden="true" />
+          <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+            <Pencil className="h-5 w-5 text-primary" aria-hidden="true" />
             Edit Intake Documents
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-[var(--color-text-muted)]">
+          <AlertDialogDescription className="text-muted-foreground">
             Update document statuses for{" "}
-            <span className="font-semibold text-[var(--color-text)]">
+            <span className="font-semibold text-foreground">
               {schoolYear} · {gradeLevel}
             </span>
           </AlertDialogDescription>
@@ -69,7 +69,7 @@ export default function EditIntakeDocumentsDialog({
           {state.message && !state.success && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-md border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-3 py-2 text-sm text-[var(--color-error)]"
+              className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
             >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{state.message}</span>

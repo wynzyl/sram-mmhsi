@@ -41,7 +41,7 @@ export function AddFeeItemForm({
   }
 
   return (
-    <form action={action} className="fin-form-stack">
+    <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="feeTemplateId" value={templateId} />
 
       <SelectField
@@ -73,7 +73,7 @@ export function AddFeeItemForm({
       <div className="form-group">
         <label htmlFor="add-item-order" className="form-label">
           Display Order{" "}
-          <span style={{ color: "var(--color-ops-muted)", fontWeight: 400 }}>
+          <span className="text-gray-400 dark:text-gray-500 font-normal">
             (optional)
           </span>
         </label>
@@ -87,13 +87,13 @@ export function AddFeeItemForm({
           className="form-control"
           placeholder="0"
         />
-        <p className="fin-field-hint">Lower numbers appear first. Leave blank to append.</p>
+        <p className="text-xs text-muted-foreground mt-1">Lower numbers appear first. Leave blank to append.</p>
         {state.errors?.order && (
           <p className="form-error">{state.errors.order[0]}</p>
         )}
       </div>
 
-      <div className="fin-form-actions fin-form-actions-border">
+      <div className="flex justify-end gap-2 mt-2 pt-4 border-t border-border">
         <Button type="submit" disabled={isAdding || availableOptions.length === 0}>
           {isAdding ? "Adding…" : "Add Item"}
         </Button>

@@ -20,13 +20,13 @@ export default function GlobalError({
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
       <div className="mx-auto max-w-md text-center">
         <div className="mb-6 flex justify-center">
-          <div className="rounded-full bg-[var(--color-error-muted)] p-4">
+          <div className="rounded-full bg-red-100 dark:bg-red-950 p-4">
             <svg
               width="48"
               height="48"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--color-error)"
+              className="stroke-destructive"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -38,16 +38,16 @@ export default function GlobalError({
           </div>
         </div>
 
-        <h1 className="mb-2 font-display text-2xl font-bold text-(--color-text)">
+        <h1 className="mb-2 font-display text-2xl font-bold text-foreground">
           Something went wrong
         </h1>
-        <p className="mb-6 text-[var(--color-text-muted)]">
+        <p className="mb-6 text-muted-foreground">
           An unexpected error occurred. Our team has been notified and is working to
           resolve the issue.
         </p>
 
         {error.digest && (
-          <p className="mb-4 font-mono text-xs text-[var(--color-text-muted)]">
+          <p className="mb-4 font-mono text-xs text-muted-foreground">
             Error ID: {error.digest}
           </p>
         )}

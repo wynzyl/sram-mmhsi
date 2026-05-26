@@ -42,44 +42,44 @@ export default async function FeeTemplateDetailPage(props: PageProps) {
     ];
 
   return (
-    <div className="fin-page">
+    <div className="px-8 py-6 max-w-[1200px] mx-auto">
       {/* Breadcrumb */}
-      <nav className="fin-breadcrumb" aria-label="Breadcrumb">
-        <Link href="/staff/finance/fee-templates" className="fin-breadcrumb-link">
+      <nav className="flex items-center gap-2 text-sm mb-4" aria-label="Breadcrumb">
+        <Link href="/staff/finance/fee-templates" className="text-muted-foreground hover:text-foreground transition-colors">
           Fee Templates
         </Link>
-        <span className="fin-breadcrumb-sep" aria-hidden>/</span>
-        <span className="fin-breadcrumb-current">{template.name}</span>
+        <span className="text-muted-foreground" aria-hidden>/</span>
+        <span className="text-foreground font-medium">{template.name}</span>
       </nav>
 
       {/* Page header */}
-      <div className="fin-page-header">
-        <div className="fin-page-header-main">
-          <p className="fin-eyebrow">Finance · Fee Management</p>
-          <h1 className="fin-title">{template.name}</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginTop: "0.625rem", flexWrap: "wrap" }}>
-            <span className="fin-band-pill">{bandLabel}</span>
+      <div className="flex justify-between items-start gap-6 mb-6">
+        <div className="flex-1 min-w-[280px]">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">Finance · Fee Management</p>
+          <h1 className="text-2xl font-bold text-foreground">{template.name}</h1>
+          <div className="flex items-center gap-2.5 mt-2.5 flex-wrap">
+            <span className="inline-flex px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-primary bg-primary/10 rounded">{bandLabel}</span>
             {!template.isActive && (
-              <span className="fin-badge fin-badge-muted">Inactive</span>
+              <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground">Inactive</span>
             )}
           </div>
           {template.description && (
-            <p className="fin-subtitle" style={{ marginTop: "0.5rem" }}>
+            <p className="text-sm text-muted-foreground mt-2">
               {template.description}
             </p>
           )}
         </div>
 
         {/* Total KPI card */}
-        <div className="fin-kpi-card">
-          <span className="fin-kpi-label">Template Total</span>
-          <span className="fin-kpi-value">
+        <div className="flex flex-col gap-1 p-4 bg-card border border-border rounded-md">
+          <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Template Total</span>
+          <span className="text-xl font-bold text-primary">
             {new Intl.NumberFormat("en-PH", {
               style: "currency",
               currency: "PHP",
             }).format(templateTotal)}
           </span>
-          <span className="fin-kpi-sub">
+          <span className="text-xs text-muted-foreground">
             {template.items.length} item{template.items.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -93,16 +93,16 @@ export default async function FeeTemplateDetailPage(props: PageProps) {
       />
 
       {/* Next steps callout */}
-      <div className="fin-callout fin-callout-muted">
-        <div className="fin-callout-icon" aria-hidden>→</div>
+      <div className="flex gap-3 p-4 bg-muted border border-border rounded-md mt-6">
+        <div className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground" aria-hidden>→</div>
         <div>
-          <p className="fin-callout-title">Next Steps</p>
-          <p className="fin-callout-body" style={{ marginBottom: "0.5rem" }}>
+          <p className="text-[0.8125rem] font-semibold text-foreground">Next Steps</p>
+          <p className="text-[0.8125rem] text-muted-foreground mb-2">
             Once you've added all fee items, assign this template to a school year.
           </p>
           <Link
             href="/staff/finance/fee-schedules/new"
-            className="fin-callout-link"
+            className="text-primary no-underline font-medium hover:underline"
           >
             Assign to School Year →
           </Link>

@@ -42,50 +42,50 @@ export default async function FeeItemTypesPage() {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <div className="fin-page">
+      <div className="px-8 py-6 max-w-[1200px] mx-auto flex flex-col gap-6">
         {/* Header */}
-        <div className="fin-page-header">
-          <div className="fin-page-header-main">
-            <p className="fin-eyebrow">Finance · Fee Management</p>
-            <h1 className="fin-title">Fee Item Types</h1>
-            <p className="fin-subtitle">
+        <div className="flex justify-between items-start gap-4 flex-wrap">
+          <div className="flex-1 min-w-[280px]">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">Finance · Fee Management</p>
+            <h1 className="text-2xl font-bold text-foreground mb-1.5">Fee Item Types</h1>
+            <p className="text-sm text-muted-foreground">
               Master list of reusable fee type definitions. These are used when building fee
               templates for each assessment band.
             </p>
           </div>
           {canManage && (
-            <div className="fin-page-header-actions">
+            <div>
               <CreateFeeItemTypeModal />
             </div>
           )}
         </div>
 
         {/* KPI strip */}
-        <div className="fit-kpi-strip">
-          <div className="fit-kpi-item">
-            <span className="fit-kpi-value">{feeTypes.length}</span>
-            <span className="fit-kpi-label">Total Types</span>
+        <div className="flex items-center gap-6">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-2xl font-bold text-foreground">{feeTypes.length}</span>
+            <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Total Types</span>
           </div>
-          <div className="fit-kpi-divider" aria-hidden />
-          <div className="fit-kpi-item">
-            <span className="fit-kpi-value fit-kpi-value-ok">{activeCount}</span>
-            <span className="fit-kpi-label">Active</span>
+          <div className="w-px h-8 bg-border" aria-hidden />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-2xl font-bold text-green-500">{activeCount}</span>
+            <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Active</span>
           </div>
-          <div className="fit-kpi-divider" aria-hidden />
-          <div className="fit-kpi-item">
-            <span className="fit-kpi-value">{feeTypes.length - activeCount}</span>
-            <span className="fit-kpi-label">Inactive</span>
+          <div className="w-px h-8 bg-border" aria-hidden />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-2xl font-bold text-foreground">{feeTypes.length - activeCount}</span>
+            <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Inactive</span>
           </div>
-          <div className="fit-kpi-divider" aria-hidden />
-          <div className="fit-kpi-item">
-            <span className="fit-kpi-value fit-kpi-value-disc">{discountCount}</span>
-            <span className="fit-kpi-label">Discounts</span>
+          <div className="w-px h-8 bg-border" aria-hidden />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-2xl font-bold text-primary">{discountCount}</span>
+            <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Discounts</span>
           </div>
         </div>
 
         {/* Info callout */}
-        <div className="fin-callout fin-callout-muted">
-          <div className="fin-callout-icon" aria-hidden>
+        <div className="flex gap-3 p-4 bg-muted border border-border rounded-md">
+          <div className="shrink-0 text-muted-foreground" aria-hidden>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
@@ -93,10 +93,10 @@ export default async function FeeItemTypesPage() {
             </svg>
           </div>
           <div>
-            <p className="fin-callout-title">How fee types work</p>
-            <p className="fin-callout-body">
+            <p className="text-sm font-semibold text-foreground">How fee types work</p>
+            <p className="text-sm text-muted-foreground m-0">
               Fee types are building blocks. Once defined here, add them to a{" "}
-              <Link href="/staff/finance/fee-schedules" className="fin-callout-link">
+              <Link href="/staff/finance/fee-schedules" className="text-primary no-underline font-medium hover:underline">
                 Fee Template
               </Link>{" "}
               with an amount. Each template can use each fee type only once.

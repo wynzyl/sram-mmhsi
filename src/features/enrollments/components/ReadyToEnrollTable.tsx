@@ -64,7 +64,7 @@ export default function ReadyToEnrollTable({
         accessorKey: "studentRef",
         header: "Student ID",
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-[var(--color-text-muted)]">
+          <span className="font-mono text-xs text-muted-foreground">
             {row.original.studentRef}
           </span>
         ),
@@ -74,7 +74,7 @@ export default function ReadyToEnrollTable({
         header: "Student Name",
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span className="font-semibold text-[var(--color-text)]">
+            <span className="font-semibold text-foreground">
               {row.original.lastName}, {row.original.firstName}
             </span>
           </div>
@@ -96,10 +96,10 @@ export default function ReadyToEnrollTable({
           if (student.studentType === "old_student") {
             return (
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs text-[var(--color-text-muted)]">
+                <span className="text-xs text-muted-foreground">
                   Previous: {student.previousGradeName}
                 </span>
-                <span className="font-medium text-[var(--color-text)]">
+                <span className="font-medium text-foreground">
                   → {student.suggestedGradeName}
                 </span>
               </div>
@@ -107,7 +107,7 @@ export default function ReadyToEnrollTable({
           }
 
           return (
-            <span className="font-medium text-[var(--color-text)]">
+            <span className="font-medium text-foreground">
               {student.registrationGradeName}
             </span>
           );
@@ -122,7 +122,7 @@ export default function ReadyToEnrollTable({
           // Old students don't need document check
           if (student.studentType === "old_student") {
             return (
-              <span className="text-xs text-[var(--color-text-muted)]">N/A</span>
+              <span className="text-xs text-muted-foreground">N/A</span>
             );
           }
 
@@ -147,7 +147,7 @@ export default function ReadyToEnrollTable({
 
           // Only old students have balance info
           if (student.studentType !== "old_student") {
-            return <span className="text-xs text-[var(--color-text-muted)]">N/A</span>;
+            return <span className="text-xs text-muted-foreground">N/A</span>;
           }
 
           return student.hasOutstandingBalance ? (
@@ -156,7 +156,7 @@ export default function ReadyToEnrollTable({
                 <AlertCircle className="h-4 w-4" />
                 <span className="text-xs font-semibold">Outstanding</span>
               </div>
-              <span className="text-xs text-[var(--color-text-muted)]">
+              <span className="text-xs text-muted-foreground">
                 {formatCurrency(Number(student.outstandingAmount ?? 0))}
               </span>
             </div>
@@ -194,29 +194,20 @@ export default function ReadyToEnrollTable({
     <div className="space-y-4">
       {/* Info Banner */}
       <div
-        className="rounded-md border p-4"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-success) 10%, var(--card))",
-          borderColor:
-            "color-mix(in srgb, var(--color-success) 30%, var(--border))",
-        }}
+        className="rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950"
       >
         <div className="flex items-start gap-3">
           <FileText
-            className="mt-0.5 h-5 w-5"
-            style={{ color: "var(--color-success)" }}
+            className="mt-0.5 h-5 w-5 text-emerald-600"
           />
           <div className="flex-1">
             <h3
-              className="text-sm font-semibold"
-              style={{ color: "var(--color-success)" }}
+              className="text-sm font-semibold text-emerald-600"
             >
               Ready to Enroll Queue
             </h3>
             <p
-              className="mt-1 text-sm"
-              style={{ color: "var(--color-success)" }}
+              className="mt-1 text-sm text-emerald-600"
             >
               Students in this list are eligible for enrollment confirmation. Review their details and click{" "}
               <strong>Enroll</strong> or <strong>Re-Enroll</strong> to create a pending enrollment record.
@@ -235,7 +226,7 @@ export default function ReadyToEnrollTable({
 
       {/* Results Summary */}
       {filteredStudents.length === 0 && (searchQuery || gradeLevelFilter) && (
-        <div className="mt-4 text-center text-sm text-[var(--color-text-muted)]">
+        <div className="mt-4 text-center text-sm text-muted-foreground">
           No students match the current filters. Try adjusting your search or grade level filter.
         </div>
       )}

@@ -48,9 +48,9 @@ export function DocumentProgressRing({
 
   // Color logic: red if < 50%, amber if 50-99%, emerald if 100%
   const getColor = () => {
-    if (percentage === 100) return "var(--color-accent-emerald)";
-    if (percentage >= 50) return "var(--color-accent-amber)";
-    return "var(--color-primary)";
+    if (percentage === 100) return "hsl(142.1 76.2% 36.3%)"; // emerald-600
+    if (percentage >= 50) return "hsl(45.4 93.4% 47.5%)"; // amber-500
+    return "hsl(var(--primary))";
   };
 
   const color = getColor();
@@ -70,7 +70,7 @@ export function DocumentProgressRing({
             cy={config.dimension / 2}
             r={config.radius}
             fill="none"
-            stroke="var(--color-light-gray)"
+            stroke="#e5e7eb"
             strokeWidth={config.strokeWidth}
           />
 
@@ -96,15 +96,15 @@ export function DocumentProgressRing({
           className="absolute inset-0 flex flex-col items-center justify-center"
           aria-label={`${completed} of ${total} documents complete`}
         >
-          <span className={cn("font-display font-bold text-charcoal", config.fontSize)}>
+          <span className={cn("font-display font-bold text-foreground", config.fontSize)}>
             {completed}
           </span>
-          <span className="text-[0.6em] text-warm-gray font-mono">of {total}</span>
+          <span className="text-[0.6em] text-muted-foreground font-mono">of {total}</span>
         </div>
       </div>
 
       {showLabel && (
-        <span className="text-xs text-warm-gray font-medium">
+        <span className="text-xs text-muted-foreground font-medium">
           {percentage === 100 ? "Complete" : "Documents"}
         </span>
       )}

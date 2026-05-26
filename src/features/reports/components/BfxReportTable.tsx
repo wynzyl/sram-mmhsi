@@ -53,11 +53,11 @@ export function BfxReportTable({ data }: BfxReportTableProps) {
           <div className="flex flex-col">
             <Link
               href={`/staff/students/${row.original.studentId}`}
-              className="text-[var(--color-primary)] hover:underline font-medium"
+              className="text-primary hover:underline font-medium"
             >
               {row.original.studentName}
             </Link>
-            <span className="text-xs text-[var(--color-text-muted)]">
+            <span className="text-xs text-muted-foreground">
               <ReferenceCode code={row.original.studentRef} />
             </span>
           </div>
@@ -88,11 +88,11 @@ export function BfxReportTable({ data }: BfxReportTableProps) {
         accessorKey: "remarks",
         cell: ({ row }) =>
           row.original.remarks ? (
-            <span className="text-sm text-[var(--color-text-muted)] truncate max-w-[280px] block">
+            <span className="text-sm text-muted-foreground truncate max-w-[280px] block">
               {row.original.remarks}
             </span>
           ) : (
-            <span className="text-[var(--color-text-muted)]">-</span>
+            <span className="text-muted-foreground">-</span>
           ),
       },
     ],

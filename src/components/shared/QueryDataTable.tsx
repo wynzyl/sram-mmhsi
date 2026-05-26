@@ -175,7 +175,7 @@ export function QueryDataTable<TData>({
         <div className={cn("flex items-center justify-center py-12", className)}>
           <div className="flex flex-col items-center gap-3">
             <Spinner size="lg" />
-            <p className="text-sm text-[var(--color-text-muted)]">Loading data...</p>
+            <p className="text-sm text-muted-foreground">Loading data...</p>
           </div>
         </div>
       )
@@ -196,13 +196,13 @@ export function QueryDataTable<TData>({
       errorComponent ?? (
         <div className={cn("flex items-center justify-center py-12", className)}>
           <div className="flex flex-col items-center gap-3 text-center">
-            <div className="rounded-full bg-[var(--color-error-light)] p-3">
+            <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/30">
               <svg
                 width="24"
                 height="24"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="var(--color-error)"
+                className="stroke-destructive"
                 strokeWidth="2"
               >
                 <circle cx="12" cy="12" r="10" />
@@ -210,10 +210,10 @@ export function QueryDataTable<TData>({
                 <line x1="9" y1="9" x2="15" y2="15" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-[var(--color-text)]">
+            <p className="text-sm font-medium text-foreground">
               Failed to load data
             </p>
-            <p className="text-xs text-[var(--color-text-muted)] max-w-xs">
+            <p className="text-xs text-muted-foreground max-w-xs">
               {errorMessage}
             </p>
           </div>
@@ -229,9 +229,9 @@ export function QueryDataTable<TData>({
       {/* Refetching indicator */}
       {isFetching && !isLoading && (
         <div className="absolute top-2 right-2 z-20">
-          <div className="flex items-center gap-2 rounded-full bg-[var(--color-surface)] px-3 py-1 shadow-sm border border-[var(--color-border)]">
+          <div className="flex items-center gap-2 rounded-full bg-card px-3 py-1 shadow-sm border border-border">
             <Spinner size="sm" />
-            <span className="text-xs text-[var(--color-text-muted)]">Refreshing...</span>
+            <span className="text-xs text-muted-foreground">Refreshing...</span>
           </div>
         </div>
       )}
@@ -249,13 +249,13 @@ export function QueryDataTable<TData>({
 
       {tableData.length === 0 && (
         <div className="py-8 text-center">
-          <p className="text-sm text-[var(--color-text-muted)]">{emptyMessage}</p>
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
         </div>
       )}
 
       {/* Server pagination info (if provided) */}
       {data?.pagination && data.pagination.totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-[var(--color-text-muted)]">
+        <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
           <p>
             Page {data.pagination.currentPage} of {data.pagination.totalPages}
           </p>

@@ -21,7 +21,7 @@ export function DataCard({
   return (
     <div
       className={cn(
-        "rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]",
+        "rounded-lg border border-border bg-card",
         "shadow-sm transition-all duration-150",
         hoverable && "hover-elevate cursor-pointer",
         onClick && "cursor-pointer",
@@ -41,7 +41,7 @@ interface DataCardHeaderProps {
 
 export function DataCardHeader({ children, className }: DataCardHeaderProps) {
   return (
-    <div className={cn("border-b border-[var(--color-border)] px-6 py-4", className)}>
+    <div className={cn("border-b border-border px-6 py-4", className)}>
       {children}
     </div>
   );
@@ -65,7 +65,7 @@ export function DataCardFooter({ children, className }: DataCardFooterProps) {
   return (
     <div
       className={cn(
-        "border-t border-[var(--color-border)] bg-[var(--color-surface-2)] px-6 py-4",
+        "border-t border-border bg-muted px-6 py-4",
         className
       )}
     >
