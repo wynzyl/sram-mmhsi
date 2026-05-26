@@ -445,12 +445,12 @@ function StepHeader({
   icon: React.ReactNode;
 }) {
   return (
-    <header className="mb-6 flex items-start gap-4 border-l-4 border-[var(--color-primary)] pl-5">
-      <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+    <header className="mb-6 flex items-start gap-4 border-l-4 border-primary pl-5">
+      <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
         {icon}
       </span>
       <div>
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-primary)]">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
           {eyebrow}
         </p>
         <h2 className="mt-1 font-display text-2xl font-bold leading-tight text-foreground">
@@ -689,23 +689,23 @@ function TypeRadioCard({
       aria-pressed={checked}
       className={cn(
         "group flex flex-col items-start gap-1 rounded-lg border p-4 text-left transition-all",
-        "focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/15",
+        "focus:outline-none focus:ring-2 focus:ring-primary/15",
         checked
-          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/[0.04] shadow-sm"
-          : "border-(--color-border) bg-(--color-surface) hover:border-(--color-border-2) hover:bg-(--color-surface-2)"
+          ? "border-primary bg-primary/[0.04] shadow-sm"
+          : "border-border bg-card hover:border-gray-300 hover:bg-muted dark:hover:border-gray-700"
       )}
     >
       <div className="flex w-full items-center justify-between">
         <span
           className={cn(
             "font-display text-base font-bold",
-            checked ? "text-[var(--color-primary)]" : "text-foreground"
+            checked ? "text-primary" : "text-foreground"
           )}
         >
           {label}
         </span>
         {suggested && (
-          <span className="rounded-full bg-[var(--color-accent-amber)]/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--color-accent-amber)]">
+          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-amber-500">
             Suggested
           </span>
         )}
@@ -777,8 +777,8 @@ function StepIntakeAndReview({
         previousSchool={previousSchool}
       />
 
-      <div className="flex items-start gap-3 rounded-lg border border-[var(--color-accent-amber)]/30 bg-[var(--color-accent-amber)]/[0.06] p-4 text-sm">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-accent-amber)]" />
+      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-4 text-sm">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
         <p className="text-foreground">
           The enrollment will be created as <strong>Pending</strong>. The next step in the workflow is
           building the assessment — fees and the official receipt are recorded separately by the
@@ -818,7 +818,7 @@ function ReviewSummary({
   return (
     <div className="rounded-lg border border-gray-200 bg-white">
       <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
-        <CheckCircle2 className="h-4 w-4 text-[var(--color-accent-emerald)]" />
+        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
         <h3 className="font-display text-base font-bold text-foreground">
           Confirm placement before saving
         </h3>
@@ -896,7 +896,7 @@ function WizardFooter({
           disabled={disableSubmit}
           className={cn(
             "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
-            "bg-[var(--color-primary)] hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30",
+            "bg-primary hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
             "disabled:cursor-not-allowed disabled:opacity-60"
           )}
         >
@@ -922,7 +922,7 @@ function WizardFooter({
           disabled={!canContinue || pending}
           className={cn(
             "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
-            "bg-[var(--color-primary)] hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30",
+            "bg-primary hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
             "disabled:cursor-not-allowed disabled:opacity-60"
           )}
         >

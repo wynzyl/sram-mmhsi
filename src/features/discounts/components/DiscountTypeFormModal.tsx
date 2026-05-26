@@ -87,7 +87,7 @@ export default function DiscountTypeFormModal({
           <div className="space-y-2">
             <label
               htmlFor="code"
-              className="text-sm font-medium text-[var(--color-text)]"
+              className="text-sm font-medium text-foreground"
             >
               Code
             </label>
@@ -101,11 +101,11 @@ export default function DiscountTypeFormModal({
               maxLength={50}
               className="font-mono"
             />
-            <p className="text-xs text-[var(--color-text-muted)]">
+            <p className="text-xs text-muted-foreground">
               Uppercase letters, numbers, and underscores only.
             </p>
             {(state.errors as CreateDiscountTypeFormState["errors"])?.code && (
-              <p className="text-sm text-[var(--color-danger)]">
+              <p className="text-sm text-destructive">
                 {(state.errors as CreateDiscountTypeFormState["errors"])!.code![0]}
               </p>
             )}
@@ -115,7 +115,7 @@ export default function DiscountTypeFormModal({
           <div className="space-y-2">
             <label
               htmlFor="name"
-              className="text-sm font-medium text-[var(--color-text)]"
+              className="text-sm font-medium text-foreground"
             >
               Display Name
             </label>
@@ -129,7 +129,7 @@ export default function DiscountTypeFormModal({
               maxLength={100}
             />
             {(state.errors as CreateDiscountTypeFormState["errors"])?.name && (
-              <p className="text-sm text-[var(--color-danger)]">
+              <p className="text-sm text-destructive">
                 {(state.errors as CreateDiscountTypeFormState["errors"])!.name![0]}
               </p>
             )}
@@ -139,7 +139,7 @@ export default function DiscountTypeFormModal({
           <div className="space-y-2">
             <label
               htmlFor="description"
-              className="text-sm font-medium text-[var(--color-text)]"
+              className="text-sm font-medium text-foreground"
             >
               Description (Optional)
             </label>
@@ -156,7 +156,7 @@ export default function DiscountTypeFormModal({
           {/* Calculation Type & Base Type */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[var(--color-text)]">
+              <label className="text-sm font-medium text-foreground">
                 Calculation Type
               </label>
               <select
@@ -165,7 +165,7 @@ export default function DiscountTypeFormModal({
                 onChange={(e) =>
                   setCalculationType(e.target.value as "fixed_amount" | "percentage")
                 }
-                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-surface)] text-[var(--color-text)] text-sm"
+                className="w-full px-3 py-2 border border-border rounded-md bg-card text-foreground text-sm"
               >
                 <option value="percentage">Percentage (%)</option>
                 <option value="fixed_amount">Fixed Amount (PHP)</option>
@@ -173,7 +173,7 @@ export default function DiscountTypeFormModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[var(--color-text)]">
+              <label className="text-sm font-medium text-foreground">
                 Applies To
               </label>
               <select
@@ -182,7 +182,7 @@ export default function DiscountTypeFormModal({
                 onChange={(e) =>
                   setBaseType(e.target.value as "tuition_only" | "full_assessment")
                 }
-                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-surface)] text-[var(--color-text)] text-sm"
+                className="w-full px-3 py-2 border border-border rounded-md bg-card text-foreground text-sm"
               >
                 <option value="tuition_only">Tuition Only</option>
                 <option value="full_assessment">Full Assessment</option>
@@ -194,7 +194,7 @@ export default function DiscountTypeFormModal({
           <div className="space-y-2">
             <label
               htmlFor="defaultValue"
-              className="text-sm font-medium text-[var(--color-text)]"
+              className="text-sm font-medium text-foreground"
             >
               Default Value{" "}
               {calculationType === "percentage" ? "(%)" : "(PHP)"}
@@ -210,14 +210,14 @@ export default function DiscountTypeFormModal({
               step="0.01"
               min="0"
             />
-            <p className="text-xs text-[var(--color-text-muted)]">
+            <p className="text-xs text-muted-foreground">
               {calculationType === "percentage"
                 ? "Enter percentage value (e.g., 20 for 20%)"
                 : "Enter peso amount (e.g., 5000 for P5,000)"}
             </p>
             {(state.errors as CreateDiscountTypeFormState["errors"])
               ?.defaultValue && (
-              <p className="text-sm text-[var(--color-danger)]">
+              <p className="text-sm text-destructive">
                 {
                   (state.errors as CreateDiscountTypeFormState["errors"])!
                     .defaultValue![0]
@@ -230,7 +230,7 @@ export default function DiscountTypeFormModal({
           <div className="space-y-2">
             <label
               htmlFor="displayOrder"
-              className="text-sm font-medium text-[var(--color-text)]"
+              className="text-sm font-medium text-foreground"
             >
               Display Order
             </label>
@@ -243,13 +243,13 @@ export default function DiscountTypeFormModal({
               min="0"
               className="w-24"
             />
-            <p className="text-xs text-[var(--color-text-muted)]">
+            <p className="text-xs text-muted-foreground">
               Lower numbers appear first in dropdowns.
             </p>
           </div>
 
           {/* Boolean Options */}
-          <div className="space-y-3 pt-2 border-t border-[var(--color-border)]">
+          <div className="space-y-3 pt-2 border-t border-border">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"

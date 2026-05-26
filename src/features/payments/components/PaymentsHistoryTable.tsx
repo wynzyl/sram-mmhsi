@@ -104,7 +104,7 @@ const VoidActionsCell = memo(function VoidActionsCell({
         return (
           <form action={cancelAction} className="flex gap-2 items-center">
             <input type="hidden" name="requestId" value={pendingRequest.requestId} />
-            <span className="text-xs text-[var(--color-text-muted)]">Cancel?</span>
+            <span className="text-xs text-muted-foreground">Cancel?</span>
             <Button
               type="submit"
               variant="danger"
@@ -138,7 +138,7 @@ const VoidActionsCell = memo(function VoidActionsCell({
 
     // Show who requested it (for other users)
     return (
-      <span className="text-xs text-[var(--color-text-muted)]">
+      <span className="text-xs text-muted-foreground">
         Requested by {pendingRequest.requestedByUsername}
       </span>
     );
@@ -231,7 +231,7 @@ export default function PaymentsHistoryTable({
 
           if (isReversal) {
             return (
-              <span className="text-[var(--color-text-muted)] italic text-sm">
+              <span className="text-muted-foreground italic text-sm">
                 Reversal
               </span>
             );
@@ -248,7 +248,7 @@ export default function PaymentsHistoryTable({
           return payment.orNumber ? (
             <ReferenceCode code={payment.orNumber} />
           ) : (
-            <span className="text-[var(--color-text-muted)]">-</span>
+            <span className="text-muted-foreground">-</span>
           );
         },
       },
@@ -268,7 +268,7 @@ export default function PaymentsHistoryTable({
           row.original.processedBy ? (
             <span className="text-sm">{row.original.processedBy}</span>
           ) : (
-            <span className="text-[var(--color-text-muted)]">-</span>
+            <span className="text-muted-foreground">-</span>
           ),
       },
       {
@@ -276,11 +276,11 @@ export default function PaymentsHistoryTable({
         accessorKey: "referenceNumber",
         cell: ({ row }) =>
           row.original.referenceNumber ? (
-            <code className="text-xs font-[family-name:var(--font-mono)]">
+            <code className="text-xs font-mono">
               {row.original.referenceNumber}
             </code>
           ) : (
-            <span className="text-[var(--color-text-muted)]">-</span>
+            <span className="text-muted-foreground">-</span>
           ),
       },
       {

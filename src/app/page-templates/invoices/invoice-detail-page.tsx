@@ -125,153 +125,96 @@ export async function InternalInvoiceDetailPage(props: {
     <div className="page-container">
 
       {/* ── TOP BAR ── */}
-      <div className="no-print" style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "1.75rem",
-        flexWrap: "wrap",
-        gap: "0.75rem",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <Link href={invoicesListPath} className="btn-secondary" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 mb-7">
+        <div className="flex items-center gap-4">
+          <Link href={invoicesListPath} className="btn-secondary flex items-center gap-1.5">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             Back to Invoices
           </Link>
-          <h1 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--color-text)", margin: 0 }}>
+          <h1 className="text-xl font-bold text-foreground m-0">
             {invoice.invoiceNumber}
           </h1>
-          <span style={{
-            display: "inline-flex",
-            alignItems: "center",
-            padding: "3px 10px",
-            borderRadius: "999px",
-            fontSize: "0.72rem",
-            fontWeight: 600,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: status.color,
-            background: status.bg,
-            border: `1px solid ${status.border}`,
-          }}>
+          <span
+            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.72rem] font-semibold uppercase tracking-wide"
+            style={{
+              color: status.color,
+              background: status.bg,
+              border: `1px solid ${status.border}`,
+            }}
+          >
             {status.label}
           </span>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="flex gap-2">
           <PrintInvoiceButton invoiceId={invoice.id} />
           <SendInvoiceDialog invoiceId={invoice.id} defaultEmail={defaultEmail} />
         </div>
       </div>
 
       {/* ── INVOICE DOCUMENT ── */}
-      <div id="invoice-document" style={{
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-border)",
-        borderRadius: "0.5rem",
-        overflow: "hidden",
-        boxShadow: "var(--shadow-sm)",
-        maxWidth: "820px",
-        margin: "0 auto",
-      }}>
+      <div id="invoice-document" className="bg-card border border-border rounded-lg overflow-hidden shadow-sm max-w-[820px] mx-auto">
 
         {/* Red accent bar */}
-        <div style={{ height: "5px", background: "#c70000" }} />
+        <div className="h-[5px] bg-[#c70000]" />
 
         {/* Document body */}
-        <div style={{ padding: "3rem 3.5rem" }}>
+        <div className="p-12">
 
           {/* LETTERHEAD */}
-          <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
-            <div style={{
-              fontSize: "1.05rem",
-              fontWeight: 700,
-              color: "#c70000",
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              lineHeight: 1.35,
-            }}>
+          <div className="text-center mb-7">
+            <div className="text-[1.05rem] font-bold text-[#c70000] tracking-wide uppercase leading-snug">
               Merryland Montesorri and High School Inc.
             </div>
-            <div style={{ fontSize: "0.8rem", color: "var(--color-text-muted)", marginTop: "4px" }}>
+            <div className="text-[0.8rem] text-muted-foreground mt-1">
               San Vicente, Urdaneta, Pangasinan
             </div>
           </div>
 
           {/* Red rule */}
-          <div style={{ borderBottom: "1.5px solid #c70000", marginBottom: "1.25rem" }} />
+          <div className="border-b-[1.5px] border-[#c70000] mb-5" />
 
           {/* INVOICE No. (left) / Date (right) */}
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "1.5rem",
-            fontSize: "0.82rem",
-            color: "var(--color-text-2)",
-          }}>
+          <div className="flex justify-between items-start mb-6 text-[0.82rem] text-gray-600 dark:text-gray-400">
             <div>
-              <span style={{ color: "var(--color-text-muted)" }}>Invoice No.&nbsp;</span>
-              <strong style={{ color: "var(--color-text)", letterSpacing: "0.02em" }}>{invoiceDisplay}</strong>
+              <span className="text-muted-foreground">Invoice No.&nbsp;</span>
+              <strong className="text-foreground tracking-wide">{invoiceDisplay}</strong>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <span style={{ color: "var(--color-text-muted)" }}>Date&nbsp;</span>
-              <strong style={{ color: "var(--color-text)" }}>{formatDateShort(invoice.createdAt)}</strong>
+            <div className="text-right">
+              <span className="text-muted-foreground">Date&nbsp;</span>
+              <strong className="text-foreground">{formatDateShort(invoice.createdAt)}</strong>
             </div>
           </div>
 
           {/* TITLE */}
-          <div style={{
-            textAlign: "center",
-            fontSize: "0.9rem",
-            fontWeight: 700,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "var(--color-text)",
-            padding: "1rem 0",
-            borderTop: "1px solid var(--color-border)",
-            borderBottom: "1px solid var(--color-border)",
-            marginBottom: "1.75rem",
-          }}>
+          <div className="text-center text-[0.9rem] font-bold tracking-widest uppercase text-foreground py-4 border-t border-b border-border mb-7">
             Assessment Invoice
           </div>
 
           {/* SALUTATION + INTRO */}
-          <p style={{ fontSize: "0.875rem", lineHeight: 1.75, marginBottom: "0.5rem", color: "var(--color-text)" }}>
+          <p className="text-[0.875rem] leading-7 mb-2 text-foreground">
             Dear Parent/Guardian,
           </p>
-          <p style={{ fontSize: "0.875rem", lineHeight: 1.75, marginBottom: "1.5rem", color: "var(--color-text-2)" }}>
+          <p className="text-[0.875rem] leading-7 mb-6 text-gray-600 dark:text-gray-400">
             This is to inform you that the following student has been assessed for the amount due stated below:
           </p>
 
           {/* STUDENT DETAILS BOX */}
-          <div style={{
-            borderLeft: "3px solid #c70000",
-            background: "var(--color-surface-2)",
-            borderRadius: "0 0.375rem 0.375rem 0",
-            padding: "1rem 1.25rem",
-            marginBottom: "1.5rem",
-          }}>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "max-content 1fr",
-              columnGap: "1.5rem",
-              rowGap: "0.4rem",
-              fontSize: "0.85rem",
-            }}>
-              <span style={{ color: "var(--color-text-muted)", fontWeight: 500 }}>Student Name</span>
-              <span style={{ color: "var(--color-text)", fontWeight: 600 }}>{studentName}</span>
-              <span style={{ color: "var(--color-text-muted)", fontWeight: 500 }}>Reference No.</span>
-              <span style={{ color: "var(--color-text)", fontFamily: "var(--font-ibm-mono, monospace)", fontSize: "0.82rem" }}>
+          <div className="border-l-[3px] border-[#c70000] bg-muted rounded-r-md p-4 pl-5 mb-6">
+            <div className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1.5 text-[0.85rem]">
+              <span className="text-muted-foreground font-medium">Student Name</span>
+              <span className="text-foreground font-semibold">{studentName}</span>
+              <span className="text-muted-foreground font-medium">Reference No.</span>
+              <span className="text-foreground font-mono text-[0.82rem]">
                 {invoice.studentReferenceNumber}
               </span>
               {invoice.assessmentId && (
                 <>
-                  <span style={{ color: "var(--color-text-muted)", fontWeight: 500 }}>Assessment</span>
+                  <span className="text-muted-foreground font-medium">Assessment</span>
                   <Link
                     href={`${assessmentsBasePath}/${invoice.assessmentId}`}
-                    style={{ color: "#c70000", fontSize: "0.82rem", textDecoration: "underline" }}
+                    className="text-[#c70000] text-[0.82rem] underline"
                   >
                     View Assessment →
                   </Link>
@@ -281,50 +224,31 @@ export async function InternalInvoiceDetailPage(props: {
           </div>
 
           {/* AMOUNT DUE */}
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-            marginBottom: "1.75rem",
-            paddingBottom: "1.5rem",
-            borderBottom: "1px dashed var(--color-border)",
-          }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem" }}>
-              <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", fontWeight: 500 }}>
+          <div className="flex flex-col gap-3 mb-7 pb-6 border-b border-dashed border-border">
+            <div className="flex items-baseline gap-3">
+              <span className="text-[0.85rem] text-muted-foreground font-medium">
                 Original Amount Billed
               </span>
-              <span style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--color-text)", lineHeight: 1 }}>
+              <span className="text-xl font-semibold text-foreground leading-none">
                 {formatCurrency(Number(invoice.amountDue))}
               </span>
             </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem" }}>
-              <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", fontWeight: 500 }}>
+            <div className="flex items-baseline gap-3">
+              <span className="text-[0.85rem] text-muted-foreground font-medium">
                 Current Balance
               </span>
-              <span style={{
-                fontSize: "2rem",
-                fontWeight: 700,
-                color: invoice.currentBalance && Number(invoice.currentBalance) > 0 ? "#c70000" : "#16a34a",
-                lineHeight: 1,
-              }}>
+              <span
+                className="text-[2rem] font-bold leading-none"
+                style={{
+                  color: invoice.currentBalance && Number(invoice.currentBalance) > 0 ? "#c70000" : "#16a34a",
+                }}
+              >
                 {invoice.currentBalance != null
                   ? formatCurrency(Number(invoice.currentBalance))
                   : formatCurrency(Number(invoice.amountDue))}
               </span>
               {invoice.currentBalance != null && Number(invoice.currentBalance) <= 0 && (
-                <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  padding: "2px 8px",
-                  borderRadius: "999px",
-                  fontSize: "0.68rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
-                  color: "#16a34a",
-                  background: "rgba(22,163,74,0.12)",
-                  border: "1px solid rgba(22,163,74,0.3)",
-                }}>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-semibold uppercase tracking-wide text-green-600 bg-green-600/10 border border-green-600/30">
                   Fully Paid
                 </span>
               )}
@@ -332,93 +256,80 @@ export async function InternalInvoiceDetailPage(props: {
           </div>
 
           {/* PAYMENT INSTRUCTION */}
-          <p style={{ fontSize: "0.875rem", lineHeight: 1.75, marginBottom: "1.25rem", color: "var(--color-text-2)" }}>
+          <p className="text-[0.875rem] leading-7 mb-5 text-gray-600 dark:text-gray-400">
             Please settle the above amount at the cashier&#39;s office. Kindly present this assessment
             invoice upon payment for proper verification and issuance of official receipt.
           </p>
 
-          <p style={{ fontSize: "0.875rem", lineHeight: 1.75, marginBottom: "2rem", color: "var(--color-text-2)" }}>
+          <p className="text-[0.875rem] leading-7 mb-8 text-gray-600 dark:text-gray-400">
             Thank you.
           </p>
 
           {/* SIGNATURE */}
-          <div style={{ fontSize: "0.875rem", lineHeight: 1.8, color: "var(--color-text)" }}>
+          <div className="text-[0.875rem] leading-relaxed text-foreground">
             Respectfully,<br />
             <br />
             <strong>Merryland Montesorri</strong><br />
-            <span style={{ color: "var(--color-text-muted)", fontSize: "0.8rem" }}>
+            <span className="text-muted-foreground text-[0.8rem]">
               Accounting / Cashier Department
             </span>
           </div>
         </div>
 
         {/* FOOTER STRIP — timeline + meta */}
-        <div className="no-print" style={{
-          borderTop: "1px solid var(--color-border)",
-          background: "var(--color-surface-2)",
-          padding: "1.25rem 3.5rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "1rem",
-        }}>
+        <div className="no-print border-t border-border bg-muted px-14 py-5 flex justify-between items-center flex-wrap gap-4">
           {/* Timeline dots */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0" }}>
+          <div className="flex items-center gap-0">
             {timeline.map((step, i) => (
-              <div key={step.label} style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                  <div style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: step.done ? "#c70000" : "var(--color-border)",
-                    color: step.done ? "#fff" : "var(--color-text-subtle)",
-                    fontSize: "0.7rem",
-                    fontWeight: 700,
-                    flexShrink: 0,
-                  }}>
+              <div key={step.label} className="flex items-center">
+                <div className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-[0.7rem] font-bold shrink-0"
+                    style={{
+                      background: step.done ? "#c70000" : "var(--border)",
+                      color: step.done ? "#fff" : "var(--muted-foreground)",
+                    }}
+                  >
                     {step.done ? (
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                         <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     ) : (i + 1)}
                   </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: "0.68rem", fontWeight: 600, color: step.done ? "var(--color-text)" : "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  <div className="text-center">
+                    <div
+                      className="text-[0.68rem] font-semibold uppercase tracking-wide"
+                      style={{ color: step.done ? "var(--foreground)" : "var(--muted-foreground)" }}
+                    >
                       {step.label}
                     </div>
                     {step.date && (
-                      <div style={{ fontSize: "0.65rem", color: "var(--color-text-muted)", marginTop: "1px", whiteSpace: "nowrap" }}>
+                      <div className="text-[0.65rem] text-muted-foreground mt-px whitespace-nowrap">
                         {formatDate(step.date)}
                       </div>
                     )}
                   </div>
                 </div>
                 {i < timeline.length - 1 && (
-                  <div style={{
-                    width: "48px",
-                    height: "2px",
-                    background: timeline[i + 1].done ? "#c70000" : "var(--color-border)",
-                    margin: "0 6px",
-                    marginBottom: "24px",
-                    flexShrink: 0,
-                  }} />
+                  <div
+                    className="w-12 h-0.5 mx-1.5 shrink-0"
+                    style={{
+                      background: timeline[i + 1].done ? "#c70000" : "var(--border)",
+                      marginBottom: "24px",
+                    }}
+                  />
                 )}
               </div>
             ))}
           </div>
 
-          <div style={{ fontSize: "0.72rem", color: "var(--color-text-subtle)", textAlign: "right" }}>
+          <div className="text-[0.72rem] text-gray-400 text-right">
             SRAMS · Official Assessment Invoice
           </div>
         </div>
 
         {/* Bottom accent bar */}
-        <div style={{ height: "4px", background: "#c70000" }} />
+        <div className="h-1 bg-[#c70000]" />
       </div>
     </div>
   );

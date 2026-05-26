@@ -54,28 +54,28 @@ export default function DiscountReversalModal({
           />
 
           {/* Discount Details */}
-          <div className="p-3 bg-[var(--color-surface-2)] rounded-lg space-y-2">
+          <div className="p-3 bg-muted rounded-lg space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-[var(--color-text-muted)]">Discount:</span>
+              <span className="text-muted-foreground">Discount:</span>
               <span className="font-medium">{discount.discountTypeName}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-[var(--color-text-muted)]">Base Amount:</span>
+              <span className="text-muted-foreground">Base Amount:</span>
               <CurrencyDisplay amount={Number(discount.baseAmount)} />
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-[var(--color-text-muted)]">
+              <span className="text-muted-foreground">
                 Discount Amount:
               </span>
-              <span className="font-medium text-[var(--color-success)]">
+              <span className="font-medium text-emerald-600">
                 -<CurrencyDisplay amount={Number(discount.discountAmount)} className="inline" />
               </span>
             </div>
           </div>
 
           {/* Warning */}
-          <div className="p-3 bg-[var(--color-warning-100)] border border-[var(--color-warning)] rounded-lg">
-            <p className="text-sm text-[var(--color-warning-700)]">
+          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-500 rounded-lg">
+            <p className="text-sm text-amber-700 dark:text-amber-400">
               <strong>Warning:</strong> Reversing this discount will add{" "}
               <CurrencyDisplay amount={Number(discount.discountAmount)} className="inline font-medium" />{" "}
               back to the student&apos;s assessment balance. This action cannot be undone.
@@ -86,7 +86,7 @@ export default function DiscountReversalModal({
           <div className="space-y-2">
             <label
               htmlFor="reversalRemarks"
-              className="text-sm font-medium text-[var(--color-text)]"
+              className="text-sm font-medium text-foreground"
             >
               Reason for Reversal
             </label>
@@ -100,7 +100,7 @@ export default function DiscountReversalModal({
               maxLength={500}
             />
             {state.errors?.reversalRemarks && (
-              <p className="text-sm text-[var(--color-danger)]">
+              <p className="text-sm text-destructive">
                 {state.errors.reversalRemarks[0]}
               </p>
             )}

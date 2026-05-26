@@ -61,7 +61,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
       id: "student",
       cell: ({ row }) => (
         <div className="min-w-[16rem]">
-          <div className="font-semibold text-[var(--color-text)]">{row.original.studentName}</div>
+          <div className="font-semibold text-foreground">{row.original.studentName}</div>
           <div className="mt-1">
             <ReferenceCode code={row.original.referenceNumber} />
           </div>
@@ -71,12 +71,12 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
     {
       header: "Grade Level",
       accessorKey: "gradeLevel",
-      cell: ({ row }) => <span className="text-[var(--color-text-2)]">{row.original.gradeLevel}</span>,
+      cell: ({ row }) => <span className="text-gray-600 dark:text-gray-400">{row.original.gradeLevel}</span>,
     },
     {
       header: "School Year",
       accessorKey: "schoolYear",
-      cell: ({ row }) => <span className="text-[var(--color-text-2)]">{row.original.schoolYear}</span>,
+      cell: ({ row }) => <span className="text-gray-600 dark:text-gray-400">{row.original.schoolYear}</span>,
     },
     {
       header: "Status",

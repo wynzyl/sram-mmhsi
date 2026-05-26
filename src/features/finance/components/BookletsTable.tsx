@@ -52,7 +52,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
                     <td className="font-semibold">{booklet.prefix}</td>
                     <td className="font-mono">{String(booklet.startNumber).padStart(w, "0")}</td>
                     <td className="font-mono">{String(booklet.endNumber).padStart(w, "0")}</td>
-                    <td className="font-mono" style={{ color: booklet.status === "active" ? "var(--color-primary)" : "inherit" }}>
+                    <td className={`font-mono ${booklet.status === "active" ? "text-primary" : ""}`}>
                       {booklet.status === "active" ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber) : "—"}
                     </td>
                     <td>

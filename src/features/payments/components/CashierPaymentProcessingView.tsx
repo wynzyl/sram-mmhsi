@@ -57,11 +57,11 @@ export function CashierPaymentProcessingView({
         role="dialog"
         aria-modal="true"
         aria-labelledby="cashier-payment-modal-title"
-        className="flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg max-h-[100dvh] sm:max-h-[calc(100dvh-1.5rem)] md:max-h-[calc(100dvh-2rem)]"
+        className="flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-lg max-h-[100dvh] sm:max-h-[calc(100dvh-1.5rem)] md:max-h-[calc(100dvh-2rem)]"
       >
-        <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5">
+        <div className="flex shrink-0 flex-col gap-2 border-b border-border bg-card px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Payment processing
             </p>
             <h1
@@ -72,11 +72,11 @@ export function CashierPaymentProcessingView({
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
               <ReferenceCode code={referenceNumber} />
-              <span className="text-xs text-[var(--color-text-2)] md:text-sm">{gradeLevel}</span>
-              <span className="text-xs text-[var(--color-text-muted)] md:text-sm" aria-hidden>
+              <span className="text-xs text-gray-600 dark:text-gray-400 md:text-sm">{gradeLevel}</span>
+              <span className="text-xs text-muted-foreground md:text-sm" aria-hidden>
                 ·
               </span>
-              <span className="text-xs text-[var(--color-text-2)] md:text-sm">{schoolYear}</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400 md:text-sm">{schoolYear}</span>
             </div>
           </div>
 
@@ -117,21 +117,21 @@ export function CashierPaymentProcessingView({
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-[var(--color-text-muted)]">Total assessed</span>
+                    <span className="text-sm text-muted-foreground">Total assessed</span>
                     <span className="font-semibold">
                       <CurrencyDisplay amount={totals.totalAssessed} />
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-[var(--color-text-muted)]">Paid to date</span>
-                    <span className="font-semibold text-[var(--color-success)]">
+                    <span className="text-sm text-muted-foreground">Paid to date</span>
+                    <span className="font-semibold text-emerald-600">
                       <CurrencyDisplay amount={totals.totalPaid} />
                     </span>
                   </div>
-                  <div className="h-px w-full bg-[var(--color-border)]" />
+                  <div className="h-px w-full bg-border" />
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-[var(--color-text-muted)]">Remaining balance</span>
-                    <span className="font-display text-lg font-black text-[var(--color-primary)]">
+                    <span className="text-sm text-muted-foreground">Remaining balance</span>
+                    <span className="font-display text-lg font-black text-primary">
                       <CurrencyDisplay amount={totals.balance} />
                     </span>
                   </div>
@@ -146,26 +146,26 @@ export function CashierPaymentProcessingView({
                   {lastPayment ? (
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm text-[var(--color-text-muted)]">Amount</span>
+                        <span className="text-sm text-muted-foreground">Amount</span>
                         <span className="font-semibold">
                           <CurrencyDisplay amount={lastPayment.amount} />
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm text-[var(--color-text-muted)]">Method</span>
-                        <span className="text-sm font-medium text-[var(--color-text-2)]">
+                        <span className="text-sm text-muted-foreground">Method</span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                           {lastPayment.paymentMethod}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm text-[var(--color-text-muted)]">Date</span>
-                        <span className="text-sm font-medium text-[var(--color-text-2)]">
+                        <span className="text-sm text-muted-foreground">Date</span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                           {lastPayment.paymentDateLabel}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm text-[var(--color-text-muted)]">OR</span>
-                        <span className="text-sm font-medium text-[var(--color-text-2)]">
+                        <span className="text-sm text-muted-foreground">OR</span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                           {lastPayment.orNumber ? (
                             <ReferenceCode code={lastPayment.orNumber} />
                           ) : (
@@ -175,7 +175,7 @@ export function CashierPaymentProcessingView({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-[var(--color-text-muted)]">No payments posted yet.</p>
+                    <p className="text-sm text-muted-foreground">No payments posted yet.</p>
                   )}
                 </CardContent>
               </Card>

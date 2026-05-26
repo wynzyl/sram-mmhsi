@@ -83,8 +83,8 @@ export default function DiscountRequestForm({
 
   if (activeTypes.length === 0) {
     return (
-      <div className="p-4 bg-[var(--color-surface-2)] rounded-lg">
-        <p className="text-sm text-[var(--color-text-muted)]">
+      <div className="p-4 bg-muted rounded-lg">
+        <p className="text-sm text-muted-foreground">
           No discount types are currently available. Please contact finance to
           set up discount types.
         </p>
@@ -101,7 +101,7 @@ export default function DiscountRequestForm({
       <div className="space-y-2">
         <label
           htmlFor="discountTypeId"
-          className="text-sm font-medium text-[var(--color-text)]"
+          className="text-sm font-medium text-foreground"
         >
           Discount Type
         </label>
@@ -111,7 +111,7 @@ export default function DiscountRequestForm({
           value={selectedTypeId}
           onChange={(e) => setSelectedTypeId(e.target.value)}
           required
-          className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-surface)] text-[var(--color-text)] text-sm"
+          className="w-full px-3 py-2 border border-border rounded-md bg-card text-foreground text-sm"
         >
           <option value="">Select a discount type...</option>
           {activeTypes.map((type) => (
@@ -122,7 +122,7 @@ export default function DiscountRequestForm({
           ))}
         </select>
         {state.errors?.discountTypeId && (
-          <p className="text-sm text-[var(--color-danger)]">
+          <p className="text-sm text-destructive">
             {state.errors.discountTypeId[0]}
           </p>
         )}
@@ -130,13 +130,13 @@ export default function DiscountRequestForm({
 
       {/* Selected Type Details */}
       {selectedType && (
-        <div className="p-3 bg-[var(--color-surface-2)] rounded-lg space-y-2">
+        <div className="p-3 bg-muted rounded-lg space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-[var(--color-text-muted)]">Default Value:</span>
+            <span className="text-muted-foreground">Default Value:</span>
             <span className="font-medium">{formatValue(selectedType)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-[var(--color-text-muted)]">Applies To:</span>
+            <span className="text-muted-foreground">Applies To:</span>
             <span>
               {selectedType.baseType === "tuition_only"
                 ? "Tuition Fees Only"
@@ -144,16 +144,16 @@ export default function DiscountRequestForm({
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-[var(--color-text-muted)]">Stackable:</span>
+            <span className="text-muted-foreground">Stackable:</span>
             <span>{selectedType.isStackable ? "Yes" : "No"}</span>
           </div>
           {selectedType.requiresDocumentation && (
-            <div className="text-xs text-[var(--color-warning)] mt-2">
+            <div className="text-xs text-amber-600 mt-2">
               Note: This discount requires supporting documentation.
             </div>
           )}
           {selectedType.description && (
-            <div className="text-xs text-[var(--color-text-muted)] mt-2">
+            <div className="text-xs text-muted-foreground mt-2">
               {selectedType.description}
             </div>
           )}
@@ -164,7 +164,7 @@ export default function DiscountRequestForm({
       <div className="space-y-2">
         <label
           htmlFor="requestReason"
-          className="text-sm font-medium text-[var(--color-text)]"
+          className="text-sm font-medium text-foreground"
         >
           Reason (Optional)
         </label>
@@ -176,7 +176,7 @@ export default function DiscountRequestForm({
           placeholder="Why does this student qualify for this discount?"
           maxLength={500}
         />
-        <p className="text-xs text-[var(--color-text-muted)]">
+        <p className="text-xs text-muted-foreground">
           Provide any relevant details for the finance reviewer.
         </p>
       </div>

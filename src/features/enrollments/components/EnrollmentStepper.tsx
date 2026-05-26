@@ -55,7 +55,7 @@ export default function EnrollmentStepper({
                 className={cn(
                   "absolute left-[19px] top-10 h-[calc(100%-1.25rem)] w-px",
                   status === "complete"
-                    ? "bg-[var(--color-accent-emerald)]/50"
+                    ? "bg-emerald-500/50"
                     : "bg-gray-200"
                 )}
               />
@@ -70,15 +70,15 @@ export default function EnrollmentStepper({
               className={cn(
                 "min-w-0 flex-1 rounded-md px-2 pb-6 pt-0.5 text-left transition-colors",
                 "disabled:cursor-default",
-                canClick && "hover:bg-[var(--color-primary)]/[0.04]"
+                canClick && "hover:bg-primary/[0.04]"
               )}
               aria-current={status === "active" ? "step" : undefined}
             >
               <p
                 className={cn(
                   "font-mono text-[10px] font-semibold uppercase tracking-[0.18em]",
-                  status === "active" && "text-[var(--color-primary)]",
-                  status === "complete" && "text-[var(--color-accent-emerald)]",
+                  status === "active" && "text-primary",
+                  status === "complete" && "text-emerald-500",
                   status === "upcoming" && "text-muted-foreground"
                 )}
               >
@@ -117,9 +117,9 @@ function StepCircle({
         "relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
         "transition-all duration-200",
         status === "complete" &&
-          "bg-[var(--color-accent-emerald)] text-white shadow-[0_0_0_4px_rgba(16,185,129,0.12)]",
+          "bg-emerald-500 text-white shadow-[0_0_0_4px_rgba(16,185,129,0.12)]",
         status === "active" &&
-          "bg-[var(--color-primary)] text-white shadow-[0_0_0_4px_rgba(199,0,0,0.12)]",
+          "bg-primary text-white shadow-[0_0_0_4px_rgba(199,0,0,0.12)]",
         status === "upcoming" &&
           "border border-gray-300 bg-white text-muted-foreground"
       )}
