@@ -57,9 +57,12 @@ services:
       migrate:
         condition: service_completed_successfully
     volumes:
-      # Keep container-managed node_modules + .next so they aren't shadowed by the host
+      # Keep container-managed node_modules so it isn't shadowed by the host.
+      # NOTE: .next is intentionally NOT a named volume — persisting it across
+      # rebuilds caused the webpack PackFileCacheStrategy to serve deleted
+      # modules from a stale cache. Leaving it in the container's writable
+      # layer keeps the build cache fresh on every recreate.
       - app-node-modules:/app/node_modules
-      - app-next-cache:/app/.next
     develop:
       watch:
         # Sync application source into the running container
@@ -119,4 +122,3 @@ services:
 volumes:
   db-data:
   app-node-modules:
-  app-next-cache:
