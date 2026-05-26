@@ -74,7 +74,7 @@ export default function EnrollmentQueueTabs({ counts, currentTab, basePath }: En
   };
 
   return (
-    <div className="border-b border-[var(--color-border)]">
+    <div className="border-b border-border">
       <nav className="-mb-px flex gap-1" aria-label="Enrollment tabs">
         {TABS.map((tab) => {
           const isActive = currentTab === tab.key;
@@ -87,8 +87,8 @@ export default function EnrollmentQueueTabs({ counts, currentTab, basePath }: En
               className={cn(
                 "group relative inline-flex items-center gap-2 border-b-2 px-4 py-3 font-mono text-xs font-semibold uppercase tracking-wide transition-all duration-150",
                 isActive
-                  ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-                  : "border-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border-2)] hover:text-[var(--color-text)]",
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground dark:hover:border-gray-700",
                 isPending && "cursor-wait"
               )}
               aria-current={isActive ? "page" : undefined}
@@ -101,8 +101,8 @@ export default function EnrollmentQueueTabs({ counts, currentTab, basePath }: En
                 className={cn(
                   "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 font-mono text-[10px] font-bold transition-colors duration-150",
                   isActive
-                    ? "bg-[var(--color-primary)] text-white"
-                    : "bg-[var(--color-surface-3)] text-[var(--color-text-muted)] group-hover:bg-[var(--color-surface-4)] group-hover:text-[var(--color-text)]"
+                    ? "bg-primary text-white"
+                    : "bg-gray-200 text-muted-foreground group-hover:bg-gray-300 group-hover:text-foreground dark:bg-gray-800 dark:group-hover:bg-gray-700"
                 )}
               >
                 {count}

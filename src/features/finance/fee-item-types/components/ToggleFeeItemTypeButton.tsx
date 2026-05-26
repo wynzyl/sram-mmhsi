@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { toggleFeeItemTypeAction } from "../fee-item-types.actions";
 import type { ToggleFeeItemTypeFormState } from "../fee-item-types.schema";
+import { cn } from "@/lib/utils/cn";
 
 type Props = {
   id: string;
@@ -21,7 +22,12 @@ export function ToggleFeeItemTypeButton({ id, isActive }: Props) {
       <button
         type="submit"
         disabled={isPending}
-        className={`fit-row-action ${isActive ? "fit-row-action-warn" : "fit-row-action-ok"}`}
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium bg-transparent border-none rounded cursor-pointer transition-colors",
+          isActive
+            ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-amber-950"
+            : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-950"
+        )}
         title={isActive ? "Deactivate" : "Activate"}
       >
         {isPending ? "…" : isActive ? "Deactivate" : "Activate"}

@@ -78,7 +78,7 @@ export function TextInputField({
   return (
     <div className={cn(!isEditorial && "form-group")}>
       <label
-        className={isEditorial ? "mb-1.5 block text-sm font-medium text-charcoal" : "form-label"}
+        className={isEditorial ? "mb-1.5 block text-sm font-medium text-foreground" : "form-label"}
         htmlFor={name}
       >
         {label}
@@ -146,7 +146,7 @@ export function TextAreaField({
   return (
     <div className={cn(!isEditorial && "form-group")}>
       <label
-        className={isEditorial ? "mb-1.5 block text-sm font-medium text-charcoal" : "form-label"}
+        className={isEditorial ? "mb-1.5 block text-sm font-medium text-foreground" : "form-label"}
         htmlFor={name}
       >
         {label}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const iconClass =
-  "inline-flex h-9 w-9 items-center justify-center rounded-md text-[var(--color-primary)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-primary)]";
+  "inline-flex h-9 w-9 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary";
 
 export function StudentDirectoryRowActions({
   studentId,

@@ -28,10 +28,10 @@ const STATUS_TABS: Array<{
   label: string;
   hintColour: string;
 }> = [
-  { key: "all", label: "All", hintColour: "bg-charcoal" },
-  { key: "pending", label: "Pending", hintColour: "bg-[var(--color-accent-amber)]" },
-  { key: "assessed", label: "Assessed", hintColour: "bg-[var(--color-accent-slate)]" },
-  { key: "enrolled", label: "Enrolled", hintColour: "bg-[var(--color-accent-emerald)]" },
+  { key: "all", label: "All", hintColour: "bg-gray-800" },
+  { key: "pending", label: "Pending", hintColour: "bg-amber-500" },
+  { key: "assessed", label: "Assessed", hintColour: "bg-slate-500" },
+  { key: "enrolled", label: "Enrolled", hintColour: "bg-emerald-500" },
   { key: "cancelled", label: "Cancelled", hintColour: "bg-gray-300" },
 ];
 
@@ -99,7 +99,7 @@ export default function EnrollmentsListView({
   }, [enrollments, debouncedSearch]);
 
   const subtitle = (
-    <span className="font-mono text-sm text-ops-muted">
+    <span className="font-mono text-sm text-muted-foreground">
       {totalAll.toLocaleString()} record{totalAll === 1 ? "" : "s"}
       {schoolYearLabel ? ` · SY ${schoolYearLabel}` : ""}
       {totalActive > 0 ? ` · ${totalActive} active` : ""}
@@ -128,7 +128,7 @@ export default function EnrollmentsListView({
             <Link
               href={newEnrollmentHref}
               id="new-enrollment-btn"
-              className="inline-flex items-center gap-2 rounded-md bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <Plus className="h-4 w-4" />
               Enroll Student
@@ -156,8 +156,8 @@ export default function EnrollmentsListView({
               className={cn(
                 "group inline-flex items-center gap-2 rounded-t-md px-3.5 py-2 text-sm font-medium transition-colors",
                 isActive
-                  ? "border-b-2 border-[var(--color-primary)] -mb-px bg-white text-ops-ink"
-                  : "border-b-2 border-transparent -mb-px text-ops-muted hover:bg-light-gray hover:text-ops-ink"
+                  ? "border-b-2 border-primary -mb-px bg-white text-foreground"
+                  : "border-b-2 border-transparent -mb-px text-muted-foreground hover:bg-gray-100 hover:text-foreground"
               )}
               aria-current={isActive ? "page" : undefined}
             >
@@ -173,8 +173,8 @@ export default function EnrollmentsListView({
                 className={cn(
                   "rounded-full px-1.5 py-0.5 font-mono text-[10px] tabular-nums",
                   isActive
-                    ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-                    : "bg-light-gray text-ops-muted group-hover:bg-white"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-gray-100 text-muted-foreground group-hover:bg-white"
                 )}
               >
                 {count.toLocaleString()}
@@ -184,7 +184,7 @@ export default function EnrollmentsListView({
         })}
       </nav>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ops-muted">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>
           Showing {showingFrom.toLocaleString()}-{showingTo.toLocaleString()} of{" "}
           {totalFilteredCount.toLocaleString()}
@@ -193,7 +193,7 @@ export default function EnrollmentsListView({
           {page > 1 ? (
             <Link
               href={createPageHref(page - 1)}
-              className="rounded-md border border-gray-200 px-2.5 py-1 hover:bg-light-gray"
+              className="rounded-md border border-gray-200 px-2.5 py-1 hover:bg-gray-100"
             >
               Previous
             </Link>
@@ -201,7 +201,7 @@ export default function EnrollmentsListView({
           {hasMore ? (
             <Link
               href={createPageHref(page + 1)}
-              className="rounded-md border border-gray-200 px-2.5 py-1 hover:bg-light-gray"
+              className="rounded-md border border-gray-200 px-2.5 py-1 hover:bg-gray-100"
             >
               Next
             </Link>
@@ -213,7 +213,7 @@ export default function EnrollmentsListView({
       <div className="relative">
         <Search
           aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ops-muted"
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
         />
         <input
           type="text"
@@ -227,10 +227,10 @@ export default function EnrollmentsListView({
       {/* Card grid */}
       {filtered.length === 0 ? (
         <DataCard className="px-6 py-16 text-center">
-          <p className="font-display text-lg font-semibold text-ops-ink">
+          <p className="font-display text-lg font-semibold text-foreground">
             No enrollments match this view.
           </p>
-          <p className="mt-2 text-sm text-ops-muted">
+          <p className="mt-2 text-sm text-muted-foreground">
             {debouncedSearch
               ? `Nothing in this status matches "${debouncedSearch}".`
               : filterStatus === "all"
@@ -240,7 +240,7 @@ export default function EnrollmentsListView({
           {canCreate && filterStatus === "all" && !debouncedSearch && (
             <Link
               href={newEnrollmentHref}
-              className="mt-6 inline-flex items-center gap-2 rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+              className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
             >
               <Plus className="h-4 w-4" />
               Enroll Student
@@ -271,7 +271,7 @@ export default function EnrollmentsListView({
       )}
 
       {debouncedSearch && (
-        <p className="text-center font-mono text-xs text-ops-muted">
+        <p className="text-center font-mono text-xs text-muted-foreground">
           Showing {filtered.length.toLocaleString()} of {enrollments.length.toLocaleString()} on this
           page after search
         </p>

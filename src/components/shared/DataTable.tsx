@@ -92,7 +92,7 @@ export function DataTable<TData>({
         </div>
       )}
 
-      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm">
+      <div className="rounded-lg border border-border bg-card overflow-hidden shadow-sm">
         <div
           ref={tableContainerRef}
           className="overflow-x-auto"
@@ -106,16 +106,16 @@ export function DataTable<TData>({
           }
         >
           <table className="w-full">
-            <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)] sticky top-0 z-10">
+            <thead className="border-b border-border bg-muted sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
                       className={cn(
-                        "px-5 py-3.5 text-left text-xs font-semibold text-[var(--color-text-2)] uppercase tracking-wider bg-[var(--color-surface-2)]",
+                        "px-5 py-3.5 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider bg-muted",
                         header.column.getCanSort() &&
-                          "cursor-pointer select-none hover:bg-[var(--color-surface-3)] transition-colors"
+                          "cursor-pointer select-none hover:bg-muted/80 transition-colors"
                       )}
                       onClick={header.column.getToggleSortingHandler()}
                     >
@@ -143,7 +143,7 @@ export function DataTable<TData>({
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="px-4 py-12 text-center text-sm text-[var(--color-text-muted)]"
+                    className="px-4 py-12 text-center text-sm text-muted-foreground"
                   >
                     No results found.
                   </td>
@@ -164,12 +164,12 @@ export function DataTable<TData>({
                         key={row.id}
                         data-index={virtualRow.index}
                         ref={(node) => rowVirtualizer.measureElement(node)}
-                        className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-surface-2)] transition-colors"
+                        className="border-b border-border last:border-0 hover:bg-muted transition-colors"
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
-                            className="px-5 py-4 text-sm text-[var(--color-text)]"
+                            className="px-5 py-4 text-sm text-foreground"
                           >
                             {flexRender(
                               cell.column.columnDef.cell,
@@ -199,12 +199,12 @@ export function DataTable<TData>({
                 rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-surface-2)] transition-colors"
+                    className="border-b border-border last:border-0 hover:bg-muted transition-colors"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="px-5 py-4 text-sm text-[var(--color-text)]"
+                        className="px-5 py-4 text-sm text-foreground"
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
@@ -222,7 +222,7 @@ export function DataTable<TData>({
 
       {enablePagination && !enableVirtualization && table.getPageCount() > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-[var(--color-text-muted)]">
+          <p className="text-sm text-muted-foreground">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </p>

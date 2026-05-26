@@ -41,11 +41,11 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  tuition: "var(--color-primary)",
-  fees: "var(--color-ops-ink)",
-  materials: "var(--color-ops-warning, #f59e0b)",
-  discount: "var(--color-ops-positive, #16a34a)",
-  other: "var(--color-ops-muted)",
+  tuition: "hsl(var(--primary))",
+  fees: "hsl(var(--foreground))",
+  materials: "#f59e0b",
+  discount: "#16a34a",
+  other: "#9ca3af",
 };
 
 function formatPHP(amount: number) {
@@ -110,44 +110,44 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
         <ModalHeader onClose={closeModal} kicker="Finance · Fee Management">
           <h2 id="fee-template-detail-title">{template.name}</h2>
           <div className="flex items-center gap-2 mt-2">
-            <span className="fin-band-pill">{bandLabel}</span>
+            <span className="inline-flex px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-primary bg-primary/10 rounded">{bandLabel}</span>
             {!template.isActive && (
-              <span className="fin-badge fin-badge-muted">Inactive</span>
+              <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground">Inactive</span>
             )}
           </div>
           {template.description && (
-            <p className="text-sm text-[var(--muted-foreground)] mt-1.5">{template.description}</p>
+            <p className="text-sm text-muted-foreground mt-1.5">{template.description}</p>
           )}
         </ModalHeader>
 
         {/* ── KPI Strip ── */}
-        <div className="fin-detail-kpi-strip">
-          <div className="fin-detail-kpi-item">
-            <span className="fin-detail-kpi-label">Net Total</span>
-            <span className="fin-detail-kpi-value">{formatPHP(totalAmount)}</span>
+        <div className="flex items-stretch px-5 py-4 bg-muted/50 border-b border-border">
+          <div className="flex flex-col gap-1 px-4 first:pl-0">
+            <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Net Total</span>
+            <span className="text-lg font-bold text-foreground">{formatPHP(totalAmount)}</span>
           </div>
-          <div className="fin-detail-kpi-divider" aria-hidden />
-          <div className="fin-detail-kpi-item">
-            <span className="fin-detail-kpi-label">Gross Fees</span>
-            <span className="fin-detail-kpi-value fin-detail-kpi-secondary">
+          <div className="w-px bg-border my-0.5" aria-hidden />
+          <div className="flex flex-col gap-1 px-4">
+            <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Gross Fees</span>
+            <span className="text-lg font-semibold text-muted-foreground">
               {formatPHP(grossAmount)}
             </span>
           </div>
           {totalDiscount > 0 && (
             <>
-              <div className="fin-detail-kpi-divider" aria-hidden />
-              <div className="fin-detail-kpi-item">
-                <span className="fin-detail-kpi-label">Discounts</span>
-                <span className="fin-detail-kpi-value fin-detail-kpi-discount">
+              <div className="w-px bg-border my-0.5" aria-hidden />
+              <div className="flex flex-col gap-1 px-4">
+                <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Discounts</span>
+                <span className="text-lg font-bold text-green-500">
                   −{formatPHP(totalDiscount)}
                 </span>
               </div>
             </>
           )}
-          <div className="fin-detail-kpi-divider" aria-hidden />
-          <div className="fin-detail-kpi-item">
-            <span className="fin-detail-kpi-label">Line Items</span>
-            <span className="fin-detail-kpi-value fin-detail-kpi-secondary">
+          <div className="w-px bg-border my-0.5" aria-hidden />
+          <div className="flex flex-col gap-1 px-4">
+            <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Line Items</span>
+            <span className="text-lg font-semibold text-muted-foreground">
               {template.items.length}
             </span>
           </div>
@@ -156,11 +156,11 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
         {/* ── Body ── */}
         <ModalBody className="pt-0">
           {sortedItems.length === 0 ? (
-            <div className="fin-empty">
-              <p className="fin-empty-text">No fee items in this template.</p>
+            <div className="p-8 text-center">
+              <p className="text-sm text-muted-foreground mb-2">No fee items in this template.</p>
             </div>
           ) : (
-                <div className="fin-detail-items-section">
+                <div className="flex flex-col">
               {/* Category sections */}
               {Object.entries(byCategory).map(([category, items]) => {
                 const catTotal = items.reduce((sum, item) => {
@@ -169,42 +169,38 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
                 }, 0);
 
                 return (
-                  <div key={category} className="fin-detail-category-group">
-                    <div className="fin-detail-category-head">
+                  <div key={category} className="border-b border-border last:border-b-0">
+                    <div className="flex items-center gap-2.5 px-4 py-3 bg-muted/30">
                       <span
-                        className="fin-detail-category-dot"
-                        style={{ background: CATEGORY_COLORS[category] ?? "var(--color-ops-muted)" }}
+                        className="w-2 h-2 rounded-full"
+                        style={{ background: CATEGORY_COLORS[category] ?? "#9ca3af" }}
                         aria-hidden
                       />
-                      <span className="fin-detail-category-label">
+                      <span className="flex-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {CATEGORY_LABELS[category] ?? category}
                       </span>
-                      <span className="fin-detail-category-subtotal">
+                      <span className="text-[0.8125rem] font-semibold text-muted-foreground">
                         {formatPHP(catTotal)}
                       </span>
                     </div>
 
-                    <div className="fin-detail-item-list">
+                    <div className="flex flex-col">
                       {items.map((item) => (
-                        <div key={item.id} className="fin-detail-item-row">
-                          <span className="fin-detail-item-order">
+                        <div key={item.id} className="grid grid-cols-[2rem_1fr_auto] items-center gap-2 px-4 py-2.5 border-b border-border last:border-b-0">
+                          <span className="text-[0.6875rem] font-semibold text-muted-foreground tabular-nums">
                             {item.order}
                           </span>
-                          <span className="fin-detail-item-name">
+                          <span className="text-foreground inline-flex items-center gap-2">
                             {item.feeItemType.name}
                             {item.feeItemType.isDiscount && (
-                              <span className="fin-disc-tag">DISC</span>
+                              <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-green-500 bg-green-500/10 rounded">DISC</span>
                             )}
                           </span>
                           <span
-                            className={
-                              item.feeItemType.isDiscount
-                                ? "fin-detail-item-amount fin-detail-item-amount-disc"
-                                : "fin-detail-item-amount"
-                            }
+                            className={`font-semibold tabular-nums ${item.feeItemType.isDiscount ? "text-green-500" : "text-foreground"}`}
                           >
                             {item.feeItemType.isDiscount && (
-                              <span className="fin-minus">−</span>
+                              <span className="mr-0.5">−</span>
                             )}
                             {formatPHP(Number(item.defaultAmount))}
                           </span>
@@ -216,9 +212,9 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
               })}
 
               {/* Net total row */}
-              <div className="fin-detail-total-row">
-                <span className="fin-detail-total-label">Net Total</span>
-                <span className="fin-detail-total-value">{formatPHP(totalAmount)}</span>
+              <div className="flex justify-between items-center px-4 py-4 bg-muted/50 border-t border-border">
+                <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Net Total</span>
+                <span className="text-xl font-bold text-primary">{formatPHP(totalAmount)}</span>
               </div>
             </div>
           )}

@@ -86,43 +86,15 @@ export function ThemeToggle() {
   return (
     <button
       onClick={cycleTheme}
-      className="theme-toggle-btn"
+      className="flex items-center gap-2 bg-muted border border-border px-2.5 py-1.5 rounded-md cursor-pointer text-gray-600 dark:text-gray-400 text-xs font-medium transition-colors whitespace-nowrap hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-primary hover:border-border"
       title={mounted ? `Current theme: ${getLabel()} (click to cycle)` : undefined}
       aria-label={mounted ? `Switch theme (current: ${getLabel()})` : "Switch theme"}
       suppressHydrationWarning
     >
       <span suppressHydrationWarning>{mounted ? getIcon() : null}</span>
-      <span className="theme-toggle-label" suppressHydrationWarning>
+      <span className="text-xs min-w-[42px] text-left" suppressHydrationWarning>
         {mounted ? getLabel() : ""}
       </span>
-
-      <style jsx>{`
-        .theme-toggle-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          background: var(--color-surface-2);
-          border: 1px solid var(--color-border);
-          padding: 0.375rem 0.625rem;
-          border-radius: var(--radius);
-          cursor: pointer;
-          color: var(--color-text-2);
-          font-size: 0.75rem;
-          font-weight: 500;
-          transition: background 0.15s, color 0.15s, border-color 0.15s;
-          white-space: nowrap;
-        }
-        .theme-toggle-btn:hover {
-          background: var(--color-surface-3);
-          color: var(--color-primary);
-          border-color: var(--color-border-2);
-        }
-        .theme-toggle-label {
-          font-size: 0.75rem;
-          min-width: 42px;
-          text-align: left;
-        }
-      `}</style>
     </button>
   );
 }

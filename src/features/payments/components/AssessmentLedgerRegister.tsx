@@ -13,6 +13,7 @@ import type { StudentDiscountView } from "@/features/discounts";
 import { cancelAssessmentAction } from "@/features/assessments/assessments.actions";
 import { useFormToast } from "@/hooks/useFormToast";
 import { TextAreaField } from "@/components/forms/TextInputField";
+import { cn } from "@/lib/utils/cn";
 
 export type LedgerLineItem = {
   id: string;
@@ -210,28 +211,28 @@ export default function AssessmentLedgerRegister({
   );
 
   return (
-    <div className="ledger-register">
+    <div className="flex flex-col gap-6 max-w-[1180px] mx-auto px-6 pt-6 pb-12 text-foreground">
       {/* ── Header card ── */}
-      <header className="ledger-register-top">
+      <header className="relative grid grid-cols-[1fr_auto] gap-x-8 gap-y-6 p-7 bg-card border border-border rounded-lg overflow-hidden [grid-template-areas:'identity_actions''tiles_tiles'] before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-gradient-to-r before:from-primary before:via-primary/60 before:to-transparent max-md:grid-cols-1 max-md:[grid-template-areas:'identity''actions''tiles'] max-md:p-5">
         {/* Left: identity */}
-        <div className="ledger-register-top-main">
-          <p className="ledger-register-eyebrow">Billing ledger · Cashier view</p>
-          <h1 className="ledger-register-title">
+        <div className="[grid-area:identity] flex flex-col gap-1.5 min-w-0">
+          <p className="m-0 text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground">Billing ledger · Cashier view</p>
+          <h1 className="m-0 text-[26px] leading-tight font-semibold tracking-tight text-foreground">
             {assessment.studentLastName}, {assessment.studentFirstName}
           </h1>
-          <p className="ledger-register-meta">
+          <p className="m-0 flex items-center flex-wrap gap-2 text-[13px] text-muted-foreground">
             <span>School year {assessment.schoolYear}</span>
-            <span className="ledger-register-meta-sep" aria-hidden>·</span>
+            <span className="opacity-55" aria-hidden>·</span>
             <Link
               href={`${studentRecordsBasePath}/${assessment.studentId}`}
-              className="ledger-register-student-link"
+              className="text-primary font-medium no-underline border-b border-dashed border-primary/45 transition-colors hover:border-current"
             >
               Open student record ↗
             </Link>
-            <span className="ledger-register-meta-sep" aria-hidden>·</span>
+            <span className="opacity-55" aria-hidden>·</span>
             <Link
               href={`/staff/enrollments/${enrollmentId}`}
-              className="ledger-register-student-link"
+              className="text-primary font-medium no-underline border-b border-dashed border-primary/45 transition-colors hover:border-current"
             >
               ← Back to enrollment
             </Link>
@@ -239,15 +240,15 @@ export default function AssessmentLedgerRegister({
         </div>
 
         {/* Right: actions */}
-        <div className="ledger-register-actions">
+        <div className="[grid-area:actions] flex items-start justify-end gap-2 flex-wrap max-md:justify-start">
           {canOpenPay && (
             <button
               type="button"
-              className="ledger-register-btn-primary"
+              className="inline-flex items-center gap-[0.45rem] h-[38px] px-4 bg-primary text-white text-[13px] font-semibold tracking-[0.005em] border border-primary/80 rounded-md cursor-pointer shadow-sm transition-colors hover:bg-primary/90 active:translate-y-px focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
               onClick={openPayment}
             >
               {/* Receipt icon */}
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="opacity-95">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V8z"/>
                 <line x1="16" y1="13" x2="8" y2="13"/>
                 <line x1="16" y1="17" x2="8" y2="17"/>
@@ -260,11 +261,11 @@ export default function AssessmentLedgerRegister({
           {canShowCancelButton && !cancelOpen && (
             <button
               type="button"
-              className="ledger-register-btn-danger"
+              className="inline-flex items-center gap-[0.45rem] h-[38px] px-4 bg-transparent text-destructive text-[13px] font-semibold tracking-[0.005em] border border-destructive rounded-md cursor-pointer transition-colors hover:bg-destructive hover:text-white active:translate-y-px focus-visible:outline-2 focus-visible:outline-destructive focus-visible:outline-offset-2"
               onClick={() => setCancelOpen(true)}
             >
               {/* X icon */}
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="opacity-90">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="15" y1="9" x2="9" y2="15" />
                 <line x1="9" y1="9" x2="15" y2="15" />
@@ -275,16 +276,10 @@ export default function AssessmentLedgerRegister({
         </div>
 
         {/* Bottom: KPI tiles + progress bar */}
-        <div className="ledger-register-tiles-wrap">
+        <div className="[grid-area:tiles] flex flex-col">
           {/* Progress bar */}
           <div
-            style={{
-              height: "4px",
-              borderRadius: "9999px",
-              background: "color-mix(in srgb, var(--color-ops-line) 80%, transparent)",
-              marginBottom: "1rem",
-              overflow: "hidden",
-            }}
+            className="h-1 rounded-full bg-border/80 mb-4 overflow-hidden"
             role="progressbar"
             aria-valuenow={Math.round(percent)}
             aria-valuemin={0}
@@ -292,52 +287,40 @@ export default function AssessmentLedgerRegister({
             aria-label={`${Math.round(percent)}% of assessed fees paid`}
           >
             <div
-              style={{
-                height: "100%",
-                width: `${percent}%`,
-                borderRadius: "9999px",
-                background: isFullyPaid
-                  ? "var(--color-ops-positive)"
-                  : "var(--color-primary)",
-                transition: "width 0.6s ease",
-              }}
+              className={`h-full rounded-full transition-[width] duration-500 ease-out ${isFullyPaid ? "bg-emerald-500" : "bg-primary"}`}
+              style={{ width: `${percent}%` }}
             />
           </div>
 
-          <div className="ledger-register-tiles">
+          <div className="grid grid-cols-3 gap-3.5 max-md:grid-cols-1">
             {/* Total assessed */}
-            <div className="ledger-register-tile">
-              <span className="ledger-register-tile-label">Total assessed</span>
-              <span className="ledger-register-tile-value">
+            <div className="flex flex-col gap-1 p-[0.875rem_1.05rem] bg-muted/55 border border-border rounded-lg min-w-0">
+              <span className="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">Total assessed</span>
+              <span className="text-[22px] font-semibold leading-tight tracking-tight tabular-nums text-foreground inline-flex items-baseline gap-1.5">
                 <CurrencyDisplay amount={totalNum} />
               </span>
             </div>
 
             {/* Total paid */}
-            <div className="ledger-register-tile ledger-register-tile-paid">
-              <span className="ledger-register-tile-label">Total paid</span>
-              <span className="ledger-register-tile-value">
+            <div className="flex flex-col gap-1 p-[0.875rem_1.05rem] bg-muted/55 border border-border rounded-lg min-w-0">
+              <span className="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">Total paid</span>
+              <span className="text-[22px] font-semibold leading-tight tracking-tight tabular-nums text-emerald-500 inline-flex items-baseline gap-1.5">
                 <CurrencyDisplay amount={paidNum} />
               </span>
               {totalNum > 0 && (
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "var(--color-ops-muted)",
-                    marginTop: "2px",
-                  }}
-                >
+                <span className="text-[11px] text-muted-foreground mt-0.5">
                   {Math.round(percent)}% of total
                 </span>
               )}
             </div>
 
             {/* Balance due */}
-            <div
-              className={`ledger-register-tile ledger-register-tile-balance${!isFullyPaid && !isCancelled && !isTransferred && balanceNum > 0 ? " ledger-register-tile-owe" : ""}`}
-            >
-              <span className="ledger-register-tile-label">Balance due</span>
-              <span className="ledger-register-tile-value ledger-register-tile-balance-num">
+            <div className="flex flex-col gap-1 p-[0.875rem_1.05rem] bg-muted/55 border border-border rounded-lg min-w-0">
+              <span className="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">Balance due</span>
+              <span className={cn(
+                "text-[22px] font-semibold leading-tight tracking-tight tabular-nums inline-flex items-baseline gap-1.5",
+                !isFullyPaid && !isCancelled && !isTransferred && balanceNum > 0 ? "text-primary" : "text-foreground"
+              )}>
                 {isCancelled ? (
                   <StatusBadge type="billing" status="cancelled" />
                 ) : isTransferred ? (
@@ -360,8 +343,8 @@ export default function AssessmentLedgerRegister({
             padding: "1rem 1.25rem",
             marginBottom: "1.5rem",
             borderRadius: "6px",
-            border: "1px solid color-mix(in srgb, var(--color-ops-warning) 30%, transparent)",
-            background: "color-mix(in srgb, var(--color-ops-warning) 8%, transparent)",
+            border: "1px solid color-mix(in srgb, #f59e0b 30%, transparent)",
+            background: "color-mix(in srgb, #f59e0b 8%, transparent)",
           }}
         >
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
@@ -370,7 +353,7 @@ export default function AssessmentLedgerRegister({
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--color-ops-warning)"
+              stroke="#f59e0b"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -382,10 +365,10 @@ export default function AssessmentLedgerRegister({
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             <div>
-              <p style={{ fontWeight: 600, marginBottom: "0.25rem", color: "var(--color-ops-warning)" }}>
+              <p style={{ fontWeight: 600, marginBottom: "0.25rem", color: "#f59e0b" }}>
                 Balance Transferred
               </p>
-              <p style={{ fontSize: "0.875rem", lineHeight: "1.5", color: "var(--color-ops-body)" }}>
+              <p style={{ fontSize: "0.875rem", lineHeight: "1.5", color: "var(--foreground)" }}>
                 This assessment's outstanding balance was transferred to a newer school year on{" "}
                 {new Date(assessment.transferredAt).toLocaleDateString("en-PH", {
                   year: "numeric",
@@ -398,7 +381,7 @@ export default function AssessmentLedgerRegister({
                     {" "}
                     <Link
                       href={`/staff/assessments/${assessment.transferredToAssessmentId}`}
-                      style={{ color: "var(--color-primary)", textDecoration: "underline" }}
+                      className="text-primary underline"
                     >
                       View current year assessment →
                     </Link>
@@ -412,34 +395,25 @@ export default function AssessmentLedgerRegister({
 
       {/* ── Cancel Assessment Form ── */}
       {cancelOpen && canShowCancelButton && (
-        <div
-          style={{
-            padding: "1rem 1.25rem",
-            marginBottom: "1.5rem",
-            borderRadius: "6px",
-            border: "1px solid color-mix(in srgb, var(--color-destructive, #dc2626) 30%, transparent)",
-            background: "color-mix(in srgb, var(--color-destructive, #dc2626) 5%, transparent)",
-          }}
-        >
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
+        <div className="p-4 mb-6 rounded-md border border-destructive/30 bg-destructive/5">
+          <div className="flex gap-3 items-start">
             <svg
               width="20"
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--color-destructive, #dc2626)"
+              className="stroke-destructive shrink-0 mt-0.5"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ flexShrink: 0, marginTop: "2px" }}
               aria-hidden
             >
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 600, marginBottom: "0.5rem", color: "var(--color-destructive, #dc2626)" }}>
+            <div className="flex-1">
+              <p className="font-semibold mb-2 text-destructive">
                 Cancel Assessment
               </p>
 
@@ -451,7 +425,7 @@ export default function AssessmentLedgerRegister({
                   marginBottom: "0.75rem",
                   padding: "0.5rem 0.75rem",
                   borderRadius: "4px",
-                  background: "color-mix(in srgb, var(--color-ops-warning) 10%, transparent)",
+                  background: "color-mix(in srgb, #f59e0b 10%, transparent)",
                   color: "rgb(120, 53, 15)",
                 }}
               >
@@ -480,25 +454,14 @@ export default function AssessmentLedgerRegister({
                   error={cancelState.errors?.remarks}
                   rows={3}
                   placeholder="Enter reason for cancellation (required)..."
-                  className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-ops-ink outline-none transition focus:border-gray-400"
+                  className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition focus:border-gray-400"
                 />
 
-                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+                <div className="flex gap-2 mt-3">
                   <button
                     type="submit"
                     disabled={cancelPending}
-                    style={{
-                      padding: "0.5rem 1rem",
-                      borderRadius: "6px",
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "#fff",
-                      background: "var(--color-destructive, #dc2626)",
-                      border: "none",
-                      cursor: cancelPending ? "not-allowed" : "pointer",
-                      opacity: cancelPending ? 0.5 : 1,
-                      transition: "opacity 0.15s",
-                    }}
+                    className="px-4 py-2 rounded-md text-sm font-semibold text-white bg-destructive border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
                   >
                     {cancelPending ? "Cancelling..." : "Confirm Cancellation"}
                   </button>
@@ -512,7 +475,7 @@ export default function AssessmentLedgerRegister({
                       padding: "0.5rem 1rem",
                       borderRadius: "6px",
                       fontSize: "0.875rem",
-                      color: "var(--color-ops-muted)",
+                      color: "var(--muted-foreground)",
                       background: "transparent",
                       border: "none",
                       cursor: "pointer",
@@ -528,35 +491,29 @@ export default function AssessmentLedgerRegister({
       )}
 
       {/* ── Two-column body ── */}
-      <div className="ledger-register-column">
+      <div className="grid grid-cols-1 gap-5 items-start">
         {/* Fee Assessment table */}
-        <section className="ledger-register-section" aria-labelledby="ledger-fees-heading">
-          <div className="ledger-register-section-head">
-            <h2 id="ledger-fees-heading" className="ledger-register-section-title">
+        <section className="bg-card border border-border rounded-lg overflow-hidden" aria-labelledby="ledger-fees-heading">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/35">
+            <h2 id="ledger-fees-heading" className="m-0 text-[13.5px] font-semibold tracking-[0.02em] text-foreground">
               Fee assessment
             </h2>
-            <span
-              style={{
-                fontSize: "11px",
-                color: "var(--color-ops-muted)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
+            <span className="text-[11px] text-muted-foreground tabular-nums">
               {items.length} line{items.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <div className="ledger-register-table-wrap">
-            <table className="ledger-register-table">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-[13.5px]">
               <thead>
                 <tr>
-                  <th scope="col">Description</th>
-                  <th scope="col" className="ledger-register-th-num">Amount</th>
+                  <th scope="col" className="text-left text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground px-5 py-3 border-b border-border bg-muted/25">Description</th>
+                  <th scope="col" className="text-right text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground px-5 py-3 border-b border-border bg-muted/25 tabular-nums whitespace-nowrap">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={2} className="ledger-register-empty">
+                    <td colSpan={2} className="text-center py-8 px-4 text-muted-foreground italic text-[13px]">
                       No fee lines on this assessment.
                     </td>
                   </tr>
@@ -566,52 +523,26 @@ export default function AssessmentLedgerRegister({
                     return (
                       <tr
                         key={item.id}
-                        style={
-                          isBalanceForward
-                            ? {
-                                backgroundColor: "rgba(245, 158, 11, 0.05)",
-                                borderLeft: "4px solid rgba(245, 158, 11, 0.5)",
-                              }
-                            : undefined
-                        }
+                        className={cn(
+                          "hover:bg-primary/5",
+                          isBalanceForward && "bg-amber-500/5 border-l-4 border-l-amber-500/50"
+                        )}
                       >
-                        <td>
+                        <td className="px-5 py-2.5 border-b border-border/60 text-foreground align-middle">
                           {item.isDiscount && (
-                            <span
-                              style={{
-                                fontSize: "10px",
-                                fontWeight: 700,
-                                letterSpacing: "0.08em",
-                                textTransform: "uppercase",
-                                color: "var(--color-ops-positive)",
-                                marginRight: "0.4em",
-                              }}
-                            >
+                            <span className="text-[10px] font-bold tracking-[0.08em] uppercase text-emerald-500 mr-1.5">
                               DISC
                             </span>
                           )}
                           {isBalanceForward && (
-                            <span
-                              style={{
-                                display: "inline-block",
-                                fontSize: "10px",
-                                fontWeight: 700,
-                                letterSpacing: "0.08em",
-                                textTransform: "uppercase",
-                                color: "rgb(180, 83, 9)",
-                                backgroundColor: "rgba(245, 158, 11, 0.15)",
-                                padding: "2px 6px",
-                                borderRadius: "4px",
-                                marginRight: "0.5em",
-                              }}
-                            >
+                            <span className="inline-block text-[10px] font-bold tracking-[0.08em] uppercase text-amber-700 bg-amber-500/15 px-1.5 py-0.5 rounded mr-2">
                               PREVIOUS YEAR
                             </span>
                           )}
                           {item.description}
                         </td>
-                        <td className="ledger-register-td-num">
-                          <span className={item.isDiscount ? "ledger-register-discount" : ""}>
+                        <td className="text-right px-5 py-2.5 border-b border-border/60 tabular-nums whitespace-nowrap align-middle">
+                          <span className={item.isDiscount ? "text-emerald-500 font-medium" : ""}>
                             {item.isDiscount ? "−" : ""}
                             <CurrencyDisplay amount={Number(item.amount)} />
                           </span>
@@ -622,15 +553,15 @@ export default function AssessmentLedgerRegister({
                 )}
               </tbody>
               <tfoot>
-                <tr className="ledger-register-foot-row">
-                  <th scope="row">Total fees</th>
-                  <td className="ledger-register-td-num ledger-register-foot-value">
+                <tr className="bg-primary/5 border-t-2 border-primary/55">
+                  <th scope="row" className="text-left px-5 py-3.5 text-sm font-bold tracking-[0.02em] text-foreground">Total fees</th>
+                  <td className="text-right px-5 py-3.5 text-sm font-bold tabular-nums text-primary">
                     <CurrencyDisplay amount={feesRunning} />
                   </td>
                 </tr>
                 {Math.abs(feesRunning - totalNum) > 0.005 ? (
-                  <tr className="ledger-register-foot-sub">
-                    <td colSpan={2}>
+                  <tr className="bg-amber-500/10">
+                    <td colSpan={2} className="px-5 py-2 text-[11.5px] font-medium text-amber-600">
                       ⚠ Stored total differs from line sum — stored{" "}
                       <CurrencyDisplay className="font-medium" amount={totalNum} />
                     </td>
@@ -642,22 +573,16 @@ export default function AssessmentLedgerRegister({
         </section>
 
         {/* Payment history */}
-        <section className="ledger-register-section" aria-labelledby="ledger-payments-heading">
-          <div className="ledger-register-section-head">
-            <h2 id="ledger-payments-heading" className="ledger-register-section-title">
+        <section className="bg-card border border-border rounded-lg overflow-hidden" aria-labelledby="ledger-payments-heading">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/35">
+            <h2 id="ledger-payments-heading" className="m-0 text-[13.5px] font-semibold tracking-[0.02em] text-foreground">
               Payment history
             </h2>
-            <span
-              style={{
-                fontSize: "11px",
-                color: "var(--color-ops-muted)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
+            <span className="text-[11px] text-muted-foreground tabular-nums">
               {postedPayments.length} posted
             </span>
           </div>
-          <div className="ledger-register-payments-body">
+          <div className="p-0">
             <PaymentsHistoryTable
               payments={payUiRows}
               canRequestVoid={canRequestVoid}
@@ -666,14 +591,14 @@ export default function AssessmentLedgerRegister({
               embedded
             />
           </div>
-          <div className="ledger-register-payments-footer">
-            <div className="ledger-register-foot-inline">
-              <span className="ledger-register-foot-inline-label">Payments posted</span>
-              <span className="ledger-register-foot-inline-value">
+          <div className="flex items-center justify-between flex-wrap gap-y-2 gap-x-4 px-5 py-4 border-t border-border bg-muted/25">
+            <div className="inline-flex items-baseline gap-2.5">
+              <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-muted-foreground">Payments posted</span>
+              <span className="text-base font-semibold tabular-nums text-emerald-500">
                 <CurrencyDisplay amount={paymentsRecorded} />
               </span>
             </div>
-            <p className="ledger-register-foot-hint">
+            <p className="m-0 text-[11.5px] text-muted-foreground">
               Ledger total paid{" "}
               <CurrencyDisplay amount={paidNum} className="font-medium" />
             </p>
@@ -683,25 +608,18 @@ export default function AssessmentLedgerRegister({
 
       {/* ── Discounts ── */}
       <section
-        className="ledger-register-section"
+        className="bg-card border border-border rounded-lg overflow-hidden mt-6"
         aria-labelledby="ledger-discounts-heading"
-        style={{ marginTop: "1.5rem" }}
       >
-        <div className="ledger-register-section-head">
-          <h2 id="ledger-discounts-heading" className="ledger-register-section-title">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/35">
+          <h2 id="ledger-discounts-heading" className="m-0 text-[13.5px] font-semibold tracking-[0.02em] text-foreground">
             Discounts
           </h2>
-          <span
-            style={{
-              fontSize: "11px",
-              color: "var(--color-ops-muted)",
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
+          <span className="text-[11px] text-muted-foreground tabular-nums">
             {appliedDiscounts.length} record{appliedDiscounts.length !== 1 ? "s" : ""}
           </span>
         </div>
-        <div style={{ padding: "1rem" }}>
+        <div className="p-4">
           <StudentDiscountsList
             discounts={appliedDiscounts}
             canReverse={canReverseDiscount}
@@ -713,23 +631,23 @@ export default function AssessmentLedgerRegister({
       {/* ── Payment modal ── */}
       {payOpen && (
         <div
-          className="cashier-modal-backdrop no-print"
+          className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-5 pb-8 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 no-print"
           role="presentation"
           onClick={(e) => e.target === e.currentTarget && closePayment()}
         >
           <div
-            className="cashier-modal-dialog"
+            className="relative w-full max-w-[580px] max-h-[calc(100vh-6rem)] flex flex-col bg-card border border-border rounded-lg shadow-2xl overflow-hidden animate-in slide-in-from-bottom-2 duration-200 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-primary"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cashier-modal-title"
           >
-            <div className="cashier-modal-header">
+            <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4 border-b border-border">
               <div>
-                <p className="cashier-modal-kicker">Point of payment</p>
-                <h2 id="cashier-modal-title" className="cashier-modal-title">
+                <p className="m-0 mb-1 text-[11px] font-semibold tracking-[0.14em] uppercase text-primary">Point of payment</p>
+                <h2 id="cashier-modal-title" className="m-0 text-[19px] font-semibold tracking-tight text-foreground">
                   Post official receipt payment
                 </h2>
-                <p className="cashier-modal-sub">
+                <p className="m-0 mt-1.5 text-[12.5px] text-muted-foreground">
                   {assessment.studentLastName}, {assessment.studentFirstName}
                   {" · "}
                   {assessment.schoolYear}
@@ -737,14 +655,14 @@ export default function AssessmentLedgerRegister({
               </div>
               <button
                 type="button"
-                className="cashier-modal-close"
+                className="appearance-none bg-transparent border border-transparent text-muted-foreground text-[22px] leading-none w-8 h-8 rounded-md cursor-pointer inline-flex items-center justify-center transition-colors hover:bg-primary/10 hover:text-primary hover:border-primary/30 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                 onClick={closePayment}
                 aria-label="Close payment form"
               >
                 ×
               </button>
             </div>
-            <div className="cashier-modal-body">
+            <div className="px-6 pt-5 pb-6 overflow-y-auto">
               <PostPaymentForm
                 key={formNonce}
                 studentId={assessment.studentId}

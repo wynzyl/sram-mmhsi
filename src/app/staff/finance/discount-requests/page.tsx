@@ -85,8 +85,8 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
   const tabClass = (isActive: boolean) =>
     `px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
       isActive
-        ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-        : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
+        ? "border-primary text-primary"
+        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
     }`;
 
   return (
@@ -94,36 +94,36 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-semibold">Discount Requests</h1>
-        <p className="text-(--color-text-muted)">
+        <p className="text-muted-foreground">
           Review and approve discount requests from registrars
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className={counts.pending > 0 ? "border-(--color-warning)" : ""}>
+        <Card className={counts.pending > 0 ? "border-amber-500" : ""}>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{counts.pending}</div>
-            <p className="text-xs text-(--color-text-muted)">Pending Requests</p>
+            <p className="text-xs text-muted-foreground">Pending Requests</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-(--color-success)">{counts.approved}</div>
-            <p className="text-xs text-(--color-text-muted)">Approved</p>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{counts.approved}</div>
+            <p className="text-xs text-muted-foreground">Approved</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{counts.rejected}</div>
-            <p className="text-xs text-(--color-text-muted)">Rejected</p>
+            <p className="text-xs text-muted-foreground">Rejected</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Tab Navigation */}
       <div className="mb-6">
-        <nav className="flex gap-1 border-b border-(--color-border)" aria-label="Tabs">
+        <nav className="flex gap-1 border-b border-border" aria-label="Tabs">
           <Link href="/staff/finance/discount-requests?tab=pending" className={tabClass(tab === "pending")}> 
             Pending
             {counts.pending > 0 && (
@@ -170,7 +170,7 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
                 <CardTitle>
                   Approved — Ready to Apply ({approvedUnapplied.length})
                 </CardTitle>
-                <p className="text-sm text-(--color-text-muted)">
+                <p className="text-sm text-muted-foreground">
                   These approved requests are waiting to be attached to their
                   parent assessment (e.g., after a payment void + discount reversal).
                 </p>
@@ -186,7 +186,7 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
 
           {/* Pagination info */}
           {pendingResult.pagination.totalPages > 1 && (
-            <div className="text-sm text-(--color-text-muted) text-center">
+            <div className="text-sm text-muted-foreground text-center">
               Page {pendingResult.pagination.page} of{" "}
               {pendingResult.pagination.totalPages} ({pendingResult.pagination.totalRecords}{" "}
               total records)
@@ -207,7 +207,7 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
             />
           </CardContent>
           {approvedResult.pagination.totalPages > 1 && (
-            <div className="text-sm text-(--color-text-muted) text-center py-4">
+            <div className="text-sm text-muted-foreground text-center py-4">
               Page {approvedResult.pagination.page} of{" "}
               {approvedResult.pagination.totalPages} ({approvedResult.pagination.totalRecords}{" "}
               total records)
@@ -228,7 +228,7 @@ export default async function DiscountRequestsPage({ searchParams }: PageProps) 
             />
           </CardContent>
           {rejectedResult.pagination.totalPages > 1 && (
-            <div className="text-sm text-(--color-text-muted) text-center py-4">
+            <div className="text-sm text-muted-foreground text-center py-4">
               Page {rejectedResult.pagination.page} of{" "}
               {rejectedResult.pagination.totalPages} ({rejectedResult.pagination.totalRecords}{" "}
               total records)

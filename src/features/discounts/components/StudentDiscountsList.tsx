@@ -84,7 +84,7 @@ export default function StudentDiscountsList({
 
   if (discounts.length === 0) {
     return (
-      <div className="p-4 text-center text-[var(--color-text-muted)]">
+      <div className="p-4 text-center text-muted-foreground">
         No discounts applied to this assessment.
       </div>
     );
@@ -113,7 +113,7 @@ export default function StudentDiscountsList({
             {activeDiscounts.map((discount) => (
               <div
                 key={discount.id}
-                className="p-3 bg-[var(--color-surface-2)] rounded-lg flex justify-between items-start"
+                className="p-3 bg-muted rounded-lg flex justify-between items-start"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -122,19 +122,19 @@ export default function StudentDiscountsList({
                     </span>
                     <Badge variant="success">Active</Badge>
                   </div>
-                  <div className="text-sm text-[var(--color-text-muted)] mt-1">
+                  <div className="text-sm text-muted-foreground mt-1">
                     {formatDiscountValue(discount)} {formatBaseInfo(discount)}
                   </div>
-                  <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     Base: <CurrencyDisplay amount={Number(discount.baseAmount)} className="inline" />
                   </div>
-                  <div className="text-xs text-[var(--color-text-muted)]">
+                  <div className="text-xs text-muted-foreground">
                     Applied {new Date(discount.appliedAt).toLocaleDateString("en-PH")} by{" "}
                     {discount.appliedByName}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-semibold text-[var(--color-success)]">
+                  <div className="text-lg font-semibold text-emerald-600">
                     {isReversalCounter(discount) ? "+" : "−"}
                     <CurrencyDisplay
                       amount={Math.abs(Number(discount.discountAmount))}
@@ -142,7 +142,7 @@ export default function StudentDiscountsList({
                     />
                   </div>
                   {isReversalCounter(discount) && (
-                    <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                    <div className="text-xs text-muted-foreground mt-1">
                       added back to balance
                     </div>
                   )}
@@ -166,14 +166,14 @@ export default function StudentDiscountsList({
       {/* Reversed Discounts */}
       {reversedDiscounts.length > 0 && (
         <div>
-          <h4 className="text-sm font-medium mb-2 text-[var(--color-text-muted)]">
+          <h4 className="text-sm font-medium mb-2 text-muted-foreground">
             Reversed Discounts
           </h4>
           <div className="space-y-2">
             {reversedDiscounts.map((discount) => (
               <div
                 key={discount.id}
-                className="p-3 bg-[var(--color-surface)] rounded-lg opacity-70 flex justify-between items-start"
+                className="p-3 bg-card rounded-lg opacity-70 flex justify-between items-start"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -182,47 +182,47 @@ export default function StudentDiscountsList({
                     </span>
                     <Badge variant="danger">Reversed</Badge>
                   </div>
-                  <div className="text-sm text-[var(--color-text-muted)] mt-1 line-through">
+                  <div className="text-sm text-muted-foreground mt-1 line-through">
                     {formatDiscountValue(discount)} {formatBaseInfo(discount)}
                   </div>
-                  <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     Reversed{" "}
                     {new Date(discount.reversedAt!).toLocaleDateString("en-PH")}
                     {discount.reversedByName && ` by ${discount.reversedByName}`}
                   </div>
                   {discount.reversalRemarks && (
-                    <div className="text-xs text-[var(--color-text-muted)] italic mt-1">
+                    <div className="text-xs text-muted-foreground italic mt-1">
                       Reason: {discount.reversalRemarks}
                     </div>
                   )}
                   {canRequest && !discount.hasReplacement && (
                     <a
                       href={`/staff/enrollments/${discount.enrollmentId}?requestDiscount=1&discountTypeCode=${encodeURIComponent(discount.discountTypeCode)}`}
-                      className="mt-2 inline-block text-xs font-medium text-[var(--color-primary)] hover:underline"
+                      className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
                     >
                       Request replacement →
                     </a>
                   )}
                   {!canRequest && !discount.hasReplacement && requestBlockReason && (
-                    <div className="mt-2 text-xs text-[var(--color-text-muted)] italic">
+                    <div className="mt-2 text-xs text-muted-foreground italic">
                       {requestBlockReason}
                     </div>
                   )}
                   {discount.hasReplacement && (
-                    <div className="mt-2 text-xs text-[var(--color-success)]">
+                    <div className="mt-2 text-xs text-emerald-600">
                       Replacement request issued.
                     </div>
                   )}
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-semibold text-[var(--color-success)] line-through">
+                  <div className="text-lg font-semibold text-emerald-600 line-through">
                     −
                     <CurrencyDisplay
                       amount={Math.abs(Number(discount.discountAmount))}
                       className="inline"
                     />
                   </div>
-                  <div className="text-xs text-[var(--color-text-muted)] mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     offset above
                   </div>
                 </div>
@@ -244,10 +244,10 @@ export default function StudentDiscountsList({
           add back to the balance, and the effective Total so the math is
           fully transparent. Uses memoized discountTotals computed above. */}
       {discounts.length > 0 && (
-        <div className="pt-3 border-t border-[var(--color-border)] space-y-1">
+        <div className="pt-3 border-t border-border space-y-1">
           {discountTotals.reversalOffsets > 0 && (
             <>
-              <div className="flex justify-between items-center text-sm text-[var(--color-text-muted)]">
+              <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <span>Gross discounts</span>
                 <span className="font-[family-name:var(--font-mono)]">
                   −
@@ -257,7 +257,7 @@ export default function StudentDiscountsList({
                   />
                 </span>
               </div>
-              <div className="flex justify-between items-center text-sm text-[var(--color-text-muted)]">
+              <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <span>Reversal offsets</span>
                 <span className="font-[family-name:var(--font-mono)]">
                   +
@@ -269,9 +269,9 @@ export default function StudentDiscountsList({
               </div>
             </>
           )}
-          <div className="flex justify-between items-center pt-1 border-t border-[var(--color-border)]">
+          <div className="flex justify-between items-center pt-1 border-t border-border">
             <span className="font-medium">Total Discounts</span>
-            <span className="text-lg font-semibold text-[var(--color-success)]">
+            <span className="text-lg font-semibold text-emerald-600">
               −
               <CurrencyDisplay
                 amount={discountTotals.effectiveTotal}

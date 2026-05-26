@@ -47,12 +47,12 @@ export default async function PortalAssessmentsPage() {
 
   const emptyCopy =
     studentIds.length === 0 ? (
-      <p className="text-[var(--color-text-muted)]">
+      <p className="text-muted-foreground">
         No learner profile is linked to your portal account yet. Ask the registrar to link your account if
         you believe this is an error.
       </p>
     ) : rows.length === 0 ? (
-      <p className="text-[var(--color-text-muted)]">No fee assessments on file yet.</p>
+      <p className="text-muted-foreground">No fee assessments on file yet.</p>
     ) : null;
 
   return (
@@ -62,18 +62,18 @@ export default async function PortalAssessmentsPage() {
       {emptyCopy}
 
       {rows.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
           <table className="min-w-full text-sm">
-            <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+            <thead className="border-b border-border bg-muted">
               <tr>
                 {(labels.length > 1 || studentIds.length > 1) && (
-                  <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Student</th>
+                  <th className="px-4 py-2 text-left font-semibold text-foreground">Student</th>
                 )}
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">School year</th>
-                <th className="px-4 py-2 text-right font-semibold text-[var(--color-text)]">Total</th>
-                <th className="px-4 py-2 text-right font-semibold text-[var(--color-text)]">Paid</th>
-                <th className="px-4 py-2 text-right font-semibold text-[var(--color-text)]">Balance</th>
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Billing</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">School year</th>
+                <th className="px-4 py-2 text-right font-semibold text-foreground">Total</th>
+                <th className="px-4 py-2 text-right font-semibold text-foreground">Paid</th>
+                <th className="px-4 py-2 text-right font-semibold text-foreground">Balance</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">Billing</th>
               </tr>
             </thead>
             <tbody>
@@ -82,14 +82,14 @@ export default async function PortalAssessmentsPage() {
                 const name =
                   who != null ? `${who.lastName}, ${who.firstName}` : "—";
                 return (
-                  <tr key={`${r.studentId}-${r.id}`} className="border-b border-[var(--color-border)] last:border-0">
+                  <tr key={`${r.studentId}-${r.id}`} className="border-b border-border last:border-0">
                     {(labels.length > 1 || studentIds.length > 1) && (
-                      <td className="px-4 py-3 text-[var(--color-text)]">
+                      <td className="px-4 py-3 text-foreground">
                         <div className="font-medium">{name}</div>
-                        <div className="text-xs text-[var(--color-text-muted)]">{who?.referenceNumber}</div>
+                        <div className="text-xs text-muted-foreground">{who?.referenceNumber}</div>
                       </td>
                     )}
-                    <td className="px-4 py-3 text-[var(--color-text)]">{r.schoolYear}</td>
+                    <td className="px-4 py-3 text-foreground">{r.schoolYear}</td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       <CurrencyDisplay amount={Number(r.totalAmount)} />
                     </td>

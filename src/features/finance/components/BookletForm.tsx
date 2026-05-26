@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CalendarDays, ClipboardPlus, Info, UserRound } from "lucide-react";
 import { createBookletAction } from "@/features/payments/payments.actions";
 import type { BookletFormState } from "@/lib/validators/cashier";
+import { cn } from "@/lib/utils/cn";
 
 interface BookletFormProps {
   variant?: "default" | "dashboard";
@@ -14,9 +15,7 @@ interface BookletFormProps {
   onSuccess?: (state: BookletFormState) => void;
 }
 
-function inputStateClass(hasError: boolean): string {
-  return hasError ? "ops-input ops-input-error" : "ops-input";
-}
+const inputBaseClasses = "block w-full px-3.5 py-2.5 rounded-md border border-border bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25";
 
 function deriveBookletFields(series: string): {
   prefix: string;
@@ -162,12 +161,12 @@ export default function BookletForm({
   }
 
   return (
-    <form action={action} className="ops-panel p-6">
+    <form action={action} className="bg-card border border-border rounded-md p-6">
       <div className="mb-6 flex items-center gap-3">
-        <div className="rounded-lg bg-[var(--color-ops-panel-muted)] p-2 text-[var(--color-primary-300)]">
+        <div className="rounded-lg bg-primary/15 p-2 text-primary">
           <ClipboardPlus className="h-4 w-4" />
         </div>
-        <h2 className="font-display text-3xl leading-none text-[var(--color-ops-ink)]">Add New Booklet</h2>
+        <h2 className="font-display text-3xl leading-none text-foreground">Add New Booklet</h2>
       </div>
 
       {state.errors?._form && (
@@ -185,14 +184,14 @@ export default function BookletForm({
 
       <div className="space-y-4">
         <div>
-          <label className="ops-label" htmlFor="series">
+          <label className="block text-[0.8125rem] font-medium text-foreground mb-1.5" htmlFor="series">
             Booklet Name/ID
           </label>
           <input
             type="text"
             id="series"
             name="series"
-            className={inputStateClass(Boolean(state.errors?.series))}
+            className={cn(inputBaseClasses, state.errors?.series && "border-destructive")}
             placeholder="e.g., AK-00051-00100"
             value={seriesInput}
             onChange={(event) => setSeriesInput(event.target.value.toUpperCase())}
@@ -203,14 +202,14 @@ export default function BookletForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="ops-label" htmlFor="prefix">
+            <label className="block text-[0.8125rem] font-medium text-foreground mb-1.5" htmlFor="prefix">
               Prefix
             </label>
             <input
               type="text"
               id="prefix"
               name="prefix"
-              className={inputStateClass(Boolean(state.errors?.prefix))}
+              className={cn(inputBaseClasses, state.errors?.prefix && "border-destructive")}
               placeholder="Auto-derived"
               maxLength={2}
               pattern="[A-Za-z]{2}"
@@ -222,26 +221,26 @@ export default function BookletForm({
           </div>
 
           <div>
-            <label className="ops-label" htmlFor="dateIssued">
+            <label className="block text-[0.8125rem] font-medium text-foreground mb-1.5" htmlFor="dateIssued">
               Date Issued
             </label>
             <div className="relative">
-              <input id="dateIssued" type="date" className="ops-input pr-10" />
-              <CalendarDays className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-[var(--color-ops-muted)]" />
+              <input id="dateIssued" type="date" className={cn(inputBaseClasses, "pr-10")} />
+              <CalendarDays className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-500" />
             </div>
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="ops-label" htmlFor="startNumber">
+            <label className="block text-[0.8125rem] font-medium text-foreground mb-1.5" htmlFor="startNumber">
               Start Number
             </label>
             <input
               type="text"
               id="startNumber"
               name="startNumber"
-              className={inputStateClass(Boolean(state.errors?.startNumber))}
+              className={cn(inputBaseClasses, state.errors?.startNumber && "border-destructive")}
               placeholder="Auto-derived"
               value={derivedFields?.startNumber ?? ""}
               readOnly
@@ -250,14 +249,14 @@ export default function BookletForm({
           </div>
 
           <div>
-            <label className="ops-label" htmlFor="endNumber">
+            <label className="block text-[0.8125rem] font-medium text-foreground mb-1.5" htmlFor="endNumber">
               End Number
             </label>
             <input
               type="text"
               id="endNumber"
               name="endNumber"
-              className={inputStateClass(Boolean(state.errors?.endNumber))}
+              className={cn(inputBaseClasses, state.errors?.endNumber && "border-destructive")}
               placeholder="Auto-derived"
               value={derivedFields?.endNumber ?? ""}
               readOnly
@@ -267,14 +266,14 @@ export default function BookletForm({
         </div>
 
         <div>
-          <label className="ops-label" htmlFor="assignedTo">
+          <label className="block text-[0.8125rem] font-medium text-foreground mb-1.5" htmlFor="assignedTo">
             Assigned To (Staff/Cashier)
           </label>
           <div className="relative">
-            <select id="assignedTo" className="ops-input ops-input-disabled pr-10" disabled defaultValue="">
+            <select id="assignedTo" className={cn(inputBaseClasses, "pr-10 opacity-60 cursor-not-allowed bg-muted")} disabled defaultValue="">
               <option value="">Select Cashier (assignment soon)</option>
             </select>
-            <UserRound className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-[var(--color-ops-muted)]" />
+            <UserRound className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-500" />
           </div>
         </div>
 
@@ -284,12 +283,12 @@ export default function BookletForm({
         </button>
       </div>
 
-      <div className="ops-panel ops-panel-muted mt-5 p-4">
-        <div className="flex items-center gap-2 text-sm font-semibold tracking-wide text-[var(--color-ops-ink)]">
-          <Info className="h-4 w-4 text-[var(--color-primary-300)]" />
+      <div className="bg-muted border border-border rounded-md mt-5 p-4">
+        <div className="flex items-center gap-2 text-sm font-semibold tracking-wide text-foreground">
+          <Info className="h-4 w-4 text-primary" />
           Administrative Protocol
         </div>
-        <p className="ops-note mt-2 leading-relaxed">
+        <p className="text-[0.8125rem] text-muted-foreground leading-relaxed mt-2">
           Physical booklets must be verified by the Bursar before assignment. Booklet range rules and overlap
           validation are enforced before registration.
         </p>

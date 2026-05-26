@@ -25,7 +25,7 @@ export default async function DiscountTypesPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-semibold">Discount Types</h1>
-        <p className="text-[var(--color-text-muted)]">
+        <p className="text-muted-foreground">
           Configure discount types available for student enrollments
         </p>
       </div>

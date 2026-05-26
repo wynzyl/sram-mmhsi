@@ -30,7 +30,7 @@ export default function PaymentProgressBar({
   return (
     <div className={cn("w-full space-y-1.5", className)}>
       <div
-        className="relative h-1.5 w-full overflow-hidden rounded-full bg-light-gray"
+        className="relative h-1.5 w-full overflow-hidden rounded-full bg-gray-100"
         role="progressbar"
         aria-valuenow={Math.round(percentage)}
         aria-valuemin={0}
@@ -41,9 +41,9 @@ export default function PaymentProgressBar({
           className={cn(
             "h-full rounded-full transition-all duration-500 ease-out",
             isComplete
-              ? "bg-[var(--color-accent-emerald)]"
+              ? "bg-emerald-500"
               : hasAnyPayment
-              ? "bg-[var(--color-primary)]"
+              ? "bg-primary"
               : "bg-gray-300"
           )}
           style={{ width: `${percentage}%` }}
@@ -51,14 +51,14 @@ export default function PaymentProgressBar({
       </div>
 
       {!compact && (
-        <div className="flex items-baseline justify-between gap-3 font-mono text-[11px] text-ops-muted">
+        <div className="flex items-baseline justify-between gap-3 font-mono text-[11px] text-muted-foreground">
           <span>
             <span
               className={cn(
                 "font-semibold",
                 isComplete
-                  ? "text-[var(--color-accent-emerald)]"
-                  : "text-ops-ink"
+                  ? "text-emerald-500"
+                  : "text-foreground"
               )}
             >
               {formatCurrency(safePaid)}
@@ -69,7 +69,7 @@ export default function PaymentProgressBar({
           <span
             className={cn(
               "tabular-nums",
-              isComplete && "text-[var(--color-accent-emerald)]"
+              isComplete && "text-emerald-500"
             )}
           >
             {Math.round(percentage)}%

@@ -206,7 +206,7 @@ export default function NewEnrollmentForm({
               School Year <span className="required">*</span>
             </span>
             <div
-              className={`form-control bg-[var(--color-surface-2)] ${state.errors?.schoolYearId ? "form-control-error" : ""}`}
+              className={`form-control bg-muted ${state.errors?.schoolYearId ? "form-control-error" : ""}`}
               aria-live="polite"
             >
               {currentSchoolYear ? (
@@ -278,7 +278,7 @@ export default function NewEnrollmentForm({
               <input type="hidden" name="studentType" value="old_student" />
               <div
                 id="enrollment-type-display"
-                className={`form-control bg-[var(--color-surface-2)] ${state.errors?.studentType ? "form-control-error" : ""}`}
+                className={`form-control bg-muted ${state.errors?.studentType ? "form-control-error" : ""}`}
                 aria-live="polite"
               >
                 <strong>Old</strong>

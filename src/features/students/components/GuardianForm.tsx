@@ -26,15 +26,15 @@ export default function GuardianForm({
   return (
     <div
       className={cn(
-        "rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm",
-        "transition-shadow duration-150 hover:shadow-[var(--shadow-md)]"
+        "rounded-xl border border-border bg-card p-5 shadow-sm",
+        "transition-shadow duration-150 hover:shadow-md"
       )}
     >
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border)] pb-4">
-        <h4 className="font-display text-lg font-bold tracking-tight text-[var(--color-text)]">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
+        <h4 className="font-display text-lg font-bold tracking-tight text-foreground">
           Guardian {index + 1}
           {guardian.isPrimary && (
-            <span className="ml-2 inline-flex items-center rounded-full border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/10 px-2.5 py-0.5 align-middle font-mono text-xs font-semibold uppercase tracking-wide text-[var(--color-primary)]">
+            <span className="ml-2 inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 align-middle font-mono text-xs font-semibold uppercase tracking-wide text-primary">
               Primary
             </span>
           )}
@@ -43,7 +43,7 @@ export default function GuardianForm({
           {!guardian.isPrimary && (
             <button
               type="button"
-              className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] shadow-sm transition-colors hover:bg-[var(--color-surface-2)]"
+              className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
               onClick={() => update("isPrimary", true)}
             >
               Set as primary
@@ -52,7 +52,7 @@ export default function GuardianForm({
           {canRemove && (
             <button
               type="button"
-              className="rounded-lg border border-red-200 bg-[var(--color-surface)] px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/50"
+              className="rounded-lg border border-red-200 bg-card px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/50"
               onClick={() => onRemove(index)}
             >
               Remove

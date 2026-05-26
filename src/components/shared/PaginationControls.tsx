@@ -33,12 +33,12 @@ export function PaginationControls({ pagination, basePath }: PaginationControlsP
   }
 
   return (
-    <div className="mt-4 flex items-center justify-between border-t border(--color-border) pt-4">
+    <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
       {/* Record count */}
-      <div className="text-sm text(--color-text-muted)">
-        Showing <span className="font-medium text(--color-text)">{startRecord}</span> to{" "}
-        <span className="font-medium text(--color-text)">{endRecord}</span> of{" "}
-        <span className="font-medium text(--color-text)">{totalRecords}</span> records
+      <div className="text-sm text-muted-foreground">
+        Showing <span className="font-medium text-foreground">{startRecord}</span> to{" "}
+        <span className="font-medium text-foreground">{endRecord}</span> of{" "}
+        <span className="font-medium text-foreground">{totalRecords}</span> records
       </div>
 
       {/* Navigation buttons */}
@@ -51,10 +51,10 @@ export function PaginationControls({ pagination, basePath }: PaginationControlsP
         </Link>
 
         <div className="flex items-center gap-1 px-2 text-sm">
-          <span className="text(--color-text-muted)">Page</span>
-          <span className="font-medium text(--color-text)">{page}</span>
-          <span className="text(--color-text-muted)">of</span>
-          <span className="font-medium text(--color-text)">{totalPages}</span>
+          <span className="text-muted-foreground">Page</span>
+          <span className="font-medium text-foreground">{page}</span>
+          <span className="text-muted-foreground">of</span>
+          <span className="font-medium text-foreground">{totalPages}</span>
         </div>
 
         <Link href={createPageUrl(page + 1)} aria-disabled={!hasNextPage}>

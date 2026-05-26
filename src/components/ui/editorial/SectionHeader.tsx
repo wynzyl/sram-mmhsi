@@ -43,7 +43,7 @@ export function SectionHeader({
         <div className="flex-1">
           <h1
             className={cn(
-              "font-display text-ops-ink",
+              "font-display text-foreground",
               sizeClasses[size].title,
               accent && "relative inline-block"
             )}
@@ -51,7 +51,7 @@ export function SectionHeader({
             {title}
             {accent && (
               <span
-                className="absolute -bottom-2 left-0 h-1 w-16 bg-[var(--color-primary)] rounded-full"
+                className="absolute -bottom-2 left-0 h-1 w-16 bg-primary rounded-full"
                 aria-hidden="true"
               />
             )}
@@ -59,7 +59,7 @@ export function SectionHeader({
           {subtitle && (
             <p
               className={cn(
-                "mt-2 text-ops-muted",
+                "mt-2 text-muted-foreground",
                 sizeClasses[size].subtitle
               )}
             >

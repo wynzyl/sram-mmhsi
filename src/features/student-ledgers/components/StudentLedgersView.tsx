@@ -51,9 +51,9 @@ function paginationPages(current: number, total: number): (number | "ellipsis")[
 }
 
 const btnBase =
-  "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-2)]";
+  "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted";
 const btnActive =
-  "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)] font-semibold";
+  "border-primary bg-primary/10 text-primary font-semibold";
 const btnDisabled = "pointer-events-none opacity-40";
 
 export function StudentLedgersView({
@@ -147,7 +147,7 @@ export function StudentLedgersView({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search student name..."
@@ -159,7 +159,7 @@ export function StudentLedgersView({
               <button
                 type="button"
                 onClick={() => setSearchInput("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 aria-label="Clear search"
               >
                 <X className="h-4 w-4" />
@@ -171,7 +171,7 @@ export function StudentLedgersView({
           <select
             value={initialSchoolYearId || activeSchoolYearId || ""}
             onChange={handleSchoolYearChange}
-            className="h-9 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+            className="h-9 rounded-md border border-border bg-card px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             {schoolYears.map((sy) => (
               <option key={sy.id} value={sy.id}>
@@ -186,7 +186,7 @@ export function StudentLedgersView({
             <button
               type="button"
               onClick={clearFilters}
-              className="text-sm text-[var(--color-primary)] hover:underline"
+              className="text-sm text-primary hover:underline"
             >
               Clear filters
             </button>
@@ -194,12 +194,12 @@ export function StudentLedgersView({
         </div>
 
         {/* Results Count */}
-        <p className="text-sm text-[var(--color-text-muted)]">
+        <p className="text-sm text-muted-foreground">
           {totalRecords === 0 ? (
             "No results"
           ) : (
             <>
-              <span className="font-medium text-[var(--color-text)]">{totalRecords.toLocaleString()}</span>{" "}
+              <span className="font-medium text-foreground">{totalRecords.toLocaleString()}</span>{" "}
               {totalRecords === 1 ? "ledger" : "ledgers"} found
             </>
           )}
@@ -209,14 +209,14 @@ export function StudentLedgersView({
       {/* Active Filters Display */}
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-[var(--color-text-muted)]">Active filters:</span>
+          <span className="text-sm text-muted-foreground">Active filters:</span>
           {initialSearch && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text)]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
               Search: &quot;{initialSearch}&quot;
               <button
                 type="button"
                 onClick={() => setSearchInput("")}
-                className="ml-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                className="ml-0.5 text-muted-foreground hover:text-foreground"
                 aria-label="Remove search filter"
               >
                 <X className="h-3 w-3" />
@@ -224,12 +224,12 @@ export function StudentLedgersView({
             </span>
           )}
           {initialSchoolYearId && initialSchoolYearId !== activeSchoolYearId && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text)]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
               Year: {schoolYears.find((sy) => sy.id === initialSchoolYearId)?.label}
               <button
                 type="button"
                 onClick={() => router.push(buildUrl({ schoolYearId: "" }))}
-                className="ml-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                className="ml-0.5 text-muted-foreground hover:text-foreground"
                 aria-label="Remove school year filter"
               >
                 <X className="h-3 w-3" />
@@ -248,11 +248,11 @@ export function StudentLedgersView({
           className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between"
           aria-label="Ledgers pagination"
         >
-          <p className="text-sm text-[var(--color-text-muted)]">
+          <p className="text-sm text-muted-foreground">
             Showing{" "}
-            <span className="font-medium text-[var(--color-text)]">{startRecord}</span> to{" "}
-            <span className="font-medium text-[var(--color-text)]">{endRecord}</span> of{" "}
-            <span className="font-medium text-[var(--color-text)]">{totalRecords.toLocaleString()}</span>{" "}
+            <span className="font-medium text-foreground">{startRecord}</span> to{" "}
+            <span className="font-medium text-foreground">{endRecord}</span> of{" "}
+            <span className="font-medium text-foreground">{totalRecords.toLocaleString()}</span>{" "}
             ledgers
           </p>
 
@@ -274,7 +274,7 @@ export function StudentLedgersView({
                 item === "ellipsis" ? (
                   <span
                     key={`e-${i}`}
-                    className="inline-flex min-w-9 items-center justify-center text-[var(--color-text-muted)]"
+                    className="inline-flex min-w-9 items-center justify-center text-muted-foreground"
                     aria-hidden
                   >
                     …

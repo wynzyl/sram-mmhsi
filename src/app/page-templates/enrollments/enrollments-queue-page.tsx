@@ -209,12 +209,12 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       {/* Page Header */}
       <header className="mb-6 flex items-start justify-between">
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-(--color-primary)">            Enrollment Management
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">            Enrollment Management
           </p>
-          <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-charcoal">
+          <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-foreground">
             Enrollment Queue
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-(--color-text-muted)">
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             List-first enrollment workflow. Students automatically appear in the queue when eligible.
           </p>
         </div>
@@ -249,13 +249,13 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       <div className="mt-6">{renderTabContent()}</div>
 
       {/* Legacy Link */}
-      <div className="mt-8 rounded-md border border-(--color-border) bg-(--color-surface-2) p-4">
-        <p className="text-xs text-(--color-text-muted)">
+      <div className="mt-8 rounded-md border border-border bg-muted p-4">
+        <p className="text-xs text-muted-foreground">
           <strong>Note:</strong> This is the new list-first enrollment queue. If you need to manually create an
           enrollment record, use the{" "}
           <Link
             href={`${enrollmentsBasePath}/new`}
-            className="font-medium text-(--color-primary) hover:underline"
+            className="font-medium text-primary hover:underline"
           >
             manual entry form
           </Link>

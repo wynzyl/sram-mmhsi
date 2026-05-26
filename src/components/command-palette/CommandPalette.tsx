@@ -144,28 +144,28 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       aria-label="Search"
     >
       <div
-        className="w-full max-w-xl overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+        className="w-full max-w-xl overflow-hidden rounded-xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-150"
         onKeyDown={handleKeyDown}
       >
         {/* Search input */}
-        <div className="relative flex items-center border-b border-[var(--color-border)] px-4">
-          <Search className="h-5 w-5 shrink-0 text-[var(--color-text-muted)]" />
+        <div className="relative flex items-center border-b border-border px-4">
+          <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search students, enrollments, assessments, payments..."
-            className="flex-1 bg-transparent px-3 py-4 text-base text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none"
+            className="flex-1 bg-transparent px-3 py-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
           {isLoading && (
-            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-[var(--color-text-muted)]" />
+            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-muted-foreground" />
           )}
           {query && !isLoading && (
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text)]"
+              className="rounded p-1 text-muted-foreground hover:bg-gray-200 hover:text-foreground dark:hover:bg-gray-800"
               aria-label="Clear search"
             >
               <X className="h-4 w-4" />
@@ -181,7 +181,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         >
           {showEmptyState && (
             <div className="px-4 py-12 text-center">
-              <p className="text-[var(--color-text-muted)]">
+              <p className="text-muted-foreground">
                 No results found for &quot;{debouncedQuery}&quot;
               </p>
             </div>
@@ -200,7 +200,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                   return (
                     <div key={category}>
                       {/* Category header */}
-                      <div className="flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                      <div className="flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         {CATEGORY_ICONS[category]}
                         <span>{SEARCH_CATEGORY_LABELS[category]}</span>
                       </div>
@@ -225,27 +225,27 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                             className={cn(
                               "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
                               isActive
-                                ? "bg-[var(--color-primary)]/10"
-                                : "hover:bg-[var(--color-surface-3)]"
+                                ? "bg-primary/10"
+                                : "hover:bg-gray-200 dark:hover:bg-gray-800"
                             )}
                           >
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-[var(--color-text)] truncate">
+                                <span className="font-medium text-foreground truncate">
                                   {item.title}
                                 </span>
                                 {item.badge && (
-                                  <span className="shrink-0 rounded-full bg-[var(--color-surface-3)] px-2 py-0.5 text-[10px] font-medium uppercase text-[var(--color-text-muted)]">
+                                  <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium uppercase text-muted-foreground dark:bg-gray-800">
                                     {item.badge}
                                   </span>
                                 )}
                               </div>
-                              <p className="mt-0.5 text-sm text-[var(--color-text-muted)] truncate">
+                              <p className="mt-0.5 text-sm text-muted-foreground truncate">
                                 {item.subtitle}
                               </p>
                             </div>
                             {isActive && (
-                              <ArrowRight className="h-4 w-4 shrink-0 text-[var(--color-primary)]" />
+                              <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
                             )}
                           </button>
                         );
@@ -259,22 +259,22 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         </div>
 
         {/* Footer with keyboard hints */}
-        <div className="flex items-center justify-between border-t border-[var(--color-border)] px-4 py-2 text-xs text-[var(--color-text-muted)]">
+        <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-3)] px-1.5 py-0.5 font-mono text-[10px]">
+              <kbd className="rounded border border-border bg-gray-200 px-1.5 py-0.5 font-mono text-[10px] dark:bg-gray-800">
                 ↑↓
               </kbd>
               <span>Navigate</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-3)] px-1.5 py-0.5 font-mono text-[10px]">
+              <kbd className="rounded border border-border bg-gray-200 px-1.5 py-0.5 font-mono text-[10px] dark:bg-gray-800">
                 Enter
               </kbd>
               <span>Open</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-3)] px-1.5 py-0.5 font-mono text-[10px]">
+              <kbd className="rounded border border-border bg-gray-200 px-1.5 py-0.5 font-mono text-[10px] dark:bg-gray-800">
                 Esc
               </kbd>
               <span>Close</span>

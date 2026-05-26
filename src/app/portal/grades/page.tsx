@@ -62,12 +62,12 @@ export default async function PortalGradesPage() {
 
   const emptyCopy =
     studentIds.length === 0 ? (
-      <p className="text-[var(--color-text-muted)]">
+      <p className="text-muted-foreground">
         No learner profile is linked to your portal account yet. Ask the registrar to link your account if
         you believe this is an error.
       </p>
     ) : rows.length === 0 ? (
-      <p className="text-[var(--color-text-muted)]">
+      <p className="text-muted-foreground">
         No grades published yet for your enrollment. Check back once teachers submit grades.
       </p>
     ) : null;
@@ -81,19 +81,19 @@ export default async function PortalGradesPage() {
       {emptyCopy}
 
       {rows.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
           <table className="min-w-full text-sm">
-            <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+            <thead className="border-b border-border bg-muted">
               <tr>
                 {showStudentColumn && (
-                  <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Student</th>
+                  <th className="px-4 py-2 text-left font-semibold text-foreground">Student</th>
                 )}
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">School year</th>
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Subject</th>
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Section</th>
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Period</th>
-                <th className="px-4 py-2 text-right font-semibold text-[var(--color-text)]">Grade</th>
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Status</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">School year</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">Subject</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">Section</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">Period</th>
+                <th className="px-4 py-2 text-right font-semibold text-foreground">Grade</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -102,18 +102,18 @@ export default async function PortalGradesPage() {
                 const name = who != null ? `${who.lastName}, ${who.firstName}` : "—";
                 const gradeNum = r.grade != null && r.grade !== "" ? Number(r.grade) : null;
                 return (
-                  <tr key={r.id} className="border-b border-[var(--color-border)] last:border-0">
+                  <tr key={r.id} className="border-b border-border last:border-0">
                     {showStudentColumn && (
-                      <td className="px-4 py-3 text-[var(--color-text)]">
+                      <td className="px-4 py-3 text-foreground">
                         <div className="font-medium">{name}</div>
-                        <div className="text-xs text-[var(--color-text-muted)]">{who?.referenceNumber}</div>
+                        <div className="text-xs text-muted-foreground">{who?.referenceNumber}</div>
                       </td>
                     )}
-                    <td className="px-4 py-3 text-[var(--color-text)]">{r.schoolYear}</td>
-                    <td className="px-4 py-3 text-[var(--color-text)]">{r.subject}</td>
-                    <td className="px-4 py-3 text-[var(--color-text)]">{r.section}</td>
-                    <td className="px-4 py-3 font-mono text-[var(--color-text)]">{r.period}</td>
-                    <td className="px-4 py-3 text-right tabular-nums font-medium text-[var(--color-text)]">
+                    <td className="px-4 py-3 text-foreground">{r.schoolYear}</td>
+                    <td className="px-4 py-3 text-foreground">{r.subject}</td>
+                    <td className="px-4 py-3 text-foreground">{r.section}</td>
+                    <td className="px-4 py-3 font-mono text-foreground">{r.period}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-medium text-foreground">
                       {gradeNum != null && !Number.isNaN(gradeNum) ? gradeNum.toFixed(2) : "—"}
                     </td>
                     <td className="px-4 py-3">

@@ -34,10 +34,10 @@ type FeeTemplatesTableProps = {
 export function FeeTemplatesTable({ templates }: FeeTemplatesTableProps) {
   if (templates.length === 0) {
     return (
-      <div className="fin-panel">
-        <div className="fin-empty">
-          <p className="fin-empty-text">No fee templates created yet.</p>
-          <p className="fin-empty-text">
+      <div className="bg-card border border-border rounded-md">
+        <div className="p-8 text-center">
+          <p className="text-sm text-muted-foreground mb-2">No fee templates created yet.</p>
+          <p className="text-sm text-muted-foreground mb-2">
             Use the Create Template button in the header above to get started.
           </p>
         </div>
@@ -57,19 +57,19 @@ export function FeeTemplatesTable({ templates }: FeeTemplatesTableProps) {
   );
 
   return (
-    <div className="fin-stack">
+    <div className="flex flex-col gap-6">
       {Object.entries(templatesByBand).map(([band, bandTemplates]) => (
-        <div key={band} className="fin-panel">
-          <div className="fin-panel-head">
-            <h2 className="fin-panel-title">
+        <div key={band} className="bg-card border border-border rounded-md">
+          <div className="flex justify-between items-center gap-4 px-5 py-4 border-b border-border">
+            <h2 className="text-base font-semibold text-foreground">
               {FEE_ASSESSMENT_BAND_LABELS[band as keyof typeof FEE_ASSESSMENT_BAND_LABELS]}
             </h2>
-            <span className="fin-panel-meta">
+            <span className="text-xs text-muted-foreground">
               {bandTemplates.length} template{bandTemplates.length !== 1 ? "s" : ""}
             </span>
           </div>
 
-          <div className="fin-template-list">
+          <div className="flex flex-col">
             {bandTemplates.map((template) => {
               const totalAmount = template.items.reduce((sum, item) => {
                 const amount = Number(item.defaultAmount);
@@ -77,28 +77,28 @@ export function FeeTemplatesTable({ templates }: FeeTemplatesTableProps) {
               }, 0);
 
               return (
-                <div key={template.id} className="fin-template-row">
-                  <div className="fin-template-row-main">
-                    <div className="fin-template-row-name-row">
+                <div key={template.id} className="flex justify-between items-center py-4 px-5 border-b border-border last:border-b-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
                       <Link
                         href={`/staff/finance/fee-templates/${template.id}`}
-                        className="fin-template-name-link"
+                        className="text-[0.9375rem] font-semibold text-foreground no-underline hover:text-primary hover:underline"
                       >
                         {template.name}
                       </Link>
                       {!template.isActive && (
-                        <span className="fin-badge fin-badge-muted">Inactive</span>
+                        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground">Inactive</span>
                       )}
                     </div>
 
                     {template.description && (
-                      <p className="fin-template-desc">{template.description}</p>
+                      <p className="text-[0.8125rem] text-muted-foreground mt-1">{template.description}</p>
                     )}
 
-                    <div className="fin-template-stats">
-                      <span className="fin-stat-item">{template.items.length} item{template.items.length !== 1 ? "s" : ""}</span>
-                      <span className="fin-stat-divider" aria-hidden>·</span>
-                      <span className="fin-stat-total">
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                      <span>{template.items.length} item{template.items.length !== 1 ? "s" : ""}</span>
+                      <span className="text-border" aria-hidden>·</span>
+                      <span className="text-foreground">
                         Total:{" "}
                         <strong>
                           {new Intl.NumberFormat("en-PH", {
@@ -110,7 +110,7 @@ export function FeeTemplatesTable({ templates }: FeeTemplatesTableProps) {
                     </div>
                   </div>
 
-                  <div className="fin-template-row-actions">
+                  <div className="flex gap-2 shrink-0">
                     <FeeTemplateDetailModal template={template} />
                   </div>
                 </div>

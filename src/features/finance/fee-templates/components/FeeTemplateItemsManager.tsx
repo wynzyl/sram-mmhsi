@@ -41,11 +41,11 @@ export function FeeTemplateItemsManager({
   }, 0);
 
   return (
-    <div className="fin-panel">
-      <div className="fin-panel-head">
-        <h3 className="fin-panel-title">Template Items</h3>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <span className="fin-panel-meta">
+    <div className="bg-card border border-border rounded-md">
+      <div className="flex justify-between items-center gap-4 px-5 py-4 border-b border-border">
+        <h3 className="text-base font-semibold text-foreground">Template Items</h3>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
             {items.length} item{items.length !== 1 ? "s" : ""}
           </span>
           <AddFeeItemModal
@@ -57,54 +57,49 @@ export function FeeTemplateItemsManager({
       </div>
 
       {items.length === 0 ? (
-        <div className="fin-empty">
-          <div style={{
-            width: "2.5rem", height: "2.5rem", borderRadius: "50%",
-            background: "color-mix(in srgb, var(--color-ops-line) 60%, transparent)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "1.1rem", color: "var(--color-ops-muted)",
-          }} aria-hidden>
+        <div className="p-8 text-center">
+          <div className="w-10 h-10 rounded-full bg-border/60 flex items-center justify-center text-lg text-gray-400 dark:text-gray-500 mx-auto mb-3" aria-hidden>
             ₱
           </div>
-          <p className="fin-empty-text">No items yet.</p>
-          <p className="fin-empty-text" style={{ marginTop: "-0.5rem", fontSize: "0.75rem" }}>
+          <p className="text-sm text-muted-foreground mb-2">No items yet.</p>
+          <p className="text-xs text-muted-foreground">
             Use the <strong>+ Add Fee Item</strong> button above to build this template.
           </p>
         </div>
       ) : (
         <>
-          <div className="fin-table-wrap">
-            <table className="fin-table">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th scope="col" className="fin-th fin-th-num">#</th>
-                  <th scope="col" className="fin-th">Fee Type</th>
-                  <th scope="col" className="fin-th">Category</th>
-                  <th scope="col" className="fin-th fin-th-num">Default Amount</th>
-                  <th scope="col" className="fin-th fin-th-num">Remove</th>
+                  <th scope="col" className="px-4 py-2.5 text-right text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border">#</th>
+                  <th scope="col" className="px-4 py-2.5 text-left text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border">Fee Type</th>
+                  <th scope="col" className="px-4 py-2.5 text-left text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border">Category</th>
+                  <th scope="col" className="px-4 py-2.5 text-right text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border">Default Amount</th>
+                  <th scope="col" className="px-4 py-2.5 text-right text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border">Remove</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedItems.map((item) => (
-                  <tr key={item.id} className="fin-tr">
-                    <td className="fin-td fin-td-num fin-td-muted">{item.order}</td>
-                    <td className="fin-td">
-                      <span className="fin-td-name">{item.feeItemType.name}</span>
+                  <tr key={item.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-2.5 text-[0.8125rem] text-muted-foreground text-right tabular-nums">{item.order}</td>
+                    <td className="px-4 py-2.5 text-[0.8125rem] text-foreground">
+                      <span className="font-medium">{item.feeItemType.name}</span>
                       {item.feeItemType.isDiscount && (
-                        <span className="fin-disc-tag">DISC</span>
+                        <span className="inline-flex ml-2 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-green-500 bg-green-500/10 rounded">DISC</span>
                       )}
                     </td>
-                    <td className="fin-td fin-td-muted capitalize">{item.feeItemType.category}</td>
-                    <td className="fin-td fin-td-num fin-td-amount">
+                    <td className="px-4 py-2.5 text-[0.8125rem] text-muted-foreground capitalize">{item.feeItemType.category}</td>
+                    <td className="px-4 py-2.5 text-[0.8125rem] text-foreground text-right tabular-nums font-medium">
                       {item.feeItemType.isDiscount && (
-                        <span className="fin-minus">−</span>
+                        <span className="mr-0.5">−</span>
                       )}
                       {new Intl.NumberFormat("en-PH", {
                         style: "currency",
                         currency: "PHP",
                       }).format(Number(item.defaultAmount))}
                     </td>
-                    <td className="fin-td fin-td-num">
+                    <td className="px-4 py-2.5 text-right">
                       <InlineConfirmButton
                         action={removeFeeTemplateItemAction}
                         confirmMessage={`Remove ${item.feeItemType.name} from this template?`}
@@ -118,17 +113,17 @@ export function FeeTemplateItemsManager({
                 ))}
               </tbody>
               <tfoot>
-                <tr className="fin-tfoot-row">
-                  <td colSpan={3} className="fin-td">
-                    <span className="fin-tfoot-label">Template Total</span>
+                <tr className="bg-muted/30">
+                  <td colSpan={3} className="px-4 py-3 text-[0.8125rem]">
+                    <span className="font-semibold uppercase tracking-wide text-muted-foreground">Template Total</span>
                   </td>
-                  <td className="fin-td fin-td-num fin-tfoot-total">
+                  <td className="px-4 py-3 text-right text-lg font-bold text-primary">
                     {new Intl.NumberFormat("en-PH", {
                       style: "currency",
                       currency: "PHP",
                     }).format(templateTotal)}
                   </td>
-                  <td className="fin-td" />
+                  <td className="px-4 py-3" />
                 </tr>
               </tfoot>
             </table>

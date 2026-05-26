@@ -30,22 +30,22 @@ export default async function NewFeeSchedulePage() {
   });
 
   return (
-    <div className="fin-page fin-page-narrow">
+    <div className="px-8 py-6 max-w-[800px] mx-auto">
       {/* Breadcrumb */}
-      <nav className="fin-breadcrumb" aria-label="Breadcrumb">
-        <Link href="/staff/finance/fee-schedules" className="fin-breadcrumb-link">
+      <nav className="flex items-center gap-2 text-sm mb-4" aria-label="Breadcrumb">
+        <Link href="/staff/finance/fee-schedules" className="text-muted-foreground hover:text-foreground transition-colors">
           Fee Schedules
         </Link>
-        <span className="fin-breadcrumb-sep" aria-hidden>/</span>
-        <span className="fin-breadcrumb-current">Assign Template</span>
+        <span className="text-muted-foreground" aria-hidden>/</span>
+        <span className="text-foreground font-medium">Assign Template</span>
       </nav>
 
       {/* Header */}
-      <div className="fin-page-header">
-        <div className="fin-page-header-main">
-          <p className="fin-eyebrow">Finance · Fee Management</p>
-          <h1 className="fin-title">Assign Fee Template</h1>
-          <p className="fin-subtitle">
+      <div className="flex justify-between items-start gap-6 mb-6">
+        <div className="flex-1 min-w-[280px]">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">Finance · Fee Management</p>
+          <h1 className="text-2xl font-bold text-foreground">Assign Fee Template</h1>
+          <p className="text-sm text-muted-foreground mt-2">
             Select a fee template and assign it to a school year and assessment band. The
             template's default amounts will be used, but you can add overrides afterward.
           </p>
@@ -53,11 +53,11 @@ export default async function NewFeeSchedulePage() {
       </div>
 
       {activeTemplates.length === 0 ? (
-        <div className="fin-callout fin-callout-warn">
-          <div className="fin-callout-icon" aria-hidden>⚠</div>
+        <div className="flex gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-md mb-6">
+          <div className="shrink-0 w-5 h-5 flex items-center justify-center text-amber-500" aria-hidden>⚠</div>
           <div>
-            <p className="fin-callout-title">No Templates Available</p>
-            <p className="fin-callout-body">
+            <p className="text-[0.8125rem] font-semibold text-foreground">No Templates Available</p>
+            <p className="text-[0.8125rem] text-muted-foreground m-0">
               You need to create fee templates before you can assign them to school years.
             </p>
             <Link href="/staff/finance/fee-templates/new" className="mt-3 inline-block">
@@ -66,13 +66,13 @@ export default async function NewFeeSchedulePage() {
           </div>
         </div>
       ) : (
-        <div className="fin-stack">
+        <div className="flex flex-col gap-6">
           {/* Form card */}
-          <div className="fin-panel">
-            <div className="fin-panel-head">
-              <h2 className="fin-panel-title">Assignment Details</h2>
+          <div className="bg-card border border-border rounded-md">
+            <div className="flex justify-between items-center gap-4 px-5 py-4 border-b border-border">
+              <h2 className="text-base font-semibold text-foreground">Assignment Details</h2>
             </div>
-            <div className="fin-panel-body fin-panel-body-form">
+            <div className="p-5">
               <TemplateAssignmentForm
                 templates={activeTemplates}
                 schoolYears={allSchoolYears}
@@ -81,11 +81,11 @@ export default async function NewFeeSchedulePage() {
           </div>
 
           {/* Notes card */}
-          <div className="fin-callout fin-callout-muted">
-            <div className="fin-callout-icon" aria-hidden>📋</div>
+          <div className="flex gap-3 p-4 bg-muted border border-border rounded-md">
+            <div className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground" aria-hidden>📋</div>
             <div>
-              <p className="fin-callout-title">Important Notes</p>
-              <ul className="fin-callout-list">
+              <p className="text-[0.8125rem] font-semibold text-foreground">Important Notes</p>
+              <ul className="m-0 pl-5 text-[0.8125rem] text-muted-foreground list-disc">
                 <li>Each assessment band can only have one active schedule per school year</li>
                 <li>If you need to change amounts for a specific year, add overrides instead of creating a new template</li>
                 <li>Deactivate the old schedule before creating a new one for the same band and year</li>

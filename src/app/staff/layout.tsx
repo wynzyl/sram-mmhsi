@@ -29,7 +29,7 @@ async function StaffLayoutContent({ children }: { children: React.ReactNode }) {
             display: flex;
             height: 100vh;
             overflow: hidden;
-            background: var(--color-surface-2);
+            background: hsl(var(--muted));
           }
           .app-main {
             flex: 1;
@@ -61,7 +61,7 @@ export default function StaffLayout({
               display: flex;
               height: 100vh;
               overflow: hidden;
-              background: var(--color-surface-2);
+              background: hsl(var(--muted));
             }
           `}</style>
         </div>
