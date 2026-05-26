@@ -66,7 +66,7 @@ export default function FeeScheduleItemsList({
         )}
 
         {showAdd && (
-          <form action={addAction} className="form-card mb-4" style={{ backgroundColor: "var(--color-bg-alt)" }}>
+          <form action={addAction} className="form-card mb-4 bg-muted">
             <input type="hidden" name="feeScheduleId" value={feeScheduleId} />
             <div className="form-grid">
               <div className="form-group">
@@ -119,7 +119,7 @@ export default function FeeScheduleItemsList({
                     <td>{item.order}</td>
                     <td>{item.description}</td>
                     <td>{item.isDiscount ? <span className="badge badge-warning">Discount</span> : <span className="badge badge-secondary">Fee</span>}</td>
-                    <td style={{ textAlign: "right", color: item.isDiscount ? "var(--color-error)" : "inherit" }}>
+                    <td className={`text-right ${item.isDiscount ? "text-destructive" : ""}`}>
                       {item.isDiscount ? "-" : ""}₱{Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>
                     <td>

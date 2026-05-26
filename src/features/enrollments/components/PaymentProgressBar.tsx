@@ -41,9 +41,9 @@ export default function PaymentProgressBar({
           className={cn(
             "h-full rounded-full transition-all duration-500 ease-out",
             isComplete
-              ? "bg-[var(--color-accent-emerald)]"
+              ? "bg-emerald-500"
               : hasAnyPayment
-              ? "bg-[var(--color-primary)]"
+              ? "bg-primary"
               : "bg-gray-300"
           )}
           style={{ width: `${percentage}%` }}
@@ -57,7 +57,7 @@ export default function PaymentProgressBar({
               className={cn(
                 "font-semibold",
                 isComplete
-                  ? "text-[var(--color-accent-emerald)]"
+                  ? "text-emerald-500"
                   : "text-foreground"
               )}
             >
@@ -69,7 +69,7 @@ export default function PaymentProgressBar({
           <span
             className={cn(
               "tabular-nums",
-              isComplete && "text-[var(--color-accent-emerald)]"
+              isComplete && "text-emerald-500"
             )}
           >
             {Math.round(percentage)}%

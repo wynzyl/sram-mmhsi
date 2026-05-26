@@ -63,7 +63,7 @@ export function PendingEnrollmentsTable({
         accessorKey: "studentRef",
         header: "Student ID",
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-[var(--color-text-muted)]">
+          <span className="font-mono text-xs text-muted-foreground">
             {row.original.studentRef}
           </span>
         ),
@@ -74,7 +74,7 @@ export function PendingEnrollmentsTable({
         cell: ({ row }) => (
           <Link
             href={`${basePath}/students/${row.original.studentId}`}
-            className="font-semibold text-[var(--color-primary)] hover:underline"
+            className="font-semibold text-primary hover:underline"
           >
             {row.original.lastName}, {row.original.firstName}
           </Link>
@@ -98,14 +98,14 @@ export function PendingEnrollmentsTable({
         accessorKey: "gradeName",
         header: "Grade Level",
         cell: ({ row }) => (
-          <span className="font-medium text-[var(--color-text)]">{row.original.gradeName}</span>
+          <span className="font-medium text-foreground">{row.original.gradeName}</span>
         ),
       },
       {
         accessorKey: "sectionName",
         header: "Section",
         cell: ({ row }) => (
-          <span className="text-sm text-[var(--color-text)]">
+          <span className="text-sm text-foreground">
             {row.original.sectionName ?? "—"}
           </span>
         ),
@@ -114,7 +114,7 @@ export function PendingEnrollmentsTable({
         accessorKey: "createdAt",
         header: "Created",
         cell: ({ row }) => (
-          <span className="text-xs text-[var(--color-text-muted)]">
+          <span className="text-xs text-muted-foreground">
             {formatDate(row.original.createdAt)}
           </span>
         ),
@@ -125,7 +125,7 @@ export function PendingEnrollmentsTable({
         cell: ({ row }) => (
           <Link
             href={`${basePath}/assessments/new/${row.original.enrollmentId}`}
-            className="text-sm font-medium text-[var(--color-primary)] hover:underline"
+            className="text-sm font-medium text-primary hover:underline"
           >
             Create Assessment →
           </Link>
@@ -137,19 +137,8 @@ export function PendingEnrollmentsTable({
 
   return (
     <div className="space-y-4">
-      <div
-        className="rounded-md border p-4"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--warning, #f59e0b) 10%, var(--card))",
-          borderColor:
-            "color-mix(in srgb, var(--warning, #f59e0b) 30%, var(--border))",
-        }}
-      >
-        <p
-          className="text-sm"
-          style={{ color: "var(--warning, #f59e0b)" }}
-        >
+      <div className="rounded-md border p-4 bg-amber-500/10 border-amber-500/30">
+        <p className="text-sm text-amber-600">
           <strong>Pending Enrollments:</strong> These students have been enrolled but are awaiting fee
           assessment. Finance officers should create assessments to move them to the next stage.
         </p>
@@ -162,7 +151,7 @@ export function PendingEnrollmentsTable({
       />
       <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
-        <div className="text-center text-sm text-[var(--color-text-muted)]">
+        <div className="text-center text-sm text-muted-foreground">
           No enrollments match the current filters.
         </div>
       )}
@@ -215,7 +204,7 @@ export function AssessedEnrollmentsTable({
         accessorKey: "studentRef",
         header: "Student ID",
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-[var(--color-text-muted)]">
+          <span className="font-mono text-xs text-muted-foreground">
             {row.original.studentRef}
           </span>
         ),
@@ -226,7 +215,7 @@ export function AssessedEnrollmentsTable({
         cell: ({ row }) => (
           <Link
             href={`${basePath}/students/${row.original.studentId}`}
-            className="font-semibold text-[var(--color-primary)] hover:underline"
+            className="font-semibold text-primary hover:underline"
           >
             {row.original.lastName}, {row.original.firstName}
           </Link>
@@ -236,14 +225,14 @@ export function AssessedEnrollmentsTable({
         accessorKey: "gradeName",
         header: "Grade Level",
         cell: ({ row }) => (
-          <span className="font-medium text-[var(--color-text)]">{row.original.gradeName}</span>
+          <span className="font-medium text-foreground">{row.original.gradeName}</span>
         ),
       },
       {
         accessorKey: "totalAmount",
         header: "Total Amount",
         cell: ({ row }) => (
-          <span className="font-mono text-sm font-semibold text-[var(--color-text)]">
+          <span className="font-mono text-sm font-semibold text-foreground">
             {formatCurrency(Number(row.original.totalAmount))}
           </span>
         ),
@@ -252,10 +241,7 @@ export function AssessedEnrollmentsTable({
         accessorKey: "totalPaid",
         header: "Paid",
         cell: ({ row }) => (
-          <span
-            className="font-mono text-sm"
-            style={{ color: "var(--color-success)" }}
-          >
+          <span className="font-mono text-sm text-emerald-600">
             {formatCurrency(Number(row.original.totalPaid))}
           </span>
         ),
@@ -267,13 +253,9 @@ export function AssessedEnrollmentsTable({
           const balance = Number(row.original.balance);
           return (
             <span
-              className="font-mono text-sm font-semibold"
-              style={{
-                color:
-                  balance > 0.01
-                    ? "var(--warning, #f59e0b)"
-                    : "var(--color-success)",
-              }}
+              className={`font-mono text-sm font-semibold ${
+                balance > 0.01 ? "text-amber-600" : "text-emerald-600"
+              }`}
             >
               {formatCurrency(balance)}
             </span>
@@ -300,7 +282,7 @@ export function AssessedEnrollmentsTable({
         cell: ({ row }) => (
           <Link
             href={`${basePath}/assessments/${row.original.assessmentId}`}
-            className="text-sm font-medium text-[var(--color-primary)] hover:underline"
+            className="text-sm font-medium text-primary hover:underline"
           >
             View Assessment →
           </Link>
@@ -312,19 +294,8 @@ export function AssessedEnrollmentsTable({
 
   return (
     <div className="space-y-4">
-      <div
-        className="rounded-md border p-4"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-primary) 10%, var(--card))",
-          borderColor:
-            "color-mix(in srgb, var(--color-primary) 30%, var(--border))",
-        }}
-      >
-        <p
-          className="text-sm"
-          style={{ color: "var(--color-primary)" }}
-        >
+      <div className="rounded-md border p-4 bg-primary/10 border-primary/30">
+        <p className="text-sm text-primary">
           <strong>Assessed Enrollments:</strong> Students with completed fee assessments awaiting payment.
           Cashiers should post payments to move them to enrolled status.
         </p>
@@ -337,7 +308,7 @@ export function AssessedEnrollmentsTable({
       />
       <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
-        <div className="text-center text-sm text-[var(--color-text-muted)]">
+        <div className="text-center text-sm text-muted-foreground">
           No enrollments match the current filters.
         </div>
       )}
@@ -390,7 +361,7 @@ export function EnrolledStudentsTable({
         accessorKey: "studentRef",
         header: "Student ID",
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-[var(--color-text-muted)]">
+          <span className="font-mono text-xs text-muted-foreground">
             {row.original.studentRef}
           </span>
         ),
@@ -401,7 +372,7 @@ export function EnrolledStudentsTable({
         cell: ({ row }) => (
           <Link
             href={`${basePath}/students/${row.original.studentId}`}
-            className="font-semibold text-[var(--color-primary)] hover:underline"
+            className="font-semibold text-primary hover:underline"
           >
             {row.original.lastName}, {row.original.firstName}
           </Link>
@@ -425,14 +396,14 @@ export function EnrolledStudentsTable({
         accessorKey: "gradeName",
         header: "Grade Level",
         cell: ({ row }) => (
-          <span className="font-medium text-[var(--color-text)]">{row.original.gradeName}</span>
+          <span className="font-medium text-foreground">{row.original.gradeName}</span>
         ),
       },
       {
         accessorKey: "sectionName",
         header: "Section",
         cell: ({ row }) => (
-          <span className="text-sm text-[var(--color-text)]">
+          <span className="text-sm text-foreground">
             {row.original.sectionName ?? "—"}
           </span>
         ),
@@ -441,7 +412,7 @@ export function EnrolledStudentsTable({
         accessorKey: "enrolledAt",
         header: "Enrolled On",
         cell: ({ row }) => (
-          <span className="text-xs text-[var(--color-text-muted)]">
+          <span className="text-xs text-muted-foreground">
             {formatDate(row.original.enrolledAt)}
           </span>
         ),
@@ -452,19 +423,8 @@ export function EnrolledStudentsTable({
 
   return (
     <div className="space-y-4">
-      <div
-        className="rounded-md border p-4"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-success) 10%, var(--card))",
-          borderColor:
-            "color-mix(in srgb, var(--color-success) 30%, var(--border))",
-        }}
-      >
-        <p
-          className="text-sm"
-          style={{ color: "var(--color-success)" }}
-        >
+      <div className="rounded-md border p-4 bg-emerald-500/10 border-emerald-500/30">
+        <p className="text-sm text-emerald-600">
           <strong>Enrolled Students:</strong> Fully enrolled students for the current school year.
         </p>
       </div>
@@ -476,7 +436,7 @@ export function EnrolledStudentsTable({
       />
       <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredStudents.length === 0 && (searchQuery || gradeLevelFilter) && (
-        <div className="text-center text-sm text-[var(--color-text-muted)]">
+        <div className="text-center text-sm text-muted-foreground">
           No students match the current filters.
         </div>
       )}
@@ -529,7 +489,7 @@ export function CancelledEnrollmentsTable({
         accessorKey: "studentRef",
         header: "Student ID",
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-[var(--color-text-muted)]">
+          <span className="font-mono text-xs text-muted-foreground">
             {row.original.studentRef}
           </span>
         ),
@@ -540,7 +500,7 @@ export function CancelledEnrollmentsTable({
         cell: ({ row }) => (
           <Link
             href={`${basePath}/students/${row.original.studentId}`}
-            className="font-semibold text-[var(--color-text-muted)] hover:underline"
+            className="font-semibold text-muted-foreground hover:underline"
           >
             {row.original.lastName}, {row.original.firstName}
           </Link>
@@ -564,14 +524,14 @@ export function CancelledEnrollmentsTable({
         accessorKey: "gradeName",
         header: "Grade Level",
         cell: ({ row }) => (
-          <span className="font-medium text-[var(--color-text-muted)]">{row.original.gradeName}</span>
+          <span className="font-medium text-muted-foreground">{row.original.gradeName}</span>
         ),
       },
       {
         accessorKey: "cancelledAt",
         header: "Cancelled On",
         cell: ({ row }) => (
-          <span className="text-xs text-[var(--color-text-muted)]">
+          <span className="text-xs text-muted-foreground">
             {formatDate(row.original.cancelledAt)}
           </span>
         ),
@@ -580,7 +540,7 @@ export function CancelledEnrollmentsTable({
         accessorKey: "cancelRemarks",
         header: "Remarks",
         cell: ({ row }) => (
-          <span className="text-xs text-[var(--color-text-muted)] line-clamp-2">
+          <span className="text-xs text-muted-foreground line-clamp-2">
             {row.original.cancelRemarks ?? "—"}
           </span>
         ),
@@ -591,19 +551,8 @@ export function CancelledEnrollmentsTable({
 
   return (
     <div className="space-y-4">
-      <div
-        className="rounded-md border p-4"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--destructive, #ef4444) 10%, var(--card))",
-          borderColor:
-            "color-mix(in srgb, var(--destructive, #ef4444) 30%, var(--border))",
-        }}
-      >
-        <p
-          className="text-sm"
-          style={{ color: "var(--destructive, #ef4444)" }}
-        >
+      <div className="rounded-md border p-4 bg-destructive/10 border-destructive/30">
+        <p className="text-sm text-destructive">
           <strong>Cancelled Enrollments:</strong> Enrollments that were cancelled for this school year.
         </p>
       </div>
@@ -615,7 +564,7 @@ export function CancelledEnrollmentsTable({
       />
       <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
-        <div className="text-center text-sm text-[var(--color-text-muted)]">
+        <div className="text-center text-sm text-muted-foreground">
           No enrollments match the current filters.
         </div>
       )}

@@ -59,7 +59,7 @@ function OverrideEnrollBlock({ enrollmentId, sections }: { enrollmentId: string;
   return (
     <div className="flex flex-col gap-1">
       {state.message && !state.success && (
-        <p className="text-[11px] text-[var(--color-error)]">{state.message}</p>
+        <p className="text-[11px] text-destructive">{state.message}</p>
       )}
       {!showPick ? (
         <button type="button" className="btn-secondary btn-sm" onClick={() => setShowPick(true)}>

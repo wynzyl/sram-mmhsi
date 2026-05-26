@@ -35,9 +35,9 @@ function TriRadios({
 }) {
   const v = preserved === "" ? undefined : preserved;
   const optionClass =
-    "flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-sm text-[var(--color-text-2) transition-colors hover:bg-[var(--color-surface-3)";
+    "flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-sm text-gray-600 transition-colors hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-800";
   const inputClass =
-    "h-4 w-4 shrink-0 border-[var(--color-border-2)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]/25";
+    "h-4 w-4 shrink-0 border-gray-300 text-primary focus:ring-primary/25 dark:border-gray-700";
 
   return (
     <div className="flex flex-wrap gap-x-6 gap-y-2 pl-0.5">
@@ -94,17 +94,17 @@ function DocumentRequirementRow({
       className={cn(
         "rounded-r-lg border-b border-l-4 py-4 pl-4 last:border-b-0",
         error
-          ? "border-b-[var(--color-error)]/20 border-l-[var(--color-error)] bg-[var(--color-error)]/5"
-          : "border-b-[var(--color-border)] border-l-[var(--color-primary)]/35 bg-[var(--color-surface-elevated)]"
+          ? "border-b-destructive/20 border-l-destructive bg-destructive/5"
+          : "border-b-border border-l-primary/35 bg-card"
       )}
     >
-      <span className="mb-2 block font-display text-base font-semibold leading-snug tracking-tight text-[var(--color-text)] md:text-lg">
+      <span className="mb-2 block font-display text-base font-semibold leading-snug tracking-tight text-foreground md:text-lg">
         {title}
-        {error && <span className="ml-2 text-sm font-normal text-[var(--color-error)]">(required)</span>}
+        {error && <span className="ml-2 text-sm font-normal text-destructive">(required)</span>}
       </span>
       <TriRadios name={name} preserved={preserved} />
       {error && (
-        <p className="mt-2 text-sm font-medium text-[var(--color-error)]">{error}</p>
+        <p className="mt-2 text-sm font-medium text-destructive">{error}</p>
       )}
     </li>
   );
@@ -116,18 +116,18 @@ export default function IntakeRequirementsFieldset({
   preserved,
   description = (
     <>
-      Set each item to <strong className="text-[var(--color-text)">Received</strong>,{" "}
-      <strong className="text-[var(--color-text)">Not applicable</strong>, or{" "}
-      <strong className="text-[var(--color-text)">To follow</strong> if the document is still pending. Qualified
+      Set each item to <strong className="text-foreground">Received</strong>,{" "}
+      <strong className="text-foreground">Not applicable</strong>, or{" "}
+      <strong className="text-foreground">To follow</strong> if the document is still pending. Qualified
       Voucher and ESC follow the same rule.
     </>
   ),
 }: IntakeRequirementsFieldsetProps) {
   return (
-    <fieldset className="rounded-xl border border-[var(--color-border) bg-[var(--color-surface-2) p-5 shadow-sm">
-      <legend className="font-display text-lg font-bold text-[var(--color-text) px-1">{legend}</legend>
-      <p className="mb-5 mt-2 max-w-3xl text-sm leading-relaxed text-[var(--color-text-muted)">{description}</p>
-      <ul className="m-0 list-none space-y-0 rounded-lg border border-[var(--color-border) bg-[var(--color-surface-elevated) p-0 shadow-sm">
+    <fieldset className="rounded-xl border border-border bg-muted p-5 shadow-sm">
+      <legend className="font-display text-lg font-bold text-foreground px-1">{legend}</legend>
+      <p className="mb-5 mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+      <ul className="m-0 list-none space-y-0 rounded-lg border border-border bg-card p-0 shadow-sm">
         <DocumentRequirementRow
           title="FORM 138"
           name="intakeForm138"

@@ -24,7 +24,7 @@ export default function VoidRequestsHistoryTable({
           row.original.orNumber ? (
             <ReferenceCode code={row.original.orNumber} />
           ) : (
-            <span className="text-[var(--color-text-muted)]">-</span>
+            <span className="text-muted-foreground">-</span>
           ),
       },
       {
@@ -43,7 +43,7 @@ export default function VoidRequestsHistoryTable({
         cell: ({ row }) => (
           <div>
             <div className="font-medium">{row.original.studentName}</div>
-            <div className="text-xs text-[var(--color-text-muted)]">
+            <div className="text-xs text-muted-foreground">
               {row.original.studentRef}
             </div>
           </div>
@@ -88,7 +88,7 @@ export default function VoidRequestsHistoryTable({
         cell: ({ row }) => (
           <div className="text-sm">
             <div>{row.original.requestedByUsername}</div>
-            <div className="text-xs text-[var(--color-text-muted)]">
+            <div className="text-xs text-muted-foreground">
               {new Date(row.original.requestedAt).toLocaleDateString("en-PH")}
             </div>
           </div>
@@ -104,9 +104,9 @@ export default function VoidRequestsHistoryTable({
           if (request.status === "cancelled") {
             return (
               <div className="text-sm">
-                <div className="text-[var(--color-text-muted)] italic">Self-cancelled</div>
+                <div className="text-muted-foreground italic">Self-cancelled</div>
                 {request.cancelledAt && (
-                  <div className="text-xs text-[var(--color-text-muted)]">
+                  <div className="text-xs text-muted-foreground">
                     {new Date(request.cancelledAt).toLocaleDateString("en-PH")}
                   </div>
                 )}
@@ -115,14 +115,14 @@ export default function VoidRequestsHistoryTable({
           }
 
           if (!request.decidedByUsername) {
-            return <span className="text-[var(--color-text-muted)]">-</span>;
+            return <span className="text-muted-foreground">-</span>;
           }
 
           return (
             <div className="text-sm">
               <div>{request.decidedByUsername}</div>
               {request.decidedAt && (
-                <div className="text-xs text-[var(--color-text-muted)]">
+                <div className="text-xs text-muted-foreground">
                   {new Date(request.decidedAt).toLocaleDateString("en-PH")}
                 </div>
               )}
@@ -142,7 +142,7 @@ export default function VoidRequestsHistoryTable({
               {row.original.decisionRemarks}
             </span>
           ) : (
-            <span className="text-[var(--color-text-muted)]">-</span>
+            <span className="text-muted-foreground">-</span>
           ),
       },
     ],
@@ -152,8 +152,8 @@ export default function VoidRequestsHistoryTable({
   if (requests.length === 0) {
     return (
       <div className="p-8 text-center">
-        <div className="text-[var(--color-text-muted)] mb-2">No void request history</div>
-        <p className="text-sm text-[var(--color-text-muted)]">
+        <div className="text-muted-foreground mb-2">No void request history</div>
+        <p className="text-sm text-muted-foreground">
           Processed void requests will appear here.
         </p>
       </div>

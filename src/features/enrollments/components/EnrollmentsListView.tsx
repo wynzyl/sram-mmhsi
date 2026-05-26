@@ -29,9 +29,9 @@ const STATUS_TABS: Array<{
   hintColour: string;
 }> = [
   { key: "all", label: "All", hintColour: "bg-gray-800" },
-  { key: "pending", label: "Pending", hintColour: "bg-[var(--color-accent-amber)]" },
-  { key: "assessed", label: "Assessed", hintColour: "bg-[var(--color-accent-slate)]" },
-  { key: "enrolled", label: "Enrolled", hintColour: "bg-[var(--color-accent-emerald)]" },
+  { key: "pending", label: "Pending", hintColour: "bg-amber-500" },
+  { key: "assessed", label: "Assessed", hintColour: "bg-slate-500" },
+  { key: "enrolled", label: "Enrolled", hintColour: "bg-emerald-500" },
   { key: "cancelled", label: "Cancelled", hintColour: "bg-gray-300" },
 ];
 
@@ -128,7 +128,7 @@ export default function EnrollmentsListView({
             <Link
               href={newEnrollmentHref}
               id="new-enrollment-btn"
-              className="inline-flex items-center gap-2 rounded-md bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <Plus className="h-4 w-4" />
               Enroll Student
@@ -156,7 +156,7 @@ export default function EnrollmentsListView({
               className={cn(
                 "group inline-flex items-center gap-2 rounded-t-md px-3.5 py-2 text-sm font-medium transition-colors",
                 isActive
-                  ? "border-b-2 border-[var(--color-primary)] -mb-px bg-white text-foreground"
+                  ? "border-b-2 border-primary -mb-px bg-white text-foreground"
                   : "border-b-2 border-transparent -mb-px text-muted-foreground hover:bg-gray-100 hover:text-foreground"
               )}
               aria-current={isActive ? "page" : undefined}
@@ -173,7 +173,7 @@ export default function EnrollmentsListView({
                 className={cn(
                   "rounded-full px-1.5 py-0.5 font-mono text-[10px] tabular-nums",
                   isActive
-                    ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                    ? "bg-primary/10 text-primary"
                     : "bg-gray-100 text-muted-foreground group-hover:bg-white"
                 )}
               >
@@ -240,7 +240,7 @@ export default function EnrollmentsListView({
           {canCreate && filterStatus === "all" && !debouncedSearch && (
             <Link
               href={newEnrollmentHref}
-              className="mt-6 inline-flex items-center gap-2 rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+              className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
             >
               <Plus className="h-4 w-4" />
               Enroll Student

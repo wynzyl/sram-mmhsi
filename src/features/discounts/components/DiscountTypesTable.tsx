@@ -55,7 +55,7 @@ export default function DiscountTypesTable({
           <div>
             <div className="font-medium">{row.original.name}</div>
             {row.original.description && (
-              <div className="text-xs text-[var(--color-text-muted)] truncate max-w-[200px]">
+              <div className="text-xs text-muted-foreground truncate max-w-[200px]">
                 {row.original.description}
               </div>
             )}
@@ -106,12 +106,12 @@ export default function DiscountTypesTable({
         cell: ({ row }) => (
           <div className="flex gap-1 text-xs">
             {row.original.isStackable && (
-              <span className="px-1.5 py-0.5 bg-[var(--color-surface-2)] rounded">
+              <span className="px-1.5 py-0.5 bg-muted rounded">
                 Stackable
               </span>
             )}
             {row.original.requiresDocumentation && (
-              <span className="px-1.5 py-0.5 bg-[var(--color-surface-2)] rounded">
+              <span className="px-1.5 py-0.5 bg-muted rounded">
                 Docs Required
               </span>
             )}
@@ -127,7 +127,7 @@ export default function DiscountTypesTable({
           if (deletingId === discountType.id) {
             return (
               <div className="flex gap-2 items-center">
-                <span className="text-xs text-[var(--color-text-muted)]">Delete?</span>
+                <span className="text-xs text-muted-foreground">Delete?</span>
                 <Button
                   variant="danger"
                   size="sm"
@@ -177,7 +177,7 @@ export default function DiscountTypesTable({
       <div className="flex justify-between items-center mb-4 px-4">
         <div>
           <h2 className="text-lg font-semibold">Discount Types</h2>
-          <p className="text-sm text-[var(--color-text-muted)]">
+          <p className="text-sm text-muted-foreground">
             Manage available discount types for student enrollments
           </p>
         </div>
@@ -188,10 +188,10 @@ export default function DiscountTypesTable({
 
       {discountTypes.length === 0 ? (
         <div className="p-8 text-center">
-          <div className="text-[var(--color-text-muted)] mb-2">
+          <div className="text-muted-foreground mb-2">
             No discount types configured
           </div>
-          <p className="text-sm text-[var(--color-text-muted)]">
+          <p className="text-sm text-muted-foreground">
             Create discount types to enable registrars to tag students for
             discounts.
           </p>

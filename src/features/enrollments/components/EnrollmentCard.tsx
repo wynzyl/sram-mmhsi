@@ -134,9 +134,9 @@ export default function EnrollmentCard({
         aria-hidden="true"
         className={cn(
           "absolute left-0 top-0 h-full w-1",
-          en.status === "pending" && "bg-[var(--color-accent-amber)]",
-          en.status === "assessed" && "bg-[var(--color-accent-slate)]",
-          en.status === "enrolled" && "bg-[var(--color-accent-emerald)]",
+          en.status === "pending" && "bg-amber-500",
+          en.status === "assessed" && "bg-slate-500",
+          en.status === "enrolled" && "bg-emerald-500",
           en.status === "cancelled" && "bg-gray-300"
         )}
       />
@@ -158,7 +158,7 @@ export default function EnrollmentCard({
             </div>
 
             <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
-              <code className="rounded bg-[var(--color-surface-3)] px-2 py-0.5 font-mono text-[12px] text-[var(--color-text)]">
+              <code className="rounded bg-gray-200 px-2 py-0.5 font-mono text-[12px] text-foreground dark:bg-gray-800">
                 {en.referenceNumber}
               </code>
               <span className="text-muted-foreground">·</span>
@@ -172,7 +172,7 @@ export default function EnrollmentCard({
               <span className="text-muted-foreground">·</span>
               <span className="text-muted-foreground">{en.schoolYear}</span>
               <span className="text-muted-foreground">·</span>
-              <span className="rounded-full bg-[var(--color-primary)]/8 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+              <span className="rounded-full bg-primary/[0.08] px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
                 {TYPE_LABEL[en.studentType]}
               </span>
             </div>
@@ -375,15 +375,15 @@ function OverrideEnrollBlock({
 
   if (state.success) {
     return (
-      <p className="rounded-md border border-[var(--color-accent-emerald)]/30 bg-[var(--color-accent-emerald)]/5 px-3 py-2 text-xs text-[var(--color-accent-emerald)]">
+      <p className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-500">
         ✓ {state.message}
       </p>
     );
   }
 
   return (
-    <div className="rounded-lg border border-[var(--color-accent-amber)]/30 bg-[var(--color-accent-amber)]/5 p-3">
-      <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent-amber)]">
+    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+      <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-500">
         <ShieldCheck className="h-3 w-3" />
         Admin override
       </p>
@@ -391,7 +391,7 @@ function OverrideEnrollBlock({
         <button
           type="button"
           onClick={() => setShow(true)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-accent-amber)]/40 bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-accent-amber)] transition-colors hover:bg-[var(--color-accent-amber)]/10"
+          className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-white px-3 py-1.5 text-xs font-medium text-amber-500 transition-colors hover:bg-amber-500/10"
         >
           Mark enrolled (no payment)
         </button>
@@ -401,7 +401,7 @@ function OverrideEnrollBlock({
           <input type="hidden" name="action" value="override_enroll" />
           <select
             name="sectionId"
-            className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-foreground outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-[var(--color-primary)]/15"
+            className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-foreground outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-primary/15"
           >
             <option value="">Section (optional)…</option>
             {sections.map((s) => (

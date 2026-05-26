@@ -50,7 +50,7 @@ function CancelEnrollmentInline({
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="inline-flex items-center justify-center rounded-md border border-[var(--color-destructive,#dc2626)] bg-transparent px-3 py-1 text-xs font-semibold text-[var(--color-destructive,#dc2626)] hover:bg-[var(--color-destructive,#dc2626)] hover:text-white transition-colors"
+        className="inline-flex items-center justify-center rounded-md border border-destructive bg-transparent px-3 py-1 text-xs font-semibold text-destructive hover:bg-destructive hover:text-white transition-colors"
       >
         Cancel
       </button>
@@ -65,14 +65,14 @@ function CancelEnrollmentInline({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center justify-center rounded-md bg-[var(--color-destructive,#dc2626)] px-2 py-1 text-xs font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+        className="inline-flex items-center justify-center rounded-md bg-destructive px-2 py-1 text-xs font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
       >
         {pending ? "..." : "Confirm"}
       </button>
       <button
         type="button"
         onClick={() => setConfirming(false)}
-        className="inline-flex items-center justify-center rounded-md border border-[var(--color-border)] bg-transparent px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] transition-colors"
+        className="inline-flex items-center justify-center rounded-md border border-border bg-transparent px-2 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
       >
         No
       </button>
@@ -106,24 +106,24 @@ export default function PendingAssessmentsQueue({
   const colSpan = hasActions ? 6 : 5;
 
   return (
-    <div className="table-wrapper rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)] overflow-hidden">
+    <div className="table-wrapper rounded-lg border border-border bg-card shadow-sm overflow-hidden">
       <table className="data-table w-full text-left text-sm" id="pending-assessments-table">
         <thead>
-          <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
-            <th className="pl-4 font-semibold tracking-wide text-[var(--color-text-2)]">Student</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Reference</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Grade Level</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">School Year</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Queued</th>
+          <tr className="border-b border-border bg-muted">
+            <th className="pl-4 font-semibold tracking-wide text-gray-600 dark:text-gray-400">Student</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Reference</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Grade Level</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">School Year</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Queued</th>
             {hasActions && (
-              <th className="w-px text-right font-semibold tracking-wide text-[var(--color-text-2)]" aria-label="Actions" />
+              <th className="w-px text-right font-semibold tracking-wide text-gray-600 dark:text-gray-400" aria-label="Actions" />
             )}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={colSpan} className="table-empty px-6 py-12 text-center text-[var(--color-text-muted)]">
+              <td colSpan={colSpan} className="table-empty px-6 py-12 text-center text-muted-foreground">
                 No enrollments are waiting for assessment.
               </td>
             </tr>
@@ -131,18 +131,18 @@ export default function PendingAssessmentsQueue({
             rows.map((r) => (
               <tr
                 key={r.enrollmentId}
-                className="border-b border-[var(--color-border)] last:border-b-0 transition-colors hover:bg-[var(--color-surface-2)]/80"
+                className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/80"
               >
                 <td className="align-middle py-3 pl-4 pr-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_14%,var(--color-surface))] font-display text-sm font-bold text-[var(--color-primary)]"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary"
                       aria-hidden
                     >
                       {initials(r.studentName)}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-[var(--color-text)]">
+                      <p className="truncate font-semibold text-foreground">
                         {r.studentName}
                       </p>
                     </div>
@@ -151,13 +151,13 @@ export default function PendingAssessmentsQueue({
                 <td className="align-middle py-3">
                   <code className="reference-code text-[0.8rem]">#{r.referenceNumber}</code>
                 </td>
-                <td className="align-middle py-3 text-[var(--color-text)]">
+                <td className="align-middle py-3 text-foreground">
                   {r.gradeLevel}
                 </td>
-                <td className="align-middle py-3 text-[var(--color-text)]">
+                <td className="align-middle py-3 text-foreground">
                   {r.schoolYear}
                 </td>
-                <td className="align-middle py-3 text-[var(--color-text-muted)] text-sm">
+                <td className="align-middle py-3 text-muted-foreground text-sm">
                   {r.queuedAtLabel}
                 </td>
                 {hasActions && (
@@ -166,7 +166,7 @@ export default function PendingAssessmentsQueue({
                       {canCreate && (
                         <Link
                           href={`${assessmentsBasePath}/new/${r.enrollmentId}`}
-                          className="inline-flex items-center justify-center rounded-md bg-[var(--color-primary)] px-3 py-1 text-xs font-semibold text-white hover:opacity-95 transition-opacity"
+                          className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1 text-xs font-semibold text-white hover:opacity-95 transition-opacity"
                         >
                           Assessment
                         </Link>

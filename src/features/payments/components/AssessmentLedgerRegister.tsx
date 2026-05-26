@@ -279,13 +279,7 @@ export default function AssessmentLedgerRegister({
         <div className="[grid-area:tiles] flex flex-col">
           {/* Progress bar */}
           <div
-            style={{
-              height: "4px",
-              borderRadius: "9999px",
-              background: "color-mix(in srgb, var(--border) 80%, transparent)",
-              marginBottom: "1rem",
-              overflow: "hidden",
-            }}
+            className="h-1 rounded-full bg-border/80 mb-4 overflow-hidden"
             role="progressbar"
             aria-valuenow={Math.round(percent)}
             aria-valuemin={0}
@@ -293,15 +287,8 @@ export default function AssessmentLedgerRegister({
             aria-label={`${Math.round(percent)}% of assessed fees paid`}
           >
             <div
-              style={{
-                height: "100%",
-                width: `${percent}%`,
-                borderRadius: "9999px",
-                background: isFullyPaid
-                  ? "#22c55e"
-                  : "var(--color-primary)",
-                transition: "width 0.6s ease",
-              }}
+              className={`h-full rounded-full transition-[width] duration-500 ease-out ${isFullyPaid ? "bg-emerald-500" : "bg-primary"}`}
+              style={{ width: `${percent}%` }}
             />
           </div>
 
@@ -394,7 +381,7 @@ export default function AssessmentLedgerRegister({
                     {" "}
                     <Link
                       href={`/staff/assessments/${assessment.transferredToAssessmentId}`}
-                      style={{ color: "var(--color-primary)", textDecoration: "underline" }}
+                      className="text-primary underline"
                     >
                       View current year assessment →
                     </Link>
@@ -408,34 +395,25 @@ export default function AssessmentLedgerRegister({
 
       {/* ── Cancel Assessment Form ── */}
       {cancelOpen && canShowCancelButton && (
-        <div
-          style={{
-            padding: "1rem 1.25rem",
-            marginBottom: "1.5rem",
-            borderRadius: "6px",
-            border: "1px solid color-mix(in srgb, var(--color-destructive, #dc2626) 30%, transparent)",
-            background: "color-mix(in srgb, var(--color-destructive, #dc2626) 5%, transparent)",
-          }}
-        >
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
+        <div className="p-4 mb-6 rounded-md border border-destructive/30 bg-destructive/5">
+          <div className="flex gap-3 items-start">
             <svg
               width="20"
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--color-destructive, #dc2626)"
+              className="stroke-destructive shrink-0 mt-0.5"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ flexShrink: 0, marginTop: "2px" }}
               aria-hidden
             >
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 600, marginBottom: "0.5rem", color: "var(--color-destructive, #dc2626)" }}>
+            <div className="flex-1">
+              <p className="font-semibold mb-2 text-destructive">
                 Cancel Assessment
               </p>
 
@@ -479,22 +457,11 @@ export default function AssessmentLedgerRegister({
                   className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition focus:border-gray-400"
                 />
 
-                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+                <div className="flex gap-2 mt-3">
                   <button
                     type="submit"
                     disabled={cancelPending}
-                    style={{
-                      padding: "0.5rem 1rem",
-                      borderRadius: "6px",
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "#fff",
-                      background: "var(--color-destructive, #dc2626)",
-                      border: "none",
-                      cursor: cancelPending ? "not-allowed" : "pointer",
-                      opacity: cancelPending ? 0.5 : 1,
-                      transition: "opacity 0.15s",
-                    }}
+                    className="px-4 py-2 rounded-md text-sm font-semibold text-white bg-destructive border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
                   >
                     {cancelPending ? "Cancelling..." : "Confirm Cancellation"}
                   </button>
