@@ -73,7 +73,7 @@ export default function CancelEnrollmentForm({
         {!show ? (
           <button
             type="button"
-            className="btn-ghost btn-sm text-(--color-error)"
+            className="btn-ghost btn-sm text-destructive"
             onClick={() => setShow(true)}
           >
             Cancel enrollment
@@ -97,8 +97,8 @@ export default function CancelEnrollmentForm({
                 className={cn(
                   "m-0 text-[11px]",
                   cancelBlockedByPayments
-                    ? "text-(--color-error)"
-                    : "text-(--color-warning,#b45309)"
+                    ? "text-destructive"
+                    : "text-amber-600"
                 )}
               >
                 {cancelBlockedByPayments ? (
@@ -182,7 +182,7 @@ export default function CancelEnrollmentForm({
           {financeStatuses && assessmentId && (
             <Link
               href={`/staff/assessments/${assessmentId}`}
-              className="inline-flex items-center gap-1 text-[11px] text-(--color-primary) underline"
+              className="inline-flex items-center gap-1 text-[11px] text-primary underline"
             >
               Open assessment ledger first
             </Link>
@@ -194,7 +194,7 @@ export default function CancelEnrollmentForm({
                 "rounded-md p-2 text-[11px] leading-relaxed",
                 cancelBlockedByPayments
                   ? "bg-red-100/60 text-red-800"
-                  : "bg-(--color-accent-amber)/15 text-(--color-accent-amber)"
+                  : "bg-amber-100 text-amber-600"
               )}
             >
               {cancelBlockedByPayments ? (

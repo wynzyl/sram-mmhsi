@@ -20,13 +20,13 @@ export default function PortalError({
     <div className="flex min-h-[50vh] flex-col items-center justify-center px-4">
       <div className="mx-auto max-w-md text-center">
         <div className="mb-6 flex justify-center">
-          <div className="rounded-full bg-[var(--color-error-muted)] p-4">
+          <div className="rounded-full bg-red-100 dark:bg-red-950 p-4">
             <svg
               width="40"
               height="40"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--color-error)"
+              className="stroke-destructive"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -38,15 +38,15 @@ export default function PortalError({
           </div>
         </div>
 
-        <h2 className="mb-2 font-display text-xl font-bold text-[var(--color-text)]">
+        <h2 className="mb-2 font-display text-xl font-bold text-foreground">
           Portal Error
         </h2>
-        <p className="mb-4 text-sm text-[var(--color-text-muted)]">
+        <p className="mb-4 text-sm text-muted-foreground">
           An error occurred while loading the portal. Please try again.
         </p>
 
         {error.digest && (
-          <p className="mb-4 font-mono text-xs text-[var(--color-text-muted)]">
+          <p className="mb-4 font-mono text-xs text-muted-foreground">
             Reference: {error.digest}
           </p>
         )}

@@ -285,7 +285,7 @@ export async function RegistrationQueuePage(props: {
           id="registrations-school-year"
           name="schoolYearId"
           defaultValue={schoolYearId ?? ""}
-          className="min-w-[12rem] rounded-md border border-[var(--color-border-2)] bg-[var(--color-surface)] px-3 py-2 text-[0.825rem] text-foreground outline-none"
+          className="min-w-[12rem] rounded-md border border-input bg-card px-3 py-2 text-[0.825rem] text-foreground outline-none"
         >
           <option value="">All school years</option>
           {schoolYearOptions.map((y) => (

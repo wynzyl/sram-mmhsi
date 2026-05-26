@@ -151,6 +151,7 @@ NODE_ENV="development"
 | Page Templates    | `src/app/page-templates/`                                 | Reusable page components for routes               | Server components that compose features                 |
 
 **Violations:** No business logic in `.tsx` files. No direct DB calls in components. No raw SQL outside queries/actions.
+* No HARD DELETE.
 
 ### Routing & Authentication
 

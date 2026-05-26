@@ -63,67 +63,6 @@
      Maps old variable names to new theme tokens
      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-  /* Surface variants */
-  --color-surface: var(--card);
-  --color-surface-2: var(--muted);
-  --color-surface-3: #E5E7EB;
-  --color-surface-elevated: var(--card);
-
-  /* Text variants */
-  --color-text: var(--foreground);
-  --color-text-2: #4B5563;
-  --color-text-muted: var(--muted-foreground);
-  --color-text-subtle: #9CA3AF;
-
-  /* Border variants */
-  --color-border-2: #D1D5DB;
-
-  /* Error/semantic aliases */
-  --color-error: var(--destructive);
-  --color-error-surface: #FEF2F2;
-  --color-error-foreground: #991B1B;
-  --color-error-100: #FEE2E2;
-  --color-error-200: #FECACA;
-  --color-error-700: #B91C1C;
-
-  /* Warning shades */
-  --color-warning-100: #FEF3C7;
-  --color-warning-200: #FDE68A;
-  --color-warning-700: #B45309;
-
-  /* Info shades */
-  --color-info-100: #DBEAFE;
-  --color-info-200: #BFDBFE;
-  --color-info-700: #1D4ED8;
-
-  /* Accent shades */
-  --color-accent-100: #FEF3C7;
-  --color-accent-200: #FDE68A;
-  --color-accent-700: #92400e;
-
-  /* Primary shade */
-  --color-primary-700: #b91c1c;
-
-  /* Sidebar */
-  --color-sidebar-elevated: var(--card);
-
-  /* Operations panel (login page) */
-  --color-ops-line: var(--border);
-  --color-ops-panel: var(--card);
-
-  /* Success color alias */
-  --color-success: #22c55e;
-
-  /* Operations panel colors */
-  --color-ops-positive: #22c55e;
-  --color-ops-muted: #9ca3af;
-  --color-ops-danger: #ef4444;
-  --color-ops-ink: var(--foreground);
-  --color-ops-line: var(--border);
-  --color-ops-field: var(--muted);
-  --color-ops-field-text: var(--foreground);
-  --color-ops-panel-muted: color-mix(in srgb, var(--primary) 15%, var(--muted));
-  --color-primary-300: var(--primary);
 }
 
 .dark {

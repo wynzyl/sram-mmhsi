@@ -119,7 +119,7 @@ export async function InternalEnrollmentDetailPage(props: {
               {studentName}
             </Link>
           </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[var(--color-text-muted)]">
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <ReferenceCode code={enrollment.studentRef} />
             <span>·</span>
             <span>{enrollment.gradeLevelName}</span>
@@ -132,7 +132,7 @@ export async function InternalEnrollmentDetailPage(props: {
             <span>·</span>
             <span>{enrollment.schoolYearLabel}</span>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--color-text-muted)]">
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span>Created {formatDate(enrollment.createdAt)}</span>
             {enrollment.enrolledAt && (
               <span>Enrolled {formatDate(enrollment.enrolledAt)}</span>
@@ -149,7 +149,7 @@ export async function InternalEnrollmentDetailPage(props: {
         <Card>
           <CardContent className="pt-6 text-sm">
             <span className="font-medium">Cancellation note: </span>
-            <span className="text-[var(--color-text-muted)]">
+            <span className="text-muted-foreground">
               {enrollment.cancelRemarks}
             </span>
           </CardContent>
@@ -173,14 +173,14 @@ export async function InternalEnrollmentDetailPage(props: {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <div>
-                <div className="text-xs text-[var(--color-text-muted)]">Total</div>
+                <div className="text-xs text-muted-foreground">Total</div>
                 <div className="text-lg font-semibold">
                   <CurrencyDisplay amount={Number(assessment.totalAmount)} />
                 </div>
               </div>
               <div>
-                <div className="text-xs text-[var(--color-text-muted)]">Discounts</div>
-                <div className="text-lg font-semibold text-[var(--color-success)]">
+                <div className="text-xs text-muted-foreground">Discounts</div>
+                <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
                   -<CurrencyDisplay
                     amount={Number(assessment.totalDiscounts)}
                     className="inline"
@@ -188,20 +188,20 @@ export async function InternalEnrollmentDetailPage(props: {
                 </div>
               </div>
               <div>
-                <div className="text-xs text-[var(--color-text-muted)]">Paid</div>
+                <div className="text-xs text-muted-foreground">Paid</div>
                 <div className="text-lg font-semibold">
                   <CurrencyDisplay amount={Number(assessment.totalPaid)} />
                 </div>
               </div>
               <div>
-                <div className="text-xs text-[var(--color-text-muted)]">Balance</div>
+                <div className="text-xs text-muted-foreground">Balance</div>
                 <div className="text-lg font-semibold">
                   <CurrencyDisplay amount={Number(assessment.balance)} />
                 </div>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-[var(--color-border)]">
+            <div className="pt-2 border-t border-border">
               <h3 className="text-sm font-medium mb-3">Applied Discounts</h3>
               <StudentDiscountsList
                 discounts={appliedDiscounts}
@@ -218,7 +218,7 @@ export async function InternalEnrollmentDetailPage(props: {
             <CardTitle className="text-base">Assessment</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-start gap-3">
-            <p className="text-sm text-[var(--color-text-muted)]">
+            <p className="text-sm text-muted-foreground">
               No assessment has been created for this enrollment yet.
             </p>
             {hasPermission(session.role, "assessments:create") && (

@@ -25,11 +25,11 @@ export function PageHeader({
       )}
     >
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-[var(--color-text)]">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
           {title}
         </h1>
         {description && (
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             {description}
           </p>
         )}

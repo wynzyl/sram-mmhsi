@@ -51,7 +51,7 @@ export function SectionHeader({
             {title}
             {accent && (
               <span
-                className="absolute -bottom-2 left-0 h-1 w-16 bg-[var(--color-primary)] rounded-full"
+                className="absolute -bottom-2 left-0 h-1 w-16 bg-primary rounded-full"
                 aria-hidden="true"
               />
             )}

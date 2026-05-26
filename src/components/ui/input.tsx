@@ -13,13 +13,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         type={type}
         className={cn(
           "w-full px-3 py-2 border rounded-md text-sm transition-colors duration-150",
-          "bg-[var(--color-surface)] text-[var(--color-text)]",
-          "focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none",
+          "bg-card text-foreground",
+          "focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none",
           "disabled:opacity-60 disabled:cursor-not-allowed",
-          "placeholder:text-[var(--color-text-muted)]",
+          "placeholder:text-muted-foreground",
           error
-            ? "border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/20"
-            : "border-[var(--color-border-2)]",
+            ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+            : "border-input",
           className
         )}
         ref={ref}
