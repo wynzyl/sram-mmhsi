@@ -271,9 +271,9 @@ export default function StudentRegistrationForm({
           </span>
           <span className="font-medium text-foreground">{stepTitles[currentStep]}</span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
+        <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
           <div
-            className="h-full bg-[var(--color-primary)] transition-all duration-300 ease-out"
+            className="h-full bg-primary transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -301,7 +301,7 @@ export default function StudentRegistrationForm({
 
         {lockedRegistrationType === "transferee" && (
           <div
-            className="mb-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm"
+            className="mb-4 rounded-lg border border-border bg-card px-4 py-3 text-sm"
             role="note"
           >
             <strong>Transferee:</strong> Enter the learner&apos;s last school in{" "}
@@ -313,7 +313,7 @@ export default function StudentRegistrationForm({
           <DataCardBody className="space-y-8">
             {/* Step 1 */}
             <div className={cn("space-y-6", currentStep !== 1 && "hidden")}>
-              <div className="border-l-4 border-[var(--color-primary)] pl-6">
+              <div className="border-l-4 border-primary pl-6">
                 <h2 className="mb-2 font-display text-2xl font-bold text-foreground">
                   Student Information
                 </h2>
@@ -452,7 +452,7 @@ export default function StudentRegistrationForm({
 
             {/* Step 2 */}
             <div className={cn("space-y-6", currentStep !== 2 && "hidden")}>
-              <div className="border-l-4 border-[var(--color-primary)] pl-6">
+              <div className="border-l-4 border-primary pl-6">
                 <h2 className="mb-2 font-display text-2xl font-bold text-foreground">
                   Contact, Notes & Application
                 </h2>
@@ -618,7 +618,7 @@ export default function StudentRegistrationForm({
               </div>
 
               {currentSchoolYear ? (
-                <div className="grid grid-cols-1 gap-4 border-t border-[var(--color-border)] pt-6 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 border-t border-border pt-6 md:grid-cols-2">
                   <div>
                     <span className="mb-1.5 block text-sm font-medium text-foreground">
                       School year <span className="text-red-600">*</span>
@@ -627,10 +627,10 @@ export default function StudentRegistrationForm({
                       className={editorialFieldClass({
                         invalid: !!getError("schoolYearId"),
                         className:
-                          "bg-[var(--color-surface-3)] text-[var(--color-text-muted)]",
+                          "bg-gray-200 text-muted-foreground dark:bg-gray-800",
                       })}
                     >
-                      <strong className="text-[var(--color-text)]">{currentSchoolYear.label}</strong>
+                      <strong className="text-foreground">{currentSchoolYear.label}</strong>
                       <span className="ml-2 text-sm">(active year only)</span>
                     </div>
                     {getError("schoolYearId") && (
@@ -667,13 +667,13 @@ export default function StudentRegistrationForm({
                     <div
                       className={editorialFieldClass({
                         invalid: !!getError("registrationStudentType"),
-                        className: "bg-[var(--color-surface-3)] text-[var(--color-text)]",
+                        className: "bg-gray-200 text-foreground dark:bg-gray-800",
                       })}
                     >
-                      <strong className="text-[var(--color-text)]">
+                      <strong className="text-foreground">
                         {lockedRegistrationType === "transferee" ? "Transferee" : "New student"}
                       </strong>
-                      <span className="ml-2 text-sm text-[var(--color-text-muted)]">
+                      <span className="ml-2 text-sm text-muted-foreground">
                         (set by the page you opened)
                       </span>
                     </div>
@@ -689,7 +689,7 @@ export default function StudentRegistrationForm({
 
             {/* Step 3 */}
             <div className={cn("space-y-6", currentStep !== 3 && "hidden")}>
-              <div className="border-l-4 border-[var(--color-primary)] pl-6">
+              <div className="border-l-4 border-primary pl-6">
                 <h2 className="mb-2 font-display text-2xl font-bold text-foreground">Guardians</h2>
                 <p className="text-muted-foreground">
                   At least one guardian with a complete name is required before submission.
@@ -704,7 +704,7 @@ export default function StudentRegistrationForm({
                 <button
                   type="button"
                   onClick={addGuardian}
-                  className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-[var(--color-surface-3)]"
+                  className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                 >
                   + Add guardian
                 </button>
@@ -726,7 +726,7 @@ export default function StudentRegistrationForm({
 
             {/* Step 4 */}
             <div className={cn("space-y-6", currentStep !== 4 && "hidden")}>
-              <div className="border-l-4 border-[var(--color-primary)] pl-6">
+              <div className="border-l-4 border-primary pl-6">
                 <h2 className="mb-2 font-display text-2xl font-bold text-foreground">
                   Documents & Requirements
                 </h2>
@@ -760,7 +760,7 @@ export default function StudentRegistrationForm({
               </div>
             )}
 
-            <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-6">
+            <div className="flex items-center justify-between border-t border-border pt-6">
               {currentStep > 1 ? (
                 <button
                   type="button"

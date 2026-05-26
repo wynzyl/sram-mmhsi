@@ -44,9 +44,9 @@ export function GuardianCard({
   return (
     <div
       className={cn(
-        "rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated) p-4",
+        "rounded-lg border border-border bg-card p-4",
         "transition-all duration-150",
-        onEdit && "hover:border-[var(--color-border-2)] hover:shadow-[var(--shadow-md)]",
+        onEdit && "hover:border-gray-300 hover:shadow-md dark:hover:border-gray-700",
         className
       )}
     >
@@ -54,7 +54,7 @@ export function GuardianCard({
         <div className="flex-1 min-w-0">
           {/* Primary indicator */}
           {guardian.isPrimary && (
-            <div className="flex items-center gap-1.5 text-accent-amber mb-2">
+            <div className="flex items-center gap-1.5 text-amber-500 mb-2">
               <Star className="w-4 h-4 fill-current" />
               <span className="text-xs font-mono font-medium uppercase tracking-wide">
                 Primary Guardian
@@ -63,7 +63,7 @@ export function GuardianCard({
           )}
 
           {/* Name */}
-          <h3 className="truncate font-display text-lg font-semibold text-[var(--color-text)">
+          <h3 className="truncate font-display text-lg font-semibold text-foreground">
             {fullName}
           </h3>
 
@@ -71,46 +71,46 @@ export function GuardianCard({
           {/* Contact Information - 3 columns x 2 rows */}
           <div className="mt-3 grid grid-cols-1 gap-2 text-sm md:grid-cols-3">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Address</p>
-              <p className="truncate text-[var(--color-text)">{guardian.address?.trim() || "—"}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Address</p>
+              <p className="truncate text-foreground">{guardian.address?.trim() || "—"}</p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Tel Number</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tel Number</p>
               {guardian.contactNumber?.trim() ? (
                 <a
                   href={`tel:${stripPhoneFormat(guardian.contactNumber)}`}
-                  className="font-mono text-[var(--color-text) transition-colors hover:text-[var(--color-primary)]"
+                  className="font-mono text-foreground transition-colors hover:text-primary"
                 >
                   {formatPhoneNumber(guardian.contactNumber)}
                 </a>
               ) : (
-                <p className="text-[var(--color-text)">—</p>
+                <p className="text-foreground">—</p>
               )}
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Email</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</p>
               {guardian.email?.trim() ? (
                 <a
                   href={`mailto:${guardian.email}`}
-                  className="block truncate text-[var(--color-text) transition-colors hover:text-[var(--color-primary)]"
+                  className="block truncate text-foreground transition-colors hover:text-primary"
                 >
                   {guardian.email}
                 </a>
               ) : (
-                <p className="text-[var(--color-text)">—</p>
+                <p className="text-foreground">—</p>
               )}
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Occupation</p>
-              <p className="truncate text-[var(--color-text)">{guardian.occupation?.trim() || "—"}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Occupation</p>
+              <p className="truncate text-foreground">{guardian.occupation?.trim() || "—"}</p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Relationship</p>
-              <p className="truncate capitalize text-[var(--color-text)">{guardian.relationship || "—"}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Relationship</p>
+              <p className="truncate capitalize text-foreground">{guardian.relationship || "—"}</p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)">Primary</p>
-              <p className="text-[var(--color-text)">{guardian.isPrimary ? "Yes" : "No"}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Primary</p>
+              <p className="text-foreground">{guardian.isPrimary ? "Yes" : "No"}</p>
             </div>
           </div>
         </div>
@@ -122,7 +122,7 @@ export function GuardianCard({
               <button
                 type="button"
                 onClick={() => onEdit(guardian.id)}
-                className="rounded px-2 py-1 text-xs text-[var(--color-text-muted) transition-colors hover:bg-[var(--color-surface-2) hover:text-[var(--color-text)"
+                className="rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 Edit
               </button>
@@ -131,7 +131,7 @@ export function GuardianCard({
               <button
                 type="button"
                 onClick={() => onRemove(guardian.id)}
-                className="rounded px-2 py-1 text-xs text-[var(--color-error)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-error)_12%,transparent)] hover:text-[var(--color-error)]"
+                className="rounded px-2 py-1 text-xs text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
                 Remove
               </button>

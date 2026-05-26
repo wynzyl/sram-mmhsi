@@ -116,8 +116,8 @@ export default function EditStudentForm({
       <input type="hidden" name="guardians" value={JSON.stringify(guardians)} />
 
       <DataCard className="p-6">
-        <h2 className="mb-5 flex items-center gap-3 border-b border-[var(--color-border)] pb-4 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
-          <User className="h-5 w-5 shrink-0 text-[var(--color-primary)]" aria-hidden />
+        <h2 className="mb-5 flex items-center gap-3 border-b border-border pb-4 font-display text-lg font-bold tracking-tight text-foreground sm:text-xl">
+          <User className="h-5 w-5 shrink-0 text-primary" aria-hidden />
           Student information
         </h2>
         <div className="form-grid form-grid-3">
@@ -240,8 +240,8 @@ export default function EditStudentForm({
       </DataCard>
 
       <DataCard className="p-6">
-        <h2 className="mb-5 flex items-center gap-3 border-b border-[var(--color-border)] pb-4 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
-          <Home className="h-5 w-5 shrink-0 text-[var(--color-primary)]" aria-hidden />
+        <h2 className="mb-5 flex items-center gap-3 border-b border-border pb-4 font-display text-lg font-bold tracking-tight text-foreground sm:text-xl">
+          <Home className="h-5 w-5 shrink-0 text-primary" aria-hidden />
           Contact &amp; additional information
         </h2>
         <div className="form-grid form-grid-3">
@@ -360,8 +360,8 @@ export default function EditStudentForm({
       </DataCard>
 
       <DataCard className="p-6">
-        <h2 className="mb-5 flex items-center gap-3 border-b border-[var(--color-border)] pb-4 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
-          <FileText className="h-5 w-5 shrink-0 text-[var(--color-primary)]" aria-hidden />
+        <h2 className="mb-5 flex items-center gap-3 border-b border-border pb-4 font-display text-lg font-bold tracking-tight text-foreground sm:text-xl">
+          <FileText className="h-5 w-5 shrink-0 text-primary" aria-hidden />
           Registration / transfer notes
         </h2>
         <div className="form-group">
@@ -392,10 +392,10 @@ export default function EditStudentForm({
       </DataCard>
 
       <DataCard className="p-6">
-        <h2 className="mb-4 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
+        <h2 className="mb-4 font-display text-lg font-bold tracking-tight text-foreground sm:text-xl">
           Record status
         </h2>
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
+        <div className="rounded-xl border border-border bg-muted p-4">
           <div className="flex flex-row items-start gap-3">
             {isActiveLocked && (
               <input type="hidden" name="isActive" value={student.isActive ? "true" : "false"} />
@@ -406,16 +406,16 @@ export default function EditStudentForm({
               type="checkbox"
               defaultChecked={student.isActive}
               disabled={isActiveLocked}
-              className="mt-1 h-4 w-4 shrink-0 rounded border-[var(--color-border-2)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]/30 disabled:cursor-not-allowed"
+              className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 dark:border-gray-700 text-primary focus:ring-[var(--color-primary)]/30 disabled:cursor-not-allowed"
             />
             <div className="min-w-0">
               <label className="form-label m-0 cursor-pointer" htmlFor="isActive">
                 Active student
               </label>
               {isActiveLocked ? (
-                <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Active cannot be changed while this student has an enrollment in{" "}
-                  <strong className="text-[var(--color-text)]">Enrolled</strong> status.
+                  <strong className="text-foreground">Enrolled</strong> status.
                 </p>
               ) : null}
               {state.errors?.isActive?.[0] && (
@@ -429,14 +429,14 @@ export default function EditStudentForm({
       </DataCard>
 
       <DataCard className="p-6">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
-          <h2 className="flex items-center gap-3 font-display text-lg font-bold tracking-tight text-[var(--color-text)] sm:text-xl">
-            <Users className="h-5 w-5 shrink-0 text-[var(--color-primary)]" aria-hidden />
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+          <h2 className="flex items-center gap-3 font-display text-lg font-bold tracking-tight text-foreground sm:text-xl">
+            <Users className="h-5 w-5 shrink-0 text-primary" aria-hidden />
             Parents / guardians
           </h2>
           <button
             type="button"
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] shadow-sm transition-colors hover:bg-[var(--color-surface-2)]"
+            className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
             onClick={addGuardian}
           >
             + Add guardian
@@ -461,11 +461,11 @@ export default function EditStudentForm({
         </div>
       </DataCard>
 
-      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[var(--color-border)] pt-6">
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-6">
         <Link
           href={cancelHref}
           className={cn(
-            "inline-flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-2.5 text-sm font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-2)]",
+            "inline-flex items-center justify-center rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted",
             pending && "pointer-events-none opacity-50"
           )}
         >
