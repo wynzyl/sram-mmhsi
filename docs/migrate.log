@@ -1,0 +1,33 @@
+time="2026-05-20T19:53:35+08:00" level=warning msg="Found multiple config files with supported names: C:\\Users\\wynzy\\Downloads\\sram-mmhsi\\compose.yaml, C:\\Users\\wynzy\\Downloads\\sram-mmhsi\\docker-compose.yml"
+time="2026-05-20T19:53:35+08:00" level=warning msg="Using C:\\Users\\wynzy\\Downloads\\sram-mmhsi\\compose.yaml"
+ Container sram-mmhsi-db-1 Running 
+ Container sram-mmhsi-db-1 Waiting 
+ Container sram-mmhsi-db-1 Healthy 
+ Container sram-mmhsi-migrate-run-9490240cc541 Creating 
+ Container sram-mmhsi-migrate-run-9490240cc541 Created 
+
+> srams-app@2.1.0 db:migrate
+> drizzle-kit migrate
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/app/drizzle.config.ts'
+Using 'postgres' driver for database querying
+[⣷] applying migrations...[2K[1G[⣯] applying migrations...[2K[1G[⣟] applying migrations...{
+  severity_local: 'NOTICE',
+  severity: 'NOTICE',
+  code: '42622',
+  message: 'identifier "fee_schedule_overrides_schedule_id_school_year_fee_schedules_id_fk" will be truncated to "fee_schedule_overrides_schedule_id_school_year_fee_schedules_id"',
+  file: 'scansup.c',
+  line: '99',
+  routine: 'truncate_identifier'
+}
+{
+  severity_local: 'NOTICE',
+  severity: 'NOTICE',
+  code: '42622',
+  message: 'identifier "fee_schedule_overrides_fee_template_item_id_fee_template_items_id_fk" will be truncated to "fee_schedule_overrides_fee_template_item_id_fee_template_items_"',
+  file: 'scansup.c',
+  line: '99',
+  routine: 'truncate_identifier'
+}
+[2K[1G[⡿] applying migrations...[2K[1G[⢿] applying migrations...[2K[1G[⣻] applying migrations...[2K[1G[⣽] applying migrations...[2K[1G[⣽] applying migrations...
