@@ -44,12 +44,12 @@ export default async function PortalPaymentsPage() {
 
   const emptyCopy =
     studentIds.length === 0 ? (
-      <p className="text-[var(--color-text-muted)]">
+      <p className="text-muted-foreground">
         No learner profile is linked to your portal account yet. Ask the registrar to link your account if
         you believe this is an error.
       </p>
     ) : rows.length === 0 ? (
-      <p className="text-[var(--color-text-muted)]">No posted payments on file yet.</p>
+      <p className="text-muted-foreground">No posted payments on file yet.</p>
     ) : null;
 
   const showStudentColumn = studentIds.length > 1;
@@ -61,19 +61,19 @@ export default async function PortalPaymentsPage() {
       {emptyCopy}
 
       {rows.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
           <table className="min-w-full text-sm">
-            <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+            <thead className="border-b border-border bg-muted">
               <tr>
                 {showStudentColumn && (
-                  <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Student</th>
+                  <th className="px-4 py-2 text-left font-semibold text-foreground">Student</th>
                 )}
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Date</th>
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">OR #</th>
-                <th className="px-4 py-2 text-right font-semibold text-[var(--color-text)]">Amount</th>
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Method</th>
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Ref</th>
-                <th className="px-4 py-2 text-left font-semibold text-[var(--color-text)]">Status</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">Date</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">OR #</th>
+                <th className="px-4 py-2 text-right font-semibold text-foreground">Amount</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">Method</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">Ref</th>
+                <th className="px-4 py-2 text-left font-semibold text-foreground">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -86,20 +86,20 @@ export default async function PortalPaymentsPage() {
                   day: "numeric",
                 });
                 return (
-                  <tr key={r.id} className="border-b border-[var(--color-border)] last:border-0">
+                  <tr key={r.id} className="border-b border-border last:border-0">
                     {showStudentColumn && (
-                      <td className="px-4 py-3 text-[var(--color-text)]">
+                      <td className="px-4 py-3 text-foreground">
                         <div className="font-medium">{name}</div>
-                        <div className="text-xs text-[var(--color-text-muted)]">{who?.referenceNumber}</div>
+                        <div className="text-xs text-muted-foreground">{who?.referenceNumber}</div>
                       </td>
                     )}
-                    <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text)]">{dateLabel}</td>
-                    <td className="px-4 py-3 font-mono text-[var(--color-text)]">{r.orNumber ?? "—"}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-foreground">{dateLabel}</td>
+                    <td className="px-4 py-3 font-mono text-foreground">{r.orNumber ?? "—"}</td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       <CurrencyDisplay amount={Number(r.amount)} />
                     </td>
-                    <td className="px-4 py-3 capitalize text-[var(--color-text)]">{r.paymentMethod}</td>
-                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{r.referenceNumber ?? "—"}</td>
+                    <td className="px-4 py-3 capitalize text-foreground">{r.paymentMethod}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{r.referenceNumber ?? "—"}</td>
                     <td className="px-4 py-3">
                       <StatusBadge type="payment" status={r.status} />
                     </td>

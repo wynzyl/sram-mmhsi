@@ -12,7 +12,7 @@ export type StudentDirectoryQuickLink = {
 };
 
 function QuickLinkIcon({ name }: { name: StudentDirectoryQuickLink["icon"] }) {
-  const cls = "h-5 w-5 text-[var(--color-primary)] shrink-0";
+  const cls = "h-5 w-5 text-primary shrink-0";
   if (name === "register") {
     return (
       <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -100,9 +100,9 @@ export function StudentDirectoryView({
     <div className="page-container space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--color-text)]">{title}</h1>
-          <p className="max-w-2xl text-sm leading-relaxed text-[var(--color-text-muted)]">
-            <span className="text-[var(--color-text-2)]">{subtitleFilter}</span>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">{title}</h1>
+          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            <span className="text-gray-600 dark:text-gray-400">{subtitleFilter}</span>
             {" · "}
             {totalCount.toLocaleString()} enrollment{totalCount !== 1 ? "s" : ""}{" "}
             {hasFilters ? "matching the current filters." : "on file."}
@@ -118,10 +118,10 @@ export function StudentDirectoryView({
       <form
         method="GET"
         role="search"
-        className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-sm)] focus-within:ring-2 focus-within:ring-[var(--color-primary)] focus-within:ring-offset-1 sm:flex-row sm:flex-wrap sm:items-stretch"
+        className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 shadow-sm focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-1 sm:flex-row sm:flex-wrap sm:items-stretch"
       >
-        <div className="flex min-w-0 flex-1 items-stretch rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)]/50 sm:min-w-[14rem]">
-          <span className="flex items-center pl-3 pr-2 text-[var(--color-text-muted)] pointer-events-none">
+        <div className="flex min-w-0 flex-1 items-stretch rounded-md border border-border bg-muted/50 sm:min-w-[14rem]">
+          <span className="flex items-center pl-3 pr-2 text-muted-foreground pointer-events-none">
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
               <path
                 fillRule="evenodd"
@@ -134,7 +134,7 @@ export function StudentDirectoryView({
             id="student-search"
             type="search"
             name="q"
-            className="min-h-11 flex-1 bg-transparent py-2 pr-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none"
+            className="min-h-11 flex-1 bg-transparent py-2 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none"
             placeholder="Search student records by name or reference…"
             defaultValue={q}
             autoComplete="off"
@@ -145,7 +145,7 @@ export function StudentDirectoryView({
           name="schoolYearId"
           defaultValue={schoolYearId ?? ""}
           aria-label="Filter by school year"
-          className="form-control min-h-11 min-w-0 shrink-0 sm:min-w-44 sm:max-w-56 bg-(--color-surface-2) text-(--color-text) [&>option]:bg-(--color-surface) [&>option]:text-(--color-text)"
+          className="form-control min-h-11 min-w-0 shrink-0 sm:min-w-44 sm:max-w-56 bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
         >
           <option value="">All school years</option>
           {schoolYearOptions.map((y) => (
@@ -159,7 +159,7 @@ export function StudentDirectoryView({
           name="gradeLevelId"
           defaultValue={gradeLevelId ?? ""}
           aria-label="Filter by grade level"
-          className="form-control min-h-11 min-w-0 shrink-0 sm:min-w-40 sm:max-w-48 bg-(--color-surface-2) text-(--color-text) [&>option]:bg-(--color-surface) [&>option]:text-(--color-text)"
+          className="form-control min-h-11 min-w-0 shrink-0 sm:min-w-40 sm:max-w-48 bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
         >
           <option value="">All grades</option>
           {gradeLevelOptions.map((g) => (
@@ -173,7 +173,7 @@ export function StudentDirectoryView({
           {hasFilters && (
             <Link
               href={clearHref}
-              className="inline-flex min-h-11 items-center px-3 text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              className="inline-flex min-h-11 items-center px-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Clear filters
             </Link>
@@ -189,14 +189,14 @@ export function StudentDirectoryView({
           <Link
             key={link.href}
             href={link.href}
-            className="group flex gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-sm)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]"
+            className="group flex gap-3 rounded-lg border border-border bg-card p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md"
           >
             <QuickLinkIcon name={link.icon} />
             <div className="min-w-0">
-              <p className="font-display font-semibold text-[var(--color-text)] group-hover:text-[var(--color-primary)] transition-colors">
+              <p className="font-display font-semibold text-foreground group-hover:text-primary transition-colors">
                 {link.label}
               </p>
-              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{link.description}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{link.description}</p>
             </div>
           </Link>
         ))}
@@ -206,7 +206,7 @@ export function StudentDirectoryView({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2
             id="roster-heading"
-            className="font-display text-xs font-bold uppercase tracking-[0.14em] text-[var(--color-primary)]"
+            className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
           >
             Active student roster
           </h2>
@@ -215,7 +215,7 @@ export function StudentDirectoryView({
               type="button"
               disabled
               title="Export CSV is not available yet."
-              className="inline-flex items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-xs font-semibold text-[var(--color-text-muted)] cursor-not-allowed opacity-70"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground cursor-not-allowed opacity-70"
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden>
                 <path
@@ -245,7 +245,7 @@ export function StudentDirectoryView({
         />
       </section>
 
-      <p className="text-center text-[0.7rem] text-[var(--color-text-subtle)] pb-2">
+      <p className="text-center text-[0.7rem] text-gray-400 pb-2">
         Confidential institutional data. Authorized access only.
       </p>
     </div>

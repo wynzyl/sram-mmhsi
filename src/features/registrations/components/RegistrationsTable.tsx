@@ -77,24 +77,24 @@ export default function RegistrationsTable({
   const colSpan = 8;
 
   return (
-    <div className="table-wrapper rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)] overflow-hidden">
+    <div className="table-wrapper rounded-lg border border-border bg-card shadow-sm overflow-hidden">
       <table className="data-table w-full text-left text-sm" id="registrations-table">
         <thead>
-          <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
-            <th className="pl-4 font-semibold tracking-wide text-[var(--color-text-2)]">Student</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Reference</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Grade Level</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">School Year</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Type</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Documents</th>
-            <th className="font-semibold tracking-wide text-[var(--color-text-2)]">Registered</th>
-            <th className="w-px text-right font-semibold tracking-wide text-[var(--color-text-2)]" aria-label="Actions" />
+          <tr className="border-b border-border bg-muted">
+            <th className="pl-4 font-semibold tracking-wide text-gray-600 dark:text-gray-400">Student</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Reference</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Grade Level</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">School Year</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Type</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Documents</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Registered</th>
+            <th className="w-px text-right font-semibold tracking-wide text-gray-600 dark:text-gray-400" aria-label="Actions" />
           </tr>
         </thead>
         <tbody>
           {registrations.length === 0 ? (
             <tr>
-              <td colSpan={colSpan} className="table-empty px-6 py-12 text-center text-[var(--color-text-muted)]">
+              <td colSpan={colSpan} className="table-empty px-6 py-12 text-center text-muted-foreground">
                 {emptyMessage}
               </td>
             </tr>
@@ -106,12 +106,12 @@ export default function RegistrationsTable({
               return (
                 <tr
                   key={reg.id}
-                  className="border-b border-[var(--color-border)] last:border-b-0 transition-colors hover:bg-[var(--color-surface-2)]/80"
+                  className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/80"
                 >
                   <td className="align-middle py-3 pl-4 pr-4">
                     <div className="flex items-center gap-3 min-w-0">
                       <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_14%,var(--color-surface))] font-display text-sm font-bold text-[var(--color-primary)]"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary"
                         aria-hidden
                       >
                         {initials(reg.studentName)}
@@ -119,7 +119,7 @@ export default function RegistrationsTable({
                       <div className="min-w-0">
                         <Link
                           href={`${studentBasePath}/${reg.studentId}`}
-                          className="block truncate font-semibold text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors"
+                          className="block truncate font-semibold text-foreground hover:text-primary transition-colors"
                         >
                           {reg.studentName}
                         </Link>
@@ -129,30 +129,30 @@ export default function RegistrationsTable({
                   <td className="align-middle py-3">
                     <code className="reference-code text-[0.8rem]">#{reg.referenceNumber}</code>
                   </td>
-                  <td className="align-middle py-3 text-[var(--color-text)]">
+                  <td className="align-middle py-3 text-foreground">
                     {reg.gradeLevel}
                   </td>
-                  <td className="align-middle py-3 text-[var(--color-text)]">
+                  <td className="align-middle py-3 text-foreground">
                     {reg.schoolYear}
                   </td>
-                  <td className="align-middle py-3 text-[var(--color-text)]">
+                  <td className="align-middle py-3 text-foreground">
                     {registrationStudentTypeLabel(reg.studentType)}
                   </td>
                   <td className="align-middle py-3">
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
                         isComplete
-                          ? "bg-[color-mix(in_srgb,var(--color-success)_18%,transparent)] text-[var(--color-success)]"
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                           : docProgress.completed > 0
-                            ? "bg-[color-mix(in_srgb,var(--color-warning)_18%,transparent)] text-[var(--color-warning)]"
-                            : "bg-[var(--color-surface-3)] text-[var(--color-text-muted)]"
+                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                            : "bg-gray-200 text-muted-foreground dark:bg-gray-800"
                       }`}
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-current opacity-90" aria-hidden />
                       {isComplete ? "Complete" : `${docProgress.completed}/${docProgress.total}`}
                     </span>
                   </td>
-                  <td className="align-middle py-3 text-[var(--color-text-muted)] text-sm">
+                  <td className="align-middle py-3 text-muted-foreground text-sm">
                     {formatDate(reg.createdAt)}
                   </td>
                   <td className="align-middle py-3 text-right pr-2">

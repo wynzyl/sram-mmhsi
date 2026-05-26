@@ -7,9 +7,9 @@ import {
 import { STUDENT_DIRECTORY_PAGE_SIZE } from "../students.queries";
 
 const btnBase =
-  "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-2)]";
+  "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted";
 const btnActive =
-  "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)] font-semibold";
+  "border-primary bg-primary/10 text-primary font-semibold";
 const btnDisabled = "pointer-events-none opacity-40";
 
 export function StudentDirectoryPagination({
@@ -49,11 +49,11 @@ export function StudentDirectoryPagination({
       className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between"
       aria-label="Enrollment list pagination"
     >
-      <p className="text-sm text-[var(--color-text-muted)]">
+      <p className="text-sm text-muted-foreground">
         Showing{" "}
-        <span className="font-medium text-[var(--color-text)]">{start}</span> to{" "}
-        <span className="font-medium text-[var(--color-text)]">{end}</span> of{" "}
-        <span className="font-medium text-[var(--color-text)]">{totalCount.toLocaleString()}</span>{" "}
+        <span className="font-medium text-foreground">{start}</span> to{" "}
+        <span className="font-medium text-foreground">{end}</span> of{" "}
+        <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span>{" "}
         enrollment{totalCount !== 1 ? "s" : ""}
       </p>
 
@@ -73,7 +73,7 @@ export function StudentDirectoryPagination({
             item === "ellipsis" ? (
               <span
                 key={`e-${i}`}
-                className="inline-flex min-w-9 items-center justify-center text-[var(--color-text-muted)]"
+                className="inline-flex min-w-9 items-center justify-center text-muted-foreground"
                 aria-hidden
               >
                 …
