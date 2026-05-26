@@ -64,13 +64,13 @@ export default async function VoidRequestsPage({ searchParams }: PageProps) {
 
       {/* Tab Navigation */}
       <div className="mb-6">
-        <nav className="flex gap-1 border-b border-[var(--color-border)]" aria-label="Tabs">
+        <nav className="flex gap-1 border-b border-border" aria-label="Tabs">
           <a
             href="/staff/void-requests?tab=pending"
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === "pending"
-                ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-                : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
             }`}
           >
             {isAdminView ? "Pending" : "Awaiting Approval"}
@@ -84,8 +84,8 @@ export default async function VoidRequestsPage({ searchParams }: PageProps) {
             href="/staff/void-requests?tab=history"
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === "history"
-                ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-                : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
             }`}
           >
             History
@@ -94,7 +94,7 @@ export default async function VoidRequestsPage({ searchParams }: PageProps) {
       </div>
 
       {/* Content */}
-      <div className="bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)]">
+      <div className="bg-card rounded-lg border border-border">
         {tab === "pending" ? (
           isAdminView ? (
             <VoidRequestsPendingTable

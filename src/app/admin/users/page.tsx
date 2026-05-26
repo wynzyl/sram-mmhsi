@@ -88,11 +88,11 @@ export default async function UsersPage({ searchParams }: PageProps) {
       <form
         method="GET"
         role="search"
-        className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-sm)]"
+        className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-[var(--shadow-sm)]"
       >
         <div className="relative min-w-[18rem] flex-1">
           <svg
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             viewBox="0 0 20 20"
             fill="currentColor"
             aria-hidden="true"

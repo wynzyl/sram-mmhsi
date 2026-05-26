@@ -132,7 +132,7 @@ export async function InternalNewEnrollmentPage(props: {
       </nav>
 
       <header className="mb-8 max-w-3xl">
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-primary)]">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
           Enrollment Workflow
         </p>
         <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-foreground">

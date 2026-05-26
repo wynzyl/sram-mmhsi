@@ -269,10 +269,10 @@ export function RegistrationDetailView({
                       student.isActive
                         ? {
                             backgroundColor:
-                              "color-mix(in srgb, var(--color-success) 10%, var(--card))",
+                              "color-mix(in srgb, hsl(var(--emerald-500)) 10%, hsl(var(--card)))",
                             borderColor:
-                              "color-mix(in srgb, var(--color-success) 30%, var(--border))",
-                            color: "var(--color-success)",
+                              "color-mix(in srgb, hsl(var(--emerald-500)) 30%, hsl(var(--border)))",
+                            color: "hsl(142.1 76.2% 36.3%)",
                           }
                         : undefined
                     }

@@ -450,7 +450,7 @@ export default function StudentForm({
             </span>
             <div
               className={`form-control ${state.errors?.schoolYearId ? "form-control-error" : ""}`}
-              style={{ background: "var(--color-surface-2)" }}
+              style={{ background: "hsl(var(--muted))" }}
               aria-live="polite"
             >
               {currentSchoolYear ? (
@@ -496,7 +496,7 @@ export default function StudentForm({
           <span className="form-label">Enrollment type</span>
           <div
             className={`form-control ${state.errors?.registrationStudentType ? "form-control-error" : ""}`}
-            style={{ background: "var(--color-surface-2)" }}
+            style={{ background: "hsl(var(--muted))" }}
             aria-live="polite"
             id="student-registration-type-display"
           >

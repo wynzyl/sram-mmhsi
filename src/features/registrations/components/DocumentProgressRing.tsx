@@ -48,9 +48,9 @@ export function DocumentProgressRing({
 
   // Color logic: red if < 50%, amber if 50-99%, emerald if 100%
   const getColor = () => {
-    if (percentage === 100) return "var(--color-accent-emerald)";
-    if (percentage >= 50) return "var(--color-accent-amber)";
-    return "var(--color-primary)";
+    if (percentage === 100) return "hsl(142.1 76.2% 36.3%)"; // emerald-600
+    if (percentage >= 50) return "hsl(45.4 93.4% 47.5%)"; // amber-500
+    return "hsl(var(--primary))";
   };
 
   const color = getColor();

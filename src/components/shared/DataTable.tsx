@@ -169,7 +169,7 @@ export function DataTable<TData>({
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
-                            className="px-5 py-4 text-sm text-[var(--color-text)]"
+                            className="px-5 py-4 text-sm text-foreground"
                           >
                             {flexRender(
                               cell.column.columnDef.cell,
@@ -204,7 +204,7 @@ export function DataTable<TData>({
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="px-5 py-4 text-sm text-[var(--color-text)]"
+                        className="px-5 py-4 text-sm text-foreground"
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
