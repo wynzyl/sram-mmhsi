@@ -69,43 +69,43 @@ export default async function UserProfilePage({ params }: PageProps) {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Details */}
         <div className="form-card space-y-5 lg:col-span-2">
-          <h2 className="text-xl font-semibold text-[var(--color-text)]">Account Information</h2>
+          <h2 className="text-xl font-semibold text-foreground">Account Information</h2>
           <div className="grid gap-3 text-sm">
-            <div className="grid gap-1 border-b border-[var(--color-border)]/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
-              <span className="font-medium text-[var(--color-text-muted)]">Email</span>
-              <span className="text-[var(--color-text)]">{user.email}</span>
+            <div className="grid gap-1 border-b border-border/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-muted-foreground">Email</span>
+              <span className="text-foreground">{user.email}</span>
             </div>
-            <div className="grid gap-1 border-b border-[var(--color-border)]/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
-              <span className="font-medium text-[var(--color-text-muted)]">Username</span>
-              <span className="text-[var(--color-text)]">
+            <div className="grid gap-1 border-b border-border/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-muted-foreground">Username</span>
+              <span className="text-foreground">
                 <code className="reference-code">{user.username}</code>
               </span>
             </div>
-            <div className="grid gap-1 border-b border-[var(--color-border)]/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
-              <span className="font-medium text-[var(--color-text-muted)]">Role</span>
-              <span className="text-[var(--color-text)]">
+            <div className="grid gap-1 border-b border-border/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-muted-foreground">Role</span>
+              <span className="text-foreground">
                 <span className="badge badge-secondary">
                   {ROLE_LABELS[user.role as keyof typeof ROLE_LABELS]}
                 </span>
               </span>
             </div>
-            <div className="grid gap-1 border-b border-[var(--color-border)]/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
-              <span className="font-medium text-[var(--color-text-muted)]">Status</span>
-              <span className="text-[var(--color-text)]">
+            <div className="grid gap-1 border-b border-border/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-muted-foreground">Status</span>
+              <span className="text-foreground">
                 <span className={`badge ${user.isActive ? "badge-success" : "badge-danger"}`}>
                   {user.isActive ? "Active" : "Inactive"}
                 </span>
               </span>
             </div>
-            <div className="grid gap-1 border-b border-[var(--color-border)]/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
-              <span className="font-medium text-[var(--color-text-muted)]">Force Password Change</span>
-              <span className="text-[var(--color-text)]">
+            <div className="grid gap-1 border-b border-border/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-muted-foreground">Force Password Change</span>
+              <span className="text-foreground">
                 {user.forcePasswordChange ? "Yes" : "No"}
               </span>
             </div>
-            <div className="grid gap-1 border-b border-[var(--color-border)]/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
-              <span className="font-medium text-[var(--color-text-muted)]">Created</span>
-              <span className="text-[var(--color-text)]">
+            <div className="grid gap-1 border-b border-border/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
+              <span className="font-medium text-muted-foreground">Created</span>
+              <span className="text-foreground">
                 {new Date(user.createdAt).toLocaleDateString("en-PH", {
                   year: "numeric",
                   month: "long",
@@ -114,8 +114,8 @@ export default async function UserProfilePage({ params }: PageProps) {
               </span>
             </div>
             <div className="grid gap-1 sm:grid-cols-[14rem_1fr] sm:items-center">
-              <span className="font-medium text-[var(--color-text-muted)]">Last Updated</span>
-              <span className="text-[var(--color-text)]">
+              <span className="font-medium text-muted-foreground">Last Updated</span>
+              <span className="text-foreground">
                 {new Date(user.updatedAt).toLocaleDateString("en-PH", {
                   year: "numeric",
                   month: "long",
@@ -129,7 +129,7 @@ export default async function UserProfilePage({ params }: PageProps) {
         {/* Quick Actions */}
         <div className="lg:col-span-2">
           <div className="form-card space-y-4">
-            <h3 className="text-lg font-semibold text-[var(--color-text)]">Quick Actions</h3>
+            <h3 className="text-lg font-semibold text-foreground">Quick Actions</h3>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {canUpdate && (
                 <Link href={`/admin/users/${id}/edit`} className="btn-secondary w-full">
@@ -146,8 +146,8 @@ export default async function UserProfilePage({ params }: PageProps) {
         {/* Reset Password Section */}
         {canUpdate && (
           <div className="form-card space-y-3 lg:col-span-2">
-            <h2 className="text-xl font-semibold text-[var(--color-text)]">Reset Password</h2>
-            <p className="text-sm text-[var(--color-text-muted)]">
+            <h2 className="text-xl font-semibold text-foreground">Reset Password</h2>
+            <p className="text-sm text-muted-foreground">
               Generate a new password for this user. They will be required to change it on next login if the checkbox is checked.
             </p>
             <ResetPasswordForm userId={user.id} />
