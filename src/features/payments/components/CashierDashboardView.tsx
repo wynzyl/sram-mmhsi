@@ -127,12 +127,11 @@ export function CashierDashboardView() {
                 <p className="text-sm text-muted-foreground">No posted payments yet.</p>
               ) : (
                 <ul className="max-h-48 space-y-2 overflow-y-auto pr-1">
-                  {recentCollections.map((p) => (
-                    <li key={p.paymentId}>
-                      <Link
-                        href={p.assessmentId ? `/staff/assessments/${p.assessmentId}` : "#"}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-3 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 hover:border-primary"
-                      >
+                  {recentCollections.map((p) => {
+                    const rowClassName =
+                      "flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-3 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 hover:border-primary";
+                    const rowContent = (
+                      <>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-foreground">
                             Receipt {p.orNumber ? <ReferenceCode code={p.orNumber} /> : "#—"}
@@ -151,9 +150,22 @@ export function CashierDashboardView() {
                         <div className="shrink-0 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                           <CurrencyDisplay amount={Number(p.amount)} />
                         </div>
-                      </Link>
-                    </li>
-                  ))}
+                      </>
+                    );
+                    return (
+                      <li key={p.paymentId}>
+                        {p.assessmentId ? (
+                          <Link href={`/staff/assessments/${p.assessmentId}`} className={rowClassName}>
+                            {rowContent}
+                          </Link>
+                        ) : (
+                          <div className={rowClassName} aria-disabled="true">
+                            {rowContent}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </CardContent>
