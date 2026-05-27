@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
     const totalPages = isPending
       ? Math.max(1, Math.ceil(pending.totalCount / PAGE_SIZE))
       : billing!.pagination.totalPages;
+    const currentPage = Math.min(Math.max(1, page), totalPages || 1);
 
     return NextResponse.json({
       view,
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
       pendingRows: isPending ? pending.rows : [],
       totalCount,
       totalPages,
-      currentPage: page,
+      currentPage,
       tabCounts,
       pendingCount: pending.totalCount,
       canCreate,
