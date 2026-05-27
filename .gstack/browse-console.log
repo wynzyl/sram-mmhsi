@@ -1,227 +1,26 @@
-[2026-05-21T23:51:36.223Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:51:36.783Z] [log] [HMR] connected
-[2026-05-21T23:52:04.686Z] [log] [Fast Refresh] rebuilding
-[2026-05-21T23:52:05.710Z] [log] [Fast Refresh] done in 1026ms
-[2026-05-21T23:52:24.517Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:25.064Z] [log] [HMR] connected
-[2026-05-21T23:52:25.865Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:26.394Z] [log] [HMR] connected
-[2026-05-21T23:52:27.306Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:27.807Z] [log] [HMR] connected
-[2026-05-21T23:52:45.607Z] [log] [Fast Refresh] rebuilding
-[2026-05-21T23:52:46.396Z] [log] [Fast Refresh] done in 789ms
-[2026-05-21T23:52:47.112Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:47.681Z] [log] [HMR] connected
-[2026-05-21T23:52:48.486Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:48.992Z] [log] [HMR] connected
-[2026-05-21T23:52:49.867Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:50.370Z] [log] [HMR] connected
-[2026-05-21T23:52:51.168Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:51.678Z] [log] [HMR] connected
-[2026-05-21T23:52:52.460Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:52.988Z] [log] [HMR] connected
-[2026-05-21T23:52:53.850Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:54.421Z] [log] [HMR] connected
-[2026-05-21T23:52:55.331Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:55.872Z] [log] [HMR] connected
-[2026-05-21T23:52:56.726Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:57.247Z] [log] [HMR] connected
-[2026-05-21T23:52:58.139Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:52:58.669Z] [log] [HMR] connected
-[2026-05-21T23:52:59.554Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:00.121Z] [log] [HMR] connected
-[2026-05-21T23:53:00.886Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:01.442Z] [log] [HMR] connected
-[2026-05-21T23:53:02.226Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:02.791Z] [log] [HMR] connected
-[2026-05-21T23:53:03.134Z] [log] [Fast Refresh] rebuilding
-[2026-05-21T23:53:03.856Z] [log] [Fast Refresh] rebuilding
-[2026-05-21T23:53:03.858Z] [log] [Fast Refresh] done in 2ms
-[2026-05-21T23:53:04.161Z] [log] [Fast Refresh] done in 304ms
-[2026-05-21T23:53:05.913Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:06.472Z] [log] [HMR] connected
-[2026-05-21T23:53:07.308Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:07.820Z] [log] [HMR] connected
-[2026-05-21T23:53:08.736Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:09.265Z] [log] [HMR] connected
-[2026-05-21T23:53:10.188Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:10.736Z] [log] [HMR] connected
-[2026-05-21T23:53:11.549Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:12.068Z] [log] [HMR] connected
-[2026-05-21T23:53:12.969Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:13.486Z] [log] [HMR] connected
-[2026-05-21T23:53:14.312Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:14.831Z] [log] [HMR] connected
-[2026-05-21T23:53:15.723Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:16.248Z] [log] [HMR] connected
-[2026-05-21T23:53:17.537Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:18.089Z] [log] [HMR] connected
-[2026-05-21T23:53:18.810Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:19.351Z] [log] [HMR] connected
-[2026-05-21T23:53:20.223Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:20.801Z] [log] [HMR] connected
-[2026-05-21T23:53:21.564Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:22.050Z] [log] [HMR] connected
-[2026-05-21T23:53:22.796Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:23.276Z] [log] [HMR] connected
-[2026-05-21T23:53:24.014Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:24.507Z] [log] [HMR] connected
-[2026-05-21T23:53:25.237Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:25.812Z] [log] [HMR] connected
-[2026-05-21T23:53:26.640Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:27.227Z] [log] [HMR] connected
-[2026-05-21T23:53:28.031Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:28.529Z] [log] [HMR] connected
-[2026-05-21T23:53:29.250Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:29.771Z] [log] [HMR] connected
-[2026-05-21T23:53:30.500Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:31.050Z] [log] [HMR] connected
-[2026-05-21T23:53:31.821Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:32.367Z] [log] [HMR] connected
-[2026-05-21T23:53:33.230Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:33.926Z] [log] [HMR] connected
-[2026-05-21T23:53:34.648Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:35.191Z] [log] [HMR] connected
-[2026-05-21T23:53:35.929Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:36.480Z] [log] [HMR] connected
-[2026-05-21T23:53:37.232Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:37.751Z] [log] [HMR] connected
-[2026-05-21T23:53:37.752Z] [log] [Fast Refresh] rebuilding
-[2026-05-21T23:53:38.888Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:39.428Z] [log] [HMR] connected
-[2026-05-21T23:53:40.343Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:40.925Z] [log] [HMR] connected
-[2026-05-21T23:53:41.680Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:42.201Z] [log] [HMR] connected
-[2026-05-21T23:53:42.924Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:43.442Z] [log] [HMR] connected
-[2026-05-21T23:53:44.289Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:44.898Z] [log] [HMR] connected
-[2026-05-21T23:53:45.631Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:46.128Z] [log] [HMR] connected
-[2026-05-21T23:53:46.845Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:47.363Z] [log] [HMR] connected
-[2026-05-21T23:53:48.093Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:48.625Z] [log] [HMR] connected
-[2026-05-21T23:53:49.344Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:49.869Z] [log] [HMR] connected
-[2026-05-21T23:53:50.668Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:51.348Z] [log] [HMR] connected
-[2026-05-21T23:53:52.060Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:52.574Z] [log] [HMR] connected
-[2026-05-21T23:53:53.289Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:53.803Z] [log] [HMR] connected
-[2026-05-21T23:53:54.562Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:55.108Z] [log] [HMR] connected
-[2026-05-21T23:53:55.912Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:56.543Z] [log] [HMR] connected
-[2026-05-21T23:53:57.286Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:57.791Z] [log] [HMR] connected
-[2026-05-21T23:53:58.517Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:53:59.049Z] [log] [HMR] connected
-[2026-05-21T23:53:59.884Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:00.465Z] [log] [HMR] connected
-[2026-05-21T23:54:01.430Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:02.028Z] [log] [HMR] connected
-[2026-05-21T23:54:02.791Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:03.333Z] [log] [HMR] connected
-[2026-05-21T23:54:04.099Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:04.591Z] [log] [HMR] connected
-[2026-05-21T23:54:05.449Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:05.941Z] [log] [HMR] connected
-[2026-05-21T23:54:06.742Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:07.289Z] [log] [HMR] connected
-[2026-05-21T23:54:08.056Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:08.544Z] [log] [HMR] connected
-[2026-05-21T23:54:09.307Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:09.787Z] [log] [HMR] connected
-[2026-05-21T23:54:10.561Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:11.044Z] [log] [HMR] connected
-[2026-05-21T23:54:11.810Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:12.297Z] [log] [HMR] connected
-[2026-05-21T23:54:13.048Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:13.541Z] [log] [HMR] connected
-[2026-05-21T23:54:14.268Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:14.768Z] [log] [HMR] connected
-[2026-05-21T23:54:15.511Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:16.062Z] [log] [HMR] connected
-[2026-05-21T23:54:17.305Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:17.975Z] [log] [HMR] connected
-[2026-05-21T23:54:18.751Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:19.260Z] [log] [HMR] connected
-[2026-05-21T23:54:20.037Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:20.540Z] [log] [HMR] connected
-[2026-05-21T23:54:21.319Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:21.839Z] [log] [HMR] connected
-[2026-05-21T23:54:22.609Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:23.109Z] [log] [HMR] connected
-[2026-05-21T23:54:23.879Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:24.364Z] [log] [HMR] connected
-[2026-05-21T23:54:25.120Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:25.612Z] [log] [HMR] connected
-[2026-05-21T23:54:26.397Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:26.912Z] [log] [HMR] connected
-[2026-05-21T23:54:27.673Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:28.166Z] [log] [HMR] connected
-[2026-05-21T23:54:28.901Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:29.396Z] [log] [HMR] connected
-[2026-05-21T23:54:30.164Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:30.770Z] [log] [HMR] connected
-[2026-05-21T23:54:31.654Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:32.308Z] [log] [HMR] connected
-[2026-05-21T23:54:33.090Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:33.574Z] [log] [HMR] connected
-[2026-05-21T23:54:34.352Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:34.850Z] [log] [HMR] connected
-[2026-05-21T23:54:35.623Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:36.208Z] [log] [HMR] connected
-[2026-05-21T23:54:38.898Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:39.411Z] [log] [HMR] connected
-[2026-05-21T23:54:40.287Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:40.800Z] [log] [HMR] connected
-[2026-05-21T23:54:41.615Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:42.112Z] [log] [HMR] connected
-[2026-05-21T23:54:42.909Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:43.399Z] [log] [HMR] connected
-[2026-05-21T23:54:44.208Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:44.702Z] [log] [HMR] connected
-[2026-05-21T23:54:45.515Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:46.033Z] [log] [HMR] connected
-[2026-05-21T23:54:46.850Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:47.355Z] [log] [HMR] connected
-[2026-05-21T23:54:48.150Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:48.630Z] [log] [HMR] connected
-[2026-05-21T23:54:49.461Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:49.952Z] [log] [HMR] connected
-[2026-05-21T23:54:50.743Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:51.236Z] [log] [HMR] connected
-[2026-05-21T23:54:52.043Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:52.522Z] [log] [HMR] connected
-[2026-05-21T23:54:53.394Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:53.874Z] [log] [HMR] connected
-[2026-05-21T23:54:54.718Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:55.230Z] [log] [HMR] connected
-[2026-05-21T23:54:56.015Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:56.547Z] [log] [HMR] connected
-[2026-05-21T23:54:57.411Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:57.965Z] [log] [HMR] connected
-[2026-05-21T23:54:58.830Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:54:59.342Z] [log] [HMR] connected
-[2026-05-21T23:55:00.159Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:55:00.717Z] [log] [HMR] connected
-[2026-05-21T23:55:01.612Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:55:02.162Z] [log] [HMR] connected
-[2026-05-21T23:55:03.022Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:55:03.615Z] [log] [HMR] connected
-[2026-05-21T23:56:37.493Z] [log] [Fast Refresh] rebuilding
-[2026-05-21T23:56:38.607Z] [log] [Fast Refresh] done in 1115ms
-[2026-05-21T23:56:39.473Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:56:39.997Z] [log] [HMR] connected
-[2026-05-21T23:57:25.630Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:57:26.141Z] [log] [HMR] connected
-[2026-05-21T23:57:26.970Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:57:27.463Z] [log] [HMR] connected
-[2026-05-21T23:57:28.255Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-21T23:57:28.747Z] [log] [HMR] connected
-[2026-05-21T23:58:44.062Z] [log] [Fast Refresh] rebuilding
-[2026-05-21T23:58:44.863Z] [log] [Fast Refresh] done in 802ms
+[2026-05-27T00:27:47.221Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-27T00:27:47.570Z] [log] [HMR] connected
+[2026-05-27T00:27:56.746Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-27T00:27:57.038Z] [log] [HMR] connected
+[2026-05-27T00:28:07.960Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-27T00:28:08.301Z] [log] [HMR] connected
+[2026-05-27T00:28:10.110Z] [log] [Fast Refresh] rebuilding
+[2026-05-27T00:28:14.113Z] [log] [Fast Refresh] done in 4002ms
+[2026-05-27T00:28:14.578Z] [log] [Fast Refresh] rebuilding
+[2026-05-27T00:28:15.742Z] [log] [Fast Refresh] done in 1163ms
+[2026-05-27T00:28:19.687Z] [warning] The resource http://localhost:3000/_next/static/css/app/layout.css?v=1779841695491 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-27T00:28:30.892Z] [log] [Fast Refresh] rebuilding
+[2026-05-27T00:28:31.827Z] [warning] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree.
+[2026-05-27T00:28:32.722Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-27T00:28:33.290Z] [log] [HMR] connected
+[2026-05-27T00:28:33.778Z] [log] [Fast Refresh] rebuilding
+[2026-05-27T00:28:34.548Z] [log] [Fast Refresh] done in 771ms
+[2026-05-27T00:29:11.431Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-27T00:29:11.938Z] [log] [HMR] connected

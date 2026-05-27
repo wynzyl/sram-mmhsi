@@ -24,6 +24,7 @@ export async function GET() {
       recentCollections: data.recentCollections.map((c) => ({
         ...c,
         paymentDate: c.paymentDate.toISOString(),
+        assessmentId: c.assessmentId,
       })),
     });
   } catch (error) {

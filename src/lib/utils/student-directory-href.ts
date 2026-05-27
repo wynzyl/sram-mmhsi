@@ -1,5 +1,8 @@
 export type StudentDirectoryBasePath = "/admin/students" | "/staff/students";
 
+/** Rows per page in the student directory. Client-safe (no server deps). */
+export const STUDENT_DIRECTORY_PAGE_SIZE = 10;
+
 export function studentDirectoryListHref(
   basePath: StudentDirectoryBasePath,
   opts: {

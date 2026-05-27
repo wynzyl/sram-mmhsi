@@ -52,6 +52,7 @@ const RecentCollectionSchema = z.object({
   paymentDate: z.string(), // Serialized Date from API
   studentFirstName: z.string(),
   studentLastName: z.string(),
+  assessmentId: z.string().nullable(),
 });
 
 const CashierQueueResponseSchema = z.object({
