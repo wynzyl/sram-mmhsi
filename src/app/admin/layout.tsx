@@ -4,6 +4,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommandPaletteProvider } from "@/components/command-palette";
+import { ActiveSchoolYearProvider } from "@/components/providers/ActiveSchoolYearProvider";
+import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import type { Role } from "@/lib/constants/roles";
 import { ROLES, normalizeRole } from "@/lib/constants/roles";
 
@@ -19,7 +21,10 @@ async function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  const activeSchoolYear = await getActiveSchoolYear();
+
   return (
+    <ActiveSchoolYearProvider activeSchoolYearId={activeSchoolYear?.id ?? null}>
     <CommandPaletteProvider>
       <div className="app-shell">
         <Sidebar role={user.role as Role} username={user.username} />
@@ -39,6 +44,7 @@ async function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         `}</style>
       </div>
     </CommandPaletteProvider>
+    </ActiveSchoolYearProvider>
   );
 }
 

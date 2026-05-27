@@ -8,7 +8,9 @@ import {
   schoolYears,
   students,
 } from "@/lib/db/schema";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import type { Role } from "@/lib/constants/roles";
+import { getPortalStudentIds, getPortalStudentLabels } from "@/lib/queries/portal-student";
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -39,6 +41,7 @@ export type RecentCollection = {
   paymentDate: Date;
   studentFirstName: string;
   studentLastName: string;
+  assessmentId: string | null;
 };
 
 export type CashierQueueData = {
@@ -167,6 +170,7 @@ export async function fetchCashierQueueData(
         paymentDate: payments.paymentDate,
         studentFirstName: students.firstName,
         studentLastName: students.lastName,
+        assessmentId: payments.assessmentId,
       })
       .from(payments)
       .innerJoin(students, eq(payments.studentId, students.id))
@@ -208,6 +212,7 @@ export async function fetchCashierQueueData(
       paymentDate: p.paymentDate,
       studentFirstName: p.studentFirstName,
       studentLastName: p.studentLastName,
+      assessmentId: p.assessmentId,
     })
   );
 
@@ -217,4 +222,77 @@ export async function fetchCashierQueueData(
     recentCollections: formattedRecentCollections,
     queueTotalCount,
   };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Portal payments (student / parent read-only history)
+// ─────────────────────────────────────────────────────────────────
+
+export type PortalPaymentRow = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentReference: string | null;
+  orNumber: string | null;
+  amount: number;
+  paymentMethod: string;
+  paymentDate: string; // ISO (serialized for client)
+  status: string;
+  paymentReference: string | null;
+};
+
+export type PortalPaymentsData = {
+  rows: PortalPaymentRow[];
+  showStudentColumn: boolean;
+  hasLinkedStudents: boolean;
+};
+
+/**
+ * Read-only payment history for a portal user (student or parent/guardian).
+ * Not cached — financial data must always be current.
+ */
+export async function getPortalPayments(
+  userId: string,
+  role: Role
+): Promise<PortalPaymentsData> {
+  const studentIds = await getPortalStudentIds(userId, role);
+  if (studentIds.length === 0) {
+    return { rows: [], showStudentColumn: false, hasLinkedStudents: false };
+  }
+
+  const labels = await getPortalStudentLabels(studentIds);
+  const labelMap = new Map(labels.map((s) => [s.id, s]));
+
+  const paymentRows = await db
+    .select({
+      id: payments.id,
+      studentId: payments.studentId,
+      orNumber: payments.orNumber,
+      amount: payments.amount,
+      paymentMethod: payments.paymentMethod,
+      paymentDate: payments.paymentDate,
+      status: payments.status,
+      referenceNumber: payments.referenceNumber,
+    })
+    .from(payments)
+    .where(inArray(payments.studentId, studentIds))
+    .orderBy(desc(payments.paymentDate));
+
+  const rows: PortalPaymentRow[] = paymentRows.map((r) => {
+    const who = labelMap.get(r.studentId);
+    return {
+      id: r.id,
+      studentId: r.studentId,
+      studentName: who ? `${who.lastName}, ${who.firstName}` : "—",
+      studentReference: who?.referenceNumber ?? null,
+      orNumber: r.orNumber,
+      amount: Number(r.amount),
+      paymentMethod: r.paymentMethod,
+      paymentDate: r.paymentDate.toISOString(),
+      status: r.status,
+      paymentReference: r.referenceNumber,
+    };
+  });
+
+  return { rows, showStudentColumn: studentIds.length > 1, hasLinkedStudents: true };
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createStudentAction } from "../students.actions";
+import { useCreateStudent } from "../hooks/use-students";
 import type {
   CreateStudentFormFieldSnapshot,
   CreateStudentFormState,
@@ -53,7 +53,9 @@ export default function StudentForm({
   lockedRegistrationType,
 }: StudentFormProps) {
   const router = useRouter();
-  const [state, action, pending] = useActionState(createStudentAction, initialState);
+  const createStudent = useCreateStudent();
+  const state: CreateStudentFormState = createStudent.data ?? initialState;
+  const pending = createStudent.isPending;
   const [draft, setDraft] = useState<Partial<CreateStudentFormFieldSnapshot>>({});
   const [guardians, setGuardians] = useState<GuardianInput[]>([
     { ...emptyGuardian(), isPrimary: true },
@@ -104,7 +106,7 @@ export default function StudentForm({
   const disableSubmit = pending || !currentSchoolYear;
 
   return (
-    <form action={action} className="student-form" noValidate>
+    <form action={(formData) => createStudent.mutate(formData)} className="student-form" noValidate>
       <input type="hidden" name="guardians" value={JSON.stringify(guardians)} />
 
       {state.message && (

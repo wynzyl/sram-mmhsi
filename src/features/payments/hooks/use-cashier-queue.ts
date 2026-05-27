@@ -52,6 +52,7 @@ const RecentCollectionSchema = z.object({
   paymentDate: z.string(), // Serialized Date from API
   studentFirstName: z.string(),
   studentLastName: z.string(),
+  assessmentId: z.string().nullable(),
 });
 
 const CashierQueueResponseSchema = z.object({
@@ -129,7 +130,10 @@ export function usePostPayment() {
         queryClient.invalidateQueries({
           queryKey: queryKeys.booklets.all,
         });
-        // Invalidate assessments (balance updated)
+        // Invalidate assessments (balance updated). Intentionally broad: the
+        // assessments directory list key (assessments.list({view,page})) lives
+        // under assessments.all, so this refreshes it. Do NOT narrow to
+        // byStudent/detail — that would stop the list from refreshing.
         queryClient.invalidateQueries({
           queryKey: queryKeys.assessments.all,
         });
@@ -155,7 +159,8 @@ export function useVoidPayment() {
         queryClient.invalidateQueries({
           queryKey: queryKeys.payments.queue(),
         });
-        // Invalidate assessments (balance reverted)
+        // Invalidate assessments (balance reverted). Broad on purpose — refreshes
+        // the assessments directory list (key sits under assessments.all).
         queryClient.invalidateQueries({
           queryKey: queryKeys.assessments.all,
         });

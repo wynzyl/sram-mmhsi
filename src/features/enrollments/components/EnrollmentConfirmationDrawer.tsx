@@ -63,6 +63,8 @@ export default function EnrollmentConfirmationDrawer({
       return result.data;
     },
     enabled: isOpen && needsDetail && Boolean(student.studentId),
+    // Always re-read intake-doc status on open — never serve a stale cache entry.
+    staleTime: 0,
   });
 
   const detailError = detailQueryError ? detailQueryError.message : null;
