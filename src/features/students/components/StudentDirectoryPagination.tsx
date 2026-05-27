@@ -2,9 +2,9 @@ import Link from "next/link";
 import {
   studentDirectoryListHref,
   studentDirectoryPaginationPages,
+  STUDENT_DIRECTORY_PAGE_SIZE,
   type StudentDirectoryBasePath,
 } from "@/lib/utils/student-directory-href";
-import { STUDENT_DIRECTORY_PAGE_SIZE } from "../students.queries";
 
 const btnBase =
   "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted";

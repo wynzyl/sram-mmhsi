@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileText, Home, User, Users } from "lucide-react";
-import { updateStudentAction } from "../students.actions";
+import { useUpdateStudent } from "../hooks/use-students";
 import type { UpdateStudentFormState, GuardianInput } from "../students.schema";
 import { useFormToast } from "@/hooks/useFormToast";
 import { DataCard } from "@/components/ui/editorial/DataCard";
@@ -70,7 +70,9 @@ export default function EditStudentForm({
   cancelHref,
 }: EditStudentFormProps) {
   const router = useRouter();
-  const [state, action, pending] = useActionState(updateStudentAction, initialState);
+  const updateStudent = useUpdateStudent();
+  const state: UpdateStudentFormState = updateStudent.data ?? initialState;
+  const pending = updateStudent.isPending;
   const [guardians, setGuardians] = useState<GuardianInput[]>(
     initialGuardians.length > 0 ? initialGuardians : [{ ...emptyGuardian(), isPrimary: true }]
   );
@@ -111,7 +113,7 @@ export default function EditStudentForm({
   };
 
   return (
-    <form action={action} className="space-y-6" noValidate>
+    <form action={(formData) => updateStudent.mutate(formData)} className="space-y-6" noValidate>
       <input type="hidden" name="studentId" value={student.id} />
       <input type="hidden" name="guardians" value={JSON.stringify(guardians)} />
 

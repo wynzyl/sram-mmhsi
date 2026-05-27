@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useActionState } from "react";
-import { updateEnrollmentStatusAction } from "@/features/enrollments/enrollments.actions";
+import { useState } from "react";
 import { useFormToast } from "@/hooks/useFormToast";
-import { useRouter } from "next/navigation";
+import { useCancelAssessmentFromQueue } from "@/features/assessments/hooks/use-assessments";
+
+const EMPTY_STATE = {} as const;
 
 export interface PendingEnrollmentRow {
   enrollmentId: string;
@@ -33,17 +34,21 @@ function CancelEnrollmentInline({
   enrollmentId: string;
   studentName: string;
 }) {
-  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
-  const [state, action, pending] = useActionState(updateEnrollmentStatusAction, {});
+  const cancel = useCancelAssessmentFromQueue();
 
-  useFormToast(state, {
+  useFormToast(cancel.data ?? EMPTY_STATE, {
     successMessage: "Enrollment cancelled",
-    onSuccess: () => {
-      setConfirming(false);
-      router.refresh();
-    },
+    onSuccess: () => setConfirming(false),
   });
+
+  function handleConfirm() {
+    const formData = new FormData();
+    formData.set("enrollmentId", enrollmentId);
+    formData.set("action", "cancel");
+    formData.set("cancelRemarks", `Cancelled from assessment queue for ${studentName}`);
+    cancel.mutate(formData);
+  }
 
   if (!confirming) {
     return (
@@ -58,16 +63,14 @@ function CancelEnrollmentInline({
   }
 
   return (
-    <form action={action} className="flex items-center gap-1">
-      <input type="hidden" name="enrollmentId" value={enrollmentId} />
-      <input type="hidden" name="action" value="cancel" />
-      <input type="hidden" name="cancelRemarks" value={`Cancelled from assessment queue for ${studentName}`} />
+    <div className="flex items-center gap-1">
       <button
-        type="submit"
-        disabled={pending}
+        type="button"
+        onClick={handleConfirm}
+        disabled={cancel.isPending}
         className="inline-flex items-center justify-center rounded-md bg-destructive px-2 py-1 text-xs font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
       >
-        {pending ? "..." : "Confirm"}
+        {cancel.isPending ? "..." : "Confirm"}
       </button>
       <button
         type="button"
@@ -76,7 +79,7 @@ function CancelEnrollmentInline({
       >
         No
       </button>
-    </form>
+    </div>
   );
 }
 

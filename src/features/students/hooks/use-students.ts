@@ -1,7 +1,19 @@
 "use client";
 
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
+import { schoolYearFreshness } from "@/lib/query/staleness";
+import { useActiveSchoolYearId } from "@/components/providers/ActiveSchoolYearProvider";
+import { createStudentAction, updateStudentAction } from "../students.actions";
+import type {
+  CreateStudentFormState,
+  UpdateStudentFormState,
+} from "../students.schema";
 import type { StudentDirectoryRow } from "../students.queries";
 
 // ─────────────────────────────────────────────────────────────────
@@ -73,13 +85,17 @@ export function useStudents(filters: StudentFilters = {}) {
     gradeLevelId: filters.gradeLevelId || undefined,
   };
 
+  // Freshness is school-year aware: rows for the active school year stay
+  // perpetually fresh (live enrollment/assessment/payment data), while past
+  // years use a long stale window.
+  const activeSchoolYearId = useActiveSchoolYearId();
+
   return useQuery({
     queryKey: queryKeys.students.list(normalizedFilters),
     queryFn: () => fetchStudents(normalizedFilters),
     // Keep previous data during refetch (smooth pagination experience)
     placeholderData: keepPreviousData,
-    // 30 second stale time (frequent updates may happen)
-    staleTime: 30 * 1000,
+    ...schoolYearFreshness(normalizedFilters.schoolYearId, activeSchoolYearId),
   });
 }
 
@@ -104,5 +120,57 @@ export function useStudent(studentId: string | null) {
     },
     enabled: !!studentId,
     staleTime: 60 * 1000,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Mutation Hooks
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Create a student (with registration).
+ *
+ * On success, invalidates the entire `students` cache so every directory
+ * list/detail refetches with fresh data. This is what keeps the master
+ * list in sync — `revalidatePath` in the action only busts Next's *server*
+ * cache, not this client-side TanStack cache.
+ */
+export function useCreateStudent() {
+  const queryClient = useQueryClient();
+
+  return useMutation<CreateStudentFormState, Error, FormData>({
+    mutationFn: (formData) => createStudentAction({}, formData),
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.students.all });
+      }
+    },
+  });
+}
+
+/**
+ * Update an existing student.
+ *
+ * Invalidates both the lists and the specific student's detail entry so the
+ * directory row and the profile page both refetch. Falls back to the broad
+ * `students.all` key when the id isn't present on the result.
+ */
+export function useUpdateStudent() {
+  const queryClient = useQueryClient();
+
+  return useMutation<UpdateStudentFormState, Error, FormData>({
+    mutationFn: (formData) => updateStudentAction({}, formData),
+    onSuccess: (result, formData) => {
+      if (!result.success) return;
+
+      queryClient.invalidateQueries({ queryKey: queryKeys.students.lists() });
+
+      const studentId = formData.get("studentId");
+      if (typeof studentId === "string" && studentId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.students.detail(studentId),
+        });
+      }
+    },
   });
 }

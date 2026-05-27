@@ -2,6 +2,9 @@ import 'server-only';
 import { db } from "@/lib/db";
 import { enrollments, gradeLevels, schoolYears, sections, students } from "@/lib/db/schema";
 import { and, asc, desc, eq, ilike, isNull, ne, or, sql } from "drizzle-orm";
+import { STUDENT_DIRECTORY_PAGE_SIZE } from "@/lib/utils/student-directory-href";
+
+export { STUDENT_DIRECTORY_PAGE_SIZE };
 
 export async function fetchActiveSchoolYearId(): Promise<string | undefined> {
   const row = await db
@@ -12,7 +15,6 @@ export async function fetchActiveSchoolYearId(): Promise<string | undefined> {
   return row[0]?.id;
 }
 
-export const STUDENT_DIRECTORY_PAGE_SIZE = 10;
 
 export type StudentDirectoryRow = {
   enrollmentId: string;
