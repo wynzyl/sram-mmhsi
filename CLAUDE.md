@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **SRAMS (School Registration and Accounts Monitoring System)** — A production-grade K-12 school management system for managing student enrollment, fee assessments, Official Receipt (OR) tracking, payment processing, and grade encoding.
 
-**Stack:** Next.js 16 (App Router) · PostgreSQL · Drizzle ORM · Tailwind CSS 4 · Zod 4 · React Hook Form · JWT (jose)
+**Stack:** Next.js 16 (App Router) · PostgreSQL · Drizzle ORM · Tailwind CSS 4 · Zod 4 · React 19 `useActionState` + Server Actions (forms) · JWT (jose)
+
+> **Forms:** The form pattern is native React 19 `<form action={action}>` + `useActionState`, with **server-side** Zod validation in the action (`schema.safeParse(formData)`) and errors returned via `state.errors`. React Hook Form is **not** used. TanStack Form (`@tanstack/react-form`) is being trialed for complex wizard / field-array forms only (e.g. student registration) — see `StudentRegistrationFormTanstack.tsx`.
   
   #Tanstack Query 
   -Correct architecture:
