@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -13,7 +14,7 @@ export function PortalPaymentsView() {
   const rows = data?.rows ?? [];
   const showStudentColumn = data?.showStudentColumn ?? false;
 
-  let emptyCopy: React.ReactNode = null;
+  let emptyCopy: ReactNode = null;
   if (query.isLoading) {
     emptyCopy = <p className="text-muted-foreground">Loading payments…</p>;
   } else if (query.isError) {
