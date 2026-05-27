@@ -221,6 +221,71 @@ export async function getAssessmentsList(
 }
 
 /**
+ * A single row in the pending fee-assessment queue (enrollments awaiting
+ * assessment). Date is preformatted on the server (en-PH).
+ */
+export type PendingAssessmentQueueRow = {
+  enrollmentId: string;
+  referenceNumber: string;
+  studentName: string;
+  schoolYear: string;
+  gradeLevel: string;
+  queuedAtLabel: string;
+};
+
+/**
+ * Get the paginated queue of enrollments with status `pending` (awaiting fee
+ * assessment), plus the total count. Not cached — financial-adjacent workqueue.
+ */
+export async function getPendingAssessmentQueue(params: {
+  page: number;
+  pageSize: number;
+}): Promise<{ rows: PendingAssessmentQueueRow[]; totalCount: number }> {
+  const page = Math.max(1, params.page);
+  const offset = calculateOffset(page, params.pageSize);
+
+  const [countResult, pendingRows] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(enrollments)
+      .where(eq(enrollments.status, "pending")),
+    db
+      .select({
+        enrollmentId: enrollments.id,
+        enrollmentCreatedAt: enrollments.createdAt,
+        referenceNumber: students.referenceNumber,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        schoolYear: schoolYears.label,
+        gradeLevel: gradeLevels.name,
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .where(eq(enrollments.status, "pending"))
+      .orderBy(desc(enrollments.createdAt))
+      .limit(params.pageSize)
+      .offset(offset),
+  ]);
+
+  const rows: PendingAssessmentQueueRow[] = pendingRows.map((r) => ({
+    enrollmentId: r.enrollmentId,
+    referenceNumber: r.referenceNumber,
+    studentName: `${r.lastName}, ${r.firstName}`,
+    schoolYear: r.schoolYear,
+    gradeLevel: r.gradeLevel,
+    queuedAtLabel: r.enrollmentCreatedAt.toLocaleDateString("en-PH", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }),
+  }));
+
+  return { rows, totalCount: Number(countResult[0]?.count ?? 0) };
+}
+
+/**
  * Counts for each assessment billing filter category.
  */
 export type AssessmentTabCounts = {

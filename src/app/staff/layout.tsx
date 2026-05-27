@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { STAFF_ROLES, normalizeRole } from "@/lib/constants/roles";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommandPaletteProvider } from "@/components/command-palette";
+import { ActiveSchoolYearProvider } from "@/components/providers/ActiveSchoolYearProvider";
+import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import type { Role } from "@/lib/constants/roles";
 
 // Authenticated layout content - wrapped in Suspense at the page level
@@ -19,7 +21,10 @@ async function StaffLayoutContent({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  const activeSchoolYear = await getActiveSchoolYear();
+
   return (
+    <ActiveSchoolYearProvider activeSchoolYearId={activeSchoolYear?.id ?? null}>
     <CommandPaletteProvider>
       <div className="app-shell">
         <Sidebar role={user.role as Role} username={user.username} />
@@ -39,6 +44,7 @@ async function StaffLayoutContent({ children }: { children: React.ReactNode }) {
         `}</style>
       </div>
     </CommandPaletteProvider>
+    </ActiveSchoolYearProvider>
   );
 }
 

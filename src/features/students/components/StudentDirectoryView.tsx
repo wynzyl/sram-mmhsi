@@ -1,6 +1,14 @@
+"use client";
+
+import { useEffect } from "react";
 import Link from "next/link";
-import type { StudentDirectoryRow } from "../students.queries";
-import type { StudentDirectoryBasePath } from "@/lib/utils/student-directory-href";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useStudents } from "@/features/students/hooks/use-students";
+import { useActiveSchoolYearId } from "@/components/providers/ActiveSchoolYearProvider";
+import {
+  studentDirectoryListHref,
+  type StudentDirectoryBasePath,
+} from "@/lib/utils/student-directory-href";
 import { StudentDirectoryTable } from "@/features/students/components/StudentDirectoryTable";
 import { StudentDirectoryPagination } from "@/features/students/components/StudentDirectoryPagination";
 
@@ -44,42 +52,71 @@ function QuickLinkIcon({ name }: { name: StudentDirectoryQuickLink["icon"] }) {
 export function StudentDirectoryView({
   basePath,
   registerHref,
-  canCreate,
   title,
-  q,
-  schoolYearId,
-  gradeLevelId,
-  schoolYearOptions,
-  gradeLevelOptions,
-  rows,
-  emptyMessage,
-  totalCount,
-  totalPages,
-  currentPage,
   quickLinks,
 }: {
   basePath: StudentDirectoryBasePath;
   registerHref: string;
-  canCreate: boolean;
   title: string;
-  q: string;
-  schoolYearId?: string;
-  gradeLevelId?: string;
-  schoolYearOptions: { id: string; label: string }[];
-  gradeLevelOptions: { id: string; name: string }[];
-  rows: StudentDirectoryRow[];
-  emptyMessage: string;
-  totalCount: number;
-  totalPages: number;
-  currentPage: number;
   quickLinks: StudentDirectoryQuickLink[];
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeSchoolYearId = useActiveSchoolYearId();
+
+  // ─── Filters from URL (URL is the source of truth) ──────────────────
+  const q = searchParams.get("q") ?? "";
+  const rawYear = searchParams.get("schoolYearId") || undefined;
+  const gradeLevelId = searchParams.get("gradeLevelId") || undefined;
+  const currentPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  // Three cases for the year filter:
+  // - "all"     → explicit "All school years": no year filter.
+  // - <uuid>    → that specific year.
+  // - absent    → initial load defaults to the active year (keeps freshness "current").
+  const isAllYears = rawYear === "all";
+  const effectiveSchoolYearId = isAllYears
+    ? undefined
+    : rawYear ?? activeSchoolYearId ?? undefined;
+
+  const query = useStudents({
+    q,
+    page: currentPage,
+    schoolYearId: effectiveSchoolYearId,
+    gradeLevelId,
+  });
+
+  const data = query.data;
+  const rows = data?.rows ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = data?.totalPages ?? 0;
+  const schoolYearOptions = data?.schoolYearOptions ?? [];
+  const gradeLevelOptions = data?.gradeLevelOptions ?? [];
+  const canCreate = data?.canCreate ?? false;
+
+  // If the requested page is out of range, snap back to the last page.
+  useEffect(() => {
+    if (totalCount > 0 && currentPage > totalPages) {
+      router.replace(
+        studentDirectoryListHref(basePath, {
+          q: q.trim() || undefined,
+          schoolYearId: rawYear,
+          gradeLevelId,
+          page: totalPages,
+        })
+      );
+    }
+  }, [totalCount, totalPages, currentPage, basePath, q, rawYear, gradeLevelId, router]);
+
+  // ─── Derived display values ─────────────────────────────────────────
   const qTrim = q.trim();
   const qParam = qTrim || undefined;
-  const hasFilters = qTrim !== "" || schoolYearId != null || gradeLevelId != null;
+  const hasFilters = qTrim !== "" || rawYear != null || gradeLevelId != null;
 
   const selectedYearLabel =
-    schoolYearId != null ? schoolYearOptions.find((y) => y.id === schoolYearId)?.label : null;
+    !isAllYears && effectiveSchoolYearId != null
+      ? schoolYearOptions.find((y) => y.id === effectiveSchoolYearId)?.label
+      : null;
   const selectedGradeLabel =
     gradeLevelId != null ? gradeLevelOptions.find((g) => g.id === gradeLevelId)?.name : null;
 
@@ -94,7 +131,24 @@ export function StudentDirectoryView({
     subtitleFilter = "All enrolled school years";
   }
 
-  const clearHref = basePath;
+  // ─── Filter form submit → push to URL (page resets to 1) ────────────
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const nextQ = (form.get("q") as string | null)?.trim() || undefined;
+    const nextYear = (form.get("schoolYearId") as string | null) || undefined;
+    const nextGrade = (form.get("gradeLevelId") as string | null) || undefined;
+    router.push(
+      studentDirectoryListHref(basePath, {
+        q: nextQ,
+        schoolYearId: nextYear,
+        gradeLevelId: nextGrade,
+      })
+    );
+  }
+
+  const isInitialLoading = query.isLoading;
+  const emptyMessage = data?.emptyMessage ?? "No students found.";
 
   return (
     <div className="page-container space-y-8">
@@ -116,7 +170,8 @@ export function StudentDirectoryView({
       </div>
 
       <form
-        method="GET"
+        key={searchParams.toString()}
+        onSubmit={handleSubmit}
         role="search"
         className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 shadow-sm focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-1 sm:flex-row sm:flex-wrap sm:items-stretch"
       >
@@ -143,11 +198,11 @@ export function StudentDirectoryView({
 
         <select
           name="schoolYearId"
-          defaultValue={schoolYearId ?? ""}
+          defaultValue={isAllYears ? "all" : (rawYear ?? activeSchoolYearId ?? "")}
           aria-label="Filter by school year"
           className="form-control min-h-11 min-w-0 shrink-0 sm:min-w-44 sm:max-w-56 bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
         >
-          <option value="">All school years</option>
+          <option value="all">All school years</option>
           {schoolYearOptions.map((y) => (
             <option key={y.id} value={y.id}>
               {y.label}
@@ -172,7 +227,7 @@ export function StudentDirectoryView({
         <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           {hasFilters && (
             <Link
-              href={clearHref}
+              href={basePath}
               className="inline-flex min-h-11 items-center px-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Clear filters
@@ -211,6 +266,11 @@ export function StudentDirectoryView({
             Active student roster
           </h2>
           <div className="flex items-center gap-2">
+            {query.isFetching && !isInitialLoading && (
+              <span className="text-xs text-muted-foreground" aria-live="polite">
+                Refreshing…
+              </span>
+            )}
             <button
               type="button"
               disabled
@@ -229,10 +289,21 @@ export function StudentDirectoryView({
           </div>
         </div>
 
-        <StudentDirectoryTable
-          rows={rows}
-          emptyMessage={emptyMessage}
-        />
+        {query.isError ? (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-6 text-center text-sm text-destructive">
+            Failed to load students. Please try again.
+            <div className="mt-3">
+              <button type="button" onClick={() => query.refetch()} className="btn-primary min-h-9 px-4">
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : (
+          <StudentDirectoryTable
+            rows={rows}
+            emptyMessage={isInitialLoading ? "Loading students…" : emptyMessage}
+          />
+        )}
 
         <StudentDirectoryPagination
           basePath={basePath}
@@ -240,7 +311,7 @@ export function StudentDirectoryView({
           totalPages={totalPages}
           totalCount={totalCount}
           q={qParam}
-          schoolYearId={schoolYearId}
+          schoolYearId={rawYear}
           gradeLevelId={gradeLevelId}
         />
       </section>
