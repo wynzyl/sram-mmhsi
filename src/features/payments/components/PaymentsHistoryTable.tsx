@@ -6,6 +6,7 @@ import type { RequestVoidFormState, CancelVoidRequestFormState } from "../void-r
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { formatDate } from "@/lib/utils/date";
 import { useFormToast } from "@/hooks/useFormToast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -216,7 +217,9 @@ export default function PaymentsHistoryTable({
         cell: ({ row }) => {
           const d = row.original.paymentDate;
           const date = d instanceof Date ? d : new Date(d);
-          return Number.isFinite(date.getTime()) ? date.toLocaleDateString("en-PH") : "-";
+          return Number.isFinite(date.getTime())
+            ? formatDate(date, { year: "numeric", month: "numeric", day: "numeric" })
+            : "-";
         },
       },
       {

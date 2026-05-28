@@ -9,6 +9,7 @@ import {
 import { BfxReportFilters } from "@/features/reports/components/BfxReportFilters";
 import { BfxReportTable } from "@/features/reports/components/BfxReportTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { formatDate } from "@/lib/utils/date";
 
 interface PageProps {
   searchParams: Promise<{
@@ -102,13 +103,13 @@ export default async function BalanceForwardsReportPage({
         <div className="p-4 bg-card border border-border rounded-lg">
           <p className="text-sm text-muted-foreground">Period</p>
           <p className="text-sm font-medium text-foreground mt-1">
-            {startDate.toLocaleDateString("en-PH", {
+            {formatDate(startDate, {
               month: "short",
               day: "numeric",
               year: "numeric",
             })}{" "}
             -{" "}
-            {endDate.toLocaleDateString("en-PH", {
+            {formatDate(endDate, {
               month: "short",
               day: "numeric",
               year: "numeric",

@@ -28,10 +28,10 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
+import { formatDate as formatDateLocalized } from "@/lib/utils/date";
 
 function formatDate(date: Date | null | undefined): string {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("en-PH", {
+  return formatDateLocalized(date, {
     year: "numeric",
     month: "short",
     day: "numeric",

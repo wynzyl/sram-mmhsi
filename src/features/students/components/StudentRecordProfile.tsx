@@ -12,6 +12,7 @@ import {
   registrationStudentTypeLabel,
 } from "@/lib/utils/intake-documents";
 import { formatPhoneNumber } from "@/lib/utils/phone";
+import { formatDate } from "@/lib/utils/date";
 
 export type StudentRecordStudent = {
   id: string;
@@ -169,7 +170,7 @@ function RequirementsRecordCard({ snap }: { snap: StudentRequirementsSnapshot })
             Enrollment type {registrationStudentTypeLabel(snap.studentType)}
             {" · "}
             Recorded{" "}
-            {snap.recordedAt.toLocaleDateString("en-PH", {
+            {formatDate(snap.recordedAt, {
               year: "numeric",
               month: "short",
               day: "numeric",
@@ -287,7 +288,7 @@ export function StudentRecordProfile({
             <dt>Date of birth</dt>
             <dd>
               {student.dateOfBirth
-                ? new Date(student.dateOfBirth).toLocaleDateString("en-PH", {
+                ? formatDate(student.dateOfBirth, {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
@@ -344,7 +345,7 @@ export function StudentRecordProfile({
           <div className="student-record-dl-row">
             <dt>Registered</dt>
             <dd>
-              {new Date(student.createdAt).toLocaleDateString("en-PH", {
+              {formatDate(student.createdAt, {
                 year: "numeric",
                 month: "long",
                 day: "numeric",
@@ -456,7 +457,7 @@ export function StudentRecordProfile({
                     </td>
                     <td className="student-record-muted">
                       {row.enrolledAt
-                        ? new Date(row.enrolledAt).toLocaleDateString("en-PH", {
+                        ? formatDate(row.enrolledAt, {
                             year: "numeric",
                             month: "short",
                             day: "numeric",
@@ -464,7 +465,7 @@ export function StudentRecordProfile({
                         : "—"}
                     </td>
                     <td className="student-record-muted">
-                      {new Date(row.createdAt).toLocaleDateString("en-PH", {
+                      {formatDate(row.createdAt, {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
@@ -566,7 +567,7 @@ export function StudentRecordProfile({
                     </td>
                     <td className="student-record-muted">
                       {inv.dueDate
-                        ? new Date(inv.dueDate).toLocaleDateString("en-PH", {
+                        ? formatDate(inv.dueDate, {
                             year: "numeric",
                             month: "short",
                             day: "numeric",
@@ -574,7 +575,7 @@ export function StudentRecordProfile({
                         : "—"}
                     </td>
                     <td className="student-record-muted">
-                      {new Date(inv.createdAt).toLocaleDateString("en-PH", {
+                      {formatDate(inv.createdAt, {
                         year: "numeric",
                         month: "short",
                         day: "numeric",

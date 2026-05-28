@@ -10,6 +10,7 @@ import type { NewAssessmentFeeCatalogEntry, ExpectedDiscountsSummary } from "../
 import { useFormToast } from "@/hooks/useFormToast";
 import { TextAreaField } from "@/components/forms/TextInputField";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { formatDate } from "@/lib/utils/date";
 import {
   DataCard,
   DataCardHeader,
@@ -393,7 +394,7 @@ export default function AssessmentDraftForm({
                             )}
                             <p className="mt-1 text-xs text-muted-foreground">
                               Requested by {req.requestedByName} on{" "}
-                              {new Date(req.requestedAt).toLocaleDateString()}
+                              {formatDate(req.requestedAt, { year: "numeric", month: "numeric", day: "numeric" })}
                             </p>
                           </div>
                           {canReviewDiscounts && (

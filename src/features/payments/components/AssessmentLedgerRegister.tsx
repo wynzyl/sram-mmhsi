@@ -14,6 +14,7 @@ import { cancelAssessmentAction } from "@/features/assessments/assessments.actio
 import { useFormToast } from "@/hooks/useFormToast";
 import { TextAreaField } from "@/components/forms/TextInputField";
 import { cn } from "@/lib/utils/cn";
+import { formatDate } from "@/lib/utils/date";
 
 export type LedgerLineItem = {
   id: string;
@@ -370,7 +371,7 @@ export default function AssessmentLedgerRegister({
               </p>
               <p style={{ fontSize: "0.875rem", lineHeight: "1.5", color: "var(--foreground)" }}>
                 This assessment's outstanding balance was transferred to a newer school year on{" "}
-                {new Date(assessment.transferredAt).toLocaleDateString("en-PH", {
+                {formatDate(assessment.transferredAt, {
                   year: "numeric",
                   month: "long",
                   day: "numeric",

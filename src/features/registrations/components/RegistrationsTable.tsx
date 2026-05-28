@@ -4,6 +4,7 @@ import Link from "next/link";
 import { StudentRowActionsMenu } from "@/features/students/components/StudentRowActionsMenu";
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import { registrationStudentTypeLabel } from "@/lib/utils/intake-documents";
+import { formatDate as formatDateLocalized } from "@/lib/utils/date";
 
 export interface RegistrationRow {
   id: string;
@@ -62,7 +63,7 @@ function countIntakeDocuments(docs: EnrollmentIntakeDocuments | null): {
 }
 
 function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString("en-PH", {
+  return formatDateLocalized(date, {
     year: "numeric",
     month: "short",
     day: "numeric",

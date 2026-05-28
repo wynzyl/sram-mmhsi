@@ -6,6 +6,7 @@ import { desc, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
+import { formatDate } from "@/lib/utils/date";
 
 export const metadata: Metadata = {
   title: "School Years",
@@ -70,14 +71,14 @@ export default async function StaffSchoolYearsPage() {
                     {sy.isActive && <span className="badge badge-success ml-2">Active</span>}
                   </td>
                   <td>
-                    {new Date(sy.startDate).toLocaleDateString("en-PH", {
+                    {formatDate(sy.startDate, {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
                     })}
                   </td>
                   <td>
-                    {new Date(sy.endDate).toLocaleDateString("en-PH", {
+                    {formatDate(sy.endDate, {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
@@ -89,7 +90,7 @@ export default async function StaffSchoolYearsPage() {
                     </span>
                   </td>
                   <td className="text-muted">
-                    {new Date(sy.createdAt).toLocaleDateString("en-PH", {
+                    {formatDate(sy.createdAt, {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
