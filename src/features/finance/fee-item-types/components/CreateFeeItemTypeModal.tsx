@@ -18,6 +18,7 @@ export function CreateFeeItemTypeModal() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isDiscount, setIsDiscount] = useState(false);
+  const [isRefundable, setIsRefundable] = useState(true); // Default to refundable
   const [state, formAction, isPending] = useActionState(createFeeItemTypeAction, initialState);
 
   const openModal = useCallback(() => setOpen(true), []);
@@ -158,6 +159,36 @@ export function CreateFeeItemTypeModal() {
                       <p className="text-sm font-medium text-foreground">This is a discount</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         Discount types subtract from the assessment total
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Refundable toggle */}
+                  <div className="flex items-start gap-3 py-2">
+                    <input
+                      type="hidden"
+                      name="isRefundable"
+                      value={isRefundable ? "true" : "false"}
+                    />
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isRefundable}
+                      className={cn(
+                        "relative w-10 h-6 rounded-full border cursor-pointer shrink-0 transition-colors",
+                        isRefundable ? "bg-green-500 border-green-500" : "bg-muted border-border"
+                      )}
+                      onClick={() => setIsRefundable((v) => !v)}
+                    >
+                      <span className={cn(
+                        "absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform",
+                        isRefundable && "translate-x-4"
+                      )} />
+                    </button>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Refundable on cancellation</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Payments for this fee can be refunded when enrollment is cancelled within the cutoff period
                       </p>
                     </div>
                   </div>

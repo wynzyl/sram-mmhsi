@@ -115,7 +115,7 @@ export async function listVoidRequestHistory(opts: {
   const { limit = 50, offset = 0 } = opts;
 
   // Use aliases for the two user joins (requester and decider)
-  const results = await db.execute(sql`
+  const rows = await db.execute(sql`
     SELECT
       vr.id,
       vr.payment_id,
@@ -143,11 +143,11 @@ export async function listVoidRequestHistory(opts: {
     OFFSET ${offset}
   `);
 
-  if (!Array.isArray(results)) {
+  if (!rows || rows.length === 0) {
     return [];
   }
 
-  return results.map((r: Record<string, unknown>) => ({
+  return Array.from(rows).map((r: Record<string, unknown>) => ({
     id: String(r.id),
     paymentId: String(r.payment_id),
     orNumber: r.or_number != null ? String(r.or_number) : null,
@@ -229,7 +229,7 @@ export async function countPendingVoidRequests(): Promise<number> {
  * Gets a single void request by ID with full details.
  */
 export async function getVoidRequestById(requestId: string) {
-  const result = await db.execute(sql`
+  const rows = await db.execute(sql`
     SELECT
       vr.*,
       p.or_number,
@@ -255,18 +255,18 @@ export async function getVoidRequestById(requestId: string) {
     LIMIT 1
   `);
 
-  if (!Array.isArray(result) || result.length === 0) {
+  if (!rows || rows.length === 0) {
     return null;
   }
 
-  return result[0];
+  return rows[0];
 }
 
 /**
  * Lists pending void requests for a specific user (their own requests).
  */
 export async function listMyPendingVoidRequests(userId: string): Promise<PendingVoidRequest[]> {
-  const results = await db.execute(sql`
+  const rows = await db.execute(sql`
     SELECT
       vr.id,
       vr.payment_id,
@@ -290,11 +290,11 @@ export async function listMyPendingVoidRequests(userId: string): Promise<Pending
     ORDER BY vr.requested_at DESC
   `);
 
-  if (!Array.isArray(results)) {
+  if (!rows || rows.length === 0) {
     return [];
   }
 
-  return results.map((r: Record<string, unknown>) => ({
+  return Array.from(rows).map((r: Record<string, unknown>) => ({
     id: String(r.id),
     paymentId: String(r.payment_id),
     orNumber: r.or_number != null ? String(r.or_number) : null,
@@ -324,7 +324,7 @@ export async function listMyVoidRequestHistory(
 ): Promise<VoidRequestHistoryRow[]> {
   const { limit = 50, offset = 0 } = opts;
 
-  const results = await db.execute(sql`
+  const rows = await db.execute(sql`
     SELECT
       vr.id,
       vr.payment_id,
@@ -352,11 +352,11 @@ export async function listMyVoidRequestHistory(
     OFFSET ${offset}
   `);
 
-  if (!Array.isArray(results)) {
+  if (!rows || rows.length === 0) {
     return [];
   }
 
-  return results.map((r: Record<string, unknown>) => ({
+  return Array.from(rows).map((r: Record<string, unknown>) => ({
     id: String(r.id),
     paymentId: String(r.payment_id),
     orNumber: r.or_number != null ? String(r.or_number) : null,

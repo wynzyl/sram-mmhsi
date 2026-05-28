@@ -1,6 +1,17 @@
 // Actions
 export * from "./enrollments.actions";
 export * from "./enrollment-confirmation.actions";
+export * from "./enrollment-cancellation.actions";
+
+// Cancellation Schemas
+export * from "./enrollment-cancellation.schema";
+
+// Cancellation Queries (types only - functions are server-only)
+export type {
+  CancellationRequestListItem,
+  CancellationRequestDetail,
+  RefundCalculation,
+} from "./enrollment-cancellation.queries";
 
 // Queries - Export types only (functions are server-only, import directly from query files)
 export type {
@@ -55,6 +66,15 @@ export { default as ReadyToEnrollTable } from "./components/ReadyToEnrollTable";
 export { default as ReadyToEnrollTableClient } from "./components/ReadyToEnrollTableClient";
 export { default as StudentPicker } from "./components/StudentPicker";
 export type { StudentPickerOption } from "./components/StudentPicker";
+
+// Cancellation Components
+export { default as CancellationRequestsTable } from "./components/CancellationRequestsTable";
+export { default as CancellationRequestDetailCard } from "./components/CancellationRequestDetail";
+export { default as DirectCancelForm } from "./components/DirectCancelForm";
+export { default as RequestCancellationForm } from "./components/RequestCancellationForm";
+export { default as WithdrawRequestButton } from "./components/WithdrawRequestButton";
+export { default as EnrollmentCancellationSection } from "./components/EnrollmentCancellationSection";
+export { default as CancelEnrollmentButton } from "./components/CancelEnrollmentButton";
 
 // Re-export intake document utilities
 export { parseIntakeDocumentStatus } from '@/lib/validators/intake-documents';

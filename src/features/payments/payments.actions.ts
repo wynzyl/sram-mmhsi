@@ -36,6 +36,7 @@ import {
   lockEnrollment,
 } from "@/lib/utils/tx-helpers";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
+import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -201,6 +202,16 @@ export async function postPaymentAction(
         enrollmentForPayment?.id ?? assessment.enrollmentId ?? null,
         assessment.enrollmentId ?? null
       );
+
+      // Check for pending cancellation request (blocks all payments)
+      if (assessment.enrollmentId) {
+        const hasPendingCancel = await hasPendingCancellationRequest(assessment.enrollmentId);
+        if (hasPendingCancel) {
+          throw new Error(
+            "Cannot record payment: enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
+          );
+        }
+      }
 
       if (referenceNumber) {
         const existingRef = await tx.query.payments.findFirst({
@@ -398,6 +409,22 @@ export async function voidPaymentAction(
 
       if (payment.status === "voided") {
         throw new Error("Payment is already voided.");
+      }
+
+      // Check for pending cancellation request (blocks voids too)
+      if (payment.assessmentId) {
+        const assessment = await tx.query.assessments.findFirst({
+          where: eq(assessments.id, payment.assessmentId),
+          columns: { enrollmentId: true },
+        });
+        if (assessment?.enrollmentId) {
+          const hasPendingCancel = await hasPendingCancellationRequest(assessment.enrollmentId);
+          if (hasPendingCancel) {
+            throw new Error(
+              "Cannot void payment: enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
+            );
+          }
+        }
       }
 
       // 2. Mark Payment as Voided

@@ -19,7 +19,9 @@ export type NavIconName =
   | "fee-item-types"
   | "void-requests"
   | "reports"
-  | "discounts";
+  | "discounts"
+  | "cancellation-requests"
+  | "clearances";
 
 /** One level of nested links (e.g. Register Student). Deeper nesting is not rendered. */
 export type NavItem = {
@@ -48,6 +50,8 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Finance",
       items: [
         { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
+        { href: "/admin/cancellation-requests", label: "Cancellation Requests", icon: "cancellation-requests" },
+        { href: "/admin/clearances", label: "Clearances", icon: "clearances" },
       ],
     },
     {
@@ -88,6 +92,8 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
         { href: "/staff/finance/discount-types", label: "Discount Types", icon: "discounts" },
         { href: "/staff/finance/discount-requests", label: "Discount Requests", icon: "discounts" },
+        { href: "/admin/cancellation-requests", label: "Cancellation Requests", icon: "cancellation-requests" },
+        { href: "/admin/clearances", label: "Clearances", icon: "clearances" },
       ],
     },
     {

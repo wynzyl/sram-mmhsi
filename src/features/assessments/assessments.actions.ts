@@ -31,6 +31,7 @@ import {
   hasPendingDiscountRequests,
   applyApprovedDiscountsToAssessment,
 } from "@/features/discounts";
+import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
 
 export async function createAssessmentFromEnrollmentAction(
   _prevState: AssessmentFormState,
@@ -211,6 +212,7 @@ export async function createAssessmentFromEnrollmentAction(
     description: string;
     amount: number;
     isDiscount: boolean;
+    isRefundable: boolean; // For cancellation refund calculation
     feeTemplateItemId: string | null; // Allow null for balance forward items
     feeItemTypeId: string;
     feeItemTypeCode: string | null; // For discount base calculation
@@ -225,6 +227,7 @@ export async function createAssessmentFromEnrollmentAction(
       description: template.description,
       amount: line.amount,
       isDiscount: template.isDiscount,
+      isRefundable: template.isRefundable, // Copy from fee item type
     });
   }
 
@@ -252,6 +255,7 @@ export async function createAssessmentFromEnrollmentAction(
         description: bfItem.description,
         amount: Number(bfItem.amount),
         isDiscount: false,
+        isRefundable: false, // Balance forward items are never refundable
         sourceAssessmentId: bfItem.sourceAssessmentId, // Link to source assessment
       });
     }
@@ -309,6 +313,7 @@ export async function createAssessmentFromEnrollmentAction(
           description: item.description,               // ← Snapshot from fee_item_types.name
           amount: String(Number(item.amount).toFixed(2)),
           isDiscount: item.isDiscount,                 // ← Snapshot from fee_item_types.isDiscount
+          isRefundable: item.isRefundable,             // ← Snapshot from fee_item_types.isRefundable
           sourceAssessmentId: item.sourceAssessmentId ?? null, // ← Link to source assessment for balance forward
           createdBy: session.userId,
           updatedBy: session.userId,
@@ -827,6 +832,17 @@ export async function cancelAssessmentAction(
     return {
       message: `Cannot cancel: enrollment status is '${assessment.enrollment?.status ?? "unknown"}'. Only assessments with enrollment status 'assessed' can be cancelled.`,
     };
+  }
+
+  // 5b. Check for pending cancellation request (blocks assessment modifications)
+  if (assessment.enrollmentId) {
+    const hasPendingCancel = await hasPendingCancellationRequest(assessment.enrollmentId);
+    if (hasPendingCancel) {
+      return {
+        message:
+          "Cannot cancel assessment: enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn.",
+      };
+    }
   }
 
   // 6. HARD BLOCK: No posted payments allowed (per spec, no admin override)
