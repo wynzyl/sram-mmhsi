@@ -18,7 +18,6 @@ export * from "./students.utils";
 export * from "@/lib/utils/student-directory-href";
 
 // Components
-export { default as StudentForm } from "./components/StudentForm";
 export { default as EditStudentForm } from "./components/EditStudentForm";
 export { StudentDirectoryTable } from "./components/StudentDirectoryTable";
 export { StudentRecordProfile } from "./components/StudentRecordProfile";
