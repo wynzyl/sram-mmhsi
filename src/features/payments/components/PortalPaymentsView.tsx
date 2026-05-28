@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { formatDate } from "@/lib/utils/date";
 import { usePortalPayments } from "@/features/payments/hooks/use-portal-payments";
 
 export function PortalPaymentsView() {
@@ -61,7 +62,7 @@ export function PortalPaymentsView() {
             </thead>
             <tbody>
               {rows.map((r) => {
-                const dateLabel = new Date(r.paymentDate).toLocaleDateString("en-PH", {
+                const dateLabel = formatDate(r.paymentDate, {
                   year: "numeric",
                   month: "short",
                   day: "numeric",

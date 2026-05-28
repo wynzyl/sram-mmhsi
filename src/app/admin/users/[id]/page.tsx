@@ -7,6 +7,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { ROLE_LABELS } from "@/lib/constants/roles";
+import { formatDate } from "@/lib/utils/date";
 import ResetPasswordForm from "@/features/users/components/ResetPasswordForm";
 
 interface PageProps {
@@ -106,7 +107,7 @@ export default async function UserProfilePage({ params }: PageProps) {
             <div className="grid gap-1 border-b border-border/70 pb-2 sm:grid-cols-[14rem_1fr] sm:items-center">
               <span className="font-medium text-muted-foreground">Created</span>
               <span className="text-foreground">
-                {new Date(user.createdAt).toLocaleDateString("en-PH", {
+                {formatDate(user.createdAt, {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -116,7 +117,7 @@ export default async function UserProfilePage({ params }: PageProps) {
             <div className="grid gap-1 sm:grid-cols-[14rem_1fr] sm:items-center">
               <span className="font-medium text-muted-foreground">Last Updated</span>
               <span className="text-foreground">
-                {new Date(user.updatedAt).toLocaleDateString("en-PH", {
+                {formatDate(user.updatedAt, {
                   year: "numeric",
                   month: "long",
                   day: "numeric",

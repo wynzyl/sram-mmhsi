@@ -7,6 +7,7 @@ import { CLEARANCE_TYPE_LABELS, type ClearanceType } from "../clearances.schema"
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -89,7 +90,7 @@ export default function ClearanceTable({
         accessorKey: "createdAt",
         cell: ({ row }) => (
           <div className="text-sm">
-            {new Date(row.original.createdAt).toLocaleDateString("en-PH")}
+            {formatDate(row.original.createdAt, { year: "numeric", month: "numeric", day: "numeric" })}
           </div>
         ),
       },

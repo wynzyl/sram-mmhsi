@@ -3,6 +3,7 @@
 import { Download, Pencil, SlidersHorizontal } from "lucide-react";
 import { formatStoredOrNumber, orNumberPadWidth } from "@/lib/utils/or-number";
 import { getReceiptStatusClasses } from "@/lib/utils/receipt-theme";
+import { formatDate } from "@/lib/utils/date";
 
 interface ReceiptBooklet {
   id: string;
@@ -58,7 +59,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
                     <td>
                       <span className={`badge capitalize ${getReceiptStatusClasses(booklet.status)}`}>{booklet.status}</span>
                     </td>
-                    <td className="text-muted">{booklet.createdAt.toLocaleDateString()}</td>
+                    <td className="text-muted">{formatDate(booklet.createdAt, { year: "numeric", month: "numeric", day: "numeric" })}</td>
                   </tr>
                 );
               })

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
+import { formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { BfxTransferRow } from "../balance-forward-report.queries";
@@ -32,18 +33,11 @@ export function BfxReportTable({ data }: BfxReportTableProps) {
         header: "Transfer Date",
         accessorKey: "transferDate",
         cell: ({ row }) => {
-          const date = row.original.transferDate;
-          return date instanceof Date
-            ? date.toLocaleDateString("en-PH", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })
-            : new Date(date).toLocaleDateString("en-PH", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              });
+          return formatDate(row.original.transferDate, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
         },
       },
       {

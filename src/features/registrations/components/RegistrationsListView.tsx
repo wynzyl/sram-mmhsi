@@ -11,6 +11,7 @@ import { StudentRowActionsMenu } from "@/features/students/components/StudentRow
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import { registrationStudentTypeLabel } from "@/lib/utils/intake-documents";
 import { cn } from "@/lib/utils/cn";
+import { formatDate } from "@/lib/utils/date";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export interface RegistrationRow {
@@ -186,7 +187,7 @@ export default function RegistrationsListView({
                       {/* Registration date */}
                       <p className="mt-3 text-xs text-muted-foreground">
                         Registered{" "}
-                        {new Date(reg.createdAt).toLocaleDateString("en-PH", {
+                        {formatDate(reg.createdAt, {
                           year: "numeric",
                           month: "short",
                           day: "numeric",

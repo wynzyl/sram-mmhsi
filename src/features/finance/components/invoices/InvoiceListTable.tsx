@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatDate } from "@/lib/utils/date";
 
 interface InvoiceData {
   id: string;
@@ -68,7 +69,7 @@ export default function InvoiceListTable({
                     {invoice.status.toUpperCase()}
                   </span>
                 </td>
-                <td>{new Date(invoice.createdAt).toLocaleDateString()}</td>
+                <td>{formatDate(invoice.createdAt, { year: "numeric", month: "numeric", day: "numeric" })}</td>
                 <td>
                   <Link
                     href={`${normalizedBasePath}/${invoice.id}`}

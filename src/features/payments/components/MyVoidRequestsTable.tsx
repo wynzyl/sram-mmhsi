@@ -7,6 +7,7 @@ import type { PendingVoidRequest } from "../void-requests.queries";
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { formatDate } from "@/lib/utils/date";
 import { useFormToast } from "@/hooks/useFormToast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,9 +83,9 @@ export default function MyVoidRequestsTable({
           const date = new Date(row.original.requestedAt);
           return (
             <div className="text-sm">
-              <div>{date.toLocaleDateString("en-PH")}</div>
+              <div>{formatDate(date, { year: "numeric", month: "numeric", day: "numeric" })}</div>
               <div className="text-xs text-muted-foreground">
-                {date.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" })}
+                {formatDate(date, { hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>
           );

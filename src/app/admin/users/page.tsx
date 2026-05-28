@@ -7,6 +7,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import { ROLE_LABELS, type Role } from "@/lib/constants/roles";
+import { formatDate } from "@/lib/utils/date";
 
 export const metadata: Metadata = {
   title: "User Management",
@@ -158,7 +159,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
                     </span>
                   </td>
                   <td className="text-muted">
-                    {new Date(user.createdAt).toLocaleDateString("en-PH", {
+                    {formatDate(user.createdAt, {
                       year: "numeric",
                       month: "short",
                       day: "numeric",

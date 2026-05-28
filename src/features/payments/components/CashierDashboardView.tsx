@@ -6,6 +6,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
+import { formatDate } from "@/lib/utils/date";
 import { CashierQueueTable } from "@/features/payments/components/CashierQueueTable";
 import { useCashierQueue } from "@/features/payments/hooks/use-cashier-queue";
 
@@ -140,10 +141,9 @@ export function CashierDashboardView() {
                             {p.studentLastName}, {p.studentFirstName}
                           </p>
                           <p className="mt-1 truncate text-[11px] text-muted-foreground">
-                            {new Date(p.paymentDate).toLocaleTimeString("en-PH", {
+                            {formatDate(p.paymentDate, {
                               hour: "numeric",
                               minute: "2-digit",
-                              timeZone: "Asia/Manila",
                             })}
                           </p>
                         </div>

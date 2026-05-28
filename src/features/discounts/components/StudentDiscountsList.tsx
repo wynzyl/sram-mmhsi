@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import type { StudentDiscountView } from "../discounts.schema";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import DiscountReversalModal from "./DiscountReversalModal";
@@ -129,7 +130,7 @@ export default function StudentDiscountsList({
                     Base: <CurrencyDisplay amount={Number(discount.baseAmount)} className="inline" />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Applied {new Date(discount.appliedAt).toLocaleDateString("en-PH")} by{" "}
+                    Applied {formatDate(discount.appliedAt, { year: "numeric", month: "numeric", day: "numeric" })} by{" "}
                     {discount.appliedByName}
                   </div>
                 </div>
@@ -187,7 +188,7 @@ export default function StudentDiscountsList({
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
                     Reversed{" "}
-                    {new Date(discount.reversedAt!).toLocaleDateString("en-PH")}
+                    {formatDate(discount.reversedAt!, { year: "numeric", month: "numeric", day: "numeric" })}
                     {discount.reversedByName && ` by ${discount.reversedByName}`}
                   </div>
                   {discount.reversalRemarks && (

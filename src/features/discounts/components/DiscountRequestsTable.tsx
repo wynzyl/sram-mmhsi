@@ -19,6 +19,7 @@ import type {
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { formatDate } from "@/lib/utils/date";
 import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -235,7 +236,7 @@ export default function DiscountRequestsTable({
           const date = new Date(row.original.requestedAt);
           return (
             <div className="text-sm">
-              <div>{date.toLocaleDateString("en-PH")}</div>
+              <div>{formatDate(date, { year: "numeric", month: "numeric", day: "numeric" })}</div>
               <div className="text-xs text-muted-foreground">
                 by {row.original.requestedByName}
               </div>
