@@ -5,10 +5,9 @@ import { eq, asc, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import StudentRegistrationForm from "@/features/registrations/components/StudentRegistrationForm";
-import StudentRegistrationFormTanstack from "@/features/registrations/components/StudentRegistrationFormTanstack";
 
 export async function InternalNewStudentRegistrationPage(props: {
-  searchParams: Promise<{ intent?: string; form?: string }>;
+  searchParams: Promise<{ intent?: string }>;
   deniedRedirect: string;
   afterCreateStudentBasePath: "/staff/students";
 }) {
@@ -16,9 +15,8 @@ export async function InternalNewStudentRegistrationPage(props: {
   const session = await requireSession();
   if (!hasPermission(session.role, "students:create")) redirect(deniedRedirect);
 
-  const { intent, form } = await searchParams;
+  const { intent } = await searchParams;
   const lockedRegistrationType = intent === "transferee" ? "transferee" : "new_student";
-  const useTanstackPrototype = form === "tanstack";
 
   const [activeSyRows, glRows] = await Promise.all([
     db
@@ -58,20 +56,12 @@ export async function InternalNewStudentRegistrationPage(props: {
         <p className="max-w-2xl text-muted-foreground">{subtitle}</p>
       </header>
 
-      {useTanstackPrototype ? (
-        <StudentRegistrationFormTanstack
-          currentSchoolYear={currentSchoolYear}
-          gradeLevels={glRows}
-          lockedRegistrationType={lockedRegistrationType}
-        />
-      ) : (
-        <StudentRegistrationForm
-          afterCreateStudentBasePath={afterCreateStudentBasePath}
-          currentSchoolYear={currentSchoolYear}
-          gradeLevels={glRows}
-          lockedRegistrationType={lockedRegistrationType}
-        />
-      )}
+      <StudentRegistrationForm
+        afterCreateStudentBasePath={afterCreateStudentBasePath}
+        currentSchoolYear={currentSchoolYear}
+        gradeLevels={glRows}
+        lockedRegistrationType={lockedRegistrationType}
+      />
     </div>
   );
 }

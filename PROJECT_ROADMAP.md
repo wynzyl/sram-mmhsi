@@ -2,9 +2,14 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-05-23
+> Last sync: 2026-05-28
 
-### Current update highlights (2026-05-23)
+### Current update highlights (2026-05-28)
+- **TanStack Form — first in-place migration** — `StudentRegistrationForm` (4-step wizard + guardian field array) migrated from native `useActionState` to TanStack Form (`@tanstack/react-form`). Live per-field validation reuses the existing Zod schemas via a `zodCheck` adapter; server action + FormData contract unchanged.
+- **Migration bug fixes** — guardian single-primary toggle now works (whole-array `setFieldValue`), and submit redirect/toast fixed by wrapping the `useActionState` dispatch in `startTransition`. Both found via browser dogfood.
+- **Forms-stack cleanup** — phantom `react-hook-form` / `@hookform/resolvers` removed; prototype + `?form=tanstack` toggle retired. Per-form assessment and migration order documented in `docs/TANSTACK-MIGRATION/TANSTACK-FORM-CANDIDATES.md`.
+
+### Previous highlights (2026-05-23)
 - **Assessment cancellation & reassessment** — Fixed re-assessment blocking issue; students can now receive new assessments after cancellation.
 - **Discount auto-rejection** — Linked discount requests are automatically rejected when assessments are cancelled.
 - **Applied discounts in profile** — Student profile now shows discounts applied to current assessment.
@@ -62,6 +67,7 @@
 **Status: 🟡 Mostly complete**
 
 - [x] Student creation form (Registrar / permitted roles) — `admin/students/new`
+- [x] Multi-step registration wizard on TanStack Form — `StudentRegistrationForm` (live per-field validation + guardian field array; migrated in place 2026-05-28)
 - [x] Parent/Guardian linking — `createStudentAction` / `updateStudentAction`
 - [x] Registration submission during student onboarding — `createStudentAction` inserts approved `registrations` rows in same transaction
 - [ ] Dedicated registration intake action (separate from student-create flow)

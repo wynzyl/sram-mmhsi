@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-05-23
+> Last updated: 2026-05-28
 
 ## Current phase
 
@@ -8,7 +8,14 @@
 
 **Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, executive/reporting dashboards, formal OR **receipt** print view, **E2E** tests, and wiring **rate limit** + mandatory **password-change** gate.
 
-## Latest updates (2026-05-23)
+## Latest updates (2026-05-28)
+
+- [x] **TanStack Form adopted for the registration wizard** — `src/features/registrations/components/StudentRegistrationForm.tsx` migrated in place from the native `useActionState` pattern to TanStack Form (`@tanstack/react-form`). Adds live per-field validation (reusing the existing Zod schemas via a `zodCheck` adapter) and a typed guardian field array. Server contract is unchanged — `createStudentAction` and its FormData keys are identical, so server validation + audit logging stay authoritative.
+- [x] **Two bugs fixed during migration** (found via browser dogfood): (1) the guardian *single-primary* toggle now works — "Set as primary" moves the badge and removing the primary falls back to the first guardian (implemented via whole-array `setFieldValue` so the array store updates reactively); (2) submit now redirects + toasts correctly — the `useActionState` dispatch is wrapped in `startTransition` (previously called outside a transition, so `state` never updated).
+- [x] **Forms-stack cleanup** — removed the phantom `react-hook-form` + `@hookform/resolvers` dependencies (zero source imports) and corrected the forms guidance in CLAUDE.md. The throwaway prototype (`StudentRegistrationFormTanstack.tsx`) and the `?form=tanstack` toggle were retired now that the migration is in place.
+- [x] **Docs** — added `docs/01-STATUS-REPORT/TANSTACK-FORM-TRIAL-REPORT.md`, `docs/TANSTACK-MIGRATION/TANSTACK-FORM-CANDIDATES.md` (per-form assessment + migration order), and `docs/TANSTACK-MIGRATION/TANSTACK-FORM-IMPLEMENTATION-REPORT.md`. The remaining ~15 simple single-submit forms stay native (progressive enhancement); next TanStack targets are the field-array forms `StudentForm` / `EditStudentForm`.
+
+## Previous updates (2026-05-23)
 
 - [x] **Assessment cancellation & reassessment** — Students can now receive a new assessment after their previous assessment is cancelled. Fixed logic that previously blocked re-assessment.
 - [x] **Discount rejection on cancellation** — When an assessment is cancelled, any linked discount requests are automatically rejected with appropriate status updates.
