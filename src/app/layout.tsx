@@ -1,27 +1,32 @@
 import type { Metadata } from "next";
-import { Crimson_Pro, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { RootProviders } from "@/components/providers/RootProviders";
 import "./globals.css";
 
-const crimsonPro = Crimson_Pro({
+const crimsonPro = localFont({
   variable: "--font-crimson",
-  subsets: ["latin"],
-  weight: ["600", "700", "900"],
   display: "swap",
+  src: [
+    { path: "../../public/fonts/CrimsonPro-Variable.woff2", weight: "600 900", style: "normal" },
+  ],
 });
 
-const ibmPlexSans = IBM_Plex_Sans({
+const ibmPlexSans = localFont({
   variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
+  src: [
+    { path: "../../public/fonts/IBMPlexSans-Variable.woff2", weight: "300 700", style: "normal" },
+  ],
 });
 
-const ibmPlexMono = IBM_Plex_Mono({
+const ibmPlexMono = localFont({
   variable: "--font-ibm-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
   display: "swap",
+  src: [
+    { path: "../../public/fonts/IBMPlexMono-400.woff2", weight: "400", style: "normal" },
+    { path: "../../public/fonts/IBMPlexMono-500.woff2", weight: "500", style: "normal" },
+    { path: "../../public/fonts/IBMPlexMono-600.woff2", weight: "600", style: "normal" },
+  ],
 });
 
 export const metadata: Metadata = {

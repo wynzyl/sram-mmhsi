@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { CancellationRequestListItem } from "../enrollment-cancellation.queries";
 import { CANCELLATION_REASON_LABELS, type CancellationReason } from "@/lib/constants/cancellation-reasons";
 import { DataTable } from "@/components/shared/DataTable";
+import { formatDate } from "@/lib/utils/date";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,7 @@ export default function CancellationRequestsTable({
           <div className="text-sm">
             <div>{row.original.requestedByName}</div>
             <div className="text-xs text-muted-foreground">
-              {new Date(row.original.requestedAt).toLocaleDateString("en-PH")}
+              {formatDate(row.original.requestedAt)}
             </div>
           </div>
         ),

@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CANCELLATION_REASON_LABELS, type CancellationReason } from "@/lib/constants/cancellation-reasons";
+import { formatDateTime } from "@/lib/utils/date";
 import { AlertTriangle, Clock, XCircle } from "lucide-react";
 
 export interface PendingCancellationRequest {
@@ -81,15 +82,9 @@ export default function EnrollmentCancellationSection({
                 <span>{pendingRequest.remarks}</span>
               </div>
             )}
-            <div className="text-xs text-muted-foreground" suppressHydrationWarning>
+            <div className="text-xs text-muted-foreground">
               Requested by {pendingRequest.requestedByName} on{" "}
-              {new Date(pendingRequest.requestedAt).toLocaleString("en-PH", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {formatDateTime(pendingRequest.requestedAt)}
             </div>
           </div>
 
