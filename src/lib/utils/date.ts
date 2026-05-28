@@ -3,6 +3,13 @@
  */
 
 /**
+ * Canonical timezone for the school. Pinned so date formatting is deterministic
+ * across server (UTC) and client (browser locale) — otherwise the same timestamp
+ * renders as different calendar dates and triggers React hydration mismatches.
+ */
+export const SCHOOL_TIME_ZONE = "Asia/Manila";
+
+/**
  * Format a date as a human-readable string
  * @param date - Date to format
  * @param options - Intl.DateTimeFormat options
@@ -22,7 +29,12 @@ export function formatDate(
 
   if (isNaN(dateObj.getTime())) return "—";
 
-  return new Intl.DateTimeFormat("en-PH", options).format(dateObj);
+  // Force the school timezone so SSR and client render identical text.
+  // Callers can still override by passing an explicit `timeZone`.
+  return new Intl.DateTimeFormat("en-PH", {
+    timeZone: SCHOOL_TIME_ZONE,
+    ...options,
+  }).format(dateObj);
 }
 
 /**

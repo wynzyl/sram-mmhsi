@@ -705,6 +705,7 @@ Seeds: students, enrollments, assessments (for testing).
 4. **Grade Locking:** Locked grades can only be unlocked by admin role.
 5. **Booklet Exhaustion:** When booklet reaches end number, auto-mark as `exhausted` and require new booklet selection.
 6. **Unique Constraints:** Respect unique indexes (student reference, OR number, invoice number, etc.).
+7. **Date Hydration Mismatch (Timezone):** NEVER hand-roll `new Date(x).toLocaleDateString("en-PH")` / `toLocaleString(...)` in components. With no fixed `timeZone`, the server (UTC) and client (Asia/Manila, UTC+8) format the same timestamp as **different calendar dates**, causing a React hydration mismatch ("server rendered text didn't match the client") that regenerates the subtree on the client — observed as instability/"infinite re-render"/freeze. **Always format dates via `formatDate` / `formatDateTime` from `src/lib/utils/date.ts`**, which pin `SCHOOL_TIME_ZONE = "Asia/Manila"`. Do not mask the symptom with `suppressHydrationWarning`. When a "freeze / re-render loop" is reported, check the browser console for a hydration mismatch first. (Regressed in the enrollment-cancellation feature, fixed 2026-05-29.)
 
 ### Integration Points (Future)
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { updateEnrollmentStatusAction } from "../enrollments.actions";
 import CancelEnrollmentForm from "./CancelEnrollmentForm";
 import type { EnrollmentStatus } from "./CancelEnrollmentForm";
+import { formatDate } from "@/lib/utils/date";
 
 interface Enrollment {
   id: string;
@@ -277,13 +278,7 @@ export default function EnrollmentsTable({
                   </span>
                 </td>
                 <td className="text-muted">
-                  {en.enrolledAt
-                    ? new Date(en.enrolledAt).toLocaleDateString("en-PH", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })
-                    : "—"}
+                  {en.enrolledAt ? formatDate(en.enrolledAt) : "—"}
                 </td>
                 {showActions && (
                   <td>

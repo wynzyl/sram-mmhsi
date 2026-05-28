@@ -8,6 +8,7 @@ import {
 } from "../enrollment-cancellation.actions";
 import { CANCELLATION_REASON_LABELS, type CancellationReason } from "@/lib/constants/cancellation-reasons";
 import { useFormToast } from "@/hooks/useFormToast";
+import { formatDate, formatDateTime } from "@/lib/utils/date";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -137,7 +138,7 @@ export default function CancellationRequestDetailView({
                   <p className="mt-1 text-sm font-medium">{request.requestedByName}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     <Clock className="mr-1 inline-block h-3 w-3" />
-                    {new Date(request.requestedAt).toLocaleString("en-PH")}
+                    {formatDateTime(request.requestedAt)}
                   </p>
                 </div>
               </div>
@@ -219,7 +220,7 @@ export default function CancellationRequestDetailView({
               <p className="text-sm text-muted-foreground">
                 Cutoff Date:{" "}
                 <span className="font-medium text-foreground">
-                  {new Date(request.refundPreview.cutoffDate).toLocaleDateString("en-PH", {
+                  {formatDate(request.refundPreview.cutoffDate, {
                     weekday: "long",
                     year: "numeric",
                     month: "long",
@@ -402,7 +403,7 @@ export default function CancellationRequestDetailView({
                     Reviewed At
                   </p>
                   <p className="mt-1 text-sm">
-                    {new Date(request.reviewedAt).toLocaleString("en-PH")}
+                    {formatDateTime(request.reviewedAt)}
                   </p>
                 </div>
               </div>
