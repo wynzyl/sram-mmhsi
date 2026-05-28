@@ -23,6 +23,7 @@ export type FeeItemType = {
   name: string;
   category: string;
   isDiscount: boolean;
+  isRefundable: boolean;
   displayOrder: number;
   isActive: boolean;
   createdAt: string;

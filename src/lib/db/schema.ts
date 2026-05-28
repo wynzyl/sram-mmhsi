@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import { FEE_ASSESSMENT_BANDS } from "@/lib/constants/assessment-bands";
+import { CANCELLATION_REASONS } from "@/lib/constants/cancellation-reasons";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -122,6 +123,40 @@ export const discountRequestStatusEnum = pgEnum("discount_request_status", [
   "rejected",
   "cancelled",
   "reversed",
+]);
+
+/** Enrollment cancellation reason types */
+export const cancellationReasonTypeEnum = pgEnum("cancellation_reason_type", CANCELLATION_REASONS);
+
+/** Enrollment cancellation request status workflow */
+export const enrollmentCancellationRequestStatusEnum = pgEnum("enrollment_cancellation_request_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "cancelled",
+]);
+
+/** Student clearance types */
+export const clearanceTypeEnum = pgEnum("clearance_type", [
+  "end_of_year",
+  "enrollment_cancellation",
+  "transfer_out",
+  "graduation",
+  "other",
+]);
+
+/** Clearance status */
+export const clearanceStatusEnum = pgEnum("clearance_status", [
+  "cleared",
+  "pending",
+  "waived",
+]);
+
+/** Clearance resolution types */
+export const resolutionTypeEnum = pgEnum("resolution_type", [
+  "paid",
+  "waived",
+  "written_off",
 ]);
 
 // ─── Users & Sessions ─────────────────────────────────────────────────────────
@@ -454,6 +489,8 @@ export const feeItemTypes = pgTable("fee_item_types", {
   name: text("name").notNull(),
   category: feeItemTypesCategoryEnum("category").notNull(),
   isDiscount: boolean("is_discount").notNull().default(false),
+  /** Whether payments to this fee type can be refunded on enrollment cancellation */
+  isRefundable: boolean("is_refundable").notNull().default(true),
   displayOrder: integer("display_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -628,6 +665,8 @@ export const assessmentItems = pgTable(
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
     /** Snapshot: Discount flag from fee_item_types.isDiscount at time of assessment */
     isDiscount: boolean("is_discount").notNull().default(false),
+    /** Snapshot: Refundability flag from fee_item_types.isRefundable at time of assessment */
+    isRefundable: boolean("is_refundable").notNull().default(true),
     /** Balance forward tracking: Links to the source assessment when this item is a "Balance Forward" line */
     sourceAssessmentId: uuid("source_assessment_id").references(() => assessments.id),
     /** Links to the student discount record that generated this line item (for discount lines) */
@@ -1033,6 +1072,113 @@ export const studentDiscounts = pgTable(
   ]
 );
 
+// ─── System Settings ──────────────────────────────────────────────────────────
+
+/**
+ * System-wide configuration settings (key-value store).
+ * Used for configurable values like refund cutoff days, etc.
+ */
+export const systemSettings = pgTable("system_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: uuid("updated_by").references(() => users.id),
+});
+
+// ─── Enrollment Cancellation Requests ─────────────────────────────────────────
+
+/**
+ * Enrollment cancellation requests capture requests to cancel enrolled enrollments.
+ * Direct cancellation is allowed for pending/assessed status.
+ * Enrolled status requires approval from admin/super_admin.
+ */
+export const enrollmentCancellationRequests = pgTable(
+  "enrollment_cancellation_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // No onDelete cascade: enrollments are soft-deleted via deletedAt/deletedBy;
+    // cancellation requests must follow the same soft-delete lifecycle, not be hard-purged.
+    enrollmentId: uuid("enrollment_id").notNull().references(() => enrollments.id),
+    /** User who submitted the cancellation request */
+    requestedBy: uuid("requested_by").notNull().references(() => users.id),
+    requestedAt: timestamp("requested_at").notNull().defaultNow(),
+    /** Predefined cancellation reason */
+    reasonType: cancellationReasonTypeEnum("reason_type").notNull(),
+    /** Optional details (required when reasonType = 'other') */
+    remarks: text("remarks"),
+    status: enrollmentCancellationRequestStatusEnum("status").notNull().default("pending"),
+    /** Admin who approved/rejected */
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at"),
+    /** Remarks from the approver/rejecter */
+    reviewRemarks: text("review_remarks"),
+    /** Soft delete */
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // Only one pending request per enrollment at a time
+    uniqueIndex("ecr_enrollment_pending_uidx")
+      .on(t.enrollmentId)
+      .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
+    index("ecr_enrollment_idx").on(t.enrollmentId),
+    index("ecr_status_idx").on(t.status),
+    index("ecr_pending_idx")
+      .on(t.status, t.deletedAt)
+      .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
+    index("ecr_requested_by_idx").on(t.requestedBy),
+  ]
+);
+
+// ─── Student Clearances ───────────────────────────────────────────────────────
+
+/**
+ * Student clearances track outstanding balances that must be resolved
+ * before document release. Created on:
+ * - End-of-year school year close
+ * - Enrollment cancellation with balance
+ * - Transfer out
+ * - Graduation
+ */
+export const studentClearances = pgTable(
+  "student_clearances",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentId: uuid("student_id").notNull().references(() => students.id),
+    enrollmentId: uuid("enrollment_id").references(() => enrollments.id),
+    schoolYearId: uuid("school_year_id").references(() => schoolYears.id),
+    clearanceType: clearanceTypeEnum("clearance_type").notNull(),
+    /** Outstanding amount snapshot at creation */
+    outstandingAmount: numeric("outstanding_amount", { precision: 12, scale: 2 }).notNull(),
+    status: clearanceStatusEnum("status").notNull().default("pending"),
+    /** For resolved clearances */
+    resolvedBy: uuid("resolved_by").references(() => users.id),
+    resolvedAt: timestamp("resolved_at"),
+    resolutionType: resolutionTypeEnum("resolution_type"),
+    resolutionRemarks: text("resolution_remarks"),
+    /** Timestamps */
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    /** Soft delete */
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    index("clearances_student_idx").on(t.studentId),
+    index("clearances_enrollment_idx").on(t.enrollmentId),
+    index("clearances_school_year_idx").on(t.schoolYearId),
+    index("clearances_status_idx").on(t.status),
+    index("clearances_pending_idx")
+      .on(t.status)
+      .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
+    // Prevent duplicate clearances for same enrollment + type (active only)
+    uniqueIndex("clearances_enrollment_type_uidx")
+      .on(t.enrollmentId, t.clearanceType)
+      .where(sql`${t.deletedAt} IS NULL`),
+  ]
+);
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 // Fee Templates Relations
@@ -1247,6 +1393,8 @@ export const enrollmentsRelations = relations(enrollments, ({ one, many }) => ({
   }),
   assessments: many(assessments),
   discountRequests: many(discountRequests),
+  cancellationRequests: many(enrollmentCancellationRequests),
+  clearances: many(studentClearances),
 }));
 
 export const studentsRelations = relations(students, ({ one, many }) => ({
@@ -1257,4 +1405,49 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   enrollments: many(enrollments),
   discountRequests: many(discountRequests),
   studentDiscounts: many(studentDiscounts),
+  clearances: many(studentClearances),
+}));
+
+// Enrollment Cancellation Request Relations
+export const enrollmentCancellationRequestsRelations = relations(enrollmentCancellationRequests, ({ one }) => ({
+  enrollment: one(enrollments, {
+    fields: [enrollmentCancellationRequests.enrollmentId],
+    references: [enrollments.id],
+  }),
+  requestedByUser: one(users, {
+    fields: [enrollmentCancellationRequests.requestedBy],
+    references: [users.id],
+    relationName: "cancellationRequest_requester",
+  }),
+  reviewedByUser: one(users, {
+    fields: [enrollmentCancellationRequests.reviewedBy],
+    references: [users.id],
+    relationName: "cancellationRequest_reviewer",
+  }),
+}));
+
+// Student Clearance Relations
+export const studentClearancesRelations = relations(studentClearances, ({ one }) => ({
+  student: one(students, {
+    fields: [studentClearances.studentId],
+    references: [students.id],
+  }),
+  enrollment: one(enrollments, {
+    fields: [studentClearances.enrollmentId],
+    references: [enrollments.id],
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [studentClearances.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  resolvedByUser: one(users, {
+    fields: [studentClearances.resolvedBy],
+    references: [users.id],
+    relationName: "clearance_resolver",
+  }),
+  createdByUser: one(users, {
+    fields: [studentClearances.createdBy],
+    references: [users.id],
+    relationName: "clearance_creator",
+  }),
 }));

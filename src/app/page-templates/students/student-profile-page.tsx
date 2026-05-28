@@ -26,6 +26,7 @@ import {
 import { RegistrationDetailView } from "@/features/registrations/components/RegistrationDetailView";
 import { getStudentRequirementsSnapshots } from "@/features/registrations/registrations.queries";
 import { getDiscountRequestsByStudent, getActiveDiscountTypes } from "@/features/discounts/discounts.queries";
+import { getStudentEnrollmentsWithPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
 
 /** Caller must have verified `students:read` before render (thin route pages use `redirect` when missing). */
 export async function InternalStudentProfilePage(props: {
@@ -46,6 +47,7 @@ export async function InternalStudentProfilePage(props: {
   const canReadDiscounts = hasPermission(session.role, "discounts:read");
   const canRequestDiscounts = hasPermission(session.role, "discounts:request");
   const canManageDiscounts = hasPermission(session.role, "discounts:manage");
+  const canCancelEnrollment = hasPermission(session.role, "enrollments:cancel");
 
   const studentRow = await db.query.students.findFirst({
     where: eq(students.id, id),
@@ -98,59 +100,47 @@ export async function InternalStudentProfilePage(props: {
 
   const guardians: GuardianRow[] = guardianLinks;
 
-  const enrollmentQueryRows = await db
-    .select({
-      id: enrollments.id,
-      createdAt: enrollments.createdAt,
-      enrolledAt: enrollments.enrolledAt,
-      status: enrollments.status,
-      studentType: enrollments.studentType,
-      schoolYear: schoolYears.label,
-      schoolYearIsActive: schoolYears.isActive,
-      gradeLevel: gradeLevels.name,
-      sectionName: sections.name,
-      assessmentId: assessments.id,
-    })
-    .from(enrollments)
-    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
-    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .leftJoin(sections, eq(enrollments.sectionId, sections.id))
-    .leftJoin(
-      assessments,
-      and(
-        eq(assessments.enrollmentId, enrollments.id),
-        isNull(assessments.cancelledAt) // Exclude cancelled assessments
+  // Run all queries in parallel for better performance
+  const [
+    enrollmentQueryRows,
+    pendingCancellations,
+    assessmentSummariesRaw,
+    invoicesRaw,
+    requirementsSnapshots,
+    discountRequests,
+    discountTypes,
+  ] = await Promise.all([
+    // Enrollment query
+    db
+      .select({
+        id: enrollments.id,
+        createdAt: enrollments.createdAt,
+        enrolledAt: enrollments.enrolledAt,
+        status: enrollments.status,
+        studentType: enrollments.studentType,
+        schoolYear: schoolYears.label,
+        schoolYearIsActive: schoolYears.isActive,
+        gradeLevel: gradeLevels.name,
+        sectionName: sections.name,
+        assessmentId: assessments.id,
+      })
+      .from(enrollments)
+      .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .leftJoin(sections, eq(enrollments.sectionId, sections.id))
+      .leftJoin(
+        assessments,
+        and(
+          eq(assessments.enrollmentId, enrollments.id),
+          isNull(assessments.cancelledAt) // Exclude cancelled assessments
+        )
       )
-    )
-    .where(eq(enrollments.studentId, id))
-    .orderBy(desc(enrollments.createdAt));
-
-  const enrollmentRows: EnrollmentRecordRow[] = enrollmentQueryRows.map((row) => ({
-    id: row.id,
-    createdAt: new Date(row.createdAt),
-    enrolledAt: row.enrolledAt ? new Date(row.enrolledAt) : null,
-    status: row.status,
-    studentType: row.studentType,
-    schoolYear: row.schoolYear,
-    schoolYearIsActive: row.schoolYearIsActive,
-    gradeLevel: row.gradeLevel,
-    sectionName: row.sectionName,
-    assessmentId: row.assessmentId,
-  }));
-
-  let placement: CurrentPlacement = null;
-  for (const row of enrollmentQueryRows) {
-    if (row.status === "enrolled" && row.schoolYearIsActive) {
-      placement = {
-        schoolYear: row.schoolYear,
-        gradeLevel: row.gradeLevel,
-        sectionName: row.sectionName,
-      };
-      break;
-    }
-  }
-
-  const [assessmentSummariesRaw, invoicesRaw, requirementsSnapshots, discountRequests, discountTypes] = await Promise.all([
+      .where(eq(enrollments.studentId, id))
+      .orderBy(desc(enrollments.createdAt)),
+    // Pending cancellation query (by student ID for parallelization)
+    canCancelEnrollment
+      ? getStudentEnrollmentsWithPendingCancellation(id)
+      : Promise.resolve(new Set<string>()),
     canReadAssessments
       ? db
           .select({
@@ -203,6 +193,34 @@ export async function InternalStudentProfilePage(props: {
     canRequestDiscounts ? getActiveDiscountTypes() : Promise.resolve([]),
   ]);
 
+  // Map enrollment rows with pending cancellation status
+  const enrollmentRows: EnrollmentRecordRow[] = enrollmentQueryRows.map((row) => ({
+    id: row.id,
+    createdAt: new Date(row.createdAt),
+    enrolledAt: row.enrolledAt ? new Date(row.enrolledAt) : null,
+    status: row.status,
+    studentType: row.studentType,
+    schoolYear: row.schoolYear,
+    schoolYearIsActive: row.schoolYearIsActive,
+    gradeLevel: row.gradeLevel,
+    sectionName: row.sectionName,
+    assessmentId: row.assessmentId,
+    hasPendingCancellation: pendingCancellations.has(row.id),
+  }));
+
+  // Find current placement
+  let placement: CurrentPlacement = null;
+  for (const row of enrollmentQueryRows) {
+    if (row.status === "enrolled" && row.schoolYearIsActive) {
+      placement = {
+        schoolYear: row.schoolYear,
+        gradeLevel: row.gradeLevel,
+        sectionName: row.sectionName,
+      };
+      break;
+    }
+  }
+
   const assessmentSummaries: AssessmentSummaryRow[] = assessmentSummariesRaw;
   const invoiceRows: InvoiceSummaryRow[] = invoicesRaw.map((inv) => ({
     id: inv.id,
@@ -224,6 +242,7 @@ export async function InternalStudentProfilePage(props: {
     canReadDiscounts,
     canRequestDiscounts,
     canManageDiscounts,
+    canCancelEnrollment,
   };
 
   // Find pending enrollment (no assessment yet) for discount requests

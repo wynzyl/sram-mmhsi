@@ -85,6 +85,20 @@
       "when": 1779604800002,
       "tag": "0011_fix_assessment_unique_index_for_reassessment",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1779946193254,
+      "tag": "0012_add_enrollment_cancellation_and_clearances",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1780001703621,
+      "tag": "0013_drop_ecr_enrollment_cascade",
+      "breakpoints": true
     }
   ]
 }

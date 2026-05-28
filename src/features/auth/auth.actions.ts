@@ -136,9 +136,15 @@ export async function loginAction(
     forcePasswordChange: user.forcePasswordChange,
   });
 
-  // 5. Audit: successful login
+  // 5. Reset rate limit on successful login (sync operation)
+  resetLoginRateLimit(clientIp);
+
+  // 5.1 Log success (non-blocking - don't await before redirect)
   logger.info("[auth] User logged in", { userId: user.id, role: user.role });
-  await logAudit({
+
+  // Fire-and-forget audit log - redirect must happen immediately after session creation
+  // to ensure Set-Cookie header is included in the response
+  void logAudit({
     actor: user.id,
     actorRole: user.role,
     action: "auth:login_success",
@@ -146,11 +152,8 @@ export async function loginAction(
     targetId: user.id,
   });
 
-  // 5.1 Reset rate limit on successful login
-  resetLoginRateLimit(clientIp);
-
-  // 6. Redirect to role landing page
-  // redirect() throws internally — must be called outside try/catch
+  // 6. CRITICAL: redirect() must be called immediately after createSession()
+  // to ensure the Set-Cookie header is properly included in the 303 response
   const landing = ROLE_LANDING[normalizedRole] ?? "/login";
   redirect(landing);
 }

@@ -27,6 +27,7 @@ import {
   registrationStudentTypeLabel,
 } from "@/lib/utils/intake-documents";
 import EditIntakeDocumentsDialog from "@/features/enrollments/components/EditIntakeDocumentsDialog";
+import EnrollmentCancelAction from "@/features/registrations/components/EnrollmentCancelAction";
 import { cn } from "@/lib/utils/cn";
 import { formatPhoneNumber } from "@/lib/utils/phone";
 import {
@@ -702,12 +703,20 @@ export function RegistrationDetailView({
                     <th className="px-4 py-3">Billing</th>
                     <th className="px-4 py-3">Enrolled</th>
                     <th className="px-4 py-3">Created</th>
+                    {flags.canCancelEnrollment && <th className="px-4 py-3">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {enrollmentRows.map((row) => (
                     <tr key={row.id} className="border-b border-border">
-                      <td className="px-4 py-3">{row.schoolYear}</td>
+                      <td className="px-4 py-3">
+                        <Link
+                          href={`/staff/enrollments/${row.id}`}
+                          className="text-primary hover:underline underline-offset-2"
+                        >
+                          {row.schoolYear}
+                        </Link>
+                      </td>
                       <td className="px-4 py-3">{row.gradeLevel}</td>
                       <td className="px-4 py-3 text-muted-foreground">{row.sectionName ?? "—"}</td>
                       <td className="px-4 py-3">{enrollmentTypeLabel(row.studentType)}</td>
@@ -733,6 +742,16 @@ export function RegistrationDetailView({
                           day: "numeric",
                         })}
                       </td>
+                      {flags.canCancelEnrollment && (
+                        <td className="px-4 py-3">
+                          <EnrollmentCancelAction
+                            enrollmentId={row.id}
+                            enrollmentStatus={row.status}
+                            schoolYearIsActive={row.schoolYearIsActive}
+                            hasPendingCancellation={row.hasPendingCancellation}
+                          />
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

@@ -18,8 +18,11 @@ import {
   getActiveDiscountTypes,
   getDiscountRequestGate,
 } from "@/features/discounts";
+import { getPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
 import EnrollmentDiscountsSection from "@/features/discounts/components/EnrollmentDiscountsSection";
 import StudentDiscountsList from "@/features/discounts/components/StudentDiscountsList";
+import EnrollmentCancellationSection from "@/features/enrollments/components/EnrollmentCancellationSection";
+import CancelEnrollmentButton from "@/features/enrollments/components/CancelEnrollmentButton";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -88,7 +91,7 @@ export async function InternalEnrollmentDetailPage(props: {
     .where(eq(assessments.enrollmentId, enrollmentId))
     .limit(1);
 
-  const [appliedDiscounts, discountRequests, discountTypes, gate] =
+  const [appliedDiscounts, discountRequests, discountTypes, gate, pendingCancellationRequest] =
     await Promise.all([
       assessment
         ? getStudentDiscountsByAssessment(assessment.id)
@@ -96,6 +99,7 @@ export async function InternalEnrollmentDetailPage(props: {
       getDiscountRequestsByEnrollment(enrollmentId),
       getActiveDiscountTypes(),
       getDiscountRequestGate(enrollmentId),
+      getPendingCancellationRequest(enrollmentId),
     ]);
 
   const canRequestPermission = hasPermission(session.role, "discounts:request");
@@ -103,18 +107,31 @@ export async function InternalEnrollmentDetailPage(props: {
   const requestBlockReason = !gate.allowed ? gate.reason : undefined;
   const canReverse = hasPermission(session.role, "discounts:manage");
 
+  // Cancellation permissions
+  const canCancelEnrollment = hasPermission(session.role, "enrollments:cancel");
+  const canWithdrawRequest =
+    pendingCancellationRequest?.requestedBy === session.userId;
+
   const studentBasePath = studentRecordsBasePath ?? "/staff/students";
   const studentName = `${enrollment.studentLastName}, ${enrollment.studentFirstName}`;
 
   return (
     <div className="page-container space-y-6 p-6">
+      {/* Back link */}
+      <Link
+        href="/staff/enrollments"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        ← Back to enrollments
+      </Link>
+
       {/* Header */}
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">
             <Link
               href={`${studentBasePath}/${enrollment.studentId}`}
-              className="hover:underline"
+              className="text-primary hover:underline"
             >
               {studentName}
             </Link>
@@ -142,7 +159,16 @@ export async function InternalEnrollmentDetailPage(props: {
             )}
           </div>
         </div>
-        <StatusBadge status={enrollment.status} type="enrollment" />
+        <div className="flex items-center gap-3">
+          <StatusBadge status={enrollment.status} type="enrollment" />
+          {/* Cancel button in header for quick access */}
+          {canCancelEnrollment && enrollment.status !== "cancelled" && !pendingCancellationRequest && (
+            <CancelEnrollmentButton
+              enrollmentId={enrollment.id}
+              enrollmentStatus={enrollment.status}
+            />
+          )}
+        </div>
       </div>
 
       {enrollment.cancelRemarks && (
@@ -241,6 +267,28 @@ export async function InternalEnrollmentDetailPage(props: {
         discountTypes={discountTypes}
         canRequest={canRequest}
         requestBlockReason={requestBlockReason}
+      />
+
+      {/* Enrollment Cancellation Section */}
+      <EnrollmentCancellationSection
+        enrollmentId={enrollment.id}
+        enrollmentStatus={enrollment.status}
+        studentName={studentName}
+        gradeLevelName={enrollment.gradeLevelName}
+        assessmentTotalPaid={assessment ? Number(assessment.totalPaid) : null}
+        pendingRequest={
+          pendingCancellationRequest
+            ? {
+                id: pendingCancellationRequest.id,
+                reasonType: pendingCancellationRequest.reasonType,
+                remarks: pendingCancellationRequest.remarks,
+                requestedAt: pendingCancellationRequest.requestedAt,
+                requestedByName: pendingCancellationRequest.requestedByName,
+              }
+            : null
+        }
+        canCancel={canCancelEnrollment}
+        canWithdraw={canWithdrawRequest}
       />
     </div>
   );

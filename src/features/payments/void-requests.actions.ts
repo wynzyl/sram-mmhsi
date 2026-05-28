@@ -35,6 +35,7 @@ import {
 } from "@/lib/utils/tx-helpers";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
+import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
 
 // ─── Request Void Action ───────────────────────────────────────────────────────
 
@@ -89,6 +90,21 @@ export async function requestVoidAction(
             "VOID_BLOCKED: This payment's assessment balance was transferred to a newer school year. " +
             "Voiding payments on transferred assessments is not allowed."
           );
+        }
+
+        // Check for pending cancellation request (blocks void requests too)
+        // Fetch assessment with enrollment ID
+        const assessmentForCheck = await tx.query.assessments.findFirst({
+          where: eq(assessments.id, payment.assessmentId),
+          columns: { enrollmentId: true },
+        });
+        if (assessmentForCheck?.enrollmentId) {
+          const hasPendingCancel = await hasPendingCancellationRequest(assessmentForCheck.enrollmentId);
+          if (hasPendingCancel) {
+            throw new Error(
+              "Cannot request void: enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
+            );
+          }
         }
       }
 
