@@ -1,116 +1,17 @@
-[2026-05-27T23:18:57.723Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:18:58.094Z] [log] [HMR] connected
-[2026-05-27T23:19:21.535Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:19:22.395Z] [error] ./src/features/registrations/components/StudentRegistrationFormTanstack.tsx:7:1
-Module not found: Can't resolve '@tanstack/react-form'
-   5 | import { useActionState, useState } from "react";
-   6 | import { useRouter } from "next/navigation";
->  7 | import { useForm } from "@tanstack/react-form";
-     | ^
-   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
-   9 | import { z } from "zod";
-  10 |
-
-https://nextjs.org/docs/messages/module-not-found
-[2026-05-27T23:19:25.822Z] [error] ./src/features/registrations/components/StudentRegistrationFormTanstack.tsx:7:1
-Module not found: Can't resolve '@tanstack/react-form'
-   5 | import { useActionState, useState } from "react";
-   6 | import { useRouter } from "next/navigation";
->  7 | import { useForm } from "@tanstack/react-form";
-     | ^
-   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
-   9 | import { z } from "zod";
-  10 |
-
-https://nextjs.org/docs/messages/module-not-found
-[2026-05-27T23:19:26.776Z] [error] ./src/features/registrations/components/StudentRegistrationFormTanstack.tsx:7:1
-Module not found: Can't resolve '@tanstack/react-form'
-   5 | import { useActionState, useState } from "react";
-   6 | import { useRouter } from "next/navigation";
->  7 | import { useForm } from "@tanstack/react-form";
-     | ^
-   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
-   9 | import { z } from "zod";
-  10 |
-
-https://nextjs.org/docs/messages/module-not-found
-[2026-05-27T23:19:27.503Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:19:27.848Z] [error] ./src/features/registrations/components/StudentRegistrationFormTanstack.tsx:7:1
-Module not found: Can't resolve '@tanstack/react-form'
-   5 | import { useActionState, useState } from "react";
-   6 | import { useRouter } from "next/navigation";
->  7 | import { useForm } from "@tanstack/react-form";
-     | ^
-   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
-   9 | import { z } from "zod";
-  10 |
-
-https://nextjs.org/docs/messages/module-not-found
-[2026-05-27T23:19:27.849Z] [error] ./src/features/registrations/components/StudentRegistrationFormTanstack.tsx:7:1
-Module not found: Can't resolve '@tanstack/react-form'
-   5 | import { useActionState, useState } from "react";
-   6 | import { useRouter } from "next/navigation";
->  7 | import { useForm } from "@tanstack/react-form";
-     | ^
-   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
-   9 | import { z } from "zod";
-  10 |
-
-https://nextjs.org/docs/messages/module-not-found
-[2026-05-27T23:19:27.966Z] [error] ./src/features/registrations/components/StudentRegistrationFormTanstack.tsx:7:1
-Module not found: Can't resolve '@tanstack/react-form'
-   5 | import { useActionState, useState } from "react";
-   6 | import { useRouter } from "next/navigation";
->  7 | import { useForm } from "@tanstack/react-form";
-     | ^
-   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
-   9 | import { z } from "zod";
-  10 |
-
-https://nextjs.org/docs/messages/module-not-found
-[2026-05-27T23:19:28.062Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:19:28.285Z] [error] ./src/features/registrations/components/StudentRegistrationFormTanstack.tsx:7:1
-Module not found: Can't resolve '@tanstack/react-form'
-   5 | import { useActionState, useState } from "react";
-   6 | import { useRouter } from "next/navigation";
->  7 | import { useForm } from "@tanstack/react-form";
-     | ^
-   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
-   9 | import { z } from "zod";
-  10 |
-
-https://nextjs.org/docs/messages/module-not-found
-[2026-05-27T23:19:28.592Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
-[2026-05-27T23:19:28.602Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
-[2026-05-27T23:19:28.945Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:19:29.449Z] [log] [HMR] connected
-[2026-05-27T23:19:29.450Z] [error] ./src/features/registrations/components/StudentRegistrationFormTanstack.tsx:7:1
-Module not found: Can't resolve '@tanstack/react-form'
-   5 | import { useActionState, useState } from "react";
-   6 | import { useRouter } from "next/navigation";
->  7 | import { useForm } from "@tanstack/react-form";
-     | ^
-   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
-   9 | import { z } from "zod";
-  10 |
-
-https://nextjs.org/docs/messages/module-not-found
-[2026-05-27T23:21:02.621Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Connection closed before receiving a handshake response
-[2026-05-27T23:21:05.963Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-27T23:21:09.322Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-27T23:21:12.697Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-27T23:21:16.046Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-27T23:21:23.406Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-27T23:21:30.765Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-27T23:21:35.967Z] [log] [HMR] connected
-[2026-05-27T23:21:35.967Z] [clear] console.clear
-[2026-05-27T23:21:35.992Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
-[2026-05-27T23:21:35.994Z] [warning] [Fast Refresh] performing full reload because your application had an unrecoverable error
-[2026-05-27T23:21:36.926Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:21:39.237Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
-[2026-05-27T23:21:39.237Z] [warning] [Fast Refresh] performing full reload because your application had an unrecoverable error
-[2026-05-27T23:21:40.017Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:21:41.812Z] [warning] [Fast Refresh] performing full reload
+[2026-05-28T01:21:47.939Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:21:48.320Z] [log] [HMR] connected
+[2026-05-28T01:21:50.339Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:21:50.945Z] [log] [Fast Refresh] done in 606ms
+[2026-05-28T01:21:51.095Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:21:51.770Z] [error] Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[2026-05-28T01:21:51.799Z] [log] [Fast Refresh] done in 703ms
+[2026-05-28T01:21:55.318Z] [warning] The resource http://localhost:3000/_next/static/media/d3ebbfd689654d3a-s.p.woff2?v=1779931307124 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:21:55.319Z] [warning] The resource http://localhost:3000/_next/static/media/26d4368bf94c0ec4-s.p.woff2?v=1779931307124 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:21:55.319Z] [warning] The resource http://localhost:3000/_next/static/media/db96af6b531dc71f-s.p.woff2?v=1779931307124 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:21:55.319Z] [warning] The resource http://localhost:3000/_next/static/media/3296bccdacdd55f7-s.p.woff2?v=1779931307124 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:21:55.319Z] [warning] The resource http://localhost:3000/_next/static/media/98e207f02528a563-s.p.woff2?v=1779931307124 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:22:05.549Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:22:07.031Z] [warning] [Fast Refresh] performing full reload
 
 Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
 You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
@@ -118,10 +19,546 @@ Consider migrating the non-React component export to a separate file and importi
 
 It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
 Fast Refresh requires at least one parent function component in your React tree.
-[2026-05-27T23:21:43.246Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:21:43.800Z] [log] [HMR] connected
-[2026-05-27T23:21:43.855Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:21:44.993Z] [warning] [Fast Refresh] performing full reload
+[2026-05-28T01:22:08.093Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:22:08.743Z] [log] [HMR] connected
+[2026-05-28T01:22:12.137Z] [warning] The resource http://localhost:3000/_next/static/media/3296bccdacdd55f7-s.p.woff2?v=1779931326733 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:22:12.137Z] [warning] The resource http://localhost:3000/_next/static/media/98e207f02528a563-s.p.woff2?v=1779931326733 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:22:12.137Z] [warning] The resource http://localhost:3000/_next/static/media/26d4368bf94c0ec4-s.p.woff2?v=1779931326733 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:22:12.137Z] [warning] The resource http://localhost:3000/_next/static/media/d3ebbfd689654d3a-s.p.woff2?v=1779931326733 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:22:12.137Z] [warning] The resource http://localhost:3000/_next/static/media/db96af6b531dc71f-s.p.woff2?v=1779931326733 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:22:52.689Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-05-28T01:22:53.051Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:22:53.438Z] [log] [HMR] connected
+[2026-05-28T01:22:53.438Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:16.942Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-05-28T01:23:16.968Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:23:17.104Z] [log] [HMR] connected
+[2026-05-28T01:23:17.106Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:19.869Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-05-28T01:23:19.896Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:23:20.022Z] [log] [HMR] connected
+[2026-05-28T01:23:20.023Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:42.254Z] [clear] console.clear
+[2026-05-28T01:23:42.254Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:43.492Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:23:44.360Z] [clear] console.clear
+[2026-05-28T01:23:44.361Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:44.361Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:45.171Z] [clear] console.clear
+[2026-05-28T01:23:45.172Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:45.172Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:45.629Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:23:46.662Z] [clear] console.clear
+[2026-05-28T01:23:46.664Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:46.664Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:47.451Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-05-28T01:23:47.474Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:23:47.582Z] [log] [HMR] connected
+[2026-05-28T01:23:47.584Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:23:47.584Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:25:16.614Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Connection closed before receiving a handshake response
+[2026-05-28T01:25:19.990Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-05-28T01:25:23.366Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-05-28T01:25:26.736Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-05-28T01:25:30.104Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-05-28T01:25:37.472Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-05-28T01:25:43.300Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Connection closed before receiving a handshake response
+[2026-05-28T01:25:48.363Z] [log] [HMR] connected
+[2026-05-28T01:25:48.366Z] [clear] console.clear
+[2026-05-28T01:25:48.414Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-05-28T01:25:48.415Z] [warning] [Fast Refresh] performing full reload because your application had an unrecoverable error
+[2026-05-28T01:25:48.435Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:25:53.877Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-05-28T01:25:53.877Z] [warning] [Fast Refresh] performing full reload because your application had an unrecoverable error
+[2026-05-28T01:25:56.006Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:25:56.414Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:25:56.414Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:25:57.400Z] [clear] console.clear
+[2026-05-28T01:25:57.401Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:25:57.401Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:25:59.253Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:26:00.227Z] [clear] console.clear
+[2026-05-28T01:26:00.227Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:00.227Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:00.228Z] [clear] console.clear
+[2026-05-28T01:26:00.229Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:00.229Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:01.392Z] [clear] console.clear
+[2026-05-28T01:26:01.392Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:01.392Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:01.392Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:26:01.911Z] [clear] console.clear
+[2026-05-28T01:26:01.911Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:01.911Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:01.911Z] [clear] console.clear
+[2026-05-28T01:26:01.912Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:01.912Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:02.000Z] [clear] console.clear
+[2026-05-28T01:26:02.000Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:02.000Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:02.001Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:26:02.277Z] [clear] console.clear
+[2026-05-28T01:26:02.278Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:02.278Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:02.413Z] [clear] console.clear
+[2026-05-28T01:26:02.414Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:02.414Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:02.519Z] [clear] console.clear
+[2026-05-28T01:26:02.519Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:02.519Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:02.623Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:26:02.813Z] [clear] console.clear
+[2026-05-28T01:26:02.814Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:02.814Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:03.080Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-05-28T01:26:03.489Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:26:03.829Z] [log] [HMR] connected
+[2026-05-28T01:26:03.829Z] [error] ./src/features/registrations/components/StudentRegistrationForm.tsx:7:1
+Module not found: Can't resolve '@tanstack/react-form'
+   5 | import { useActionState, useState, startTransition } from "react";
+   6 | import { useRouter } from "next/navigation";
+>  7 | import { useForm } from "@tanstack/react-form";
+     | ^
+   8 | import { ChevronLeft, ChevronRight } from "lucide-react";
+   9 | import { z } from "zod";
+  10 |
+
+https://nextjs.org/docs/messages/module-not-found
+[2026-05-28T01:26:03.829Z] [error] ./src/features/students/components/EditStudentForm.tsx:8:1
+Module not found: Can't resolve '@tanstack/react-form'
+   6 | import { useRouter } from "next/navigation";
+   7 | import { FileText, Home, User, Users } from "lucide-react";
+>  8 | import { useForm } from "@tanstack/react-form";
+     | ^
+   9 | import { z } from "zod";
+  10 | import { useUpdateStudent } from "../hooks/use-students";
+  11 | import {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/features/students/index.ts
+./src/features/registrations/components/StudentRegistrationForm.tsx
+[2026-05-28T01:26:27.851Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Connection closed before receiving a handshake response
+[2026-05-28T01:26:31.228Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-05-28T01:26:34.602Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[2026-05-28T01:26:40.656Z] [log] [HMR] connected
+[2026-05-28T01:26:40.656Z] [clear] console.clear
+[2026-05-28T01:26:40.747Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-05-28T01:26:40.747Z] [warning] [Fast Refresh] performing full reload because your application had an unrecoverable error
+[2026-05-28T01:26:41.541Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:26:44.990Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-05-28T01:26:44.990Z] [warning] [Fast Refresh] performing full reload because your application had an unrecoverable error
+[2026-05-28T01:26:45.031Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:26:47.595Z] [warning] [Fast Refresh] performing full reload
 
 Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
 You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
@@ -129,156 +566,66 @@ Consider migrating the non-React component export to a separate file and importi
 
 It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
 Fast Refresh requires at least one parent function component in your React tree.
-[2026-05-27T23:21:45.986Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:21:46.510Z] [log] [HMR] connected
-[2026-05-27T23:22:47.147Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:22:48.616Z] [log] [Fast Refresh] done in 1470ms
-[2026-05-27T23:22:49.173Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:22:50.286Z] [log] [Fast Refresh] done in 1112ms
-[2026-05-27T23:22:54.115Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:22:54.701Z] [log] [Fast Refresh] done in 586ms
-[2026-05-27T23:23:18.276Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:23:18.739Z] [log] [HMR] connected
-[2026-05-27T23:23:19.834Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:23:20.348Z] [log] [HMR] connected
-[2026-05-27T23:23:26.079Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:23:26.655Z] [log] [HMR] connected
-[2026-05-27T23:23:27.899Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:23:28.473Z] [log] [HMR] connected
-[2026-05-27T23:23:42.034Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:23:42.516Z] [log] [HMR] connected
-[2026-05-27T23:23:43.138Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:23:43.566Z] [log] [Fast Refresh] done in 428ms
-[2026-05-27T23:23:44.680Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:23:45.136Z] [log] [HMR] connected
-[2026-05-27T23:24:30.168Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:24:30.656Z] [log] [HMR] connected
-[2026-05-27T23:24:54.332Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:24:54.917Z] [log] [HMR] connected
-[2026-05-27T23:25:38.760Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:25:39.298Z] [log] [HMR] connected
-[2026-05-27T23:28:21.515Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:28:22.041Z] [log] [HMR] connected
-[2026-05-27T23:32:17.072Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:32:18.693Z] [log] [Fast Refresh] done in 1621ms
-[2026-05-27T23:32:19.705Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:32:21.320Z] [log] [Fast Refresh] done in 1615ms
-[2026-05-27T23:32:23.259Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:32:25.664Z] [log] [Fast Refresh] done in 2404ms
-[2026-05-27T23:32:31.110Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:32:33.269Z] [log] [Fast Refresh] done in 2159ms
-[2026-05-27T23:33:43.744Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:33:45.000Z] [log] [Fast Refresh] done in 1254ms
-[2026-05-27T23:54:12.156Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:54:13.122Z] [log] [Fast Refresh] done in 966ms
-[2026-05-27T23:54:13.140Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:54:13.854Z] [log] [Fast Refresh] done in 714ms
-[2026-05-27T23:54:31.767Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:54:33.110Z] [log] [Fast Refresh] done in 1342ms
-[2026-05-27T23:54:33.449Z] [error] %o
+[2026-05-28T01:26:48.769Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:26:49.249Z] [log] [HMR] connected
+[2026-05-28T01:26:49.250Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:26:50.214Z] [warning] [Fast Refresh] performing full reload
 
-%s ReferenceError: useTanstackPrototype is not defined
-    at InternalNewStudentRegistrationPage (about://React/Server/webpack-internal:///(rsc)/./src/app/page-templates/registrations/new-student-registration-page.tsx?119:103:13)
-    at resolveErrorDev (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:3270:29)
-    at processFullStringRow (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:4436:23)
-    at processFullBinaryRow (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:4379:7)
-    at processBinaryChunk (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:4602:19)
-    at progress (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:4933:9) The above error occurred in the <InternalNewStudentRegistrationPage> component. It was handled by the <ErrorBoundaryHandler> error boundary.
-[2026-05-27T23:54:33.459Z] [error] [STAFFError] {source: [STAFFError], message: useTanstackPrototype is not defined, digest: 1446268464, pathname: /staff/students/new, timestamp: 2026-05-27T23:54:33.452Z}
-[2026-05-27T23:54:33.461Z] [error] [STAFFError] {source: [STAFFError], message: useTanstackPrototype is not defined, digest: 1446268464, pathname: /staff/students/new, timestamp: 2026-05-27T23:54:33.459Z}
-[2026-05-27T23:54:37.510Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:54:38.118Z] [log] [Fast Refresh] done in 608ms
-[2026-05-27T23:54:38.181Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:54:38.538Z] [log] [Fast Refresh] done in 357ms
-[2026-05-27T23:54:42.120Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:54:42.782Z] [log] [Fast Refresh] done in 661ms
-[2026-05-27T23:54:46.824Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:54:47.488Z] [log] [Fast Refresh] done in 664ms
-[2026-05-27T23:55:23.265Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:55:24.517Z] [log] [Fast Refresh] done in 1252ms
-[2026-05-27T23:55:39.842Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:55:40.479Z] [log] [Fast Refresh] done in 638ms
-[2026-05-27T23:55:41.553Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:55:42.020Z] [log] [HMR] connected
-[2026-05-27T23:55:43.919Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:55:44.505Z] [log] [HMR] connected
-[2026-05-27T23:55:54.943Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:55:55.483Z] [log] [HMR] connected
-[2026-05-27T23:58:52.398Z] [error] An async function with useActionState was called outside of a transition. This is likely not what you intended (for example, isPending will not update correctly). Either call the returned function inside startTransition, or pass it to an `action` or `formAction` prop.
-[2026-05-27T23:58:53.446Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:58:54.237Z] [log] [Fast Refresh] done in 792ms
-[2026-05-27T23:58:55.142Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:58:55.558Z] [log] [Fast Refresh] done in 417ms
-[2026-05-27T23:59:27.819Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:59:29.065Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:59:29.077Z] [log] [Fast Refresh] done in 11ms
-[2026-05-27T23:59:29.816Z] [log] [Fast Refresh] done in 750ms
-[2026-05-27T23:59:32.402Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:59:33.068Z] [log] [Fast Refresh] rebuilding
-[2026-05-27T23:59:33.073Z] [log] [Fast Refresh] done in 6ms
-[2026-05-27T23:59:33.505Z] [log] [Fast Refresh] done in 437ms
-[2026-05-27T23:59:44.935Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-27T23:59:45.426Z] [log] [HMR] connected
-[2026-05-28T00:00:08.257Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:00:09.352Z] [log] [Fast Refresh] done in 1095ms
-[2026-05-28T00:00:13.981Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:00:14.846Z] [log] [Fast Refresh] done in 865ms
-[2026-05-28T00:00:17.846Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-28T00:00:18.673Z] [log] [HMR] connected
-[2026-05-28T00:06:03.795Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:06:04.774Z] [log] [Fast Refresh] done in 977ms
-[2026-05-28T00:06:26.146Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:06:26.869Z] [log] [Fast Refresh] done in 723ms
-[2026-05-28T00:06:35.885Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:06:36.569Z] [log] [Fast Refresh] done in 683ms
-[2026-05-28T00:06:50.948Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:06:51.629Z] [log] [Fast Refresh] done in 680ms
-[2026-05-28T00:07:24.171Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:07:24.841Z] [log] [Fast Refresh] done in 669ms
-[2026-05-28T00:10:06.018Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:10:10.274Z] [log] [Fast Refresh] done in 4255ms
-[2026-05-28T00:10:48.212Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:10:50.624Z] [log] [Fast Refresh] done in 2411ms
-[2026-05-28T00:10:56.352Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:10:58.192Z] [log] [Fast Refresh] done in 1839ms
-[2026-05-28T00:11:40.807Z] [log] [HMR] connected
-[2026-05-28T00:11:47.775Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-28T00:11:48.546Z] [log] [HMR] connected
-[2026-05-28T00:11:48.832Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:11:51.039Z] [log] [Fast Refresh] done in 2208ms
-[2026-05-28T00:11:55.072Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[2026-05-28T00:11:55.753Z] [log] [HMR] connected
-[2026-05-28T00:12:00.027Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:12:03.428Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:12:04.466Z] [log] [Fast Refresh] done in 1038ms
-[2026-05-28T00:12:05.023Z] [log] [Fast Refresh] done in 1593ms
-[2026-05-28T00:12:05.588Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:12:08.505Z] [log] [Fast Refresh] done in 2916ms
-[2026-05-28T00:12:12.631Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:12:13.810Z] [log] [Fast Refresh] done in 1179ms
-[2026-05-28T00:13:06.399Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:13:09.299Z] [log] [Fast Refresh] done in 2899ms
-[2026-05-28T00:14:35.779Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:14:37.743Z] [log] [Fast Refresh] done in 1964ms
-[2026-05-28T00:14:38.043Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:14:39.229Z] [log] [Fast Refresh] done in 1185ms
-[2026-05-28T00:14:49.653Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:14:52.247Z] [log] [Fast Refresh] done in 2593ms
-[2026-05-28T00:15:11.880Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:15:12.723Z] [log] [Fast Refresh] done in 843ms
-[2026-05-28T00:16:32.741Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:16:34.230Z] [log] [Fast Refresh] done in 1489ms
-[2026-05-28T00:24:07.418Z] [log] [Fast Refresh] rebuilding
-[2026-05-28T00:24:08.667Z] [log] [Fast Refresh] done in 1249ms
-[2026-05-28T00:24:22.402Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:24:25.780Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:24:29.158Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:24:32.524Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:24:35.892Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:24:43.229Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:24:50.610Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:24:59.906Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:25:07.304Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:25:14.694Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:25:22.122Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[2026-05-28T00:25:29.544Z] [error] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LTtxzfT1Bt0kd6CzS3sPA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree.
+[2026-05-28T01:26:51.056Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:26:51.478Z] [log] [HMR] connected
+[2026-05-28T01:27:00.962Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:27:01.850Z] [log] [Fast Refresh] done in 889ms
+[2026-05-28T01:27:02.449Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:27:03.539Z] [log] [Fast Refresh] done in 1089ms
+[2026-05-28T01:27:20.707Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:27:22.059Z] [log] [Fast Refresh] done in 1352ms
+[2026-05-28T01:27:22.470Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:27:23.942Z] [log] [Fast Refresh] done in 1471ms
+[2026-05-28T01:27:54.854Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:27:56.361Z] [log] [Fast Refresh] done in 1507ms
+[2026-05-28T01:28:15.598Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:28:16.033Z] [log] [HMR] connected
+[2026-05-28T01:28:17.352Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:28:18.269Z] [log] [Fast Refresh] done in 918ms
+[2026-05-28T01:28:19.292Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:28:19.710Z] [log] [HMR] connected
+[2026-05-28T01:28:27.812Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:28:29.103Z] [log] [Fast Refresh] done in 1291ms
+[2026-05-28T01:28:30.910Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:28:31.427Z] [log] [HMR] connected
+[2026-05-28T01:28:34.608Z] [warning] The resource http://localhost:3000/_next/static/css/app/staff/students/%5Bid%5D/layout.css?v=1779931709813 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:28:44.871Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:28:45.411Z] [log] [HMR] connected
+[2026-05-28T01:28:48.676Z] [warning] The resource http://localhost:3000/_next/static/css/app/staff/students/%5Bid%5D/layout.css?v=1779931723972 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:28:55.983Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:28:56.501Z] [log] [HMR] connected
+[2026-05-28T01:28:59.717Z] [warning] The resource http://localhost:3000/_next/static/css/app/staff/students/%5Bid%5D/layout.css?v=1779931735107 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+[2026-05-28T01:29:15.867Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:29:17.040Z] [warning] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree.
+[2026-05-28T01:29:18.117Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:29:18.570Z] [log] [HMR] connected
+[2026-05-28T01:29:19.066Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:29:20.039Z] [log] [Fast Refresh] done in 973ms
+[2026-05-28T01:29:33.661Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:29:34.134Z] [log] [HMR] connected
+[2026-05-28T01:29:56.613Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:29:58.345Z] [log] [Fast Refresh] done in 1732ms
+[2026-05-28T01:30:55.660Z] [info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[2026-05-28T01:30:56.122Z] [log] [HMR] connected
+[2026-05-28T01:31:52.717Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:31:53.686Z] [log] [Fast Refresh] done in 969ms
+[2026-05-28T01:32:05.260Z] [log] [Fast Refresh] rebuilding
+[2026-05-28T01:32:06.243Z] [log] [Fast Refresh] done in 983ms
