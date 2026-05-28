@@ -1097,7 +1097,9 @@ export const enrollmentCancellationRequests = pgTable(
   "enrollment_cancellation_requests",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    enrollmentId: uuid("enrollment_id").notNull().references(() => enrollments.id, { onDelete: "cascade" }),
+    // No onDelete cascade: enrollments are soft-deleted via deletedAt/deletedBy;
+    // cancellation requests must follow the same soft-delete lifecycle, not be hard-purged.
+    enrollmentId: uuid("enrollment_id").notNull().references(() => enrollments.id),
     /** User who submitted the cancellation request */
     requestedBy: uuid("requested_by").notNull().references(() => users.id),
     requestedAt: timestamp("requested_at").notNull().defaultNow(),
