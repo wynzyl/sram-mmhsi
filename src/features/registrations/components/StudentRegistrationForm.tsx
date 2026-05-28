@@ -1,30 +1,81 @@
 "use client";
 
-import { useActionState, useState, useEffect, useCallback } from "react";
+/* eslint-disable react/no-children-prop -- TanStack Form's <form.Field> uses children as a render-prop function; this is its documented API. */
+
+import { useActionState, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "@tanstack/react-form";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { z } from "zod";
+
 import { createStudentAction } from "@/features/students";
+import { GuardianSchema, type CreateStudentFormState } from "@/lib/validators/student";
 import {
-  GuardianSchema,
-  type CreateStudentFormFieldSnapshot,
-  type CreateStudentFormState,
-  type GuardianInput,
-} from "@/lib/validators/student";
-import {
+  nameSchema,
   emailSchema,
   lrnSchema,
   phoneSchema,
+  phoneRequiredSchema,
+  emailRequiredSchema,
 } from "@/lib/validators/common-schemas";
 import { DataCard, DataCardBody } from "@/components/ui/editorial/DataCard";
-import GuardianForm from "@/features/students/components/GuardianForm";
-import IntakeRequirementsFieldset from "@/features/enrollments/components/IntakeRequirementsFieldset";
-import { useFormToast } from "@/hooks/useFormToast";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { editorialFieldClass } from "@/lib/utils/editorial-styles";
 import { formatPhoneInput, stripPhoneFormat } from "@/lib/utils/phone";
+import { useFormToast } from "@/hooks/useFormToast";
 
-const emptyGuardian = (): GuardianInput => ({
+/**
+ * Multi-step registration wizard built on TanStack Form.
+ *
+ * Client editing (per-field live validation reusing the shared Zod schemas, a
+ * typed guardian field array with single-primary enforcement, and per-step
+ * gating) is handled by TanStack Form. The server contract is unchanged: on
+ * submit we build the same FormData and dispatch `createStudentAction`, so
+ * server-side validation + audit logging stay authoritative. Server-side field
+ * errors are merged back into the inline field messages.
+ */
+
+type IntakeStatus = "received" | "not_applicable" | "to_follow" | "";
+
+type GuardianValues = {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  relationship: string;
+  address: string;
+  occupation: string;
+  contactNumber: string;
+  email: string;
+  isPrimary: boolean;
+};
+
+type FormValues = {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  suffix: string;
+  dateOfBirth: string;
+  gender: string;
+  address: string;
+  lrn: string;
+  mobileNumber: string;
+  email: string;
+  nationality: string;
+  bloodType: string;
+  religion: string;
+  previousSchool: string;
+  submittedDocumentsNotes: string;
+  gradeLevelId: string;
+  guardians: GuardianValues[];
+  intakeForm138: IntakeStatus;
+  intakeBirthCertificatePsa: IntakeStatus;
+  intakeGoodMoralCharacter: IntakeStatus;
+  intakeQualifiedVoucher: IntakeStatus;
+  intakeEscCertificate: IntakeStatus;
+};
+
+const emptyGuardian = (isPrimary = false): GuardianValues => ({
   firstName: "",
   middleName: "",
   lastName: "",
@@ -33,16 +84,81 @@ const emptyGuardian = (): GuardianInput => ({
   occupation: "",
   contactNumber: "",
   email: "",
-  isPrimary: false,
+  isPrimary,
 });
 
-const initialState: CreateStudentFormState = {};
+const intakeRequired = z.enum(["received", "not_applicable", "to_follow"], {
+  message: "Select a status.",
+});
 
-type StudentProfileBase = "/staff/students";
+const requiredText = (label: string) =>
+  z.string().trim().min(1, `${label} is required.`);
 
-function registrationsQueuePath(_studentBasePath: StudentProfileBase): string {
-  return "/staff/registrations";
-}
+/**
+ * Adapt a Zod schema to a TanStack Form field validator function.
+ * Returning `string | undefined` avoids the standard-schema output-type
+ * matching constraint, so optional schemas and dynamic array fields work.
+ */
+const zodCheck =
+  (schema: z.ZodType) =>
+  ({ value }: { value: unknown }): string | undefined => {
+    const r = schema.safeParse(value);
+    return r.success ? undefined : r.error.issues[0]?.message;
+  };
+
+/**
+ * Whole-array validator for guardians: every guardian must satisfy
+ * GuardianSchema and exactly one must be primary. Drives step-3 gating and
+ * final submit. (The single-primary invariant is also maintained imperatively
+ * by setPrimary/removeGuardian below.)
+ */
+const validateGuardians = ({
+  value,
+}: {
+  value: GuardianValues[];
+}): string | undefined => {
+  if (!value || value.length === 0) return "At least one guardian is required.";
+  for (let i = 0; i < value.length; i++) {
+    const r = GuardianSchema.safeParse(value[i]);
+    if (!r.success) {
+      const issue = r.error.issues[0];
+      const fieldName = String(issue?.path[0] ?? "details");
+      return `Guardian ${i + 1}: ${issue?.message ?? `please complete the ${fieldName} field.`}`;
+    }
+  }
+  if (!value.some((g) => g.isPrimary)) {
+    return "Mark one guardian as the primary contact.";
+  }
+  return undefined;
+};
+
+const INTAKE_ROWS: { name: keyof FormValues; title: string }[] = [
+  { name: "intakeForm138", title: "FORM 138" },
+  { name: "intakeBirthCertificatePsa", title: "Birth Certificate (PSA)" },
+  { name: "intakeGoodMoralCharacter", title: "Good Moral Character" },
+  { name: "intakeQualifiedVoucher", title: "Qualified Voucher Certificate (if any)" },
+  { name: "intakeEscCertificate", title: "ESC Certificate (if any)" },
+];
+
+const STEP_FIELDS: Record<number, (keyof FormValues)[]> = {
+  1: ["firstName", "lastName", "dateOfBirth", "gender"],
+  2: ["gradeLevelId", "previousSchool", "lrn", "mobileNumber", "email"],
+  3: ["guardians"],
+  4: [
+    "intakeForm138",
+    "intakeBirthCertificatePsa",
+    "intakeGoodMoralCharacter",
+    "intakeQualifiedVoucher",
+    "intakeEscCertificate",
+  ],
+};
+
+const STEP_TITLES: Record<number, string> = {
+  1: "Student Information",
+  2: "Contact, Notes & Grade",
+  3: "Guardians",
+  4: "Documents & Review",
+};
 
 interface GradeLevelOption {
   id: string;
@@ -50,226 +166,135 @@ interface GradeLevelOption {
   order: number;
 }
 
+type StudentProfileBase = "/staff/students";
+
 interface StudentRegistrationFormProps {
   afterCreateStudentBasePath?: StudentProfileBase;
-  /** Where to go after successful registration (default: registrations queue for admin/staff). */
+  /** Where to go after successful registration (default: registrations queue). */
   successRedirectTo?: string;
   currentSchoolYear: { id: string; label: string } | null;
   gradeLevels: GradeLevelOption[];
   lockedRegistrationType: "new_student" | "transferee";
 }
 
-type FormStep = 1 | 2 | 3 | 4;
+type ServerErrors = Record<string, string[] | undefined> | undefined;
 
-const stepTitles: Record<FormStep, string> = {
-  1: "Student Information",
-  2: "Contact, Notes & Grade",
-  3: "Guardians",
-  4: "Documents & Review",
-};
+/** First validation error for a field (client meta errors), if any. */
+function fieldError(errors: unknown[]): string | null {
+  if (!errors || errors.length === 0) return null;
+  const first = errors[0] as { message?: string } | string | undefined;
+  if (!first) return null;
+  return typeof first === "string" ? first : first.message ?? "Invalid value.";
+}
 
-/**
- * Multi-step registration wizard with editorial styling. Submits via the same
- * `createStudentAction` contract as `StudentForm` (guardians JSON, gender, intake fields, etc.).
- */
 export default function StudentRegistrationForm({
-  afterCreateStudentBasePath = "/staff/students",
   successRedirectTo,
   currentSchoolYear,
   gradeLevels,
   lockedRegistrationType,
 }: StudentRegistrationFormProps) {
   const router = useRouter();
-  const [state, action, pending] = useActionState(createStudentAction, initialState);
-  const [currentStep, setCurrentStep] = useState<FormStep>(1);
-  const [draft, setDraft] = useState<Partial<CreateStudentFormFieldSnapshot>>({});
-  const [guardians, setGuardians] = useState<GuardianInput[]>([
-    { ...emptyGuardian(), isPrimary: true },
-  ]);
-  /** Client-side per-step validation errors (cleared on field change / step transition). */
-  const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (state.fieldValues) {
-      setDraft(state.fieldValues);
-      if (state.fieldValues.guardians.length > 0) {
-        setGuardians(state.fieldValues.guardians);
-      }
-    }
-  }, [state.fieldValues]);
-
-  /** Single source of truth for field errors — merge client + server, prefer fresh client errors. */
-  const getError = useCallback(
-    (key: string): string | undefined =>
-      stepErrors[key] ??
-      (state.errors as Record<string, string[] | undefined> | undefined)?.[key]?.[0],
-    [stepErrors, state.errors]
+  const [state, action, pending] = useActionState<CreateStudentFormState, FormData>(
+    createStudentAction,
+    {},
   );
+  const [currentStep, setCurrentStep] = useState(1);
 
-  /** Update a draft field and clear its stale per-step error (so the inline message disappears as the user types). */
-  const updateDraft = useCallback(
-    <K extends keyof CreateStudentFormFieldSnapshot>(
-      key: K,
-      value: CreateStudentFormFieldSnapshot[K]
-    ) => {
-      setDraft((d) => ({ ...d, [key]: value }));
-      setStepErrors((prev) => {
-        if (!(key in prev)) return prev;
-        const next = { ...prev };
-        delete next[key as string];
-        return next;
-      });
-    },
-    []
-  );
-
-  /** Validate just the fields that live on the requested step. Returns errors keyed by field name. */
-  const validateStep = useCallback(
-    (step: FormStep): Record<string, string> => {
-      const errors: Record<string, string> = {};
-
-      if (step === 1) {
-        if (!draft.firstName?.trim()) errors.firstName = "First name is required.";
-        if (!draft.lastName?.trim()) errors.lastName = "Last name is required.";
-        if (!draft.dateOfBirth) errors.dateOfBirth = "Date of birth is required.";
-        else {
-          const d = new Date(draft.dateOfBirth);
-          if (Number.isNaN(d.getTime())) errors.dateOfBirth = "Invalid date of birth.";
-        }
-        if (!draft.gender) errors.gender = "Gender is required.";
-      }
-
-      if (step === 2) {
-        if (!currentSchoolYear) {
-          errors._form =
-            "An active school year is required before continuing. Configure one under School Years.";
-          return errors;
-        }
-        if (!draft.gradeLevelId) errors.gradeLevelId = "Grade level is required.";
-        if (lockedRegistrationType === "transferee" && !draft.previousSchool?.trim()) {
-          errors.previousSchool = "Previous school is required for transferees.";
-        }
-        const lrnCheck = lrnSchema.safeParse(draft.lrn || undefined);
-        if (!lrnCheck.success) errors.lrn = lrnCheck.error.issues[0]?.message ?? "Invalid LRN.";
-        const phoneCheck = phoneSchema.safeParse(draft.mobileNumber || undefined);
-        if (!phoneCheck.success) {
-          errors.mobileNumber =
-            phoneCheck.error.issues[0]?.message ?? "Invalid mobile number.";
-        }
-        const emailCheck = emailSchema.safeParse(draft.email || undefined);
-        if (!emailCheck.success) {
-          errors.email = emailCheck.error.issues[0]?.message ?? "Invalid email address.";
-        }
-      }
-
-      if (step === 3) {
-        if (guardians.length === 0) {
-          errors.guardians = "At least one guardian is required.";
-        } else {
-          for (let i = 0; i < guardians.length; i++) {
-            const result = GuardianSchema.safeParse(guardians[i]);
-            if (!result.success) {
-              const firstIssue = result.error.issues[0];
-              const fieldName = String(firstIssue?.path[0] ?? "details");
-              errors.guardians = `Guardian ${i + 1}: ${firstIssue?.message ?? `please complete the ${fieldName} field.`}`;
-              break;
-            }
-          }
-          if (!errors.guardians && !guardians.some((g) => g.isPrimary)) {
-            errors.guardians = "Mark one guardian as the primary contact.";
-          }
-        }
-      }
-
-      return errors;
-    },
-    [draft, guardians, currentSchoolYear, lockedRegistrationType]
-  );
-
-  const handleContinue = useCallback(() => {
-    const errors = validateStep(currentStep);
-    if (Object.keys(errors).length > 0) {
-      setStepErrors(errors);
-      return;
-    }
-    setStepErrors({});
-    setCurrentStep((prev) => Math.min(4, prev + 1) as FormStep);
-  }, [currentStep, validateStep]);
-
-  const handleBack = useCallback(() => {
-    setStepErrors({});
-    setCurrentStep((prev) => Math.max(1, prev - 1) as FormStep);
-  }, []);
+  const serverErrors = state.errors as ServerErrors;
 
   useFormToast(state, {
     successMessage: "Student registered successfully",
-    onSuccess: () => {
-      const next =
-        successRedirectTo ?? registrationsQueuePath(afterCreateStudentBasePath);
-      router.push(next);
+    onSuccess: () => router.push(successRedirectTo ?? "/staff/registrations"),
+  });
+
+  const form = useForm({
+    defaultValues: {
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      suffix: "",
+      dateOfBirth: "",
+      gender: "",
+      address: "",
+      lrn: "",
+      mobileNumber: "",
+      email: "",
+      nationality: "",
+      bloodType: "",
+      religion: "",
+      previousSchool: "",
+      submittedDocumentsNotes: "",
+      gradeLevelId: "",
+      guardians: [emptyGuardian(true)],
+      intakeForm138: "",
+      intakeBirthCertificatePsa: "",
+      intakeGoodMoralCharacter: "",
+      intakeQualifiedVoucher: "",
+      intakeEscCertificate: "",
+    } as FormValues,
+    onSubmit: async ({ value }) => {
+      const fd = new FormData();
+      const scalarKeys: (keyof FormValues)[] = [
+        "firstName", "middleName", "lastName", "suffix", "dateOfBirth", "gender",
+        "address", "lrn", "mobileNumber", "email", "nationality", "bloodType",
+        "religion", "previousSchool", "submittedDocumentsNotes", "gradeLevelId",
+        "intakeForm138", "intakeBirthCertificatePsa", "intakeGoodMoralCharacter",
+        "intakeQualifiedVoucher", "intakeEscCertificate",
+      ];
+      for (const k of scalarKeys) fd.set(k, String(value[k] ?? ""));
+      fd.set("guardians", JSON.stringify(value.guardians));
+      if (currentSchoolYear) fd.set("schoolYearId", currentSchoolYear.id);
+      fd.set("registrationIntent", lockedRegistrationType);
+      fd.set("registrationStudentType", lockedRegistrationType);
+      startTransition(() => action(fd));
     },
   });
 
-  const clearGuardiansError = useCallback(() => {
-    setStepErrors((prev) => {
-      if (!("guardians" in prev)) return prev;
-      const next = { ...prev };
-      delete next.guardians;
-      return next;
-    });
-  }, []);
-
-  const handleGuardianChange = (index: number, guardian: GuardianInput) => {
-    setGuardians((prev) => {
-      const next = [...prev];
-      if (guardian.isPrimary) {
-        next.forEach((g, i) => {
-          if (i !== index) next[i] = { ...g, isPrimary: false };
-        });
-      }
-      next[index] = guardian;
-      return next;
-    });
-    clearGuardiansError();
-  };
-
-  const handleGuardianRemove = (index: number) => {
-    setGuardians((prev) => {
-      const next = prev.filter((_, i) => i !== index);
-      if (next.length > 0 && !next.some((g) => g.isPrimary)) {
-        next[0] = { ...next[0], isPrimary: true };
-      }
-      return next;
-    });
-    clearGuardiansError();
-  };
+  // ── Guardian array helpers (single-primary invariant via whole-array writes) ──
+  const guardianList = () => form.getFieldValue("guardians") as GuardianValues[];
 
   const addGuardian = () => {
-    setGuardians((prev) => [...prev, emptyGuardian()]);
-    clearGuardiansError();
+    form.setFieldValue("guardians", [...guardianList(), emptyGuardian()]);
   };
 
-  const disableSubmit = pending || !currentSchoolYear;
-  const progress = (currentStep / 4) * 100;
+  const removeGuardian = (index: number) => {
+    const next = guardianList().filter((_, i) => i !== index);
+    if (next.length > 0 && !next.some((g) => g.isPrimary)) {
+      next[0] = { ...next[0], isPrimary: true };
+    }
+    form.setFieldValue("guardians", next);
+  };
 
-  const intakePreserved = state.fieldValues
-    ? {
-        intakeForm138: state.fieldValues.intakeForm138,
-        intakeBirthCertificatePsa: state.fieldValues.intakeBirthCertificatePsa,
-        intakeGoodMoralCharacter: state.fieldValues.intakeGoodMoralCharacter,
-        intakeQualifiedVoucher: state.fieldValues.intakeQualifiedVoucher,
-        intakeEscCertificate: state.fieldValues.intakeEscCertificate,
-      }
-    : undefined;
+  const setPrimary = (index: number) => {
+    form.setFieldValue(
+      "guardians",
+      guardianList().map((g, i) => ({ ...g, isPrimary: i === index })),
+    );
+  };
+
+  /** Validate the fields belonging to a step; return true if all pass. */
+  const validateStep = async (step: number): Promise<boolean> => {
+    const names = STEP_FIELDS[step] ?? [];
+    const results = await Promise.all(
+      names.map((n) => form.validateField(n as never, "change")),
+    );
+    return results.every((errs) => !errs || errs.length === 0);
+  };
+
+  const handleContinue = async () => {
+    if (await validateStep(currentStep)) {
+      setCurrentStep((s) => Math.min(4, s + 1));
+    }
+  };
+
+  const progress = (currentStep / 4) * 100;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="font-mono text-muted-foreground">
-            Step {currentStep} of 4
-          </span>
-          <span className="font-medium text-foreground">{stepTitles[currentStep]}</span>
+          <span className="font-mono text-muted-foreground">Step {currentStep} of 4</span>
+          <span className="font-medium text-foreground">{STEP_TITLES[currentStep]}</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
           <div
@@ -279,16 +304,13 @@ export default function StudentRegistrationForm({
         </div>
       </div>
 
-      <form action={action} noValidate>
-        <input type="hidden" name="guardians" value={JSON.stringify(guardians)} />
-        {currentSchoolYear ? (
-          <>
-            <input type="hidden" name="schoolYearId" value={currentSchoolYear.id} />
-            <input type="hidden" name="registrationIntent" value={lockedRegistrationType} />
-            <input type="hidden" name="registrationStudentType" value={lockedRegistrationType} />
-          </>
-        ) : null}
-
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+      >
         {!currentSchoolYear && (
           <div
             className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
@@ -300,10 +322,7 @@ export default function StudentRegistrationForm({
         )}
 
         {lockedRegistrationType === "transferee" && (
-          <div
-            className="mb-4 rounded-lg border border-border bg-card px-4 py-3 text-sm"
-            role="note"
-          >
+          <div className="mb-4 rounded-lg border border-border bg-card px-4 py-3 text-sm" role="note">
             <strong>Transferee:</strong> Enter the learner&apos;s last school in{" "}
             <strong>Previous school</strong>. Enrollment type is fixed to <strong>Transferee</strong>.
           </div>
@@ -311,460 +330,372 @@ export default function StudentRegistrationForm({
 
         <DataCard>
           <DataCardBody className="space-y-8">
-            {/* Step 1 */}
+            {/* ── Step 1 ── */}
             <div className={cn("space-y-6", currentStep !== 1 && "hidden")}>
-              <div className="border-l-4 border-primary pl-6">
-                <h2 className="mb-2 font-display text-2xl font-bold text-foreground">
-                  Student Information
-                </h2>
-                <p className="text-muted-foreground">Legal name, demographics, and address.</p>
-              </div>
-
+              <StepHeading title="Student Information" subtitle="Legal name, demographics, and address." />
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label htmlFor="firstName" className="mb-1.5 block text-sm font-medium text-foreground">
-                    First Name <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    id="firstName"
-                    name="firstName"
-                    required
-                    autoComplete="given-name"
-                    value={draft.firstName ?? ""}
-                    onChange={(e) => updateDraft("firstName", e.target.value)}
-                    className={editorialFieldClass({ invalid: !!getError("firstName") })}
-                  />
-                  {getError("firstName") && (
-                    <p className="mt-1 text-sm text-red-600">{getError("firstName")}</p>
+                <form.Field
+                  name="firstName"
+                  validators={{ onChange: zodCheck(nameSchema) }}
+                  children={(field) => (
+                    <TextField label="First Name" required field={field} serverErrors={serverErrors} autoComplete="given-name" />
                   )}
-                </div>
-
-                <div>
-                  <label htmlFor="middleName" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Middle Name
-                  </label>
-                  <input
-                    id="middleName"
-                    name="middleName"
-                    autoComplete="additional-name"
-                    value={draft.middleName ?? ""}
-                    onChange={(e) => updateDraft("middleName", e.target.value)}
-                    className={editorialFieldClass()}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="lastName" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Last Name <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    id="lastName"
-                    name="lastName"
-                    required
-                    autoComplete="family-name"
-                    value={draft.lastName ?? ""}
-                    onChange={(e) => updateDraft("lastName", e.target.value)}
-                    className={editorialFieldClass({ invalid: !!getError("lastName") })}
-                  />
-                  {getError("lastName") && (
-                    <p className="mt-1 text-sm text-red-600">{getError("lastName")}</p>
+                />
+                <form.Field
+                  name="middleName"
+                  children={(field) => (
+                    <TextField label="Middle Name" field={field} serverErrors={serverErrors} autoComplete="additional-name" />
                   )}
-                </div>
-
-                <div>
-                  <label htmlFor="suffix" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Suffix
-                  </label>
-                  <select
-                    id="suffix"
-                    name="suffix"
-                    value={draft.suffix ?? ""}
-                    onChange={(e) => updateDraft("suffix", e.target.value)}
-                    className={editorialFieldClass()}
-                  >
-                    <option value="">None</option>
-                    <option value="Jr.">Jr.</option>
-                    <option value="Sr.">Sr.</option>
-                    <option value="II">II</option>
-                    <option value="III">III</option>
-                    <option value="IV">IV</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="dateOfBirth" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Date of Birth <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    id="dateOfBirth"
-                    name="dateOfBirth"
-                    type="date"
-                    required
-                    value={draft.dateOfBirth ?? ""}
-                    onChange={(e) => updateDraft("dateOfBirth", e.target.value)}
-                    className={editorialFieldClass({ invalid: !!getError("dateOfBirth") })}
-                  />
-                  {getError("dateOfBirth") && (
-                    <p className="mt-1 text-sm text-red-600">{getError("dateOfBirth")}</p>
+                />
+                <form.Field
+                  name="lastName"
+                  validators={{ onChange: zodCheck(nameSchema) }}
+                  children={(field) => (
+                    <TextField label="Last Name" required field={field} serverErrors={serverErrors} autoComplete="family-name" />
                   )}
-                </div>
-
-                <div>
-                  <label htmlFor="gender" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Gender <span className="text-red-600">*</span>
-                  </label>
-                  <select
-                    id="gender"
-                    name="gender"
-                    required
-                    value={draft.gender ?? ""}
-                    onChange={(e) => updateDraft("gender", e.target.value)}
-                    className={editorialFieldClass({ invalid: !!getError("gender") })}
-                  >
-                    <option value="" disabled>
-                      Select gender
-                    </option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                    <option value="prefer_not_to_say">Prefer not to say</option>
-                  </select>
-                  {getError("gender") && (
-                    <p className="mt-1 text-sm text-red-600">{getError("gender")}</p>
+                />
+                <form.Field
+                  name="suffix"
+                  children={(field) => (
+                    <SelectField
+                      label="Suffix"
+                      field={field}
+                      serverErrors={serverErrors}
+                      options={[
+                        ["", "None"],
+                        ["Jr.", "Jr."],
+                        ["Sr.", "Sr."],
+                        ["II", "II"],
+                        ["III", "III"],
+                        ["IV", "IV"],
+                      ]}
+                    />
                   )}
-                </div>
-
+                />
+                <form.Field
+                  name="dateOfBirth"
+                  validators={{ onChange: zodCheck(requiredText("Date of birth")) }}
+                  children={(field) => (
+                    <TextField label="Date of Birth" required type="date" field={field} serverErrors={serverErrors} />
+                  )}
+                />
+                <form.Field
+                  name="gender"
+                  validators={{ onChange: zodCheck(requiredText("Gender")) }}
+                  children={(field) => (
+                    <SelectField
+                      label="Gender"
+                      required
+                      field={field}
+                      serverErrors={serverErrors}
+                      options={[
+                        ["", "Select gender"],
+                        ["male", "Male"],
+                        ["female", "Female"],
+                        ["other", "Other"],
+                        ["prefer_not_to_say", "Prefer not to say"],
+                      ]}
+                    />
+                  )}
+                />
                 <div className="md:col-span-2">
-                  <label htmlFor="address" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Address
-                  </label>
-                  <textarea
-                    id="address"
+                  <form.Field
                     name="address"
-                    rows={2}
-                    value={draft.address ?? ""}
-                    onChange={(e) => updateDraft("address", e.target.value)}
-                    className={editorialFieldClass()}
+                    children={(field) => <TextAreaField label="Address" field={field} serverErrors={serverErrors} rows={2} />}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Step 2 */}
+            {/* ── Step 2 ── */}
             <div className={cn("space-y-6", currentStep !== 2 && "hidden")}>
-              <div className="border-l-4 border-primary pl-6">
-                <h2 className="mb-2 font-display text-2xl font-bold text-foreground">
-                  Contact, Notes & Application
-                </h2>
-                <p className="text-muted-foreground">Reachable contacts, transfer notes, and grade placement.</p>
-              </div>
-
+              <StepHeading
+                title="Contact, Notes & Application"
+                subtitle="Reachable contacts, transfer notes, and grade placement."
+              />
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div>
-                  <label htmlFor="lrn" className="mb-1.5 block text-sm font-medium text-foreground">
-                    LRN
-                  </label>
-                  <input
-                    id="lrn"
-                    name="lrn"
-                    maxLength={12}
-                    placeholder="12-digit DepEd LRN"
-                    value={draft.lrn ?? ""}
-                    onChange={(e) => updateDraft("lrn", e.target.value)}
-                    className={editorialFieldClass({ invalid: !!getError("lrn"), className: "font-mono" })}
-                  />
-                  {getError("lrn") && (
-                    <p className="mt-1 text-sm text-red-600">{getError("lrn")}</p>
+                <form.Field
+                  name="lrn"
+                  validators={{ onChange: zodCheck(lrnSchema) }}
+                  children={(field) => (
+                    <TextField label="LRN" field={field} serverErrors={serverErrors} maxLength={12} mono placeholder="12-digit DepEd LRN" />
                   )}
-                </div>
-
-                <div>
-                  <label htmlFor="mobileNumber" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Mobile
-                  </label>
-                  <input
-                    id="mobileNumber"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    placeholder="0917-010-0098"
-                    value={formatPhoneInput(draft.mobileNumber ?? "")}
-                    onChange={(e) => {
-                      const formatted = formatPhoneInput(e.target.value);
-                      updateDraft("mobileNumber", stripPhoneFormat(formatted));
-                    }}
-                    className={editorialFieldClass({ invalid: !!getError("mobileNumber"), className: "font-mono" })}
-                  />
-                  {/* Hidden input with raw value for form submission */}
-                  <input type="hidden" name="mobileNumber" value={draft.mobileNumber ?? ""} />
-                  {getError("mobileNumber") && (
-                    <p className="mt-1 text-sm text-red-600">{getError("mobileNumber")}</p>
+                />
+                <form.Field
+                  name="mobileNumber"
+                  validators={{ onChange: zodCheck(phoneSchema) }}
+                  children={(field) => (
+                    <PhoneField label="Mobile" field={field} serverErrors={serverErrors} />
                   )}
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    value={draft.email ?? ""}
-                    onChange={(e) => updateDraft("email", e.target.value)}
-                    className={editorialFieldClass({ invalid: !!getError("email") })}
-                  />
-                  {getError("email") && (
-                    <p className="mt-1 text-sm text-red-600">{getError("email")}</p>
+                />
+                <form.Field
+                  name="email"
+                  validators={{ onChange: zodCheck(emailSchema) }}
+                  children={(field) => <TextField label="Email" type="email" field={field} serverErrors={serverErrors} />}
+                />
+                <form.Field
+                  name="nationality"
+                  children={(field) => <TextField label="Nationality" field={field} serverErrors={serverErrors} placeholder="Filipino" />}
+                />
+                <form.Field
+                  name="bloodType"
+                  children={(field) => (
+                    <SelectField
+                      label="Blood Type"
+                      field={field}
+                      serverErrors={serverErrors}
+                      options={[["", "Unknown"], ["A+", "A+"], ["A-", "A-"], ["B+", "B+"], ["B-", "B-"], ["AB+", "AB+"], ["AB-", "AB-"], ["O+", "O+"], ["O-", "O-"]]}
+                    />
                   )}
-                </div>
-
-                <div>
-                  <label htmlFor="nationality" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Nationality
-                  </label>
-                  <input
-                    id="nationality"
-                    name="nationality"
-                    placeholder="Filipino"
-                    value={draft.nationality ?? ""}
-                    onChange={(e) => updateDraft("nationality", e.target.value)}
-                    className={editorialFieldClass()}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="bloodType" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Blood Type
-                  </label>
-                  <select
-                    id="bloodType"
-                    name="bloodType"
-                    value={draft.bloodType ?? ""}
-                    onChange={(e) => updateDraft("bloodType", e.target.value)}
-                    className={editorialFieldClass()}
-                  >
-                    <option value="">Unknown</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="religion" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Religion
-                  </label>
-                  <input
-                    id="religion"
-                    name="religion"
-                    placeholder="Roman Catholic"
-                    value={draft.religion ?? ""}
-                    onChange={(e) => updateDraft("religion", e.target.value)}
-                    className={editorialFieldClass()}
-                  />
-                </div>
-
+                />
+                <form.Field
+                  name="religion"
+                  children={(field) => <TextField label="Religion" field={field} serverErrors={serverErrors} placeholder="Roman Catholic" />}
+                />
                 <div className="md:col-span-3">
-                  <label htmlFor="previousSchool" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Previous school{lockedRegistrationType === "transferee" ? " " : " (transferees)"}
-                    {lockedRegistrationType === "transferee" && (
-                      <span className="text-red-600">*</span>
-                    )}
-                  </label>
-                  <input
-                    id="previousSchool"
+                  <form.Field
                     name="previousSchool"
-                    placeholder="Name of last school attended"
-                    value={draft.previousSchool ?? ""}
-                    onChange={(e) => updateDraft("previousSchool", e.target.value)}
-                    className={editorialFieldClass({ invalid: !!getError("previousSchool") })}
+                    validators={{
+                      onChange: lockedRegistrationType === "transferee"
+                        ? zodCheck(requiredText("Previous school"))
+                        : undefined,
+                    }}
+                    children={(field) => (
+                      <TextField
+                        label={`Previous school${lockedRegistrationType === "transferee" ? "" : " (transferees)"}`}
+                        required={lockedRegistrationType === "transferee"}
+                        field={field}
+                        serverErrors={serverErrors}
+                        placeholder="Name of last school attended"
+                      />
+                    )}
                   />
-                  {getError("previousSchool") && (
-                    <p className="mt-1 text-sm text-red-600">{getError("previousSchool")}</p>
-                  )}
                 </div>
-
                 <div className="md:col-span-3">
-                  <label
-                    htmlFor="submittedDocumentsNotes"
-                    className="mb-1.5 block text-sm font-medium text-foreground"
-                  >
-                    Submitted documents (notes)
-                  </label>
-                  <textarea
-                    id="submittedDocumentsNotes"
+                  <form.Field
                     name="submittedDocumentsNotes"
-                    rows={3}
-                    placeholder="e.g. Birth certificate on file, Form 137 pending"
-                    value={draft.submittedDocumentsNotes ?? ""}
-                    onChange={(e) =>
-                      updateDraft("submittedDocumentsNotes", e.target.value)
-                    }
-                    className={editorialFieldClass({ invalid: !!getError("submittedDocumentsNotes") })}
+                    children={(field) => (
+                      <TextAreaField
+                        label="Submitted documents (notes)"
+                        field={field}
+                        serverErrors={serverErrors}
+                        rows={3}
+                        placeholder="e.g. Birth certificate on file, Form 137 pending"
+                      />
+                    )}
                   />
-                  {getError("submittedDocumentsNotes") && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {getError("submittedDocumentsNotes")}
-                    </p>
-                  )}
                 </div>
               </div>
 
-              {currentSchoolYear ? (
+              {currentSchoolYear && (
                 <div className="grid grid-cols-1 gap-4 border-t border-border pt-6 md:grid-cols-2">
                   <div>
                     <span className="mb-1.5 block text-sm font-medium text-foreground">
                       School year <span className="text-red-600">*</span>
                     </span>
-                    <div
-                      className={editorialFieldClass({
-                        invalid: !!getError("schoolYearId"),
-                        className:
-                          "bg-gray-200 text-muted-foreground dark:bg-gray-800",
-                      })}
-                    >
+                    <div className={editorialFieldClass({ className: "bg-gray-200 text-muted-foreground dark:bg-gray-800" })}>
                       <strong className="text-foreground">{currentSchoolYear.label}</strong>
                       <span className="ml-2 text-sm">(active year only)</span>
                     </div>
-                    {getError("schoolYearId") && (
-                      <p className="mt-1 text-sm text-red-600">{getError("schoolYearId")}</p>
-                    )}
                   </div>
-
-                  <div>
-                    <label htmlFor="gradeLevelId" className="mb-1.5 block text-sm font-medium text-foreground">
-                      Grade level <span className="text-red-600">*</span>
-                    </label>
-                    <select
-                      id="gradeLevelId"
-                      name="gradeLevelId"
-                      required
-                      value={draft.gradeLevelId ?? ""}
-                      onChange={(e) => updateDraft("gradeLevelId", e.target.value)}
-                      className={editorialFieldClass({ invalid: !!getError("gradeLevelId") })}
-                    >
-                      <option value="">Select grade level</option>
-                      {gradeLevels.map((gl) => (
-                        <option key={gl.id} value={gl.id}>
-                          {gl.name}
-                        </option>
-                      ))}
-                    </select>
-                    {getError("gradeLevelId") && (
-                      <p className="mt-1 text-sm text-red-600">{getError("gradeLevelId")}</p>
+                  <form.Field
+                    name="gradeLevelId"
+                    validators={{ onChange: zodCheck(requiredText("Grade level")) }}
+                    children={(field) => (
+                      <SelectField
+                        label="Grade level"
+                        required
+                        field={field}
+                        serverErrors={serverErrors}
+                        options={[["", "Select grade level"], ...gradeLevels.map((gl) => [gl.id, gl.name] as [string, string])]}
+                      />
                     )}
-                  </div>
-
+                  />
                   <div className="md:col-span-2">
                     <span className="mb-1.5 block text-sm font-medium text-foreground">Enrollment type</span>
-                    <div
-                      className={editorialFieldClass({
-                        invalid: !!getError("registrationStudentType"),
-                        className: "bg-gray-200 text-foreground dark:bg-gray-800",
-                      })}
-                    >
+                    <div className={editorialFieldClass({ className: "bg-gray-200 text-foreground dark:bg-gray-800" })}>
                       <strong className="text-foreground">
                         {lockedRegistrationType === "transferee" ? "Transferee" : "New student"}
                       </strong>
-                      <span className="ml-2 text-sm text-muted-foreground">
-                        (set by the page you opened)
-                      </span>
+                      <span className="ml-2 text-sm text-muted-foreground">(set by the page you opened)</span>
                     </div>
-                    {getError("registrationStudentType") && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {getError("registrationStudentType")}
-                      </p>
-                    )}
                   </div>
                 </div>
-              ) : null}
-            </div>
-
-            {/* Step 3 */}
-            <div className={cn("space-y-6", currentStep !== 3 && "hidden")}>
-              <div className="border-l-4 border-primary pl-6">
-                <h2 className="mb-2 font-display text-2xl font-bold text-foreground">Guardians</h2>
-                <p className="text-muted-foreground">
-                  At least one guardian with a complete name is required before submission.
-                </p>
-              </div>
-
-              {getError("guardians") && (
-                <p className="text-sm text-red-600">{getError("guardians")}</p>
               )}
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={addGuardian}
-                  className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                >
-                  + Add guardian
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {guardians.map((guardian, index) => (
-                  <GuardianForm
-                    key={index}
-                    index={index}
-                    guardian={guardian}
-                    canRemove={guardians.length > 1}
-                    onChange={handleGuardianChange}
-                    onRemove={handleGuardianRemove}
-                  />
-                ))}
-              </div>
             </div>
 
-            {/* Step 4 */}
-            <div className={cn("space-y-6", currentStep !== 4 && "hidden")}>
-              <div className="border-l-4 border-primary pl-6">
-                <h2 className="mb-2 font-display text-2xl font-bold text-foreground">
-                  Documents & Requirements
-                </h2>
-                <p className="text-muted-foreground">Intake checklist for this registration.</p>
-              </div>
+            {/* ── Step 3: Guardians (field array) ── */}
+            <div className={cn("space-y-6", currentStep !== 3 && "hidden")}>
+              <StepHeading
+                title="Guardians"
+                subtitle="At least one guardian with a complete profile is required before submission."
+              />
+              <form.Field
+                name="guardians"
+                mode="array"
+                validators={{ onChange: validateGuardians }}
+                children={(arrayField) => {
+                  const arrayErr = fieldError(arrayField.state.meta.errors);
+                  return (
+                    <div className="space-y-4">
+                      {arrayErr && <p className="text-sm text-red-600">{arrayErr}</p>}
 
-              <IntakeRequirementsFieldset
-                key={
-                  state.fieldValues
-                    ? `intake-${state.fieldValues.intakeForm138}-${state.fieldValues.intakeBirthCertificatePsa}-${state.fieldValues.intakeGoodMoralCharacter}-${state.fieldValues.intakeQualifiedVoucher}-${state.fieldValues.intakeEscCertificate}`
-                    : "intake"
-                }
-                errors={state.errors}
-                legend="Requirements (new / transferee)"
-                preserved={intakePreserved}
-                description={
-                  <>
-                    Set each item to <strong>Received</strong>, <strong>Not applicable</strong>, or{" "}
-                    <strong>To follow</strong> when documents are still pending.
-                  </>
-                }
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={addGuardian}
+                          className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                        >
+                          + Add guardian
+                        </button>
+                      </div>
+
+                      {arrayField.state.value.map((g, i) => (
+                        <div key={i} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                          <div className="mb-4 flex items-center justify-between border-b border-border pb-4">
+                            <h4 className="font-display text-lg font-bold text-foreground">
+                              Guardian {i + 1}
+                              {g.isPrimary && (
+                                <span className="ml-2 inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 align-middle font-mono text-xs font-semibold uppercase text-primary">
+                                  Primary
+                                </span>
+                              )}
+                            </h4>
+                            <div className="flex items-center gap-2">
+                              {!g.isPrimary && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPrimary(i)}
+                                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+                                >
+                                  Set as primary
+                                </button>
+                              )}
+                              {arrayField.state.value.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeGuardian(i)}
+                                  className="rounded-lg border border-red-200 bg-card px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/50"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <form.Field
+                              name={`guardians[${i}].firstName` as never}
+                              validators={{ onChange: zodCheck(nameSchema) }}
+                              children={(field) => <TextField label="First name" required field={field} />}
+                            />
+                            <form.Field
+                              name={`guardians[${i}].middleName` as never}
+                              children={(field) => <TextField label="Middle name" field={field} />}
+                            />
+                            <form.Field
+                              name={`guardians[${i}].lastName` as never}
+                              validators={{ onChange: zodCheck(nameSchema) }}
+                              children={(field) => <TextField label="Last name" required field={field} />}
+                            />
+                            <form.Field
+                              name={`guardians[${i}].relationship` as never}
+                              validators={{ onChange: zodCheck(requiredText("Relationship")) }}
+                              children={(field) => (
+                                <SelectField
+                                  label="Relationship"
+                                  required
+                                  field={field}
+                                  options={[["", "Select relationship"], ["Mother", "Mother"], ["Father", "Father"], ["Grandmother", "Grandmother"], ["Grandfather", "Grandfather"], ["Aunt", "Aunt"], ["Uncle", "Uncle"], ["Legal Guardian", "Legal Guardian"], ["Other", "Other"]]}
+                                />
+                              )}
+                            />
+                            <div className="md:col-span-2">
+                              <form.Field
+                                name={`guardians[${i}].address` as never}
+                                validators={{ onChange: zodCheck(requiredText("Address")) }}
+                                children={(field) => <TextAreaField label="Address" required field={field} rows={2} />}
+                              />
+                            </div>
+                            <form.Field
+                              name={`guardians[${i}].occupation` as never}
+                              children={(field) => <TextField label="Occupation" field={field} />}
+                            />
+                            <form.Field
+                              name={`guardians[${i}].contactNumber` as never}
+                              validators={{ onChange: zodCheck(phoneRequiredSchema) }}
+                              children={(field) => <PhoneField label="Contact number" required field={field} />}
+                            />
+                            <div className="md:col-span-2">
+                              <form.Field
+                                name={`guardians[${i}].email` as never}
+                                validators={{ onChange: zodCheck(emailRequiredSchema) }}
+                                children={(field) => <TextField label="Email" required type="email" field={field} />}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }}
               />
             </div>
 
-            {stepErrors._form && currentStep < 4 && (
-              <div
-                className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
-                role="alert"
-              >
-                {stepErrors._form}
-              </div>
-            )}
+            {/* ── Step 4: Intake ── */}
+            <div className={cn("space-y-6", currentStep !== 4 && "hidden")}>
+              <StepHeading title="Documents & Requirements" subtitle="Intake checklist for this registration." />
+              <fieldset className="rounded-xl border border-border bg-muted p-5 shadow-sm">
+                <legend className="px-1 font-display text-lg font-bold text-foreground">
+                  Requirements (new / transferee)
+                </legend>
+                <ul className="m-0 mt-3 list-none space-y-0 rounded-lg border border-border bg-card p-0 shadow-sm">
+                  {INTAKE_ROWS.map((row) => (
+                    <form.Field
+                      key={row.name}
+                      name={row.name as never}
+                      validators={{ onChange: zodCheck(intakeRequired) }}
+                      children={(field) => {
+                        const err = fieldError(field.state.meta.errors) ?? serverErrors?.[row.name]?.[0] ?? null;
+                        return (
+                          <li className={cn(
+                            "rounded-r-lg border-b border-l-4 py-4 pl-4 last:border-b-0",
+                            err ? "border-l-destructive bg-destructive/5" : "border-l-primary/35 bg-card",
+                          )}>
+                            <span className="mb-2 block font-display text-base font-semibold text-foreground">
+                              {row.title}
+                            </span>
+                            <div className="flex flex-wrap gap-x-6 gap-y-2">
+                              {(["received", "not_applicable", "to_follow"] as const).map((opt) => (
+                                <label key={opt} className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                  <input
+                                    type="radio"
+                                    name={String(row.name)}
+                                    value={opt}
+                                    checked={field.state.value === opt}
+                                    onChange={() => field.handleChange(opt as never)}
+                                    className="h-4 w-4 text-primary focus:ring-primary/25"
+                                  />
+                                  <span>{opt === "not_applicable" ? "Not applicable" : opt === "to_follow" ? "To follow" : "Received"}</span>
+                                </label>
+                              ))}
+                            </div>
+                            {err && <p className="mt-2 text-sm font-medium text-destructive">{err}</p>}
+                          </li>
+                        );
+                      }}
+                    />
+                  ))}
+                </ul>
+              </fieldset>
+            </div>
 
+            {/* ── Footer ── */}
             <div className="flex items-center justify-between border-t border-border pt-6">
               {currentStep > 1 ? (
                 <button
                   type="button"
-                  onClick={handleBack}
+                  onClick={() => setCurrentStep((s) => Math.max(1, s - 1))}
                   className="inline-flex items-center gap-2 px-4 py-2 text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -775,23 +706,12 @@ export default function StudentRegistrationForm({
               )}
 
               {currentStep < 4 ? (
-                <Button
-                  type="button"
-                  onClick={handleContinue}
-                  variant="primary"
-                  size="md"
-                >
+                <Button type="button" onClick={handleContinue} variant="primary" size="md">
                   Continue
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button
-                  type="submit"
-                  disabled={disableSubmit}
-                  variant="primary"
-                  size="md"
-                  loading={pending}
-                >
+                <Button type="submit" disabled={pending || !currentSchoolYear} variant="primary" size="md" loading={pending}>
                   {pending ? "Registering…" : "Register student"}
                 </Button>
               )}
@@ -799,6 +719,182 @@ export default function StudentRegistrationForm({
           </DataCardBody>
         </DataCard>
       </form>
+    </div>
+  );
+}
+
+// ──────────────────────── Reusable field renderers ────────────────────────
+
+type AnyField = {
+  name: string;
+  state: { value: string; meta: { errors: unknown[] } };
+  handleChange: (v: never) => void;
+  handleBlur: () => void;
+};
+
+type ServerErrorsProp = Record<string, string[] | undefined> | undefined;
+
+/** Merge the field's live client error with any server-side error keyed by field name. */
+function mergedError(field: AnyField, serverErrors?: ServerErrorsProp): string | null {
+  return fieldError(field.state.meta.errors) ?? serverErrors?.[field.name]?.[0] ?? null;
+}
+
+function StepHeading({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="border-l-4 border-primary pl-6">
+      <h2 className="mb-2 font-display text-2xl font-bold text-foreground">{title}</h2>
+      <p className="text-muted-foreground">{subtitle}</p>
+    </div>
+  );
+}
+
+function TextField({
+  label,
+  field,
+  required,
+  type = "text",
+  placeholder,
+  autoComplete,
+  maxLength,
+  mono,
+  serverErrors,
+}: {
+  label: string;
+  field: AnyField;
+  required?: boolean;
+  type?: string;
+  placeholder?: string;
+  autoComplete?: string;
+  maxLength?: number;
+  mono?: boolean;
+  serverErrors?: ServerErrorsProp;
+}) {
+  const err = mergedError(field, serverErrors);
+  return (
+    <div>
+      <label htmlFor={field.name} className="mb-1.5 block text-sm font-medium text-foreground">
+        {label} {required && <span className="text-red-600">*</span>}
+      </label>
+      <input
+        id={field.name}
+        name={field.name}
+        type={type}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        maxLength={maxLength}
+        value={field.state.value}
+        onChange={(e) => field.handleChange(e.target.value as never)}
+        onBlur={field.handleBlur}
+        className={editorialFieldClass({ invalid: !!err, className: mono ? "font-mono" : undefined })}
+      />
+      {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
+    </div>
+  );
+}
+
+function PhoneField({
+  label,
+  field,
+  required,
+  serverErrors,
+}: {
+  label: string;
+  field: AnyField;
+  required?: boolean;
+  serverErrors?: ServerErrorsProp;
+}) {
+  const err = mergedError(field, serverErrors);
+  return (
+    <div>
+      <label htmlFor={field.name} className="mb-1.5 block text-sm font-medium text-foreground">
+        {label} {required && <span className="text-red-600">*</span>}
+      </label>
+      <input
+        id={field.name}
+        type="tel"
+        inputMode="numeric"
+        autoComplete="tel"
+        placeholder="0917-010-0098"
+        value={formatPhoneInput(field.state.value)}
+        onChange={(e) => field.handleChange(stripPhoneFormat(formatPhoneInput(e.target.value)) as never)}
+        onBlur={field.handleBlur}
+        className={editorialFieldClass({ invalid: !!err, className: "font-mono" })}
+      />
+      {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
+    </div>
+  );
+}
+
+function TextAreaField({
+  label,
+  field,
+  rows = 2,
+  required,
+  placeholder,
+  serverErrors,
+}: {
+  label: string;
+  field: AnyField;
+  rows?: number;
+  required?: boolean;
+  placeholder?: string;
+  serverErrors?: ServerErrorsProp;
+}) {
+  const err = mergedError(field, serverErrors);
+  return (
+    <div>
+      <label htmlFor={field.name} className="mb-1.5 block text-sm font-medium text-foreground">
+        {label} {required && <span className="text-red-600">*</span>}
+      </label>
+      <textarea
+        id={field.name}
+        name={field.name}
+        rows={rows}
+        placeholder={placeholder}
+        value={field.state.value}
+        onChange={(e) => field.handleChange(e.target.value as never)}
+        onBlur={field.handleBlur}
+        className={editorialFieldClass({ invalid: !!err })}
+      />
+      {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  field,
+  options,
+  required,
+  serverErrors,
+}: {
+  label: string;
+  field: AnyField;
+  options: [string, string][];
+  required?: boolean;
+  serverErrors?: ServerErrorsProp;
+}) {
+  const err = mergedError(field, serverErrors);
+  return (
+    <div>
+      <label htmlFor={field.name} className="mb-1.5 block text-sm font-medium text-foreground">
+        {label} {required && <span className="text-red-600">*</span>}
+      </label>
+      <select
+        id={field.name}
+        name={field.name}
+        value={field.state.value}
+        onChange={(e) => field.handleChange(e.target.value as never)}
+        onBlur={field.handleBlur}
+        className={editorialFieldClass({ invalid: !!err })}
+      >
+        {options.map(([value, text]) => (
+          <option key={value} value={value}>
+            {text}
+          </option>
+        ))}
+      </select>
+      {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
     </div>
   );
 }
