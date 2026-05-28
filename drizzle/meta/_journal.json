@@ -92,6 +92,13 @@
       "when": 1779946193254,
       "tag": "0012_add_enrollment_cancellation_and_clearances",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1780001703621,
+      "tag": "0013_drop_ecr_enrollment_cascade",
+      "breakpoints": true
     }
   ]
 }

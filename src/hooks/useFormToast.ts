@@ -54,13 +54,14 @@ export function useFormToast<T extends BaseFormState>(
     callbacksRef.current = options;
   });
 
+  // Stringify form-level errors so we have a stable primitive for the effect's
+  // dependency array — object references on state.errors change every render.
+  const currentFormErrors = state.errors?._form
+    ? JSON.stringify(state.errors._form)
+    : null;
+
   useEffect(() => {
     const lastState = lastStateRef.current;
-
-    // Stringify form-level errors for value comparison (avoids object reference issues)
-    const currentFormErrors = state.errors?._form
-      ? JSON.stringify(state.errors._form)
-      : null;
 
     // Determine if anything actually changed
     const isNewState =
@@ -114,10 +115,10 @@ export function useFormToast<T extends BaseFormState>(
       message: state.message,
       formErrors: currentFormErrors,
     };
-  // Note: state.errors intentionally excluded - we use stringified comparison
-  // (currentFormErrors) inside the effect to detect form-level error changes.
-  // Including state.errors would cause infinite re-renders since objects are
-  // compared by reference, not value.
+  // state.errors (the object) is intentionally excluded — it would change reference
+  // every render. We track form-level error changes via the stringified
+  // currentFormErrors primitive instead. The early-return read of state.errors is
+  // covered transitively (it only matters when other tracked deps are also empty).
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.success, state.message]);
+  }, [state.success, state.message, currentFormErrors]);
 }
