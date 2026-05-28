@@ -40,43 +40,47 @@ export async function updateRefundCutoffSettingsAction(
   const { refundCutoffStartDate, refundCutoffDays } = parsed.data;
 
   try {
-    // Upsert start date setting
-    await db
-      .insert(systemSettings)
-      .values({
-        key: SYSTEM_SETTING_KEYS.REFUND_CUTOFF_START_DATE,
-        value: refundCutoffStartDate,
-        description: "Start date for refund eligibility calculation (school year start)",
-        updatedAt: new Date(),
-        updatedBy: session.userId,
-      })
-      .onConflictDoUpdate({
-        target: systemSettings.key,
-        set: {
-          value: refundCutoffStartDate,
-          updatedAt: new Date(),
-          updatedBy: session.userId,
-        },
-      });
+    // Both settings must succeed or fail together — partial saves would leave
+    // refund cutoff configuration inconsistent.
+    await db.transaction(async (tx) => {
+      const now = new Date();
 
-    // Upsert cutoff days setting
-    await db
-      .insert(systemSettings)
-      .values({
-        key: SYSTEM_SETTING_KEYS.REFUND_CUTOFF_DAYS,
-        value: String(refundCutoffDays),
-        description: "Number of days from start date within which refunds are allowed",
-        updatedAt: new Date(),
-        updatedBy: session.userId,
-      })
-      .onConflictDoUpdate({
-        target: systemSettings.key,
-        set: {
-          value: String(refundCutoffDays),
-          updatedAt: new Date(),
+      await tx
+        .insert(systemSettings)
+        .values({
+          key: SYSTEM_SETTING_KEYS.REFUND_CUTOFF_START_DATE,
+          value: refundCutoffStartDate,
+          description: "Start date for refund eligibility calculation (school year start)",
+          updatedAt: now,
           updatedBy: session.userId,
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: {
+            value: refundCutoffStartDate,
+            updatedAt: now,
+            updatedBy: session.userId,
+          },
+        });
+
+      await tx
+        .insert(systemSettings)
+        .values({
+          key: SYSTEM_SETTING_KEYS.REFUND_CUTOFF_DAYS,
+          value: String(refundCutoffDays),
+          description: "Number of days from start date within which refunds are allowed",
+          updatedAt: now,
+          updatedBy: session.userId,
+        })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: {
+            value: String(refundCutoffDays),
+            updatedAt: now,
+            updatedBy: session.userId,
+          },
+        });
+    });
 
     // Audit log
     await logAudit({
