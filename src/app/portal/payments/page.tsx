@@ -4,7 +4,6 @@ import { PORTAL_ROLES } from "@/lib/constants/roles";
 import { PortalPaymentsView } from "@/features/payments/components/PortalPaymentsView";
 
 export const metadata = { title: "My Payments" };
-export const dynamic = "force-dynamic";
 
 /**
  * Thin server shell: enforces auth + portal role, then renders the client view.
