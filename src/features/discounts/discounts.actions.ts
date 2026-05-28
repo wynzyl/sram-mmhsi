@@ -50,6 +50,7 @@ import {
   formatDiscountDescription,
 } from "./utils/discount-calculations";
 import { getDiscountRequestGate } from "./discounts.queries";
+import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
 
 // ─── Discount Type Management ─────────────────────────────────────────────────
 
@@ -928,6 +929,24 @@ export async function reverseDiscountAction(
         );
       }
 
+      // Check for pending cancellation request - need to fetch enrollment ID from assessment
+      const [assessmentWithEnrollment] = await tx
+        .select({
+          enrollmentId: assessments.enrollmentId,
+        })
+        .from(assessments)
+        .where(eq(assessments.id, appliedDiscount.assessmentId))
+        .limit(1);
+
+      if (assessmentWithEnrollment?.enrollmentId) {
+        const hasPendingCancel = await hasPendingCancellationRequest(assessmentWithEnrollment.enrollmentId);
+        if (hasPendingCancel) {
+          throw new Error(
+            "REVERSE_BLOCKED: Enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
+          );
+        }
+      }
+
       // "Live" = still consuming balance: only pending_confirmation/posted
       // block. Voided/reversed/reversal/balance_forward payments have already
       // released their hold on the assessment and must not block reversal.
@@ -998,6 +1017,7 @@ export async function reverseDiscountAction(
           description: `Reversal: ${appliedDiscount.discountTypeName}`,
           amount: appliedDiscount.discountAmount, // The original discount amount (was negative, now adding back)
           isDiscount: false, // This is a charge, not a discount
+          isRefundable: false, // Discount reversals are not refundable
           studentDiscountId: reversalDiscount.id,
           createdBy: session.userId,
           updatedBy: session.userId,
@@ -1168,6 +1188,14 @@ export async function applyApprovedDiscountToExistingAssessment(
         );
       }
 
+      // Check for pending cancellation request (blocks discount application)
+      const hasPendingCancel = await hasPendingCancellationRequest(request.enrollmentId);
+      if (hasPendingCancel) {
+        throw new Error(
+          "APPLY_BLOCKED: Enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
+        );
+      }
+
       // 4. Refuse if any live payment exists. Re-applying a discount over a
       //    live payment would silently change the recorded balance.
       //    "Live" = pending_confirmation or posted; voided/reversed/reversal/
@@ -1265,6 +1293,7 @@ export async function applyApprovedDiscountToExistingAssessment(
           description,
           amount: String(discountAmount), // Positive value; isDiscount flag controls sign in display
           isDiscount: true,
+          isRefundable: false, // Discounts are not refundable
           studentDiscountId: studentDiscount.id,
           createdBy: session.userId,
           updatedBy: session.userId,
@@ -1535,6 +1564,7 @@ export async function applyApprovedDiscountsToAssessment(
         description,
         amount: String(discountAmount), // Positive value
         isDiscount: true,
+        isRefundable: false, // Discounts are not refundable
         studentDiscountId: studentDiscount.id,
         createdBy: userId,
         updatedBy: userId,

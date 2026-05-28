@@ -13,6 +13,7 @@ export const CreateFeeItemTypeSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(80, "Name too long"),
   category: z.enum(FEE_ITEM_CATEGORIES, { message: "Select a valid category" }),
   isDiscount: z.boolean().default(false),
+  isRefundable: z.boolean().default(true),
   displayOrder: z.number().int().min(0).default(0),
 });
 
@@ -21,6 +22,7 @@ export const UpdateFeeItemTypeSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(80, "Name too long").optional(),
   category: z.enum(FEE_ITEM_CATEGORIES).optional(),
   isDiscount: z.coerce.boolean().optional(),
+  isRefundable: z.coerce.boolean().optional(),
   displayOrder: z.coerce.number().int().min(0).optional(),
   isActive: z.coerce.boolean().optional(),
 });

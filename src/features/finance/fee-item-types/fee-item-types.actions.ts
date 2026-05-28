@@ -34,6 +34,7 @@ export async function createFeeItemTypeAction(
     name: formData.get("name"),
     category: formData.get("category"),
     isDiscount: formData.get("isDiscount") === "true",
+    isRefundable: formData.get("isRefundable") === "true",
     displayOrder: formData.get("displayOrder") || 0,
   });
 
@@ -65,7 +66,7 @@ export async function createFeeItemTypeAction(
     action: "fee_item_type_created",
     targetEntity: "fee_item_types",
     targetId: type.id,
-    newState: { code: parsed.data.code, name: parsed.data.name, category: parsed.data.category },
+    newState: { code: parsed.data.code, name: parsed.data.name, category: parsed.data.category, isRefundable: parsed.data.isRefundable },
   }, { throwOnFail: true });
 
   revalidatePath(REVALIDATE);
@@ -89,6 +90,7 @@ export async function updateFeeItemTypeAction(
     name: formData.get("name"),
     category: formData.get("category"),
     isDiscount: formData.get("isDiscount") === "true",
+    isRefundable: formData.get("isRefundable") === "true",
     displayOrder: formData.get("displayOrder"),
   });
 
@@ -110,6 +112,7 @@ export async function updateFeeItemTypeAction(
       name: parsed.data.name ?? existing.name,
       category: parsed.data.category ?? existing.category,
       isDiscount: parsed.data.isDiscount ?? existing.isDiscount,
+      isRefundable: parsed.data.isRefundable ?? existing.isRefundable,
       displayOrder: parsed.data.displayOrder ?? existing.displayOrder,
       updatedBy: session.userId,
       updatedAt: new Date(),
@@ -122,7 +125,7 @@ export async function updateFeeItemTypeAction(
     action: "fee_item_type_updated",
     targetEntity: "fee_item_types",
     targetId: parsed.data.id,
-    newState: { name: parsed.data.name, category: parsed.data.category },
+    newState: { name: parsed.data.name, category: parsed.data.category, isRefundable: parsed.data.isRefundable },
   }, { throwOnFail: true });
 
   revalidatePath(REVALIDATE);

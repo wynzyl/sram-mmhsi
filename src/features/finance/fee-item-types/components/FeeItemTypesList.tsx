@@ -8,6 +8,7 @@ type FeeItemType = {
   name: string;
   category: string;
   isDiscount: boolean;
+  isRefundable: boolean;
   displayOrder: number;
   isActive: boolean;
   createdAt: Date | string;
@@ -90,6 +91,7 @@ function FeeTypeGroup({
               <th className="px-4 py-2.5 text-left text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border">Name</th>
               <th className="px-4 py-2.5 text-left text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border">Category</th>
               <th className="px-4 py-2.5 text-left text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border">Type</th>
+              <th className="px-4 py-2.5 text-center text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border">Refundable</th>
               <th className="px-4 py-2.5 text-right text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border">Order</th>
               {canManage && <th className="px-4 py-2.5 text-left text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground bg-muted/50 border-b border-border" style={{ width: "8rem" }}>Actions</th>}
             </tr>
@@ -121,6 +123,13 @@ function FeeTypeGroup({
                     <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-green-500 bg-green-500/10 rounded">DISC</span>
                   ) : (
                     <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide bg-muted text-muted-foreground rounded">FEE</span>
+                  )}
+                </td>
+                <td className="px-4 py-2.5 text-[0.8125rem] border-b border-border text-center">
+                  {ft.isRefundable ? (
+                    <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-green-500 bg-green-500/10 rounded">YES</span>
+                  ) : (
+                    <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-amber-500 bg-amber-500/10 rounded">NO</span>
                   )}
                 </td>
                 <td className="px-4 py-2.5 text-[0.8125rem] border-b border-border text-right tabular-nums">

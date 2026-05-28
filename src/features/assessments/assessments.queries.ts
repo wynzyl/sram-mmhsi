@@ -348,6 +348,7 @@ export type ResolvedFeeItem = {
   description: string; // From fee_item_types.name
   amount: string;
   isDiscount: boolean; // From fee_item_types.is_discount
+  isRefundable: boolean; // From fee_item_types.is_refundable (for cancellation refund calculation)
   order: number;
 };
 
@@ -384,6 +385,7 @@ export type FeeScheduleResolution = {
  *     description: item.description,
  *     amount: item.amount,
  *     isDiscount: item.isDiscount,
+ *     isRefundable: item.isRefundable,
  *   }))
  * );
  * ```
@@ -450,6 +452,7 @@ export async function resolveFeeScheduleForAssessment(
       ? String(overrideMap.get(item.id))
       : item.defaultAmount,
     isDiscount: item.feeItemType.isDiscount, // Get from fee_item_types
+    isRefundable: item.feeItemType.isRefundable, // Get from fee_item_types (for cancellation refunds)
     order: item.order,
   }));
 

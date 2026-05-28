@@ -58,6 +58,8 @@ export type EnrollmentRecordRow = {
   gradeLevel: string;
   sectionName: string | null;
   assessmentId: string | null;
+  /** True if enrollment has a pending cancellation request */
+  hasPendingCancellation?: boolean;
 };
 
 export type AssessmentSummaryRow = {
@@ -100,6 +102,8 @@ export type StudentRecordFlags = {
   canRequestDiscounts?: boolean;
   /** Finance / admin — manage/reverse discounts. */
   canManageDiscounts?: boolean;
+  /** Registrar / admin — cancel enrollments or request cancellation. */
+  canCancelEnrollment?: boolean;
 };
 
 function computeAge(dob: Date): number {
