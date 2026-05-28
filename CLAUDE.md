@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Stack:** Next.js 16 (App Router) · PostgreSQL · Drizzle ORM · Tailwind CSS 4 · Zod 4 · React 19 `useActionState` + Server Actions (forms) · JWT (jose)
 
-> **Forms:** The form pattern is native React 19 `<form action={action}>` + `useActionState`, with **server-side** Zod validation in the action (`schema.safeParse(formData)`) and errors returned via `state.errors`. React Hook Form is **not** used. TanStack Form (`@tanstack/react-form`) is being trialed for complex wizard / field-array forms only (e.g. student registration) — see `StudentRegistrationFormTanstack.tsx`.
+> **Forms:** The default form pattern is native React 19 `<form action={action}>` + `useActionState`, with **server-side** Zod validation in the action (`schema.safeParse(formData)`) and errors returned via `state.errors`. React Hook Form is **not** used. **TanStack Form (`@tanstack/react-form`) is adopted for complex wizard / field-array forms only** — first migration is `src/features/registrations/components/StudentRegistrationForm.tsx` (4-step wizard + guardian field array, migrated in place 2026-05-28). When migrating a form to TanStack Form: reuse the existing Zod schemas via a small `zodCheck` adapter, render array-item flags (e.g. guardian `isPrimary`) as real subscribed fields or set them through whole-array `setFieldValue`, keep the existing server action + FormData contract unchanged, and dispatch the `useActionState` action inside `startTransition`. Simple single-submit forms stay native (progressive enhancement). See `docs/TANSTACK-MIGRATION/TANSTACK-FORM-CANDIDATES.md` for the per-form assessment and migration order.
   
   #Tanstack Query 
   -Correct architecture:
