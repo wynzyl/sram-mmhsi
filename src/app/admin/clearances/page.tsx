@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { getClearances } from "@/features/clearances/clearances.queries";
+import { getClearances, getClearanceCounters } from "@/features/clearances/clearances.queries";
 import ClearanceTable from "@/features/clearances/components/ClearanceTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -27,21 +27,17 @@ export default async function ClearancesPage() {
     );
   }
 
-  // Fetch clearances
-  const [pendingResult, allResult] = await Promise.all([
-    getClearances({ page: 1, pageSize: 100 }, { status: "pending" }),
+  // Aggregate counters computed in SQL; table rows still paginated.
+  const [counters, allResult] = await Promise.all([
+    getClearanceCounters(),
     getClearances({ page: 1, pageSize: 100 }),
   ]);
 
-  const pendingClearances = pendingResult.data;
   const allClearances = allResult.data;
-
-  const clearedCount = allClearances.filter((c) => c.status === "cleared").length;
-  const waivedCount = allClearances.filter((c) => c.status === "waived").length;
-  const totalOutstanding = pendingClearances.reduce(
-    (sum, c) => sum + Number(c.outstandingAmount),
-    0
-  );
+  const pendingCount = counters.pendingCount;
+  const clearedCount = counters.clearedCount;
+  const waivedCount = counters.waivedCount;
+  const totalOutstanding = counters.totalPendingOutstanding;
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,14 +54,14 @@ export default async function ClearancesPage() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card className={pendingClearances.length > 0 ? "border-amber-200 bg-amber-50/30" : ""}>
+        <Card className={pendingCount > 0 ? "border-amber-200 bg-amber-50/30" : ""}>
           <CardContent className="flex items-center gap-3 pt-6">
             <div className="rounded-full bg-amber-100 p-2">
               <Clock className="h-5 w-5 text-amber-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-amber-600">
-                {pendingClearances.length}
+                {pendingCount}
               </p>
               <p className="text-xs text-muted-foreground">Pending</p>
             </div>
@@ -113,13 +109,13 @@ export default async function ClearancesPage() {
       </div>
 
       {/* Pending Clearances Alert */}
-      {pendingClearances.length > 0 && (
+      {pendingCount > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
           <div className="flex items-start gap-3">
             <Clock className="mt-0.5 h-5 w-5 text-amber-600" />
             <div>
               <p className="font-medium text-amber-800">
-                {pendingClearances.length} student{pendingClearances.length > 1 ? "s have" : " has"} pending clearances
+                {pendingCount} student{pendingCount > 1 ? "s have" : " has"} pending clearances
               </p>
               <p className="mt-1 text-sm text-amber-700">
                 Total outstanding: <CurrencyDisplay amount={totalOutstanding} className="font-semibold" />.

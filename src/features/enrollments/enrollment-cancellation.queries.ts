@@ -268,14 +268,6 @@ export async function getCancellationRequests(
   const totalRecords = Number(countResult?.count || 0);
 
   // Get paginated data with joins
-  const requestedByUser = db.$with("requested_by_user").as(
-    db.select({ id: users.id, name: sql<string>`concat(${users.username})` }).from(users)
-  );
-
-  const reviewedByUser = db.$with("reviewed_by_user").as(
-    db.select({ id: users.id, name: sql<string>`concat(${users.username})` }).from(users)
-  );
-
   const rows = await db
     .select({
       id: enrollmentCancellationRequests.id,

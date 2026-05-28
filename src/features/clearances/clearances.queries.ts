@@ -204,6 +204,44 @@ export async function getClearances(
 }
 
 /**
+ * Aggregate counters for the clearances overview cards.
+ * Computed in SQL to avoid loading all rows into memory.
+ */
+export async function getClearanceCounters(filters?: {
+  schoolYearId?: string;
+}): Promise<{
+  pendingCount: number;
+  clearedCount: number;
+  waivedCount: number;
+  totalRecords: number;
+  totalPendingOutstanding: number;
+}> {
+  const conditions = [isNull(studentClearances.deletedAt)];
+  if (filters?.schoolYearId) {
+    conditions.push(eq(studentClearances.schoolYearId, filters.schoolYearId));
+  }
+
+  const [row] = await db
+    .select({
+      pendingCount: sql<number>`count(*) filter (where ${studentClearances.status} = 'pending')`,
+      clearedCount: sql<number>`count(*) filter (where ${studentClearances.status} = 'cleared')`,
+      waivedCount: sql<number>`count(*) filter (where ${studentClearances.status} = 'waived')`,
+      totalRecords: sql<number>`count(*)`,
+      totalPendingOutstanding: sql<string>`coalesce(sum(${studentClearances.outstandingAmount}) filter (where ${studentClearances.status} = 'pending'), 0)`,
+    })
+    .from(studentClearances)
+    .where(and(...conditions));
+
+  return {
+    pendingCount: Number(row?.pendingCount ?? 0),
+    clearedCount: Number(row?.clearedCount ?? 0),
+    waivedCount: Number(row?.waivedCount ?? 0),
+    totalRecords: Number(row?.totalRecords ?? 0),
+    totalPendingOutstanding: Number(row?.totalPendingOutstanding ?? 0),
+  };
+}
+
+/**
  * Get count of pending clearances (for badge display)
  */
 export async function getPendingClearancesCount(): Promise<number> {
@@ -449,10 +487,10 @@ export async function getEnrollmentsWithBalance(schoolYearId: string): Promise<
       and(
         eq(enrollments.schoolYearId, schoolYearId),
         eq(enrollments.status, "enrolled"),
-        isNull(assessments.cancelledAt)
+        isNull(assessments.cancelledAt),
+        sql`${assessments.balance} > 0.01`
       )
     );
 
-  // Filter to only those with positive balance
-  return rows.filter((r) => Number(r.balance) > 0.01);
+  return rows;
 }
