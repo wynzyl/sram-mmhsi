@@ -10,7 +10,6 @@ import {
   assessments,
   assessmentItems,
   enrollments,
-  payments,
   feeItemTypes,
 } from "@/lib/db/schema";
 import { eq, and, isNull, inArray, sql } from "drizzle-orm";
@@ -52,6 +51,7 @@ import {
 } from "./utils/discount-calculations";
 import { getDiscountRequestGate } from "./discounts.queries";
 import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
+import { assertNoLivePayments } from "@/lib/utils/payment-checks";
 
 // ─── Discount Type Management ─────────────────────────────────────────────────
 
@@ -943,25 +943,12 @@ export async function reverseDiscountAction(
         "reverse discount"
       );
 
-      // "Live" = still consuming balance: only pending_confirmation/posted
-      // block. Voided/reversed/reversal/balance_forward payments have already
-      // released their hold on the assessment and must not block reversal.
-      const livePayments = await tx
-        .select({ id: payments.id })
-        .from(payments)
-        .where(
-          and(
-            eq(payments.assessmentId, appliedDiscount.assessmentId),
-            inArray(payments.status, ["pending_confirmation", "posted"])
-          )
-        )
-        .limit(1);
-
-      if (livePayments.length > 0) {
-        throw new Error(
-          "Can not reverse discount if payment has been made!"
-        );
-      }
+      // Refuse if any live payment exists. Payment must be voided first (LIFO reversal order).
+      await assertNoLivePayments(
+        appliedDiscount.assessmentId,
+        "reverse discount",
+        tx
+      );
 
       // 1. Stamp the original discount as reversed FIRST. The unique partial
       //    index `student_discounts_request_active_uidx` permits only one row
@@ -1185,24 +1172,7 @@ export async function applyApprovedDiscountToExistingAssessment(
 
       // 4. Refuse if any live payment exists. Re-applying a discount over a
       //    live payment would silently change the recorded balance.
-      //    "Live" = pending_confirmation or posted; voided/reversed/reversal/
-      //    balance_forward have already released their hold.
-      const livePayments = await tx
-        .select({ id: payments.id })
-        .from(payments)
-        .where(
-          and(
-            eq(payments.assessmentId, assessment.id),
-            inArray(payments.status, ["pending_confirmation", "posted"])
-          )
-        )
-        .limit(1);
-
-      if (livePayments.length > 0) {
-        throw new Error(
-          "APPLY_BLOCKED: A live payment exists on this assessment. Void it before applying a new discount."
-        );
-      }
+      await assertNoLivePayments(assessment.id, "apply discount", tx);
 
       // 5. Load the live assessment items (with fee type codes) to compute
       //    the discount base. Includes prior reversal entries (isDiscount=false)

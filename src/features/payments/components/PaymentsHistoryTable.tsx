@@ -6,7 +6,7 @@ import type { RequestVoidFormState, CancelVoidRequestFormState } from "../void-r
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { formatDate } from "@/lib/utils/date";
+import { createDateColumn } from "@/components/tables/column-factories";
 import { useFormToast } from "@/hooks/useFormToast";
 import { useInlineConfirm } from "@/hooks/useInlineConfirm";
 import { Badge } from "@/components/ui/badge";
@@ -194,17 +194,10 @@ export default function PaymentsHistoryTable({
   // Columns are now stable - action state moved to VoidActionsCell component
   const columns = useMemo<ColumnDef<Payment>[]>(() => {
     const baseColumns: ColumnDef<Payment>[] = [
-      {
+      createDateColumn<Payment>("paymentDate", {
         header: "Date",
-        accessorKey: "paymentDate",
-        cell: ({ row }) => {
-          const d = row.original.paymentDate;
-          const date = d instanceof Date ? d : new Date(d);
-          return Number.isFinite(date.getTime())
-            ? formatDate(date, { year: "numeric", month: "numeric", day: "numeric" })
-            : "-";
-        },
-      },
+        formatOptions: { year: "numeric", month: "numeric", day: "numeric" },
+      }),
       {
         header: "OR Number",
         accessorKey: "orNumber",
