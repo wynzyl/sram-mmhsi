@@ -35,7 +35,7 @@ import {
 import { revertToAssessedOnVoid } from "@/lib/utils/enrollment-status";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
-import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
+import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
 
 // ─── Request Void Action ───────────────────────────────────────────────────────
 
@@ -91,19 +91,11 @@ export async function requestVoidAction(
         );
 
         // Check for pending cancellation request (blocks void requests too)
-        // Fetch assessment with enrollment ID
         const assessmentForCheck = await tx.query.assessments.findFirst({
           where: eq(assessments.id, payment.assessmentId),
           columns: { enrollmentId: true },
         });
-        if (assessmentForCheck?.enrollmentId) {
-          const hasPendingCancel = await hasPendingCancellationRequest(assessmentForCheck.enrollmentId);
-          if (hasPendingCancel) {
-            throw new Error(
-              "Cannot request void: enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
-            );
-          }
-        }
+        await assertNoPendingCancellation(assessmentForCheck?.enrollmentId, "request void");
       }
 
       // 4. Check for existing pending request (DB constraint will also enforce, but we want a nice message)
