@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 
 /**
@@ -8,9 +7,7 @@ import { useTheme } from "@/components/providers/ThemeProvider";
  * Displays current theme with icon and cycles through: light → dark → system
  */
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const { theme, setTheme, mounted } = useTheme();
 
   const cycleTheme = () => {
     if (theme === "light") setTheme("dark");
