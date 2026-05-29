@@ -1,18 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState, useCallback } from "react";
 import { Mail, AlertCircle } from "lucide-react";
 import { sendInvoiceAction } from "../../invoices/invoices.actions";
 import type { InvoiceActionState } from "../../invoices/invoices.schema";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Modal, ModalHeader, ModalBody } from "@/components/shared/Modal";
 import { Button } from "@/components/ui/button";
+import { useFormToast } from "@/hooks/useFormToast";
 
 interface SendInvoiceDialogProps {
   invoiceId: string;
@@ -28,84 +22,93 @@ export default function SendInvoiceDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [state, action, pending] = useActionState(sendInvoiceAction, initialState);
 
-  useEffect(() => {
-    if (state.success) {
-      setIsOpen(false);
-    }
-  }, [state.success]);
+  const openModal = useCallback(() => setIsOpen(true), []);
+  const closeModal = useCallback(() => setIsOpen(false), []);
+
+  useFormToast(state, {
+    successMessage: "Invoice sent successfully",
+    onSuccess: closeModal,
+  });
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-      <AlertDialogTrigger asChild>
-        <Button type="button" variant="primary">
-          <Mail className="mr-2 h-4 w-4" aria-hidden="true" />
-          Send via Email
-        </Button>
-      </AlertDialogTrigger>
+    <>
+      <Button type="button" variant="primary" onClick={openModal}>
+        <Mail className="mr-2 h-4 w-4" aria-hidden="true" />
+        Send via Email
+      </Button>
 
-      <AlertDialogContent className="max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2 text-neutral-900 dark:text-foreground">
+      <Modal
+        open={isOpen}
+        onClose={closeModal}
+        size="sm"
+        aria-labelledby="send-invoice-title"
+        aria-describedby="send-invoice-description"
+      >
+        <ModalHeader onClose={closeModal} kicker="Finance · Invoices">
+          <h2 id="send-invoice-title" className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" aria-hidden="true" />
             Send Invoice
-          </AlertDialogTitle>
-          <AlertDialogDescription className="text-neutral-700 dark:text-muted-foreground">
+          </h2>
+        </ModalHeader>
+
+        <ModalBody>
+          <p id="send-invoice-description" className="text-sm text-muted-foreground mb-4">
             Send the invoice details to the recipient. The invoice status will
-            be updated to <span className="font-semibold text-neutral-900 dark:text-foreground">SENT</span>.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+            be updated to <span className="font-semibold text-foreground">SENT</span>.
+          </p>
 
-        <form action={action} className="space-y-4">
-          <input type="hidden" name="invoiceId" value={invoiceId} />
+          <form action={action} className="space-y-4">
+            <input type="hidden" name="invoiceId" value={invoiceId} />
 
-          {state.message && !state.success && (
-            <div
-              role="alert"
-              className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>{state.message}</span>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-neutral-900 dark:text-foreground"
-            >
-              Recipient Email <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              defaultValue={defaultEmail}
-              required
-              placeholder="parent@example.com"
-              autoComplete="email"
-              disabled={pending}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-neutral-900 shadow-sm transition-colors placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 dark:text-foreground dark:placeholder:text-muted-foreground"
-            />
-            {state.errors?.email && (
-              <p className="text-xs text-destructive">{state.errors.email[0]}</p>
+            {state.message && !state.success && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{state.message}</span>
+              </div>
             )}
-          </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsOpen(false)}
-              disabled={pending}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" disabled={pending}>
-              {pending ? "Sending..." : "Send Invoice"}
-            </Button>
-          </div>
-        </form>
-      </AlertDialogContent>
-    </AlertDialog>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-foreground"
+              >
+                Recipient Email <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                defaultValue={defaultEmail}
+                required
+                placeholder="parent@example.com"
+                autoComplete="email"
+                disabled={pending}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              {state.errors?.email && (
+                <p className="text-xs text-destructive">{state.errors.email[0]}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={closeModal}
+                disabled={pending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={pending}>
+                {pending ? "Sending..." : "Send Invoice"}
+              </Button>
+            </div>
+          </form>
+        </ModalBody>
+      </Modal>
+    </>
   );
 }
