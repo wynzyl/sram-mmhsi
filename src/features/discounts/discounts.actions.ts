@@ -51,7 +51,7 @@ import {
   formatDiscountDescription,
 } from "./utils/discount-calculations";
 import { getDiscountRequestGate } from "./discounts.queries";
-import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
+import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
 
 // ─── Discount Type Management ─────────────────────────────────────────────────
 
@@ -938,14 +938,10 @@ export async function reverseDiscountAction(
         .where(eq(assessments.id, appliedDiscount.assessmentId))
         .limit(1);
 
-      if (assessmentWithEnrollment?.enrollmentId) {
-        const hasPendingCancel = await hasPendingCancellationRequest(assessmentWithEnrollment.enrollmentId);
-        if (hasPendingCancel) {
-          throw new Error(
-            "REVERSE_BLOCKED: Enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
-          );
-        }
-      }
+      await assertNoPendingCancellation(
+        assessmentWithEnrollment?.enrollmentId,
+        "reverse discount"
+      );
 
       // "Live" = still consuming balance: only pending_confirmation/posted
       // block. Voided/reversed/reversal/balance_forward payments have already
@@ -1185,12 +1181,7 @@ export async function applyApprovedDiscountToExistingAssessment(
       }
 
       // Check for pending cancellation request (blocks discount application)
-      const hasPendingCancel = await hasPendingCancellationRequest(request.enrollmentId);
-      if (hasPendingCancel) {
-        throw new Error(
-          "APPLY_BLOCKED: Enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
-        );
-      }
+      await assertNoPendingCancellation(request.enrollmentId, "apply discount");
 
       // 4. Refuse if any live payment exists. Re-applying a discount over a
       //    live payment would silently change the recorded balance.

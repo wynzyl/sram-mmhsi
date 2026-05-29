@@ -141,6 +141,37 @@ export async function hasPendingCancellationRequest(enrollmentId: string): Promi
 }
 
 /**
+ * Assert that an enrollment does not have a pending cancellation request.
+ *
+ * Throws a descriptive error if a cancellation request is pending for the enrollment.
+ * Use this guard to block financial operations while cancellation is under review.
+ *
+ * @param enrollmentId - The enrollment ID to check (skips check if null/undefined)
+ * @param operation - Description of the blocked operation (e.g., "post payment", "apply discount")
+ * @throws Error if enrollment has a pending cancellation request
+ *
+ * @example
+ * ```typescript
+ * await assertNoPendingCancellation(assessment.enrollmentId, "post payment");
+ * // Continue with payment...
+ * ```
+ */
+export async function assertNoPendingCancellation(
+  enrollmentId: string | null | undefined,
+  operation: string
+): Promise<void> {
+  if (!enrollmentId) return;
+
+  const hasPending = await hasPendingCancellationRequest(enrollmentId);
+  if (hasPending) {
+    throw new Error(
+      `OPERATION_BLOCKED: Cannot ${operation} - enrollment has a pending cancellation request. ` +
+        `Please wait for the request to be approved, rejected, or withdrawn.`
+    );
+  }
+}
+
+/**
  * Get enrollment IDs that have pending cancellation requests (batch query)
  * Useful for showing pending status in enrollment history tables
  */
