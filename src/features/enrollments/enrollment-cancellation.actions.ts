@@ -90,9 +90,7 @@ export async function requestEnrollmentCancellationAction(
     return { errors: result.errors };
   }
 
-  const parsed = result;
-
-  const { enrollmentId, reasonType, remarks } = parsed.data;
+  const { enrollmentId, reasonType, remarks } = result.data;
 
   try {
     let requestId: string | undefined;
@@ -198,9 +196,7 @@ export async function directCancelEnrollmentAction(
     return { errors: result.errors };
   }
 
-  const parsed = result;
-
-  const { enrollmentId, reasonType, remarks } = parsed.data;
+  const { enrollmentId, reasonType, remarks } = result.data;
 
   try {
     let refundResult: RefundResult | null = null;
@@ -368,9 +364,7 @@ export async function approveEnrollmentCancellationAction(
     return { errors: result.errors };
   }
 
-  const parsed = result;
-
-  const { requestId, reviewRemarks } = parsed.data;
+  const { requestId, reviewRemarks } = result.data;
 
   try {
     let refundResult: RefundResult | null = null;
@@ -584,9 +578,7 @@ export async function rejectEnrollmentCancellationAction(
     return { errors: result.errors };
   }
 
-  const parsed = result;
-
-  const { requestId, reviewRemarks } = parsed.data;
+  const { requestId, reviewRemarks } = result.data;
 
   try {
     await db.transaction(async (tx) => {
