@@ -152,7 +152,10 @@ export default function VoidRequestsPendingTable({
                   confirmLabel="Reject"
                   isLoading={rejectPending}
                   variant="danger"
-                  onCancel={() => setRejectingId(null)}
+                  onCancel={() => {
+                    setRejectingId(null);
+                    setRejectReasonValue("");
+                  }}
                   inputConfig={{
                     name: "decisionRemarks",
                     placeholder: "Rejection reason",
@@ -194,7 +197,10 @@ export default function VoidRequestsPendingTable({
               <Button
                 variant="danger"
                 size="sm"
-                onClick={() => setRejectingId(request.id)}
+                onClick={() => {
+                  setRejectReasonValue("");
+                  setRejectingId(request.id);
+                }}
               >
                 Reject
               </Button>
