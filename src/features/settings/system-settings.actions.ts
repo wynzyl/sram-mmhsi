@@ -3,6 +3,7 @@
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import { db } from "@/lib/db";
 import { systemSettings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -28,16 +29,12 @@ export async function updateRefundCutoffSettingsAction(
     return { message: "You do not have permission to modify system settings." };
   }
 
-  const parsed = RefundCutoffSettingsSchema.safeParse({
-    refundCutoffStartDate: formData.get("refundCutoffStartDate"),
-    refundCutoffDays: formData.get("refundCutoffDays"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(RefundCutoffSettingsSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { refundCutoffStartDate, refundCutoffDays } = parsed.data;
+  const { refundCutoffStartDate, refundCutoffDays } = result.data;
 
   try {
     // Both settings must succeed or fail together — partial saves would leave
