@@ -763,16 +763,12 @@ export async function cancelAssessmentAction(
   }
 
   // 2. Parse and validate input (remarks is now required in schema)
-  const parsed = CancelAssessmentSchema.safeParse({
-    assessmentId: formData.get("assessmentId"),
-    remarks: formData.get("remarks"),
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten().fieldErrors as CancelAssessmentFormState["errors"],
-    };
+  const result = parseFormData(CancelAssessmentSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { assessmentId, remarks } = parsed.data;
 

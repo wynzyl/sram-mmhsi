@@ -92,8 +92,9 @@ export function parseFormData<T extends z.ZodTypeAny>(
       // Use getAll for array fields
       data[key] = formData.getAll(key);
     } else if (booleanFields.includes(key)) {
-      // Convert "true"/"false" strings to boolean
-      data[key] = formData.get(key) === "true";
+      // Convert "true"/"on" strings to boolean (handles both hidden inputs and checkboxes)
+      const val = formData.get(key);
+      data[key] = val === "true" || val === "on";
     } else if (jsonFields.includes(key)) {
       // Parse JSON fields
       const raw = formData.get(key);
