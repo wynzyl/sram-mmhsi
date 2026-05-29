@@ -146,7 +146,8 @@ export default function AssessmentLedgerRegister({
   const isFullyPaid = assessment.billingStatus === "fully_paid";
   const isCancelled = assessment.billingStatus === "cancelled";
   const isTransferred = assessment.transferredAt != null;
-  const canOpenPay = canPost && !isFullyPaid && !isCancelled && !isTransferred && balanceNum > 0;
+  // Allow payments for cancelled enrollments to settle outstanding balances/clearances
+  const canOpenPay = canPost && !isFullyPaid && !isTransferred && balanceNum > 0;
 
   // Check for balance forward items (visual indicator only - action handles reversal)
   const hasBalanceForwardItems = items.some(

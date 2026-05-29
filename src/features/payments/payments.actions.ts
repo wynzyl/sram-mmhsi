@@ -166,11 +166,8 @@ export async function postPaymentAction(
       });
 
       if (!assessment) throw new Error("Assessment not found.");
-      if (assessment.cancelledAt != null) {
-        throw new Error(
-          "This ledger is closed because the enrollment was cancelled. You cannot post new payments here. Use Void payment on existing rows if reversing posted tuition."
-        );
-      }
+      // Note: Payments are allowed after enrollment cancellation to enable settling
+      // outstanding balances/clearances. The balance validation below prevents overpayment.
       if (assessment.transferredAt != null) {
         throw new Error(
           "PAYMENT_BLOCKED: This assessment's balance was transferred to a newer school year. All payments must be posted to the current year's assessment instead."
