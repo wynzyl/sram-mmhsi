@@ -8,6 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import { logger } from "@/lib/observability/logger";
 import {
   GenerateClearanceSchema,
@@ -44,18 +45,12 @@ export async function generateClearanceAction(
     return { message: "You do not have permission to generate clearances." };
   }
 
-  const parsed = GenerateClearanceSchema.safeParse({
-    studentId: formData.get("studentId"),
-    enrollmentId: formData.get("enrollmentId") || undefined,
-    schoolYearId: formData.get("schoolYearId") || undefined,
-    clearanceType: formData.get("clearanceType"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as GenerateClearanceFormState["errors"] };
+  const result = parseFormData(GenerateClearanceSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { studentId, enrollmentId, schoolYearId, clearanceType } = parsed.data;
+  const { studentId, enrollmentId, schoolYearId, clearanceType } = result.data;
 
   try {
     let clearanceId: string | undefined;
@@ -165,17 +160,12 @@ export async function resolveClearanceAction(
     return { message: "You do not have permission to resolve clearances." };
   }
 
-  const parsed = ResolveClearanceSchema.safeParse({
-    clearanceId: formData.get("clearanceId"),
-    resolutionType: formData.get("resolutionType"),
-    resolutionRemarks: formData.get("resolutionRemarks") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as ResolveClearanceFormState["errors"] };
+  const result = parseFormData(ResolveClearanceSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { clearanceId, resolutionType, resolutionRemarks } = parsed.data;
+  const { clearanceId, resolutionType, resolutionRemarks } = result.data;
 
   try {
     await db.transaction(async (tx) => {
@@ -261,15 +251,12 @@ export async function batchGenerateEOYClearancesAction(
     return { message: "Only administrators can batch generate clearances." };
   }
 
-  const parsed = BatchGenerateEOYClearancesSchema.safeParse({
-    schoolYearId: formData.get("schoolYearId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as BatchGenerateEOYClearancesFormState["errors"] };
+  const result = parseFormData(BatchGenerateEOYClearancesSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { schoolYearId } = parsed.data;
+  const { schoolYearId } = result.data;
 
   try {
     let generatedCount = 0;

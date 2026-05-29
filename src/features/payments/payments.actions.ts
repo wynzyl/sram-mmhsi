@@ -19,6 +19,7 @@ import {
   PostPaymentSchema,
   VoidPaymentSchema,
 } from "./payments.schema";
+import { parseFormData } from "@/lib/utils/form-validation";
 import type {
   BookletFormState,
   PaymentFormState,
@@ -53,16 +54,12 @@ export async function createBookletAction(
     return { message: "You do not have permission to manage OR booklets." };
   }
 
-  const parsed = CreateBookletSchema.safeParse({
-    series: formData.get("series"),
-    prefix: formData.get("prefix"),
-    startNumber: formData.get("startNumber"),
-    endNumber: formData.get("endNumber"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as BookletFormState["errors"] };
+  const result = parseFormData(CreateBookletSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { startNumber, endNumber } = parsed.data;
   const prefix = parsed.data.prefix.toUpperCase();
@@ -148,22 +145,12 @@ export async function postPaymentAction(
     return { message: "You do not have permission to post payments." };
   }
 
-  const parsed = PostPaymentSchema.safeParse({
-    studentId: formData.get("studentId"),
-    assessmentId: formData.get("assessmentId"),
-    bookletId: formData.get("bookletId"),
-    amount: formData.get("amount"),
-    paymentMethod: formData.get("paymentMethod"),
-    amountTendered: formData.get("amountTendered"),
-    referenceNumber: formData.get("referenceNumber"),
-    remarks: formData.get("remarks") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as PaymentFormState["errors"] };
+  const result = parseFormData(PostPaymentSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { studentId, assessmentId, bookletId, amount, paymentMethod, referenceNumber, remarks } = parsed.data;
+  const { studentId, assessmentId, bookletId, amount, paymentMethod, referenceNumber, remarks } = result.data;
 
   try {
     let orNumberToAssign: string | undefined;
@@ -372,16 +359,12 @@ export async function voidPaymentAction(
     return { message: "You do not have permission to void payments." };
   }
 
-  const parsed = VoidPaymentSchema.safeParse({
-    paymentId: formData.get("paymentId"),
-    voidReason: formData.get("voidReason"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as VoidPaymentFormState["errors"] };
+  const result = parseFormData(VoidPaymentSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { paymentId, voidReason } = parsed.data;
+  const { paymentId, voidReason } = result.data;
 
   try {
     await db.transaction(async (tx) => {

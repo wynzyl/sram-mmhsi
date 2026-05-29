@@ -3,6 +3,7 @@
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import { db } from "@/lib/db";
 import { feeItemTypes } from "@/lib/db/schema";
 import {
@@ -29,18 +30,12 @@ export async function createFeeItemTypeAction(
     return { message: "Permission denied" };
   }
 
-  const parsed = CreateFeeItemTypeSchema.safeParse({
-    code: formData.get("code"),
-    name: formData.get("name"),
-    category: formData.get("category"),
-    isDiscount: formData.get("isDiscount") === "true",
-    isRefundable: formData.get("isRefundable") === "true",
-    displayOrder: formData.get("displayOrder") || 0,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(CreateFeeItemTypeSchema, formData, { booleanFields: ["isDiscount", "isRefundable"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const existing = await db.query.feeItemTypes.findFirst({
     where: eq(feeItemTypes.code, parsed.data.code),
@@ -85,18 +80,12 @@ export async function updateFeeItemTypeAction(
     return { message: "Permission denied" };
   }
 
-  const parsed = UpdateFeeItemTypeSchema.safeParse({
-    id: formData.get("id"),
-    name: formData.get("name"),
-    category: formData.get("category"),
-    isDiscount: formData.get("isDiscount") === "true",
-    isRefundable: formData.get("isRefundable") === "true",
-    displayOrder: formData.get("displayOrder"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(UpdateFeeItemTypeSchema, formData, { booleanFields: ["isDiscount", "isRefundable"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const existing = await db.query.feeItemTypes.findFirst({
     where: eq(feeItemTypes.id, parsed.data.id),
@@ -144,14 +133,12 @@ export async function toggleFeeItemTypeAction(
     return { message: "Permission denied" };
   }
 
-  const parsed = ToggleFeeItemTypeSchema.safeParse({
-    id: formData.get("id"),
-    isActive: formData.get("isActive") === "true",
-  });
-
-  if (!parsed.success) {
+  const result = parseFormData(ToggleFeeItemTypeSchema, formData, { booleanFields: ["isActive"] });
+  if (!result.success) {
     return { message: "Invalid request" };
   }
+
+  const parsed = result;
 
   await db
     .update(feeItemTypes)
