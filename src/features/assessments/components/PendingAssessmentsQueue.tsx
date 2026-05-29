@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useFormToast } from "@/hooks/useFormToast";
+import { useInlineConfirm } from "@/hooks/useInlineConfirm";
 import { useCancelAssessmentFromQueue } from "@/features/assessments/hooks/use-assessments";
+import { getInitials } from "@/lib/utils/name";
+import {
+  InlineConfirmButtons,
+  InlineConfirmTrigger,
+} from "@/components/shared/InlineConfirmButtons";
 
 const EMPTY_STATE = {} as const;
 
@@ -34,12 +39,12 @@ function CancelEnrollmentInline({
   enrollmentId: string;
   studentName: string;
 }) {
-  const [confirming, setConfirming] = useState(false);
+  const confirm = useInlineConfirm();
   const cancel = useCancelAssessmentFromQueue();
 
   useFormToast(cancel.data ?? EMPTY_STATE, {
     successMessage: "Enrollment cancelled",
-    onSuccess: () => setConfirming(false),
+    onSuccess: () => confirm.reset(),
   });
 
   function handleConfirm() {
@@ -50,54 +55,28 @@ function CancelEnrollmentInline({
     cancel.mutate(formData);
   }
 
-  if (!confirming) {
+  if (!confirm.isConfirming) {
     return (
-      <button
-        type="button"
-        onClick={() => setConfirming(true)}
-        className="inline-flex items-center justify-center rounded-md border border-destructive bg-transparent px-3 py-1 text-xs font-semibold text-destructive hover:bg-destructive hover:text-white transition-colors"
-      >
-        Cancel
-      </button>
+      <InlineConfirmTrigger
+        label="Cancel"
+        variant="danger-outline"
+        onClick={confirm.showConfirm}
+      />
     );
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <button
-        type="button"
-        onClick={handleConfirm}
-        disabled={cancel.isPending}
-        className="inline-flex items-center justify-center rounded-md bg-destructive px-2 py-1 text-xs font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-      >
-        {cancel.isPending ? "..." : "Confirm"}
-      </button>
-      <button
-        type="button"
-        onClick={() => setConfirming(false)}
-        className="inline-flex items-center justify-center rounded-md border border-border bg-transparent px-2 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
-      >
-        No
-      </button>
-    </div>
+    <InlineConfirmButtons
+      confirmLabel={cancel.isPending ? "..." : "Confirm"}
+      cancelLabel="No"
+      isLoading={cancel.isPending}
+      variant="danger"
+      onConfirm={handleConfirm}
+      onCancel={confirm.hideConfirm}
+    />
   );
 }
 
-function initials(name: string): string {
-  const parts = name.split(",").map((s) => s.trim());
-  if (parts.length >= 2) {
-    // "Last, First" format
-    const last = parts[0].charAt(0);
-    const first = parts[1].charAt(0);
-    return `${first}${last}`.toUpperCase() || "?";
-  }
-  // Fallback for other formats
-  const words = name.trim().split(/\s+/);
-  if (words.length >= 2) {
-    return `${words[0].charAt(0)}${words[1].charAt(0)}`.toUpperCase();
-  }
-  return name.charAt(0).toUpperCase() || "?";
-}
 
 export default function PendingAssessmentsQueue({
   rows,
@@ -142,7 +121,7 @@ export default function PendingAssessmentsQueue({
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary"
                       aria-hidden
                     >
-                      {initials(r.studentName)}
+                      {getInitials(r.studentName)}
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-foreground">

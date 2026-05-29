@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useMemo, memo } from "react";
+import { useActionState, useMemo, memo } from "react";
 import { requestVoidAction, cancelVoidRequestAction } from "../void-requests.actions";
 import type { RequestVoidFormState, CancelVoidRequestFormState } from "../void-requests.schema";
 import { DataTable } from "@/components/shared/DataTable";
@@ -8,9 +8,13 @@ import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
 import { useFormToast } from "@/hooks/useFormToast";
+import { useInlineConfirm } from "@/hooks/useInlineConfirm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  InlineConfirmButtons,
+  InlineConfirmTrigger,
+} from "@/components/shared/InlineConfirmButtons";
 import type { ColumnDef } from "@tanstack/react-table";
 
 interface Payment {
@@ -54,8 +58,8 @@ const VoidActionsCell = memo(function VoidActionsCell({
   pendingRequest,
   currentUserId,
 }: VoidActionsCellProps) {
-  const [showRequestForm, setShowRequestForm] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const requestConfirm = useInlineConfirm();
+  const cancelConfirm = useInlineConfirm();
 
   const initialRequestState: RequestVoidFormState = {};
   const [requestState, requestAction, requestPending] = useActionState(
@@ -71,12 +75,12 @@ const VoidActionsCell = memo(function VoidActionsCell({
 
   useFormToast(requestState, {
     successMessage: "Void request submitted successfully",
-    onSuccess: () => setShowRequestForm(false),
+    onSuccess: () => requestConfirm.reset(),
   });
 
   useFormToast(cancelState, {
     successMessage: "Void request cancelled",
-    onSuccess: () => setShowCancelConfirm(false),
+    onSuccess: () => cancelConfirm.reset(),
   });
 
   const isReversal = payment.kind === "reversal";
@@ -101,27 +105,18 @@ const VoidActionsCell = memo(function VoidActionsCell({
   if (pendingRequest) {
     // Show cancel button if current user is the requester
     if (currentUserId && pendingRequest.requestedBy === currentUserId) {
-      if (showCancelConfirm) {
+      if (cancelConfirm.isConfirming) {
         return (
-          <form action={cancelAction} className="flex gap-2 items-center">
+          <form action={cancelAction}>
             <input type="hidden" name="requestId" value={pendingRequest.requestId} />
-            <span className="text-xs text-muted-foreground">Cancel?</span>
-            <Button
-              type="submit"
+            <InlineConfirmButtons
+              prompt="Cancel?"
+              confirmLabel="Yes"
+              cancelLabel="No"
+              isLoading={cancelPending}
               variant="danger"
-              size="sm"
-              loading={cancelPending}
-            >
-              Yes
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCancelConfirm(false)}
-            >
-              No
-            </Button>
+              onCancel={cancelConfirm.hideConfirm}
+            />
           </form>
         );
       }
@@ -130,7 +125,7 @@ const VoidActionsCell = memo(function VoidActionsCell({
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => setShowCancelConfirm(true)}
+          onClick={cancelConfirm.showConfirm}
         >
           Cancel Request
         </Button>
@@ -145,47 +140,35 @@ const VoidActionsCell = memo(function VoidActionsCell({
     );
   }
 
-  // Show request void form
-  if (showRequestForm) {
+  // Show request void form with input
+  if (requestConfirm.isConfirming) {
     return (
-      <form action={requestAction} className="flex gap-2">
+      <form action={requestAction}>
         <input type="hidden" name="paymentId" value={payment.id} />
-        <Input
-          type="text"
-          name="requestReason"
-          placeholder="Reason for void"
-          required
-          className="w-40 h-8 text-xs"
-        />
-        <Button
-          type="submit"
+        <InlineConfirmButtons
+          confirmLabel="Submit"
+          isLoading={requestPending}
           variant="danger"
-          size="sm"
-          loading={requestPending}
-        >
-          Submit
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowRequestForm(false)}
-        >
-          Cancel
-        </Button>
+          onCancel={requestConfirm.hideConfirm}
+          inputConfig={{
+            name: "requestReason",
+            placeholder: "Reason for void",
+            value: requestConfirm.inputValue,
+            onChange: requestConfirm.setInputValue,
+            required: true,
+          }}
+        />
       </form>
     );
   }
 
   // Show request void button
   return (
-    <Button
+    <InlineConfirmTrigger
+      label="Request Void"
       variant="danger"
-      size="sm"
-      onClick={() => setShowRequestForm(true)}
-    >
-      Request Void
-    </Button>
+      onClick={requestConfirm.showConfirm}
+    />
   );
 });
 

@@ -1,11 +1,6 @@
 import type { StudentDirectoryRow } from "../students.queries";
 import { StudentDirectoryRowActions } from "@/features/students/components/StudentDirectoryRowActions";
-
-function initials(first: string, last: string): string {
-  const a = first.trim().charAt(0);
-  const b = last.trim().charAt(0);
-  return `${a}${b}`.toUpperCase() || "?";
-}
+import { getInitials } from "@/lib/utils/name";
 
 function subtitle(row: StudentDirectoryRow): string {
   const parts: string[] = [];
@@ -59,7 +54,7 @@ export function StudentDirectoryTable({
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary"
                         aria-hidden
                       >
-                        {initials(s.firstName, s.lastName)}
+                        {getInitials(s.firstName, s.lastName)}
                       </div>
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-foreground">{displayName}</p>
