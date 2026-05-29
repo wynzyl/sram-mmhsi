@@ -30,6 +30,7 @@ import EditIntakeDocumentsDialog from "@/features/enrollments/components/EditInt
 import EnrollmentCancelAction from "@/features/registrations/components/EnrollmentCancelAction";
 import { cn } from "@/lib/utils/cn";
 import { formatPhoneNumber } from "@/lib/utils/phone";
+import { formatDate } from "@/lib/utils/date";
 import {
   CalendarDays,
   ClipboardList,
@@ -436,7 +437,7 @@ export function RegistrationDetailView({
                     <dt className="text-muted-foreground">Date of birth</dt>
                     <dd className="text-right font-medium text-foreground">
                       {student.dateOfBirth
-                        ? new Date(student.dateOfBirth).toLocaleDateString("en-PH", {
+                        ? formatDate(student.dateOfBirth, {
                             year: "numeric",
                             month: "long",
                             day: "numeric",
@@ -633,7 +634,7 @@ export function RegistrationDetailView({
                       </h3>
                       <p className="text-sm text-muted-foreground">
                         Type {registrationStudentTypeLabel(snap.studentType)} · Recorded{" "}
-                        {snap.recordedAt.toLocaleDateString("en-PH", {
+                        {formatDate(snap.recordedAt, {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
@@ -728,7 +729,7 @@ export function RegistrationDetailView({
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {row.enrolledAt
-                          ? new Date(row.enrolledAt).toLocaleDateString("en-PH", {
+                          ? formatDate(row.enrolledAt, {
                               year: "numeric",
                               month: "short",
                               day: "numeric",
@@ -736,7 +737,7 @@ export function RegistrationDetailView({
                           : "—"}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {new Date(row.createdAt).toLocaleDateString("en-PH", {
+                        {formatDate(row.createdAt, {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
@@ -842,7 +843,7 @@ export function RegistrationDetailView({
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {inv.dueDate
-                          ? new Date(inv.dueDate).toLocaleDateString("en-PH", {
+                          ? formatDate(inv.dueDate, {
                               year: "numeric",
                               month: "short",
                               day: "numeric",
@@ -850,7 +851,7 @@ export function RegistrationDetailView({
                           : "—"}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {new Date(inv.createdAt).toLocaleDateString("en-PH", {
+                        {formatDate(inv.createdAt, {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
@@ -1029,7 +1030,7 @@ export function RegistrationDetailView({
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           <div>
-                            {new Date(req.requestedAt).toLocaleDateString("en-PH", {
+                            {formatDate(req.requestedAt, {
                               year: "numeric",
                               month: "short",
                               day: "numeric",
@@ -1046,7 +1047,7 @@ export function RegistrationDetailView({
                           {req.decidedAt ? (
                             <>
                               <div>
-                                {new Date(req.decidedAt).toLocaleDateString("en-PH", {
+                                {formatDate(req.decidedAt, {
                                   year: "numeric",
                                   month: "short",
                                   day: "numeric",

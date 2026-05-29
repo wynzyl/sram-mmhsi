@@ -14,6 +14,7 @@ import { asc, desc, eq, and, lte } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { CashierPaymentProcessingView } from "@/features/payments/components/CashierPaymentProcessingView";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { formatDate } from "@/lib/utils/date";
 
 interface PageProps {
   params: Promise<{ assessmentId: string }>;
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 const dateLabel = (d: Date) =>
-  d.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" });
+  formatDate(d, { year: "numeric", month: "short", day: "numeric" });
 
 export default async function CashierProcessPaymentPage({ params }: PageProps) {
   const session = await requireSession();

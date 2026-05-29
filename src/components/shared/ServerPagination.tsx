@@ -1,35 +1,11 @@
 import Link from "next/link";
+import {
+  paginationPages,
+  PAGINATION_BUTTON_STYLES,
+} from "@/lib/utils/pagination";
 
-const btnBase =
-  "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted";
-const btnActive =
-  "border-primary bg-primary/10 text-primary font-semibold";
-const btnDisabled = "pointer-events-none opacity-40";
-
-/** Generate page numbers with ellipsis markers for pagination. */
-function paginationPages(current: number, total: number): (number | "ellipsis")[] {
-  if (total <= 1) return total === 1 ? [1] : [];
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-
-  const set = new Set<number>();
-  set.add(1);
-  set.add(total);
-  for (let i = current - 2; i <= current + 2; i++) {
-    if (i >= 1 && i <= total) set.add(i);
-  }
-
-  const sorted = [...set].sort((a, b) => a - b);
-  const out: (number | "ellipsis")[] = [];
-  let prev = 0;
-  for (const n of sorted) {
-    if (prev && n - prev > 1) out.push("ellipsis");
-    out.push(n);
-    prev = n;
-  }
-  return out;
-}
+const { base: btnBase, active: btnActive, disabled: btnDisabled } =
+  PAGINATION_BUTTON_STYLES;
 
 export type ServerPaginationProps = {
   currentPage: number;

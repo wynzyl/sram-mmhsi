@@ -9,6 +9,7 @@
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import { db } from "@/lib/db";
 import {
   feeTemplates,
@@ -46,15 +47,12 @@ export async function createFeeTemplateAction(
     return { message: "Permission denied" };
   }
 
-  const parsed = CreateFeeTemplateSchema.safeParse({
-    name: formData.get("name"),
-    assessmentBand: formData.get("assessmentBand"),
-    description: formData.get("description"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(CreateFeeTemplateSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const [template] = await db
     .insert(feeTemplates)
@@ -92,16 +90,12 @@ export async function addFeeTemplateItemAction(
     return { message: "Permission denied" };
   }
 
-  const parsed = AddFeeTemplateItemSchema.safeParse({
-    feeTemplateId: formData.get("feeTemplateId"),
-    feeItemTypeId: formData.get("feeItemTypeId"),
-    defaultAmount: formData.get("defaultAmount"),
-    order: formData.get("order"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(AddFeeTemplateItemSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   // Check for existing record (active or soft-deleted) with same template + fee type
   const existing = await db.query.feeTemplateItems.findFirst({
@@ -180,13 +174,12 @@ export async function removeFeeTemplateItemAction(
     return { message: "Permission denied" };
   }
 
-  const parsed = RemoveFeeTemplateItemSchema.safeParse({
-    id: formData.get("id"),
-  });
-
-  if (!parsed.success) {
+  const result = parseFormData(RemoveFeeTemplateItemSchema, formData);
+  if (!result.success) {
     return { message: "Invalid item ID" };
   }
+
+  const parsed = result;
 
   const item = await db.query.feeTemplateItems.findFirst({
     where: and(
@@ -261,17 +254,12 @@ export async function assignTemplateToSchoolYearAction(
     return { message: "Permission denied" };
   }
 
-  const parsed = AssignTemplateToSchoolYearSchema.safeParse({
-    schoolYearId: formData.get("schoolYearId"),
-    assessmentBand: formData.get("assessmentBand"),
-    feeTemplateId: formData.get("feeTemplateId"),
-    effectiveDate: formData.get("effectiveDate"),
-    expiryDate: formData.get("expiryDate") || null,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(AssignTemplateToSchoolYearSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   // Check for existing active schedule
   const existing = await db.query.schoolYearFeeSchedules.findFirst({
@@ -327,13 +315,12 @@ export async function deactivateFeeScheduleAction(
     return { message: "Permission denied" };
   }
 
-  const parsed = DeactivateScheduleSchema.safeParse({
-    scheduleId: formData.get("scheduleId"),
-  });
-
-  if (!parsed.success) {
+  const result = parseFormData(DeactivateScheduleSchema, formData);
+  if (!result.success) {
     return { message: "Invalid schedule ID" };
   }
+
+  const parsed = result;
 
   await db
     .update(schoolYearFeeSchedules)
@@ -368,13 +355,12 @@ export async function activateFeeScheduleAction(
     return { message: "Permission denied" };
   }
 
-  const parsed = DeactivateScheduleSchema.safeParse({
-    scheduleId: formData.get("scheduleId"),
-  });
-
-  if (!parsed.success) {
+  const result = parseFormData(DeactivateScheduleSchema, formData);
+  if (!result.success) {
     return { message: "Invalid schedule ID" };
   }
+
+  const parsed = result;
 
   await db
     .update(schoolYearFeeSchedules)
@@ -411,16 +397,12 @@ export async function createFeeOverrideAction(
     return { message: "Permission denied" };
   }
 
-  const parsed = CreateFeeOverrideSchema.safeParse({
-    scheduleId: formData.get("scheduleId"),
-    feeTemplateItemId: formData.get("feeTemplateItemId"),
-    overrideAmount: formData.get("overrideAmount"),
-    reason: formData.get("reason"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(CreateFeeOverrideSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   // Check for existing override
   const existing = await db.query.feeScheduleOverrides.findFirst({

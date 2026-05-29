@@ -8,6 +8,7 @@ import { eq, and, ilike, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction, logDeleteAction } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import {
   CreateSchoolYearSchema,
   UpdateSchoolYearSchema,
@@ -35,21 +36,12 @@ export async function createSchoolYearAction(
   }
 
   // 2. Validate
-  const parsed = CreateSchoolYearSchema.safeParse({
-    label: formData.get("label"),
-    startDate: formData.get("startDate"),
-    endDate: formData.get("endDate"),
-    isActive: formData.get("isActive") === "true",
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as CreateSchoolYearFormState["errors"],
-    };
+  const result = parseFormData(CreateSchoolYearSchema, formData, { booleanFields: ["isActive"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const schoolYearData = parsed.data;
+  const schoolYearData = result.data;
 
   // 3. Duplicate label detection
   const existingLabel = await db
@@ -128,22 +120,12 @@ export async function updateSchoolYearAction(
   }
 
   // 2. Validate
-  const parsed = UpdateSchoolYearSchema.safeParse({
-    schoolYearId: formData.get("schoolYearId"),
-    label: formData.get("label"),
-    startDate: formData.get("startDate"),
-    endDate: formData.get("endDate"),
-    isActive: formData.get("isActive") === "true",
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as UpdateSchoolYearFormState["errors"],
-    };
+  const result = parseFormData(UpdateSchoolYearSchema, formData, { booleanFields: ["isActive"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { schoolYearId, ...updateData } = parsed.data;
+  const { schoolYearId, ...updateData } = result.data;
 
   // 3. Get existing school year
   const [existingSchoolYear] = await db
@@ -253,19 +235,12 @@ export async function toggleSchoolYearStatusAction(
   }
 
   // 2. Validate
-  const parsed = ToggleSchoolYearStatusSchema.safeParse({
-    schoolYearId: formData.get("schoolYearId"),
-    isActive: formData.get("isActive") === "true",
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as ToggleSchoolYearStatusFormState["errors"],
-    };
+  const result = parseFormData(ToggleSchoolYearStatusSchema, formData, { booleanFields: ["isActive"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { schoolYearId, isActive } = parsed.data;
+  const { schoolYearId, isActive } = result.data;
 
   // 3. Get existing school year
   const [existingSchoolYear] = await db
@@ -345,18 +320,12 @@ export async function deleteSchoolYearAction(
   }
 
   // 2. Validate
-  const parsed = DeleteSchoolYearSchema.safeParse({
-    schoolYearId: formData.get("schoolYearId"),
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as DeleteSchoolYearFormState["errors"],
-    };
+  const result = parseFormData(DeleteSchoolYearSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { schoolYearId } = parsed.data;
+  const { schoolYearId } = result.data;
 
   // 3. Get existing school year
   const [existingSchoolYear] = await db

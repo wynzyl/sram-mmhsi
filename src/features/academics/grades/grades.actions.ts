@@ -14,6 +14,7 @@ import {
 } from "@/lib/validators/academics";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 
 // ─── Save Grades (Draft) ────────────────────────────────────────────────────
 
@@ -191,14 +192,12 @@ export async function submitGradesAction(
     return { message: "You do not have permission to submit grades." };
   }
 
-  const parsed = SubmitGradesSchema.safeParse({
-    assignmentId: formData.get("assignmentId"),
-    gradingPeriod: formData.get("gradingPeriod"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(SubmitGradesSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { assignmentId, gradingPeriod } = parsed.data;
 

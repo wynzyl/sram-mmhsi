@@ -15,6 +15,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import { logger } from "@/lib/observability/logger";
 import { CANCELLATION_REASON_LABELS, type CancellationReason } from "@/lib/constants/cancellation-reasons";
 import {
@@ -84,17 +85,12 @@ export async function requestEnrollmentCancellationAction(
     return { message: "You do not have permission to request enrollment cancellations." };
   }
 
-  const parsed = RequestEnrollmentCancellationSchema.safeParse({
-    enrollmentId: formData.get("enrollmentId"),
-    reasonType: formData.get("reasonType"),
-    remarks: formData.get("remarks") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as RequestEnrollmentCancellationFormState["errors"] };
+  const result = parseFormData(RequestEnrollmentCancellationSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { enrollmentId, reasonType, remarks } = parsed.data;
+  const { enrollmentId, reasonType, remarks } = result.data;
 
   try {
     let requestId: string | undefined;
@@ -195,17 +191,12 @@ export async function directCancelEnrollmentAction(
     return { message: "You do not have permission to cancel enrollments." };
   }
 
-  const parsed = DirectCancelEnrollmentSchema.safeParse({
-    enrollmentId: formData.get("enrollmentId"),
-    reasonType: formData.get("reasonType"),
-    remarks: formData.get("remarks") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as DirectCancelEnrollmentFormState["errors"] };
+  const result = parseFormData(DirectCancelEnrollmentSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { enrollmentId, reasonType, remarks } = parsed.data;
+  const { enrollmentId, reasonType, remarks } = result.data;
 
   try {
     let refundResult: RefundResult | null = null;
@@ -368,16 +359,12 @@ export async function approveEnrollmentCancellationAction(
     return { message: "Only administrators can approve cancellation requests." };
   }
 
-  const parsed = ApproveEnrollmentCancellationSchema.safeParse({
-    requestId: formData.get("requestId"),
-    reviewRemarks: formData.get("reviewRemarks") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as ApproveEnrollmentCancellationFormState["errors"] };
+  const result = parseFormData(ApproveEnrollmentCancellationSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { requestId, reviewRemarks } = parsed.data;
+  const { requestId, reviewRemarks } = result.data;
 
   try {
     let refundResult: RefundResult | null = null;
@@ -586,16 +573,12 @@ export async function rejectEnrollmentCancellationAction(
     return { message: "Only administrators can reject cancellation requests." };
   }
 
-  const parsed = RejectEnrollmentCancellationSchema.safeParse({
-    requestId: formData.get("requestId"),
-    reviewRemarks: formData.get("reviewRemarks"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as RejectEnrollmentCancellationFormState["errors"] };
+  const result = parseFormData(RejectEnrollmentCancellationSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { requestId, reviewRemarks } = parsed.data;
+  const { requestId, reviewRemarks } = result.data;
 
   try {
     await db.transaction(async (tx) => {
@@ -674,15 +657,12 @@ export async function withdrawCancellationRequestAction(
     return { message: "You do not have permission to withdraw cancellation requests." };
   }
 
-  const parsed = WithdrawCancellationRequestSchema.safeParse({
-    requestId: formData.get("requestId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as WithdrawCancellationRequestFormState["errors"] };
+  const result = parseFormData(WithdrawCancellationRequestSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { requestId } = parsed.data;
+  const { requestId } = result.data;
 
   try {
     await db.transaction(async (tx) => {

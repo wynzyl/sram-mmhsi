@@ -102,3 +102,21 @@ export function isValidCurrency(value: string): boolean {
   const parsed = parseCurrency(value);
   return Number.isFinite(parsed) && parsed >= 0;
 }
+
+/**
+ * Rounds a number to two decimal places (for currency calculations).
+ * Uses standard rounding (half up).
+ *
+ * @param amount - Amount to round
+ * @returns Number rounded to 2 decimal places
+ *
+ * @example
+ * ```typescript
+ * roundToTwoDecimals(10.555)   // 10.56
+ * roundToTwoDecimals(10.554)   // 10.55
+ * roundToTwoDecimals(100)      // 100
+ * ```
+ */
+export function roundToTwoDecimals(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}

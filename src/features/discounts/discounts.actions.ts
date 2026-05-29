@@ -10,7 +10,6 @@ import {
   assessments,
   assessmentItems,
   enrollments,
-  payments,
   feeItemTypes,
 } from "@/lib/db/schema";
 import { eq, and, isNull, inArray, sql } from "drizzle-orm";
@@ -18,10 +17,12 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import {
   lockStudentDiscountReversalStatus,
   lockDiscountRequest,
   lockAssessmentByEnrollment,
+  assertAssessmentNotTransferred,
 } from "@/lib/utils/tx-helpers";
 import { recalcAssessmentTotalsForDiscount } from "@/lib/utils/assessment-balance";
 import {
@@ -50,7 +51,8 @@ import {
   formatDiscountDescription,
 } from "./utils/discount-calculations";
 import { getDiscountRequestGate } from "./discounts.queries";
-import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
+import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
+import { assertNoLivePayments } from "@/lib/utils/payment-checks";
 
 // ─── Discount Type Management ─────────────────────────────────────────────────
 
@@ -66,25 +68,14 @@ export async function createDiscountTypeAction(
     return { message: "You do not have permission to manage discount types." };
   }
 
-  const parsed = createDiscountTypeSchema.safeParse({
-    code: formData.get("code"),
-    name: formData.get("name"),
-    description: formData.get("description") || undefined,
-    calculationType: formData.get("calculationType"),
-    baseType: formData.get("baseType"),
-    defaultValue: formData.get("defaultValue"),
-    isActive: formData.get("isActive") === "true",
-    requiresDocumentation: formData.get("requiresDocumentation") === "true",
-    isStackable: formData.get("isStackable") === "true",
-    displayOrder: formData.get("displayOrder") || 0,
+  const result = parseFormData(createDiscountTypeSchema, formData, {
+    booleanFields: ["isActive", "requiresDocumentation", "isStackable"],
   });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as CreateDiscountTypeFormState["errors"],
-    };
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   // Check for duplicate code
   const existing = await db
@@ -151,26 +142,14 @@ export async function updateDiscountTypeAction(
     return { message: "You do not have permission to manage discount types." };
   }
 
-  const parsed = updateDiscountTypeSchema.safeParse({
-    id: formData.get("id"),
-    code: formData.get("code"),
-    name: formData.get("name"),
-    description: formData.get("description") || undefined,
-    calculationType: formData.get("calculationType"),
-    baseType: formData.get("baseType"),
-    defaultValue: formData.get("defaultValue"),
-    isActive: formData.get("isActive") === "true",
-    requiresDocumentation: formData.get("requiresDocumentation") === "true",
-    isStackable: formData.get("isStackable") === "true",
-    displayOrder: formData.get("displayOrder") || 0,
+  const result = parseFormData(updateDiscountTypeSchema, formData, {
+    booleanFields: ["isActive", "requiresDocumentation", "isStackable"],
   });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as UpdateDiscountTypeFormState["errors"],
-    };
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   // Check for duplicate code (excluding current record)
   const existing = await db
@@ -290,20 +269,13 @@ export async function createDiscountRequestAction(
   };
   logger.info("[discounts] createDiscountRequestAction received:", { rawData });
 
-  const parsed = createDiscountRequestSchema.safeParse({
-    studentId: rawData.studentId,
-    enrollmentId: rawData.enrollmentId,
-    discountTypeId: rawData.discountTypeId,
-    requestReason: rawData.requestReason || undefined,
-  });
-
-  if (!parsed.success) {
-    logger.error("[discounts] Validation failed:", { errors: parsed.error.flatten() });
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as CreateDiscountRequestFormState["errors"],
-    };
+  const result = parseFormData(createDiscountRequestSchema, formData);
+  if (!result.success) {
+    logger.error("[discounts] Validation failed:", { errors: result.errors });
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   // Check discount type exists and is active
   const [discountType] = await db
@@ -491,19 +463,12 @@ export async function approveDiscountRequestAction(
     return { message: "You do not have permission to review discount requests." };
   }
 
-  const parsed = approveDiscountRequestSchema.safeParse({
-    discountRequestId: formData.get("discountRequestId"),
-    overrideValue: formData.get("overrideValue") || undefined,
-    overrideReason: formData.get("overrideReason") || undefined,
-    decisionRemarks: formData.get("decisionRemarks") || undefined,
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as ApproveDiscountRequestFormState["errors"],
-    };
+  const result = parseFormData(approveDiscountRequestSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   // Get the request with discount type
   const [request] = await db
@@ -582,17 +547,12 @@ export async function rejectDiscountRequestAction(
     return { message: "You do not have permission to review discount requests." };
   }
 
-  const parsed = rejectDiscountRequestSchema.safeParse({
-    discountRequestId: formData.get("discountRequestId"),
-    decisionRemarks: formData.get("decisionRemarks"),
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as RejectDiscountRequestFormState["errors"],
-    };
+  const result = parseFormData(rejectDiscountRequestSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   // Get the request
   const [request] = await db
@@ -661,20 +621,14 @@ export async function bulkApproveDiscountsAction(
     return { message: "You do not have permission to review discount requests." };
   }
 
-  const requestIds = formData.getAll("discountRequestIds") as string[];
-  const decisionRemarks = formData.get("decisionRemarks") as string | null;
-
-  const parsed = bulkApproveDiscountsSchema.safeParse({
-    discountRequestIds: requestIds,
-    decisionRemarks: decisionRemarks || undefined,
+  const result = parseFormData(bulkApproveDiscountsSchema, formData, {
+    arrayFields: ["discountRequestIds"],
   });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as BulkApproveDiscountsFormState["errors"],
-    };
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   try {
     // Get all pending requests to verify and get enrollment IDs
@@ -758,16 +712,12 @@ export async function cancelDiscountRequestAction(
 ): Promise<CancelDiscountRequestFormState> {
   const session = await requireSession();
 
-  const parsed = cancelDiscountRequestSchema.safeParse({
-    discountRequestId: formData.get("discountRequestId"),
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as CancelDiscountRequestFormState["errors"],
-    };
+  const result = parseFormData(cancelDiscountRequestSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   // Get the request with enrollment status
   const [request] = await db
@@ -859,17 +809,12 @@ export async function reverseDiscountAction(
     return { message: "You do not have permission to reverse discounts." };
   }
 
-  const parsed = reverseDiscountSchema.safeParse({
-    studentDiscountId: formData.get("studentDiscountId"),
-    reversalRemarks: formData.get("reversalRemarks"),
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as ReverseDiscountFormState["errors"],
-    };
+  const result = parseFormData(reverseDiscountSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   // Get the applied discount
   const [appliedDiscount] = await db
@@ -923,11 +868,10 @@ export async function reverseDiscountAction(
         .where(eq(assessments.id, appliedDiscount.assessmentId))
         .limit(1);
 
-      if (parentAssessment?.transferredAt) {
-        throw new Error(
-          "REVERSE_BLOCKED: This assessment's balance was transferred to a newer school year. Reversing a discount would affect a closed ledger, which is not allowed."
-        );
-      }
+      assertAssessmentNotTransferred(
+        parentAssessment?.transferredAt ?? null,
+        "reverse discount"
+      );
 
       // Check for pending cancellation request - need to fetch enrollment ID from assessment
       const [assessmentWithEnrollment] = await tx
@@ -938,34 +882,17 @@ export async function reverseDiscountAction(
         .where(eq(assessments.id, appliedDiscount.assessmentId))
         .limit(1);
 
-      if (assessmentWithEnrollment?.enrollmentId) {
-        const hasPendingCancel = await hasPendingCancellationRequest(assessmentWithEnrollment.enrollmentId);
-        if (hasPendingCancel) {
-          throw new Error(
-            "REVERSE_BLOCKED: Enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
-          );
-        }
-      }
+      await assertNoPendingCancellation(
+        assessmentWithEnrollment?.enrollmentId,
+        "reverse discount"
+      );
 
-      // "Live" = still consuming balance: only pending_confirmation/posted
-      // block. Voided/reversed/reversal/balance_forward payments have already
-      // released their hold on the assessment and must not block reversal.
-      const livePayments = await tx
-        .select({ id: payments.id })
-        .from(payments)
-        .where(
-          and(
-            eq(payments.assessmentId, appliedDiscount.assessmentId),
-            inArray(payments.status, ["pending_confirmation", "posted"])
-          )
-        )
-        .limit(1);
-
-      if (livePayments.length > 0) {
-        throw new Error(
-          "Can not reverse discount if payment has been made!"
-        );
-      }
+      // Refuse if any live payment exists. Payment must be voided first (LIFO reversal order).
+      await assertNoLivePayments(
+        appliedDiscount.assessmentId,
+        "reverse discount",
+        tx
+      );
 
       // 1. Stamp the original discount as reversed FIRST. The unique partial
       //    index `student_discounts_request_active_uidx` permits only one row
@@ -1119,16 +1046,12 @@ export async function applyApprovedDiscountToExistingAssessment(
     };
   }
 
-  const parsed = applyApprovedDiscountSchema.safeParse({
-    discountRequestId: formData.get("discountRequestId"),
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as ApplyApprovedDiscountFormState["errors"],
-    };
+  const result = parseFormData(applyApprovedDiscountSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   try {
     return await db.transaction(async (tx) => {
@@ -1177,11 +1100,7 @@ export async function applyApprovedDiscountToExistingAssessment(
         );
       }
 
-      if (assessment.transferredAt) {
-        throw new Error(
-          "APPLY_BLOCKED: This assessment's balance was transferred to a new school year and is read-only."
-        );
-      }
+      assertAssessmentNotTransferred(assessment.transferredAt, "apply discount");
       if (assessment.cancelledAt) {
         throw new Error(
           "APPLY_BLOCKED: This assessment is cancelled; discounts cannot be applied."
@@ -1189,33 +1108,11 @@ export async function applyApprovedDiscountToExistingAssessment(
       }
 
       // Check for pending cancellation request (blocks discount application)
-      const hasPendingCancel = await hasPendingCancellationRequest(request.enrollmentId);
-      if (hasPendingCancel) {
-        throw new Error(
-          "APPLY_BLOCKED: Enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
-        );
-      }
+      await assertNoPendingCancellation(request.enrollmentId, "apply discount");
 
       // 4. Refuse if any live payment exists. Re-applying a discount over a
       //    live payment would silently change the recorded balance.
-      //    "Live" = pending_confirmation or posted; voided/reversed/reversal/
-      //    balance_forward have already released their hold.
-      const livePayments = await tx
-        .select({ id: payments.id })
-        .from(payments)
-        .where(
-          and(
-            eq(payments.assessmentId, assessment.id),
-            inArray(payments.status, ["pending_confirmation", "posted"])
-          )
-        )
-        .limit(1);
-
-      if (livePayments.length > 0) {
-        throw new Error(
-          "APPLY_BLOCKED: A live payment exists on this assessment. Void it before applying a new discount."
-        );
-      }
+      await assertNoLivePayments(assessment.id, "apply discount", tx);
 
       // 5. Load the live assessment items (with fee type codes) to compute
       //    the discount base. Includes prior reversal entries (isDiscount=false)

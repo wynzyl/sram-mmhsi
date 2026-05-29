@@ -13,9 +13,10 @@ import type { PendingVoidRequest } from "../void-requests.queries";
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { formatDate } from "@/lib/utils/date";
 import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { InlineConfirmButtons } from "@/components/shared/InlineConfirmButtons";
 import type { ColumnDef } from "@tanstack/react-table";
 
 interface VoidRequestsPendingTableProps {
@@ -30,6 +31,8 @@ export default function VoidRequestsPendingTable({
 }: VoidRequestsPendingTableProps) {
   // State for which request's reject form is open
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  // State for rejection reason input value
+  const [rejectReasonValue, setRejectReasonValue] = useState("");
   // State for which request's approve confirmation is open
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
@@ -53,7 +56,10 @@ export default function VoidRequestsPendingTable({
 
   useFormToast(rejectState, {
     successMessage: "Void request rejected",
-    onSuccess: () => setRejectingId(null),
+    onSuccess: () => {
+      setRejectingId(null);
+      setRejectReasonValue("");
+    },
   });
 
   const columns = useMemo<ColumnDef<PendingVoidRequest>[]>(
@@ -113,9 +119,9 @@ export default function VoidRequestsPendingTable({
           const date = new Date(row.original.requestedAt);
           return (
             <div className="text-sm">
-              <div>{date.toLocaleDateString("en-PH")}</div>
+              <div>{formatDate(date, { year: "numeric", month: "numeric", day: "numeric" })}</div>
               <div className="text-xs text-muted-foreground">
-                {date.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" })}
+                {formatDate(date, { hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>
           );
@@ -137,34 +143,27 @@ export default function VoidRequestsPendingTable({
             );
           }
 
-          // Show reject form
+          // Show reject form with input
           if (rejectingId === request.id) {
             return (
-              <form action={rejectAction} className="flex gap-2 items-center">
+              <form action={rejectAction}>
                 <input type="hidden" name="requestId" value={request.id} />
-                <Input
-                  type="text"
-                  name="decisionRemarks"
-                  placeholder="Rejection reason"
-                  required
-                  className="w-36 h-8 text-xs"
-                />
-                <Button
-                  type="submit"
+                <InlineConfirmButtons
+                  confirmLabel="Reject"
+                  isLoading={rejectPending}
                   variant="danger"
-                  size="sm"
-                  loading={rejectPending}
-                >
-                  Reject
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setRejectingId(null)}
-                >
-                  Cancel
-                </Button>
+                  onCancel={() => {
+                    setRejectingId(null);
+                    setRejectReasonValue("");
+                  }}
+                  inputConfig={{
+                    name: "decisionRemarks",
+                    placeholder: "Rejection reason",
+                    value: rejectReasonValue,
+                    onChange: setRejectReasonValue,
+                    required: true,
+                  }}
+                />
               </form>
             );
           }
@@ -172,25 +171,15 @@ export default function VoidRequestsPendingTable({
           // Show approve confirmation
           if (approvingId === request.id) {
             return (
-              <form action={approveAction} className="flex gap-2 items-center">
+              <form action={approveAction}>
                 <input type="hidden" name="requestId" value={request.id} />
-                <span className="text-xs text-muted-foreground">Approve void?</span>
-                <Button
-                  type="submit"
+                <InlineConfirmButtons
+                  prompt="Approve void?"
+                  confirmLabel="Confirm"
+                  isLoading={approvePending}
                   variant="success"
-                  size="sm"
-                  loading={approvePending}
-                >
-                  Confirm
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setApprovingId(null)}
-                >
-                  Cancel
-                </Button>
+                  onCancel={() => setApprovingId(null)}
+                />
               </form>
             );
           }
@@ -208,7 +197,10 @@ export default function VoidRequestsPendingTable({
               <Button
                 variant="danger"
                 size="sm"
-                onClick={() => setRejectingId(request.id)}
+                onClick={() => {
+                  setRejectReasonValue("");
+                  setRejectingId(request.id);
+                }}
               >
                 Reject
               </Button>
@@ -220,6 +212,7 @@ export default function VoidRequestsPendingTable({
     [
       currentUserId,
       rejectingId,
+      rejectReasonValue,
       approvingId,
       approveAction,
       approvePending,

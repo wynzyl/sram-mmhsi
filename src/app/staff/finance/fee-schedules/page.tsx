@@ -8,6 +8,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { getSchoolYearFeeSchedules } from "@/features/finance/fee-templates/fee-templates.queries";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
+import { formatDate } from "@/lib/utils/date";
 import { Button } from "@/components/ui/button";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
 import { deactivateFeeScheduleAction } from "@/features/finance/fee-templates/fee-templates.actions";
@@ -82,9 +83,9 @@ export default async function StaffFeeSchedulesPage() {
                   )}
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {new Date(schoolYear.startDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                  {formatDate(schoolYear.startDate, { month: "short", day: "numeric", year: "numeric" })}
                   {" – "}
-                  {new Date(schoolYear.endDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                  {formatDate(schoolYear.endDate, { month: "short", day: "numeric", year: "numeric" })}
                 </span>
               </div>
 
@@ -150,8 +151,8 @@ export default async function StaffFeeSchedulesPage() {
                               </span>
                             )}
                             <span>
-                              Effective: {new Date(schedule.effectiveDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
-                              {schedule.expiryDate && ` – ${new Date(schedule.expiryDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`}
+                              Effective: {formatDate(schedule.effectiveDate, { month: "short", day: "numeric", year: "numeric" })}
+                              {schedule.expiryDate && ` – ${formatDate(schedule.expiryDate, { month: "short", day: "numeric", year: "numeric" })}`}
                             </span>
                           </div>
 

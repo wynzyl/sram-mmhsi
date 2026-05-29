@@ -17,6 +17,7 @@ import { eq, and, ne, isNull, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logUpdateAction } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
 import { formatCurrency } from "@/lib/utils/currency";
 import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
@@ -348,16 +349,12 @@ export async function updateEnrollmentStatusAction(
 ): Promise<UpdateEnrollmentFormState> {
   const session = await requireSession();
 
-  const parsed = UpdateEnrollmentStatusSchema.safeParse({
-    enrollmentId: formData.get("enrollmentId"),
-    action: formData.get("action"),
-    sectionId: formData.get("sectionId") || undefined,
-    cancelRemarks: formData.get("cancelRemarks") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(UpdateEnrollmentStatusSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { enrollmentId, action, sectionId, cancelRemarks } = parsed.data;
 

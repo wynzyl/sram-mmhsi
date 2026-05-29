@@ -7,6 +7,7 @@ import { getClearanceById } from "@/features/clearances/clearances.queries";
 import ResolveClearanceForm from "@/features/clearances/components/ResolveClearanceForm";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
+import { formatDate } from "@/lib/utils/date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -114,7 +115,7 @@ export default async function ClearanceDetailPage({ params }: PageProps) {
                   Created
                 </p>
                 <p className="mt-1 text-sm">
-                  {new Date(clearance.createdAt).toLocaleDateString("en-PH")}
+                  {formatDate(clearance.createdAt, { year: "numeric", month: "numeric", day: "numeric" })}
                 </p>
               </div>
             </div>
@@ -158,7 +159,14 @@ export default async function ClearanceDetailPage({ params }: PageProps) {
                       Resolved At
                     </p>
                     <p className="mt-1 text-sm">
-                      {new Date(clearance.resolvedAt).toLocaleString("en-PH")}
+                      {formatDate(clearance.resolvedAt, {
+                        year: "numeric",
+                        month: "numeric",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
                     </p>
                   </div>
                 </div>

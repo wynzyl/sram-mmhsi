@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { ReferenceCode } from "@/components/shared/ReferenceCode";
+import {
+  createStudentColumn,
+  createTextColumn,
+  createStatusColumn,
+  createCurrencyColumn,
+} from "@/components/tables/column-factories";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
@@ -55,43 +58,23 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
   }, [filterMode, rows, debouncedSearch]);
 
   const columns: ColumnDef<CashierQueueRow>[] = [
-    {
-      header: "Student",
-      accessorFn: (row) => `${row.studentName} ${row.referenceNumber}`,
-      id: "student",
-      cell: ({ row }) => (
-        <div className="min-w-[16rem]">
-          <div className="font-semibold text-foreground">{row.original.studentName}</div>
-          <div className="mt-1">
-            <ReferenceCode code={row.original.referenceNumber} />
-          </div>
-        </div>
-      ),
-    },
-    {
+    createStudentColumn<CashierQueueRow>({ refKey: "referenceNumber" }),
+    createTextColumn<CashierQueueRow>("gradeLevel", {
       header: "Grade Level",
-      accessorKey: "gradeLevel",
-      cell: ({ row }) => <span className="text-gray-600 dark:text-gray-400">{row.original.gradeLevel}</span>,
-    },
-    {
+      className: "text-gray-600 dark:text-gray-400",
+    }),
+    createTextColumn<CashierQueueRow>("schoolYear", {
       header: "School Year",
-      accessorKey: "schoolYear",
-      cell: ({ row }) => <span className="text-gray-600 dark:text-gray-400">{row.original.schoolYear}</span>,
-    },
-    {
+      className: "text-gray-600 dark:text-gray-400",
+    }),
+    createStatusColumn<CashierQueueRow>("billingStatus", {
       header: "Status",
-      accessorKey: "billingStatus",
-      cell: ({ row }) => <StatusBadge type="billing" status={row.original.billingStatus} />,
-    },
-    {
-      header: () => <span className="block text-right">Balance</span>,
-      accessorKey: "balance",
-      cell: ({ row }) => (
-        <div className="text-right font-semibold">
-          <CurrencyDisplay amount={row.original.balance} />
-        </div>
-      ),
-    },
+      type: "billing",
+    }),
+    createCurrencyColumn<CashierQueueRow>("balance", {
+      header: "Balance",
+      align: "right",
+    }),
     {
       header: () => <span className="block text-right">Action</span>,
       id: "action",
@@ -163,4 +146,3 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
     </div>
   );
 }
-

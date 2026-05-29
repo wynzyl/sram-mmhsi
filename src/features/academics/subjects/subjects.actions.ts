@@ -7,6 +7,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logDeleteAction, logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import {
   AssignTeacherSchema,
   RemoveAssignmentSchema,
@@ -34,21 +35,16 @@ export async function createSubjectAction(
     return { message: "You do not have permission to manage subjects." };
   }
 
-  const parsed = CreateSubjectSchema.safeParse({
-    name: formData.get("name"),
-    code: formData.get("code"),
-    gradeLevelId: formData.get("gradeLevelId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(CreateSubjectSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const data = parsed.data;
+  const { name, code, gradeLevelId } = result.data;
 
   // Check duplicate code
   const existing = await db.query.subjects.findFirst({
-    where: and(eq(subjects.code, data.code), isNull(subjects.deletedAt)),
+    where: and(eq(subjects.code, code), isNull(subjects.deletedAt)),
   });
 
   if (existing) {
@@ -66,15 +62,15 @@ export async function createSubjectAction(
     const [newSubject] = await db
       .insert(subjects)
       .values({
-        name: data.name,
-        code: data.code,
+        name,
+        code,
         curriculumId: fallbackCurriculum.id,
-        gradeLevelId: data.gradeLevelId,
+        gradeLevelId,
         createdBy: session.userId,
       })
       .returning({ id: subjects.id });
 
-    await logCreateAction(session, "subjects", newSubject.id, data, { throwOnFail: true });
+    await logCreateAction(session, "subjects", newSubject.id, { name, code, gradeLevelId }, { throwOnFail: true });
 
     revalidatePath("/staff/academics/subjects");
     return { success: true, message: "Subject created successfully." };
@@ -93,13 +89,12 @@ export async function deleteSubjectAction(
     return { message: "You do not have permission to manage subjects." };
   }
 
-  const parsed = DeleteSubjectSchema.safeParse({
-    subjectId: formData.get("subjectId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(DeleteSubjectSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   try {
     await db
@@ -131,16 +126,12 @@ export async function assignTeacherAction(
     return { message: "You do not have permission to manage teacher assignments." };
   }
 
-  const parsed = AssignTeacherSchema.safeParse({
-    teacherId: formData.get("teacherId"),
-    subjectId: formData.get("subjectId"),
-    sectionId: formData.get("sectionId"),
-    schoolYearId: formData.get("schoolYearId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(AssignTeacherSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const data = parsed.data;
 
@@ -192,13 +183,12 @@ export async function removeAssignmentAction(
     return { message: "You do not have permission to remove teacher assignments." };
   }
 
-  const parsed = RemoveAssignmentSchema.safeParse({
-    assignmentId: formData.get("assignmentId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(RemoveAssignmentSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   try {
     await db
@@ -230,14 +220,12 @@ export async function lockGradesAction(
     return { message: "You do not have permission to lock grades." };
   }
 
-  const parsed = LockGradesSchema.safeParse({
-    assignmentId: formData.get("assignmentId"),
-    gradingPeriod: formData.get("gradingPeriod"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(LockGradesSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { assignmentId, gradingPeriod } = parsed.data;
 

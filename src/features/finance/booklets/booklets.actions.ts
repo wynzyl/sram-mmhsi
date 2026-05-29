@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { parseFormData } from "@/lib/utils/form-validation";
 import { db } from "@/lib/db";
 import {
   feeSchedules,
@@ -52,16 +53,14 @@ export async function createFeeScheduleAction(
     return { message: "You do not have permission to manage fee schedules." };
   }
 
-  const parsed = FeeScheduleSchema.safeParse({
-    schoolYearId: formData.get("schoolYearId"),
-    assessmentBand: formData.get("assessmentBand") || undefined,
-    description: formData.get("description"),
-    isActive: formData.get("isActive") === "on",
+  const result = parseFormData(FeeScheduleSchema, formData, {
+    booleanFields: ["isActive"],
   });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as FeeScheduleFormState["errors"] };
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { schoolYearId, assessmentBand, description, isActive } = parsed.data;
 
@@ -135,16 +134,14 @@ export async function updateFeeScheduleAction(
   const id = formData.get("id") as string;
   if (!id) return { message: "Fee schedule ID is required." };
 
-  const parsed = FeeScheduleSchema.safeParse({
-    id,
-    schoolYearId: formData.get("schoolYearId"),
-    description: formData.get("description"),
-    isActive: formData.get("isActive") === "on",
+  const result = parseFormData(FeeScheduleSchema, formData, {
+    booleanFields: ["isActive"],
   });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as FeeScheduleFormState["errors"] };
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { schoolYearId, description, isActive } = parsed.data;
 
@@ -218,17 +215,14 @@ export async function addFeeScheduleItemAction(
     return { message: "You do not have permission to manage fee schedules." };
   }
 
-  const parsed = FeeScheduleItemSchema.safeParse({
-    feeScheduleId: formData.get("feeScheduleId"),
-    description: formData.get("description"),
-    amount: formData.get("amount"),
-    isDiscount: formData.get("isDiscount") === "on" || formData.get("isDiscount") === "true",
-    order: formData.get("order") || "0",
+  const result = parseFormData(FeeScheduleItemSchema, formData, {
+    booleanFields: ["isDiscount"],
   });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as FeeScheduleItemFormState["errors"] };
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   try {
     const [newItem] = await db

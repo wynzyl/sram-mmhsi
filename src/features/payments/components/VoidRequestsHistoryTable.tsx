@@ -5,6 +5,7 @@ import type { VoidRequestHistoryRow } from "../void-requests.queries";
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -89,7 +90,7 @@ export default function VoidRequestsHistoryTable({
           <div className="text-sm">
             <div>{row.original.requestedByUsername}</div>
             <div className="text-xs text-muted-foreground">
-              {new Date(row.original.requestedAt).toLocaleDateString("en-PH")}
+              {formatDate(row.original.requestedAt, { year: "numeric", month: "numeric", day: "numeric" })}
             </div>
           </div>
         ),
@@ -107,7 +108,7 @@ export default function VoidRequestsHistoryTable({
                 <div className="text-muted-foreground italic">Self-cancelled</div>
                 {request.cancelledAt && (
                   <div className="text-xs text-muted-foreground">
-                    {new Date(request.cancelledAt).toLocaleDateString("en-PH")}
+                    {formatDate(request.cancelledAt, { year: "numeric", month: "numeric", day: "numeric" })}
                   </div>
                 )}
               </div>
@@ -123,7 +124,7 @@ export default function VoidRequestsHistoryTable({
               <div>{request.decidedByUsername}</div>
               {request.decidedAt && (
                 <div className="text-xs text-muted-foreground">
-                  {new Date(request.decidedAt).toLocaleDateString("en-PH")}
+                  {formatDate(request.decidedAt, { year: "numeric", month: "numeric", day: "numeric" })}
                 </div>
               )}
             </div>

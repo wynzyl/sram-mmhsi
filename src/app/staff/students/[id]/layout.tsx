@@ -1,11 +1,12 @@
-import { Source_Serif_4 } from "next/font/google";
+import localFont from "next/font/local";
 import type { ReactNode } from "react";
 
-const studentDisplay = Source_Serif_4({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
+const studentDisplay = localFont({
   variable: "--font-student-display",
   display: "swap",
+  src: [
+    { path: "../../../../../public/fonts/SourceSerif4-Variable.woff2", weight: "400 700", style: "normal" },
+  ],
 });
 
 export default function StaffStudentRecordLayout({ children }: { children: ReactNode }) {

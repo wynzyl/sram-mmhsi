@@ -20,6 +20,7 @@ import type {
 } from "@/lib/validators/finance";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 
 function isGradeLevelIdNotNullDbError(error: unknown): boolean {
   let current: unknown = error;
@@ -52,18 +53,12 @@ export async function createFeeScheduleAction(
     return { message: "You do not have permission to manage fee schedules." };
   }
 
-  const parsed = FeeScheduleSchema.safeParse({
-    schoolYearId: formData.get("schoolYearId"),
-    assessmentBand: formData.get("assessmentBand") || undefined,
-    description: formData.get("description"),
-    isActive: formData.get("isActive") === "on",
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as FeeScheduleFormState["errors"] };
+  const result = parseFormData(FeeScheduleSchema, formData, { booleanFields: ["isActive"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { schoolYearId, assessmentBand, description, isActive } = parsed.data;
+  const { schoolYearId, assessmentBand, description, isActive } = result.data;
 
   if (!assessmentBand) {
     return {
@@ -106,7 +101,7 @@ export async function createFeeScheduleAction(
       action: "fee_schedule_created",
       targetEntity: "fee_schedules",
       targetId: newSchedule.id,
-      newState: parsed.data,
+      newState: result.data,
     }, { throwOnFail: true });
 
     revalidatePath("/staff/finance/fee-schedules");
@@ -135,18 +130,12 @@ export async function updateFeeScheduleAction(
   const id = formData.get("id") as string;
   if (!id) return { message: "Fee schedule ID is required." };
 
-  const parsed = FeeScheduleSchema.safeParse({
-    id,
-    schoolYearId: formData.get("schoolYearId"),
-    description: formData.get("description"),
-    isActive: formData.get("isActive") === "on",
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as FeeScheduleFormState["errors"] };
+  const result = parseFormData(FeeScheduleSchema, formData, { booleanFields: ["isActive"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { schoolYearId, description, isActive } = parsed.data;
+  const { schoolYearId, description, isActive } = result.data;
 
   try {
     const existingRecord = await db.query.feeSchedules.findFirst({
@@ -195,7 +184,7 @@ export async function updateFeeScheduleAction(
       targetEntity: "fee_schedules",
       targetId: id,
       previousState: existingRecord,
-      newState: parsed.data,
+      newState: result.data,
     }, { throwOnFail: true });
 
     revalidatePath("/staff/finance/fee-schedules");
@@ -218,27 +207,22 @@ export async function addFeeScheduleItemAction(
     return { message: "You do not have permission to manage fee schedules." };
   }
 
-  const parsed = FeeScheduleItemSchema.safeParse({
-    feeScheduleId: formData.get("feeScheduleId"),
-    description: formData.get("description"),
-    amount: formData.get("amount"),
-    isDiscount: formData.get("isDiscount") === "on" || formData.get("isDiscount") === "true",
-    order: formData.get("order") || "0",
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as FeeScheduleItemFormState["errors"] };
+  const result = parseFormData(FeeScheduleItemSchema, formData, { booleanFields: ["isDiscount"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   try {
     const [newItem] = await db
       .insert(feeScheduleItems)
       .values({
-        feeScheduleId: parsed.data.feeScheduleId,
-        description: parsed.data.description,
-        amount: String(parsed.data.amount),
-        isDiscount: parsed.data.isDiscount,
-        order: parsed.data.order,
+        feeScheduleId: result.data.feeScheduleId,
+        description: result.data.description,
+        amount: String(result.data.amount),
+        isDiscount: result.data.isDiscount,
+        order: result.data.order,
         createdBy: session.userId,
         updatedBy: session.userId,
       })
@@ -250,10 +234,10 @@ export async function addFeeScheduleItemAction(
       action: "fee_schedule_item_added",
       targetEntity: "fee_schedule_items",
       targetId: newItem.id,
-      newState: parsed.data,
+      newState: result.data,
     }, { throwOnFail: true });
 
-    revalidatePath(`/staff/finance/fee-schedules/${parsed.data.feeScheduleId}`);
+    revalidatePath(`/staff/finance/fee-schedules/${result.data.feeScheduleId}`);
     return { success: true, message: "Fee item added successfully." };
   } catch (error) {
     logger.error("[finance] Failed to add fee schedule item", { error });

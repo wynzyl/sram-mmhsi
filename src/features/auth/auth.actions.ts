@@ -18,6 +18,7 @@ import {
   getCurrentSession,
 } from "@/lib/auth/session";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import { logger } from "@/lib/observability/logger";
 import type { Role } from "@/lib/constants/roles";
 import { normalizeRole } from "@/lib/constants/roles";
@@ -62,16 +63,12 @@ export async function loginAction(
   }
 
   // 1. Validate inputs with Zod
-  const parsed = LoginSchema.safeParse({
-    username: formData.get("username"),
-    password: formData.get("password"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(LoginSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { username, password } = parsed.data;
+  const { username, password } = result.data;
 
   // 2. Look up user by username OR email (constant-time pattern)
   let user;
@@ -179,17 +176,12 @@ export async function changePasswordAction(
   }
 
   // 2. Validate inputs with Zod
-  const parsed = ChangePasswordSchema.safeParse({
-    currentPassword: formData.get("currentPassword"),
-    newPassword: formData.get("newPassword"),
-    confirmPassword: formData.get("confirmPassword"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  const result = parseFormData(ChangePasswordSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { currentPassword, newPassword } = parsed.data;
+  const { currentPassword, newPassword } = result.data;
 
   // 3. Look up user and verify current password
   const user = await db.query.users.findFirst({

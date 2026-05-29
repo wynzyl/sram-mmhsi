@@ -2,6 +2,7 @@
 
 import { useState, useActionState } from "react";
 import { useFormToast } from "@/hooks/useFormToast";
+import { formatDate } from "@/lib/utils/date";
 import { updateRefundCutoffSettingsAction } from "../system-settings.actions";
 import type { RefundCutoffSettingsFormState } from "../system-settings.schema";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ export function RefundCutoffSettingsForm({ initialStartDate, initialCutoffDays }
     ? (() => {
         const date = new Date(startDate);
         date.setDate(date.getDate() + parseInt(cutoffDays, 10));
-        return date.toLocaleDateString("en-PH", {
+        return formatDate(date, {
           weekday: "long",
           year: "numeric",
           month: "long",

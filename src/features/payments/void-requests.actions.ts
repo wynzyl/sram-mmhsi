@@ -6,7 +6,6 @@ import { db } from "@/lib/db";
 import {
   payments,
   assessments,
-  enrollments,
   voidRequests,
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -26,16 +25,18 @@ import type {
 } from "./void-requests.schema";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import {
   lockPayment,
   lockAssessment,
-  lockEnrollment,
   lockVoidRequest,
   lockAssessmentTransferStatus,
+  assertAssessmentNotTransferred,
 } from "@/lib/utils/tx-helpers";
+import { revertToAssessedOnVoid } from "@/lib/utils/enrollment-status";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
-import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
+import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
 
 // ─── Request Void Action ───────────────────────────────────────────────────────
 
@@ -53,14 +54,12 @@ export async function requestVoidAction(
     return { message: "You do not have permission to request payment voids." };
   }
 
-  const parsed = RequestVoidSchema.safeParse({
-    paymentId: formData.get("paymentId"),
-    requestReason: formData.get("requestReason"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as RequestVoidFormState["errors"] };
+  const result = parseFormData(RequestVoidSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { paymentId, requestReason } = parsed.data;
 
@@ -85,27 +84,17 @@ export async function requestVoidAction(
       // 3. Check if assessment is transferred
       if (payment.assessmentId) {
         const transferStatus = await lockAssessmentTransferStatus(tx, payment.assessmentId);
-        if (transferStatus?.transferredAt != null) {
-          throw new Error(
-            "VOID_BLOCKED: This payment's assessment balance was transferred to a newer school year. " +
-            "Voiding payments on transferred assessments is not allowed."
-          );
-        }
+        assertAssessmentNotTransferred(
+          transferStatus?.transferredAt ?? null,
+          "request void on this payment"
+        );
 
         // Check for pending cancellation request (blocks void requests too)
-        // Fetch assessment with enrollment ID
         const assessmentForCheck = await tx.query.assessments.findFirst({
           where: eq(assessments.id, payment.assessmentId),
           columns: { enrollmentId: true },
         });
-        if (assessmentForCheck?.enrollmentId) {
-          const hasPendingCancel = await hasPendingCancellationRequest(assessmentForCheck.enrollmentId);
-          if (hasPendingCancel) {
-            throw new Error(
-              "Cannot request void: enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
-            );
-          }
-        }
+        await assertNoPendingCancellation(assessmentForCheck?.enrollmentId, "request void");
       }
 
       // 4. Check for existing pending request (DB constraint will also enforce, but we want a nice message)
@@ -172,15 +161,12 @@ export async function approveVoidRequestAction(
     return { message: "You do not have permission to approve void requests." };
   }
 
-  const parsed = ApproveVoidRequestSchema.safeParse({
-    requestId: formData.get("requestId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as ApproveVoidRequestFormState["errors"] };
+  const result = parseFormData(ApproveVoidRequestSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { requestId } = parsed.data;
+  const { requestId } = result.data;
 
   try {
     let assessmentIdForRevalidation: string | null = null;
@@ -223,11 +209,10 @@ export async function approveVoidRequestAction(
       if (originalPayment.assessmentId) {
         const assessment = await lockAssessment(tx, originalPayment.assessmentId);
         if (assessment) {
-          if (assessment.transferredAt != null) {
-            throw new Error(
-              "VOID_BLOCKED: Assessment balance was transferred since this request was created. Cannot approve."
-            );
-          }
+          assertAssessmentNotTransferred(
+            assessment.transferredAt,
+            "approve void request"
+          );
           assessmentIdForRevalidation = assessment.id;
 
           // 7. Update original payment to "reversed" status
@@ -287,29 +272,15 @@ export async function approveVoidRequestAction(
             newTotalPaid <= ASSESSMENT_BALANCE_FULLY_PAID_EPSILON &&
             assessment.enrollmentId
           ) {
-            const enrollment = await lockEnrollment(tx, assessment.enrollmentId);
-            if (enrollment && enrollment.status === "enrolled") {
-              await tx
-                .update(enrollments)
-                .set({
-                  status: "assessed",
-                  enrolledAt: null,
-                  updatedBy: session.userId,
-                  updatedAt: new Date(),
-                })
-                .where(eq(enrollments.id, assessment.enrollmentId));
-
-              await logAudit({
-                actor: session.userId,
-                actorRole: session.role,
-                action: "enrollment_reverted_via_void",
-                targetEntity: "enrollments",
-                targetId: assessment.enrollmentId,
-                context: `Total paid reverted to zero after approving void request`,
-                previousState: { status: "enrolled" },
-                newState: { status: "assessed" },
-              }, { throwOnFail: true });
-            }
+            await revertToAssessedOnVoid(
+              {
+                tx,
+                enrollmentId: assessment.enrollmentId,
+                userId: session.userId,
+                userRole: session.role,
+              },
+              `Total paid reverted to zero after approving void request`
+            );
           }
 
           // 10. Update void request to approved
@@ -459,14 +430,12 @@ export async function rejectVoidRequestAction(
     return { message: "You do not have permission to reject void requests." };
   }
 
-  const parsed = RejectVoidRequestSchema.safeParse({
-    requestId: formData.get("requestId"),
-    decisionRemarks: formData.get("decisionRemarks"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as RejectVoidRequestFormState["errors"] };
+  const result = parseFormData(RejectVoidRequestSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { requestId, decisionRemarks } = parsed.data;
 
@@ -543,15 +512,12 @@ export async function cancelVoidRequestAction(
     return { message: "You do not have permission to cancel void requests." };
   }
 
-  const parsed = CancelVoidRequestSchema.safeParse({
-    requestId: formData.get("requestId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as CancelVoidRequestFormState["errors"] };
+  const result = parseFormData(CancelVoidRequestSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { requestId } = parsed.data;
+  const { requestId } = result.data;
 
   try {
     await db.transaction(async (tx) => {

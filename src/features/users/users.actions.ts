@@ -7,6 +7,7 @@ import { eq, and, ilike, isNull, sql, count } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import {
   CreateUserSchema,
   UpdateUserSchema,
@@ -47,22 +48,12 @@ export async function createUserAction(
   }
 
   // 2. Validate
-  const parsed = CreateUserSchema.safeParse({
-    email: formData.get("email"),
-    username: formData.get("username"),
-    password: formData.get("password"),
-    role: formData.get("role"),
-    forcePasswordChange: formData.get("forcePasswordChange") === "true",
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as CreateUserFormState["errors"],
-    };
+  const result = parseFormData(CreateUserSchema, formData, { booleanFields: ["forcePasswordChange"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { password, ...userData } = parsed.data;
+  const { password, ...userData } = result.data;
 
   // 3. Duplicate detection (PERFORMANCE: Single query checks both email and username)
   const duplicates = await db
@@ -148,20 +139,12 @@ export async function updateUserAction(
   }
 
   // 2. Validate
-  const parsed = UpdateUserSchema.safeParse({
-    userId: formData.get("userId"),
-    email: formData.get("email"),
-    username: formData.get("username"),
-    role: formData.get("role"),
-    isActive: formData.get("isActive") === "true",
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as UpdateUserFormState["errors"],
-    };
+  const result = parseFormData(UpdateUserSchema, formData, { booleanFields: ["isActive"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { userId, ...updateData } = parsed.data;
 
@@ -314,18 +297,12 @@ export async function resetPasswordAction(
   }
 
   // 2. Validate
-  const parsed = ResetPasswordSchema.safeParse({
-    userId: formData.get("userId"),
-    newPassword: formData.get("newPassword"),
-    forcePasswordChange: formData.get("forcePasswordChange") === "true",
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as ResetPasswordFormState["errors"],
-    };
+  const result = parseFormData(ResetPasswordSchema, formData, { booleanFields: ["forcePasswordChange"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { userId, newPassword, forcePasswordChange } = parsed.data;
 
@@ -393,17 +370,12 @@ export async function toggleUserStatusAction(
   }
 
   // 2. Validate
-  const parsed = ToggleUserStatusSchema.safeParse({
-    userId: formData.get("userId"),
-    isActive: formData.get("isActive") === "true",
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten()
-        .fieldErrors as ToggleUserStatusFormState["errors"],
-    };
+  const result = parseFormData(ToggleUserStatusSchema, formData, { booleanFields: ["isActive"] });
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { userId, isActive } = parsed.data;
 

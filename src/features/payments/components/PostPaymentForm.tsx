@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { formatCurrency, roundToTwoDecimals } from "@/lib/utils/currency";
 
 type PaymentMethod = "cash" | "check" | "bank_transfer" | "gcash" | "other";
 
@@ -28,9 +29,6 @@ interface PostPaymentFormProps {
   onPosted?: () => void;
 }
 
-function roundMoney(n: number): number {
-  return Math.round(n * 100) / 100;
-}
 
 export default function PostPaymentForm({
   studentId,
@@ -58,7 +56,7 @@ export default function PostPaymentForm({
   const tenderNum = Number.parseFloat(amountTendered) || 0;
   const change =
     paymentMethod === "cash" && tenderNum >= payNum && payNum > 0
-      ? roundMoney(tenderNum - payNum)
+      ? roundToTwoDecimals(tenderNum - payNum)
       : 0;
 
   if (state.success) {
@@ -137,7 +135,7 @@ export default function PostPaymentForm({
           label="Amount to pay"
           required
           error={state.errors?.amount}
-          hint={`Maximum ${new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(balance)}`}
+          hint={`Maximum ${formatCurrency(balance)}`}
         >
           <Input
             type="number"

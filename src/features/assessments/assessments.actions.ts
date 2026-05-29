@@ -26,6 +26,7 @@ import type { AssessmentFormState, CancelAssessmentFormState } from "./assessmen
 import { formatCurrency } from "@/lib/utils/currency";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import { generateNextBfxNumber } from "@/lib/utils/reference";
 import {
   hasPendingDiscountRequests,
@@ -762,16 +763,12 @@ export async function cancelAssessmentAction(
   }
 
   // 2. Parse and validate input (remarks is now required in schema)
-  const parsed = CancelAssessmentSchema.safeParse({
-    assessmentId: formData.get("assessmentId"),
-    remarks: formData.get("remarks"),
-  });
-
-  if (!parsed.success) {
-    return {
-      errors: parsed.error.flatten().fieldErrors as CancelAssessmentFormState["errors"],
-    };
+  const result = parseFormData(CancelAssessmentSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { assessmentId, remarks } = parsed.data;
 

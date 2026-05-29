@@ -21,6 +21,7 @@ import {
   calculateOffset,
 } from "@/lib/types/pagination";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
+import { formatDate } from "@/lib/utils/date";
 
 export type AssessmentListItem = {
   id: string;
@@ -275,7 +276,7 @@ export async function getPendingAssessmentQueue(params: {
     studentName: `${r.lastName}, ${r.firstName}`,
     schoolYear: r.schoolYear,
     gradeLevel: r.gradeLevel,
-    queuedAtLabel: r.enrollmentCreatedAt.toLocaleDateString("en-PH", {
+    queuedAtLabel: formatDate(r.enrollmentCreatedAt, {
       year: "numeric",
       month: "short",
       day: "numeric",

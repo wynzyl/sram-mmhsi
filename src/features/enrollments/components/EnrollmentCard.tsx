@@ -21,6 +21,7 @@ import CancelEnrollmentForm, { type EnrollmentStatus } from "./CancelEnrollmentF
 import { buttonVariants } from "@/components/ui/button";
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import { cn } from "@/lib/utils/cn";
+import { formatDate as formatDateLocalized } from "@/lib/utils/date";
 
 // Re-export from CancelEnrollmentForm for backwards compatibility
 export type { EnrollmentStatus } from "./CancelEnrollmentForm";
@@ -75,12 +76,7 @@ const STATUS_TO_INDICATOR: Record<
 };
 
 function formatDate(value: Date | null): string {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString("en-PH", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatDateLocalized(value);
 }
 
 function countIntakeDocuments(docs: EnrollmentIntakeDocuments | null): {

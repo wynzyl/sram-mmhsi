@@ -19,6 +19,7 @@ import {
   PostPaymentSchema,
   VoidPaymentSchema,
 } from "./payments.schema";
+import { parseFormData } from "@/lib/utils/form-validation";
 import type {
   BookletFormState,
   PaymentFormState,
@@ -33,10 +34,14 @@ import {
   lockReceiptBooklet,
   lockPayment,
   lockAssessment,
-  lockEnrollment,
+  assertAssessmentNotTransferred,
 } from "@/lib/utils/tx-helpers";
+import {
+  transitionToEnrolledOnPayment,
+  revertToAssessedOnVoid,
+} from "@/lib/utils/enrollment-status";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
-import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
+import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -49,16 +54,12 @@ export async function createBookletAction(
     return { message: "You do not have permission to manage OR booklets." };
   }
 
-  const parsed = CreateBookletSchema.safeParse({
-    series: formData.get("series"),
-    prefix: formData.get("prefix"),
-    startNumber: formData.get("startNumber"),
-    endNumber: formData.get("endNumber"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as BookletFormState["errors"] };
+  const result = parseFormData(CreateBookletSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { startNumber, endNumber } = parsed.data;
   const prefix = parsed.data.prefix.toUpperCase();
@@ -144,22 +145,12 @@ export async function postPaymentAction(
     return { message: "You do not have permission to post payments." };
   }
 
-  const parsed = PostPaymentSchema.safeParse({
-    studentId: formData.get("studentId"),
-    assessmentId: formData.get("assessmentId"),
-    bookletId: formData.get("bookletId"),
-    amount: formData.get("amount"),
-    paymentMethod: formData.get("paymentMethod"),
-    amountTendered: formData.get("amountTendered"),
-    referenceNumber: formData.get("referenceNumber"),
-    remarks: formData.get("remarks") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as PaymentFormState["errors"] };
+  const result = parseFormData(PostPaymentSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { studentId, assessmentId, bookletId, amount, paymentMethod, referenceNumber, remarks } = parsed.data;
+  const { studentId, assessmentId, bookletId, amount, paymentMethod, referenceNumber, remarks } = result.data;
 
   try {
     let orNumberToAssign: string | undefined;
@@ -204,14 +195,7 @@ export async function postPaymentAction(
       );
 
       // Check for pending cancellation request (blocks all payments)
-      if (assessment.enrollmentId) {
-        const hasPendingCancel = await hasPendingCancellationRequest(assessment.enrollmentId);
-        if (hasPendingCancel) {
-          throw new Error(
-            "Cannot record payment: enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
-          );
-        }
-      }
+      await assertNoPendingCancellation(assessment.enrollmentId, "record payment");
 
       if (referenceNumber) {
         const existingRef = await tx.query.payments.findFirst({
@@ -301,29 +285,17 @@ export async function postPaymentAction(
           );
       }
 
-      // 6. Check and Update Enrollment Status
+      // 6. Check and Update Enrollment Status (assessed → enrolled on first payment)
       if (assessment.enrollmentId) {
-        const enrollment = await lockEnrollment(tx, assessment.enrollmentId);
-        if (enrollment && enrollment.status === "assessed") {
-          await tx
-            .update(enrollments)
-            .set({
-              status: "enrolled",
-              enrolledAt: new Date(),
-              updatedBy: session.userId,
-              updatedAt: new Date(),
-            })
-            .where(eq(enrollments.id, assessment.enrollmentId));
-
-          await logAudit({
-            actor: session.userId,
-            actorRole: session.role,
-            action: "enrollment_enrolled_via_payment",
-            targetEntity: "enrollments",
-            targetId: assessment.enrollmentId,
-            context: `Payment posted: OR ${orNumberToAssign}`,
-          }, { throwOnFail: true });
-        }
+        await transitionToEnrolledOnPayment(
+          {
+            tx,
+            enrollmentId: assessment.enrollmentId,
+            userId: session.userId,
+            userRole: session.role,
+          },
+          `Payment posted: OR ${orNumberToAssign}`
+        );
       }
 
       // 7. Audit Log
@@ -387,16 +359,12 @@ export async function voidPaymentAction(
     return { message: "You do not have permission to void payments." };
   }
 
-  const parsed = VoidPaymentSchema.safeParse({
-    paymentId: formData.get("paymentId"),
-    voidReason: formData.get("voidReason"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as VoidPaymentFormState["errors"] };
+  const result = parseFormData(VoidPaymentSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { paymentId, voidReason } = parsed.data;
+  const { paymentId, voidReason } = result.data;
 
   try {
     await db.transaction(async (tx) => {
@@ -413,18 +381,11 @@ export async function voidPaymentAction(
 
       // Check for pending cancellation request (blocks voids too)
       if (payment.assessmentId) {
-        const assessment = await tx.query.assessments.findFirst({
+        const assessmentForCancel = await tx.query.assessments.findFirst({
           where: eq(assessments.id, payment.assessmentId),
           columns: { enrollmentId: true },
         });
-        if (assessment?.enrollmentId) {
-          const hasPendingCancel = await hasPendingCancellationRequest(assessment.enrollmentId);
-          if (hasPendingCancel) {
-            throw new Error(
-              "Cannot void payment: enrollment has a pending cancellation request. Please wait for the request to be approved, rejected, or withdrawn."
-            );
-          }
-        }
+        await assertNoPendingCancellation(assessmentForCancel?.enrollmentId, "void payment");
       }
 
       // 2. Mark Payment as Voided
@@ -446,11 +407,7 @@ export async function voidPaymentAction(
         const assessment = await lockAssessment(tx, payment.assessmentId);
         if (assessment) {
           // Block voiding payments on transferred assessments
-          if (assessment.transferredAt != null) {
-            throw new Error(
-              "VOID_BLOCKED: This assessment's balance was transferred to a newer school year. Voiding this payment would affect a closed ledger, which is not allowed."
-            );
-          }
+          assertAssessmentNotTransferred(assessment.transferredAt, "void payment");
 
           const pAmount = Number(payment.amount);
 
@@ -469,29 +426,15 @@ export async function voidPaymentAction(
             newTotalPaid <= ASSESSMENT_BALANCE_FULLY_PAID_EPSILON &&
             assessment.enrollmentId
           ) {
-            const enrollment = await lockEnrollment(tx, assessment.enrollmentId);
-            if (enrollment && enrollment.status === "enrolled") {
-              await tx
-                .update(enrollments)
-                .set({
-                  status: "assessed",
-                  enrolledAt: null,
-                  updatedBy: session.userId,
-                  updatedAt: new Date(),
-                })
-                .where(eq(enrollments.id, assessment.enrollmentId));
-
-              await logAudit({
-                actor: session.userId,
-                actorRole: session.role,
-                action: "enrollment_reverted_via_void",
-                targetEntity: "enrollments",
-                targetId: assessment.enrollmentId,
-                context: `Total paid reverted to zero after voiding payment`,
-                previousState: { status: "enrolled" },
-                newState: { status: "assessed" },
-              }, { throwOnFail: true });
-            }
+            await revertToAssessedOnVoid(
+              {
+                tx,
+                enrollmentId: assessment.enrollmentId,
+                userId: session.userId,
+                userRole: session.role,
+              },
+              `Total paid reverted to zero after voiding payment`
+            );
           }
         }
       }
