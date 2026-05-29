@@ -25,6 +25,7 @@ import type {
 } from "./void-requests.schema";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import {
   lockPayment,
   lockAssessment,
@@ -53,14 +54,12 @@ export async function requestVoidAction(
     return { message: "You do not have permission to request payment voids." };
   }
 
-  const parsed = RequestVoidSchema.safeParse({
-    paymentId: formData.get("paymentId"),
-    requestReason: formData.get("requestReason"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as RequestVoidFormState["errors"] };
+  const result = parseFormData(RequestVoidSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { paymentId, requestReason } = parsed.data;
 
@@ -162,15 +161,12 @@ export async function approveVoidRequestAction(
     return { message: "You do not have permission to approve void requests." };
   }
 
-  const parsed = ApproveVoidRequestSchema.safeParse({
-    requestId: formData.get("requestId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as ApproveVoidRequestFormState["errors"] };
+  const result = parseFormData(ApproveVoidRequestSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { requestId } = parsed.data;
+  const { requestId } = result.data;
 
   try {
     let assessmentIdForRevalidation: string | null = null;
@@ -434,14 +430,12 @@ export async function rejectVoidRequestAction(
     return { message: "You do not have permission to reject void requests." };
   }
 
-  const parsed = RejectVoidRequestSchema.safeParse({
-    requestId: formData.get("requestId"),
-    decisionRemarks: formData.get("decisionRemarks"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as RejectVoidRequestFormState["errors"] };
+  const result = parseFormData(RejectVoidRequestSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const parsed = result;
 
   const { requestId, decisionRemarks } = parsed.data;
 
@@ -518,15 +512,12 @@ export async function cancelVoidRequestAction(
     return { message: "You do not have permission to cancel void requests." };
   }
 
-  const parsed = CancelVoidRequestSchema.safeParse({
-    requestId: formData.get("requestId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as CancelVoidRequestFormState["errors"] };
+  const result = parseFormData(CancelVoidRequestSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
-  const { requestId } = parsed.data;
+  const { requestId } = result.data;
 
   try {
     await db.transaction(async (tx) => {

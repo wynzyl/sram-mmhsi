@@ -19,6 +19,7 @@ import { logger } from "@/lib/observability/logger";
 import { validateGradeProgression } from "@/lib/utils/enrollment-grade";
 import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
 import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
+import { parseFormData } from "@/lib/utils/form-validation";
 import {
   ConfirmEnrollmentSchema,
   QuickConfirmEnrollmentSchema,
@@ -56,22 +57,13 @@ export async function confirmEnrollmentAction(
   }
 
   // Parse and validate input
-  const parsed = ConfirmEnrollmentSchema.safeParse({
-    studentId: formData.get("studentId"),
-    schoolYearId: formData.get("schoolYearId"),
-    gradeLevelId: formData.get("gradeLevelId"),
-    sectionId: formData.get("sectionId") || undefined,
-    studentType: formData.get("studentType"),
-    registrationId: formData.get("registrationId") || undefined,
-    previousSchool: formData.get("previousSchool") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as ConfirmEnrollmentFormState["errors"] };
+  const result = parseFormData(ConfirmEnrollmentSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
 
   const { studentId, schoolYearId, gradeLevelId, sectionId, studentType, registrationId, previousSchool } =
-    parsed.data;
+    result.data;
 
   // Validate school year is active
   const schoolYear = await db.query.schoolYears.findFirst({
@@ -367,31 +359,24 @@ export async function quickConfirmEnrollmentAction(
     return { message: "You do not have permission to confirm enrollments." };
   }
 
-  const parsed = QuickConfirmEnrollmentSchema.safeParse({
-    studentId: formData.get("studentId"),
-    schoolYearId: formData.get("schoolYearId"),
-    gradeLevelId: formData.get("gradeLevelId"),
-    studentType: formData.get("studentType"),
-    registrationId: formData.get("registrationId") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as QuickConfirmEnrollmentFormState["errors"] };
+  const parseResult = parseFormData(QuickConfirmEnrollmentSchema, formData);
+  if (!parseResult.success) {
+    return { errors: parseResult.errors };
   }
+
+  const { studentId, schoolYearId, gradeLevelId, studentType, registrationId } = parseResult.data;
 
   // Delegate to full confirmation action (with no section assignment)
   const fullFormData = new FormData();
-  fullFormData.set("studentId", parsed.data.studentId);
-  fullFormData.set("schoolYearId", parsed.data.schoolYearId);
-  fullFormData.set("gradeLevelId", parsed.data.gradeLevelId);
-  fullFormData.set("studentType", parsed.data.studentType);
-  if (parsed.data.registrationId) {
-    fullFormData.set("registrationId", parsed.data.registrationId);
+  fullFormData.set("studentId", studentId);
+  fullFormData.set("schoolYearId", schoolYearId);
+  fullFormData.set("gradeLevelId", gradeLevelId);
+  fullFormData.set("studentType", studentType);
+  if (registrationId) {
+    fullFormData.set("registrationId", registrationId);
   }
 
-  const result = await confirmEnrollmentAction({}, fullFormData);
-
-  return result;
+  return confirmEnrollmentAction({}, fullFormData);
 }
 
 // ─── Fetch Ready-to-Enroll Detail (Lazy Load) ─────────────────────────────────

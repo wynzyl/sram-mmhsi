@@ -8,6 +8,7 @@ import { eq, like } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import {
   GenerateInvoiceSchema,
   SendInvoiceSchema,
@@ -133,13 +134,12 @@ export async function sendInvoiceAction(
     return { message: "You do not have permission to send invoices." };
   }
 
-  const invoiceId = formData.get("invoiceId") as string;
-  const email = formData.get("email") as string;
-
-  const parsed = SendInvoiceSchema.safeParse({ invoiceId, email });
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors as InvoiceActionState["errors"] };
+  const result = parseFormData(SendInvoiceSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
   }
+
+  const { invoiceId, email } = result.data;
 
   try {
     const [invoice] = await db

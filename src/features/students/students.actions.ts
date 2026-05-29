@@ -16,6 +16,7 @@ import { eq, ne, ilike, and, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
+import { parseFormData } from "@/lib/utils/form-validation";
 import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
 import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
 import { CreateStudentWithRegistrationSchema } from "../registrations/registrations.schema";
