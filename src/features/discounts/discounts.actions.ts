@@ -22,6 +22,7 @@ import {
   lockStudentDiscountReversalStatus,
   lockDiscountRequest,
   lockAssessmentByEnrollment,
+  assertAssessmentNotTransferred,
 } from "@/lib/utils/tx-helpers";
 import { recalcAssessmentTotalsForDiscount } from "@/lib/utils/assessment-balance";
 import {
@@ -923,11 +924,10 @@ export async function reverseDiscountAction(
         .where(eq(assessments.id, appliedDiscount.assessmentId))
         .limit(1);
 
-      if (parentAssessment?.transferredAt) {
-        throw new Error(
-          "REVERSE_BLOCKED: This assessment's balance was transferred to a newer school year. Reversing a discount would affect a closed ledger, which is not allowed."
-        );
-      }
+      assertAssessmentNotTransferred(
+        parentAssessment?.transferredAt ?? null,
+        "reverse discount"
+      );
 
       // Check for pending cancellation request - need to fetch enrollment ID from assessment
       const [assessmentWithEnrollment] = await tx
@@ -1177,11 +1177,7 @@ export async function applyApprovedDiscountToExistingAssessment(
         );
       }
 
-      if (assessment.transferredAt) {
-        throw new Error(
-          "APPLY_BLOCKED: This assessment's balance was transferred to a new school year and is read-only."
-        );
-      }
+      assertAssessmentNotTransferred(assessment.transferredAt, "apply discount");
       if (assessment.cancelledAt) {
         throw new Error(
           "APPLY_BLOCKED: This assessment is cancelled; discounts cannot be applied."
