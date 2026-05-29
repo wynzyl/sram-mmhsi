@@ -9,7 +9,6 @@ import {
   assessments,
   assessmentItems,
   payments,
-  paymentAllocations,
   users,
   systemSettings,
 } from "@/lib/db/schema";
@@ -502,61 +501,42 @@ export async function calculateRefundPreview(assessmentId: string): Promise<Refu
       )
     );
 
-  // Get payment allocations
-  const paymentIds = paymentsData.map((p) => p.id);
-  let allocations: { paymentId: string; assessmentItemId: string | null; amount: string }[] = [];
+  // Calculate total paid from payments (lump-sum approach - no allocations needed)
+  const totalPaid = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0);
 
-  if (paymentIds.length > 0) {
-    allocations = await db
-      .select({
-        paymentId: paymentAllocations.paymentId,
-        assessmentItemId: paymentAllocations.assessmentItemId,
-        amount: paymentAllocations.amount,
-      })
-      .from(paymentAllocations)
-      .where(inArray(paymentAllocations.paymentId, paymentIds));
-  }
+  // Calculate total non-refundable item amounts (fees that are forfeited first)
+  let totalNonRefundableItemAmount = 0;
 
-  // Create item map for quick lookup
-  const itemMap = new Map(items.map((item) => [item.id, item]));
-
-  // Calculate amounts per item
-  const itemPaidAmounts = new Map<string, number>();
-  for (const alloc of allocations) {
-    if (alloc.assessmentItemId) {
-      const current = itemPaidAmounts.get(alloc.assessmentItemId) || 0;
-      itemPaidAmounts.set(alloc.assessmentItemId, current + Number(alloc.amount));
+  for (const item of items) {
+    if (item.isDiscount) continue;
+    if (!item.isRefundable) {
+      totalNonRefundableItemAmount += Number(item.amount);
     }
   }
 
-  // Calculate breakdown
-  let refundableAmount = 0;
-  let nonRefundableAmount = 0;
+  // Non-refundable fees are deducted first, remainder is refunded
+  // Cap non-refundable at total paid (can't forfeit more than was paid)
+  const nonRefundableAmount = Math.min(totalNonRefundableItemAmount, totalPaid);
+  const refundableAmount = totalPaid - nonRefundableAmount;
+
+  // Build item breakdown for UI display
   const itemBreakdown: RefundCalculation["itemBreakdown"] = [];
 
   for (const item of items) {
-    if (item.isDiscount) continue; // Skip discount lines
+    if (item.isDiscount) continue;
 
-    const paidAmount = itemPaidAmounts.get(item.id) || 0;
-    const willRefund = isEligibleForRefund && item.isRefundable && paidAmount > 0;
+    const itemAmount = Number(item.amount);
+    // For lump-sum payments, we show the item's fee amount (not what was paid per item)
+    // Since non-refundable is deducted first, calculate what portion is effectively "paid"
+    const willRefund = isEligibleForRefund && item.isRefundable && refundableAmount > 0;
 
-    if (paidAmount > 0) {
-      if (item.isRefundable) {
-        refundableAmount += paidAmount;
-      } else {
-        nonRefundableAmount += paidAmount;
-      }
-
-      itemBreakdown.push({
-        description: item.description,
-        paidAmount,
-        isRefundable: item.isRefundable,
-        willRefund,
-      });
-    }
+    itemBreakdown.push({
+      description: item.description,
+      paidAmount: itemAmount, // Show fee amount for reference
+      isRefundable: item.isRefundable,
+      willRefund,
+    });
   }
-
-  const totalPaid = refundableAmount + nonRefundableAmount;
 
   return {
     isEligibleForRefund,
