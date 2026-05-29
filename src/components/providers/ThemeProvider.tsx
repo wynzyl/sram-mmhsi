@@ -13,6 +13,7 @@ type Theme = "light" | "dark" | "system";
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  mounted: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -31,14 +32,25 @@ function getResolvedTheme(theme: Theme): "light" | "dark" {
  *
  * The inline script in layout.tsx handles initial DOM state (no flash).
  * This provider syncs React state with localStorage and handles user changes.
+ *
+ * IMPORTANT: useState must initialize with a constant value ("system") to avoid
+ * hydration mismatch between server (no localStorage) and client (has localStorage).
+ * The actual stored theme is synced via useEffect after hydration completes.
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Lazy initializer reads localStorage synchronously on first render
-  // This matches what the inline script read, avoiding state mismatch
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "system";
-    return (localStorage.getItem("theme") as Theme) || "system";
-  });
+  // Initialize with constant value to avoid hydration mismatch
+  // Server and client both render with "system" initially
+  const [theme, setThemeState] = useState<Theme>("system");
+  const [mounted, setMounted] = useState(false);
+
+  // Sync with localStorage after hydration completes
+  useEffect(() => {
+    const storedTheme = localStorage.getItem("theme") as Theme | null;
+    if (storedTheme && ["light", "dark", "system"].includes(storedTheme)) {
+      setThemeState(storedTheme);
+    }
+    setMounted(true);
+  }, []);
 
   // User-triggered theme change: update DOM, localStorage, and React state
   const setTheme = useCallback((newTheme: Theme) => {
@@ -71,7 +83,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, mounted }}>
       {children}
     </ThemeContext.Provider>
   );
