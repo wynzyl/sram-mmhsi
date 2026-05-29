@@ -25,6 +25,7 @@ Tech assumptions:
 - Drizzle ORM or current project ORM implementation
 - PostgreSQL production target
 - Server Actions preferred for CUD
+- Tanstack query
 - Reads may use queries/fetch/TanStack Query if already implemented
 - Local LAN deployment first, scalable to cloud later
 
