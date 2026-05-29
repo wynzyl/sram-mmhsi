@@ -5,6 +5,7 @@ import { StudentRowActionsMenu } from "@/features/students/components/StudentRow
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import { registrationStudentTypeLabel } from "@/lib/utils/intake-documents";
 import { formatDate as formatDateLocalized } from "@/lib/utils/date";
+import { getInitials } from "@/lib/utils/name";
 
 export interface RegistrationRow {
   id: string;
@@ -25,21 +26,6 @@ interface RegistrationsTableProps {
   studentBasePath?: "/admin/students" | "/staff/students";
 }
 
-function initials(name: string): string {
-  const parts = name.split(",").map((s) => s.trim());
-  if (parts.length >= 2) {
-    // "Last, First" format
-    const last = parts[0].charAt(0);
-    const first = parts[1].charAt(0);
-    return `${first}${last}`.toUpperCase() || "?";
-  }
-  // Fallback for other formats
-  const words = name.trim().split(/\s+/);
-  if (words.length >= 2) {
-    return `${words[0].charAt(0)}${words[1].charAt(0)}`.toUpperCase();
-  }
-  return name.charAt(0).toUpperCase() || "?";
-}
 
 function countIntakeDocuments(docs: EnrollmentIntakeDocuments | null): {
   completed: number;
@@ -115,7 +101,7 @@ export default function RegistrationsTable({
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary"
                         aria-hidden
                       >
-                        {initials(reg.studentName)}
+                        {getInitials(reg.studentName)}
                       </div>
                       <div className="min-w-0">
                         <Link

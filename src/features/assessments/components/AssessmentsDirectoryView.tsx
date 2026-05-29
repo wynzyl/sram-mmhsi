@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
+import { ServerPagination } from "@/components/shared/ServerPagination";
 import AssessmentsTable from "@/features/finance/components/AssessmentsTable";
 import PendingAssessmentsQueue from "@/features/assessments/components/PendingAssessmentsQueue";
 import { useAssessments, type AssessmentView } from "@/features/assessments/hooks/use-assessments";
@@ -56,115 +57,16 @@ function parseView(value: string | null): AssessmentView {
     : "pending";
 }
 
-/** Page indices for numbered pagination (1-based); inserts ellipsis markers between gaps. */
-function paginationPages(current: number, total: number): (number | "ellipsis")[] {
-  if (total <= 1) return total === 1 ? [1] : [];
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-
-  const set = new Set<number>();
-  set.add(1);
-  set.add(total);
-  for (let i = current - 2; i <= current + 2; i++) {
-    if (i >= 1 && i <= total) set.add(i);
-  }
-  const sorted = [...set].sort((a, b) => a - b);
-  const out: (number | "ellipsis")[] = [];
-  let prev = 0;
-  for (const n of sorted) {
-    if (prev && n - prev > 1) out.push("ellipsis");
-    out.push(n);
-    prev = n;
-  }
-  return out;
-}
-
-const btnBase =
-  "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted";
-const btnActive = "border-primary bg-primary/10 text-primary font-semibold";
-const btnDisabled = "pointer-events-none opacity-40";
-
-function AssessmentsPagination({
-  basePath,
-  view,
-  currentPage,
-  totalPages,
-  totalCount,
-  label,
-}: {
-  basePath: string;
-  view: AssessmentView;
-  currentPage: number;
-  totalPages: number;
-  totalCount: number;
-  label: string;
-}) {
-  if (totalCount <= 0) return null;
-
-  const start = (currentPage - 1) * PAGE_SIZE + 1;
-  const end = Math.min(currentPage * PAGE_SIZE, totalCount);
-
-  const hrefForPage = (page: number) => {
-    const p = new URLSearchParams();
-    p.set("view", view);
-    if (page > 1) p.set("page", String(page));
-    return `${basePath}?${p.toString()}`;
-  };
-
-  const pages = paginationPages(currentPage, totalPages);
-
-  return (
-    <nav
-      className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between"
-      aria-label={`${label} pagination`}
-    >
-      <p className="text-sm text-muted-foreground">
-        Showing <span className="font-medium text-foreground">{start}</span> to{" "}
-        <span className="font-medium text-foreground">{end}</span> of{" "}
-        <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span> {label.toLowerCase()}
-      </p>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {currentPage <= 1 ? (
-          <span className={`${btnBase} ${btnDisabled}`} aria-disabled>
-            ← Previous
-          </span>
-        ) : (
-          <Link href={hrefForPage(currentPage - 1)} className={btnBase}>
-            ← Previous
-          </Link>
-        )}
-
-        <div className="flex flex-wrap items-center gap-1">
-          {pages.map((item, i) =>
-            item === "ellipsis" ? (
-              <span key={`e-${i}`} className="inline-flex min-w-9 items-center justify-center text-muted-foreground" aria-hidden>
-                …
-              </span>
-            ) : (
-              <Link
-                key={item}
-                href={hrefForPage(item)}
-                className={`${btnBase} min-w-9 px-0 ${item === currentPage ? btnActive : ""}`}
-                aria-current={item === currentPage ? "page" : undefined}
-              >
-                {item}
-              </Link>
-            )
-          )}
-        </div>
-
-        {currentPage >= totalPages ? (
-          <span className={`${btnBase} ${btnDisabled}`} aria-disabled>
-            Next →
-          </span>
-        ) : (
-          <Link href={hrefForPage(currentPage + 1)} className={btnBase}>
-            Next →
-          </Link>
-        )}
-      </div>
-    </nav>
-  );
+/** Build href for pagination links that preserve the current view. */
+function buildAssessmentsPaginationHref(
+  basePath: string,
+  view: AssessmentView,
+  page: number
+): string {
+  const p = new URLSearchParams();
+  p.set("view", view);
+  if (page > 1) p.set("page", String(page));
+  return `${basePath}?${p.toString()}`;
 }
 
 export function AssessmentsDirectoryView({ basePath }: { basePath: AssessmentsBasePath }) {
@@ -229,25 +131,25 @@ export function AssessmentsDirectoryView({ basePath }: { basePath: AssessmentsBa
             canCancel={canCancel}
             assessmentsBasePath={basePath}
           />
-          <AssessmentsPagination
-            basePath={basePath}
-            view="pending"
+          <ServerPagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalCount={totalCount}
-            label="enrollments"
+            pageSize={PAGE_SIZE}
+            itemLabel="enrollment"
+            buildHref={(page) => buildAssessmentsPaginationHref(basePath, "pending", page)}
           />
         </>
       ) : (
         <>
           <AssessmentsTable assessments={isInitialLoading ? [] : rows} assessmentsBasePath={basePath} />
-          <AssessmentsPagination
-            basePath={basePath}
-            view={view}
+          <ServerPagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalCount={totalCount}
-            label="assessments"
+            pageSize={PAGE_SIZE}
+            itemLabel="assessment"
+            buildHref={(page) => buildAssessmentsPaginationHref(basePath, view, page)}
           />
         </>
       )}
