@@ -381,3 +381,34 @@ export async function lockStudentDiscountReversalStatus(
   const row = rows[0] as { reversed_at: Date | null };
   return { reversedAt: row.reversed_at };
 }
+
+// ─── Guard Functions ──────────────────────────────────────────────────────────
+
+/**
+ * Assert that an assessment has not been transferred.
+ *
+ * Throws a descriptive error if the assessment balance was forwarded to a new school year.
+ * Use this guard to prevent operations on closed/transferred assessments.
+ *
+ * @param transferredAt - The transferredAt timestamp from the assessment
+ * @param operation - Description of the blocked operation (e.g., "void payment", "reverse discount")
+ * @throws Error if assessment is transferred
+ *
+ * @example
+ * ```typescript
+ * const assessment = await lockAssessment(tx, assessmentId);
+ * assertAssessmentNotTransferred(assessment.transferredAt, "void payment");
+ * // Continue with operation...
+ * ```
+ */
+export function assertAssessmentNotTransferred(
+  transferredAt: Date | null,
+  operation: string
+): asserts transferredAt is null {
+  if (transferredAt != null) {
+    throw new Error(
+      `OPERATION_BLOCKED: Cannot ${operation} - this assessment's balance was transferred to a newer school year. ` +
+        `Operations on transferred assessments are not allowed.`
+    );
+  }
+}

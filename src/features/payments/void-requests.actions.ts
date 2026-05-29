@@ -6,7 +6,6 @@ import { db } from "@/lib/db";
 import {
   payments,
   assessments,
-  enrollments,
   voidRequests,
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -29,10 +28,11 @@ import { logAudit } from "@/lib/utils/audit-logger";
 import {
   lockPayment,
   lockAssessment,
-  lockEnrollment,
   lockVoidRequest,
   lockAssessmentTransferStatus,
+  assertAssessmentNotTransferred,
 } from "@/lib/utils/tx-helpers";
+import { revertToAssessedOnVoid } from "@/lib/utils/enrollment-status";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
 import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
@@ -85,12 +85,10 @@ export async function requestVoidAction(
       // 3. Check if assessment is transferred
       if (payment.assessmentId) {
         const transferStatus = await lockAssessmentTransferStatus(tx, payment.assessmentId);
-        if (transferStatus?.transferredAt != null) {
-          throw new Error(
-            "VOID_BLOCKED: This payment's assessment balance was transferred to a newer school year. " +
-            "Voiding payments on transferred assessments is not allowed."
-          );
-        }
+        assertAssessmentNotTransferred(
+          transferStatus?.transferredAt ?? null,
+          "request void on this payment"
+        );
 
         // Check for pending cancellation request (blocks void requests too)
         // Fetch assessment with enrollment ID
@@ -223,11 +221,10 @@ export async function approveVoidRequestAction(
       if (originalPayment.assessmentId) {
         const assessment = await lockAssessment(tx, originalPayment.assessmentId);
         if (assessment) {
-          if (assessment.transferredAt != null) {
-            throw new Error(
-              "VOID_BLOCKED: Assessment balance was transferred since this request was created. Cannot approve."
-            );
-          }
+          assertAssessmentNotTransferred(
+            assessment.transferredAt,
+            "approve void request"
+          );
           assessmentIdForRevalidation = assessment.id;
 
           // 7. Update original payment to "reversed" status
@@ -287,29 +284,15 @@ export async function approveVoidRequestAction(
             newTotalPaid <= ASSESSMENT_BALANCE_FULLY_PAID_EPSILON &&
             assessment.enrollmentId
           ) {
-            const enrollment = await lockEnrollment(tx, assessment.enrollmentId);
-            if (enrollment && enrollment.status === "enrolled") {
-              await tx
-                .update(enrollments)
-                .set({
-                  status: "assessed",
-                  enrolledAt: null,
-                  updatedBy: session.userId,
-                  updatedAt: new Date(),
-                })
-                .where(eq(enrollments.id, assessment.enrollmentId));
-
-              await logAudit({
-                actor: session.userId,
-                actorRole: session.role,
-                action: "enrollment_reverted_via_void",
-                targetEntity: "enrollments",
-                targetId: assessment.enrollmentId,
-                context: `Total paid reverted to zero after approving void request`,
-                previousState: { status: "enrolled" },
-                newState: { status: "assessed" },
-              }, { throwOnFail: true });
-            }
+            await revertToAssessedOnVoid(
+              {
+                tx,
+                enrollmentId: assessment.enrollmentId,
+                userId: session.userId,
+                userRole: session.role,
+              },
+              `Total paid reverted to zero after approving void request`
+            );
           }
 
           // 10. Update void request to approved

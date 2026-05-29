@@ -33,8 +33,12 @@ import {
   lockReceiptBooklet,
   lockPayment,
   lockAssessment,
-  lockEnrollment,
+  assertAssessmentNotTransferred,
 } from "@/lib/utils/tx-helpers";
+import {
+  transitionToEnrolledOnPayment,
+  revertToAssessedOnVoid,
+} from "@/lib/utils/enrollment-status";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
 
@@ -301,29 +305,17 @@ export async function postPaymentAction(
           );
       }
 
-      // 6. Check and Update Enrollment Status
+      // 6. Check and Update Enrollment Status (assessed → enrolled on first payment)
       if (assessment.enrollmentId) {
-        const enrollment = await lockEnrollment(tx, assessment.enrollmentId);
-        if (enrollment && enrollment.status === "assessed") {
-          await tx
-            .update(enrollments)
-            .set({
-              status: "enrolled",
-              enrolledAt: new Date(),
-              updatedBy: session.userId,
-              updatedAt: new Date(),
-            })
-            .where(eq(enrollments.id, assessment.enrollmentId));
-
-          await logAudit({
-            actor: session.userId,
-            actorRole: session.role,
-            action: "enrollment_enrolled_via_payment",
-            targetEntity: "enrollments",
-            targetId: assessment.enrollmentId,
-            context: `Payment posted: OR ${orNumberToAssign}`,
-          }, { throwOnFail: true });
-        }
+        await transitionToEnrolledOnPayment(
+          {
+            tx,
+            enrollmentId: assessment.enrollmentId,
+            userId: session.userId,
+            userRole: session.role,
+          },
+          `Payment posted: OR ${orNumberToAssign}`
+        );
       }
 
       // 7. Audit Log
@@ -446,11 +438,7 @@ export async function voidPaymentAction(
         const assessment = await lockAssessment(tx, payment.assessmentId);
         if (assessment) {
           // Block voiding payments on transferred assessments
-          if (assessment.transferredAt != null) {
-            throw new Error(
-              "VOID_BLOCKED: This assessment's balance was transferred to a newer school year. Voiding this payment would affect a closed ledger, which is not allowed."
-            );
-          }
+          assertAssessmentNotTransferred(assessment.transferredAt, "void payment");
 
           const pAmount = Number(payment.amount);
 
@@ -469,29 +457,15 @@ export async function voidPaymentAction(
             newTotalPaid <= ASSESSMENT_BALANCE_FULLY_PAID_EPSILON &&
             assessment.enrollmentId
           ) {
-            const enrollment = await lockEnrollment(tx, assessment.enrollmentId);
-            if (enrollment && enrollment.status === "enrolled") {
-              await tx
-                .update(enrollments)
-                .set({
-                  status: "assessed",
-                  enrolledAt: null,
-                  updatedBy: session.userId,
-                  updatedAt: new Date(),
-                })
-                .where(eq(enrollments.id, assessment.enrollmentId));
-
-              await logAudit({
-                actor: session.userId,
-                actorRole: session.role,
-                action: "enrollment_reverted_via_void",
-                targetEntity: "enrollments",
-                targetId: assessment.enrollmentId,
-                context: `Total paid reverted to zero after voiding payment`,
-                previousState: { status: "enrolled" },
-                newState: { status: "assessed" },
-              }, { throwOnFail: true });
-            }
+            await revertToAssessedOnVoid(
+              {
+                tx,
+                enrollmentId: assessment.enrollmentId,
+                userId: session.userId,
+                userRole: session.role,
+              },
+              `Total paid reverted to zero after voiding payment`
+            );
           }
         }
       }
