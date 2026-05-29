@@ -40,13 +40,11 @@ export async function createSubjectAction(
     return { errors: result.errors };
   }
 
-  const parsed = result;
-
-  const data = parsed.data;
+  const { name, code, gradeLevelId } = result.data;
 
   // Check duplicate code
   const existing = await db.query.subjects.findFirst({
-    where: and(eq(subjects.code, data.code), isNull(subjects.deletedAt)),
+    where: and(eq(subjects.code, code), isNull(subjects.deletedAt)),
   });
 
   if (existing) {
@@ -64,15 +62,15 @@ export async function createSubjectAction(
     const [newSubject] = await db
       .insert(subjects)
       .values({
-        name: data.name,
-        code: data.code,
+        name,
+        code,
         curriculumId: fallbackCurriculum.id,
-        gradeLevelId: data.gradeLevelId,
+        gradeLevelId,
         createdBy: session.userId,
       })
       .returning({ id: subjects.id });
 
-    await logCreateAction(session, "subjects", newSubject.id, data, { throwOnFail: true });
+    await logCreateAction(session, "subjects", newSubject.id, { name, code, gradeLevelId }, { throwOnFail: true });
 
     revalidatePath("/staff/academics/subjects");
     return { success: true, message: "Subject created successfully." };
