@@ -14,9 +14,9 @@ import {
   assessments,
   assessmentItems,
   feeItemTypes,
-  payments,
 } from "@/lib/db/schema";
 import { eq, desc, and, isNull, sql, inArray, or, ilike } from "drizzle-orm";
+import { hasLivePayment, hasAnyPayment } from "@/lib/utils/payment-checks";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
   type PaginationParams,
@@ -392,25 +392,10 @@ export async function getDiscountRequestGate(
     return { allowed: true };
   }
 
-  // "Live" = still consuming balance: only pending_confirmation/posted block.
-  // Voided/reversed/reversal/balance_forward payments have already released
-  // their hold on the assessment and must not block a new discount request.
-  const [livePaymentRow, anyPaymentRow, reversedRequestRow] = await Promise.all([
-    db
-      .select({ id: payments.id })
-      .from(payments)
-      .where(
-        and(
-          eq(payments.assessmentId, assessment.id),
-          inArray(payments.status, ["pending_confirmation", "posted"])
-        )
-      )
-      .limit(1),
-    db
-      .select({ id: payments.id })
-      .from(payments)
-      .where(eq(payments.assessmentId, assessment.id))
-      .limit(1),
+  // Check for live payments (pending_confirmation or posted) and any payment history
+  const [hasLive, hasAny, reversedRequestRow] = await Promise.all([
+    hasLivePayment(assessment.id),
+    hasAnyPayment(assessment.id),
     db
       .select({ id: discountRequests.id })
       .from(discountRequests)
@@ -423,7 +408,7 @@ export async function getDiscountRequestGate(
       .limit(1),
   ]);
 
-  if (livePaymentRow.length > 0) {
+  if (hasLive) {
     return {
       allowed: false,
       code: "PAYMENT_POSTED",
@@ -432,7 +417,7 @@ export async function getDiscountRequestGate(
     };
   }
 
-  if (reversedRequestRow.length > 0 && anyPaymentRow.length > 0) {
+  if (reversedRequestRow.length > 0 && hasAny) {
     return {
       allowed: false,
       code: "DISCOUNT_REVERSED",
