@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Modal, ModalHeader, ModalBody } from "@/components/shared/Modal";
 import { useFormToast } from "@/hooks/useFormToast";
+import { ToggleSwitch } from "@/components/forms/ToggleSwitch";
 import { updateFeeItemTypeAction } from "../fee-item-types.actions";
 import { FEE_ITEM_CATEGORIES_LIST, FEE_ITEM_CATEGORY_LABELS, type UpdateFeeItemTypeFormState } from "../fee-item-types.schema";
-import { cn } from "@/lib/utils/cn";
 
 type FeeItemType = {
   id: string;
@@ -154,64 +154,23 @@ export function EditFeeItemTypeModal({ feeType }: Props) {
                   </div>
 
                   {/* Discount toggle */}
-                  <div className="flex items-start gap-3 py-2">
-                    <input
-                      type="hidden"
-                      name="isDiscount"
-                      value={isDiscount ? "true" : "false"}
-                    />
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={isDiscount}
-                      className={cn(
-                        "relative w-10 h-6 rounded-full border cursor-pointer shrink-0 transition-colors",
-                        isDiscount ? "bg-primary border-primary" : "bg-muted border-border"
-                      )}
-                      onClick={() => setIsDiscount((v) => !v)}
-                    >
-                      <span className={cn(
-                        "absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform",
-                        isDiscount && "translate-x-4"
-                      )} />
-                    </button>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">This is a discount</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Discount types subtract from the assessment total
-                      </p>
-                    </div>
-                  </div>
+                  <ToggleSwitch
+                    name="isDiscount"
+                    checked={isDiscount}
+                    onChange={setIsDiscount}
+                    label="This is a discount"
+                    description="Discount types subtract from the assessment total"
+                  />
 
                   {/* Refundable toggle */}
-                  <div className="flex items-start gap-3 py-2">
-                    <input
-                      type="hidden"
-                      name="isRefundable"
-                      value={isRefundable ? "true" : "false"}
-                    />
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={isRefundable}
-                      className={cn(
-                        "relative w-10 h-6 rounded-full border cursor-pointer shrink-0 transition-colors",
-                        isRefundable ? "bg-green-500 border-green-500" : "bg-muted border-border"
-                      )}
-                      onClick={() => setIsRefundable((v) => !v)}
-                    >
-                      <span className={cn(
-                        "absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform",
-                        isRefundable && "translate-x-4"
-                      )} />
-                    </button>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Refundable on cancellation</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Payments for this fee can be refunded when enrollment is cancelled within the cutoff period
-                      </p>
-                    </div>
-                  </div>
+                  <ToggleSwitch
+                    name="isRefundable"
+                    checked={isRefundable}
+                    onChange={setIsRefundable}
+                    label="Refundable on cancellation"
+                    description="Payments for this fee can be refunded when enrollment is cancelled within the cutoff period"
+                    checkedColor="green"
+                  />
 
             <div className="flex justify-end gap-2 mt-2 pt-4 border-t border-border">
               <Button type="button" variant="secondary" onClick={closeModal}>

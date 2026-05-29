@@ -11,6 +11,8 @@
  *   Employee 5% (full_assessment) = 5% × 57,000 = 2,850
  */
 
+import { formatCurrency } from "@/lib/utils/currency";
+
 /** Assessment item with fee type info for calculation */
 export interface CalculationAssessmentItem {
   id: string;
@@ -173,11 +175,8 @@ export function sumDiscountLines(discountLines: DiscountLine[]): number {
 export function formatDiscountDescription(line: DiscountLine): string {
   const baseLabel =
     line.baseType === "tuition_only" ? "tuition" : "full assessment";
-  const formattedBase = new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(line.baseAmount);
+  // Format without decimals for cleaner display (e.g., "₱50,000" not "₱50,000.00")
+  const formattedBase = formatCurrency(line.baseAmount).replace(/\.00$/, "");
 
   return `${line.discountTypeName} (on ${formattedBase} ${baseLabel})`;
 }

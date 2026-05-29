@@ -14,6 +14,7 @@ import { Modal, ModalHeader, ModalBody } from "@/components/shared/Modal";
 import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ToggleSwitch } from "@/components/forms/ToggleSwitch";
 
 interface DiscountTypeFormModalProps {
   discountType?: DiscountTypeView;
@@ -249,47 +250,33 @@ export default function DiscountTypeFormModal({
           </div>
 
           {/* Boolean Options */}
-          <div className="space-y-3 pt-2 border-t border-border">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <input type="hidden" name="isActive" value={String(isActive)} />
-              <span className="text-sm">Active (available for selection)</span>
-            </label>
+          <div className="space-y-1 pt-2 border-t border-border">
+            <ToggleSwitch
+              name="isActive"
+              checked={isActive}
+              onChange={setIsActive}
+              label="Active"
+              description="Available for selection when applying discounts"
+              checkedColor="green"
+            />
 
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={requiresDocumentation}
-                onChange={(e) => setRequiresDocumentation(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <input
-                type="hidden"
-                name="requiresDocumentation"
-                value={String(requiresDocumentation)}
-              />
-              <span className="text-sm">Requires supporting documentation</span>
-            </label>
+            <ToggleSwitch
+              name="requiresDocumentation"
+              checked={requiresDocumentation}
+              onChange={setRequiresDocumentation}
+              label="Requires documentation"
+              description="Supporting documents must be submitted for this discount"
+              checkedColor="amber"
+            />
 
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={isStackable}
-                onChange={(e) => setIsStackable(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <input
-                type="hidden"
-                name="isStackable"
-                value={String(isStackable)}
-              />
-              <span className="text-sm">Can be combined with other discounts</span>
-            </label>
+            <ToggleSwitch
+              name="isStackable"
+              checked={isStackable}
+              onChange={setIsStackable}
+              label="Stackable"
+              description="Can be combined with other discounts on the same assessment"
+              checkedColor="blue"
+            />
           </div>
 
           <div className="flex gap-2 justify-end pt-2">
