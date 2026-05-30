@@ -14,8 +14,9 @@ This document describes the security architecture, controls, and best practices 
 8. [Password Security](#password-security)
 9. [SQL Injection Prevention](#sql-injection-prevention)
 10. [XSS Prevention](#xss-prevention)
-11. [Known Limitations](#known-limitations)
-12. [Security Contacts](#security-contacts)
+11. [Deployment Security](#deployment-security)
+12. [Known Limitations & Trade-offs](#known-limitations--trade-offs)
+13. [Security Contacts](#security-contacts)
 
 ---
 
@@ -80,8 +81,26 @@ Expired sessions are cleaned up via:
 {
   httpOnly: true,           // Prevents XSS access
   secure: true,             // HTTPS only in production
-  sameSite: "lax",          // CSRF protection
+  sameSite: "lax",          // CSRF protection with redirect compatibility
   path: "/",                // Available site-wide
+}
+```
+
+**Note on SameSite=Lax:** We use `Lax` instead of `Strict` because `Strict` can cause issues with server action redirects in Next.js. `Lax` still provides CSRF protection by blocking cross-site POST requests while allowing top-level navigations.
+
+### Session Binding Validation (A-2)
+
+Sessions are bound to the original User-Agent to detect session hijacking:
+
+- **User-Agent mismatch:** Session is immediately invalidated (strong tampering signal)
+- **IP address change:** Logged but not blocked (mobile networks/NAT cause legitimate changes)
+
+```typescript
+// In getCurrentSession()
+if (dbSession.userAgent && dbSession.userAgent !== currentUA) {
+  logger.warn("[session] User-Agent mismatch - possible session hijack");
+  await db.delete(sessions).where(eq(sessions.id, dbSession.id));
+  return null;
 }
 ```
 
@@ -142,7 +161,7 @@ SRAMS uses Next.js Server Actions for all mutations, which provide built-in CSRF
 
 ### Cookie Configuration
 
-The `sameSite: "lax"` cookie attribute provides additional CSRF protection by preventing cross-site cookie sending for non-GET requests.
+The `sameSite: "lax"` cookie attribute provides CSRF protection by preventing cross-site cookie sending for non-GET requests (form submissions, AJAX calls). Top-level navigations are allowed for better UX with external links.
 
 ---
 
@@ -150,33 +169,60 @@ The `sameSite: "lax"` cookie attribute provides additional CSRF protection by pr
 
 ### Implementation
 
-SRAMS implements in-memory sliding window rate limiting in `src/lib/security/rateLimit.ts`.
+SRAMS implements in-memory sliding window rate limiting in `src/lib/security/rateLimit.ts` with secure IP extraction in `src/lib/security/ipExtraction.ts`.
+
+### Security Enhancements (D-1)
+
+1. **Secure IP Extraction:** Trusts only the Nth IP from the right in `X-Forwarded-For` based on `TRUSTED_PROXY_COUNT` environment variable
+2. **Per-Account Throttling:** Username-based rate limiting alongside IP-based
+3. **Exponential Backoff:** Lockout duration doubles after consecutive failures
+4. **No Shared Buckets:** Never uses a shared "unknown" bucket that could be exploited
 
 ### Rate Limit Contexts
 
-| Context | Window | Max Attempts | Purpose |
-|---------|--------|--------------|---------|
-| Login | 15 minutes | 10 | Prevent brute force attacks |
-| Admin Actions | 1 minute | 10 | Prevent abuse of sensitive operations |
+| Context | Window | Max Attempts | Notes |
+|---------|--------|--------------|-------|
+| Login (IP) | 15 minutes | 10 | Per IP address |
+| Login (Username) | 15 minutes | 5 | Per account (stricter) |
+| Admin Actions | 1 minute | 10 | Per user session |
+
+### Exponential Backoff
+
+After 3 consecutive failures, lockout duration increases:
+
+| Consecutive Failures | Lockout Window |
+|---------------------|----------------|
+| 1-3 | 15 minutes (base) |
+| 4 | 30 minutes (2x) |
+| 5 | 60 minutes (4x) |
+| 6+ | 120 minutes (8x max) |
 
 ### Usage
 
 ```typescript
-// Login rate limiting
-if (isLoginRateLimited(clientIp)) {
-  return { message: "Too many attempts..." };
+import { extractClientIPForRateLimit } from "@/lib/security/ipExtraction";
+import { checkLoginRateLimits, recordLoginFailures, resetLoginRateLimits } from "@/lib/security/rateLimit";
+
+// Get secure client IP
+const clientIp = extractClientIPForRateLimit(headers, username);
+
+// Check both IP and username limits
+const limits = checkLoginRateLimits(clientIp, username);
+if (limits.blocked) {
+  return { message: limits.message };
 }
 
-// Admin action rate limiting
-if (isAdminActionRateLimited(session.userId)) {
-  return { message: "Too many requests..." };
-}
+// On failure: record for exponential backoff
+recordLoginFailures(clientIp, username);
+
+// On success: reset limits
+resetLoginRateLimits(clientIp, username);
 ```
 
 ### Limitations
 
 - **Single-instance only:** Rate limits are stored in memory and don't persist across restarts or scale across multiple instances
-- **No distributed locking:** For multi-instance deployments, replace with Redis-backed rate limiting
+- **No distributed locking:** For multi-instance deployments, implement Redis-backed rate limiting (see `src/lib/security/rateLimit.store.ts` interface)
 
 ---
 
@@ -252,8 +298,22 @@ Audit logs are stored in the `audit_logs` table with:
 ### Password Hashing
 
 - **Algorithm:** bcrypt
-- **Cost factor:** 10 rounds
+- **Cost factor:** 12 rounds (A-6)
 - **Library:** bcryptjs
+
+### Transparent Hash Upgrade (A-6)
+
+Existing passwords with lower cost factors (e.g., cost 10) are automatically upgraded on successful login:
+
+```typescript
+const currentCost = getRounds(user.passwordHash);
+if (currentCost < BCRYPT_COST) {
+  const upgradedHash = await hash(password, BCRYPT_COST);
+  await db.update(users).set({ passwordHash: upgradedHash });
+}
+```
+
+This ensures all passwords eventually use the current security standard without requiring forced password resets.
 
 ### Password Requirements
 
@@ -268,7 +328,7 @@ Audit logs are stored in the `audit_logs` table with:
 Login always performs password comparison (even for non-existent users) to prevent timing-based user enumeration:
 
 ```typescript
-const dummyHash = "$2b$10$dummyhashfortimingneutralityXXXXXXXXXXXXXXXX";
+const dummyHash = "$2b$12$dummyhashfortimingneutralityXXXXXXXXXXXXXXXX";
 const isValid = await compare(password, user?.passwordHash ?? dummyHash);
 ```
 
@@ -313,7 +373,98 @@ For additional protection, consider adding CSP headers in production deployment 
 
 ---
 
-## Known Limitations
+## Deployment Security
+
+### TLS Configuration (D-2)
+
+SRAMS requires TLS (HTTPS) in production for secure cookie transmission.
+
+**Recommended Architecture:**
+```
+[Client] → HTTPS → [Reverse Proxy (nginx/Caddy)] → HTTP → [SRAMS Container]
+                    ↑ TLS termination here
+```
+
+**nginx Configuration Example:**
+```nginx
+server {
+    listen 443 ssl;
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    # HSTS - tell browsers to always use HTTPS
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    location / {
+        proxy_pass http://srams-app:3000;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+**Environment Variables:**
+```bash
+# Number of reverse proxies between client and app (for IP extraction)
+TRUSTED_PROXY_COUNT=1
+```
+
+### Session Cleanup Cron (A-5)
+
+The cleanup endpoint uses:
+- **DELETE method only** - no GET alias (prevents CSRF/accidental triggers)
+- **Timing-safe secret comparison** - prevents timing attacks on the CRON_SECRET
+
+```bash
+# Call with DELETE method only
+curl -X DELETE https://your-app/api/cron/cleanup-sessions \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+### Docker Security (D-4)
+
+See `docs/SECURITY/DEPLOYMENT-HARDENING.md` for:
+- PostgreSQL internal network binding
+- Docker secrets management
+- Image pinning by SHA256 digest
+- Health check configuration
+
+---
+
+## Known Limitations & Trade-offs
+
+### Session Revocation Lag (A-3) - Accepted Trade-off
+
+The route middleware (`proxy.ts`) validates JWT signatures without database lookup for Edge runtime performance. This means:
+
+- A revoked session can still pass the routing layer until the JWT expires (~10h)
+- The revoked session CANNOT read or mutate data (all actions/queries check DB)
+- This is a deliberate performance trade-off
+
+**If instant logout-everywhere is required:**
+- Option 1: Add per-user `tokenVersion` claim, compare against DB in middleware
+- Option 2: Maintain short-TTL cache of revoked sessionIds in Redis
+- Option 3: Reduce JWT lifetime (increases renewal frequency)
+
+### Authorization Denial Behavior (A-7)
+
+| Layer | Insufficient Permission Response |
+|-------|----------------------------------|
+| Route middleware (proxy.ts) | Redirect to role's landing page |
+| Server actions | `{ message: "You do not have permission..." }` |
+| Data API routes | HTTP 403 Forbidden JSON |
+
+This is intentional UX design - page-level denials are graceful redirects, API-level denials are proper HTTP status codes.
+
+### Zombie Session Handling (A-1)
+
+Sessions with valid JWT tokens but unrecognized roles (e.g., corrupted data) are handled gracefully:
+- Cookie is cleared
+- User is redirected to login
+- No infinite redirect loop
+
+### Current Architecture Constraints
 
 ### Current Architecture Constraints
 
@@ -321,16 +472,12 @@ For additional protection, consider adding CSP headers in production deployment 
    - Rate limits use in-memory storage
    - Does not persist across server restarts
    - Does not scale across multiple instances
-   - **Mitigation:** Use Redis for multi-instance deployments
+   - **Mitigation:** Implement Redis-backed rate limiting for horizontal scaling (see D-3)
 
-2. **Session Metadata Validation**
-   - Session does not validate IP address or user agent changes
-   - **Status:** Documented as optional future hardening
-   - **Risk:** Low - tokens are short-lived and require valid JWT signature
-
-3. **No Account Lockout**
-   - Failed login attempts are rate-limited but accounts are not locked
-   - **Mitigation:** Rate limiting provides sufficient protection for most use cases
+2. **No Permanent Account Lockout**
+   - Failed login attempts use exponential backoff but accounts are not permanently locked
+   - **Rationale:** Permanent lockout can be used for DoS against legitimate users
+   - **Mitigation:** Exponential backoff (up to 2 hours) provides sufficient protection
 
 ### Operational Security
 
@@ -364,3 +511,10 @@ For security issues or vulnerabilities:
 | 2026-05-18 | Added grade encoding teacher validation |
 | 2026-05-18 | Added user creation rate limiting |
 | 2026-05-18 | Added session cleanup mechanism |
+| 2026-05-30 | (A-1) Fixed zombie session redirect loop |
+| 2026-05-30 | (A-2) Added session User-Agent binding validation |
+| 2026-05-30 | (A-4) Evaluated SameSite=Strict, kept Lax for redirect compatibility |
+| 2026-05-30 | (A-5) Removed GET alias on cron endpoint, added timing-safe comparison |
+| 2026-05-30 | (A-6) Increased bcrypt cost factor to 12 with transparent re-hash |
+| 2026-05-30 | (D-1) Added secure IP extraction and per-account rate limiting |
+| 2026-05-30 | (D-2) Added TLS/deployment security documentation |

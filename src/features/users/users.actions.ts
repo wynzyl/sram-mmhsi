@@ -24,6 +24,9 @@ import { logger } from "@/lib/observability/logger";
 import { isAdminActionRateLimited, getAdminActionResetSeconds } from "@/lib/security/rateLimit";
 import bcrypt from "bcryptjs";
 
+// SECURITY (A-6): bcrypt cost factor - matches auth.actions.ts
+const BCRYPT_COST = 12;
+
 // ─── Create User Action ───────────────────────────────────────────────────────
 
 export async function createUserAction(
@@ -91,7 +94,7 @@ export async function createUserAction(
 
   try {
     // 4. Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
 
     // 5. Insert user
     const [newUser] = await db
@@ -319,7 +322,7 @@ export async function resetPasswordAction(
 
   try {
     // 4. Hash new password
-    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
 
     // 5. Update password
     await db

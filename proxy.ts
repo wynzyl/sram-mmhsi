@@ -57,13 +57,26 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAuthenticated && isPublic) {
-    const landing = role ? ROLE_LANDING[role] : "/login";
-    return NextResponse.redirect(new URL(landing, req.nextUrl));
+  // SECURITY FIX (A-1): Handle broken/zombie sessions BEFORE public route redirect
+  // A valid JWT token with an unusable role (null after normalization) indicates
+  // a corrupted or outdated session. Clear the cookie and allow login.
+  if (isAuthenticated && !role) {
+    if (isPublic) {
+      // On public route (e.g., /login): clear stale cookie, let them proceed
+      const res = NextResponse.next();
+      res.cookies.delete(SESSION_COOKIE_NAME);
+      return res;
+    }
+    // On protected route: redirect to login with cleared cookie
+    const res = NextResponse.redirect(new URL("/login", req.nextUrl));
+    res.cookies.delete(SESSION_COOKIE_NAME);
+    return res;
   }
 
-  if (isAuthenticated && !role) {
-    return NextResponse.redirect(new URL("/login", req.nextUrl));
+  // Authenticated user on public route → send to role's landing page
+  // (role is guaranteed valid at this point due to the check above)
+  if (isAuthenticated && isPublic && role) {
+    return NextResponse.redirect(new URL(ROLE_LANDING[role], req.nextUrl));
   }
 
   if (isAuthenticated && role && isStaffRoute && PORTAL_ROLES.includes(role)) {
