@@ -10,13 +10,12 @@ import {
   gradeLevels,
   assessments,
   registrations,
-  auditLogs,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
 import { eq, and, ne, isNull, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { logUpdateAction } from "@/lib/utils/audit-logger";
+import { logAudit, logUpdateAction } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
 import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -287,22 +286,23 @@ export async function createEnrollmentAction(
         .returning({ id: enrollments.id });
 
       newEnrollmentId = created.id;
+    });
 
-      await tx.insert(auditLogs).values({
-        actor: session.userId,
-        actorRole: session.role,
-        action: "enrollment_created_pending",
-        targetEntity: "enrollments",
-        targetId: created.id,
-        newState: JSON.stringify({
-          studentId,
-          schoolYearId,
-          gradeLevelId,
-          studentType,
-          status: "pending",
-          intakeDocuments,
-        }),
-      });
+    // Audit log (outside transaction - uses standardized helper)
+    await logAudit({
+      actor: session.userId,
+      actorRole: session.role,
+      action: "enrollment_created_pending",
+      targetEntity: "enrollments",
+      targetId: newEnrollmentId!,
+      newState: {
+        studentId,
+        schoolYearId,
+        gradeLevelId,
+        studentType,
+        status: "pending",
+        intakeDocuments,
+      },
     });
 
     logger.info("[enrollments] Enrollment created (pending)", {

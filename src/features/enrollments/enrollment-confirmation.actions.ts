@@ -9,13 +9,13 @@ import {
   schoolYears,
   gradeLevels,
   registrations,
-  auditLogs,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
 import { eq, and, ne, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logger } from "@/lib/observability/logger";
+import { logAudit } from "@/lib/utils/audit-logger";
 import { validateGradeProgression } from "@/lib/utils/enrollment-grade";
 import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
 import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
@@ -275,24 +275,24 @@ export async function confirmEnrollmentAction(
         .returning({ id: enrollments.id });
 
       newEnrollmentId = created.id;
+    });
 
-      // Audit log
-      await tx.insert(auditLogs).values({
-        actor: session.userId,
-        actorRole: session.role,
-        action: "enrollment_confirmed",
-        targetEntity: "enrollments",
-        targetId: created.id,
-        newState: JSON.stringify({
-          studentId,
-          schoolYearId,
-          gradeLevelId,
-          sectionId,
-          studentType,
-          registrationId,
-          status: "pending",
-        }),
-      });
+    // Audit log (outside transaction - uses standardized helper)
+    await logAudit({
+      actor: session.userId,
+      actorRole: session.role,
+      action: "enrollment_confirmed",
+      targetEntity: "enrollments",
+      targetId: newEnrollmentId!,
+      newState: {
+        studentId,
+        schoolYearId,
+        gradeLevelId,
+        sectionId,
+        studentType,
+        registrationId,
+        status: "pending",
+      },
     });
 
     logger.info("[enrollment-confirmation] Enrollment confirmed", {
