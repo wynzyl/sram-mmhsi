@@ -1,5 +1,7 @@
 # SRAMS Security Audit — Authentication, Session & RBAC Layer
 
+Role: You are an expert Full-Stack Security Engineer specializing in Next.js (App Router), PostgreSQL, and Drizzle ORM.
+
 | | |
 |---|---|
 | **System** | School Registration and Accounts Monitoring System (SRAMS) |
@@ -10,7 +12,7 @@
 | **Method** | Manual code review + targeted source verification (read-only). No code was modified — all fixes below are recommendations. |
 | **Stack reviewed** | Next.js 16 App Router · `jose` JWT · Drizzle ORM · PostgreSQL · `bcryptjs` |
 
-> **Note on the migration context.** This audit was requested after a migration to a pure Next.js
+> **Note on the migration context.** This audit was requested to a pure Next.js
 > fullstack auth approach intended to resolve infinite redirect loops and RBAC failures. The single
 > highest-value finding (**A-1**) is a *latent* version of exactly that redirect-loop class, still
 > reachable under a specific condition. Fixing it closes out the original motivation.
