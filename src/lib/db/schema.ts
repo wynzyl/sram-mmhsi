@@ -339,10 +339,16 @@ export const parentsGuardians = pgTable(
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
     index("pg_name_idx").on(t.lastName, t.firstName),
     index("pg_email_idx").on(t.email), // For portal login lookups
+    // Partial index for active parents/guardians (soft delete optimization)
+    index("pg_deleted_at_idx")
+      .on(t.deletedAt)
+      .where(sql`${t.deletedAt} IS NULL`),
   ]
 );
 
@@ -461,7 +467,7 @@ export const feeSchedules = pgTable("fee_schedules", {
 
 export const feeScheduleItems = pgTable("fee_schedule_items", {
   id: uuid("id").primaryKey().defaultRandom(),
-  feeScheduleId: uuid("fee_schedule_id").notNull().references(() => feeSchedules.id, { onDelete: "cascade" }),
+  feeScheduleId: uuid("fee_schedule_id").notNull().references(() => feeSchedules.id, { onDelete: "restrict" }),
   description: text("description").notNull(),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
   isDiscount: boolean("is_discount").notNull().default(false),
@@ -526,7 +532,7 @@ export const feeTemplateItems = pgTable("fee_template_items", {
   id: uuid("id").primaryKey().defaultRandom(),
   feeTemplateId: uuid("fee_template_id")
     .notNull()
-    .references(() => feeTemplates.id, { onDelete: "cascade" }),
+    .references(() => feeTemplates.id, { onDelete: "restrict" }),
   feeItemTypeId: uuid("fee_item_type_id")
     .notNull()
     .references(() => feeItemTypes.id),
@@ -549,7 +555,7 @@ export const schoolYearFeeSchedules = pgTable("school_year_fee_schedules", {
   id: uuid("id").primaryKey().defaultRandom(),
   schoolYearId: uuid("school_year_id")
     .notNull()
-    .references(() => schoolYears.id, { onDelete: "cascade" }),
+    .references(() => schoolYears.id, { onDelete: "restrict" }),
   assessmentBand: feeAssessmentBandEnum("assessment_band").notNull(),
   feeTemplateId: uuid("fee_template_id")
     .notNull()
@@ -575,7 +581,7 @@ export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
   id: uuid("id").primaryKey().defaultRandom(),
   scheduleId: uuid("schedule_id")
     .notNull()
-    .references(() => schoolYearFeeSchedules.id, { onDelete: "cascade" }),
+    .references(() => schoolYearFeeSchedules.id, { onDelete: "restrict" }),
   feeTemplateItemId: uuid("fee_template_item_id")
     .notNull()
     .references(() => feeTemplateItems.id),
@@ -652,7 +658,7 @@ export const assessmentItems = pgTable(
   "assessment_items",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    assessmentId: uuid("assessment_id").notNull().references(() => assessments.id, { onDelete: "cascade" }),
+    assessmentId: uuid("assessment_id").notNull().references(() => assessments.id, { onDelete: "restrict" }),
     /** Legacy: References old fee_schedule_items (will be migrated to feeTemplateItemId) */
     feeScheduleItemId: uuid("fee_schedule_item_id").references(() => feeScheduleItems.id),
     /** New: References fee_template_items for audit trail */
@@ -817,7 +823,7 @@ export const paymentAllocations = pgTable(
   "payment_allocations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    paymentId: uuid("payment_id").notNull().references(() => payments.id, { onDelete: "cascade" }),
+    paymentId: uuid("payment_id").notNull().references(() => payments.id, { onDelete: "restrict" }),
     assessmentItemId: uuid("assessment_item_id").references(() => assessmentItems.id),
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
