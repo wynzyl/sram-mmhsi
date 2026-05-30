@@ -16,6 +16,7 @@ import {
   calculateDiscountAmount,
 } from "@/features/discounts/utils/discount-calculations";
 import type { DiscountRequestView } from "@/features/discounts/discounts.schema";
+import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 
 export type NewAssessmentFeeCatalogEntry = {
   feeTemplateItemId: string; // Changed from feeScheduleItemId
@@ -49,10 +50,16 @@ export type NewAssessmentPageReadyContext = {
   submitBlockedReason: string | null;
 };
 
-export type NewAssessmentPageBlockedContext = {
-  status: "not_pending";
-  reason: "not_pending";
-};
+export type NewAssessmentPageBlockedContext =
+  | {
+      status: "not_pending";
+      reason: "not_pending";
+    }
+  | {
+      status: "school_year_not_active";
+      reason: "school_year_not_active";
+      message: string;
+    };
 
 /** Pre-calculated discount amount for display in the assessment draft */
 export type CalculatedDiscountPreview = {
@@ -149,6 +156,17 @@ export async function loadNewAssessmentPageContext(
     return {
       status: "not_pending",
       reason: "not_pending",
+    };
+  }
+
+  // Check school year is active (defense in depth)
+  const activeSchoolYear = await getActiveSchoolYear();
+  if (!activeSchoolYear || e.schoolYearId !== activeSchoolYear.id) {
+    return {
+      status: "school_year_not_active",
+      reason: "school_year_not_active",
+      message:
+        "This enrollment belongs to an inactive school year. Assessments can only be created for the current active school year.",
     };
   }
 

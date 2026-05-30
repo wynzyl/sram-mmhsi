@@ -33,6 +33,7 @@ import {
   applyApprovedDiscountsToAssessment,
 } from "@/features/discounts";
 import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
+import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
 
 export async function createAssessmentFromEnrollmentAction(
   _prevState: AssessmentFormState,
@@ -99,6 +100,21 @@ export async function createAssessmentFromEnrollmentAction(
   if (enrollmentRow.status !== "pending") {
     return {
       message: `Assessment can only be created when enrollment is Pending (current: ${enrollmentRow.status}).`,
+    };
+  }
+
+  // ─── Validate School Year is Active (Defense in Depth) ────────────────────
+  const activeSchoolYearId = await getActiveSchoolYearId();
+  if (!activeSchoolYearId) {
+    return {
+      message:
+        "No active school year is configured. Please set the current school year before creating assessments.",
+    };
+  }
+  if (enrollmentRow.schoolYearId !== activeSchoolYearId) {
+    return {
+      message:
+        "Assessments can only be created for enrollments in the current active school year. This enrollment belongs to a different school year.",
     };
   }
 

@@ -1,9 +1,10 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
 import { sessions, users } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import type { Role } from "@/lib/constants/roles";
+import { logger } from "@/lib/observability/logger";
 import {
   SESSION_COOKIE_NAME,
   encryptSessionJwt,
@@ -112,6 +113,45 @@ export async function getCurrentSession(): Promise<SessionPayload | null> {
   });
 
   if (!dbSession) return null;
+
+  // SECURITY (A-2): Validate session binding to User-Agent and IP
+  // Wrapped in try-catch to ensure session validation doesn't break auth flow
+  try {
+    const h = await headers();
+    const currentUA = h.get("user-agent") ?? "";
+    const currentIP = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+
+    // Hard-fail on User-Agent mismatch (strong tampering signal)
+    // Note: We only validate if the session has a stored UA (backwards compatible)
+    if (dbSession.userAgent && dbSession.userAgent !== currentUA) {
+      logger.warn("[session] User-Agent mismatch - possible session hijack", {
+        sessionId: dbSession.id,
+        storedUA: dbSession.userAgent,
+        currentUA,
+      });
+      // Invalidate the compromised session
+      await db.delete(sessions).where(eq(sessions.id, dbSession.id));
+      return null;
+    }
+
+    // Soft log on IP change (mobile networks/NAT can cause legitimate changes)
+    // We don't hard-fail here to avoid false positives
+    if (dbSession.ipAddress && dbSession.ipAddress !== currentIP) {
+      logger.info("[session] IP address changed during session", {
+        sessionId: dbSession.id,
+        storedIP: dbSession.ipAddress,
+        currentIP,
+      });
+    }
+  } catch (error) {
+    // If headers() fails (e.g., during certain edge cases), log and continue
+    // Session is still valid based on token verification above
+    logger.warn("[session] Failed to validate session binding", {
+      sessionId: dbSession.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
   return payload;
 }
 

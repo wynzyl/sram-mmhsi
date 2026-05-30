@@ -14,6 +14,7 @@
 # testing
 /coverage
 .playwright-mcp*
+.gstack*
 
 # next.js
 /.next/
@@ -45,3 +46,10 @@ next-env.d.ts
 
 # docs
 .gstack/
+
+# Database dumps and backups (SECURITY: prevent accidental commits)
+*.sql
+*backup*.sql
+*.dump
+*.bak
+!drizzle/*.sql

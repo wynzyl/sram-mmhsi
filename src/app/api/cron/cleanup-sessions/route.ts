@@ -9,6 +9,10 @@
  * Security: Protected by CRON_SECRET environment variable.
  * If CRON_SECRET is not set, the endpoint is disabled.
  *
+ * SECURITY (A-5):
+ * - Only DELETE method is allowed (no GET alias)
+ * - Uses timing-safe comparison for secret validation
+ *
  * Usage with cron:
  * - Vercel: Add to vercel.json crons configuration
  * - External: Call with Authorization: Bearer <CRON_SECRET>
@@ -17,8 +21,27 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { cleanupExpiredSessions } from "@/lib/auth/session-cleanup";
 import { logger } from "@/lib/observability/logger";
+
+/**
+ * Timing-safe comparison of two strings.
+ * Prevents timing attacks by always comparing the same number of bytes.
+ */
+function timingSafeCompare(a: string, b: string): boolean {
+  const aBuffer = Buffer.from(a);
+  const bBuffer = Buffer.from(b);
+
+  // If lengths differ, compare against a same-length dummy to prevent timing leak
+  if (aBuffer.length !== bBuffer.length) {
+    // Compare b against itself (same length) to maintain constant time
+    timingSafeEqual(bBuffer, bBuffer);
+    return false;
+  }
+
+  return timingSafeEqual(aBuffer, bBuffer);
+}
 
 export async function DELETE(req: NextRequest) {
   // Validate cron secret for security
@@ -34,9 +57,10 @@ export async function DELETE(req: NextRequest) {
 
   // Check authorization header
   const authHeader = req.headers.get("authorization");
-  const providedSecret = authHeader?.replace("Bearer ", "");
+  const providedSecret = authHeader?.replace("Bearer ", "") ?? "";
 
-  if (providedSecret !== cronSecret) {
+  // SECURITY (A-5): Use timing-safe comparison to prevent timing attacks
+  if (!timingSafeCompare(providedSecret, cronSecret)) {
     logger.warn("[cron] Session cleanup called with invalid secret");
     return NextResponse.json(
       { error: "Unauthorized" },
@@ -65,7 +89,5 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// Also support GET for health checks / manual triggers
-export async function GET(req: NextRequest) {
-  return DELETE(req);
-}
+// SECURITY (A-5): GET method removed - destructive operations should not be accessible via GET
+// This prevents CSRF attacks and accidental triggering via browser navigation/prefetch

@@ -237,6 +237,9 @@ export type PendingAssessmentQueueRow = {
 /**
  * Get the paginated queue of enrollments with status `pending` (awaiting fee
  * assessment), plus the total count. Not cached — financial-adjacent workqueue.
+ *
+ * **IMPORTANT:** Only returns enrollments from the active school year.
+ * This ensures assessments can only be created for the current accounting period.
  */
 export async function getPendingAssessmentQueue(params: {
   page: number;
@@ -245,11 +248,22 @@ export async function getPendingAssessmentQueue(params: {
   const page = Math.max(1, params.page);
   const offset = calculateOffset(page, params.pageSize);
 
+  // Only show enrollments from the active school year
+  const activeSchoolYear = await getActiveSchoolYear();
+  if (!activeSchoolYear) {
+    return { rows: [], totalCount: 0 };
+  }
+
+  const whereConditions = and(
+    eq(enrollments.status, "pending"),
+    eq(enrollments.schoolYearId, activeSchoolYear.id)
+  );
+
   const [countResult, pendingRows] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)` })
       .from(enrollments)
-      .where(eq(enrollments.status, "pending")),
+      .where(whereConditions),
     db
       .select({
         enrollmentId: enrollments.id,
@@ -264,7 +278,7 @@ export async function getPendingAssessmentQueue(params: {
       .innerJoin(students, eq(enrollments.studentId, students.id))
       .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
       .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-      .where(eq(enrollments.status, "pending"))
+      .where(whereConditions)
       .orderBy(desc(enrollments.createdAt))
       .limit(params.pageSize)
       .offset(offset),

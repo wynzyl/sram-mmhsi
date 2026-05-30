@@ -10,37 +10,38 @@ export const metadata: Metadata = {
 
 export default function ChangePasswordPage() {
   return (
-    <main className="login-page">
-      <div className="login-grain" aria-hidden="true" />
+    <main className="auth-page-bg">
+      {/* Grain texture overlay */}
+      <div className="auth-grain-overlay" aria-hidden="true" />
 
-      <section className="login-card animate-login-rise" aria-labelledby="change-password-title">
-        <header className="login-brand">
-          <span className="login-crest" aria-hidden="true">
+      <section className="auth-card" aria-labelledby="change-password-title">
+        <header className="auth-header">
+          <span className="auth-logo-wrapper" aria-hidden="true">
             <Image
               src="/Hero.png"
               alt=""
               width={56}
               height={56}
               priority
-              className="login-crest-img"
+              className="w-full h-full object-cover"
             />
           </span>
 
-          <p className="login-eyebrow">Merryland Montessori &amp; High School, Inc.</p>
-          <h1 id="change-password-title" className="login-title">
-            Change Password
+          <p className="auth-subtitle">Merryland Montessori &amp; High School, Inc.</p>
+          <h1 id="change-password-title" className="auth-title">
+            Change <span className="auth-title-accent">Password</span>
           </h1>
-          <p className="login-subtitle">
+          <p className="auth-description">
             You must change your password before continuing.
           </p>
-          <span className="login-rule" aria-hidden="true" />
+          <span className="auth-divider" aria-hidden="true" />
         </header>
 
         <ChangePasswordForm />
 
-        <footer className="login-foot">
+        <footer className="auth-footer">
           <form action={logoutAction}>
-            <button type="submit" className="login-link">
+            <button type="submit" className="auth-link">
               Sign out instead
             </button>
           </form>

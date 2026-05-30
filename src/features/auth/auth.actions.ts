@@ -2,10 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { compare, hash } from "bcryptjs";
+import { compare, hash, getRounds } from "bcryptjs";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq, or } from "drizzle-orm";
+
+// SECURITY (A-6): bcrypt cost factor
+// Cost 12 provides ~4x more resistance than cost 10 against offline attacks
+const BCRYPT_COST = 12;
 import {
   LoginSchema,
   ChangePasswordSchema,
@@ -23,10 +27,11 @@ import { logger } from "@/lib/observability/logger";
 import type { Role } from "@/lib/constants/roles";
 import { normalizeRole } from "@/lib/constants/roles";
 import {
-  isLoginRateLimited,
-  resetLoginRateLimit,
-  getRateLimitResetSeconds,
+  checkLoginRateLimits,
+  recordLoginFailures,
+  resetLoginRateLimits,
 } from "@/lib/security/rateLimit";
+import { extractClientIPForRateLimit } from "@/lib/security/ipExtraction";
 
 // ─── Role → Landing Page Map ──────────────────────────────────────────────────
 
@@ -47,28 +52,31 @@ export async function loginAction(
   _prevState: LoginFormState,
   formData: FormData
 ): Promise<LoginFormState> {
-  // 0. Get client IP for rate limiting
-  const headersList = await headers();
-  const forwardedFor = headersList.get("x-forwarded-for");
-  const clientIp = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
-
-  // 0.1 Check rate limit before processing
-  if (isLoginRateLimited(clientIp)) {
-    const resetSeconds = getRateLimitResetSeconds(clientIp);
-    const resetMinutes = Math.ceil(resetSeconds / 60);
-    logger.warn("[auth] Rate limit exceeded", { ip: clientIp });
-    return {
-      message: `Too many login attempts. Please try again in ${resetMinutes} minute${resetMinutes !== 1 ? "s" : ""}.`,
-    };
-  }
-
-  // 1. Validate inputs with Zod
+  // 0. Validate inputs first (needed for username-based rate limiting)
   const result = parseFormData(LoginSchema, formData);
   if (!result.success) {
     return { errors: result.errors };
   }
 
   const { username, password } = result.data;
+
+  // 0.1 Get client IP securely for rate limiting
+  // SECURITY (D-1): Use proper IP extraction that handles spoofed X-Forwarded-For
+  const headersList = await headers();
+  const clientIp = extractClientIPForRateLimit(headersList, username);
+
+  // 0.2 Check both IP and username rate limits
+  // SECURITY (D-1): Per-account throttling prevents targeted attacks
+  const rateLimitCheck = checkLoginRateLimits(clientIp, username);
+  if (rateLimitCheck.blocked) {
+    logger.warn("[auth] Rate limit exceeded", {
+      ip: clientIp,
+      username,
+      byIP: rateLimitCheck.byIP,
+      byUsername: rateLimitCheck.byUsername,
+    });
+    return { message: rateLimitCheck.message };
+  }
 
   // 2. Look up user by username OR email (constant-time pattern)
   let user;
@@ -101,14 +109,17 @@ export async function loginAction(
   const isValid = await compare(password, user?.passwordHash ?? dummyHash);
 
   if (!user || !isValid || !user.isActive) {
-    logger.warn("[auth] Failed login attempt", { username });
+    // SECURITY (D-1): Record failure for exponential backoff
+    recordLoginFailures(clientIp, username);
+
+    logger.warn("[auth] Failed login attempt", { username, ip: clientIp });
     await logAudit({
       actor: user?.id ?? null,
       actorRole: "system",
       action: "auth:login_failed",
       targetEntity: "users",
       targetId: "unknown",
-      context: `username=${username}`,
+      context: `username=${username}, ip=${clientIp}`,
     });
     // Generic message — do not leak whether user exists
     return { message: "Invalid credentials. Please try again." };
@@ -133,8 +144,35 @@ export async function loginAction(
     forcePasswordChange: user.forcePasswordChange,
   });
 
-  // 5. Reset rate limit on successful login (sync operation)
-  resetLoginRateLimit(clientIp);
+  // 4.1 SECURITY (A-6): Transparent re-hash if password uses weaker cost factor
+  // This upgrades existing passwords to the current BCRYPT_COST on successful login
+  const currentCost = getRounds(user.passwordHash);
+  if (currentCost < BCRYPT_COST) {
+    // Fire-and-forget: upgrade hash in background without blocking login
+    void (async () => {
+      try {
+        const upgradedHash = await hash(password, BCRYPT_COST);
+        await db.update(users)
+          .set({ passwordHash: upgradedHash, updatedAt: new Date() })
+          .where(eq(users.id, user.id));
+        logger.info("[auth] Password hash upgraded", {
+          userId: user.id,
+          oldCost: currentCost,
+          newCost: BCRYPT_COST,
+        });
+      } catch (err) {
+        // Non-critical: log and continue (user is already logged in)
+        logger.warn("[auth] Failed to upgrade password hash", {
+          userId: user.id,
+          error: String(err),
+        });
+      }
+    })();
+  }
+
+  // 5. Reset rate limits on successful login (sync operation)
+  // SECURITY (D-1): Reset both IP and username rate limits
+  resetLoginRateLimits(clientIp, username);
 
   // 5.1 Log success (non-blocking - don't await before redirect)
   logger.info("[auth] User logged in", { userId: user.id, role: user.role });
@@ -208,7 +246,8 @@ export async function changePasswordAction(
 
   try {
     // 4. Hash new password and update user
-    const newPasswordHash = await hash(newPassword, 10);
+    // SECURITY (A-6): Use current bcrypt cost factor
+    const newPasswordHash = await hash(newPassword, BCRYPT_COST);
 
     await db
       .update(users)

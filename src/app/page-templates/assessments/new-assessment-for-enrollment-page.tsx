@@ -18,7 +18,7 @@ export async function InternalNewAssessmentForEnrollmentPage(props: {
 
   const ctx = await loadNewAssessmentPageContext(enrollmentId);
   if (!ctx) notFound();
-  if (ctx.status === "not_pending") {
+  if (ctx.status === "not_pending" || ctx.status === "school_year_not_active") {
     redirect(assessmentsBasePath);
   }
 
