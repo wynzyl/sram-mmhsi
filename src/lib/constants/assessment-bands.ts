@@ -32,7 +32,7 @@ export type FeeAssessmentBand = (typeof FEE_ASSESSMENT_BANDS)[number];
 
 export const FEE_ASSESSMENT_BAND_LABELS: Record<FeeAssessmentBand, string> = {
   casa: "Casa (Junior / Senior)",
-  advance_casa: "Advance Casa",
+  advance_casa: "Advance Casa (Advance Casa)",
   lower_elementary: "Lower Elementary (Grades 1–3)",
   higher_elementary: "Higher Elementary (Grades 4–6)",
   junior_high: "Junior High School (Grades 7–10)",
