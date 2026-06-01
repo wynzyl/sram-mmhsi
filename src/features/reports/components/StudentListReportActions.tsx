@@ -2,34 +2,24 @@
 
 import { Button } from "@/components/ui/button";
 
-interface PaymentCollectionReportActionsProps {
-  startDate: string;
-  endDate: string;
-  schoolYearId?: string;
-  paymentMethod?: string;
-  paymentStatus?: string;
+interface StudentListReportActionsProps {
+  schoolYearId: string;
+  gradeLevelId?: string;
 }
 
-export function PaymentCollectionReportActions({
-  startDate,
-  endDate,
+export function StudentListReportActions({
   schoolYearId,
-  paymentMethod,
-  paymentStatus,
-}: PaymentCollectionReportActionsProps) {
+  gradeLevelId,
+}: StudentListReportActionsProps) {
   const download = (format: "pdf" | "xlsx") => {
     const params = new URLSearchParams();
     params.set("format", format);
-    if (startDate) params.set("startDate", startDate);
-    if (endDate) params.set("endDate", endDate);
     if (schoolYearId) params.set("schoolYearId", schoolYearId);
-    if (paymentMethod) params.set("paymentMethod", paymentMethod);
-    if (paymentStatus) params.set("paymentStatus", paymentStatus);
+    if (gradeLevelId) params.set("gradeLevelId", gradeLevelId);
 
-    // Trigger a download without navigating away (server sets the filename
-    // via Content-Disposition, so no `download` attribute is needed).
+    // Trigger download without navigating (filename comes from the server).
     const a = document.createElement("a");
-    a.href = `/staff/reports/payment-collection/export?${params.toString()}`;
+    a.href = `/staff/reports/student-list/export?${params.toString()}`;
     document.body.appendChild(a);
     a.click();
     a.remove();

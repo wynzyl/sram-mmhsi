@@ -27,20 +27,20 @@ export function PaymentCollectionReportPreview({
   return (
     <div
       id="report-preview"
-      className="bg-white text-black rounded-lg shadow-lg border border-border overflow-hidden print:shadow-none print:border-none print:rounded-none"
+      className="bg-card text-foreground rounded-lg shadow-lg border border-border overflow-hidden print:shadow-none print:border-none print:rounded-none"
     >
       {/* Report Header */}
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-8 py-6 border-b-2 border-primary/20 print:bg-white print:border-b print:border-black">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               Payment Collection Report
             </h1>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               SRAMS - School Registration and Accounts Monitoring System
             </p>
           </div>
-          <div className="text-right text-sm text-gray-600">
+          <div className="text-right text-sm text-muted-foreground">
             <p>
               <span className="font-medium">Period:</span>{" "}
               {formatDate(summary.periodStart, {
@@ -70,19 +70,19 @@ export function PaymentCollectionReportPreview({
       </div>
 
       {/* Summary Section */}
-      <div className="px-8 py-6 bg-gray-50 border-b border-gray-200 print:bg-white">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Summary</h2>
+      <div className="px-8 py-6 bg-muted border-b border-border print:bg-white">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Summary</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500 font-medium">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
               Total Payments
             </p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">
+            <p className="text-2xl font-bold text-foreground mt-1">
               {summary.totalCount.toLocaleString()}
             </p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500 font-medium">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
               Total Amount
             </p>
             <p className="text-2xl font-bold text-primary mt-1">
@@ -92,38 +92,38 @@ export function PaymentCollectionReportPreview({
         </div>
 
         {/* Method Breakdown */}
-        <div className="mt-4 pt-3 border-t border-gray-200">
-          <p className="text-xs uppercase tracking-wide text-gray-500 font-medium mb-2">
+        <div className="mt-4 pt-3 border-t border-border">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">
             Breakdown by Payment Method
           </p>
           <div className="grid grid-cols-5 gap-2">
-            <div className="bg-white px-3 py-2 rounded border border-gray-200 print:border-gray-300">
-              <p className="text-[10px] text-gray-500">Cash</p>
-              <p className="text-sm font-semibold text-gray-900">
+            <div className="bg-background px-3 py-2 rounded border border-border print:border-gray-300">
+              <p className="text-[10px] text-muted-foreground">Cash</p>
+              <p className="text-sm font-semibold text-foreground">
                 {formatAmount(summary.byMethod.cash)}
               </p>
             </div>
-            <div className="bg-white px-3 py-2 rounded border border-gray-200 print:border-gray-300">
-              <p className="text-[10px] text-gray-500">GCash</p>
-              <p className="text-sm font-semibold text-gray-900">
+            <div className="bg-background px-3 py-2 rounded border border-border print:border-gray-300">
+              <p className="text-[10px] text-muted-foreground">GCash</p>
+              <p className="text-sm font-semibold text-foreground">
                 {formatAmount(summary.byMethod.gcash)}
               </p>
             </div>
-            <div className="bg-white px-3 py-2 rounded border border-gray-200 print:border-gray-300">
-              <p className="text-[10px] text-gray-500">Bank Transfer</p>
-              <p className="text-sm font-semibold text-gray-900">
+            <div className="bg-background px-3 py-2 rounded border border-border print:border-gray-300">
+              <p className="text-[10px] text-muted-foreground">Bank Transfer</p>
+              <p className="text-sm font-semibold text-foreground">
                 {formatAmount(summary.byMethod.bank_transfer)}
               </p>
             </div>
-            <div className="bg-white px-3 py-2 rounded border border-gray-200 print:border-gray-300">
-              <p className="text-[10px] text-gray-500">Check</p>
-              <p className="text-sm font-semibold text-gray-900">
+            <div className="bg-background px-3 py-2 rounded border border-border print:border-gray-300">
+              <p className="text-[10px] text-muted-foreground">Check</p>
+              <p className="text-sm font-semibold text-foreground">
                 {formatAmount(summary.byMethod.check)}
               </p>
             </div>
-            <div className="bg-white px-3 py-2 rounded border border-gray-200 print:border-gray-300">
-              <p className="text-[10px] text-gray-500">Other</p>
-              <p className="text-sm font-semibold text-gray-900">
+            <div className="bg-background px-3 py-2 rounded border border-border print:border-gray-300">
+              <p className="text-[10px] text-muted-foreground">Other</p>
+              <p className="text-sm font-semibold text-foreground">
                 {formatAmount(summary.byMethod.other)}
               </p>
             </div>
@@ -133,41 +133,41 @@ export function PaymentCollectionReportPreview({
 
       {/* Table Section */}
       <div className="px-8 py-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <h2 className="text-lg font-semibold text-foreground mb-4">
           Payment Details ({rows.length.toLocaleString()} records)
         </h2>
 
         {rows.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground">
             No payments found for the selected period.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-gray-100 print:bg-gray-200">
-                  <th className="px-3 py-2 text-left font-semibold text-gray-700 border-b border-gray-300">
+                <tr className="bg-muted print:bg-gray-200">
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                     OR #
                   </th>
-                  <th className="px-3 py-2 text-left font-semibold text-gray-700 border-b border-gray-300">
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                     Date
                   </th>
-                  <th className="px-3 py-2 text-left font-semibold text-gray-700 border-b border-gray-300">
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                     Student
                   </th>
-                  <th className="px-3 py-2 text-left font-semibold text-gray-700 border-b border-gray-300">
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                     Grade
                   </th>
-                  <th className="px-3 py-2 text-right font-semibold text-gray-700 border-b border-gray-300">
+                  <th className="px-3 py-2 text-right font-semibold text-muted-foreground border-b border-border">
                     Amount
                   </th>
-                  <th className="px-3 py-2 text-left font-semibold text-gray-700 border-b border-gray-300">
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                     Method
                   </th>
-                  <th className="px-3 py-2 text-left font-semibold text-gray-700 border-b border-gray-300">
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                     Reference #
                   </th>
-                  <th className="px-3 py-2 text-left font-semibold text-gray-700 border-b border-gray-300">
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                     Processed By
                   </th>
                 </tr>
@@ -177,55 +177,55 @@ export function PaymentCollectionReportPreview({
                   <tr
                     key={row.id}
                     className={
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50 print:bg-white"
+                      index % 2 === 0 ? "bg-card" : "bg-muted/50 print:bg-white"
                     }
                   >
-                    <td className="px-3 py-2 border-b border-gray-200 font-mono text-xs">
+                    <td className="px-3 py-2 border-b border-border font-mono text-xs">
                       {row.orNumber || "—"}
                     </td>
-                    <td className="px-3 py-2 border-b border-gray-200 whitespace-nowrap">
+                    <td className="px-3 py-2 border-b border-border whitespace-nowrap">
                       {formatDate(row.collectionDate, {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
                       })}
                     </td>
-                    <td className="px-3 py-2 border-b border-gray-200">
+                    <td className="px-3 py-2 border-b border-border">
                       <span className="font-medium">{row.studentName}</span>
                     </td>
-                    <td className="px-3 py-2 border-b border-gray-200">
+                    <td className="px-3 py-2 border-b border-border">
                       {row.gradeLevel}
                     </td>
-                    <td className="px-3 py-2 border-b border-gray-200 text-right font-medium">
+                    <td className="px-3 py-2 border-b border-border text-right font-medium">
                       {formatAmount(Number(row.amount))}
                     </td>
-                    <td className="px-3 py-2 border-b border-gray-200">
+                    <td className="px-3 py-2 border-b border-border">
                       {PAYMENT_METHOD_LABELS[row.paymentMethod] ||
                         row.paymentMethod}
                     </td>
-                    <td className="px-3 py-2 border-b border-gray-200 font-mono text-xs">
+                    <td className="px-3 py-2 border-b border-border font-mono text-xs">
                       {row.referenceNumber || "—"}
                     </td>
-                    <td className="px-3 py-2 border-b border-gray-200">
+                    <td className="px-3 py-2 border-b border-border">
                       {row.processedBy}
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-gray-100 font-semibold print:bg-gray-200">
+                <tr className="bg-muted font-semibold print:bg-gray-200">
                   <td
                     colSpan={4}
-                    className="px-3 py-2 border-t-2 border-gray-300 text-right"
+                    className="px-3 py-2 border-t-2 border-border text-right"
                   >
                     Total:
                   </td>
-                  <td className="px-3 py-2 border-t-2 border-gray-300 text-right text-primary">
+                  <td className="px-3 py-2 border-t-2 border-border text-right text-primary">
                     {formatAmount(summary.totalAmount)}
                   </td>
                   <td
                     colSpan={3}
-                    className="px-3 py-2 border-t-2 border-gray-300"
+                    className="px-3 py-2 border-t-2 border-border"
                   />
                 </tr>
               </tfoot>
@@ -235,7 +235,7 @@ export function PaymentCollectionReportPreview({
       </div>
 
       {/* Footer */}
-      <div className="px-8 py-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 print:bg-white">
+      <div className="px-8 py-4 bg-muted border-t border-border text-xs text-muted-foreground print:bg-white">
         <div className="flex justify-between">
           <span>SRAMS Payment Collection Report</span>
           <span>Page 1 of 1</span>

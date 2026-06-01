@@ -37,6 +37,7 @@
     "dotenv": "^17.4.2",
     "dotenv-expand": "^13.0.0",
     "drizzle-orm": "^0.45.2",
+    "exceljs": "^4.4.0",
     "jose": "^6.2.3",
     "lucide-react": "^1.14.0",
     "next": "^16.2.4",

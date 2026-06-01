@@ -8,6 +8,7 @@ import {
 } from "@/features/reports";
 import { BfxReportFilters } from "@/features/reports/components/BfxReportFilters";
 import { BfxReportTable } from "@/features/reports/components/BfxReportTable";
+import { BfxReportActions } from "@/features/reports/components/BfxReportActions";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
 
@@ -67,13 +68,20 @@ export default async function BalanceForwardsReportPage({
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">
-          Balance Forward Transfers
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          BFX receipts showing balance transfers from prior school years
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">
+            Balance Forward Transfers
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            BFX receipts showing balance transfers from prior school years
+          </p>
+        </div>
+        <BfxReportActions
+          startDate={params.startDate}
+          endDate={params.endDate}
+          schoolYearId={params.schoolYearId}
+        />
       </div>
 
       {/* Filters */}

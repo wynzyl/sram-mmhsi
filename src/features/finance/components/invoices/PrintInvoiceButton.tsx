@@ -6,7 +6,7 @@ interface PrintInvoiceButtonProps {
 
 export default function PrintInvoiceButton({ invoiceId }: PrintInvoiceButtonProps) {
   const handlePrint = () => {
-    window.open(`/staff/finance/invoices/${invoiceId}/print`, "_blank");
+    window.open(`/staff/finance/invoices/${invoiceId}/export?format=pdf`, "_blank");
   };
 
   return (

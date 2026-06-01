@@ -631,6 +631,50 @@ Always use `CurrencyDisplay` component or format manually with `en-PH` locale:
 new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(1500);
 ```
 
+### Report & Document Generation (Standard — Non-Negotiable)
+
+All reports and printable documents follow **one two-track standard** built on the shared module
+`src/features/reports/shared/`. Do **not** invent a new per-report mechanism, and do **not** use
+browser `window.print()` for documents.
+
+**Track 1 — Official documents → `@react-pdf/renderer`.** Presentation-grade artifacts that must look
+identical for everyone and may be emailed/attached: invoices, receipts, official letters, and the
+"official" PDF of any report. Server-rendered via `renderToBuffer` in a route handler.
+
+**Track 2 — Analytical reports → XLSX via `exceljs`.** Tabular finance data officers pivot/total
+themselves: Payment Collection, Balance Forward, ledgers. Usually paired with a Track-1 PDF.
+
+**Route convention:** every export is a route handler at `…/<name>/export?format=pdf|xlsx&<filters>`
+that (1) checks `getCurrentUser()` + `hasPermission(role, "reports:view")` (or `invoices:read` for
+invoice docs), (2) returns via `pdfResponse` / `xlsxResponse`, and (3) calls `logReportExport(...)`
+(`reports:export` audit entry). See `src/app/staff/reports/payment-collection/export/route.ts` as the
+reference implementation.
+
+**Shared module (`src/features/reports/shared/`) — always reuse, never re-roll:**
+
+- `report-format.ts` — `pesoText` (real `₱`), `pesoNumber` + `PESO_NUMBER_FORMAT` (Excel), `reportDate`
+  / `reportDateTime` / `reportPeriodLabel`. Wraps `src/lib/utils/currency.ts` + `date.ts`
+  (Asia/Manila). **Never** hand-roll `Intl` or print the literal `"PHP "` in a report.
+- `pdf-fonts.ts` — `registerReportFonts()` embeds Roboto (`public/fonts/Roboto-*.ttf`) so `₱` (U+20B1)
+  renders; the PDF built-in Helvetica cannot. Call it before rendering (the primitives do this).
+- `pdf-primitives.tsx` — `TabularReportDocument<T>` (generic paginated report: header + summary +
+  repeating table header + page-numbered footer), `Letterhead`, `ReportColumn<T>`. Build a new tabular
+  report by supplying a `columns` config — do not duplicate `StyleSheet`/pagination.
+- `xlsx-report.ts` — `buildReportWorkbook({ columns, rows, summaryItems, … })` → `Buffer`.
+- `report-response.ts` — `pdfResponse` (supports `{ inline: true }` for print/preview), `xlsxResponse`,
+  `parseReportFormat`.
+- `report-request.ts` — `parseReportDateRange`, `reportFilename`.
+- `audit-report.ts` — `logReportExport({ actor, report, format, rowCount, filters })`.
+
+**Per-report wiring:** put the shared PDF document + XLSX builder for a report in a single
+`*-report.export.tsx` so the two formats never drift (e.g. `payment-collection-report.export.tsx`,
+`balance-forward-report.export.tsx`; invoices: `src/features/finance/invoices/invoice-document.tsx`).
+Client "Export PDF / Export Excel" buttons download via a temporary `<a>` (filename comes from the
+server's `Content-Disposition`).
+
+**Email stays HTML:** `generateAssessmentLetterHtml` is for the Gmail invoice path only — email clients
+need HTML. Only the print/download path uses react-pdf.
+
 ### Testing
 
 **Unit Tests:** Use Vitest for utility functions and schema validation.

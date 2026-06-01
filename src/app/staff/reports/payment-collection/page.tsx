@@ -157,9 +157,10 @@ export default async function PaymentCollectionReportPage({
         </div>
       )}
 
-      {/* Print note */}
+      {/* Export note */}
       <p className="text-xs text-muted-foreground text-center no-print">
-        Use the Print button to open a print-optimized version.
+        Use Export PDF for an official printable copy, or Export Excel for a
+        spreadsheet you can sort and total.
       </p>
     </div>
   );

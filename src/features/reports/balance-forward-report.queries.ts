@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { payments, students, assessments, schoolYears } from "@/lib/db/schema";
+import { payments, students, assessments, schoolYears, users } from "@/lib/db/schema";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 
 export type BfxTransferRow = {
@@ -115,6 +115,70 @@ export async function getBfxTransfersReport(
     rows,
     totalCount: countResult?.count ?? 0,
   };
+}
+
+/**
+ * Get all BFX transfers (no pagination) for export.
+ * Capped at 5000 rows to prevent memory issues, mirroring the payment report.
+ */
+export async function getAllBfxData(params: {
+  startDate: Date;
+  endDate: Date;
+  schoolYearId?: string;
+}): Promise<BfxTransferRow[]> {
+  const MAX_EXPORT_ROWS = 5000;
+  const { startDate, endDate, schoolYearId } = params;
+
+  const conditions = [
+    eq(payments.kind, "balance_forward"),
+    eq(payments.status, "balance_forward"),
+    gte(payments.paymentDate, startDate),
+    lte(payments.paymentDate, endDate),
+  ];
+
+  if (schoolYearId) {
+    conditions.push(eq(assessments.schoolYearId, schoolYearId));
+  }
+
+  const processedByUser = users;
+
+  const results = await db
+    .select({
+      id: payments.id,
+      bfxNumber: payments.referenceNumber,
+      transferDate: payments.paymentDate,
+      studentId: payments.studentId,
+      studentFirstName: students.firstName,
+      studentLastName: students.lastName,
+      studentRef: students.referenceNumber,
+      sourceSchoolYearId: assessments.schoolYearId,
+      sourceSchoolYearLabel: schoolYears.label,
+      amount: payments.amount,
+      remarks: payments.remarks,
+      createdBy: processedByUser.username,
+    })
+    .from(payments)
+    .innerJoin(students, eq(payments.studentId, students.id))
+    .innerJoin(assessments, eq(payments.assessmentId, assessments.id))
+    .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
+    .leftJoin(processedByUser, eq(payments.createdBy, processedByUser.id))
+    .where(and(...conditions))
+    .orderBy(desc(payments.paymentDate))
+    .limit(MAX_EXPORT_ROWS);
+
+  return results.map((row) => ({
+    id: row.id,
+    bfxNumber: row.bfxNumber ?? "",
+    transferDate: row.transferDate,
+    studentId: row.studentId,
+    studentName: `${row.studentLastName}, ${row.studentFirstName}`,
+    studentRef: row.studentRef,
+    sourceSchoolYearId: row.sourceSchoolYearId,
+    sourceSchoolYearLabel: row.sourceSchoolYearLabel,
+    amount: row.amount,
+    remarks: row.remarks,
+    createdBy: row.createdBy ?? "System",
+  }));
 }
 
 /**

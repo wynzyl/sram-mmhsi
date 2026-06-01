@@ -1,6 +1,7 @@
 // Balance Forward Report
 export {
   getBfxTransfersReport,
+  getAllBfxData,
   getBfxSummary,
   getSchoolYearsForBfxReport,
   type BfxTransferRow,
@@ -14,6 +15,15 @@ export {
   getAllPaymentCollectionData,
   getSchoolYearsForPaymentReport,
 } from "./payment-collection-report.queries";
+
+// Student List Report - Queries (server-only)
+export {
+  getStudentListReport,
+  getAllStudentListData,
+  type StudentListRow,
+  type StudentListParams,
+  type StudentListResult,
+} from "./student-list-report.queries";
 
 // Payment Collection Report - Types and Constants (client-safe)
 export {
