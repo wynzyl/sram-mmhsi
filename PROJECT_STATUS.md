@@ -1,14 +1,26 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-05-28
+> Last updated: 2026-06-01
 
 ## Current phase
 
 **Core school operations (Phases 1–8)** are implemented in code: auth, student records, registrations listing + creation through student onboarding, enrollments, assessments, fees, cashier/OR posting, invoices, and teacher grade encoding.
 
-**Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, executive/reporting dashboards, formal OR **receipt** print view, **E2E** tests, and wiring **rate limit** + mandatory **password-change** gate.
+**Reporting (Phase 10) is now underway** — a reusable two-track report/document pipeline (PDF via `@react-pdf/renderer` + XLSX via `exceljs`) is live with four reports: Payment Collection, Balance Forward, Invoice, and a new Student List masterlist.
 
-## Latest updates (2026-05-28)
+**Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, executive **dashboards** with real data (metrics still placeholders), formal OR **receipt** print view, **E2E** tests, and wiring **rate limit** + mandatory **password-change** gate.
+
+## Latest updates (2026-06-01)
+
+- [x] **Report & Document Generation standard** — established a two-track pipeline with a shared foundation in `src/features/reports/shared/` (`TabularReportDocument` PDF primitive, `buildReportWorkbook` XLSX builder, `pdfResponse`/`xlsxResponse`, `parseReportDateRange`, and `logReportExport`). **Track 1 = official documents → `@react-pdf/renderer`**; **Track 2 = analytical reports → XLSX (`exceljs`)**. Every report is a route handler at `…/<name>/export?format=pdf|xlsx`, RBAC-gated (`reports:view`) and audited (`reports:export`). Documented in CLAUDE.md. New dep: `exceljs`; Roboto TTF embedded in `public/fonts/` so the **₱** glyph renders (replacing the old `"PHP "` workaround).
+- [x] **Payment Collection report migrated + de-duplicated** — collapsed three redundant routes (`/pdf`, `/pdf-data`, `/print`) into one `/export?format=pdf|xlsx`; rebuilt the PDF on the shared primitive and added an Excel export.
+- [x] **Invoice moved to real PDF** — replaced the browser `window.print()` HTML route with a server-rendered `@react-pdf/renderer` document (`src/features/finance/invoices/invoice-document.tsx`) at `…/invoices/[id]/export`. The HTML template is retained for the Gmail email path only.
+- [x] **Balance Forward (BFX) exports added** — previously screen-only; now has PDF + Excel export (`getAllBfxData` + `balance-forwards/export` route + on-page buttons).
+- [x] **NEW: Student List (masterlist) report** — `/staff/reports/student-list`: enrolled students for the selected year (defaults to active), filterable by grade level, with on-screen preview + PDF/Excel export. Columns: Student Name (Lastname, Firstname Middlename), Grade, Address, primary Guardian Name, Contact No., Email. Primary guardian resolved via a `DISTINCT ON` subquery (no row duplication).
+- [x] **Shared PDF robustness fixes** (found via sample-render dogfood) — added inter-column spacing so right-aligned amounts don't collide with the next column, and `wrap={false}` on table rows so a row never splits across a page boundary into an orphaned fragment.
+- [x] **Ops note** — the app runs in Docker with `node_modules` as a persistent named volume; adding a dependency requires reinstalling inside the container (`up --build` alone won't refresh the volume). Captured for future sessions.
+
+## Previous updates (2026-05-28)
 
 - [x] **TanStack Form adopted for the registration wizard** — `src/features/registrations/components/StudentRegistrationForm.tsx` migrated in place from the native `useActionState` pattern to TanStack Form (`@tanstack/react-form`). Adds live per-field validation (reusing the existing Zod schemas via a `zodCheck` adapter) and a typed guardian field array. Server contract is unchanged — `createStudentAction` and its FormData keys are identical, so server validation + audit logging stay authoritative.
 - [x] **Two bugs fixed during migration** (found via browser dogfood): (1) the guardian *single-primary* toggle now works — "Set as primary" moves the badge and removing the primary falls back to the first guardian (implemented via whole-array `setFieldValue` so the array store updates reactively); (2) submit now redirects + toasts correctly — the `useActionState` dispatch is wrapped in `startTransition` (previously called outside a transition, so `state` never updated).
@@ -121,6 +133,14 @@ if (!schoolYearId) {
 - [x] **Staff route coverage** — staff aliases/pages exist for key operational flows (`/staff/students`, `/staff/enrollments`, `/staff/payments`, `/staff/registrations`, `/staff/finance`, `/staff/grades`)
 - [x] **Portal shell** — authenticated `/portal/dashboard` page with role-aware links
 
+### Phase 10 — Reporting & exports (foundation)
+
+- [x] **Two-track report pipeline** — shared foundation `src/features/reports/shared/*` (PDF primitives + fonts, `exceljs` workbook builder, response/request/audit helpers); `…/export?format=pdf|xlsx` route convention; `reports:export` audit
+- [x] **Payment Collection report** — PDF + Excel (`src/features/reports/payment-collection-report.export.tsx`, `staff/reports/payment-collection/export`)
+- [x] **Balance Forward (BFX) report** — PDF + Excel (`…/balance-forward-report.export.tsx`, `staff/reports/balance-forwards/export`)
+- [x] **Student List masterlist** — enrolled students + primary guardian, grade filter, PDF + Excel (`…/student-list-report.*`, `staff/reports/student-list`)
+- [x] **Invoice document** — server-rendered PDF (`src/features/finance/invoices/invoice-document.tsx`, `…/invoices/[id]/export`)
+
 ### Phase 11 — Tests (initial)
 
 - [x] Vitest unit tests — `src/lib/validators/assessment.test.ts`, `src/lib/utils/enrollment-grade.test.ts`, `src/lib/utils/enrollment-payment.test.ts`
@@ -136,14 +156,14 @@ if (!schoolYearId) {
 - [ ] **First-login password change** — enforce redirect when `forcePasswordChange` until password updated
 - [ ] **OR receipt** — formal printable OR layout (beyond success message / browser print hooks)
 - [ ] **Portal expansion** — `/portal/dashboard` exists, but `/portal/assessments`, `/portal/payments`, and `/portal/grades` pages are not implemented yet
-- [ ] **Dashboards & exports** — Phase 10 metrics are placeholders; no PDF/Excel export pipeline
+- [ ] **Dashboards** — Phase 10 dashboard metrics are still placeholders (the PDF/Excel **export pipeline now exists**; AR aging, enrollment summary, and grade summary reports are still pending)
 - [ ] **E2E** — add Playwright config + smoke tests (login, enrollment, payment, grades)
 
 ---
 
 ## Not started (see roadmap)
 
-- Phase 10 — Reporting & management dashboard (real data)
+- Phase 10 — Management **dashboard** with real data + AR aging / enrollment-summary / grade-summary reports (the report **export pipeline** is done — see above)
 - Phase 12 — Production deployment hardening
 
 ---

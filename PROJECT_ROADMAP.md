@@ -2,9 +2,15 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-05-28
+> Last sync: 2026-06-01
 
-### Current update highlights (2026-05-28)
+### Current update highlights (2026-06-01)
+- **Report & Document Generation standard (Phase 10 kickoff)** — reusable two-track pipeline: **PDF via `@react-pdf/renderer`** for official documents, **XLSX via `exceljs`** for analytical reports. Shared foundation in `src/features/reports/shared/` (`TabularReportDocument`, `buildReportWorkbook`, response/request/audit helpers); one route convention `…/<name>/export?format=pdf|xlsx`, RBAC `reports:view`, audited `reports:export`. Documented in CLAUDE.md. Roboto embedded so **₱** renders.
+- **Four reports live** — Payment Collection (migrated; collapsed 3 legacy routes into 1, added Excel), Balance Forward (PDF + Excel added; was screen-only), Invoice (now a real server-rendered PDF instead of `window.print()`), and a **new Student List masterlist** (`/staff/reports/student-list`: enrolled students + primary guardian, grade filter, default active year, PDF + Excel).
+- **Shared PDF fixes** — column spacing for right-aligned amounts; `wrap={false}` so rows never split across page boundaries.
+- **Doc correction** — Phase 8 (Grade Encoding) status fixed below: it is implemented, not "not started".
+
+### Previous highlights (2026-05-28)
 - **TanStack Form — first in-place migration** — `StudentRegistrationForm` (4-step wizard + guardian field array) migrated from native `useActionState` to TanStack Form (`@tanstack/react-form`). Live per-field validation reuses the existing Zod schemas via a `zodCheck` adapter; server action + FormData contract unchanged.
 - **Migration bug fixes** — guardian single-primary toggle now works (whole-array `setFieldValue`), and submit redirect/toast fixed by wrapping the `useActionState` dispatch in `startTransition`. Both found via browser dogfood.
 - **Forms-stack cleanup** — phantom `react-hook-form` / `@hookform/resolvers` removed; prototype + `?form=tanstack` toggle retired. Per-form assessment and migration order documented in `docs/TANSTACK-MIGRATION/TANSTACK-FORM-CANDIDATES.md`.
@@ -140,13 +146,13 @@
 ---
 
 ## Phase 8 — Grade Encoding
-**Status:  NOT STARTED**
+**Status: ✅ Complete**
 
-- [ ] Teacher assignment management (Admin)
-- [ ] Grade entry per assigned class/subject/period (Teacher) — `/staff/grades`
-- [ ] Grade submission and lock workflow
-- [ ] Grade period locking (Admin)
-- [ ] Audit events: grade saved/submitted/locked
+- [x] Teacher assignment management (Admin) — `actions/academics.ts`, assignment pages
+- [x] Grade entry per assigned class/subject/period (Teacher) — `/staff/grades`, `components/academics/GradeEncodingTable.tsx`, `actions/teacher.ts`
+- [x] Grade submission and lock workflow (draft → submitted → locked)
+- [x] Grade period locking (Admin-only unlock)
+- [x] Audit events: grade saved/submitted/locked
 
 ---
 
@@ -163,13 +169,17 @@
 ---
 
 ## Phase 10 — Reporting & Management Dashboard
-**Status: ⏳ Not Started**
+**Status: 🟡 In progress (report/export pipeline done; dashboards pending)**
 
-- [ ] Admin/Finance dashboard (collection summary, AR aging) — admin dashboard shell exists with placeholder metrics
+- [x] **Report/export foundation** — two-track pipeline (`@react-pdf/renderer` + `exceljs`), shared `src/features/reports/shared/*`, `…/export?format=pdf|xlsx` route convention
+- [x] **Export to PDF/Excel (access-controlled, auditable)** — `reports:view` gate + `reports:export` audit on every export
+- [x] **Payment collection report** — PDF + Excel
+- [x] **Balance Forward (BFX) report** — PDF + Excel
+- [x] **Student List masterlist report** — enrolled students + primary guardian, grade filter, PDF + Excel
+- [x] **Invoice document** — server-rendered PDF (replaces browser print)
+- [ ] Admin/Finance **dashboard** (collection summary, AR aging) — admin dashboard shell exists with placeholder metrics
 - [ ] Enrollment summary report (per school year)
 - [ ] Grade summary report (per section/school year)
-- [ ] Payment collection report
-- [ ] Export to PDF/Excel (access-controlled, auditable)
 
 ---
 
