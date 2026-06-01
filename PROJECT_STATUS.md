@@ -156,14 +156,14 @@ if (!schoolYearId) {
 - [ ] **First-login password change** — enforce redirect when `forcePasswordChange` until password updated
 - [ ] **OR receipt** — formal printable OR layout (beyond success message / browser print hooks)
 - [ ] **Portal expansion** — `/portal/dashboard` exists, but `/portal/assessments`, `/portal/payments`, and `/portal/grades` pages are not implemented yet
-- [ ] **Dashboards** — Phase 10 dashboard metrics are still placeholders (the PDF/Excel **export pipeline now exists**; AR aging, enrollment summary, and grade summary reports are still pending)
+- [x] **Dashboards** — Admin dashboard KPIs are live, and a reusable collection-summary + AR-aging insights section now renders on `/admin/dashboard` and `/staff/finance` (the latter promoted from a link hub to a real dashboard). Remaining Phase 10 items: enrollment summary and grade summary reports
 - [ ] **E2E** — add Playwright config + smoke tests (login, enrollment, payment, grades)
 
 ---
 
 ## Not started (see roadmap)
 
-- Phase 10 — Management **dashboard** with real data + AR aging / enrollment-summary / grade-summary reports (the report **export pipeline** is done — see above)
+- Phase 10 — enrollment-summary / grade-summary reports (the management **dashboard** with real data + AR aging and the report **export pipeline** are done — see above)
 - Phase 12 — Production deployment hardening
 
 ---

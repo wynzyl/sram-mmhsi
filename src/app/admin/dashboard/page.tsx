@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { getAdminDashboardMetrics } from "@/lib/queries/admin-dashboard";
 import { formatCurrency } from "@/lib/utils/currency";
 import { StatCard } from "@/components/ui/stat-card";
-import { SkeletonStatCard } from "@/components/ui/skeleton";
+import { FinanceInsightsSection } from "@/components/dashboard/FinanceInsightsSection";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -108,6 +108,17 @@ export default async function AdminDashboardPage() {
           iconType="overdue"
         />
       </div>
+
+      <Suspense
+        fallback={
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="h-64 rounded-xl border border-border bg-card animate-pulse" />
+            <div className="h-64 rounded-xl border border-border bg-card animate-pulse" />
+          </div>
+        }
+      >
+        <FinanceInsightsSection schoolYearId={metrics.activeSchoolYear.id} />
+      </Suspense>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <section className="rounded-xl border border-border bg-card p-5">

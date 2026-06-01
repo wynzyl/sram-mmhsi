@@ -520,3 +520,36 @@
 {"ts":"2026-06-01T12:54:34.086Z","cmd":"goto","args":"file:///C:/Users/wynzy/Downloads/sram-mmhsi/sample-payment-collection.pdf","origin":"about:blank","durationMs":28,"status":"error","hasCookies":false,"mode":"launched","error":"page.goto: Download is starting\nCall log:\n\u001b[2m  - navigating to \"file:///C:/Users/wynzy/Downloads/sram-mmhsi/sample-payment-collection.pdf\", waiting until \"domcontentloaded\"\u001b[22m\n"}
 {"ts":"2026-06-01T12:54:34.241Z","cmd":"wait","args":"--load","origin":"about:blank","durationMs":3,"status":"ok","hasCookies":false,"mode":"launched"}
 {"ts":"2026-06-01T12:54:34.470Z","cmd":"screenshot","args":"C:/Users/wynzy/AppData/Local/Temp/pc-report.png","origin":"about:blank","durationMs":86,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:29:47.292Z","cmd":"goto","args":"http://localhost:3000/login","origin":"http://localhost:3000/login","durationMs":456,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:29:47.485Z","cmd":"snapshot","args":"-i","origin":"http://localhost:3000/login","durationMs":54,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:29:53.741Z","cmd":"fill","args":"@e1 admin","origin":"http://localhost:3000/login","durationMs":0,"status":"error","hasCookies":false,"mode":"launched","error":"Ref @e1 not found. Run 'snapshot' to get fresh refs."}
+{"ts":"2026-06-01T14:29:53.861Z","cmd":"fill","args":"@e3 Admin@2026!","origin":"http://localhost:3000/login","durationMs":0,"status":"error","hasCookies":false,"mode":"launched","error":"Ref @e3 not found. Run 'snapshot' to get fresh refs."}
+{"ts":"2026-06-01T14:29:53.980Z","cmd":"click","args":"@e5","origin":"http://localhost:3000/login","durationMs":0,"status":"error","hasCookies":false,"mode":"launched","error":"Ref @e5 not found. Run 'snapshot' to get fresh refs."}
+{"ts":"2026-06-01T14:29:54.102Z","cmd":"wait","args":"--networkidle","origin":"http://localhost:3000/login","durationMs":3,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:29:54.219Z","cmd":"url","args":"","origin":"http://localhost:3000/login","durationMs":0,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:02.175Z","cmd":"forms","args":"","origin":"http://localhost:3000/login","durationMs":7,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:07.468Z","cmd":"fill","args":"#username admin","origin":"http://localhost:3000/login","durationMs":35,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:07.604Z","cmd":"fill","args":"#password Admin@2026!","origin":"http://localhost:3000/login","durationMs":14,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:07.809Z","cmd":"click","args":"button[type=submit]","origin":"http://localhost:3000/login","durationMs":86,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:07.932Z","cmd":"wait","args":"--networkidle","origin":"http://localhost:3000/login","durationMs":1,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:08.049Z","cmd":"url","args":"","origin":"http://localhost:3000/login","durationMs":0,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:16.548Z","cmd":"text","args":"","origin":"http://localhost:3000/login","durationMs":4,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:16.684Z","cmd":"console","args":"--errors","origin":"http://localhost:3000/login","durationMs":1,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:26.964Z","cmd":"js","args":"document.querySelector('#username').value=''; document.querySelector('#password').value=''","origin":"http://localhost:3000/login","durationMs":2,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:27.139Z","cmd":"click","args":"#username","origin":"http://localhost:3000/login","durationMs":57,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:27.278Z","cmd":"type","args":"admin","origin":"http://localhost:3000/login","durationMs":18,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:27.422Z","cmd":"click","args":"#password","origin":"http://localhost:3000/login","durationMs":24,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:27.565Z","cmd":"type","args":"Admin@2026!","origin":"http://localhost:3000/login","durationMs":26,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:27.684Z","cmd":"js","args":"({u:document.querySelector('#username').value, p:document.querySelector('#password').value.length})","origin":"http://localhost:3000/login","durationMs":3,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:27.855Z","cmd":"click","args":"button[type=submit]","origin":"http://localhost:3000/login","durationMs":51,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:27.976Z","cmd":"wait","args":"--networkidle","origin":"http://localhost:3000/login","durationMs":1,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:28.098Z","cmd":"url","args":"","origin":"http://localhost:3000/login","durationMs":0,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:39.197Z","cmd":"screenshot","args":"C:/Users/wynzy/AppData/Local/Temp/login-after.png","origin":"http://localhost:3000/login","durationMs":295,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:30:39.335Z","cmd":"js","args":"Array.from(document.querySelectorAll('[role=alert],.text-destructive,.text-error,[class*=error],[data-sonner-toast]')).map(e=>e.textContent.trim()).filter(Boolean).join(' | ')","origin":"http://localhost:3000/login","durationMs":2,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:31:03.317Z","cmd":"goto","args":"http://localhost:3000/admin/dashboard","origin":"http://localhost:3000/admin/dashboard","durationMs":340,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:31:04.172Z","cmd":"wait","args":"--networkidle","origin":"http://localhost:3000/admin/dashboard","durationMs":661,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:31:04.723Z","cmd":"url","args":"","origin":"http://localhost:3000/admin/dashboard","durationMs":0,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:31:04.999Z","cmd":"cookies","args":"","origin":"http://localhost:3000/admin/dashboard","durationMs":5,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:31:13.397Z","cmd":"screenshot","args":"--viewport C:/Users/wynzy/AppData/Local/Temp/admin-dash.png","origin":"http://localhost:3000/admin/dashboard","durationMs":94,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:31:13.516Z","cmd":"js","args":"Array.from(document.querySelectorAll('h2')).map(e=>e.textContent.trim()).join(' | ')","origin":"http://localhost:3000/admin/dashboard","durationMs":2,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-06-01T14:31:13.633Z","cmd":"console","args":"--errors","origin":"http://localhost:3000/admin/dashboard","durationMs":0,"status":"ok","hasCookies":false,"mode":"launched"}

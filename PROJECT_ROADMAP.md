@@ -177,7 +177,7 @@
 - [x] **Balance Forward (BFX) report** — PDF + Excel
 - [x] **Student List masterlist report** — enrolled students + primary guardian, grade filter, PDF + Excel
 - [x] **Invoice document** — server-rendered PDF (replaces browser print)
-- [ ] Admin/Finance **dashboard** (collection summary, AR aging) — admin dashboard shell exists with placeholder metrics
+- [x] Admin/Finance **dashboard** (collection summary, AR aging) — admin dashboard KPIs are live (`getAdminDashboardMetrics`); added a reusable collection-summary + AR-aging insights section (`FinanceInsightsSection`) on both `/admin/dashboard` and the now-real `/staff/finance` dashboard, backed by `getCollectionSummary` / `getArAging` (`src/lib/queries/finance-dashboard.ts`)
 - [ ] Enrollment summary report (per school year)
 - [ ] Grade summary report (per section/school year)
 
