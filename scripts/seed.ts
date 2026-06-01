@@ -1,18 +1,22 @@
 /**
- * SRAMS Database Seed Script
- * Creates the initial super admin user.
+ * SRAMS Unified Database Seed Script
+ * Seeds all initial data: system configuration, super admin user, fee types, and discount types.
  * Run: npx tsx scripts/seed.ts
  *
  * Per Engineering spec §9 — session + user model.
  * Per Engineering spec §8.5 — passwords hashed with bcrypt.
  */
 
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { hash } from "bcryptjs";
 import { users } from "../src/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { loadEnvConfig } from "@next/env";
+
+import { seedConfig } from "./seed-config";
+import { seedFeeItemTypes } from "./seed-fee-item-types";
+import { seedDiscountTypes } from "./seed-discount-types";
 
 loadEnvConfig(process.cwd());
 
@@ -22,8 +26,9 @@ if (!connectionString) throw new Error("DATABASE_URL not set");
 const client = postgres(connectionString, { max: 1 });
 const db = drizzle(client);
 
-async function seed() {
-  console.log("🌱 Seeding SRAMS database...");
+// ─── Super Admin Seed ─────────────────────────────────────────────────────────
+async function seedAdminUser(db: PostgresJsDatabase): Promise<void> {
+  console.log("🌱 Seeding super admin user...");
 
   const SUPER_ADMIN_USERNAME = "admin";
   const SUPER_ADMIN_EMAIL = "admin@srams.local";
@@ -37,8 +42,7 @@ async function seed() {
     .limit(1);
 
   if (existing.length > 0) {
-    console.log("✅ Super admin user already exists. Skipping seed.");
-    await client.end();
+    console.log("✅ Super admin user already exists. Skipping.");
     return;
   }
 
@@ -57,12 +61,46 @@ async function seed() {
   console.log(`   Username : ${SUPER_ADMIN_USERNAME}`);
   console.log(`   Email    : ${SUPER_ADMIN_EMAIL}`);
   console.log(`   Password : ${SUPER_ADMIN_PASSWORD}`);
-  console.log("\n⚠️  IMPORTANT: Change the super admin password immediately after first login!\n");
+  console.log("\n⚠️  IMPORTANT: Change the super admin password immediately after first login!");
+}
+
+// ─── Main Seed Orchestrator ───────────────────────────────────────────────────
+async function seed() {
+  console.log("🚀 Starting unified database seed...\n");
+
+  // Step 1: System configuration (school years, grade levels)
+  console.log("━".repeat(50));
+  console.log("📚 Step 1/4: System Configuration");
+  console.log("━".repeat(50));
+  await seedConfig(db);
+
+  // Step 2: Super admin user
+  console.log("\n" + "━".repeat(50));
+  console.log("👤 Step 2/4: Super Admin User");
+  console.log("━".repeat(50));
+  await seedAdminUser(db);
+
+  // Step 3: Fee item types
+  console.log("\n" + "━".repeat(50));
+  console.log("💰 Step 3/4: Fee Item Types");
+  console.log("━".repeat(50));
+  await seedFeeItemTypes(db);
+
+  // Step 4: Discount types
+  console.log("\n" + "━".repeat(50));
+  console.log("🎫 Step 4/4: Discount Types");
+  console.log("━".repeat(50));
+  await seedDiscountTypes(db);
+
+  console.log("\n" + "═".repeat(50));
+  console.log("✅ SRAMS Database Setup Complete!");
+  console.log("═".repeat(50));
 
   await client.end();
 }
 
-seed().catch((err) => {
+seed().catch(async (err) => {
   console.error("❌ Seed failed:", err);
+  await client.end();
   process.exit(1);
 });

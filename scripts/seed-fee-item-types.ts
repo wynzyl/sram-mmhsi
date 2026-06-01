@@ -4,76 +4,69 @@
  * Run: npx tsx scripts/seed-fee-item-types.ts
  */
 
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { feeItemTypes } from "../src/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { config } from "dotenv";
 import { expand } from "dotenv-expand";
 
-expand(config({ path: ".env.local" }));
-expand(config());
+// ─── Fee Type Data ────────────────────────────────────────────────────────────
+const defaultFeeTypes = [
+  // Tuition
+  {
+    code: "TUITION",
+    name: "Tuition Fee",
+    category: "tuition" as const,
+    isDiscount: false,
+    displayOrder: 1,
+  },
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error("DATABASE_URL not set");
+  // Fees
+  {
+    code: "MISC",
+    name: "Miscellaneous Fees",
+    category: "fees" as const,
+    isDiscount: false,
+    displayOrder: 2,
+  },
+  {
+    code: "REGISTRATION",
+    name: "Registration Fee",
+    category: "fees" as const,
+    isDiscount: false,
+    displayOrder: 3,
+  },
 
-const client = postgres(connectionString, { max: 1 });
-const db = drizzle(client);
+  // Materials
+  {
+    code: "BOOKS",
+    name: "Books and Materials",
+    category: "materials" as const,
+    isDiscount: false,
+    displayOrder: 7,
+  },
 
-async function seedFeeItemTypes() {
+  // Other
+  {
+    code: "BALANCE_FORWARD",
+    name: "Balance Forward from Previous Year",
+    category: "other" as const,
+    isDiscount: false,
+    displayOrder: 0, // Show first in assessments
+  },
+  {
+    code: "OTHER",
+    name: "Other Fees",
+    category: "other" as const,
+    isDiscount: false,
+    displayOrder: 99,
+  },
+];
+
+// ─── Exportable Seed Function ─────────────────────────────────────────────────
+export async function seedFeeItemTypes(db: PostgresJsDatabase): Promise<void> {
   console.log("🌱 Seeding fee item types...");
-
-  const defaultFeeTypes = [
-    // Tuition
-    {
-      code: "TUITION",
-      name: "Tuition Fee",
-      category: "tuition" as const,
-      isDiscount: false,
-      displayOrder: 1,
-    },
-
-    // Fees
-    {
-      code: "MISC",
-      name: "Miscellaneous Fees",
-      category: "fees" as const,
-      isDiscount: false,
-      displayOrder: 2,
-    },
-    {
-      code: "REGISTRATION",
-      name: "Registration Fee",
-      category: "fees" as const,
-      isDiscount: false,
-      displayOrder: 3,
-    },
-   
-    // Materials
-    {
-      code: "BOOKS",
-      name: "Books and Materials",
-      category: "materials" as const,
-      isDiscount: false,
-      displayOrder: 7,
-    },
-   
-    // Other
-    {
-      code: "BALANCE_FORWARD",
-      name: "Balance Forward from Previous Year",
-      category: "other" as const,
-      isDiscount: false,
-      displayOrder: 0, // Show first in assessments
-    },
-    {
-      code: "OTHER",
-      name: "Other Fees",
-      category: "other" as const,
-      isDiscount: false,
-      displayOrder: 99,
-    },
-  ];
 
   let insertedCount = 0;
   let skippedCount = 0;
@@ -102,15 +95,28 @@ async function seedFeeItemTypes() {
     insertedCount++;
   }
 
-  console.log(`\n✨ Seed complete: ${insertedCount} inserted, ${skippedCount} skipped`);
+  console.log(`✨ Seed complete: ${insertedCount} inserted, ${skippedCount} skipped`);
 }
 
-seedFeeItemTypes()
-  .then(() => {
-    console.log("✅ Done!");
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error("❌ Seed failed:", err);
-    process.exit(1);
-  });
+// ─── Standalone Execution ─────────────────────────────────────────────────────
+if (require.main === module) {
+  expand(config({ path: ".env.local" }));
+  expand(config());
+
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) throw new Error("DATABASE_URL not set");
+
+  const client = postgres(connectionString, { max: 1 });
+  const db = drizzle(client);
+
+  seedFeeItemTypes(db)
+    .then(async () => {
+      console.log("✅ Done!");
+      await client.end();
+    })
+    .catch(async (err) => {
+      console.error("❌ Seed failed:", err);
+      await client.end();
+      process.exit(1);
+    });
+}

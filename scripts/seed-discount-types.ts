@@ -4,26 +4,15 @@
  * Run: npx tsx scripts/seed-discount-types.ts
  */
 
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { discountTypes } from "../src/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { config } from "dotenv";
 import { expand } from "dotenv-expand";
 
-expand(config({ path: ".env.local" }));
-expand(config());
-
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error("DATABASE_URL not set");
-
-const client = postgres(connectionString, { max: 1 });
-const db = drizzle(client);
-
-async function seedDiscountTypes() {
-  console.log("🌱 Seeding discount types...\n");
-
-  const defaultDiscountTypes = [
+// ─── Discount Type Data ───────────────────────────────────────────────────────
+const defaultDiscountTypes = [
     // ─── Tuition-only discounts (most common) ────────────────────────────────
     {
       code: "ESC_20",
@@ -192,7 +181,11 @@ async function seedDiscountTypes() {
       isStackable: true,
       displayOrder: 51,
     },
-  ];
+];
+
+// ─── Exportable Seed Function ─────────────────────────────────────────────────
+export async function seedDiscountTypes(db: PostgresJsDatabase): Promise<void> {
+  console.log("🌱 Seeding discount types...");
 
   let insertedCount = 0;
   let skippedCount = 0;
@@ -226,15 +219,28 @@ async function seedDiscountTypes() {
     insertedCount++;
   }
 
-  console.log(`\n✨ Seed complete: ${insertedCount} inserted, ${skippedCount} skipped`);
+  console.log(`✨ Seed complete: ${insertedCount} inserted, ${skippedCount} skipped`);
 }
 
-seedDiscountTypes()
-  .then(() => {
-    console.log("\n✅ Done!");
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error("❌ Seed failed:", err);
-    process.exit(1);
-  });
+// ─── Standalone Execution ─────────────────────────────────────────────────────
+if (require.main === module) {
+  expand(config({ path: ".env.local" }));
+  expand(config());
+
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) throw new Error("DATABASE_URL not set");
+
+  const client = postgres(connectionString, { max: 1 });
+  const db = drizzle(client);
+
+  seedDiscountTypes(db)
+    .then(async () => {
+      console.log("\n✅ Done!");
+      await client.end();
+    })
+    .catch(async (err) => {
+      console.error("❌ Seed failed:", err);
+      await client.end();
+      process.exit(1);
+    });
+}
