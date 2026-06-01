@@ -315,12 +315,12 @@ export async function GET(request: NextRequest) {
   </div>
 
   <script>
-    // Auto-print on load
+    // Auto-print on load and close window after
     window.onload = function() {
-      // Small delay to ensure styles are loaded
-      setTimeout(function() {
-        window.print();
-      }, 500);
+      window.print();
+    };
+    window.onafterprint = function() {
+      window.close();
     };
   </script>
 </body>
