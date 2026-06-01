@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // output: 'standalone',
   cacheComponents: true,
+  // Exclude @react-pdf/renderer from bundling (has native dependencies)
+  serverExternalPackages: ["@react-pdf/renderer"],
   cacheLife: {
     // Custom profile for fee-templates (10-minute cache)
     "fee-templates": {
