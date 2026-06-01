@@ -50,23 +50,23 @@ async function seedConfig() {
   }
 
   // ─── Grade Levels ───────────────────────────────────────────────────────────
-  /** Maps each grade to a fee assessment band (Casa / elem / JHS / SHS). Kinder 1–2 are Casa; use Casa Junior/Senior/Advance names if you prefer—they share the same `casa` band. */
+  /** Maps each grade to a fee assessment band. Junior/Senior Casa share 'casa' band; Advance Casa has its own 'advance_casa' band. */
   const gradeData = [
     { name: "Junior Casa", order: 1, assessmentBand: "casa" as const },
     { name: "Senior Casa", order: 2, assessmentBand: "casa" as const },
-    { name: "Advance Casa", order: 2, assessmentBand: "casa" as const },
-    { name: "Grade 1", order: 3, assessmentBand: "lower_elementary" as const },
-    { name: "Grade 2", order: 4, assessmentBand: "lower_elementary" as const },
-    { name: "Grade 3", order: 5, assessmentBand: "lower_elementary" as const },
-    { name: "Grade 4", order: 6, assessmentBand: "higher_elementary" as const },
-    { name: "Grade 5", order: 7, assessmentBand: "higher_elementary" as const },
-    { name: "Grade 6", order: 8, assessmentBand: "higher_elementary" as const },
-    { name: "Grade 7", order: 9, assessmentBand: "junior_high" as const },
-    { name: "Grade 8", order: 10, assessmentBand: "junior_high" as const },
-    { name: "Grade 9", order: 11, assessmentBand: "junior_high" as const },
-    { name: "Grade 10", order: 12, assessmentBand: "junior_high" as const },
-    { name: "Grade 11", order: 13, assessmentBand: "senior_high" as const },
-    { name: "Grade 12", order: 14, assessmentBand: "senior_high" as const },
+    { name: "Advance Casa", order: 3, assessmentBand: "advance_casa" as const },
+    { name: "Grade 1", order: 4, assessmentBand: "lower_elementary" as const },
+    { name: "Grade 2", order: 5, assessmentBand: "lower_elementary" as const },
+    { name: "Grade 3", order: 6, assessmentBand: "lower_elementary" as const },
+    { name: "Grade 4", order: 7, assessmentBand: "higher_elementary" as const },
+    { name: "Grade 5", order: 8, assessmentBand: "higher_elementary" as const },
+    { name: "Grade 6", order: 9, assessmentBand: "higher_elementary" as const },
+    { name: "Grade 7", order: 10, assessmentBand: "junior_high" as const },
+    { name: "Grade 8", order: 11, assessmentBand: "junior_high" as const },
+    { name: "Grade 9", order: 12, assessmentBand: "junior_high" as const },
+    { name: "Grade 10", order: 13, assessmentBand: "junior_high" as const },
+    { name: "Grade 11", order: 14, assessmentBand: "senior_high" as const },
+    { name: "Grade 12", order: 15, assessmentBand: "senior_high" as const },
   ];
 
   const existingGLs = await db
