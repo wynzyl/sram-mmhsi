@@ -150,8 +150,6 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Finance",
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
-        { href: "/staff/student-ledgers", label: "Student Ledger", icon: "assessments" },
-        { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
       ],
     },
     {

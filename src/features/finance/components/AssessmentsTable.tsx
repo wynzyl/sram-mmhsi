@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -23,7 +24,7 @@ interface AssessmentsTableProps {
 }
 
 
-export default function AssessmentsTable({
+function AssessmentsTableComponent({
   assessments,
   assessmentsBasePath = "/staff/assessments",
 }: AssessmentsTableProps) {
@@ -106,3 +107,8 @@ export default function AssessmentsTable({
     </div>
   );
 }
+
+// Memoize to prevent unnecessary re-renders when parent state changes
+const AssessmentsTable = memo(AssessmentsTableComponent);
+
+export default AssessmentsTable;

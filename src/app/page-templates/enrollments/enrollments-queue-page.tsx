@@ -16,18 +16,15 @@ import {
   type CancelledEnrollment,
 } from "@/features/enrollments/enrollments-queue.queries";
 import type { PaginationParams, PaginatedResult } from "@/lib/types/pagination";
-import { EnrollmentQueueTabs } from "@/features/enrollments";
-import { EnrollmentGlobalFilters } from "@/features/enrollments";
-import { ReadyToEnrollTableClient } from "@/features/enrollments";
 import {
+  EnrollmentQueueTabs,
+  EnrollmentQueueHeader,
+  ReadyToEnrollTableClient,
   PendingEnrollmentsTable,
   AssessedEnrollmentsTable,
   EnrolledStudentsTable,
   CancelledEnrollmentsTable,
 } from "@/features/enrollments";
-import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
-import { RefreshButton } from "@/components/shared/RefreshButton";
 
 type EnrollmentQueuePageProps = {
   searchParams: Promise<{
@@ -139,6 +136,24 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
     cancelled: tabCountsData?.cancelled ?? 0,
   };
 
+  // Get total count for the current tab (used in header subtitle)
+  function getCurrentTabCount(tab: TabKey): number {
+    switch (tab) {
+      case "ready-to-enroll":
+        return tabCounts.readyToEnroll;
+      case "pending":
+        return tabCounts.pending;
+      case "assessed":
+        return tabCounts.assessed;
+      case "enrolled":
+        return tabCounts.enrolled;
+      case "cancelled":
+        return tabCounts.cancelled;
+      default:
+        return 0;
+    }
+  }
+
   // Render current tab content with pagination
   const renderTabContent = () => {
     switch (currentTab) {
@@ -208,38 +223,15 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
   };
 
   return (
-    <div className="page-container">
-      {/* Page Header */}
-      <header className="mb-6 flex items-start justify-between">
-        <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">            Enrollment Management
-          </p>
-          <h1 className="mt-2 font-display text-4xl font-black tracking-tight text-foreground">
-            Enrollment Queue
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            List-first enrollment workflow. Students automatically appear in the queue when eligible.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Refresh Button - uses router.refresh() to clear client cache */}
-          <RefreshButton />
-
-          {/* Manual Entry Link (for edge cases) */}
-          {canCreate && (
-            <Link href={`${enrollmentsBasePath}/new`}>
-              <Button variant="ghost" size="sm" className="gap-1.5">
-                <FileText className="h-3.5 w-3.5" />
-                Manual Entry
-              </Button>
-            </Link>
-          )}
-        </div>
-      </header>
-
-      {/* Global Filters */}
-      <EnrollmentGlobalFilters gradeLevels={allGradeLevels} basePath={enrollmentsBasePath} />
+    <div className="page-container space-y-6">
+      {/* Unified Header: Title + Subtitle (left), Filters + Action (right) */}
+      <EnrollmentQueueHeader
+        basePath={enrollmentsBasePath}
+        gradeLevels={allGradeLevels}
+        schoolYearLabel={activeSchoolYear.label}
+        totalCount={getCurrentTabCount(currentTab)}
+        canCreate={canCreate}
+      />
 
       {/* Tabs Navigation */}
       <EnrollmentQueueTabs
@@ -249,10 +241,10 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       />
 
       {/* Tab Content */}
-      <div className="mt-6">{renderTabContent()}</div>
+      <div>{renderTabContent()}</div>
 
       {/* Legacy Link */}
-      <div className="mt-8 rounded-md border border-border bg-muted p-4">
+      <div className="rounded-md border border-border bg-muted p-4">
         <p className="text-xs text-muted-foreground">
           <strong>Note:</strong> This is the new list-first enrollment queue. If you need to manually create an
           enrollment record, use the{" "}

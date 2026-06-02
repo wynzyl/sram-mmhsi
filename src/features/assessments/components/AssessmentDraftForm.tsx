@@ -2,7 +2,9 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { queryKeys } from "@/lib/query/keys";
 import { createAssessmentFromEnrollmentAction } from "../assessments.actions";
 import { computeAssessmentTotals } from "../assessments.schema";
 import type { AssessmentFormState } from "../assessments.schema";
@@ -101,6 +103,7 @@ export default function AssessmentDraftForm({
   expectedDiscounts,
 }: AssessmentDraftFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [state, action, pending] = useActionState(
     createAssessmentFromEnrollmentAction,
     initialAssessmentState
@@ -113,10 +116,20 @@ export default function AssessmentDraftForm({
 
   const [remarks, setRemarks] = useState("");
 
-  // Separate discount requests by status
-  const pendingRequests = existingDiscountRequests.filter((r) => r.status === "pending");
-  const approvedRequests = existingDiscountRequests.filter((r) => r.status === "approved");
-  const rejectedRequests = existingDiscountRequests.filter((r) => r.status === "rejected");
+  // Memoize discount request filtering to avoid O(n) on every render
+  const { pendingRequests, approvedRequests, rejectedRequests } = useMemo(() => {
+    const pending: typeof existingDiscountRequests = [];
+    const approved: typeof existingDiscountRequests = [];
+    const rejected: typeof existingDiscountRequests = [];
+
+    for (const r of existingDiscountRequests) {
+      if (r.status === "pending") pending.push(r);
+      else if (r.status === "approved") approved.push(r);
+      else if (r.status === "rejected") rejected.push(r);
+    }
+
+    return { pendingRequests: pending, approvedRequests: approved, rejectedRequests: rejected };
+  }, [existingDiscountRequests]);
 
   // Format discount value for display
   const formatDiscountValue = (
@@ -171,7 +184,14 @@ export default function AssessmentDraftForm({
 
   useFormToast(state, {
     successMessage: "Assessment created successfully",
-    onSuccess: () => router.replace(`${assessmentsBasePath}/${state.assessmentId}`),
+    onSuccess: () => {
+      // Invalidate TanStack Query cache so the assessments list refreshes
+      // when user navigates back (fixes "refresh required" issue)
+      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.payments.queue() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.enrollments.queue() });
+      router.replace(`${assessmentsBasePath}/${state.assessmentId}`);
+    },
   });
 
   const blocked = !!submitBlockedReason;

@@ -45,6 +45,7 @@ export { default as EnrollmentCard } from "./components/EnrollmentCard";
 export type { EnrollmentCardRow, SectionOption } from "./components/EnrollmentCard";
 export { default as EnrollmentConfirmationDrawer } from "./components/EnrollmentConfirmationDrawer";
 export { default as EnrollmentGlobalFilters } from "./components/EnrollmentGlobalFilters";
+export { default as EnrollmentQueueHeader } from "./components/EnrollmentQueueHeader";
 export { default as EnrollmentQueueTabs } from "./components/EnrollmentQueueTabs";
 export { default as EnrollmentsListView } from "./components/EnrollmentsListView";
 export { default as EnrollmentsTable } from "./components/EnrollmentsTable";

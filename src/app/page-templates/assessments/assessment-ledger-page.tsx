@@ -56,42 +56,45 @@ export async function InternalAssessmentLedgerPage(props: {
 
   if (!assessment) notFound();
 
-  // Get BALANCE_FORWARD fee type ID for visual indicators
-  const balanceForwardType = await db.query.feeItemTypes.findFirst({
-    where: eq(feeItemTypes.code, "BALANCE_FORWARD"),
-    columns: { id: true },
-  });
-
-  const items = await db
-    .select({
-      id: assessmentItems.id,
-      description: assessmentItems.description,
-      amount: assessmentItems.amount,
-      isDiscount: assessmentItems.isDiscount,
-      feeItemTypeId: assessmentItems.feeItemTypeId,
-      sourceAssessmentId: assessmentItems.sourceAssessmentId,
-    })
-    .from(assessmentItems)
-    .where(eq(assessmentItems.assessmentId, id))
-    .orderBy(desc(assessmentItems.createdAt));
-
-  const paymentRecords = await db
-    .select({
-      id: payments.id,
-      orNumber: payments.orNumber,
-      amount: payments.amount,
-      paymentMethod: payments.paymentMethod,
-      paymentDate: payments.paymentDate,
-      status: payments.status,
-      referenceNumber: payments.referenceNumber,
-      processedByUsername: users.username,
-      kind: payments.kind,
-      reversesPaymentId: payments.reversesPaymentId,
-    })
-    .from(payments)
-    .leftJoin(users, eq(payments.createdBy, users.id))
-    .where(eq(payments.assessmentId, id))
-    .orderBy(desc(payments.createdAt));
+  // Run independent queries in parallel for better performance
+  const [balanceForwardType, items, paymentRecords] = await Promise.all([
+    // Get BALANCE_FORWARD fee type ID for visual indicators
+    db.query.feeItemTypes.findFirst({
+      where: eq(feeItemTypes.code, "BALANCE_FORWARD"),
+      columns: { id: true },
+    }),
+    // Fetch assessment line items
+    db
+      .select({
+        id: assessmentItems.id,
+        description: assessmentItems.description,
+        amount: assessmentItems.amount,
+        isDiscount: assessmentItems.isDiscount,
+        feeItemTypeId: assessmentItems.feeItemTypeId,
+        sourceAssessmentId: assessmentItems.sourceAssessmentId,
+      })
+      .from(assessmentItems)
+      .where(eq(assessmentItems.assessmentId, id))
+      .orderBy(desc(assessmentItems.createdAt)),
+    // Fetch payment records
+    db
+      .select({
+        id: payments.id,
+        orNumber: payments.orNumber,
+        amount: payments.amount,
+        paymentMethod: payments.paymentMethod,
+        paymentDate: payments.paymentDate,
+        status: payments.status,
+        referenceNumber: payments.referenceNumber,
+        processedByUsername: users.username,
+        kind: payments.kind,
+        reversesPaymentId: payments.reversesPaymentId,
+      })
+      .from(payments)
+      .leftJoin(users, eq(payments.createdBy, users.id))
+      .where(eq(payments.assessmentId, id))
+      .orderBy(desc(payments.createdAt)),
+  ]);
 
   const canPost = hasPermission(session.role, "payments:post");
   const canRequestVoid = hasPermission(session.role, "payments:void_request");
