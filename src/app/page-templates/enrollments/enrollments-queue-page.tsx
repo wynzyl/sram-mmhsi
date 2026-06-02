@@ -151,7 +151,6 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
             gradeLevels={allGradeLevels}
             searchQuery={searchQuery}
             gradeLevelFilter={gradeLevelFilter}
-            basePath={enrollmentsBasePath}
           />
         );
 
@@ -163,6 +162,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
             searchQuery={searchQuery}
             gradeLevelFilter={gradeLevelFilter}
             enrollmentsBasePath={enrollmentsBasePath}
+            currentTab={currentTab}
           />
         );
 
@@ -174,6 +174,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
             searchQuery={searchQuery}
             gradeLevelFilter={gradeLevelFilter}
             enrollmentsBasePath={enrollmentsBasePath}
+            currentTab={currentTab}
           />
         );
 
@@ -185,6 +186,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
             searchQuery={searchQuery}
             gradeLevelFilter={gradeLevelFilter}
             enrollmentsBasePath={enrollmentsBasePath}
+            currentTab={currentTab}
           />
         );
 
@@ -196,6 +198,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
             searchQuery={searchQuery}
             gradeLevelFilter={gradeLevelFilter}
             enrollmentsBasePath={enrollmentsBasePath}
+            currentTab={currentTab}
           />
         );
 

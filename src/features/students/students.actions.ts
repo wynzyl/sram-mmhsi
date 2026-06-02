@@ -219,7 +219,7 @@ export async function createStudentAction(
 
     while (retries < MAX_RETRIES) {
       const seq = await getNextStudentSequence();
-      referenceNumber = generateStudentRef(new Date().getFullYear(), seq);
+      referenceNumber = generateStudentRef(seq);
 
       // Check if this reference already exists
       const existing = await db

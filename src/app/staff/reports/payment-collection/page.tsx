@@ -9,6 +9,9 @@ import {
 import { PaymentCollectionFilters } from "@/features/reports/components/PaymentCollectionFilters";
 import { PaymentCollectionReportPreview } from "@/features/reports/components/PaymentCollectionReportPreview";
 import { PaymentCollectionReportActions } from "@/features/reports/components/PaymentCollectionReportActions";
+import { TablePagination } from "@/components/ui/TablePagination";
+
+const PAGE_SIZE = 30;
 
 interface PageProps {
   searchParams: Promise<{
@@ -64,7 +67,7 @@ export default async function PaymentCollectionReportPage({
       paymentMethod,
       paymentStatus,
       page,
-      pageSize: 100, // Show more rows in preview
+      pageSize: PAGE_SIZE,
     }),
     getPaymentCollectionSummary({
       startDate,
@@ -77,20 +80,18 @@ export default async function PaymentCollectionReportPage({
   ]);
 
   const { rows: payments, totalCount } = reportResult;
-  const totalPages = Math.ceil(totalCount / 100);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // Build pagination URL
-  const buildPageUrl = (pageNum: number) => {
+  // Build base URL for pagination (preserving current filters)
+  const buildPaginationBaseUrl = () => {
     const urlParams = new URLSearchParams();
     if (params.startDate) urlParams.set("startDate", params.startDate);
     if (params.endDate) urlParams.set("endDate", params.endDate);
     if (params.schoolYearId) urlParams.set("schoolYearId", params.schoolYearId);
-    if (params.paymentMethod)
-      urlParams.set("paymentMethod", params.paymentMethod);
-    if (params.paymentStatus)
-      urlParams.set("paymentStatus", params.paymentStatus);
-    urlParams.set("page", pageNum.toString());
-    return `?${urlParams.toString()}`;
+    if (params.paymentMethod) urlParams.set("paymentMethod", params.paymentMethod);
+    if (params.paymentStatus) urlParams.set("paymentStatus", params.paymentStatus);
+    const queryString = urlParams.toString();
+    return queryString ? `?${queryString}` : "";
   };
 
   return (
@@ -130,32 +131,16 @@ export default async function PaymentCollectionReportPage({
       <PaymentCollectionReportPreview rows={payments} summary={summary} />
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-card border border-border rounded-lg no-print">
-          <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * 100 + 1} -{" "}
-            {Math.min(page * 100, totalCount)} of {totalCount} payments
-          </p>
-          <div className="flex gap-2">
-            {page > 1 && (
-              <a
-                href={buildPageUrl(page - 1)}
-                className="px-3 py-1 text-sm border border-border rounded hover:bg-muted"
-              >
-                Previous
-              </a>
-            )}
-            {page < totalPages && (
-              <a
-                href={buildPageUrl(page + 1)}
-                className="px-3 py-1 text-sm border border-border rounded hover:bg-muted"
-              >
-                Next
-              </a>
-            )}
-          </div>
-        </div>
-      )}
+      <div className="no-print">
+        <TablePagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalRecords={totalCount}
+          pageSize={PAGE_SIZE}
+          baseUrl={`/staff/reports/payment-collection${buildPaginationBaseUrl()}`}
+          itemLabel="payments"
+        />
+      </div>
 
       {/* Export note */}
       <p className="text-xs text-muted-foreground text-center no-print">

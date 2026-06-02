@@ -40,6 +40,7 @@ async function StaffLayoutContent({ children }: { children: React.ReactNode }) {
             flex: 1;
             overflow-y: auto;
             padding: 1.5rem 2rem;
+            background-color: hsl(var(--background));
           }
         `}</style>
       </div>
@@ -59,7 +60,7 @@ export default function StaffLayout({
       fallback={
         <div className="app-shell">
           <aside className="sidebar" style={{ width: 220, flexShrink: 0 }} aria-hidden />
-          <main className="app-main" style={{ flex: 1, overflow: "auto", padding: "1.5rem 2rem" }}>
+          <main className="app-main" style={{ flex: 1, overflow: "auto", padding: "1.5rem 2rem", backgroundColor: "hsl(var(--background))" }}>
             <div className="animate-pulse" style={{ height: "100%" }} />
           </main>
           <style>{`

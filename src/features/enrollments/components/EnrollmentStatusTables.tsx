@@ -6,7 +6,7 @@ import { DataTable } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
-import { PaginationControls } from "@/components/shared/PaginationControls";
+import { TablePagination } from "@/components/ui/TablePagination";
 import Link from "next/link";
 import type {
   PendingEnrollment,
@@ -16,6 +16,22 @@ import type {
 } from "../enrollments-queue.queries";
 import type { PaginatedResult } from "@/lib/types/pagination";
 
+/**
+ * Build base URL for pagination (preserving current tab and filters).
+ */
+function buildEnrollmentPaginationUrl(
+  basePath: string,
+  tab: string,
+  searchQuery?: string,
+  gradeLevelFilter?: string
+): string {
+  const params = new URLSearchParams();
+  params.set("tab", tab);
+  if (searchQuery) params.set("search", searchQuery);
+  if (gradeLevelFilter && gradeLevelFilter !== "all") params.set("gradeLevel", gradeLevelFilter);
+  return `${basePath}?${params.toString()}`;
+}
+
 // ─── Pending Enrollments Table ───────────────────────────────────────────────
 
 type PendingEnrollmentsTableProps = {
@@ -24,6 +40,7 @@ type PendingEnrollmentsTableProps = {
   searchQuery?: string;
   gradeLevelFilter?: string;
   enrollmentsBasePath: string;
+  currentTab: string;
 };
 
 export function PendingEnrollmentsTable({
@@ -32,6 +49,7 @@ export function PendingEnrollmentsTable({
   searchQuery = "",
   gradeLevelFilter = "",
   enrollmentsBasePath,
+  currentTab,
 }: PendingEnrollmentsTableProps) {
   const enrollments = paginatedData.data;
 
@@ -149,7 +167,14 @@ export function PendingEnrollmentsTable({
         searchable={false}
         enablePagination={false}
       />
-      <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
+      <TablePagination
+        currentPage={paginatedData.pagination.page}
+        totalPages={paginatedData.pagination.totalPages}
+        totalRecords={paginatedData.pagination.totalRecords}
+        pageSize={paginatedData.pagination.pageSize}
+        baseUrl={buildEnrollmentPaginationUrl(enrollmentsBasePath, currentTab, searchQuery, gradeLevelFilter)}
+        itemLabel="enrollments"
+      />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
         <div className="text-center text-sm text-muted-foreground">
           No enrollments match the current filters.
@@ -167,6 +192,7 @@ type AssessedEnrollmentsTableProps = {
   searchQuery?: string;
   gradeLevelFilter?: string;
   enrollmentsBasePath: string;
+  currentTab: string;
 };
 
 export function AssessedEnrollmentsTable({
@@ -175,6 +201,7 @@ export function AssessedEnrollmentsTable({
   searchQuery = "",
   gradeLevelFilter = "",
   enrollmentsBasePath,
+  currentTab,
 }: AssessedEnrollmentsTableProps) {
   const enrollments = paginatedData.data;
 
@@ -306,7 +333,14 @@ export function AssessedEnrollmentsTable({
         searchable={false}
         enablePagination={false}
       />
-      <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
+      <TablePagination
+        currentPage={paginatedData.pagination.page}
+        totalPages={paginatedData.pagination.totalPages}
+        totalRecords={paginatedData.pagination.totalRecords}
+        pageSize={paginatedData.pagination.pageSize}
+        baseUrl={buildEnrollmentPaginationUrl(enrollmentsBasePath, currentTab, searchQuery, gradeLevelFilter)}
+        itemLabel="enrollments"
+      />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
         <div className="text-center text-sm text-muted-foreground">
           No enrollments match the current filters.
@@ -324,6 +358,7 @@ type EnrolledStudentsTableProps = {
   searchQuery?: string;
   gradeLevelFilter?: string;
   enrollmentsBasePath: string;
+  currentTab: string;
 };
 
 export function EnrolledStudentsTable({
@@ -332,6 +367,7 @@ export function EnrolledStudentsTable({
   searchQuery = "",
   gradeLevelFilter = "",
   enrollmentsBasePath,
+  currentTab,
 }: EnrolledStudentsTableProps) {
   const students = paginatedData.data;
 
@@ -434,7 +470,14 @@ export function EnrolledStudentsTable({
         searchable={false}
         enablePagination={false}
       />
-      <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
+      <TablePagination
+        currentPage={paginatedData.pagination.page}
+        totalPages={paginatedData.pagination.totalPages}
+        totalRecords={paginatedData.pagination.totalRecords}
+        pageSize={paginatedData.pagination.pageSize}
+        baseUrl={buildEnrollmentPaginationUrl(enrollmentsBasePath, currentTab, searchQuery, gradeLevelFilter)}
+        itemLabel="students"
+      />
       {filteredStudents.length === 0 && (searchQuery || gradeLevelFilter) && (
         <div className="text-center text-sm text-muted-foreground">
           No students match the current filters.
@@ -452,6 +495,7 @@ type CancelledEnrollmentsTableProps = {
   searchQuery?: string;
   gradeLevelFilter?: string;
   enrollmentsBasePath: string;
+  currentTab: string;
 };
 
 export function CancelledEnrollmentsTable({
@@ -460,6 +504,7 @@ export function CancelledEnrollmentsTable({
   searchQuery = "",
   gradeLevelFilter = "",
   enrollmentsBasePath,
+  currentTab,
 }: CancelledEnrollmentsTableProps) {
   const enrollments = paginatedData.data;
 
@@ -562,7 +607,14 @@ export function CancelledEnrollmentsTable({
         searchable={false}
         enablePagination={false}
       />
-      <PaginationControls pagination={paginatedData.pagination} basePath={enrollmentsBasePath} />
+      <TablePagination
+        currentPage={paginatedData.pagination.page}
+        totalPages={paginatedData.pagination.totalPages}
+        totalRecords={paginatedData.pagination.totalRecords}
+        pageSize={paginatedData.pagination.pageSize}
+        baseUrl={buildEnrollmentPaginationUrl(enrollmentsBasePath, currentTab, searchQuery, gradeLevelFilter)}
+        itemLabel="enrollments"
+      />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
         <div className="text-center text-sm text-muted-foreground">
           No enrollments match the current filters.

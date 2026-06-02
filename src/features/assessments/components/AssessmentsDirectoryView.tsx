@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
-import { ServerPagination } from "@/components/shared/ServerPagination";
+import { TablePagination } from "@/components/ui/TablePagination";
 import AssessmentsTable from "@/features/finance/components/AssessmentsTable";
 import PendingAssessmentsQueue from "@/features/assessments/components/PendingAssessmentsQueue";
 import { useAssessments, type AssessmentView } from "@/features/assessments/hooks/use-assessments";
@@ -57,16 +57,9 @@ function parseView(value: string | null): AssessmentView {
     : "pending";
 }
 
-/** Build href for pagination links that preserve the current view. */
-function buildAssessmentsPaginationHref(
-  basePath: string,
-  view: AssessmentView,
-  page: number
-): string {
-  const p = new URLSearchParams();
-  p.set("view", view);
-  if (page > 1) p.set("page", String(page));
-  return `${basePath}?${p.toString()}`;
+/** Build base URL for pagination (includes view param). */
+function buildAssessmentsPaginationBaseUrl(basePath: string, view: AssessmentView): string {
+  return `${basePath}?view=${view}`;
 }
 
 export function AssessmentsDirectoryView({ basePath }: { basePath: AssessmentsBasePath }) {
@@ -131,25 +124,25 @@ export function AssessmentsDirectoryView({ basePath }: { basePath: AssessmentsBa
             canCancel={canCancel}
             assessmentsBasePath={basePath}
           />
-          <ServerPagination
+          <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalCount={totalCount}
+            totalRecords={totalCount}
             pageSize={PAGE_SIZE}
-            itemLabel="enrollment"
-            buildHref={(page) => buildAssessmentsPaginationHref(basePath, "pending", page)}
+            baseUrl={buildAssessmentsPaginationBaseUrl(basePath, "pending")}
+            itemLabel="enrollments"
           />
         </>
       ) : (
         <>
           <AssessmentsTable assessments={isInitialLoading ? [] : rows} assessmentsBasePath={basePath} />
-          <ServerPagination
+          <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalCount={totalCount}
+            totalRecords={totalCount}
             pageSize={PAGE_SIZE}
-            itemLabel="assessment"
-            buildHref={(page) => buildAssessmentsPaginationHref(basePath, view, page)}
+            baseUrl={buildAssessmentsPaginationBaseUrl(basePath, view)}
+            itemLabel="assessments"
           />
         </>
       )}

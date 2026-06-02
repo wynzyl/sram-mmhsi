@@ -604,9 +604,8 @@ const band = assessment.enrollment.gradeLevel.assessmentBand;
 
 ### Reference Number Generation
 
-Student reference numbers use the format `SRAMS-YYYY-NNNNN` where:
-- `YYYY` = Year of registration
-- `NNNNN` = Global incremental sequence (does NOT reset each year)
+Student reference numbers use a 7-digit plain number format: `NNNNNNN`
+- e.g., `0000001`, `0000002`, `0000100`, `9999999`
 
 The sequence is managed by PostgreSQL `student_ref_seq` for concurrency safety.
 
@@ -615,8 +614,8 @@ import { generateStudentRef } from "@/lib/utils/reference";
 
 // In students.actions.ts:
 const seq = await getNextStudentSequence(); // Uses nextval('student_ref_seq')
-const referenceNumber = generateStudentRef(new Date().getFullYear(), seq);
-// e.g., "SRAMS-2026-00001", "SRAMS-2026-00002", "SRAMS-2027-00100"
+const referenceNumber = generateStudentRef(seq);
+// e.g., "0000001", "0000002", "0000100"
 ```
 
 ### Currency Formatting

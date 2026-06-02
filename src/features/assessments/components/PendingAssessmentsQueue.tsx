@@ -131,7 +131,7 @@ export default function PendingAssessmentsQueue({
                   </div>
                 </td>
                 <td className="align-middle py-3">
-                  <code className="reference-code text-[0.8rem]">#{r.referenceNumber}</code>
+                  <code className="reference-code text-[0.8rem]">{r.referenceNumber}</code>
                 </td>
                 <td className="align-middle py-3 text-foreground">
                   {r.gradeLevel}

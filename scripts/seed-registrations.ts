@@ -222,11 +222,10 @@ async function seedRegistrations() {
 
   let nextSeq = 1;
   if (latestStudent.length > 0) {
-    const match = latestStudent[0].referenceNumber.match(/(\d+)$/);
+    // Match 7-digit plain number format (e.g., "0000001")
+    const match = latestStudent[0].referenceNumber.match(/^(\d{7})$/);
     if (match) nextSeq = parseInt(match[1], 10) + 1;
   }
-
-  const currentYear = new Date().getFullYear();
   const seedData = buildSeedData();
 
   let created = 0;
@@ -267,7 +266,7 @@ async function seedRegistrations() {
       studentId = existing[0].id;
       referenceNumber = existing[0].referenceNumber;
     } else {
-      referenceNumber = generateStudentRef(currentYear, nextSeq);
+      referenceNumber = generateStudentRef(nextSeq);
       const [inserted] = await db
         .insert(students)
         .values({

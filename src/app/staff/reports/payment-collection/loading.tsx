@@ -42,7 +42,7 @@ export default function PaymentCollectionReportLoading() {
       </div>
 
       {/* Report Preview Skeleton */}
-      <div className="bg-white rounded-lg shadow-lg border border-border overflow-hidden">
+      <div className="bg-card rounded-lg shadow-lg border border-border overflow-hidden">
         {/* Header */}
         <div className="px-8 py-6 border-b-2 border-border">
           <div className="flex justify-between">
@@ -58,7 +58,7 @@ export default function PaymentCollectionReportLoading() {
         </div>
 
         {/* Summary */}
-        <div className="px-8 py-6 bg-gray-50 border-b border-border">
+        <div className="px-8 py-6 bg-muted border-b border-border">
           <div className="h-5 w-24 bg-muted rounded mb-4" />
           <div className="grid grid-cols-4 gap-6">
             <div className="space-y-2">
@@ -74,7 +74,7 @@ export default function PaymentCollectionReportLoading() {
             <div className="h-3 w-48 bg-muted rounded mb-3" />
             <div className="grid grid-cols-5 gap-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="bg-white p-3 rounded border border-border">
+                <div key={i} className="bg-card p-3 rounded border border-border">
                   <div className="h-3 w-12 bg-muted rounded" />
                   <div className="h-5 w-20 bg-muted rounded mt-2" />
                 </div>
@@ -88,7 +88,7 @@ export default function PaymentCollectionReportLoading() {
           <div className="h-5 w-48 bg-muted rounded mb-4" />
           <div className="border border-border rounded overflow-hidden">
             {/* Table Header */}
-            <div className="flex gap-4 p-3 bg-gray-100 border-b border-border">
+            <div className="flex gap-4 p-3 bg-muted border-b border-border">
               {[8, 10, 20, 10, 12, 10, 12, 10].map((w, i) => (
                 <div
                   key={i}
@@ -102,7 +102,7 @@ export default function PaymentCollectionReportLoading() {
               <div
                 key={rowIndex}
                 className={`flex gap-4 p-3 border-b border-border ${
-                  rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  rowIndex % 2 === 0 ? "bg-card" : "bg-muted"
                 }`}
               >
                 {[8, 10, 20, 10, 12, 10, 12, 10].map((w, i) => (
@@ -118,7 +118,7 @@ export default function PaymentCollectionReportLoading() {
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-4 bg-gray-50 border-t border-border flex justify-between">
+        <div className="px-8 py-4 bg-muted border-t border-border flex justify-between">
           <div className="h-4 w-48 bg-muted rounded" />
           <div className="h-4 w-24 bg-muted rounded" />
         </div>

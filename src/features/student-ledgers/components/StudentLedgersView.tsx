@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import AssessmentsTable from "@/features/finance/components/AssessmentsTable";
 import { useDebounce } from "@/hooks/useDebounce";
+import { TablePagination } from "@/components/ui/TablePagination";
 import type { AssessmentListItem } from "@/features/assessments/assessments.queries";
 import type { PaginatedResult } from "@/lib/types/pagination";
 
@@ -25,37 +24,6 @@ type StudentLedgersViewProps = {
   activeSchoolYearId: string | null;
 };
 
-/** Generate page numbers with ellipsis markers for pagination. */
-function paginationPages(current: number, total: number): (number | "ellipsis")[] {
-  if (total <= 1) return total === 1 ? [1] : [];
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-
-  const set = new Set<number>();
-  set.add(1);
-  set.add(total);
-  for (let i = current - 2; i <= current + 2; i++) {
-    if (i >= 1 && i <= total) set.add(i);
-  }
-
-  const sorted = [...set].sort((a, b) => a - b);
-  const out: (number | "ellipsis")[] = [];
-  let prev = 0;
-  for (const n of sorted) {
-    if (prev && n - prev > 1) out.push("ellipsis");
-    out.push(n);
-    prev = n;
-  }
-  return out;
-}
-
-const btnBase =
-  "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted";
-const btnActive =
-  "border-primary bg-primary/10 text-primary font-semibold";
-const btnDisabled = "pointer-events-none opacity-40";
-
 export function StudentLedgersView({
   assessments,
   schoolYears,
@@ -71,7 +39,7 @@ export function StudentLedgersView({
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const { data, pagination } = assessments;
-  const { page, pageSize, totalRecords, totalPages, hasNextPage, hasPreviousPage } = pagination;
+  const { page, pageSize, totalRecords, totalPages } = pagination;
 
   // Build URL with updated filters
   const buildUrl = useCallback(
@@ -132,13 +100,16 @@ export function StudentLedgersView({
   // Check if any filters are active
   const hasActiveFilters = initialSearch || (initialSchoolYearId && initialSchoolYearId !== activeSchoolYearId);
 
-  // Calculate record range
-  const startRecord = totalRecords === 0 ? 0 : (page - 1) * pageSize + 1;
-  const endRecord = Math.min(page * pageSize, totalRecords);
-
-  // Pagination URL builder
-  const hrefForPage = (newPage: number) => buildUrl({ page: newPage });
-  const pages = paginationPages(page, totalPages);
+  // Build base URL for pagination (preserving current filters)
+  const paginationBaseUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (initialSearch) params.set("q", initialSearch);
+    if (initialSchoolYearId && initialSchoolYearId !== activeSchoolYearId) {
+      params.set("schoolYearId", initialSchoolYearId);
+    }
+    const queryString = params.toString();
+    return queryString ? `${pathname}?${queryString}` : pathname;
+  }, [pathname, initialSearch, initialSchoolYearId, activeSchoolYearId]);
 
   return (
     <div className="space-y-4">
@@ -243,69 +214,14 @@ export function StudentLedgersView({
       <AssessmentsTable assessments={data} assessmentsBasePath="/staff/assessments" />
 
       {/* Pagination */}
-      {totalRecords > 0 && (
-        <nav
-          className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between"
-          aria-label="Ledgers pagination"
-        >
-          <p className="text-sm text-muted-foreground">
-            Showing{" "}
-            <span className="font-medium text-foreground">{startRecord}</span> to{" "}
-            <span className="font-medium text-foreground">{endRecord}</span> of{" "}
-            <span className="font-medium text-foreground">{totalRecords.toLocaleString()}</span>{" "}
-            ledgers
-          </p>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {!hasPreviousPage ? (
-              <span className={`${btnBase} ${btnDisabled}`} aria-disabled>
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Previous
-              </span>
-            ) : (
-              <Link href={hrefForPage(page - 1)} className={btnBase}>
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Previous
-              </Link>
-            )}
-
-            <div className="flex flex-wrap items-center gap-1">
-              {pages.map((item, i) =>
-                item === "ellipsis" ? (
-                  <span
-                    key={`e-${i}`}
-                    className="inline-flex min-w-9 items-center justify-center text-muted-foreground"
-                    aria-hidden
-                  >
-                    …
-                  </span>
-                ) : (
-                  <Link
-                    key={item}
-                    href={hrefForPage(item)}
-                    className={`${btnBase} min-w-9 px-0 ${item === page ? btnActive : ""}`}
-                    aria-current={item === page ? "page" : undefined}
-                  >
-                    {item}
-                  </Link>
-                )
-              )}
-            </div>
-
-            {!hasNextPage ? (
-              <span className={`${btnBase} ${btnDisabled}`} aria-disabled>
-                Next
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </span>
-            ) : (
-              <Link href={hrefForPage(page + 1)} className={btnBase}>
-                Next
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Link>
-            )}
-          </div>
-        </nav>
-      )}
+      <TablePagination
+        currentPage={page}
+        totalPages={totalPages}
+        totalRecords={totalRecords}
+        pageSize={pageSize}
+        baseUrl={paginationBaseUrl}
+        itemLabel="ledgers"
+      />
     </div>
   );
 }

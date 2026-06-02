@@ -1,22 +1,17 @@
 import { sql } from "drizzle-orm";
 
 /**
- * Generates a student reference number in the format: SRAMS-YYYY-NNNNN
- * e.g., SRAMS-2026-00001, SRAMS-2026-00002, SRAMS-2027-00100
+ * Generates a student reference number as a 7-digit plain number.
+ * e.g., 0000001, 0000002, 0000100, 9999999
  *
- * The sequence (NNNNN) is a global incremental series that does NOT reset
- * each year. It continues across years (1, 2, 3, ...) using the PostgreSQL
+ * The sequence is a global incremental series managed by the PostgreSQL
  * `student_ref_seq` sequence for concurrency safety.
  *
- * The year (YYYY) reflects when the student was registered.
- *
- * @param year - The current year (e.g., 2026)
  * @param sequence - The global sequence number from student_ref_seq
- * @returns Reference string (e.g., "SRAMS-2026-00001")
+ * @returns Reference string (e.g., "0000001")
  */
-export function generateStudentRef(year: number, sequence: number): string {
-  const seq = String(sequence).padStart(5, "0");
-  return `SRAMS-${year}-${seq}`;
+export function generateStudentRef(sequence: number): string {
+  return String(sequence).padStart(7, "0");
 }
 
 /**

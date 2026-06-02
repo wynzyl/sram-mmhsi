@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import ReadyToEnrollTable from "./ReadyToEnrollTable";
 import EnrollmentConfirmationDrawer from "./EnrollmentConfirmationDrawer";
-import { PaginationControls } from "@/components/shared/PaginationControls";
+import { TablePagination } from "@/components/ui/TablePagination";
 import type { ReadyToEnrollListRow } from "../enrollments-queue.queries";
 import type { PaginatedResult } from "@/lib/types/pagination";
 
@@ -15,7 +15,6 @@ type ReadyToEnrollTableClientProps = {
   gradeLevels?: Array<{ id: string; name: string }>;
   searchQuery?: string;
   gradeLevelFilter?: string;
-  basePath: string;
 };
 
 /**
@@ -35,11 +34,24 @@ export default function ReadyToEnrollTableClient({
   gradeLevels = [],
   searchQuery = "",
   gradeLevelFilter = "",
-  basePath,
 }: ReadyToEnrollTableClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [selectedStudent, setSelectedStudent] = useState<ReadyToEnrollListRow | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Build base URL for pagination (preserving current filters)
+  const paginationBaseUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    // Preserve the current tab from URL
+    const currentTab = searchParams.get("tab");
+    if (currentTab) params.set("tab", currentTab);
+    if (searchQuery) params.set("search", searchQuery);
+    if (gradeLevelFilter && gradeLevelFilter !== "all") params.set("gradeLevel", gradeLevelFilter);
+    const queryString = params.toString();
+    return queryString ? `${pathname}?${queryString}` : pathname;
+  }, [pathname, searchParams, searchQuery, gradeLevelFilter]);
 
   const handleConfirmEnrollment = (student: ReadyToEnrollListRow) => {
     setSelectedStudent(student);
@@ -71,7 +83,14 @@ export default function ReadyToEnrollTableClient({
         gradeLevelFilter={gradeLevelFilter}
       />
 
-      <PaginationControls pagination={paginatedData.pagination} basePath={basePath} />
+      <TablePagination
+        currentPage={paginatedData.pagination.page}
+        totalPages={paginatedData.pagination.totalPages}
+        totalRecords={paginatedData.pagination.totalRecords}
+        pageSize={paginatedData.pagination.pageSize}
+        baseUrl={paginationBaseUrl}
+        itemLabel="students"
+      />
 
       {selectedStudent && isDrawerOpen && (
         <EnrollmentConfirmationDrawer

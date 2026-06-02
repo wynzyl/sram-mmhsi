@@ -48,17 +48,15 @@ async function fixSequence() {
           max_seq INTEGER;
         BEGIN
           SELECT COALESCE(MAX(
-            CAST(
-              SUBSTRING(reference_number FROM '\\d{5}$') AS INTEGER
-            )
+            CAST(reference_number AS INTEGER)
           ), 0) INTO max_seq
           FROM students
-          WHERE reference_number ~ '^SRAMS-\\d{4}-\\d{5}$';
+          WHERE reference_number ~ '^\\d{7}$';
 
-          -- Set sequence to max + 1
-          PERFORM setval('student_ref_seq', max_seq + 1, false);
+          -- Set sequence to max + 1 (minimum 1)
+          PERFORM setval('student_ref_seq', GREATEST(max_seq + 1, 1), false);
 
-          RAISE NOTICE 'Initialized sequence to value: %', max_seq + 1;
+          RAISE NOTICE 'Initialized sequence to value: %', GREATEST(max_seq + 1, 1);
         END $$;
       `);
 

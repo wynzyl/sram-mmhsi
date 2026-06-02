@@ -36,8 +36,8 @@ async function fixStudentSequence() {
     const result = await sql`
       SELECT reference_number
       FROM students
-      WHERE reference_number ~ '^SRAMS-[0-9]{4}-[0-9]{5}$'
-      ORDER BY reference_number DESC
+      WHERE reference_number ~ '^[0-9]{7}$'
+      ORDER BY CAST(reference_number AS INTEGER) DESC
       LIMIT 1
     `;
 
@@ -52,8 +52,8 @@ async function fixStudentSequence() {
     const latestRef = result[0].reference_number as string;
     console.log(`   Latest reference: ${latestRef}`);
 
-    // Extract the sequence number from reference (e.g., "SRAMS-2026-00096" → 96)
-    const match = latestRef.match(/SRAMS-\d{4}-(\d{5})$/);
+    // Extract the sequence number from reference (e.g., "0000096" → 96)
+    const match = latestRef.match(/^(\d{7})$/);
     if (!match) {
       console.error("❌ Could not parse reference number format");
       await sql.end();
@@ -84,7 +84,7 @@ async function fixStudentSequence() {
       console.log(`\n📋 Summary:`);
       console.log(`   - Previous highest: ${currentSequence}`);
       console.log(`   - New sequence starts at: ${newSequence}`);
-      console.log(`   - Next student reference will be: SRAMS-${new Date().getFullYear()}-${String(newSequence).padStart(5, "0")}`);
+      console.log(`   - Next student reference will be: ${String(newSequence).padStart(7, "0")}`);
     } else {
       console.error("❌ Sequence verification failed");
       process.exit(1);

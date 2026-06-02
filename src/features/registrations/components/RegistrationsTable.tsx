@@ -114,7 +114,7 @@ export default function RegistrationsTable({
                     </div>
                   </td>
                   <td className="align-middle py-3">
-                    <code className="reference-code text-[0.8rem]">#{reg.referenceNumber}</code>
+                    <code className="reference-code text-[0.8rem]">{reg.referenceNumber}</code>
                   </td>
                   <td className="align-middle py-3 text-foreground">
                     {reg.gradeLevel}

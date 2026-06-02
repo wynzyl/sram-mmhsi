@@ -8,6 +8,7 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import RegistrationsTable from "@/features/registrations/components/RegistrationsTable";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
 import { parseUuidSearchParam } from "@/lib/utils/query-params";
+import { TablePagination } from "@/components/ui/TablePagination";
 
 const PAGE_SIZE = 20;
 
@@ -20,124 +21,6 @@ function registrationsListHref(prefix: PathPrefix, opts: { schoolYearId?: string
   if (opts.page != null && opts.page > 1) p.set("page", String(opts.page));
   const s = p.toString();
   return s ? `${prefix}/registrations?${s}` : `${prefix}/registrations`;
-}
-
-/** Generate page numbers with ellipsis markers for pagination. */
-function paginationPages(current: number, total: number): (number | "ellipsis")[] {
-  if (total <= 1) return total === 1 ? [1] : [];
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-
-  const set = new Set<number>();
-  set.add(1);
-  set.add(total);
-  for (let i = current - 2; i <= current + 2; i++) {
-    if (i >= 1 && i <= total) set.add(i);
-  }
-
-  const sorted = [...set].sort((a, b) => a - b);
-  const out: (number | "ellipsis")[] = [];
-  let prev = 0;
-  for (const n of sorted) {
-    if (prev && n - prev > 1) out.push("ellipsis");
-    out.push(n);
-    prev = n;
-  }
-  return out;
-}
-
-const btnBase =
-  "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted";
-const btnActive =
-  "border-primary bg-primary/10 text-primary font-semibold";
-const btnDisabled = "pointer-events-none opacity-40";
-
-function RegistrationsPagination({
-  pathPrefix,
-  currentPage,
-  totalPages,
-  totalCount,
-  schoolYearId,
-}: {
-  pathPrefix: PathPrefix;
-  currentPage: number;
-  totalPages: number;
-  totalCount: number;
-  schoolYearId?: string;
-}) {
-  if (totalCount <= 0) return null;
-
-  const start = (currentPage - 1) * PAGE_SIZE + 1;
-  const end = Math.min(currentPage * PAGE_SIZE, totalCount);
-
-  const hrefForPage = (page: number) =>
-    registrationsListHref(pathPrefix, {
-      schoolYearId,
-      page: page > 1 ? page : undefined,
-    });
-
-  const pages = paginationPages(currentPage, totalPages);
-
-  return (
-    <nav
-      className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between"
-      aria-label="Registration list pagination"
-    >
-      <p className="text-sm text-muted-foreground">
-        Showing{" "}
-        <span className="font-medium text-foreground">{start}</span> to{" "}
-        <span className="font-medium text-foreground">{end}</span> of{" "}
-        <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span>{" "}
-        registration{totalCount !== 1 ? "s" : ""}
-      </p>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {currentPage <= 1 ? (
-          <span className={`${btnBase} ${btnDisabled}`} aria-disabled>
-            ← Previous
-          </span>
-        ) : (
-          <Link href={hrefForPage(currentPage - 1)} className={btnBase}>
-            ← Previous
-          </Link>
-        )}
-
-        <div className="flex flex-wrap items-center gap-1">
-          {pages.map((item, i) =>
-            item === "ellipsis" ? (
-              <span
-                key={`e-${i}`}
-                className="inline-flex min-w-9 items-center justify-center text-muted-foreground"
-                aria-hidden
-              >
-                …
-              </span>
-            ) : (
-              <Link
-                key={item}
-                href={hrefForPage(item)}
-                className={`${btnBase} min-w-9 px-0 ${item === currentPage ? btnActive : ""}`}
-                aria-current={item === currentPage ? "page" : undefined}
-              >
-                {item}
-              </Link>
-            )
-          )}
-        </div>
-
-        {currentPage >= totalPages ? (
-          <span className={`${btnBase} ${btnDisabled}`} aria-disabled>
-            Next →
-          </span>
-        ) : (
-          <Link href={hrefForPage(currentPage + 1)} className={btnBase}>
-            Next →
-          </Link>
-        )}
-      </div>
-    </nav>
-  );
 }
 
 export async function RegistrationQueuePage(props: {
@@ -314,12 +197,13 @@ export async function RegistrationQueuePage(props: {
         }
       />
 
-      <RegistrationsPagination
-        pathPrefix={pathPrefix}
+      <TablePagination
         currentPage={currentPage}
         totalPages={totalPages}
-        totalCount={totalCount}
-        schoolYearId={schoolYearId}
+        totalRecords={totalCount}
+        pageSize={PAGE_SIZE}
+        baseUrl={registrationsListHref(pathPrefix, { schoolYearId })}
+        itemLabel="registrations"
       />
     </div>
   );

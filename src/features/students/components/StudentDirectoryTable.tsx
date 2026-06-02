@@ -134,7 +134,7 @@ export function StudentDirectoryTable({
                     </div>
                   </td>
                   <td className="align-middle py-3">
-                    <code className="reference-code text-[0.8rem]">#{s.referenceNumber}</code>
+                    <code className="reference-code text-[0.8rem]">{s.referenceNumber}</code>
                   </td>
                   <td className="align-middle py-3 text-foreground">
                     {s.gradeLevelName ?? <span className="text-muted-foreground">—</span>}
