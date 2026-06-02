@@ -46,6 +46,9 @@ next-env.d.ts
 
 # docs
 .gstack/
+docs*
+docs/*.md
+docs/**/*.md
 
 # Database dumps and backups (SECURITY: prevent accidental commits)
 *.sql

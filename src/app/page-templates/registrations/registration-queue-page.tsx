@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { registrations, students, schoolYears, gradeLevels, enrollments } from "@/lib/db/schema";
 import { and, eq, desc, ne, notExists, sql, isNull } from "drizzle-orm";
@@ -6,9 +5,9 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import RegistrationsTable from "@/features/registrations/components/RegistrationsTable";
-import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
 import { parseUuidSearchParam } from "@/lib/utils/query-params";
 import { TablePagination } from "@/components/ui/TablePagination";
+import { RegistrationQueueToolbar } from "./RegistrationQueueToolbar";
 
 const PAGE_SIZE = 20;
 
@@ -108,6 +107,12 @@ export async function RegistrationQueuePage(props: {
   const totalCount = countResult[0]?.count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
+  // Derive display labels for subtitle
+  const selectedYearLabel = schoolYearId
+    ? schoolYearOptions.find((y) => y.id === schoolYearId)?.label
+    : null;
+  const hasFilters = schoolYearId != null;
+
   const tableData = rows.map((r) => ({
     id: r.id,
     studentId: r.studentId,
@@ -123,88 +128,71 @@ export async function RegistrationQueuePage(props: {
   const studentBasePath = `${pathPrefix}/students` as StudentBasePath;
 
   return (
-    <div className="page-container space-y-8">
-      <SectionHeader
-        title="Registrar queue"
-        subtitle={
-          <>
-            <strong>Approved</strong> registrations only. Learners with a non-cancelled enrollment for
-            the <strong>active</strong> school year are omitted. Filter by the school year stored on
-            each registration.
-          </>
-        }
-        size="md"
-        accent
-        actions={
-          hasPermission(session.role, "students:create") ? (
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Link
-                href={`${studentBasePath}/new`}
-                className="btn-primary h-auto px-4 py-2"
-                id="new-registration-btn"
-              >
-                + New student
-              </Link>
-              <Link
-                href={`${studentBasePath}/new?intent=transferee`}
-                className="btn-secondary h-auto px-4 py-2 text-sm font-medium"
-                id="new-registration-transferee-btn"
-              >
-                + Transferee
-              </Link>
-            </div>
-          ) : undefined
-        }
-      />
+    <div className="page-container space-y-6">
+      {/* Header: title + subtitle (left), toolbar (right) */}
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="space-y-1">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
+            Registrar queue
+          </h1>
+          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            <span className="text-gray-600 dark:text-gray-400">
+              {selectedYearLabel ?? "All school years"}
+            </span>
+            {" · "}
+            {totalCount.toLocaleString()} registration{totalCount !== 1 ? "s" : ""}{" "}
+            {hasFilters ? "matching the filter" : "pending enrollment"}.
+          </p>
+        </div>
 
-      <form
-        method="GET"
-        className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-sm"
+        <RegistrationQueueToolbar
+          schoolYearOptions={schoolYearOptions}
+          schoolYearId={schoolYearId}
+          hasFilters={hasFilters}
+          clearHref={`${pathPrefix}/registrations`}
+          newStudentHref={`${studentBasePath}/new`}
+          newTransfereeHref={`${studentBasePath}/new?intent=transferee`}
+          canCreate={hasPermission(session.role, "students:create")}
+        />
+      </div>
+
+      {/* Table: single bordered card section */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="queue-heading"
       >
-        <label htmlFor="registrations-school-year" className="text-sm text-muted-foreground">
-          School year
-        </label>
-        <select
-          id="registrations-school-year"
-          name="schoolYearId"
-          defaultValue={schoolYearId ?? ""}
-          className="min-w-[12rem] rounded-md border border-input bg-card px-3 py-2 text-[0.825rem] text-foreground outline-none"
-        >
-          <option value="">All school years</option>
-          {schoolYearOptions.map((y) => (
-            <option key={y.id} value={y.id}>
-              {y.label}
-            </option>
-          ))}
-        </select>
-        <button type="submit" className="btn-secondary">
-          Apply
-        </button>
-        {schoolYearId != null && (
-          <Link href={`${pathPrefix}/registrations`} className="btn-ghost text-sm">
-            Clear filter
-          </Link>
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2
+            id="queue-heading"
+            className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+          >
+            Approved registrations
+          </h2>
+        </div>
+
+        <RegistrationsTable
+          registrations={tableData}
+          studentBasePath={studentBasePath}
+          emptyMessage={
+            schoolYearId != null
+              ? "No approved registrations for the selected school year that still need a current-year enrollment."
+              : "No approved registrations pending current-year enrollment."
+          }
+        />
+
+        {totalCount > 0 && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalRecords={totalCount}
+              pageSize={PAGE_SIZE}
+              baseUrl={registrationsListHref(pathPrefix, { schoolYearId })}
+              itemLabel="registrations"
+            />
+          </div>
         )}
-      </form>
-
-      <RegistrationsTable
-        registrations={tableData}
-        studentBasePath={studentBasePath}
-        emptyMessage={
-          schoolYearId != null
-            ? "No approved registrations for the selected school year that still need a current-year enrollment."
-            : "No approved registrations pending current-year enrollment."
-        }
-      />
-
-      <TablePagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalRecords={totalCount}
-        pageSize={PAGE_SIZE}
-        baseUrl={registrationsListHref(pathPrefix, { schoolYearId })}
-        itemLabel="registrations"
-      />
+      </section>
     </div>
   );
 }
