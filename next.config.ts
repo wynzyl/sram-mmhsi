@@ -1,5 +1,33 @@
 import type { NextConfig } from "next";
 
+const isProd = process.env.NODE_ENV === "production";
+
+/**
+ * Content-Security-Policy (defense-in-depth).
+ *
+ * Note: a per-request nonce policy is intentionally NOT used — it conflicts with this
+ * app's `cacheComponents` (prerendered output can't carry a fresh per-request nonce).
+ * We therefore use a static policy: `'unsafe-inline'` is required for Next.js/React inline
+ * bootstrap + styles, and `'unsafe-eval'` is only added in development (webpack/turbopack
+ * HMR needs it). Everything else is locked to `'self'`, with framing/object/base/form
+ * vectors closed off. Combined with React's auto-escaping (no `dangerouslySetInnerHTML`
+ * exists in the codebase) this is a meaningful XSS-mitigation layer.
+ */
+const cspDirectives = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "frame-src 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
 const nextConfig: NextConfig = {
   // output: 'standalone',
   cacheComponents: true,
@@ -31,6 +59,14 @@ const nextConfig: NextConfig = {
           { key: 'X-XSS-Protection', value: '1; mode=block' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Content-Security-Policy', value: cspDirectives },
+          // HSTS — only emitted in production (HTTPS). Browsers ignore it over plain HTTP.
+          ...(isProd
+            ? [{
+                key: 'Strict-Transport-Security',
+                value: 'max-age=63072000; includeSubDomains; preload',
+              }]
+            : []),
         ],
       },
     ];

@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { compare, hash, getRounds } from "bcryptjs";
+import { compare, hash, hashSync, getRounds } from "bcryptjs";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq, or } from "drizzle-orm";
@@ -10,6 +10,13 @@ import { eq, or } from "drizzle-orm";
 // SECURITY (A-6): bcrypt cost factor
 // Cost 12 provides ~4x more resistance than cost 10 against offline attacks
 const BCRYPT_COST = 12;
+
+// SECURITY (D-2): Dummy hash for timing-neutral login.
+// MUST use the same cost factor as real password hashes so that bcrypt.compare()
+// consumes identical CPU time for a non-existent user as for a real one. A hard-coded
+// lower-cost hash (e.g. $2b$10$...) leaks user existence via a measurable timing oracle.
+// Computed once at module load so it can never drift from BCRYPT_COST.
+const DUMMY_PASSWORD_HASH = hashSync("timing-neutral-dummy-password", BCRYPT_COST);
 import {
   LoginSchema,
   ChangePasswordSchema,
@@ -31,7 +38,7 @@ import {
   recordLoginFailures,
   resetLoginRateLimits,
 } from "@/lib/security/rateLimit";
-import { extractClientIPForRateLimit } from "@/lib/security/ipExtraction";
+import { extractClientIPForRateLimit, UNVERIFIED_IP_BUCKET } from "@/lib/security/ipExtraction";
 
 // ─── Role → Landing Page Map ──────────────────────────────────────────────────
 
@@ -62,8 +69,16 @@ export async function loginAction(
 
   // 0.1 Get client IP securely for rate limiting
   // SECURITY (D-1): Use proper IP extraction that handles spoofed X-Forwarded-For
+  // SECURITY (D-3): Fails closed to a shared bucket when the IP is undeterminable.
   const headersList = await headers();
-  const clientIp = extractClientIPForRateLimit(headersList, username);
+  const clientIp = extractClientIPForRateLimit(headersList);
+  if (clientIp === UNVERIFIED_IP_BUCKET) {
+    // Indicates a likely proxy misconfiguration (no X-Forwarded-For). Logins still work
+    // (per-username throttling applies) but IP throttling is degraded to a shared bucket.
+    logger.warn("[auth] Client IP undeterminable — IP rate limiting degraded to shared bucket", {
+      hint: "Ensure the reverse proxy sets X-Forwarded-For and TRUSTED_PROXY_COUNT is correct.",
+    });
+  }
 
   // 0.2 Check both IP and username rate limits
   // SECURITY (D-1): Per-account throttling prevents targeted attacks
@@ -103,10 +118,10 @@ export async function loginAction(
     };
   }
 
-  // 3. Compare password — always run compare to prevent timing attacks
-  const dummyHash =
-    "$2b$10$dummyhashfortimingneutralityXXXXXXXXXXXXXXXX";
-  const isValid = await compare(password, user?.passwordHash ?? dummyHash);
+  // 3. Compare password — always run compare to prevent timing attacks.
+  // Uses a cost-matched dummy hash (DUMMY_PASSWORD_HASH) so timing does not reveal
+  // whether the account exists.
+  const isValid = await compare(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
 
   if (!user || !isValid || !user.isActive) {
     // SECURITY (D-1): Record failure for exponential backoff

@@ -22,10 +22,35 @@ import type {
 } from "./users.schema";
 import { logger } from "@/lib/observability/logger";
 import { isAdminActionRateLimited, getAdminActionResetSeconds } from "@/lib/security/rateLimit";
+import { ROLES, type Role } from "@/lib/constants/roles";
 import bcrypt from "bcryptjs";
 
 // SECURITY (A-6): bcrypt cost factor - matches auth.actions.ts
 const BCRYPT_COST = 12;
+
+/**
+ * SECURITY: Privilege-escalation guard for user management.
+ *
+ * Only a super_admin may create, grant, or modify a super_admin account.
+ * Without this, any actor holding `users:manage` (notably `admin`) could mint a
+ * super_admin, elevate their own role, or reset the super_admin's password and
+ * take over the top-level account.
+ *
+ * @returns an error message if the action is forbidden, otherwise null.
+ */
+function assertSuperAdminAuthority(
+  actorRole: Role,
+  opts: { targetRole?: Role; existingRole?: Role }
+): string | null {
+  if (actorRole === ROLES.SUPER_ADMIN) return null;
+  if (
+    opts.targetRole === ROLES.SUPER_ADMIN ||
+    opts.existingRole === ROLES.SUPER_ADMIN
+  ) {
+    return "Only a super administrator can create or modify super-admin accounts.";
+  }
+  return null;
+}
 
 // ─── Create User Action ───────────────────────────────────────────────────────
 
@@ -57,6 +82,17 @@ export async function createUserAction(
   }
 
   const { password, ...userData } = result.data;
+
+  // 2.1 SECURITY: prevent non-super_admin from creating a super_admin account
+  const authError = assertSuperAdminAuthority(session.role, { targetRole: userData.role });
+  if (authError) {
+    logger.warn("[users] Blocked privileged role creation", {
+      actorId: session.userId,
+      actorRole: session.role,
+      targetRole: userData.role,
+    });
+    return { message: authError };
+  }
 
   // 3. Duplicate detection (PERFORMANCE: Single query checks both email and username)
   const duplicates = await db
@@ -160,6 +196,28 @@ export async function updateUserAction(
 
   if (!existingUser) {
     return { message: "User not found." };
+  }
+
+  // 3.1 SECURITY: prevent non-super_admin from modifying a super_admin account
+  // or elevating any account to super_admin.
+  const authError = assertSuperAdminAuthority(session.role, {
+    targetRole: updateData.role,
+    existingRole: existingUser.role,
+  });
+  if (authError) {
+    logger.warn("[users] Blocked privileged role escalation", {
+      actorId: session.userId,
+      actorRole: session.role,
+      targetUserId: userId,
+      existingRole: existingUser.role,
+      targetRole: updateData.role,
+    });
+    return { message: authError };
+  }
+
+  // 3.2 SECURITY: prevent self role-change (mirrors self-deactivation guard below)
+  if (userId === session.userId && updateData.role !== existingUser.role) {
+    return { errors: { role: ["You cannot change your own role."] } };
   }
 
   // 4. Duplicate detection (excluding current user)
@@ -311,13 +369,26 @@ export async function resetPasswordAction(
 
   // 3. Check user exists
   const [existingUser] = await db
-    .select({ id: users.id, email: users.email })
+    .select({ id: users.id, email: users.email, role: users.role })
     .from(users)
     .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     .limit(1);
 
   if (!existingUser) {
     return { message: "User not found." };
+  }
+
+  // 3.1 SECURITY: prevent non-super_admin from resetting a super_admin's password
+  // (account-takeover vector).
+  const authError = assertSuperAdminAuthority(session.role, { existingRole: existingUser.role });
+  if (authError) {
+    logger.warn("[users] Blocked privileged password reset", {
+      actorId: session.userId,
+      actorRole: session.role,
+      targetUserId: userId,
+      existingRole: existingUser.role,
+    });
+    return { message: authError };
   }
 
   try {
@@ -391,6 +462,18 @@ export async function toggleUserStatusAction(
 
   if (!existingUser) {
     return { message: "User not found." };
+  }
+
+  // 3.1 SECURITY: prevent non-super_admin from changing a super_admin's status
+  const authError = assertSuperAdminAuthority(session.role, { existingRole: existingUser.role });
+  if (authError) {
+    logger.warn("[users] Blocked privileged status change", {
+      actorId: session.userId,
+      actorRole: session.role,
+      targetUserId: userId,
+      existingRole: existingUser.role,
+    });
+    return { message: authError };
   }
 
   // 4. Prevent self-deactivation

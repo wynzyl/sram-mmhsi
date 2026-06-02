@@ -63,33 +63,35 @@ export function extractClientIP(headers: Headers): string | null {
 }
 
 /**
- * Extract client IP with a fallback value for rate limiting.
+ * Stable bucket used when the client IP cannot be determined.
+ * Shared on purpose — see the SECURITY note in extractClientIPForRateLimit.
+ */
+export const UNVERIFIED_IP_BUCKET = "ip:unverified";
+
+/**
+ * Extract a stable client IP key for IP-based rate limiting.
  *
- * SECURITY: Unlike extractClientIP, this NEVER returns "unknown" or a shared bucket.
- * If we can't determine the IP, we return a unique identifier to prevent
- * a shared rate limit bucket that could be exploited.
+ * SECURITY (D-3): This must FAIL CLOSED. A previous version returned a unique
+ * per-request identifier (`unknown:<uuid>`) when the IP was undeterminable — that
+ * silently DISABLED IP rate limiting (every attempt landed in its own bucket), so an
+ * attacker on a deployment without `X-Forwarded-For` could brute force without limit.
+ *
+ * When the IP cannot be determined we instead return a single STABLE shared bucket so
+ * unknown-IP traffic is collectively throttled. This is fail-closed; in a correctly
+ * configured deployment (reverse proxy setting XFF, per TRUSTED_PROXY_COUNT) it is never
+ * reached. Per-account (username) throttling is handled separately by the rate limiter,
+ * so legitimate single-user logins are unaffected. Do NOT key this bucket on the username
+ * — that would re-disable aggregate protection against credential-spraying across accounts.
  *
  * @param headers - Request headers object
- * @param fallbackIdentifier - Unique identifier to use if IP cannot be determined
- * @returns The client IP or fallback identifier
+ * @returns A stable client IP key, or the shared unverified-IP bucket.
  */
-export function extractClientIPForRateLimit(
-  headers: Headers,
-  fallbackIdentifier?: string
-): string {
+export function extractClientIPForRateLimit(headers: Headers): string {
   const ip = extractClientIP(headers);
-
   if (ip) {
     return ip;
   }
 
-  // If we can't determine IP and have a fallback (e.g., username), use it
-  if (fallbackIdentifier) {
-    return `fallback:${fallbackIdentifier}`;
-  }
-
-  // Last resort: generate a unique ID for this request
-  // This prevents shared bucket but may be too permissive
-  // In practice, legitimate proxies should always set XFF
-  return `unknown:${crypto.randomUUID()}`;
+  // Fail closed: shared, stable bucket (never a unique-per-request key).
+  return UNVERIFIED_IP_BUCKET;
 }
