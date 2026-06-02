@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { requireSession } from "@/lib/auth/session";
+import { requireSession, INVALID_SESSION_REDIRECT } from "@/lib/auth/session";
 import { getCurrentUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -19,7 +19,7 @@ async function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(INVALID_SESSION_REDIRECT);
 
   const activeSchoolYear = await getActiveSchoolYear();
 

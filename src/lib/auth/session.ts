@@ -7,6 +7,7 @@ import type { Role } from "@/lib/constants/roles";
 import { logger } from "@/lib/observability/logger";
 import {
   SESSION_COOKIE_NAME,
+  INVALID_SESSION_REDIRECT,
   encryptSessionJwt,
   decryptSessionJwt,
   type SessionPayload,
@@ -15,6 +16,8 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type { SessionPayload };
+// Re-exported so layouts/pages can import it alongside requireSession/getCurrentUser.
+export { INVALID_SESSION_REDIRECT };
 
 export type SessionUser = {
   id: string;
@@ -225,7 +228,9 @@ export async function requireSession(): Promise<SessionPayload> {
   const session = await getCurrentSession();
   if (!session) {
     const { redirect } = await import("next/navigation");
-    redirect("/login");
+    // Use the invalid-session signal so proxy.ts clears the stale cookie instead
+    // of redirecting the still-"authenticated" JWT back here (infinite loop).
+    redirect(INVALID_SESSION_REDIRECT);
     throw new Error("Redirecting...");
   }
   return session;

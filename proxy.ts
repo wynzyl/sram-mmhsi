@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { decryptSessionJwt, SESSION_COOKIE_NAME } from "@/lib/auth/session-token";
+import { decryptSessionJwt, SESSION_COOKIE_NAME, SESSION_INVALID_PARAM } from "@/lib/auth/session-token";
 import type { Role } from "@/lib/constants/roles";
 import { ROLES, STAFF_ROLES, PORTAL_ROLES, normalizeRole } from "@/lib/constants/roles";
 
@@ -76,6 +76,16 @@ export async function proxy(req: NextRequest) {
   // Authenticated user on public route → send to role's landing page
   // (role is guaranteed valid at this point due to the check above)
   if (isAuthenticated && isPublic && role) {
+    // Loop-breaker: the server layer (requireSession / layout user check) redirects
+    // here with ?session_invalid=1 when the JWT is valid but its DB session/user is
+    // gone. The proxy can't see the DB, so it trusts that signal — clear the cookie
+    // and let /login render instead of bouncing back to the landing page (which would
+    // redirect here again → infinite loop / blank flickering page).
+    if (req.nextUrl.searchParams.has(SESSION_INVALID_PARAM)) {
+      const res = NextResponse.next();
+      res.cookies.delete(SESSION_COOKIE_NAME);
+      return res;
+    }
     return NextResponse.redirect(new URL(ROLE_LANDING[role], req.nextUrl));
   }
 

@@ -1,0 +1,60 @@
+# Production Docker Compose for SRAMS
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-722811}
+      POSTGRES_DB: ${POSTGRES_DB:-SRAMS_DB}
+    ports:
+      - "5434:5432"
+    volumes:
+      # Named volume — Docker-managed (ext4 inside the Docker VM) so Postgres can
+      # set the 0700 ownership/permissions initdb requires. A Windows/NTFS host
+      # bind mount cannot honor these and makes the db container crash-loop.
+      - db-data:/var/lib/postgresql/data
+      # On a real LINUX production server you may instead anchor data to the host
+      # with a bind mount (permissions work there):
+      #   - ./srams/postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    image: sram-mmhsi-app:runner
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["npx", "tsx", "scripts/migrate.ts"]
+    restart: "no"
+
+  app:
+    image: sram-mmhsi-app:runner
+    build:
+      context: .
+      target: runner # Ensure your Dockerfile has a 'runner' stage
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  db-data:
