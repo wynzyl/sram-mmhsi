@@ -6,6 +6,7 @@ import {
   fetchStudentDirectoryPage,
   getStudentDirectoryEmptyMessage,
 } from "@/features/students/students.queries";
+import { isStudentSortBy } from "@/lib/utils/student-directory-href";
 
 export async function GET(request: NextRequest) {
   await connection(); // Requires auth - exclude from prerendering
@@ -34,11 +35,22 @@ export async function GET(request: NextRequest) {
     const validGradeLevelId =
       gradeLevelId && uuidRegex.test(gradeLevelId) ? gradeLevelId : undefined;
 
+    // Sort (whitelist-validated; invalid falls back to default order)
+    const rawSortBy = searchParams.get("sortBy");
+    const sortBy = isStudentSortBy(rawSortBy) ? rawSortBy : undefined;
+    const sortDir = sortBy
+      ? searchParams.get("sortDir") === "desc"
+        ? "desc"
+        : "asc"
+      : undefined;
+
     const data = await fetchStudentDirectoryPage({
       q,
       page,
       schoolYearId: validSchoolYearId,
       gradeLevelId: validGradeLevelId,
+      sortBy,
+      sortDir,
     });
 
     const emptyMessage = getStudentDirectoryEmptyMessage(

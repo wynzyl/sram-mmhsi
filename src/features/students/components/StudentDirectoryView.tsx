@@ -7,58 +7,25 @@ import { useStudents } from "@/features/students/hooks/use-students";
 import { useActiveSchoolYearId } from "@/components/providers/ActiveSchoolYearProvider";
 import {
   studentDirectoryListHref,
+  isStudentSortBy,
   type StudentDirectoryBasePath,
+  type StudentSortBy,
+  type StudentSortDir,
 } from "@/lib/utils/student-directory-href";
-import { StudentDirectoryTable } from "@/features/students/components/StudentDirectoryTable";
+import {
+  StudentDirectoryTable,
+  type StudentDirectoryActiveSort,
+} from "@/features/students/components/StudentDirectoryTable";
 import { StudentDirectoryPagination } from "@/features/students/components/StudentDirectoryPagination";
-
-export type StudentDirectoryQuickLink = {
-  href: string;
-  label: string;
-  description: string;
-  icon: "register" | "assessments" | "calendar";
-};
-
-function QuickLinkIcon({ name }: { name: StudentDirectoryQuickLink["icon"] }) {
-  const cls = "h-5 w-5 text-primary shrink-0";
-  if (name === "register") {
-    return (
-      <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="8.5" cy="7" r="4" />
-        <line x1="20" y1="8" x2="20" y2="14" />
-        <line x1="23" y1="11" x2="17" y2="11" />
-      </svg>
-    );
-  }
-  if (name === "assessments") {
-    return (
-      <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-      </svg>
-    );
-  }
-  return (
-    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
 
 export function StudentDirectoryView({
   basePath,
   registerHref,
   title,
-  quickLinks,
 }: {
   basePath: StudentDirectoryBasePath;
   registerHref: string;
   title: string;
-  quickLinks: StudentDirectoryQuickLink[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -69,6 +36,16 @@ export function StudentDirectoryView({
   const rawYear = searchParams.get("schoolYearId") || undefined;
   const gradeLevelId = searchParams.get("gradeLevelId") || undefined;
   const currentPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  // ─── Sort from URL ──────────────────────────────────────────────────
+  const rawSortBy = searchParams.get("sortBy");
+  const sortBy: StudentSortBy | undefined = isStudentSortBy(rawSortBy) ? rawSortBy : undefined;
+  const sortDir: StudentSortDir = sortBy
+    ? searchParams.get("sortDir") === "desc"
+      ? "desc"
+      : "asc"
+    : "asc";
+  const activeSort: StudentDirectoryActiveSort = sortBy ? { by: sortBy, dir: sortDir } : null;
 
   // Three cases for the year filter:
   // - "all"     → explicit "All school years": no year filter.
@@ -84,6 +61,8 @@ export function StudentDirectoryView({
     page: currentPage,
     schoolYearId: effectiveSchoolYearId,
     gradeLevelId,
+    sortBy,
+    sortDir,
   });
 
   const data = query.data;
@@ -94,24 +73,26 @@ export function StudentDirectoryView({
   const gradeLevelOptions = data?.gradeLevelOptions ?? [];
   const canCreate = data?.canCreate ?? false;
 
+  // ─── Derived display values ─────────────────────────────────────────
+  const qTrim = q.trim();
+  const qParam = qTrim || undefined;
+  const hasFilters = qTrim !== "" || rawYear != null || gradeLevelId != null;
+
   // If the requested page is out of range, snap back to the last page.
   useEffect(() => {
     if (totalCount > 0 && currentPage > totalPages) {
       router.replace(
         studentDirectoryListHref(basePath, {
-          q: q.trim() || undefined,
+          q: qParam,
           schoolYearId: rawYear,
           gradeLevelId,
+          sortBy,
+          sortDir: sortBy ? sortDir : undefined,
           page: totalPages,
         })
       );
     }
-  }, [totalCount, totalPages, currentPage, basePath, q, rawYear, gradeLevelId, router]);
-
-  // ─── Derived display values ─────────────────────────────────────────
-  const qTrim = q.trim();
-  const qParam = qTrim || undefined;
-  const hasFilters = qTrim !== "" || rawYear != null || gradeLevelId != null;
+  }, [totalCount, totalPages, currentPage, basePath, qParam, rawYear, gradeLevelId, sortBy, sortDir, router]);
 
   const selectedYearLabel =
     !isAllYears && effectiveSchoolYearId != null
@@ -131,7 +112,20 @@ export function StudentDirectoryView({
     subtitleFilter = "All enrolled school years";
   }
 
-  // ─── Filter form submit → push to URL (page resets to 1) ────────────
+  // ─── Sort header link builder (toggles direction, resets to page 1) ──
+  function sortHref(by: StudentSortBy): string {
+    const nextDir: StudentSortDir =
+      activeSort?.by === by && activeSort.dir === "asc" ? "desc" : "asc";
+    return studentDirectoryListHref(basePath, {
+      q: qParam,
+      schoolYearId: rawYear,
+      gradeLevelId,
+      sortBy: by,
+      sortDir: nextDir,
+    });
+  }
+
+  // ─── Filter form submit → push to URL (page resets to 1, sort kept) ──
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
@@ -143,6 +137,8 @@ export function StudentDirectoryView({
         q: nextQ,
         schoolYearId: nextYear,
         gradeLevelId: nextGrade,
+        sortBy,
+        sortDir: sortBy ? sortDir : undefined,
       })
     );
   }
@@ -151,8 +147,9 @@ export function StudentDirectoryView({
   const emptyMessage = data?.emptyMessage ?? "No students found.";
 
   return (
-    <div className="page-container space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="page-container space-y-6">
+      {/* Header: title + subtitle (left), filters + register toolbar (right, same row) */}
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-1">
           <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">{title}</h1>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
@@ -162,103 +159,97 @@ export function StudentDirectoryView({
             {hasFilters ? "matching the current filters." : "on file."}
           </p>
         </div>
-        {canCreate && (
-          <Link href={registerHref} className="btn-primary shrink-0 self-start" id="register-student-btn">
-            + Register Student
-          </Link>
-        )}
-      </div>
 
-      <form
-        key={searchParams.toString()}
-        onSubmit={handleSubmit}
-        role="search"
-        className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 shadow-sm focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-1 sm:flex-row sm:flex-wrap sm:items-stretch"
-      >
-        <div className="flex min-w-0 flex-1 items-stretch rounded-md border border-border bg-muted/50 sm:min-w-[14rem]">
-          <span className="flex items-center pl-3 pr-2 text-muted-foreground pointer-events-none">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
-              <path
-                fillRule="evenodd"
-                d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </span>
-          <input
-            id="student-search"
-            type="search"
-            name="q"
-            className="min-h-11 flex-1 bg-transparent py-2 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none"
-            placeholder="Search student records by name or reference…"
-            defaultValue={q}
-            autoComplete="off"
-          />
-        </div>
-
-        <select
-          name="schoolYearId"
-          defaultValue={isAllYears ? "all" : (rawYear ?? activeSchoolYearId ?? "")}
-          aria-label="Filter by school year"
-          className="form-control min-h-11 min-w-0 shrink-0 sm:min-w-44 sm:max-w-56 bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
-        >
-          <option value="all">All school years</option>
-          {schoolYearOptions.map((y) => (
-            <option key={y.id} value={y.id}>
-              {y.label}
-            </option>
-          ))}
-        </select>
-
-        <select
-          name="gradeLevelId"
-          defaultValue={gradeLevelId ?? ""}
-          aria-label="Filter by grade level"
-          className="form-control min-h-11 min-w-0 shrink-0 sm:min-w-40 sm:max-w-48 bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
-        >
-          <option value="">All grades</option>
-          {gradeLevelOptions.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-
-        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-          {hasFilters && (
-            <Link
-              href={basePath}
-              className="inline-flex min-h-11 items-center px-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Clear filters
-            </Link>
-          )}
-          <button type="submit" className="btn-primary min-h-11 px-6">
-            Search
-          </button>
-        </div>
-      </form>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        {quickLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="group flex gap-3 rounded-lg border border-border bg-card p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md"
+        <div className="rounded-lg border border-border bg-card p-2 shadow-sm">
+          <form
+            key={searchParams.toString()}
+            onSubmit={handleSubmit}
+            role="search"
+            className="flex flex-col gap-2 sm:flex-row sm:items-center focus-within:[&_input]:outline-none"
           >
-            <QuickLinkIcon name={link.icon} />
-            <div className="min-w-0">
-              <p className="font-display font-semibold text-foreground group-hover:text-primary transition-colors">
-                {link.label}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">{link.description}</p>
+            <div className="flex w-full items-stretch rounded-md border border-border bg-muted/50 sm:w-60">
+              <span className="flex items-center pl-3 pr-2 text-muted-foreground pointer-events-none">
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+                  <path
+                    fillRule="evenodd"
+                    d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+              <input
+                id="student-search"
+                type="search"
+                name="q"
+                className="min-h-10 flex-1 bg-transparent py-2 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                placeholder="Search student records…"
+                defaultValue={q}
+                autoComplete="off"
+              />
             </div>
-          </Link>
-        ))}
+
+            <div className="w-full sm:w-44 sm:flex-none">
+              <select
+                name="schoolYearId"
+                defaultValue={isAllYears ? "all" : (rawYear ?? activeSchoolYearId ?? "")}
+                aria-label="Filter by school year"
+                onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                className="form-control min-h-10 w-full bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
+              >
+                <option value="all">All school years</option>
+                {schoolYearOptions.map((y) => (
+                  <option key={y.id} value={y.id}>
+                    {y.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="w-full sm:w-40 sm:flex-none">
+              <select
+                name="gradeLevelId"
+                defaultValue={gradeLevelId ?? ""}
+                aria-label="Filter by grade level"
+                onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                className="form-control min-h-10 w-full bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
+              >
+                <option value="">All grades</option>
+                {gradeLevelOptions.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {hasFilters && (
+              <Link
+                href={basePath}
+                className="inline-flex min-h-10 items-center px-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Clear
+              </Link>
+            )}
+
+            {canCreate && (
+              <Link
+                href={registerHref}
+                className="btn-primary min-h-10 px-4 shrink-0"
+                id="register-student-btn"
+              >
+                + Register Student
+              </Link>
+            )}
+          </form>
+        </div>
       </div>
 
-      <section className="space-y-4" aria-labelledby="roster-heading">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* Roster: single bordered card (header bar · table · footer pagination) */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="roster-heading"
+      >
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <h2
             id="roster-heading"
             className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
@@ -290,7 +281,7 @@ export function StudentDirectoryView({
         </div>
 
         {query.isError ? (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-6 text-center text-sm text-destructive">
+          <div className="p-6 text-center text-sm text-destructive">
             Failed to load students. Please try again.
             <div className="mt-3">
               <button type="button" onClick={() => query.refetch()} className="btn-primary min-h-9 px-4">
@@ -302,18 +293,26 @@ export function StudentDirectoryView({
           <StudentDirectoryTable
             rows={rows}
             emptyMessage={isInitialLoading ? "Loading students…" : emptyMessage}
+            activeSort={activeSort}
+            sortHref={sortHref}
           />
         )}
 
-        <StudentDirectoryPagination
-          basePath={basePath}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalCount={totalCount}
-          q={qParam}
-          schoolYearId={rawYear}
-          gradeLevelId={gradeLevelId}
-        />
+        {totalCount > 0 && (
+          <div className="border-t border-border px-4 py-3">
+            <StudentDirectoryPagination
+              basePath={basePath}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              q={qParam}
+              schoolYearId={rawYear}
+              gradeLevelId={gradeLevelId}
+              sortBy={sortBy}
+              sortDir={sortBy ? sortDir : undefined}
+            />
+          </div>
+        )}
       </section>
 
       <p className="text-center text-[0.7rem] text-muted-foreground pb-2">

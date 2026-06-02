@@ -1,6 +1,10 @@
+import Link from "next/link";
 import type { StudentDirectoryRow } from "../students.queries";
 import { StudentDirectoryRowActions } from "@/features/students/components/StudentDirectoryRowActions";
 import { getInitials } from "@/lib/utils/name";
+import type { StudentSortBy, StudentSortDir } from "@/lib/utils/student-directory-href";
+
+export type StudentDirectoryActiveSort = { by: StudentSortBy; dir: StudentSortDir } | null;
 
 function subtitle(row: StudentDirectoryRow): string {
   const parts: string[] = [];
@@ -9,27 +13,94 @@ function subtitle(row: StudentDirectoryRow): string {
   return parts.length > 0 ? parts.join(" · ") : "—";
 }
 
+const headClass = "font-semibold tracking-wide text-gray-600 dark:text-gray-400";
+
+function SortChevron({ state }: { state: "asc" | "desc" | "none" }) {
+  // Active direction uses primary; inactive uses a muted double-arrow.
+  if (state === "none") {
+    return (
+      <span className="text-muted-foreground/50" aria-hidden>
+        ↕
+      </span>
+    );
+  }
+  return (
+    <span className="text-primary" aria-hidden>
+      {state === "asc" ? "▲" : "▼"}
+    </span>
+  );
+}
+
+function SortableHeader({
+  column,
+  label,
+  activeSort,
+  sortHref,
+  className,
+}: {
+  column: StudentSortBy;
+  label: string;
+  activeSort: StudentDirectoryActiveSort;
+  sortHref: (by: StudentSortBy) => string;
+  className?: string;
+}) {
+  const isActive = activeSort?.by === column;
+  const state: "asc" | "desc" | "none" = isActive ? activeSort!.dir : "none";
+  return (
+    <th className={`${headClass} ${className ?? ""}`}>
+      <Link
+        href={sortHref(column)}
+        className="group inline-flex items-center gap-1.5 rounded transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+        aria-label={`Sort by ${label}`}
+        aria-sort={isActive ? (state === "asc" ? "ascending" : "descending") : "none"}
+      >
+        {label}
+        <SortChevron state={state} />
+      </Link>
+    </th>
+  );
+}
+
 export function StudentDirectoryTable({
   rows,
   emptyMessage,
+  activeSort,
+  sortHref,
 }: {
   rows: StudentDirectoryRow[];
   emptyMessage: string;
+  activeSort: StudentDirectoryActiveSort;
+  sortHref: (by: StudentSortBy) => string;
 }) {
-  const colSpan = 8;
+  const colSpan = 7;
 
   return (
-    <div className="table-wrapper rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+    <div className="overflow-x-auto">
       <table className="data-table w-full text-left text-sm" id="students-directory-table">
         <thead>
           <tr className="border-b border-border bg-muted">
-            <th className="pl-4 font-semibold tracking-wide text-gray-600 dark:text-gray-400">Student</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">ID number</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Grade</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Address</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Tel Number</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Email</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Status</th>
+            <SortableHeader
+              column="name"
+              label="Student"
+              activeSort={activeSort}
+              sortHref={sortHref}
+              className="pl-4"
+            />
+            <th className={headClass}>ID number</th>
+            <th className={headClass}>Grade</th>
+            <th className={headClass}>Address</th>
+            <SortableHeader
+              column="tel"
+              label="Tel Number"
+              activeSort={activeSort}
+              sortHref={sortHref}
+            />
+            <SortableHeader
+              column="status"
+              label="Status"
+              activeSort={activeSort}
+              sortHref={sortHref}
+            />
             <th className="w-px text-right font-semibold tracking-wide text-gray-600 dark:text-gray-400" aria-label="Actions" />
           </tr>
         </thead>
@@ -74,9 +145,6 @@ export function StudentDirectoryTable({
                   <td className="align-middle py-3 text-foreground">
                     {s.telNumber ?? <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="align-middle py-3 text-foreground max-w-[12rem]">
-                    <span className="line-clamp-1">{s.email ?? <span className="text-muted-foreground">—</span>}</span>
-                  </td>
                   <td className="align-middle py-3">
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
@@ -89,7 +157,7 @@ export function StudentDirectoryTable({
                       {s.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="align-middle py-3 text-right">
+                  <td className="align-middle py-3 text-right pr-2">
                     <StudentDirectoryRowActions studentId={s.id} />
                   </td>
                 </tr>

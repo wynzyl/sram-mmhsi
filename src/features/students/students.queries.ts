@@ -1,8 +1,12 @@
 import 'server-only';
 import { db } from "@/lib/db";
 import { enrollments, gradeLevels, schoolYears, sections, students } from "@/lib/db/schema";
-import { and, asc, desc, eq, ilike, isNull, ne, or, sql } from "drizzle-orm";
-import { STUDENT_DIRECTORY_PAGE_SIZE } from "@/lib/utils/student-directory-href";
+import { and, asc, desc, eq, ilike, isNull, ne, or, sql, type SQL } from "drizzle-orm";
+import {
+  STUDENT_DIRECTORY_PAGE_SIZE,
+  type StudentSortBy,
+  type StudentSortDir,
+} from "@/lib/utils/student-directory-href";
 
 export { STUDENT_DIRECTORY_PAGE_SIZE };
 
@@ -39,6 +43,8 @@ export async function fetchStudentDirectoryPage(params: {
   page: number;
   schoolYearId?: string;
   gradeLevelId?: string;
+  sortBy?: StudentSortBy;
+  sortDir?: StudentSortDir;
 }): Promise<{
   rows: StudentDirectoryRow[];
   totalCount: number;
@@ -79,6 +85,29 @@ export async function fetchStudentDirectoryPage(params: {
     ...(searchWhere ? [searchWhere] : [])
   );
 
+  // ORDER BY: when a sort column is chosen, it leads, followed by stable
+  // tiebreakers. With no sort, keep the original default ordering exactly.
+  const orderDir = params.sortDir === "desc" ? desc : asc;
+  const sortColumn = {
+    name: students.lastName,
+    tel: students.mobileNumber,
+    status: students.isActive,
+  };
+  const orderBy: SQL[] = params.sortBy
+    ? [
+        orderDir(sortColumn[params.sortBy]),
+        asc(students.lastName),
+        asc(students.firstName),
+        asc(enrollments.id),
+      ]
+    : [
+        asc(schoolYears.startDate),
+        asc(students.lastName),
+        asc(students.firstName),
+        asc(gradeLevels.order),
+        asc(enrollments.id),
+      ];
+
   const [schoolYearOptions, gradeLevelOptions, listRows, countResult] = await Promise.all([
     db
       .select({ id: schoolYears.id, label: schoolYears.label })
@@ -110,13 +139,7 @@ export async function fetchStudentDirectoryPage(params: {
       .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
       .leftJoin(sections, eq(enrollments.sectionId, sections.id))
       .where(studentListWhere)
-      .orderBy(
-        asc(schoolYears.startDate),
-        asc(students.lastName),
-        asc(students.firstName),
-        asc(gradeLevels.order),
-        asc(enrollments.id)
-      )
+      .orderBy(...orderBy)
       .limit(STUDENT_DIRECTORY_PAGE_SIZE)
       .offset(offset),
     db

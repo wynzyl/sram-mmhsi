@@ -15,6 +15,7 @@ import type {
   UpdateStudentFormState,
 } from "../students.schema";
 import type { StudentDirectoryRow } from "../students.queries";
+import type { StudentSortBy, StudentSortDir } from "@/lib/utils/student-directory-href";
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -25,6 +26,8 @@ export type StudentFilters = {
   page?: number;
   schoolYearId?: string;
   gradeLevelId?: string;
+  sortBy?: StudentSortBy;
+  sortDir?: StudentSortDir;
 };
 
 export type StudentDirectoryResponse = {
@@ -51,6 +54,10 @@ async function fetchStudents(
   if (filters.page && filters.page > 1) params.set("page", String(filters.page));
   if (filters.schoolYearId) params.set("schoolYearId", filters.schoolYearId);
   if (filters.gradeLevelId) params.set("gradeLevelId", filters.gradeLevelId);
+  if (filters.sortBy) {
+    params.set("sortBy", filters.sortBy);
+    if (filters.sortDir === "desc") params.set("sortDir", "desc");
+  }
 
   const queryString = params.toString();
   const url = `/api/students${queryString ? `?${queryString}` : ""}`;
@@ -83,6 +90,8 @@ export function useStudents(filters: StudentFilters = {}) {
     page: filters.page || 1,
     schoolYearId: filters.schoolYearId || undefined,
     gradeLevelId: filters.gradeLevelId || undefined,
+    sortBy: filters.sortBy,
+    sortDir: filters.sortBy ? filters.sortDir ?? "asc" : undefined,
   };
 
   // Freshness is school-year aware: rows for the active school year stay

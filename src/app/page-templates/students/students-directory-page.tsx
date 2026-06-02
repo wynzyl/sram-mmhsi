@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
 import type { StudentDirectoryBasePath } from "@/lib/utils/student-directory-href";
-import {
-  StudentDirectoryView,
-  type StudentDirectoryQuickLink,
-} from "@/features/students/components/StudentDirectoryView";
+import { StudentDirectoryView } from "@/features/students/components/StudentDirectoryView";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 
@@ -21,9 +18,8 @@ export async function InternalStudentDirectoryPage(props: {
   registerHref: string;
   deniedRedirect: string;
   title: string;
-  quickLinks: StudentDirectoryQuickLink[];
 }) {
-  const { basePath, registerHref, deniedRedirect, title, quickLinks } = props;
+  const { basePath, registerHref, deniedRedirect, title } = props;
 
   const session = await requireSession();
   if (!hasPermission(session.role, "students:read")) redirect(deniedRedirect);
@@ -33,7 +29,6 @@ export async function InternalStudentDirectoryPage(props: {
       basePath={basePath}
       registerHref={registerHref}
       title={title}
-      quickLinks={quickLinks}
     />
   );
 }

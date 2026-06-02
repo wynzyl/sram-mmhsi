@@ -22,26 +22,6 @@ export default async function StaffStudentsMasterListPage(props: {
       registerHref="/staff/register"
       deniedRedirect={deniedRedirect}
       title="Student Directory"
-      quickLinks={[
-        {
-          href: "/staff/register",
-          label: "New registration",
-          description: "Registrar intake and new student flow.",
-          icon: "register",
-        },
-        {
-          href: "/staff/assessments",
-          label: "Assessments",
-          description: "Fee assessments and billing review.",
-          icon: "assessments",
-        },
-        {
-          href: "/staff/enrollments",
-          label: "Enrollments",
-          description: "Enrollment queue and section placement.",
-          icon: "calendar",
-        },
-      ]}
     />
   );
 }
