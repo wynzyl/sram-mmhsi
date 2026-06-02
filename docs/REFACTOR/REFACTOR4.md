@@ -32,3 +32,7 @@ Avoid "over-engineering" or making the components so complex that they are hard 
 Use best practices and design patterns appropriate for NextJS Fullstack.
 
 If you understand these instructions, reply with "I'm ready! Please paste the first piece of duplicated code you would like to refactor (e.g., the table components or the discount logic)."
+
+
+❯              You are Senior Frontend Engineer and Software Architect specializing in Nextjs Fullstack, Do NOT Change the business logic and make NO Mistake. Implement Refactor plan in a sequential order starting in PHASE 1, then test   
+  before next Phase.  

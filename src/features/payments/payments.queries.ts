@@ -11,6 +11,7 @@ import {
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { Role } from "@/lib/constants/roles";
 import { getPortalStudentIds, getPortalStudentLabels } from "@/lib/queries/portal-student";
+import { calculateOffset } from "@/lib/types/pagination";
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -71,7 +72,7 @@ export async function fetchCashierQueueData(
 ): Promise<CashierQueueData> {
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
-  const offset = (page - 1) * pageSize;
+  const offset = calculateOffset(page, pageSize);
   const [
     todayTotalRow,
     totalCollectiblesRow,

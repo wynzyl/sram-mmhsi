@@ -4,22 +4,16 @@ import Link from "next/link";
 import type { StudentClearanceSummary } from "../clearances.queries";
 import { CLEARANCE_TYPE_LABELS, type ClearanceType } from "../clearances.schema";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
-import { AlertTriangle, CheckCircle, FileText } from "lucide-react";
+import { AlertTriangle, FileText } from "lucide-react";
 
 interface StudentClearanceCardProps {
   summary: StudentClearanceSummary;
   studentId: string;
 }
-
-const STATUS_VARIANT_MAP: Record<string, "success" | "warning" | "info"> = {
-  cleared: "success",
-  pending: "warning",
-  waived: "info",
-};
 
 export default function StudentClearanceCard({
   summary,
@@ -118,9 +112,7 @@ export default function StudentClearanceCard({
                           amount={Number(clearance.outstandingAmount)}
                           className="text-sm"
                         />
-                        <Badge variant={STATUS_VARIANT_MAP[clearance.status] || "secondary"}>
-                          {clearance.status.charAt(0).toUpperCase() + clearance.status.slice(1)}
-                        </Badge>
+                        <StatusBadge type="clearance" status={clearance.status} />
                       </div>
                     </div>
                   ))}

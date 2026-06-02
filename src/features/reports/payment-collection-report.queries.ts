@@ -9,6 +9,7 @@ import {
   users,
 } from "@/lib/db/schema";
 import { eq, and, gte, lte, sql, asc, desc, isNull } from "drizzle-orm";
+import { calculateOffset } from "@/lib/types/pagination";
 
 // Re-export types and constants from types file for backward compatibility
 export type {
@@ -47,7 +48,7 @@ export async function getPaymentCollectionReport(
     params;
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
-  const offset = (page - 1) * pageSize;
+  const offset = calculateOffset(page, pageSize);
 
   // Build WHERE conditions
   const conditions = buildWhereConditions({

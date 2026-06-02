@@ -53,6 +53,7 @@ import {
 import { getDiscountRequestGate } from "./discounts.queries";
 import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
 import { assertNoLivePayments } from "@/lib/utils/payment-checks";
+import { validateRequestIsPending } from "@/lib/utils/request-guards";
 
 // ─── Discount Type Management ─────────────────────────────────────────────────
 
@@ -487,8 +488,9 @@ export async function approveDiscountRequestAction(
     return { message: "Discount request not found." };
   }
 
-  if (request.status !== "pending") {
-    return { message: `This request has already been ${request.status}.` };
+  const pendingError = validateRequestIsPending(request);
+  if (pendingError) {
+    return { message: pendingError };
   }
 
   try {
@@ -569,8 +571,9 @@ export async function rejectDiscountRequestAction(
     return { message: "Discount request not found." };
   }
 
-  if (request.status !== "pending") {
-    return { message: `This request has already been ${request.status}.` };
+  const pendingError = validateRequestIsPending(request);
+  if (pendingError) {
+    return { message: pendingError };
   }
 
   try {

@@ -18,7 +18,7 @@ import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { validateGradeProgression } from "@/lib/utils/enrollment-grade";
 import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
-import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
+import { extractConstraintName } from "@/lib/errors";
 import { parseFormData } from "@/lib/utils/form-validation";
 import {
   ConfirmEnrollmentSchema,
@@ -326,7 +326,7 @@ export async function confirmEnrollmentAction(
       };
     }
 
-    const uq = extractUniqueConstraint(err);
+    const uq = extractConstraintName(err);
     if (uq === "enrollment_unique_sy_idx" || detail.includes("enrollment_unique_sy_idx")) {
       return {
         errors: {

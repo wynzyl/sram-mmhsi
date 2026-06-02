@@ -1,39 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connection } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
+import { NextRequest } from "next/server";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   fetchStudentDirectoryPage,
   getStudentDirectoryEmptyMessage,
 } from "@/features/students/students.queries";
 import { isStudentSortBy } from "@/lib/utils/student-directory-href";
+import {
+  withAuth,
+  jsonResponse,
+  validateUuid,
+  parseIntParam,
+} from "@/lib/api/route-helpers";
 
-export async function GET(request: NextRequest) {
-  await connection(); // Requires auth - exclude from prerendering
-  try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!hasPermission(user.role, "students:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Parse query parameters
+export const GET = withAuth(
+  { permission: "students:read" },
+  async (request: NextRequest, user) => {
     const searchParams = request.nextUrl.searchParams;
-    const q = searchParams.get("q") ?? "";
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
-    const schoolYearId = searchParams.get("schoolYearId") ?? undefined;
-    const gradeLevelId = searchParams.get("gradeLevelId") ?? undefined;
 
-    // Validate UUIDs
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const validSchoolYearId =
-      schoolYearId && uuidRegex.test(schoolYearId) ? schoolYearId : undefined;
-    const validGradeLevelId =
-      gradeLevelId && uuidRegex.test(gradeLevelId) ? gradeLevelId : undefined;
+    // Parse and validate parameters
+    const q = searchParams.get("q") ?? "";
+    const page = parseIntParam(searchParams.get("page"), 1, { min: 1 });
+    const validSchoolYearId = validateUuid(searchParams.get("schoolYearId"));
+    const validGradeLevelId = validateUuid(searchParams.get("gradeLevelId"));
 
     // Sort (whitelist-validated; invalid falls back to default order)
     const rawSortBy = searchParams.get("sortBy");
@@ -61,16 +49,10 @@ export async function GET(request: NextRequest) {
 
     const canCreate = hasPermission(user.role, "students:create");
 
-    return NextResponse.json({
+    return jsonResponse({
       ...data,
       emptyMessage,
       canCreate,
     });
-  } catch (error) {
-    console.error("Error fetching students:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
   }
-}
+);

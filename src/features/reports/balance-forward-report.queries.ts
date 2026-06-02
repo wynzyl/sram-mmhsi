@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { payments, students, assessments, schoolYears, users } from "@/lib/db/schema";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
+import { calculateOffset } from "@/lib/types/pagination";
 
 export type BfxTransferRow = {
   id: string;
@@ -48,7 +49,7 @@ export async function getBfxTransfersReport(
   const { startDate, endDate, schoolYearId } = params;
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
-  const offset = (page - 1) * pageSize;
+  const offset = calculateOffset(page, pageSize);
 
   // Query BFX payments with related data
   const conditions = [

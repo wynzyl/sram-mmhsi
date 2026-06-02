@@ -7,6 +7,7 @@ import {
   parentsGuardians,
 } from "@/lib/db/schema";
 import { eq, and, asc, isNull, sql } from "drizzle-orm";
+import { calculateOffset } from "@/lib/types/pagination";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -132,7 +133,7 @@ export async function getStudentListReport(
   const { schoolYearId, gradeLevelId } = params;
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
-  const offset = (page - 1) * pageSize;
+  const offset = calculateOffset(page, pageSize);
 
   const guardian = primaryGuardianSubquery();
 

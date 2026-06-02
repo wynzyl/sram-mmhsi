@@ -10,10 +10,31 @@ type EnrollmentStatus =
 type ORStatus = "issued" | "cancelled" | "not_issued";
 type BillingStatus = "fully_paid" | "outstanding" | "cancelled" | "balance_forwarded";
 type StudentType = "new_student" | "transferee" | "old_student";
+type RequestStatus = "pending" | "approved" | "rejected" | "cancelled" | "withdrawn";
+type ClearanceStatus = "pending" | "cleared" | "waived";
+type DiscountStatus = "pending" | "approved" | "rejected" | "cancelled" | "reversed";
 
 interface StatusBadgeProps {
-  status: PaymentStatus | EnrollmentStatus | ORStatus | BillingStatus | StudentType | string;
-  type?: "payment" | "enrollment" | "or" | "billing" | "studentType";
+  status:
+    | PaymentStatus
+    | EnrollmentStatus
+    | ORStatus
+    | BillingStatus
+    | StudentType
+    | RequestStatus
+    | ClearanceStatus
+    | DiscountStatus
+    | string;
+  type?:
+    | "payment"
+    | "enrollment"
+    | "or"
+    | "billing"
+    | "studentType"
+    | "request"
+    | "clearance"
+    | "discount"
+    | "voidRequest";
 }
 
 const statusConfig = {
@@ -44,6 +65,35 @@ const statusConfig = {
     new_student: { variant: "info" as const, label: "New" },
     transferee: { variant: "secondary" as const, label: "Transferee" },
     old_student: { variant: "success" as const, label: "Returning" },
+  },
+  // Generic request status (cancellation requests, void requests, etc.)
+  request: {
+    pending: { variant: "warning" as const, label: "Pending" },
+    approved: { variant: "success" as const, label: "Approved" },
+    rejected: { variant: "danger" as const, label: "Rejected" },
+    cancelled: { variant: "secondary" as const, label: "Cancelled" },
+    withdrawn: { variant: "secondary" as const, label: "Withdrawn" },
+  },
+  // Clearance status
+  clearance: {
+    pending: { variant: "warning" as const, label: "Pending" },
+    cleared: { variant: "success" as const, label: "Cleared" },
+    waived: { variant: "info" as const, label: "Waived" },
+  },
+  // Discount request status
+  discount: {
+    pending: { variant: "warning" as const, label: "Pending" },
+    approved: { variant: "success" as const, label: "Approved" },
+    rejected: { variant: "danger" as const, label: "Rejected" },
+    cancelled: { variant: "secondary" as const, label: "Cancelled" },
+    reversed: { variant: "info" as const, label: "Reversed" },
+  },
+  // Void request status (alias for request, kept for semantic clarity)
+  voidRequest: {
+    pending: { variant: "warning" as const, label: "Pending" },
+    approved: { variant: "success" as const, label: "Approved" },
+    rejected: { variant: "danger" as const, label: "Rejected" },
+    cancelled: { variant: "secondary" as const, label: "Cancelled" },
   },
 };
 

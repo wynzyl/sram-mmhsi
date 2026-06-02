@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { CACHE_TAGS, invalidateTag, forceUpdateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
-  payments,
   assessments,
   voidRequests,
 } from "@/lib/db/schema";
@@ -33,10 +32,18 @@ import {
   lockAssessmentTransferStatus,
   assertAssessmentNotTransferred,
 } from "@/lib/utils/tx-helpers";
+import {
+  createReversalPaymentEntry,
+  markPaymentAsReversed,
+} from "@/lib/utils/payment-helpers";
 import { revertToAssessedOnVoid } from "@/lib/utils/enrollment-status";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
 import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
+import {
+  assertRequestIsPending,
+  guardAgainstSelfAction,
+} from "@/lib/utils/request-guards";
 
 // ─── Request Void Action ───────────────────────────────────────────────────────
 
@@ -180,14 +187,10 @@ export async function approveVoidRequestAction(
       }
 
       // 2. Validate request state
-      if (request.status !== "pending") {
-        throw new Error(`Cannot approve a ${request.status} request. Only pending requests can be approved.`);
-      }
+      assertRequestIsPending(request, "approve");
 
       // 3. Block self-approval
-      if (request.requestedBy === session.userId) {
-        throw new Error("Self-approval is not allowed. Another administrator must approve this request.");
-      }
+      guardAgainstSelfAction(request.requestedBy, session.userId, "approve");
 
       // 4. Lock and fetch original payment
       const originalPayment = await lockPayment(tx, request.paymentId);
@@ -216,43 +219,15 @@ export async function approveVoidRequestAction(
           assessmentIdForRevalidation = assessment.id;
 
           // 7. Update original payment to "reversed" status
-          await tx
-            .update(payments)
-            .set({
-              status: "reversed",
-              reversedAt: new Date(),
-              reversedBy: session.userId,
-              reversedByRequestId: requestId,
-              updatedBy: session.userId,
-              updatedAt: new Date(),
-            })
-            .where(eq(payments.id, originalPayment.id));
+          await markPaymentAsReversed(tx, originalPayment.id, session.userId, requestId);
 
           // 8. Create reversal payment entry
-          const reversalReferenceNumber = originalPayment.orNumber
-            ? `REV-${originalPayment.orNumber}`
-            : `REV-${originalPayment.id.substring(0, 8)}`;
-
-          const [reversalPayment] = await tx
-            .insert(payments)
-            .values({
-              studentId: originalPayment.studentId,
-              assessmentId: originalPayment.assessmentId,
-              bookletId: null, // Reversals don't consume OR
-              orNumber: null,  // Reversals don't have OR number
-              orStatus: "available", // N/A for reversals
-              amount: `-${originalPayment.amount}`, // Negative amount
-              paymentMethod: originalPayment.paymentMethod,
-              referenceNumber: reversalReferenceNumber,
-              paymentDate: new Date(),
-              status: "reversal",
-              kind: "reversal",
-              reversesPaymentId: originalPayment.id,
-              remarks: `Reversal of OR ${originalPayment.orNumber ?? "N/A"} - ${request.requestReason}`,
-              createdBy: session.userId,
-              updatedBy: session.userId,
-            })
-            .returning({ id: payments.id });
+          const reversalPayment = await createReversalPaymentEntry(tx, {
+            originalPayment,
+            reversalRemarks: `Reversal of OR ${originalPayment.orNumber ?? "N/A"} - ${request.requestReason}`,
+            createdBy: session.userId,
+            reversedByRequestId: requestId,
+          });
 
           // 9. Update assessment balance
           const originalAmount = Number(originalPayment.amount);
@@ -323,43 +298,15 @@ export async function approveVoidRequestAction(
         }
       } else {
         // Payment without assessment - just mark as reversed
-        await tx
-          .update(payments)
-          .set({
-            status: "reversed",
-            reversedAt: new Date(),
-            reversedBy: session.userId,
-            reversedByRequestId: requestId,
-            updatedBy: session.userId,
-            updatedAt: new Date(),
-          })
-          .where(eq(payments.id, originalPayment.id));
+        await markPaymentAsReversed(tx, originalPayment.id, session.userId, requestId);
 
         // Create reversal entry
-        const reversalReferenceNumber = originalPayment.orNumber
-          ? `REV-${originalPayment.orNumber}`
-          : `REV-${originalPayment.id.substring(0, 8)}`;
-
-        const [reversalPayment] = await tx
-          .insert(payments)
-          .values({
-            studentId: originalPayment.studentId,
-            assessmentId: null,
-            bookletId: null,
-            orNumber: null,
-            orStatus: "available",
-            amount: `-${originalPayment.amount}`,
-            paymentMethod: originalPayment.paymentMethod,
-            referenceNumber: reversalReferenceNumber,
-            paymentDate: new Date(),
-            status: "reversal",
-            kind: "reversal",
-            reversesPaymentId: originalPayment.id,
-            remarks: `Reversal of OR ${originalPayment.orNumber ?? "N/A"} - ${request.requestReason}`,
-            createdBy: session.userId,
-            updatedBy: session.userId,
-          })
-          .returning({ id: payments.id });
+        const reversalPayment = await createReversalPaymentEntry(tx, {
+          originalPayment,
+          reversalRemarks: `Reversal of OR ${originalPayment.orNumber ?? "N/A"} - ${request.requestReason}`,
+          createdBy: session.userId,
+          reversedByRequestId: requestId,
+        });
 
         await tx
           .update(voidRequests)
@@ -449,16 +396,10 @@ export async function rejectVoidRequestAction(
       }
 
       // 2. Validate request state
-      if (request.status !== "pending") {
-        throw new Error(`Cannot reject a ${request.status} request. Only pending requests can be rejected.`);
-      }
+      assertRequestIsPending(request, "reject");
 
       // 3. Block self-rejection (same user who requested)
-      if (request.requestedBy === session.userId) {
-        throw new Error(
-          "You cannot reject your own void request. Use the cancel option instead, or have another administrator review it."
-        );
-      }
+      guardAgainstSelfAction(request.requestedBy, session.userId, "reject");
 
       // 4. Update void request to rejected
       await tx
@@ -529,9 +470,7 @@ export async function cancelVoidRequestAction(
       }
 
       // 2. Validate request state
-      if (request.status !== "pending") {
-        throw new Error(`Cannot cancel a ${request.status} request. Only pending requests can be cancelled.`);
-      }
+      assertRequestIsPending(request, "cancel");
 
       // 3. Only the original requester can cancel
       if (request.requestedBy !== session.userId) {

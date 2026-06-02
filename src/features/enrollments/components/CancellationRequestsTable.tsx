@@ -7,7 +7,7 @@ import { CANCELLATION_REASON_LABELS, type CancellationReason } from "@/lib/const
 import { DataTable } from "@/components/shared/DataTable";
 import { formatDate } from "@/lib/utils/date";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Eye } from "lucide-react";
@@ -19,13 +19,6 @@ interface CancellationRequestsTableProps {
    */
   showActions?: boolean;
 }
-
-const STATUS_VARIANT_MAP: Record<string, "warning" | "success" | "danger" | "secondary"> = {
-  pending: "warning",
-  approved: "success",
-  rejected: "danger",
-  cancelled: "secondary",
-};
 
 export default function CancellationRequestsTable({
   requests,
@@ -91,14 +84,9 @@ export default function CancellationRequestsTable({
       {
         header: "Status",
         accessorKey: "status",
-        cell: ({ row }) => {
-          const status = row.original.status;
-          return (
-            <Badge variant={STATUS_VARIANT_MAP[status] || "secondary"}>
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </Badge>
-          );
-        },
+        cell: ({ row }) => (
+          <StatusBadge type="request" status={row.original.status} />
+        ),
       },
       ...(showActions
         ? [

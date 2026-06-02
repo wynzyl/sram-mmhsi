@@ -6,6 +6,8 @@ import { updateEnrollmentStatusAction } from "../enrollments.actions";
 import CancelEnrollmentForm from "./CancelEnrollmentForm";
 import type { EnrollmentStatus } from "./CancelEnrollmentForm";
 import { formatDate } from "@/lib/utils/date";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { TableEmptyState } from "@/components/shared/TableEmptyState";
 
 interface Enrollment {
   id: string;
@@ -38,12 +40,6 @@ interface EnrollmentsTableProps {
   canOverrideEnrolled: boolean;
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  pending: "badge-warning",
-  assessed: "badge-secondary",
-  enrolled: "badge-success",
-  cancelled: "badge-danger",
-};
 
 function OverrideEnrollBlock({ enrollmentId, sections }: { enrollmentId: string; sections: Section[] }) {
   const [state, action, pending] = useActionState(updateEnrollmentStatusAction, {});
@@ -255,11 +251,10 @@ export default function EnrollmentsTable({
         </thead>
         <tbody>
           {enrollments.length === 0 ? (
-            <tr>
-              <td colSpan={showActions ? 7 : 6} className="table-empty">
-                No enrollment records found.
-              </td>
-            </tr>
+            <TableEmptyState
+              message="No enrollment records found."
+              colSpan={showActions ? 7 : 6}
+            />
           ) : (
             enrollments.map((en) => (
               <tr key={en.id} className="table-row-hover">
@@ -273,9 +268,7 @@ export default function EnrollmentsTable({
                   {en.section && <span className="text-muted"> — {en.section}</span>}
                 </td>
                 <td>
-                  <span className={`badge ${STATUS_BADGE[en.status] ?? "badge-secondary"}`}>
-                    {en.status.charAt(0).toUpperCase() + en.status.slice(1)}
-                  </span>
+                  <StatusBadge type="enrollment" status={en.status} />
                 </td>
                 <td className="text-muted">
                   {en.enrolledAt ? formatDate(en.enrolledAt) : "—"}

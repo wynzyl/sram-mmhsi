@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
+import { NextRequest } from "next/server";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   getAssessmentsList,
@@ -7,6 +6,7 @@ import {
   getPendingAssessmentQueue,
   type AssessmentBillingFilter,
 } from "@/features/assessments";
+import { withAuth, jsonResponse, parseIntParam } from "@/lib/api/route-helpers";
 
 const PAGE_SIZE = 20;
 
@@ -39,20 +39,12 @@ function viewToBillingFilter(view: AssessmentView): AssessmentBillingFilter | un
   }
 }
 
-export async function GET(request: NextRequest) {
-  await connection(); // Requires auth - exclude from prerendering
-  try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!hasPermission(user.role, "assessments:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
+export const GET = withAuth(
+  { permission: "assessments:read" },
+  async (request: NextRequest, user) => {
     const searchParams = request.nextUrl.searchParams;
     const view = parseView(searchParams.get("view"));
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+    const page = parseIntParam(searchParams.get("page"), 1, { min: 1 });
 
     const canCreate = hasPermission(user.role, "assessments:create");
     const canCancel = hasPermission(user.role, "enrollments:cancel");
@@ -80,7 +72,7 @@ export async function GET(request: NextRequest) {
       : billing!.pagination.totalPages;
     const currentPage = Math.min(Math.max(1, page), totalPages || 1);
 
-    return NextResponse.json({
+    return jsonResponse({
       view,
       rows: isPending ? [] : billing!.data,
       pendingRows: isPending ? pending.rows : [],
@@ -92,11 +84,5 @@ export async function GET(request: NextRequest) {
       canCreate,
       canCancel,
     });
-  } catch (error) {
-    console.error("Error fetching assessments:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
   }
-}
+);

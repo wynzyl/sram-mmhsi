@@ -15,7 +15,6 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TextAreaField } from "@/components/forms/TextInputField";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import {
   AlertTriangle,
@@ -32,13 +31,6 @@ interface CancellationRequestDetailProps {
   currentUserId: string;
   onActionComplete?: () => void;
 }
-
-const STATUS_VARIANT_MAP: Record<string, "warning" | "success" | "danger" | "secondary"> = {
-  pending: "warning",
-  approved: "success",
-  rejected: "danger",
-  cancelled: "secondary",
-};
 
 export default function CancellationRequestDetailView({
   request,
@@ -86,9 +78,7 @@ export default function CancellationRequestDetailView({
                 Review and process this enrollment cancellation request
               </p>
             </div>
-            <Badge variant={STATUS_VARIANT_MAP[request.status] || "secondary"}>
-              {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-            </Badge>
+            <StatusBadge type="request" status={request.status} />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

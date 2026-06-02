@@ -17,7 +17,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
-import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
+import { extractConstraintName } from "@/lib/errors";
 import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
 import { CreateStudentWithRegistrationSchema } from "../registrations/registrations.schema";
 import { UpdateStudentSchema } from "./students.schema";
@@ -331,7 +331,7 @@ export async function createStudentAction(
     const detail = collectPgErrorText(err);
     logger.error("[students] Failed to create student", { error: String(err), detail });
     const restore = buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]);
-    const constraint = extractUniqueConstraint(err);
+    const constraint = extractConstraintName(err);
 
     // LRN uniqueness violation
     if (constraint === "students_lrn_unique") {
@@ -574,7 +574,7 @@ export async function updateStudentAction(
   } catch (err) {
     const detail = collectPgErrorText(err);
     logger.error("[students] Failed to update student", { error: String(err), detail });
-    const constraint = extractUniqueConstraint(err);
+    const constraint = extractConstraintName(err);
 
     // LRN uniqueness violation
     if (constraint === "students_lrn_unique") {

@@ -17,7 +17,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit, logUpdateAction } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
-import { extractUniqueConstraint } from "@/lib/utils/error-handlers";
+import { extractConstraintName } from "@/lib/errors";
 import { formatCurrency } from "@/lib/utils/currency";
 import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
 import {
@@ -326,7 +326,7 @@ export async function createEnrollmentAction(
       };
     }
 
-    const uq = extractUniqueConstraint(err);
+    const uq = extractConstraintName(err);
     if (uq === "enrollment_unique_sy_idx" || detail.includes("enrollment_unique_sy_idx")) {
       return {
         errors: {

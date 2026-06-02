@@ -10,7 +10,7 @@ import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { formatDate } from "@/lib/utils/date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import {
   CLEARANCE_TYPE_LABELS,
   RESOLUTION_TYPE_LABELS,
@@ -24,12 +24,6 @@ export const metadata: Metadata = { title: "Clearance Details" };
 interface PageProps {
   params: Promise<{ clearanceId: string }>;
 }
-
-const STATUS_VARIANT_MAP: Record<string, "success" | "warning" | "info"> = {
-  cleared: "success",
-  pending: "warning",
-  waived: "info",
-};
 
 export default async function ClearanceDetailPage({ params }: PageProps) {
   const session = await requireSession();
@@ -69,9 +63,7 @@ export default async function ClearanceDetailPage({ params }: PageProps) {
                 {CLEARANCE_TYPE_LABELS[clearance.clearanceType as ClearanceType]}
               </p>
             </div>
-            <Badge variant={STATUS_VARIANT_MAP[clearance.status] || "secondary"}>
-              {clearance.status.charAt(0).toUpperCase() + clearance.status.slice(1)}
-            </Badge>
+            <StatusBadge type="clearance" status={clearance.status} />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

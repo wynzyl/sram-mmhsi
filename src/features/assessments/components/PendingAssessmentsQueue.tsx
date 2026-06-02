@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useFormToast } from "@/hooks/useFormToast";
 import { useInlineConfirm } from "@/hooks/useInlineConfirm";
 import { useCancelAssessmentFromQueue } from "@/features/assessments/hooks/use-assessments";
-import { getInitials } from "@/lib/utils/name";
+import { StudentAvatarCell } from "@/components/shared/StudentAvatarCell";
+import { TableEmptyState } from "@/components/shared/TableEmptyState";
+import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import {
   InlineConfirmButtons,
   InlineConfirmTrigger,
@@ -104,11 +106,10 @@ export default function PendingAssessmentsQueue({
         </thead>
         <tbody>
           {rows.length === 0 ? (
-            <tr>
-              <td colSpan={colSpan} className="table-empty px-6 py-12 text-center text-muted-foreground">
-                No enrollments are waiting for assessment.
-              </td>
-            </tr>
+            <TableEmptyState
+              message="No enrollments are waiting for assessment."
+              colSpan={colSpan}
+            />
           ) : (
             rows.map((r) => (
               <tr
@@ -116,22 +117,10 @@ export default function PendingAssessmentsQueue({
                 className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/80"
               >
                 <td className="align-middle py-3 pl-4 pr-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary"
-                      aria-hidden
-                    >
-                      {getInitials(r.studentName)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-foreground">
-                        {r.studentName}
-                      </p>
-                    </div>
-                  </div>
+                  <StudentAvatarCell name={r.studentName} />
                 </td>
                 <td className="align-middle py-3">
-                  <code className="reference-code text-[0.8rem]">{r.referenceNumber}</code>
+                  <ReferenceCode code={r.referenceNumber} />
                 </td>
                 <td className="align-middle py-3 text-foreground">
                   {r.gradeLevel}
