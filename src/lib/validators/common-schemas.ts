@@ -214,7 +214,7 @@ export const bloodTypeSchema = z
  * });
  * ```
  */
-export const genderSchema = z.enum(["male", "female", "other", "prefer_not_to_say"], {
+export const genderSchema = z.enum(["male", "female"], {
   message: "Gender is required.",
 });
 

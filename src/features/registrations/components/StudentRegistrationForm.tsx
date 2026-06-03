@@ -392,8 +392,6 @@ export default function StudentRegistrationForm({
                         ["", "Select gender"],
                         ["male", "Male"],
                         ["female", "Female"],
-                        ["other", "Other"],
-                        ["prefer_not_to_say", "Prefer not to say"],
                       ]}
                     />
                   )}

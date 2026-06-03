@@ -286,7 +286,7 @@ export default function EditStudentForm({
                 required
                 field={field}
                 serverErrors={serverErrors}
-                options={[["", "Select gender"], ["male", "Male"], ["female", "Female"], ["other", "Other"], ["prefer_not_to_say", "Prefer not to say"]]}
+                options={[["", "Select gender"], ["male", "Male"], ["female", "Female"]]}
               />
             )}
           />
