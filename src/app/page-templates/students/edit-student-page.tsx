@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { students, parentsGuardians, studentGuardianLinks, enrollments } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import EditStudentForm from "@/features/students/components/EditStudentForm";
 import { StudentEditHero } from "@/features/students/components/StudentEditHero";
 
@@ -54,7 +54,12 @@ export async function InternalEditStudentPage(props: {
     })
     .from(studentGuardianLinks)
     .innerJoin(parentsGuardians, eq(studentGuardianLinks.guardianId, parentsGuardians.id))
-    .where(eq(studentGuardianLinks.studentId, id));
+    .where(
+      and(
+        eq(studentGuardianLinks.studentId, id),
+        isNull(studentGuardianLinks.deletedAt),
+      ),
+    );
 
   const initialGuardians = guardians.map((g) => ({
     firstName: g.firstName,

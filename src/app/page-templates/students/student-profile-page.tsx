@@ -96,7 +96,12 @@ export async function InternalStudentProfilePage(props: {
     })
     .from(studentGuardianLinks)
     .innerJoin(parentsGuardians, eq(studentGuardianLinks.guardianId, parentsGuardians.id))
-    .where(eq(studentGuardianLinks.studentId, id));
+    .where(
+      and(
+        eq(studentGuardianLinks.studentId, id),
+        isNull(studentGuardianLinks.deletedAt),
+      ),
+    );
 
   const guardians: GuardianRow[] = guardianLinks;
 

@@ -8,7 +8,7 @@ import {
   studentGuardianLinks,
   parentsGuardians,
 } from "@/lib/db/schema";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, asc, desc, and, isNull } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "./assessments.queries";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 import {
@@ -178,7 +178,12 @@ export async function loadNewAssessmentPageContext(
     })
     .from(studentGuardianLinks)
     .innerJoin(parentsGuardians, eq(studentGuardianLinks.guardianId, parentsGuardians.id))
-    .where(eq(studentGuardianLinks.studentId, e.studentId))
+    .where(
+      and(
+        eq(studentGuardianLinks.studentId, e.studentId),
+        isNull(studentGuardianLinks.deletedAt),
+      ),
+    )
     .orderBy(desc(studentGuardianLinks.isPrimary), asc(studentGuardianLinks.createdAt))
     .limit(1);
 
