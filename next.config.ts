@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
+// Only enable HTTPS upgrade when running behind HTTPS (APP_BASE_URL starts with https://)
+const isHttps = process.env.APP_BASE_URL?.startsWith("https://") ?? false;
 
 /**
  * Content-Security-Policy (defense-in-depth).
@@ -25,7 +27,8 @@ const cspDirectives = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "frame-src 'none'",
-  "upgrade-insecure-requests",
+  // Only upgrade insecure requests when behind HTTPS to avoid breaking HTTP-only environments
+  ...(isHttps ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 const nextConfig: NextConfig = {

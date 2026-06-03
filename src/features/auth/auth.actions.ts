@@ -155,9 +155,17 @@ export async function loginAction(
     return { message: "Your account role is not supported. Please contact system support." };
   }
 
-  await createSession(user.id, normalizedRole, {
-    forcePasswordChange: user.forcePasswordChange,
-  });
+  try {
+    await createSession(user.id, normalizedRole, {
+      forcePasswordChange: user.forcePasswordChange,
+    });
+  } catch (error) {
+    logger.error("[auth] Failed to create session", {
+      userId: user.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { message: "Login failed. Please try again." };
+  }
 
   // 4.1 SECURITY (A-6): Transparent re-hash if password uses weaker cost factor
   // This upgrades existing passwords to the current BCRYPT_COST on successful login
@@ -236,15 +244,24 @@ export async function changePasswordAction(
 
   const { currentPassword, newPassword } = result.data;
 
-  // 3. Look up user and verify current password
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, session.userId),
-    columns: {
-      id: true,
-      passwordHash: true,
-      role: true,
-    },
-  });
+  // 3. Look up user and verify current password (with error handling)
+  let user;
+  try {
+    user = await db.query.users.findFirst({
+      where: eq(users.id, session.userId),
+      columns: {
+        id: true,
+        passwordHash: true,
+        role: true,
+      },
+    });
+  } catch (error) {
+    logger.error("[auth] Failed to look up user for password change", {
+      userId: session.userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { message: "Database error. Please try again." };
+  }
 
   if (!user) {
     return { message: "User not found. Please log in again." };
@@ -259,9 +276,8 @@ export async function changePasswordAction(
     };
   }
 
+  // 4. Hash new password and update DB
   try {
-    // 4. Hash new password and update user
-    // SECURITY (A-6): Use current bcrypt cost factor
     const newPasswordHash = await hash(newPassword, BCRYPT_COST);
 
     await db
@@ -273,28 +289,39 @@ export async function changePasswordAction(
         updatedBy: session.userId,
       })
       .where(eq(users.id, session.userId));
-
-    // 5. Audit log
-    logger.info("[auth] User changed password", { userId: session.userId });
-    await logAudit({
-      actor: session.userId,
-      actorRole: user.role,
-      action: "auth:password_changed",
-      targetEntity: "users",
-      targetId: session.userId,
-    });
-
-    // 6. Delete current session and redirect to login
-    // User must log in again with new password
-    await deleteSession();
-
   } catch (error) {
-    logger.error("[auth] Failed to change password", {
+    logger.error("[auth] Failed to update password in database", {
+      userId: session.userId,
       error: error instanceof Error ? error.message : String(error),
     });
-    return { message: "An error occurred. Please try again." };
+    return { message: "Failed to update password. Please try again." };
   }
 
+  // 5. Password updated successfully - log and cleanup
+  logger.info("[auth] User changed password", { userId: session.userId });
+
+  // Fire-and-forget audit log (don't block redirect)
+  void logAudit({
+    actor: session.userId,
+    actorRole: user.role,
+    action: "auth:password_changed",
+    targetEntity: "users",
+    targetId: session.userId,
+  });
+
+  // 6. Delete session (best-effort - don't fail if this errors)
+  // Password was changed successfully, session deletion is cleanup only
+  try {
+    await deleteSession();
+  } catch (error) {
+    logger.warn("[auth] Failed to delete session after password change", {
+      userId: session.userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Continue anyway - password was changed successfully
+  }
+
+  // 7. Always redirect to login after successful password change
   // redirect() throws internally — must be called outside try/catch
   redirect("/login?passwordChanged=true");
 }

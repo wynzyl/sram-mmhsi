@@ -56,6 +56,8 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder --chown=nextjs:nextjs /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.ts ./next.config.ts
+# Next.js 16 proxy (formerly middleware.ts) - handles auth redirects and session management
+COPY --from=builder /app/proxy.ts ./proxy.ts
 COPY --from=builder /app/src ./src
 # Drizzle migrations + seed/maintenance scripts must exist at runtime
 COPY --from=builder /app/drizzle ./drizzle

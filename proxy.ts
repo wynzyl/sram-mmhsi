@@ -81,7 +81,15 @@ export async function proxy(req: NextRequest) {
     // gone. The proxy can't see the DB, so it trusts that signal — clear the cookie
     // and let /login render instead of bouncing back to the landing page (which would
     // redirect here again → infinite loop / blank flickering page).
-    if (req.nextUrl.searchParams.has(SESSION_INVALID_PARAM)) {
+    //
+    // Also handle ?passwordChanged=true: after a successful password change, the
+    // server deletes the DB session but the browser still has the old JWT cookie.
+    // Without this check, proxy would redirect to landing page → requireSession()
+    // fails (orphaned JWT) → error page. Clear the cookie and let /login render.
+    const isSessionInvalid = req.nextUrl.searchParams.has(SESSION_INVALID_PARAM);
+    const isPasswordChanged = req.nextUrl.searchParams.has("passwordChanged");
+
+    if (isSessionInvalid || isPasswordChanged) {
       const res = NextResponse.next();
       res.cookies.delete(SESSION_COOKIE_NAME);
       return res;
