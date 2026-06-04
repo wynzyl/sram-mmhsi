@@ -1,13 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { e2eSuperAdmin, e2eStaffAdmin } from "./credentials";
+import { login as loginHelper } from "./helpers";
 
 test.describe.configure({ mode: "serial" });
 
 async function login(page: import("@playwright/test").Page, username: string, password: string) {
-  await page.goto("/login");
-  await page.getByLabel(/Username or Email/i).fill(username);
-  await page.getByLabel(/^Password$/i).fill(password);
-  await page.getByRole("button", { name: /Sign In/i }).click();
+  await loginHelper(page, { username, password });
 }
 
 test.describe("Role routes and /admin guard", () => {
@@ -20,16 +18,14 @@ test.describe("Role routes and /admin guard", () => {
     await expect(page).toHaveURL(/\/admin\/users/);
   });
 
-  test("admin lands on staff home; /admin/* redirects away from /admin", async ({ page }) => {
-    // `/staff/dashboard` immediately redirects `admin` to `staffHomePathForRole` (registrar queue).
+  test("admin lands on /admin/dashboard and may open staff routes", async ({ page }) => {
+    // proxy.ts ROLE_LANDING sends `admin` to /admin/dashboard and the /admin
+    // guard admits both super_admin and admin roles.
     await login(page, e2eStaffAdmin.username, e2eStaffAdmin.password);
-    await page.waitForURL("**/staff/registrations**");
-    expect(page.url()).toContain("/staff/registrations");
+    await page.waitForURL("**/admin/dashboard**");
+    expect(page.url()).toContain("/admin/dashboard");
 
-    await page.goto("/admin/dashboard");
-    await expect(page).toHaveURL(/\/staff\/registrations/, { timeout: 20_000 });
-
-    await page.goto("/admin/students");
+    await page.goto("/staff/registrations");
     await expect(page).toHaveURL(/\/staff\/registrations/, { timeout: 20_000 });
   });
 });
