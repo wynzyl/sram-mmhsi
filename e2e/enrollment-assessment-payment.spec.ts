@@ -46,9 +46,10 @@ test.afterAll(async () => {
 async function registrarEnrolls(page: Page, student: E2eCasaStudent) {
   await login(page, e2eRegistrar);
 
-  // pageSize=100 keeps every ready student on one page (search filters client-side only).
+  // Server-side search (fix F5): the queue query filters across ALL pages, so
+  // the default page size suffices — this doubles as the F5 regression test.
   await page.goto(
-    `/staff/enrollments?tab=ready-to-enroll&pageSize=100&search=${encodeURIComponent(student.lastName)}`
+    `/staff/enrollments?tab=ready-to-enroll&search=${encodeURIComponent(student.lastName)}`
   );
 
   // Both synthetic students share the same lastName — match "Last, First" to stay unique.

@@ -101,8 +101,15 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
   // Fetch current tab data, sections, grade levels, and tab counts in parallel
   // MEMORY OPTIMIZATION: Only fetch data for the CURRENT tab, not all 5 tabs
   // NOTE: getEnrollmentQueueCounts is already wrapped in unstable_cache (tag: 'enrollments')
+  // Server-side filters (F5): search + grade filter apply across ALL pages.
+  const queueFilters = {
+    search: searchQuery || undefined,
+    gradeLevelId:
+      gradeLevelFilter && gradeLevelFilter !== "all" ? gradeLevelFilter : undefined,
+  };
+
   const [queueData, allSections, allGradeLevels, tabCountsData] = await Promise.all([
-    getEnrollmentQueueData(currentTab, paginationParams),
+    getEnrollmentQueueData(currentTab, paginationParams, queueFilters),
     db
       .select({ id: sections.id, name: sections.name, gradeLevelId: sections.gradeLevelId })
       .from(sections)

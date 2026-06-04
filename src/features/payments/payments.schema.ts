@@ -98,6 +98,15 @@ export const PostPaymentSchema = z
       return s === "" ? undefined : s;
     }, z.string().optional()),
     remarks: z.string().trim().optional(),
+    /**
+     * Client-generated UUID (one per form mount) making the post idempotent —
+     * a retried submit with the same key returns the original payment instead
+     * of consuming a second OR. Optional for backward compatibility.
+     */
+    idempotencyKey: z.preprocess((v) => {
+      if (v === "" || v === null || v === undefined) return undefined;
+      return v;
+    }, z.string().uuid().optional()),
   })
   .superRefine((data, ctx) => {
     if (data.paymentMethod === "gcash" || data.paymentMethod === "bank_transfer") {

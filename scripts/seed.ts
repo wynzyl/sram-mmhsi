@@ -18,11 +18,14 @@ import { seedConfig } from "./seed-config";
 import { seedFeeItemTypes } from "./seed-fee-item-types";
 import { seedDiscountTypes } from "./seed-discount-types";
 
+import { logDbTarget } from "./lib/db-target";
+
 loadEnvConfig(process.cwd());
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL not set");
 
+logDbTarget("seed", connectionString);
 const client = postgres(connectionString, { max: 1 });
 const db = drizzle(client);
 

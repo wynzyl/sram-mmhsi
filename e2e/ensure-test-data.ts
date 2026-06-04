@@ -13,8 +13,10 @@ import {
   gradeLevels,
   parentsGuardians,
   studentGuardianLinks,
+  feeItemTypes,
   feeTemplates,
   feeTemplateItems,
+  schoolYearFeeSchedules,
   receiptBooklets,
 } from "../src/lib/db/schema";
 import { generateStudentRef } from "../src/lib/utils/reference";
@@ -115,6 +117,105 @@ async function nextUniqueStudentRef(db: ReturnType<typeof drizzle>): Promise<str
     if (existing.length === 0) return ref;
   }
   throw new Error("[e2e] Unable to allocate a unique student reference number after 200 attempts.");
+}
+
+/** Finds (or creates) a fee item type by code so the casa template can reference it. */
+async function ensureFeeItemType(
+  db: ReturnType<typeof drizzle>,
+  code: string,
+  name: string,
+  category: "tuition" | "fees" | "materials" | "discount" | "other"
+): Promise<string> {
+  const [existing] = await db
+    .select({ id: feeItemTypes.id })
+    .from(feeItemTypes)
+    .where(eq(feeItemTypes.code, code))
+    .limit(1);
+  if (existing) return existing.id;
+
+  const [created] = await db
+    .insert(feeItemTypes)
+    .values({ code, name, category, isActive: true })
+    .returning({ id: feeItemTypes.id });
+  return created.id;
+}
+
+/**
+ * Ensures the active school year has an active `casa` fee schedule so the
+ * finance assessment step can run on a fresh database (e.g. CI). Reuses an
+ * existing active casa template when present; otherwise builds a minimal one
+ * from the standard fee item types (TUITION / REGISTRATION).
+ */
+async function ensureCasaFeeSchedule(
+  db: ReturnType<typeof drizzle>,
+  schoolYearId: string
+): Promise<void> {
+  const [link] = await db
+    .select({ id: schoolYearFeeSchedules.id })
+    .from(schoolYearFeeSchedules)
+    .where(
+      and(
+        eq(schoolYearFeeSchedules.schoolYearId, schoolYearId),
+        eq(schoolYearFeeSchedules.assessmentBand, "casa"),
+        eq(schoolYearFeeSchedules.isActive, true)
+      )
+    )
+    .limit(1);
+  if (link) return; // Dev DBs configure this via the finance UI — nothing to do.
+
+  // Reuse an active casa template, or create a minimal one.
+  let templateId: string;
+  const [template] = await db
+    .select({ id: feeTemplates.id })
+    .from(feeTemplates)
+    .where(
+      and(
+        eq(feeTemplates.assessmentBand, "casa"),
+        eq(feeTemplates.isActive, true),
+        isNull(feeTemplates.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (template) {
+    templateId = template.id;
+  } else {
+    const [created] = await db
+      .insert(feeTemplates)
+      .values({
+        name: "E2E Casa Fee Template",
+        assessmentBand: "casa",
+        description: "Provisioned by Playwright global setup for fresh databases.",
+        isActive: true,
+      })
+      .returning({ id: feeTemplates.id });
+    templateId = created.id;
+  }
+
+  // Make sure the template has at least one billable line.
+  const existingItems = await db
+    .select({ id: feeTemplateItems.id })
+    .from(feeTemplateItems)
+    .where(and(eq(feeTemplateItems.feeTemplateId, templateId), isNull(feeTemplateItems.deletedAt)))
+    .limit(1);
+
+  if (existingItems.length === 0) {
+    const tuitionTypeId = await ensureFeeItemType(db, "TUITION", "Tuition Fee", "tuition");
+    const registrationTypeId = await ensureFeeItemType(db, "REGISTRATION", "Registration Fee", "fees");
+    await db.insert(feeTemplateItems).values([
+      { feeTemplateId: templateId, feeItemTypeId: tuitionTypeId, defaultAmount: "16500.00", order: 1 },
+      { feeTemplateId: templateId, feeItemTypeId: registrationTypeId, defaultAmount: "900.00", order: 2 },
+    ]);
+  }
+
+  await db.insert(schoolYearFeeSchedules).values({
+    schoolYearId,
+    assessmentBand: "casa",
+    feeTemplateId: templateId,
+    effectiveDate: new Date(),
+    isActive: true,
+  });
+  console.log("[e2e] Provisioned active casa fee schedule for the school year.");
 }
 
 /** Soft-deletes synthetic students from previous runs and cancels their open enrollments. */
@@ -275,23 +376,8 @@ export async function ensureE2eTestData(): Promise<void> {
       throw new Error("[e2e] Junior Casa / Senior Casa grade levels not found. Run `npm run db:seed-config`.");
     }
 
-    // ── Preflight: active casa fee template with at least one item ─────────
-    const [casaTemplate] = await db
-      .select({ id: feeTemplates.id })
-      .from(feeTemplates)
-      .where(and(eq(feeTemplates.assessmentBand, "casa"), eq(feeTemplates.isActive, true)))
-      .limit(1);
-    if (!casaTemplate) {
-      throw new Error("[e2e] No active 'casa' fee template — finance assessment step cannot run.");
-    }
-    const casaItems = await db
-      .select({ id: feeTemplateItems.id })
-      .from(feeTemplateItems)
-      .where(eq(feeTemplateItems.feeTemplateId, casaTemplate.id))
-      .limit(1);
-    if (casaItems.length === 0) {
-      throw new Error("[e2e] The active 'casa' fee template has no items — assessment would be empty.");
-    }
+    // ── Casa fee schedule (provisioned when missing — keeps CI self-sufficient) ──
+    await ensureCasaFeeSchedule(db, activeSy.id);
 
     // ── Dedicated E2E booklet (never consume real OR series) ───────────────
     const bookletId = await ensureE2eBooklet(db);

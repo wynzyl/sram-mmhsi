@@ -39,28 +39,28 @@ export async function seedConfig(db: PostgresJsDatabase): Promise<void> {
   const existingSY = await db
     .select({ id: schoolYears.id })
     .from(schoolYears)
-    .where(eq(schoolYears.label, "2025-2026"))
+    .where(eq(schoolYears.label, "2026-2027"))
     .limit(1);
 
   let schoolYearId: string;
 
   if (existingSY.length > 0) {
     schoolYearId = existingSY[0].id;
-    console.log("✅ School year 2025-2026 already exists. Skipping.");
+    console.log("✅ School year 2026-2027 already exists. Skipping.");
   } else {
     const [sy] = await db
       .insert(schoolYears)
       .values({
-        label: "2025-2026",
-        startDate: new Date("2025-06-01"),
-        endDate: new Date("2026-03-31"),
+        label: "2026-2027",
+        startDate: new Date("2026-06-01"),
+        endDate: new Date("2027-03-31"),
         isActive: true,
       })
       .returning({ id: schoolYears.id });
     schoolYearId = sy.id;
-    console.log("✅ School year 2025-2026 created:", schoolYearId);
+    console.log("✅ School year 2026-2027 created:", schoolYearId);
   }
-
+    
   // ─── Grade Levels ───────────────────────────────────────────────────────────
   const existingGLs = await db
     .select({ name: gradeLevels.name })

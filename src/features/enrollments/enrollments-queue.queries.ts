@@ -12,7 +12,7 @@ import {
   assessments,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
-import { eq, and, isNull, desc, sql } from "drizzle-orm";
+import { eq, and, isNull, desc, sql, or, ilike } from "drizzle-orm";
 import {
   type PaginationParams,
   type PaginatedResult,
@@ -449,23 +449,65 @@ export async function getReadyToEnrollStudents(
   };
 }
 
+// ─── Queue Filters (server-side search — audit finding F5) ────────────────────
+
+/**
+ * Optional filters applied at the SQL level so search works across ALL pages,
+ * not just the currently fetched one (audit finding F5).
+ */
+export type EnrollmentQueueFilters = {
+  /** Matches first name, last name, or student reference number (ILIKE). */
+  search?: string;
+  /** Filters by the enrolling grade level id. */
+  gradeLevelId?: string;
+};
+
+/** ILIKE condition over student name + reference number, or undefined when blank. */
+function studentSearchCondition(search?: string) {
+  const q = search?.trim();
+  if (!q) return undefined;
+  const pattern = `%${q}%`;
+  return or(
+    ilike(students.firstName, pattern),
+    ilike(students.lastName, pattern),
+    ilike(students.referenceNumber, pattern)
+  );
+}
+
+/** Shared WHERE for the four status tabs (pending/assessed/enrolled/cancelled). */
+function enrollmentTabConditions(
+  activeSchoolYearId: string,
+  status: "pending" | "assessed" | "enrolled" | "cancelled",
+  filters?: EnrollmentQueueFilters
+) {
+  const conditions = [
+    eq(enrollments.schoolYearId, activeSchoolYearId),
+    eq(enrollments.status, status),
+  ];
+  const search = studentSearchCondition(filters?.search);
+  if (search) conditions.push(search);
+  if (filters?.gradeLevelId) {
+    conditions.push(eq(enrollments.gradeLevelId, filters.gradeLevelId));
+  }
+  return and(...conditions);
+}
+
 /**
  * Get enrollments with status = "pending" (created but not yet assessed)
  */
 export async function getPendingEnrollments(
   activeSchoolYearId: string,
-  params: PaginationParams
+  params: PaginationParams,
+  filters?: EnrollmentQueueFilters
 ): Promise<PaginatedResult<PendingEnrollment>> {
-  // Get total count
+  const whereCondition = enrollmentTabConditions(activeSchoolYearId, "pending", filters);
+
+  // Get total count (joins students so the search filter applies)
   const [countResult] = await db
     .select({ count: sql<number>`count(*)` })
     .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.schoolYearId, activeSchoolYearId),
-        eq(enrollments.status, "pending")
-      )
-    );
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .where(whereCondition);
 
   const totalRecords = Number(countResult?.count || 0);
 
@@ -490,12 +532,7 @@ export async function getPendingEnrollments(
     .innerJoin(students, eq(enrollments.studentId, students.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .leftJoin(sections, eq(enrollments.sectionId, sections.id))
-    .where(
-      and(
-        eq(enrollments.schoolYearId, activeSchoolYearId),
-        eq(enrollments.status, "pending")
-      )
-    )
+    .where(whereCondition)
     .orderBy(desc(enrollments.createdAt))
     .limit(params.pageSize)
     .offset(offset);
@@ -526,18 +563,17 @@ export async function getPendingEnrollments(
  */
 export async function getAssessedEnrollments(
   activeSchoolYearId: string,
-  params: PaginationParams
+  params: PaginationParams,
+  filters?: EnrollmentQueueFilters
 ): Promise<PaginatedResult<AssessedEnrollment>> {
-  // Get total count
+  const whereCondition = enrollmentTabConditions(activeSchoolYearId, "assessed", filters);
+
+  // Get total count (joins students so the search filter applies)
   const [countResult] = await db
     .select({ count: sql<number>`count(*)` })
     .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.schoolYearId, activeSchoolYearId),
-        eq(enrollments.status, "assessed")
-      )
-    );
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .where(whereCondition);
 
   const totalRecords = Number(countResult?.count || 0);
 
@@ -566,12 +602,7 @@ export async function getAssessedEnrollments(
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .innerJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
     .leftJoin(sections, eq(enrollments.sectionId, sections.id))
-    .where(
-      and(
-        eq(enrollments.schoolYearId, activeSchoolYearId),
-        eq(enrollments.status, "assessed")
-      )
-    )
+    .where(whereCondition)
     .orderBy(desc(assessments.createdAt))
     .limit(params.pageSize)
     .offset(offset);
@@ -605,18 +636,17 @@ export async function getAssessedEnrollments(
  */
 export async function getEnrolledStudents(
   activeSchoolYearId: string,
-  params: PaginationParams
+  params: PaginationParams,
+  filters?: EnrollmentQueueFilters
 ): Promise<PaginatedResult<EnrolledStudent>> {
-  // Get total count
+  const whereCondition = enrollmentTabConditions(activeSchoolYearId, "enrolled", filters);
+
+  // Get total count (joins students so the search filter applies)
   const [countResult] = await db
     .select({ count: sql<number>`count(*)` })
     .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.schoolYearId, activeSchoolYearId),
-        eq(enrollments.status, "enrolled")
-      )
-    );
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .where(whereCondition);
 
   const totalRecords = Number(countResult?.count || 0);
 
@@ -640,12 +670,7 @@ export async function getEnrolledStudents(
     .innerJoin(students, eq(enrollments.studentId, students.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .leftJoin(sections, eq(enrollments.sectionId, sections.id))
-    .where(
-      and(
-        eq(enrollments.schoolYearId, activeSchoolYearId),
-        eq(enrollments.status, "enrolled")
-      )
-    )
+    .where(whereCondition)
     .orderBy(desc(enrollments.enrolledAt))
     .limit(params.pageSize)
     .offset(offset);
@@ -675,18 +700,17 @@ export async function getEnrolledStudents(
  */
 export async function getCancelledEnrollments(
   activeSchoolYearId: string,
-  params: PaginationParams
+  params: PaginationParams,
+  filters?: EnrollmentQueueFilters
 ): Promise<PaginatedResult<CancelledEnrollment>> {
-  // Get total count
+  const whereCondition = enrollmentTabConditions(activeSchoolYearId, "cancelled", filters);
+
+  // Get total count (joins students so the search filter applies)
   const [countResult] = await db
     .select({ count: sql<number>`count(*)` })
     .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.schoolYearId, activeSchoolYearId),
-        eq(enrollments.status, "cancelled")
-      )
-    );
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .where(whereCondition);
 
   const totalRecords = Number(countResult?.count || 0);
 
@@ -709,12 +733,7 @@ export async function getCancelledEnrollments(
     .from(enrollments)
     .innerJoin(students, eq(enrollments.studentId, students.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .where(
-      and(
-        eq(enrollments.schoolYearId, activeSchoolYearId),
-        eq(enrollments.status, "cancelled")
-      )
-    )
+    .where(whereCondition)
     .orderBy(desc(enrollments.cancelledAt))
     .limit(params.pageSize)
     .offset(offset);
@@ -747,7 +766,8 @@ export async function getCancelledEnrollments(
  */
 export async function getEnrollmentQueueData(
   tab: TabKey,
-  params: PaginationParams
+  params: PaginationParams,
+  filters?: EnrollmentQueueFilters
 ): Promise<
   | PaginatedResult<ReadyToEnrollListRow>
   | PaginatedResult<PendingEnrollment>
@@ -766,15 +786,15 @@ export async function getEnrollmentQueueData(
   switch (tab) {
     case "ready-to-enroll":
       // Use optimized list query (excludes intakeDocuments - ~30-40% payload reduction)
-      return getReadyToEnrollList(activeSchoolYearId, params);
+      return getReadyToEnrollList(activeSchoolYearId, params, filters);
     case "pending":
-      return getPendingEnrollments(activeSchoolYearId, params);
+      return getPendingEnrollments(activeSchoolYearId, params, filters);
     case "assessed":
-      return getAssessedEnrollments(activeSchoolYearId, params);
+      return getAssessedEnrollments(activeSchoolYearId, params, filters);
     case "enrolled":
-      return getEnrolledStudents(activeSchoolYearId, params);
+      return getEnrolledStudents(activeSchoolYearId, params, filters);
     case "cancelled":
-      return getCancelledEnrollments(activeSchoolYearId, params);
+      return getCancelledEnrollments(activeSchoolYearId, params, filters);
     default:
       return null;
   }
@@ -958,9 +978,22 @@ export async function getEnrollmentQueueCounts(): Promise<{
  */
 export async function getReadyToEnrollList(
   activeSchoolYearId: string,
-  params: PaginationParams
+  params: PaginationParams,
+  filters?: EnrollmentQueueFilters
 ): Promise<PaginatedResult<ReadyToEnrollListRow>> {
   const offset = calculateOffset(params.page, params.pageSize);
+
+  // Server-side filters (audit finding F5): applied to the combined CTE so
+  // search matches across the whole queue, not just the fetched page.
+  const searchTerm = filters?.search?.trim();
+  const searchPattern = searchTerm ? `%${searchTerm}%` : null;
+  const searchCondition = searchPattern
+    ? sql`(first_name ILIKE ${searchPattern} OR last_name ILIKE ${searchPattern} OR student_ref ILIKE ${searchPattern})`
+    : sql`TRUE`;
+  // Enrolling grade: registration grade for new/transferee, suggested for old students.
+  const gradeCondition = filters?.gradeLevelId
+    ? sql`(COALESCE(registration_grade_level_id, suggested_grade_level_id) = ${filters.gradeLevelId})`
+    : sql`TRUE`;
 
   // Optimized SQL query - excludes intake_documents field
   const rows = await db.execute<{
@@ -977,6 +1010,7 @@ export async function getReadyToEnrollList(
     suggested_grade_name: string | null;
     assessment_balance: string | null;
     has_complete_documents: boolean;
+    total_count: number;
   }>(sql`
     WITH
       -- Context: Get previous school year ID
@@ -1084,70 +1118,18 @@ export async function getReadyToEnrollList(
         SELECT * FROM old_students
       )
 
-    -- Final paginated output with SQL-level sorting and pagination
+    -- Final paginated output with SQL-level filtering, sorting, and pagination
+    -- COUNT(*) OVER () returns the filtered total without a second query.
     -- Include student_id as tie-breaker for deterministic pagination
-    SELECT *
+    SELECT *, COUNT(*) OVER ()::int AS total_count
     FROM combined
+    WHERE ${searchCondition} AND ${gradeCondition}
     ORDER BY last_name, first_name, student_id
     LIMIT ${params.pageSize}
     OFFSET ${offset}
   `);
 
-  // Get total count (reuse existing count logic)
-  const [countResult] = await db.execute<{ total: number }>(sql`
-    WITH
-      school_year_context AS (
-        SELECT
-          sy.id AS active_id,
-          prev.id AS previous_id
-        FROM school_years sy
-        LEFT JOIN LATERAL (
-          SELECT id
-          FROM school_years
-          WHERE start_date < sy.start_date
-            AND deleted_at IS NULL
-          ORDER BY start_date DESC
-          LIMIT 1
-        ) prev ON true
-        WHERE sy.id = ${activeSchoolYearId}
-      ),
-      max_grade AS (
-        SELECT MAX("order") AS max_order FROM grade_levels
-      ),
-      enrolled_this_year AS (
-        SELECT student_id
-        FROM enrollments
-        WHERE school_year_id = ${activeSchoolYearId}
-          AND status != 'cancelled'
-      ),
-      new_transferee AS (
-        SELECT r.student_id
-        FROM registrations r
-        INNER JOIN students s ON r.student_id = s.id
-        WHERE r.school_year_id = ${activeSchoolYearId}
-          AND r.status = 'approved'
-          AND s.is_active = true
-          AND s.id NOT IN (SELECT student_id FROM enrolled_this_year)
-      ),
-      old_students AS (
-        SELECT DISTINCT e.student_id
-        FROM school_year_context syc
-        INNER JOIN enrollments e ON e.school_year_id = syc.previous_id
-        INNER JOIN students s ON e.student_id = s.id
-        INNER JOIN grade_levels gl ON e.grade_level_id = gl.id
-        WHERE syc.previous_id IS NOT NULL
-          AND e.status = 'enrolled'
-          AND s.is_active = true
-          AND gl."order" < (SELECT max_order FROM max_grade)
-          AND s.id NOT IN (SELECT student_id FROM enrolled_this_year)
-      )
-    SELECT (
-      (SELECT COUNT(*) FROM new_transferee) +
-      (SELECT COUNT(*) FROM old_students)
-    )::int AS total
-  `);
-
-  const totalRecords = Number(countResult?.total || 0);
+  const totalRecords = Number(rows[0]?.total_count ?? 0);
 
   // Map SQL snake_case results to TypeScript camelCase
   const data: ReadyToEnrollListRow[] = rows.map((row) => {

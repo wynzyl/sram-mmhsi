@@ -237,7 +237,7 @@ Authentication is JWT-based using `jose` library (NOT NextAuth). Session managem
 
 1. **Booklet Management:**
    - Finance officers create booklets with series (e.g., "AP"), start/end numbers
-   - Only one booklet can be "active" for a cashier at a time
+   - **Multiple booklets may be active at the same time** — the cashier chooses which receipt series to consume at posting time (owner-confirmed business rule, 2026-06-04; supersedes the old "one active booklet per cashier" wording)
    - Booklet status: `active` | `exhausted` | `voided`
 
 2. **Payment Posting:**
@@ -245,6 +245,8 @@ Authentication is JWT-based using `jose` library (NOT NextAuth). Session managem
    - System auto-assigns next sequential OR number (e.g., AP-00001)
    - OR status: `available` → `consumed` (immutable)
    - Payment status: `pending_confirmation` → `posted`
+   - **Idempotent posting:** the form sends a client-generated `idempotencyKey` (UUID per form mount); a retried submit with the same key returns the original payment instead of consuming a second OR (`payments_idempotency_key_uidx`)
+   - **Enrollment side effect (confirmed policy):** the FIRST posted payment — any amount, even partial — transitions the enrollment `assessed → enrolled`; the assessment ledger stays `outstanding` until the balance is settled
 
 3. **Validation Rules:**
    - OR number must be unique (enforced by unique index)

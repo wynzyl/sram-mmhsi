@@ -14,6 +14,7 @@ import { existsSync } from "fs";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { logDbTarget } from "./lib/db-target";
 
 const isInsideDocker = !existsSync(".env.local");
 if (!isInsideDocker) {
@@ -32,6 +33,7 @@ async function main() {
   const client = postgres(databaseUrl, { max: 1, onnotice: () => {} });
   const db = drizzle(client);
 
+  logDbTarget("migrate", databaseUrl);
   console.log("[migrate] applying pending migrations…");
   await migrate(db, { migrationsFolder: "./drizzle" });
   console.log("[migrate] done — schema is up to date.");

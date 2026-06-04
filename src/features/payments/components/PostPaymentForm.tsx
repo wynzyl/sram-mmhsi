@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
 import { postPaymentAction } from "../payments.actions";
 import type { PaymentFormState } from "../payments.schema";
 import { FormField } from "@/components/forms/FormField";
@@ -40,10 +41,22 @@ export default function PostPaymentForm({
 }: PostPaymentFormProps) {
   const initialState: PaymentFormState = {};
   const [state, action, pending] = useActionState(postPaymentAction, initialState);
+  const hydrated = useHydrated();
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [amountToPay, setAmountToPay] = useState(String(balance));
   const [amountTendered, setAmountTendered] = useState("");
+  // One key per form mount: a retried submit replays as the SAME payment
+  // server-side instead of consuming a second OR (audit finding F7).
+  // Generated after mount — an SSR-generated UUID would differ from the
+  // client render and cause a hydration mismatch on the hidden input.
+  const [idempotencyKey, setIdempotencyKey] = useState("");
+  useEffect(() => {
+    // One-time client-only initialization: legitimate setState-in-effect —
+    // the UUID must not be SSR-rendered or hydration would mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIdempotencyKey(crypto.randomUUID());
+  }, []);
 
   useEffect(() => {
     if (state.success && onPosted) {
@@ -96,6 +109,7 @@ export default function PostPaymentForm({
 
       <input type="hidden" name="studentId" value={studentId} />
       <input type="hidden" name="assessmentId" value={assessmentId} />
+      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
 
       <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted px-4 py-3">
         <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Amount due (balance)</span>
@@ -242,7 +256,9 @@ export default function PostPaymentForm({
         cancelLabel="Cancel"
         onCancel={onCancel}
         loading={pending}
-        submitDisabled={activeBooklets.length === 0}
+        // !hydrated: block pre-hydration submits (full-page POST fallback) on
+        // this financial form — see useHydrated (audit finding F6).
+        submitDisabled={activeBooklets.length === 0 || !hydrated}
       />
     </form>
   );

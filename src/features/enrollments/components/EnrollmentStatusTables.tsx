@@ -53,28 +53,9 @@ export function PendingEnrollmentsTable({
 }: PendingEnrollmentsTableProps) {
   const enrollments = paginatedData.data;
 
-  // Apply client-side filters (pagination already handled server-side)
-  const filteredEnrollments = useMemo(() => {
-    let filtered = enrollments;
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (e) =>
-          e.firstName.toLowerCase().includes(query) ||
-          e.lastName.toLowerCase().includes(query) ||
-          e.studentRef.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by grade level
-    if (gradeLevelFilter && gradeLevelFilter !== "all") {
-      filtered = filtered.filter((e) => e.gradeLevelId === gradeLevelFilter);
-    }
-
-    return filtered;
-  }, [enrollments, searchQuery, gradeLevelFilter]);
+  // Search + grade filters are applied SERVER-SIDE in the queue queries
+  // (audit finding F5) — no client re-filtering of the fetched page.
+  const filteredEnrollments = enrollments;
   const columns = useMemo<ColumnDef<PendingEnrollment>[]>(
     () => [
       {
@@ -205,26 +186,9 @@ export function AssessedEnrollmentsTable({
 }: AssessedEnrollmentsTableProps) {
   const enrollments = paginatedData.data;
 
-  // Apply client-side filters (pagination already handled server-side)
-  const filteredEnrollments = useMemo(() => {
-    let filtered = enrollments;
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (e) =>
-          e.firstName.toLowerCase().includes(query) ||
-          e.lastName.toLowerCase().includes(query) ||
-          e.studentRef.toLowerCase().includes(query)
-      );
-    }
-
-    if (gradeLevelFilter && gradeLevelFilter !== "all") {
-      filtered = filtered.filter((e) => e.gradeLevelId === gradeLevelFilter);
-    }
-
-    return filtered;
-  }, [enrollments, searchQuery, gradeLevelFilter]);
+  // Search + grade filters are applied SERVER-SIDE in the queue queries
+  // (audit finding F5) — no client re-filtering of the fetched page.
+  const filteredEnrollments = enrollments;
   const columns = useMemo<ColumnDef<AssessedEnrollment>[]>(
     () => [
       {
@@ -371,26 +335,9 @@ export function EnrolledStudentsTable({
 }: EnrolledStudentsTableProps) {
   const students = paginatedData.data;
 
-  // Apply client-side filters (pagination already handled server-side)
-  const filteredStudents = useMemo(() => {
-    let filtered = students;
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (s) =>
-          s.firstName.toLowerCase().includes(query) ||
-          s.lastName.toLowerCase().includes(query) ||
-          s.studentRef.toLowerCase().includes(query)
-      );
-    }
-
-    if (gradeLevelFilter && gradeLevelFilter !== "all") {
-      filtered = filtered.filter((s) => s.gradeLevelId === gradeLevelFilter);
-    }
-
-    return filtered;
-  }, [students, searchQuery, gradeLevelFilter]);
+  // Search + grade filters are applied SERVER-SIDE in the queue queries
+  // (audit finding F5) — no client re-filtering of the fetched page.
+  const filteredStudents = students;
   const columns = useMemo<ColumnDef<EnrolledStudent>[]>(
     () => [
       {
@@ -508,26 +455,9 @@ export function CancelledEnrollmentsTable({
 }: CancelledEnrollmentsTableProps) {
   const enrollments = paginatedData.data;
 
-  // Apply client-side filters (pagination already handled server-side)
-  const filteredEnrollments = useMemo(() => {
-    let filtered = enrollments;
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (e) =>
-          e.firstName.toLowerCase().includes(query) ||
-          e.lastName.toLowerCase().includes(query) ||
-          e.studentRef.toLowerCase().includes(query)
-      );
-    }
-
-    if (gradeLevelFilter && gradeLevelFilter !== "all") {
-      filtered = filtered.filter((e) => e.gradeLevelId === gradeLevelFilter);
-    }
-
-    return filtered;
-  }, [enrollments, searchQuery, gradeLevelFilter]);
+  // Search + grade filters are applied SERVER-SIDE in the queue queries
+  // (audit finding F5) — no client re-filtering of the fetched page.
+  const filteredEnrollments = enrollments;
   const columns = useMemo<ColumnDef<CancelledEnrollment>[]>(
     () => [
       {

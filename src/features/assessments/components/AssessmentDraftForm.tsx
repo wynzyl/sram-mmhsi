@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -196,6 +197,10 @@ export default function AssessmentDraftForm({
 
   const blocked = !!submitBlockedReason;
   const formId = "enrollment-assessment-form";
+  // Gate submit until hydration: a pre-hydration submit full-page-POSTs the
+  // action (assessment is created) but strands the user on the index with no
+  // toast — looks like a silent failure (audit finding F6).
+  const hydrated = useHydrated();
 
   return (
     <div className="space-y-8">
@@ -581,7 +586,7 @@ export default function AssessmentDraftForm({
                 type="submit"
                 form={formId}
                 className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
-                disabled={pending || blocked || rows.length === 0}
+                disabled={pending || blocked || rows.length === 0 || !hydrated}
               >
                 {pending ? "Saving…" : "Save assessment"}
               </button>

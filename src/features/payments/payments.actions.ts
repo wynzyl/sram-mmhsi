@@ -150,13 +150,30 @@ export async function postPaymentAction(
     return { errors: result.errors };
   }
 
-  const { studentId, assessmentId, bookletId, amount, paymentMethod, referenceNumber, remarks } = result.data;
+  const { studentId, assessmentId, bookletId, amount, paymentMethod, referenceNumber, remarks, idempotencyKey } =
+    result.data;
 
   try {
     let orNumberToAssign: string | undefined;
     let bookletIdToAssign: string | undefined;
+    let idempotentReplay = false;
 
     await db.transaction(async (tx) => {
+      // 0. Idempotent replay guard (F7): a retried submit with the same client
+      // key returns the original payment instead of consuming a second OR —
+      // no new payment, balance change, or audit entry.
+      if (idempotencyKey) {
+        const existingByKey = await tx.query.payments.findFirst({
+          where: eq(payments.idempotencyKey, idempotencyKey),
+          columns: { id: true, orNumber: true },
+        });
+        if (existingByKey) {
+          orNumberToAssign = existingByKey.orNumber ?? undefined;
+          idempotentReplay = true;
+          return;
+        }
+      }
+
       // 1. Fetch Assessment & Verify Balance
       const assessment = await tx.query.assessments.findFirst({
         where: and(
@@ -249,6 +266,7 @@ export async function postPaymentAction(
           paymentDate: new Date(),
           status: "posted",
           remarks,
+          idempotencyKey,
           createdBy: session.userId,
           updatedBy: session.userId,
         })
@@ -306,6 +324,14 @@ export async function postPaymentAction(
       }, { throwOnFail: true });
     });
 
+    if (idempotentReplay) {
+      // Original post already revalidated; just report the existing OR.
+      return {
+        success: true,
+        message: `Payment already posted (duplicate submit ignored). OR Number: ${orNumberToAssign}`,
+      };
+    }
+
     revalidatePath(`/staff/assessments/${assessmentId}`);
     revalidatePath("/staff/finance/invoices");
     // Dashboard KPIs reflect collections; an enrollment can flip to "enrolled" via payment.
@@ -314,6 +340,27 @@ export async function postPaymentAction(
     forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
     return { success: true, message: `Payment posted successfully. OR Number: ${orNumberToAssign}` };
   } catch (error: unknown) {
+    const msg0 = error instanceof Error ? error.message : String(error);
+    const detail0 =
+      typeof error === "object" && error !== null && "detail" in error
+        ? String((error as { detail?: unknown }).detail ?? "")
+        : "";
+
+    // Idempotency-key unique violation (two replays racing): the payment
+    // exists — re-read it and report success instead of an error.
+    if (idempotencyKey && `${msg0}${detail0}`.includes("idempotency_key")) {
+      const existing = await db.query.payments.findFirst({
+        where: eq(payments.idempotencyKey, idempotencyKey),
+        columns: { orNumber: true },
+      });
+      if (existing) {
+        return {
+          success: true,
+          message: `Payment already posted (duplicate submit ignored). OR Number: ${existing.orNumber}`,
+        };
+      }
+    }
+
     logger.error("[cashier] Failed to post payment", { error: String(error) });
 
     const msg = error instanceof Error ? error.message : String(error);

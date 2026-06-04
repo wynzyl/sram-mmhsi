@@ -11,7 +11,7 @@
 
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { config } from "dotenv";
 import { expand } from "dotenv-expand";
 import {
@@ -23,6 +23,7 @@ import {
   studentGuardianLinks,
 } from "../src/lib/db/schema";
 import { generateStudentRef } from "../src/lib/utils/reference";
+import { logDbTarget } from "./lib/db-target";
 
 expand(config({ path: ".env.local" }));
 expand(config());
@@ -30,6 +31,7 @@ expand(config());
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL not set");
 
+logDbTarget("seed-registrations", connectionString);
 const client = postgres(connectionString, { max: 1 });
 const db = drizzle(client);
 
@@ -383,6 +385,18 @@ async function seedRegistrations() {
       regOnly++;
     }
   }
+
+  // Keep student_ref_seq in sync: this script computes reference numbers from
+  // MAX(reference_number) instead of nextval(), so without this the app's
+  // sequence-based onboarding would collide and fail (audit finding F3).
+  await db.execute(sql`
+    SELECT setval(
+      'student_ref_seq',
+      GREATEST((SELECT COALESCE(MAX(reference_number)::int, 0) FROM students), 1),
+      true
+    )
+  `);
+  console.log("Synced student_ref_seq to MAX(reference_number).");
 
   console.log(`\n${"─".repeat(60)}`);
   console.log(`Done!`);

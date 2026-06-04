@@ -778,6 +778,12 @@ export const payments = pgTable(
     paymentDate: timestamp("payment_date").notNull(),
     status: paymentStatusEnum("status").notNull().default("pending_confirmation"),
     remarks: text("remarks"),
+    /**
+     * Client-generated key (UUID per form mount) that makes payment posting
+     * idempotent: a retried submit with the same key returns the original
+     * payment instead of consuming a second OR (audit finding F7).
+     */
+    idempotencyKey: text("idempotency_key"),
     // Void-related fields (legacy direct void - kept for backward compatibility)
     voidedAt: timestamp("voided_at"),
     voidedBy: uuid("voided_by").references(() => users.id),
@@ -809,6 +815,10 @@ export const payments = pgTable(
     uniqueIndex("payments_reference_number_unique_idx")
       .on(t.referenceNumber)
       .where(sql`${t.referenceNumber} is not null`),
+    // Idempotent posting: replays with the same client key map to one payment.
+    uniqueIndex("payments_idempotency_key_uidx")
+      .on(t.idempotencyKey)
+      .where(sql`${t.idempotencyKey} IS NOT NULL`),
     index("payments_student_idx").on(t.studentId),
     index("payments_status_idx").on(t.status),
     index("payments_date_idx").on(t.paymentDate),

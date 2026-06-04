@@ -29,34 +29,10 @@ export default function ReadyToEnrollTable({
   searchQuery = "",
   gradeLevelFilter = "",
 }: ReadyToEnrollTableProps) {
-  // Filter students based on search and grade level (from global filters)
-  const filteredStudents = useMemo(() => {
-    let filtered = students;
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (student) =>
-          student.firstName.toLowerCase().includes(query) ||
-          student.lastName.toLowerCase().includes(query) ||
-          student.studentRef.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by grade level
-    if (gradeLevelFilter && gradeLevelFilter !== "all") {
-      filtered = filtered.filter((student) => {
-        const enrollingGradeId =
-          student.studentType === "old_student"
-            ? student.suggestedGradeLevelId
-            : student.registrationGradeLevelId;
-        return enrollingGradeId === gradeLevelFilter;
-      });
-    }
-
-    return filtered;
-  }, [students, searchQuery, gradeLevelFilter]);
+  // Search + grade filters are applied SERVER-SIDE in getReadyToEnrollList
+  // (audit finding F5) — re-filtering here would only hide rows of the
+  // already-filtered page. Props are kept for the empty-state message below.
+  const filteredStudents = students;
 
   const columns = useMemo<ColumnDef<ReadyToEnrollListRow>[]>(
     () => [
