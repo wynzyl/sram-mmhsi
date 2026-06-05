@@ -60,6 +60,12 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@srams_db:5432/${POSTGRES_DB:-SRAMS_DB}
+      # This deployment is plain HTTP on the LAN (no TLS at nginx) — browsers drop
+      # `Secure` cookies on http:// origins, which breaks login from other machines.
+      # Default false HERE so the setting travels via git: the .env.production
+      # override is gitignored and never reaches the server on pull. Flip via
+      # shell env / --env-file once HTTPS is added at nginx.
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
     depends_on:
       srams_db:
         condition: service_healthy

@@ -27,6 +27,7 @@ import {
   createSession,
   deleteSession,
   getCurrentSession,
+  INVALID_SESSION_REDIRECT,
 } from "@/lib/auth/session";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
@@ -230,10 +231,15 @@ export async function changePasswordAction(
   _prevState: ChangePasswordFormState,
   formData: FormData
 ): Promise<ChangePasswordFormState> {
-  // 1. Require authenticated session
+  // 1. Require authenticated session.
+  // LOOP-BREAKER: redirect with the session_invalid signal, NOT bare /login.
+  // If the JWT cookie is still structurally valid (e.g. its DB session row is
+  // gone) a bare /login redirect leaves the cookie in place, so proxy.ts
+  // bounces /login → landing → force-password gate → back here forever.
+  // INVALID_SESSION_REDIRECT makes the proxy clear the cookie and render /login.
   const session = await getCurrentSession();
   if (!session) {
-    redirect("/login");
+    redirect(INVALID_SESSION_REDIRECT);
   }
 
   // 2. Validate inputs with Zod
