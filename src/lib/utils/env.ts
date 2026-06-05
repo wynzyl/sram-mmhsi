@@ -28,6 +28,9 @@ export const env = {
   GMAIL_FROM_ADDRESS: process.env.GMAIL_FROM_ADDRESS,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+  // Optional: "true" | "false" — overrides the session cookie Secure flag
+  // (false enables login over plain HTTP on the LAN; see src/lib/auth/session.ts)
+  SESSION_COOKIE_SECURE: process.env.SESSION_COOKIE_SECURE,
   NODE_ENV: process.env.NODE_ENV ?? "development",
   isDev: process.env.NODE_ENV !== "production",
 } as const;

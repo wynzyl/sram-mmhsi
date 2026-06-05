@@ -32,6 +32,27 @@ export type SessionUser = {
 // 10-hour session per Engineering spec §9 (8-12 hr idle business session)
 const SESSION_DURATION_MS = 10 * 60 * 60 * 1000;
 
+// SESSION_COOKIE_SECURE=false allows HTTP-on-LAN deployments (prod nginx serves
+// plain HTTP on :80 — browsers drop `Secure` cookies on non-HTTPS origins except
+// localhost, which silently breaks login from other machines).
+// Unset → default to NODE_ENV === "production" (previous behavior).
+function isSecureCookie(): boolean {
+  const override = process.env.SESSION_COOKIE_SECURE;
+  if (override === "true") return true;
+  if (override === "false") return false;
+  return process.env.NODE_ENV === "production";
+}
+
+function sessionCookieOptions(expiresAt: Date) {
+  return {
+    httpOnly: true,
+    secure: isSecureCookie(),
+    sameSite: "lax",
+    expires: expiresAt,
+    path: "/",
+  } as const;
+}
+
 /** @deprecated Prefer SESSION_COOKIE_NAME from session-token — kept for call sites importing this name */
 export const COOKIE_NAME = SESSION_COOKIE_NAME;
 
@@ -87,13 +108,7 @@ export async function createSession(
 
   // 4. Set the cookie (server-side only — httpOnly)
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, jwt, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    expires: expiresAt,
-    path: "/",
-  });
+  cookieStore.set(SESSION_COOKIE_NAME, jwt, sessionCookieOptions(expiresAt));
 }
 
 // ─── Get current session ──────────────────────────────────────────────────────
@@ -197,13 +212,7 @@ export async function renewSession(): Promise<void> {
     .set({ token: newJwt, expiresAt: newExpiresAt })
     .where(eq(sessions.id, payload.sessionId));
 
-  cookieStore.set(SESSION_COOKIE_NAME, newJwt, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    expires: newExpiresAt,
-    path: "/",
-  });
+  cookieStore.set(SESSION_COOKIE_NAME, newJwt, sessionCookieOptions(newExpiresAt));
 }
 
 // ─── Delete session (logout) ──────────────────────────────────────────────────
