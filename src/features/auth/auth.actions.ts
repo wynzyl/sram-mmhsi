@@ -212,8 +212,14 @@ export async function loginAction(
   });
 
   // 6. CRITICAL: redirect() must be called immediately after createSession()
-  // to ensure the Set-Cookie header is properly included in the 303 response
-  const landing = ROLE_LANDING[normalizedRole] ?? "/login";
+  // to ensure the Set-Cookie header is properly included in the 303 response.
+  // Users flagged for a forced password change go straight to /change-password —
+  // redirecting to the landing page and letting the proxy gate bounce them there
+  // leaves the address bar showing the landing URL while the change-password
+  // form renders (proxy redirects of RSC navigations don't always sync the URL).
+  const landing = user.forcePasswordChange
+    ? "/change-password"
+    : (ROLE_LANDING[normalizedRole] ?? "/login");
   redirect(landing);
 }
 
