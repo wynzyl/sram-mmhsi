@@ -5,7 +5,7 @@
 > Last sync: 2026-06-05
 
 ### Current update highlights (2026-06-05)
-- **Production deployment stack live (Phase 12 kickoff)** — Dockerfile `runner` stage (app built against an ephemeral build-time Postgres), `docker-compose.prod.yml` (Postgres 15 → one-shot migrate job → app → **nginx reverse proxy on :80**), `.env.production`. DB data lives in the **named volume `db-data`** (2026-06-06 layout; the earlier `./.postgres_data` bind mount is superseded). Gotcha documented: database name is case-sensitive `SRAMS_DB`; `POSTGRES_DB` is ignored on an already-initialized data dir. Prod DB published on host port **5434** (internal `srams_db:5432`). Run with `docker compose -f docker-compose.prod.yml up -d --build`.
+- **Production deployment stack live (Phase 12 kickoff)** — Dockerfile `runner` stage (app built against an ephemeral build-time Postgres), `docker-compose.prod.yml` (Postgres 15 → one-shot migrate job → app → **nginx reverse proxy on :80**), `.env.production`. DB data lives in the **named volume `db-data`** (2026-06-06 layout; the earlier `./.postgres_data` bind mount is superseded). Gotcha documented: database name is case-sensitive `SRAMS_DB`; `POSTGRES_DB` is ignored on an already-initialized data dir. Prod DB published on host port **5433** (internal `srams_db:5432`; 5432 = native host Postgres, 5434 = dev stack db). Run with `docker compose -f docker-compose.prod.yml up -d --build`.
 - **Phase 2 auth hardening closed** — login rate limiting wired (`checkLoginRateLimits`, per-IP + per-username); forced password-change gate live in `proxy.ts`; security headers (CSP, HSTS, X-Frame-Options) in `next.config.ts`; privilege-escalation fix in `users.actions.ts`.
 - **E2E suite committed** — Playwright specs (`role-redirects`, `enrollment-assessment-payment` with DB-level assertions) + deterministic provisioning (`e2e_*` users, E2E-CASA students, `ZZ` booklet) + CI workflow (`.github/workflows/ci.yml`).
 - **Idempotent payment posting** — client-generated `idempotencyKey` + unique index (migration `0015`); a retried submit returns the original payment instead of consuming a second OR.
@@ -208,7 +208,7 @@
 ## Phase 12 — Deployment Preparation
 **Status: 🟡 Mostly complete**
 
-- [x] Production Docker configuration — Dockerfile `runner` stage (ephemeral build-time Postgres so `next build` prerenders against a real schema) + `docker-compose.prod.yml` (db → one-shot migrate job → app); DB data in named volume `db-data` (2026-06-06 layout; old `./.postgres_data` bind mount superseded); DB published on host port 5434
+- [x] Production Docker configuration — Dockerfile `runner` stage (ephemeral build-time Postgres so `next build` prerenders against a real schema) + `docker-compose.prod.yml` (db → one-shot migrate job → app); DB data in named volume `db-data` (2026-06-06 layout; old `./.postgres_data` bind mount superseded); DB published on host port 5433
 - [x] Reverse proxy setup (nginx) — `nginx.conf` + `nginx_proxy` service on :80 (LAN access)
 - [x] Security headers (CSP, HSTS, X-Frame-Options) — `next.config.ts`
 - [ ] Production environment checklist

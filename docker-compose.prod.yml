@@ -22,8 +22,9 @@ services:
     env_file:
       - .env.production
     ports:
-      # Expose on 5434 (Production) to avoid clashing with a local Postgres on 5432
-      - "5434:5432"
+      # Expose on 5433 (Production) — 5432 is taken by a native host Postgres
+      # and 5434 by the dev stack's db, so prod can run side-by-side with both.
+      - "5433:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
@@ -36,8 +37,11 @@ services:
 
   migrate:
     image: sram-mmhsi-app:runner
+    # Image is built locally by the `app` service — never try to pull it from a
+    # registry (a parallel pull races the first `up --build` and fails the stack).
+    pull_policy: never
     # DATABASE_URL comes from .env.production and must use the INTERNAL port
-    # (srams_db:5432) — the 5434 mapping only exists on the host side of "5434:5432".
+    # (srams_db:5432) — the 5433 mapping only exists on the host side of "5433:5432".
     env_file:
       - .env.production
     depends_on:
