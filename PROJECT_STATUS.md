@@ -1,16 +1,26 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-06-01
+> Last updated: 2026-06-05
 
 ## Current phase
 
 **Core school operations (Phases 1–8)** are implemented in code: auth, student records, registrations listing + creation through student onboarding, enrollments, assessments, fees, cashier/OR posting, invoices, and teacher grade encoding.
 
-**Reporting (Phase 10) is now underway** — a reusable two-track report/document pipeline (PDF via `@react-pdf/renderer` + XLSX via `exceljs`) is live with four reports: Payment Collection, Balance Forward, Invoice, and a new Student List masterlist.
+**Deployment preparation (Phase 12) is now underway** — the production Docker stack (multi-stage `runner` image, one-shot migrate job, nginx reverse proxy on :80, host bind-mounted Postgres data) is built, running, and verified. **Auth hardening (Phase 2) is closed:** login rate limiting and the forced password-change gate are live. **The Playwright E2E suite is committed** with synthetic test-data provisioning and a CI workflow.
 
-**Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, executive **dashboards** with real data (metrics still placeholders), formal OR **receipt** print view, **E2E** tests, and wiring **rate limit** + mandatory **password-change** gate.
+**Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, formal OR **receipt** print view, and the remaining Phase 10 reports (enrollment summary, grade summary).
 
-## Latest updates (2026-06-01)
+## Latest updates (2026-06-05)
+
+- [x] **Production deployment stack live (Phase 12 kickoff)** — Dockerfile `runner` stage builds the Next.js app against an **ephemeral build-time Postgres** (so `next build` can prerender with a real schema). `docker-compose.prod.yml` runs: `srams_db` (Postgres 15) → one-shot `migrate` job → `app` → **nginx reverse proxy on :80** (`nginx.conf`); all services share an isolated `srams-network` and load `.env.production`. Verified end-to-end: migrate exits 0, app healthy behind nginx, login page served at `http://localhost`.
+- [x] **Postgres data moved to a host bind mount** — prod DB data now lives at `./.postgres_data` (git-ignored) instead of a Docker named volume; the previous volume `sram-mmhsi_db-data` was physically copied over and is retained as a backup. **Gotcha fixed:** the cluster's database name is case-sensitive **`SRAMS_DB`** — pointing compose at lowercase `srams_db` fails with `3D000` because `POSTGRES_DB` is ignored once the data dir is initialized. The prod DB is intentionally **not host-exposed**; inspect via `docker exec srams_db psql -U postgres -d SRAMS_DB`.
+- [x] **Auth hardening closed (Phase 2 → complete)** — login rate limiting wired into `src/features/auth/auth.actions.ts` (`checkLoginRateLimits`, per-IP + per-username, in-memory by design for this single-instance deployment); **forced password-change gate** enforced in `proxy.ts` (users with `forcePasswordChange` are redirected to `/change-password` everywhere except logout); security headers added in `next.config.ts` (CSP, HSTS, `X-Frame-Options: DENY`); privilege-escalation fix in `users.actions.ts`; client IP extraction helper (`src/lib/security/ipExtraction.ts`).
+- [x] **E2E suite committed (Playwright)** — `e2e/role-redirects.spec.ts` (route-guard behavior per role) and `e2e/enrollment-assessment-payment.spec.ts` (full enroll → assess → pay scenario with **DB-level assertions**, not toast-text). Deterministic provisioning via `e2e/ensure-test-users.ts` / `ensure-test-data.ts` (synthetic `e2e_*` users, E2E-CASA students, dedicated `ZZ` OR booklet) + `global-setup.ts`. CI workflow added (`.github/workflows/ci.yml`).
+- [x] **Idempotent payment posting** — the payment form sends a client-generated `idempotencyKey` (UUID per form mount); a retried submit returns the original payment instead of consuming a second OR (`payments_idempotency_key_uidx`, migration `0015_add_payment_idempotency_key`).
+- [x] **DB-target safety banner** — `scripts/lib/db-target.ts` prints `target database: host:port/db` from every DB script (migrate/seed/seed-config/seed-registrations) to prevent running against the wrong instance (a stale local Postgres on 5432 had been silently absorbing host scripts; live dev DB is on **5434**).
+- [x] **Smaller items** — `useHydrated` hook; soft-deleted guardian links excluded from student reads; gender options reduced to male/female across forms/queries; student directory sorting; `RegistrationQueueToolbar` + registration queue layout refresh; `advance_casa` assessment band for separate fee scheduling; pagination component refactor.
+
+## Previous updates (2026-06-01)
 
 - [x] **Report & Document Generation standard** — established a two-track pipeline with a shared foundation in `src/features/reports/shared/` (`TabularReportDocument` PDF primitive, `buildReportWorkbook` XLSX builder, `pdfResponse`/`xlsxResponse`, `parseReportDateRange`, and `logReportExport`). **Track 1 = official documents → `@react-pdf/renderer`**; **Track 2 = analytical reports → XLSX (`exceljs`)**. Every report is a route handler at `…/<name>/export?format=pdf|xlsx`, RBAC-gated (`reports:view`) and audited (`reports:export`). Documented in CLAUDE.md. New dep: `exceljs`; Roboto TTF embedded in `public/fonts/` so the **₱** glyph renders (replacing the old `"PHP "` workaround).
 - [x] **Payment Collection report migrated + de-duplicated** — collapsed three redundant routes (`/pdf`, `/pdf-data`, `/print`) into one `/export?format=pdf|xlsx`; rebuilt the PDF on the shared primitive and added an Excel export.
@@ -144,7 +154,9 @@ if (!schoolYearId) {
 ### Phase 11 — Tests (initial)
 
 - [x] Vitest unit tests — `src/lib/validators/assessment.test.ts`, `src/lib/utils/enrollment-grade.test.ts`, `src/lib/utils/enrollment-payment.test.ts`
-- [x] Scripts — `npm run test`, `npm run test:watch`; Playwright listed as `test:e2e` but no committed E2E suite yet
+- [x] Playwright E2E suite — `e2e/role-redirects.spec.ts`, `e2e/enrollment-assessment-payment.spec.ts` with deterministic test-data provisioning (`ensure-test-users.ts`, `ensure-test-data.ts`) and DB-level assertions
+- [x] CI workflow — `.github/workflows/ci.yml`
+- [x] Scripts — `npm run test`, `npm run test:watch`, `npm run test:e2e`
 - [x] Codebase audit — redirect patterns in 14 page templates audited; best practice documented for Next.js 16+
 
 ---
@@ -152,19 +164,18 @@ if (!schoolYearId) {
 ## In progress / known gaps
 
 - [ ] **`registrations` workflow** — creation is now integrated during student onboarding; dedicated registration intake + approve/reject actions are still missing
-- [ ] **Login hardening** — connect `rateLimit` to login; optional dedicated `/api/auth/*` usage
-- [ ] **First-login password change** — enforce redirect when `forcePasswordChange` until password updated
+- [x] **Login hardening** — `checkLoginRateLimits` wired into the login action (per-IP + per-username); forced password-change gate enforced in `proxy.ts`
 - [ ] **OR receipt** — formal printable OR layout (beyond success message / browser print hooks)
 - [ ] **Portal expansion** — `/portal/dashboard` exists, but `/portal/assessments`, `/portal/payments`, and `/portal/grades` pages are not implemented yet
 - [x] **Dashboards** — Admin dashboard KPIs are live, and a reusable collection-summary + AR-aging insights section now renders on `/admin/dashboard` and `/staff/finance` (the latter promoted from a link hub to a real dashboard). Remaining Phase 10 items: enrollment summary and grade summary reports
-- [ ] **E2E** — add Playwright config + smoke tests (login, enrollment, payment, grades)
+- [x] **E2E** — Playwright suite committed (role redirects + full enrollment→assessment→payment scenario); grades flow not yet covered
 
 ---
 
 ## Not started (see roadmap)
 
 - Phase 10 — enrollment-summary / grade-summary reports (the management **dashboard** with real data + AR aging and the report **export pipeline** are done — see above)
-- Phase 12 — Production deployment hardening
+- Phase 12 remaining — production environment checklist + formal database backup strategy documentation (the prod Docker stack itself — runner image, migrate job, nginx, bind-mounted DB, security headers — is live; the old named volume `sram-mmhsi_db-data` is retained as an ad-hoc backup)
 
 ---
 

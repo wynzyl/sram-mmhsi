@@ -2,9 +2,16 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-06-01
+> Last sync: 2026-06-05
 
-### Current update highlights (2026-06-01)
+### Current update highlights (2026-06-05)
+- **Production deployment stack live (Phase 12 kickoff)** — Dockerfile `runner` stage (app built against an ephemeral build-time Postgres), `docker-compose.prod.yml` (Postgres 15 → one-shot migrate job → app → **nginx reverse proxy on :80**), `.env.production`. DB data is **host bind-mounted at `./.postgres_data`** (migrated from named volume `sram-mmhsi_db-data`, kept as backup). Gotcha documented: database name is case-sensitive `SRAMS_DB`; `POSTGRES_DB` is ignored on an already-initialized data dir. Prod DB intentionally not host-exposed.
+- **Phase 2 auth hardening closed** — login rate limiting wired (`checkLoginRateLimits`, per-IP + per-username); forced password-change gate live in `proxy.ts`; security headers (CSP, HSTS, X-Frame-Options) in `next.config.ts`; privilege-escalation fix in `users.actions.ts`.
+- **E2E suite committed** — Playwright specs (`role-redirects`, `enrollment-assessment-payment` with DB-level assertions) + deterministic provisioning (`e2e_*` users, E2E-CASA students, `ZZ` booklet) + CI workflow (`.github/workflows/ci.yml`).
+- **Idempotent payment posting** — client-generated `idempotencyKey` + unique index (migration `0015`); a retried submit returns the original payment instead of consuming a second OR.
+- **Misc** — DB-target banner in all DB scripts (`scripts/lib/db-target.ts`); soft-deleted guardian-link fix; gender options cleanup; student directory sorting; `RegistrationQueueToolbar`; `advance_casa` assessment band.
+
+### Previous highlights (2026-06-01)
 - **Report & Document Generation standard (Phase 10 kickoff)** — reusable two-track pipeline: **PDF via `@react-pdf/renderer`** for official documents, **XLSX via `exceljs`** for analytical reports. Shared foundation in `src/features/reports/shared/` (`TabularReportDocument`, `buildReportWorkbook`, response/request/audit helpers); one route convention `…/<name>/export?format=pdf|xlsx`, RBAC `reports:view`, audited `reports:export`. Documented in CLAUDE.md. Roboto embedded so **₱** renders.
 - **Four reports live** — Payment Collection (migrated; collapsed 3 legacy routes into 1, added Excel), Balance Forward (PDF + Excel added; was screen-only), Invoice (now a real server-rendered PDF instead of `window.print()`), and a **new Student List masterlist** (`/staff/reports/student-list`: enrolled students + primary guardian, grade filter, default active year, PDF + Excel).
 - **Shared PDF fixes** — column spacing for right-aligned amounts; `wrap={false}` so rows never split across page boundaries.
@@ -56,13 +63,13 @@
 ---
 
 ## Phase 2 — Authentication & Session Layer
-**Status: 🟡 Mostly complete**
+**Status: ✅ Complete**
 
 - [x] Login action: credential validation, bcrypt compare, session creation
 - [x] Session validation helper for server actions (`requireSession`, `src/lib/auth/session.ts`)
 - [x] Audit logging: user login success / failed login
-- [ ] Rate limiting middleware on `/api/auth/*` — `src/lib/security/rateLimit.ts` exists; not wired to login yet
-- [ ] Force-password-change flow — field + admin reset exist; no post-login gate enforcing change
+- [x] Login rate limiting — `checkLoginRateLimits` (per-IP + per-username, in-memory by design for this single-instance deployment) wired into the login server action (`src/features/auth/auth.actions.ts`), not `/api/auth/*` middleware
+- [x] Force-password-change flow — post-login gate enforced in `proxy.ts`: users with `forcePasswordChange` are redirected to `/change-password` everywhere except logout
 - [x] Role-based landing redirect after login (`auth.ts` + `proxy.ts`)
 - [x] Protected route behavior per role group (staff vs portal vs admin-only)
 - [x] Logout action (`logoutAction`)
@@ -129,6 +136,7 @@
 - [x] OR status tracking (consumed, voided)
 - [x] Payment allocation to assessment items
 - [x] Ledger balance recalculation
+- [x] Idempotent payment posting — client-generated `idempotencyKey` per form mount + `payments_idempotency_key_uidx` (migration `0015`); retried submits return the original payment instead of consuming a second OR
 - [ ] Dedicated receipt generation/print view (button label references print; formal OR receipt layout TBD)
 - [x] Audit events: payment posted/voided, booklet consumed/exhausted
 
@@ -188,8 +196,9 @@
 
 - [x] Unit tests: validators (`assessment.test.ts`), enrollment helpers (`enrollment-grade.test.ts`, `enrollment-payment.test.ts`)
 - [ ] Integration tests: registration flow, payment posting, grade submission
-- [ ] E2E tests — Playwright dependency present; suite/config not yet in repo
-- [ ] Security tests: route protection, action-level permission, session expiry
+- [x] E2E tests — Playwright suite committed: `e2e/role-redirects.spec.ts` + `e2e/enrollment-assessment-payment.spec.ts` (full enroll → assess → pay scenario, DB-level assertions); deterministic provisioning via `ensure-test-users.ts` / `ensure-test-data.ts` (`e2e_*` users, E2E-CASA students, `ZZ` booklet); grades flow not yet covered
+- [x] CI workflow — `.github/workflows/ci.yml`
+- [ ] Security tests: route protection (partially covered by the role-redirects E2E spec), action-level permission, session expiry
 - [x] Performance optimization: enrollment queue query (`getReadyToEnrollStudents`) — SQL-level pagination with CTEs/UNION ALL (47MB → 50KB memory per page)
 - [x] **Client-side navigation audit** — Audited 14 page templates for redirect patterns; documented best practice for Next.js 16+ (avoid redirect-to-add-default-param; use direct value instead)
 - [ ] Performance tests: student search, ledger queries
@@ -197,10 +206,10 @@
 ---
 
 ## Phase 12 — Deployment Preparation
-**Status: ⏳ Not Started**
+**Status: 🟡 Mostly complete**
 
-- [ ] Production Docker configuration
-- [ ] Reverse proxy setup (nginx)
-- [ ] Security headers (CSP, HSTS, X-Frame-Options)
+- [x] Production Docker configuration — Dockerfile `runner` stage (ephemeral build-time Postgres so `next build` prerenders against a real schema) + `docker-compose.prod.yml` (db → one-shot migrate job → app); DB data host bind-mounted at `./.postgres_data` (named volume `sram-mmhsi_db-data` retained as ad-hoc backup); DB not host-exposed
+- [x] Reverse proxy setup (nginx) — `nginx.conf` + `nginx_proxy` service on :80 (LAN access)
+- [x] Security headers (CSP, HSTS, X-Frame-Options) — `next.config.ts`
 - [ ] Production environment checklist
-- [ ] Database backup strategy documentation
+- [ ] Database backup strategy documentation (named volume copy exists; formal strategy + restore drill still to document)
