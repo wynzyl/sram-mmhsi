@@ -2,24 +2,32 @@
 # Usage:
 #   docker compose -f docker-compose.prod.yml up -d --build
 
+networks:
+  srams-network:
+    driver: bridge
+
 services:
-  db:
+  srams_db:
     image: postgres:15-alpine
-    restart: unless-stopped
+    container_name: srams_db
+    restart: always
+    env_file:
+      - .env.production
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-722811}
+      # ${VAR:-default} — compose interpolation reads the SHELL env / .env file,
+      # NOT service env_file, so defaults are required for standalone `up`.
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # NOTE: must match the database that already exists in the data directory
+      # (the cluster was initialized with POSTGRES_DB=SRAMS_DB — names are
+      # case-sensitive, and POSTGRES_DB is ignored once the data dir exists).
       POSTGRES_DB: ${POSTGRES_DB:-SRAMS_DB}
-    ports:
-      - "5434:5432"
     volumes:
-      # Named volume — Docker-managed (ext4 inside the Docker VM) so Postgres can
-      # set the 0700 ownership/permissions initdb requires. A Windows/NTFS host
-      # bind mount cannot honor these and makes the db container crash-loop.
-      - db-data:/var/lib/postgresql/data
-      # On a real LINUX production server you may instead anchor data to the host
-      # with a bind mount (permissions work there):
-      #   - ./srams/postgres_data:/var/lib/postgresql/data
+      # Host bind mount — data lives in ./.postgres_data (git-ignored).
+      # The old named volume sram-mmhsi_db-data is kept untouched as backup.
+      - ./.postgres_data:/var/lib/postgresql/data
+    networks:
+      - srams-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -31,30 +39,44 @@ services:
     env_file:
       - .env.production
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@srams_db:5432/${POSTGRES_DB:-SRAMS_DB}
     depends_on:
-      db:
+      srams_db:
         condition: service_healthy
     command: ["npx", "tsx", "scripts/migrate.ts"]
     restart: "no"
+    networks:
+      - srams-network  
 
   app:
     image: sram-mmhsi-app:runner
     build:
       context: .
       target: runner # Ensure your Dockerfile has a 'runner' stage
-    ports:
-      - "3000:3000"
+    container_name: srams_app
+    restart: always
     env_file:
       - .env.production
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@srams_db:5432/${POSTGRES_DB:-SRAMS_DB}
     depends_on:
-      db:
+      srams_db:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+    networks:
+      - srams-network
 
-volumes:
-  db-data:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80" # Exposed to Host ONLY for local LAN computers (via hosts file)
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    networks:
+      - srams-network
