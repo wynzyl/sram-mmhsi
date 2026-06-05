@@ -20,7 +20,8 @@ services:
       # Expose on 5434 to avoid clashing with a local Postgres on 5432
       - "5434:5432"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      # Host bind mount — dev DB data lives in ./.postgres_data (gitignored).
+      - ./.postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -121,5 +122,4 @@ services:
     profiles: ["tools"]
 
 volumes:
-  db-data:
   app-node-modules:
