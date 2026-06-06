@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PostPaymentForm from "./PostPaymentForm";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -50,6 +51,13 @@ export function CashierPaymentProcessingView({
   activeBooklets,
 }: CashierPaymentProcessingViewProps) {
   const router = useRouter();
+
+  // Warm the queue route up front: both Cancel and the post-success flow
+  // push to /staff/payments, so the navigation is instant instead of waiting
+  // on a fresh RSC fetch after the action invalidated the router cache.
+  useEffect(() => {
+    router.prefetch("/staff/payments");
+  }, [router]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/35 p-2 sm:items-center sm:p-3 md:p-4">

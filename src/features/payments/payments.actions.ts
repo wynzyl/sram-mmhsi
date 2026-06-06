@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { CACHE_TAGS, invalidateTag, forceUpdateTag } from "@/lib/cache/cache-tags";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   receiptBooklets,
@@ -336,8 +336,11 @@ export async function postPaymentAction(
     revalidatePath("/staff/finance/invoices");
     // Dashboard KPIs reflect collections; an enrollment can flip to "enrolled" via payment.
     invalidateTag(CACHE_TAGS.DASHBOARD);
-    // Use forceUpdateTag for enrollments (read-your-own-writes - immediate consistency)
-    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
+    // SWR is enough here: the cashier lands on /staff/payments next, which does
+    // not render the enrollment-queue counts. A blocking updateTag() would force
+    // getEnrollmentQueueCounts() to re-run inside this action response (slow
+    // "Posting…" spinner) for data the actor never sees.
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return { success: true, message: `Payment posted successfully. OR Number: ${orNumberToAssign}` };
   } catch (error: unknown) {
     const msg0 = error instanceof Error ? error.message : String(error);
@@ -504,8 +507,10 @@ export async function voidPaymentAction(
     revalidatePath("/staff/assessments");
     // Dashboard KPIs reflect voided collection totals.
     invalidateTag(CACHE_TAGS.DASHBOARD);
-    // Enrollment status may have reverted to "assessed" if all payments were voided.
-    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
+    // Enrollment status may have reverted to "assessed" if all payments were
+    // voided — SWR is enough; the actor stays on the payments/assessment views,
+    // not the enrollment queue, so don't block the response on a re-query.
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
 
     return { success: true, message: "Payment voided successfully." };
   } catch (error: any) {

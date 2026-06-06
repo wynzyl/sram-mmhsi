@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { CACHE_TAGS, invalidateTag, forceUpdateTag } from "@/lib/cache/cache-tags";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   assessments,
@@ -351,8 +351,10 @@ export async function approveVoidRequestAction(
     revalidatePath("/staff/assessments");
     // Dashboard KPIs reflect reversed collection totals.
     invalidateTag(CACHE_TAGS.DASHBOARD);
-    // Enrollment status may have reverted to "assessed" if all payments were reversed.
-    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
+    // Enrollment status may have reverted to "assessed" if all payments were
+    // reversed — SWR is enough; the approver stays on the void-requests view,
+    // not the enrollment queue, so don't block the response on a re-query.
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return { success: true, message: "Void request approved. Payment has been reversed." };
   } catch (error: unknown) {
     logger.error("[void-request] Failed to approve void request", { error: String(error) });

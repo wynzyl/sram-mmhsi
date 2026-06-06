@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
 import { sessions, users } from "@/lib/db/schema";
@@ -113,7 +114,11 @@ export async function createSession(
 
 // ─── Get current session ──────────────────────────────────────────────────────
 
-export async function getCurrentSession(): Promise<SessionPayload | null> {
+// Wrapped in React cache() for request-level dedup: layouts call both
+// requireSession() and getCurrentUser(), which each resolve the session —
+// without dedup that is two sequential sessions-table queries (plus a
+// duplicate UA/IP binding check) on every server render.
+export const getCurrentSession = cache(async (): Promise<SessionPayload | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
@@ -171,7 +176,7 @@ export async function getCurrentSession(): Promise<SessionPayload | null> {
   }
 
   return payload;
-}
+});
 
 // ─── Get current session user ─────────────────────────────────────────────────
 
