@@ -14,6 +14,7 @@ import { useFormToast } from "@/hooks/useFormToast";
 import { TextAreaField } from "@/components/forms/TextInputField";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
+import { generateUuid } from "@/lib/utils/uuid";
 import {
   DataCard,
   DataCardHeader,
@@ -63,9 +64,7 @@ interface AssessmentDraftFormProps {
 const initialAssessmentState: AssessmentFormState = {};
 
 function newRowKey(): string {
-  return typeof crypto !== "undefined" && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `row-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return generateUuid();
 }
 
 function rowsFromCatalog(catalog: FeeCatalogEntry[]): AssessmentLineRow[] {

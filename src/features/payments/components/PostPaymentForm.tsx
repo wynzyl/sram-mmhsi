@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatCurrency, roundToTwoDecimals } from "@/lib/utils/currency";
+import { generateUuid } from "@/lib/utils/uuid";
 
 type PaymentMethod = "cash" | "check" | "bank_transfer" | "gcash" | "other";
 
@@ -55,7 +56,7 @@ export default function PostPaymentForm({
     // One-time client-only initialization: legitimate setState-in-effect —
     // the UUID must not be SSR-rendered or hydration would mismatch.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIdempotencyKey(crypto.randomUUID());
+    setIdempotencyKey(generateUuid());
   }, []);
 
   useEffect(() => {
