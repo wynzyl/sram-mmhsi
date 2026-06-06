@@ -5,7 +5,16 @@
 # silently resolves to "" without an --env-file flag.
 # Usage:
 #   docker compose -f docker-compose.prod.yml up -d --build
-#   docker compose -p srams-prod -f docker-compose.prod.yml run --rm migrate npm run db:seed
+#   docker compose -f docker-compose.prod.yml run --rm migrate npm run db:seed
+#
+# `name:` below pins the compose project, so no -p flag is needed and re-running
+# from any shell can't collide with the fixed container_names. The value matches
+# the Ubuntu server's repo directory name, so the server's existing project and
+# its data volume (sram-mmhsi_db-data) carry over with zero migration steps.
+# NEVER pass -p — it overrides this pin and recreates the name conflicts.
+# (Local dev uses docker-compose.yml under project "srams-dev" — see that file.)
+
+name: sram-mmhsi
 
 networks:
   srams-network:

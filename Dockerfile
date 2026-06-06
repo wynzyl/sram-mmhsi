@@ -74,9 +74,11 @@ EXPOSE 3000
 # Switch to non-root user
 USER nextjs
 
-# Healthcheck for /api/health endpoint
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+# Healthcheck via /api/readiness: verifies the DB is reachable (SELECT 1) and
+# doubles as a pool keepalive — the 30s probe keeps a warm connection in the
+# shared postgres pool so the first user transaction never pays a TCP connect.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/readiness || exit 1
 
 # Run the production server
 CMD ["npm", "run", "start"]

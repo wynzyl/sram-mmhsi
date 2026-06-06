@@ -6,7 +6,13 @@
 #   docker compose run --rm seed        # optional: seed system config
 #   docker compose run --rm seed-data   # optional: seed sample data
 #   docker compose exec app              # get a shell inside the running app container
-#   docker compose -f docker-compose.prod.yml up -d --build 
+#   docker compose -f docker-compose.prod.yml up -d --build   # prod stack (separate project)
+#
+# `name:` pins the dev project to srams-dev. The directory-default name
+# (sram-mmhsi) is reserved for the prod stack so it matches the Ubuntu server's
+# project/volume names. Never pass -p — it overrides this pin.
+
+name: srams-dev
 
 services:
   db:

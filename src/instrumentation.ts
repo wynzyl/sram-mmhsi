@@ -20,5 +20,27 @@ export async function register() {
     console.log(
       `[SRAMS] Server started in ${process.env.NODE_ENV ?? "development"} mode`
     );
+
+    // Warm the shared postgres pool (fire-and-forget — never block startup).
+    // The pool lives on globalThis (src/lib/db/index.ts), so the connections
+    // opened here are the SAME ones every route/action bundle uses — without
+    // this, the first transaction after a (re)start pays the TCP connect.
+    void (async () => {
+      try {
+        const [{ db }, { sql }] = await Promise.all([
+          import("@/lib/db"),
+          import("drizzle-orm"),
+        ]);
+        await Promise.all(
+          Array.from({ length: 3 }, () => db.execute(sql`SELECT 1`))
+        );
+        console.log("[SRAMS] DB pool warmed (3 connections)");
+      } catch (error) {
+        // Warmup is best-effort; readiness probe surfaces real DB outages.
+        console.warn(
+          `[SRAMS] DB pool warmup failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    })();
   }
 }
