@@ -16,17 +16,19 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { logDbTarget } from "./lib/db-target";
 
-const isInsideDocker = !existsSync(".env.local");
+const isInsideDocker = !existsSync(".env.production");
 if (!isInsideDocker) {
-  expand(config({ path: ".env.local", override: true }));
+  expand(config({ path: ".env.production", override: true }));
 }
 
 const raw = process.env.DATABASE_URL;
 if (!raw) {
-  console.error("[migrate] DATABASE_URL is not set. Check your .env.local file.");
+  console.error("[migrate] DATABASE_URL is not set. Check your .env.production file.");
   process.exit(1);
 }
-const databaseUrl = isInsideDocker ? raw : raw.replace("@db:", "@localhost:");
+const databaseUrl = isInsideDocker
+  ? raw.replace("@db:", "@srams_db:")   // Docker: use service hostname
+  : raw.replace("@db:", "@localhost:"); // Host: use localhost
 
 async function main() {
   // Migrations require a single sequential connection.

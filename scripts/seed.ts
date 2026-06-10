@@ -13,6 +13,7 @@ import { hash } from "bcryptjs";
 import { users } from "../src/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { loadEnvConfig } from "@next/env";
+import { existsSync } from "fs";
 
 import { seedConfig } from "./seed-config";
 import { seedFeeItemTypes } from "./seed-fee-item-types";
@@ -20,10 +21,19 @@ import { seedDiscountTypes } from "./seed-discount-types";
 
 import { logDbTarget } from "./lib/db-target";
 
-loadEnvConfig(process.cwd());
+// Only load env files when running on host (not inside Docker)
+const isInsideDocker = !existsSync(".env.production");
+if (!isInsideDocker) {
+  loadEnvConfig(process.cwd());
+}
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error("DATABASE_URL not set");
+const raw = process.env.DATABASE_URL;
+if (!raw) throw new Error("DATABASE_URL not set");
+
+// Resolve hostname: Docker uses service name, host uses localhost
+const connectionString = isInsideDocker
+  ? raw.replace("@db:", "@srams_db:")
+  : raw.replace("@db:", "@localhost:");
 
 logDbTarget("seed", connectionString);
 const client = postgres(connectionString, { max: 1 });

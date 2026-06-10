@@ -31,10 +31,10 @@ services:
     # case-sensitive, and POSTGRES_DB is ignored once the data dir exists).
     env_file:
       - .env.production
-    ports:
-      # Expose on 5433 (Production) — 5432 is taken by a native host Postgres
-      # and 5434 by the dev stack's db, so prod can run side-by-side with both.
-      - "5433:5432"
+    # ports:
+    #   # Expose on 5433 (Production) — 5432 is taken by a native host Postgres
+    #   # and 5434 by the dev stack's db, so prod can run side-by-side with both.
+    #   - "5433:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
@@ -105,7 +105,7 @@ services:
     image: metabase/metabase:latest
     restart: always
     ports:
-      - "3000:3000" # Exposes Metabase on port 3001 of your Ubuntu host
+      - "3005:3000" # Exposes Metabase on port 3005 of your Ubuntu host
     env_file:
       - .env.production
     depends_on:
