@@ -47,9 +47,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") as Theme | null;
     if (storedTheme && ["light", "dark", "system"].includes(storedTheme)) {
-      setThemeState(storedTheme);
+      setThemeState(storedTheme); // eslint-disable-line react-hooks/set-state-in-effect -- Init from localStorage
     }
-    setMounted(true);
+    setMounted(true);  
   }, []);
 
   // User-triggered theme change: update DOM, localStorage, and React state

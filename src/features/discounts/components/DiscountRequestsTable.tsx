@@ -416,6 +416,7 @@ export default function DiscountRequestsTable({
         },
       },
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toggleAll changes with selectedIds state
     [
       enableBulkActions,
       selectedIds,

@@ -52,9 +52,6 @@ export function useHotkey({
 
       // For cross-platform support: treat Cmd (meta) on Mac same as Ctrl
       const ctrlOrMeta = hasCtrl || hasMeta;
-      const modifierMatch = ctrlOrMeta
-        ? event.ctrlKey || event.metaKey
-        : true;
 
       // Check other modifiers exactly
       const altMatch = hasAlt ? event.altKey : !event.altKey;

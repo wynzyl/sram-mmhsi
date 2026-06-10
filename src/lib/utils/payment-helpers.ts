@@ -89,8 +89,7 @@ export async function createReversalPaymentEntry(
   tx: DrizzleTransaction,
   params: CreateReversalPaymentParams
 ): Promise<ReversalPaymentResult> {
-  const { originalPayment, reversalRemarks, createdBy, reversedByRequestId } =
-    params;
+  const { originalPayment, reversalRemarks, createdBy } = params;
 
   const referenceNumber = generateReversalReferenceNumber(
     originalPayment.orNumber,

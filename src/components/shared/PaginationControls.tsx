@@ -7,11 +7,11 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { PaginatedResult } from "@/lib/types/pagination";
 
 type PaginationControlsProps = {
-  pagination: PaginatedResult<any>["pagination"];
+  pagination: PaginatedResult<unknown>["pagination"];
   basePath: string;
 };
 
-export function PaginationControls({ pagination, basePath }: PaginationControlsProps) {
+export function PaginationControls({ pagination, basePath: _basePath }: PaginationControlsProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 

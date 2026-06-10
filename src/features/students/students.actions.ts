@@ -16,7 +16,7 @@ import { eq, ne, ilike, and, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
-import { parseFormData } from "@/lib/utils/form-validation";
+// parseFormData is not used in this file - form parsing is done manually for complex wizard forms
 import { extractConstraintName } from "@/lib/errors";
 import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
 import { CreateStudentWithRegistrationSchema } from "../registrations/registrations.schema";

@@ -32,7 +32,7 @@ async function fixSequence() {
       ) as exists;
     `);
 
-    const exists = (result as any).exists;
+    const exists = (result as { exists: boolean }).exists;
 
     if (!exists) {
       console.log("⚠️  Sequence does not exist. Creating it now...");
@@ -66,7 +66,7 @@ async function fixSequence() {
 
       // Show current value
       const [current] = await db.execute(sql`SELECT last_value FROM student_ref_seq;`);
-      console.log(`   Current sequence value: ${(current as any).last_value}`);
+      console.log(`   Current sequence value: ${(current as { last_value: string | number }).last_value}`);
     }
 
     console.log("\n✨ Student reference sequence is ready!");

@@ -51,11 +51,12 @@ export default function StudentPicker({
     [students, value]
   );
 
+  // Sync query display when selection changes externally
   useEffect(() => {
     if (selected) {
-      setQuery(`${selected.lastName}, ${selected.firstName}`);
+      setQuery(`${selected.lastName}, ${selected.firstName}`); // eslint-disable-line react-hooks/set-state-in-effect -- Sync selection to display
     } else {
-      setQuery("");
+      setQuery("");  
     }
   }, [selected]);
 
@@ -81,8 +82,9 @@ export default function StudentPicker({
     return all.slice(0, MAX_VISIBLE);
   }, [students, debouncedQuery]);
 
+  // Reset active index when filtered results change
   useEffect(() => {
-    setActiveIndex(0);
+    setActiveIndex(0); // eslint-disable-line react-hooks/set-state-in-effect -- Reset on filter change
   }, [filtered.length, debouncedQuery]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

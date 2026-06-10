@@ -14,7 +14,7 @@ import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
-import { CheckCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 interface ResolveClearanceFormProps {
   clearanceId: string;

@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { XCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { XCircle } from "lucide-react";
 
 export interface CancelEnrollmentButtonProps {
   enrollmentId: string;
@@ -15,7 +13,7 @@ export interface CancelEnrollmentButtonProps {
  * Clicking scrolls to the cancellation section at the bottom of the page.
  */
 export default function CancelEnrollmentButton({
-  enrollmentId,
+  enrollmentId: _enrollmentId,
   enrollmentStatus,
 }: CancelEnrollmentButtonProps) {
   // Don't show for cancelled enrollments

@@ -12,7 +12,7 @@ import {
   registrations,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
-import { eq, and, ne, isNull, desc } from "drizzle-orm";
+import { eq, and, ne, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit, logUpdateAction } from "@/lib/utils/audit-logger";

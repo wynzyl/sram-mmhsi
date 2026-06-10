@@ -25,7 +25,8 @@ type ReadyToEnrollTableProps = {
 export default function ReadyToEnrollTable({
   students,
   onConfirmEnrollment,
-  gradeLevels = [],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for future filter UI
+  gradeLevels: _gradeLevels = [],
   searchQuery = "",
   gradeLevelFilter = "",
 }: ReadyToEnrollTableProps) {

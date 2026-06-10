@@ -17,7 +17,7 @@ import {
   type ClearanceType,
   type ResolutionType,
 } from "@/features/clearances/clearances.schema";
-import { ArrowLeft, CheckCircle, Clock, User, Calendar, FileText } from "lucide-react";
+import { ArrowLeft, CheckCircle, User, Calendar, FileText } from "lucide-react";
 
 export const metadata: Metadata = { title: "Clearance Details" };
 

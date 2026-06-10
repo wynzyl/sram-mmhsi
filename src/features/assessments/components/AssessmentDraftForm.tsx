@@ -7,7 +7,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { queryKeys } from "@/lib/query/keys";
 import { createAssessmentFromEnrollmentAction } from "../assessments.actions";
-import { computeAssessmentTotals } from "../assessments.schema";
 import type { AssessmentFormState } from "../assessments.schema";
 import type { NewAssessmentFeeCatalogEntry, ExpectedDiscountsSummary } from "../new-assessment-context.queries";
 import { useFormToast } from "@/hooks/useFormToast";

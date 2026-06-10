@@ -129,9 +129,9 @@ export class RedisRateLimitStore implements RateLimitStore {
     return `${this.prefix}${key}`;
   }
 
-  async get(key: string): Promise<RateLimitEntry | null> {
+  async get(_key: string): Promise<RateLimitEntry | null> {
     // Uncomment when using Redis:
-    // const data = await this.redis.get(this.getKey(key));
+    // const data = await this.redis.get(this.getKey(_key));
     // if (!data) return null;
     // return JSON.parse(data) as RateLimitEntry;
 
@@ -141,19 +141,19 @@ export class RedisRateLimitStore implements RateLimitStore {
     );
   }
 
-  async set(key: string, entry: RateLimitEntry, windowMs: number): Promise<void> {
+  async set(_key: string, _entry: RateLimitEntry, _windowMs: number): Promise<void> {
     // Uncomment when using Redis:
-    // const ttlSeconds = Math.ceil(windowMs / 1000);
+    // const ttlSeconds = Math.ceil(_windowMs / 1000);
     // await this.redis.setex(
-    //   this.getKey(key),
+    //   this.getKey(_key),
     //   ttlSeconds,
-    //   JSON.stringify(entry)
+    //   JSON.stringify(_entry)
     // );
 
     throw new Error("Redis rate limiting not configured.");
   }
 
-  async increment(key: string, windowMs: number): Promise<RateLimitEntry> {
+  async increment(_key: string, _windowMs: number): Promise<RateLimitEntry> {
     // Uncomment when using Redis:
     // const redisKey = this.getKey(key);
     // const ttlSeconds = Math.ceil(windowMs / 1000);
@@ -189,24 +189,24 @@ export class RedisRateLimitStore implements RateLimitStore {
     throw new Error("Redis rate limiting not configured.");
   }
 
-  async recordFailure(key: string): Promise<void> {
+  async recordFailure(_key: string): Promise<void> {
     // Uncomment when using Redis:
-    // const entry = await this.get(key);
+    // const entry = await this.get(_key);
     // if (entry) {
     //   entry.consecutiveFailures++;
     //   // Keep existing TTL
-    //   const ttl = await this.redis.ttl(this.getKey(key));
+    //   const ttl = await this.redis.ttl(this.getKey(_key));
     //   if (ttl > 0) {
-    //     await this.redis.setex(this.getKey(key), ttl, JSON.stringify(entry));
+    //     await this.redis.setex(this.getKey(_key), ttl, JSON.stringify(entry));
     //   }
     // }
 
     throw new Error("Redis rate limiting not configured.");
   }
 
-  async delete(key: string): Promise<void> {
+  async delete(_key: string): Promise<void> {
     // Uncomment when using Redis:
-    // await this.redis.del(this.getKey(key));
+    // await this.redis.del(this.getKey(_key));
 
     throw new Error("Redis rate limiting not configured.");
   }

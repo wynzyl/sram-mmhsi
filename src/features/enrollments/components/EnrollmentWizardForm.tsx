@@ -141,7 +141,11 @@ export default function EnrollmentWizardForm({
   prefillStudentId,
   afterSuccessRedirect = "/staff/enrollments",
 }: EnrollmentWizardFormProps) {
-  const registrationContextByStudentId = registrationContextByStudentIdProp ?? {};
+  // Memoize to prevent unstable reference in useMemo dependencies
+  const registrationContextByStudentId = useMemo(
+    () => registrationContextByStudentIdProp ?? {},
+    [registrationContextByStudentIdProp]
+  );
 
   const router = useRouter();
   const [state, action, pending] = useActionState(createEnrollmentAction, initialState);
@@ -171,14 +175,14 @@ export default function EnrollmentWizardForm({
     const errs = state.errors;
     if (!errs) return;
     if (errs.studentId) {
-      setCurrentStep(1);
+      setCurrentStep(1); // eslint-disable-line react-hooks/set-state-in-effect -- Navigate to error step
     } else if (
       errs.gradeLevelId ||
       errs.schoolYearId ||
       errs.studentType ||
       errs.previousSchool
     ) {
-      setCurrentStep(2);
+      setCurrentStep(2);  
     } else if (
       errs.intakeForm138 ||
       errs.intakeBirthCertificatePsa ||
@@ -186,7 +190,7 @@ export default function EnrollmentWizardForm({
       errs.intakeQualifiedVoucher ||
       errs.intakeEscCertificate
     ) {
-      setCurrentStep(3);
+      setCurrentStep(3);  
     }
   }, [state.errors]);
 

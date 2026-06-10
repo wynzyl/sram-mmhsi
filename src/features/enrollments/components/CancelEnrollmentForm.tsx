@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState, useEffect } from "react";
+import { useState, useActionState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { updateEnrollmentStatusAction } from "../enrollments.actions";

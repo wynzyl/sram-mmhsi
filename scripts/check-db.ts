@@ -69,7 +69,7 @@ async function checkDatabase() {
       "audit_logs",
     ];
 
-    const existingTableNames = tables.map((t: any) => t.table_name);
+    const existingTableNames = tables.map((t: { table_name: string }) => t.table_name);
     const missingTables = requiredTables.filter(
       (t) => !existingTableNames.includes(t)
     );
@@ -111,7 +111,7 @@ async function checkDatabase() {
       "force_password_change",
     ];
 
-    const existingColumnNames = columns.map((c: any) => c.column_name);
+    const existingColumnNames = columns.map((c: { column_name: string }) => c.column_name);
     const missingColumns = requiredColumns.filter(
       (c) => !existingColumnNames.includes(c)
     );

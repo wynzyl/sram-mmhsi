@@ -36,7 +36,7 @@ export async function saveGradesAction(
   let parsedGrades;
   try {
     parsedGrades = JSON.parse(gradesJson);
-  } catch (e) {
+  } catch {
     return { message: "Failed to parse grades JSON." };
   }
 
@@ -175,9 +175,10 @@ export async function saveGradesAction(
 
     revalidatePath(`/staff/grades/${assignmentId}`);
     return { success: true, message: "Grades saved successfully." };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[teacher] Failed to save grades", { error: String(error) });
-    return { message: error.message || "An unexpected error occurred." };
+    const message = error instanceof Error ? error.message : String(error);
+    return { message: message || "An unexpected error occurred." };
   }
 }
 
@@ -269,8 +270,9 @@ export async function submitGradesAction(
 
     revalidatePath(`/staff/grades/${assignmentId}`);
     return { success: true, message: "Grades submitted successfully." };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[teacher] Failed to submit grades", { error: String(error) });
-    return { message: error.message || "An unexpected error occurred." };
+    const message = error instanceof Error ? error.message : String(error);
+    return { message: message || "An unexpected error occurred." };
   }
 }

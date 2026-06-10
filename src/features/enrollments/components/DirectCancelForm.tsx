@@ -26,7 +26,7 @@ export interface DirectCancelFormProps {
  */
 export default function DirectCancelForm({
   enrollmentId,
-  status,
+  status: _status,
   assessmentTotalPaid,
   onCancel,
 }: DirectCancelFormProps) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X, User, BookOpen, FileText, CreditCard, ArrowRight, Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -33,31 +33,33 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Flatten results for keyboard navigation
-  const flatResults: FlatResult[] = results
-    ? [
-        ...results.students.map((r) => ({ ...r, category: "students" as const })),
-        ...results.enrollments.map((r) => ({ ...r, category: "enrollments" as const })),
-        ...results.assessments.map((r) => ({ ...r, category: "assessments" as const })),
-        ...results.payments.map((r) => ({ ...r, category: "payments" as const })),
-      ]
-    : [];
+  // Flatten results for keyboard navigation (memoized to stabilize reference)
+  const flatResults = useMemo<FlatResult[]>(() => {
+    if (!results) return [];
+    return [
+      ...results.students.map((r) => ({ ...r, category: "students" as const })),
+      ...results.enrollments.map((r) => ({ ...r, category: "enrollments" as const })),
+      ...results.assessments.map((r) => ({ ...r, category: "assessments" as const })),
+      ...results.payments.map((r) => ({ ...r, category: "payments" as const })),
+    ];
+  }, [results]);
 
-  // Focus input when opened
+  // Focus input when opened - initializes state for clean modal open
+  // (eslint ignore: this is standard initialization pattern, not a side-effect loop)
   useEffect(() => {
     if (isOpen) {
       inputRef.current?.focus();
-      setQuery("");
-      setResults(null);
-      setActiveIndex(0);
+      setQuery(""); // eslint-disable-line react-hooks/set-state-in-effect -- Modal init
+      setResults(null);  
+      setActiveIndex(0);  
     }
   }, [isOpen]);
 
-  // Fetch search results
+  // Fetch search results (async fetch pattern)
   useEffect(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) {
-      setResults(null);
-      setIsLoading(false);
+      setResults(null); // eslint-disable-line react-hooks/set-state-in-effect -- Clear on empty query
+      setIsLoading(false);  
       return;
     }
 

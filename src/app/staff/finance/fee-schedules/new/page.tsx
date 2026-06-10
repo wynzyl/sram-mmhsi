@@ -47,7 +47,7 @@ export default async function NewFeeSchedulePage() {
           <h1 className="text-2xl font-bold text-foreground">Assign Fee Template</h1>
           <p className="text-sm text-muted-foreground mt-2">
             Select a fee template and assign it to a school year and assessment band. The
-            template's default amounts will be used, but you can add overrides afterward.
+            template&apos;s default amounts will be used, but you can add overrides afterward.
           </p>
         </div>
       </div>

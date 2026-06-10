@@ -98,7 +98,7 @@ export default async function FeeTemplateDetailPage(props: PageProps) {
         <div>
           <p className="text-[0.8125rem] font-semibold text-foreground">Next Steps</p>
           <p className="text-[0.8125rem] text-muted-foreground mb-2">
-            Once you've added all fee items, assign this template to a school year.
+            Once you&apos;ve added all fee items, assign this template to a school year.
           </p>
           <Link
             href="/staff/finance/fee-schedules/new"

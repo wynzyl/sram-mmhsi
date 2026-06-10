@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Filter, Search } from "lucide-react";
@@ -32,20 +32,8 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
   const [searchInput, setSearchInput] = useState(currentSearch);
   const debouncedSearch = useDebounce(searchInput, 300);
 
-  // Sync URL when debounced value changes
-  useEffect(() => {
-    if (debouncedSearch !== currentSearch) {
-      updateFilters({ search: debouncedSearch });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
-
-  // Keep local state in sync if URL changes externally (e.g., clear filters)
-  useEffect(() => {
-    setSearchInput(currentSearch);
-  }, [currentSearch]);
-
-  const updateFilters = (updates: { search?: string; gradeLevel?: string }) => {
+  // Define updateFilters before effects that use it
+  const updateFilters = useCallback((updates: { search?: string; gradeLevel?: string }) => {
     const params = new URLSearchParams(searchParams.toString());
 
     // Update search param
@@ -67,7 +55,19 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
     }
 
     router.push(`${basePath}?${params.toString()}`);
-  };
+  }, [searchParams, router, basePath]);
+
+  // Sync URL when debounced value changes
+  useEffect(() => {
+    if (debouncedSearch !== currentSearch) {
+      updateFilters({ search: debouncedSearch });
+    }
+  }, [debouncedSearch, currentSearch, updateFilters]);
+
+  // Keep local state in sync if URL changes externally (e.g., clear filters)
+  useEffect(() => {
+    setSearchInput(currentSearch); // eslint-disable-line react-hooks/set-state-in-effect -- Sync URL to local
+  }, [currentSearch]);
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
@@ -134,7 +134,7 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
           <span>Active filters:</span>
           {currentSearch && (
             <span className="rounded bg-gray-200 px-2 py-1 font-medium dark:bg-gray-800">
-              Search: "{currentSearch}"
+              Search: &quot;{currentSearch}&quot;
             </span>
           )}
           {currentGradeLevel && currentGradeLevel !== "all" && (

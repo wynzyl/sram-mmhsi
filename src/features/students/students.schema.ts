@@ -8,10 +8,8 @@ import {
   phoneSchema,
   lrnSchema,
   bloodTypeSchema,
-  genderSchema,
   genderOptionalSchema,
   type BaseFormState,
-  type FormStateWithExtras,
 } from "@/lib/validators/common-schemas";
 
 // ─── Guardian Schema ───────────────────────────────────────────────────────────

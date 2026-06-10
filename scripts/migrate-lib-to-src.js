@@ -14,8 +14,11 @@
  *   --verbose   Show detailed logging
  */
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('fs');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const path = require('path');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { execSync } = require('child_process');
 
 // Parse command line arguments
@@ -27,6 +30,8 @@ const isVerbose = args.includes('--verbose');
 const ROOT_DIR = path.resolve(__dirname, '..');
 const LIB_DIR = path.join(ROOT_DIR, 'lib');
 const SRC_DIR = path.join(ROOT_DIR, 'src');
+// SRC_LIB_DIR is the target for migration (used implicitly by git mv)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SRC_LIB_DIR = path.join(SRC_DIR, 'lib');
 const TSCONFIG_PATH = path.join(ROOT_DIR, 'tsconfig.json');
 
@@ -143,8 +148,8 @@ function moveFiles() {
     });
 
     success('Files moved successfully');
-  } catch (err) {
-    error(`Failed to move files: ${err.message}`);
+  } catch (moveErr) {
+    error(`Failed to move files: ${moveErr.message}`);
     process.exit(1);
   }
 }
@@ -255,7 +260,7 @@ function validateTypeScript() {
     });
 
     success('TypeScript compilation passed');
-  } catch (err) {
+  } catch {
     error('TypeScript compilation failed!');
     error('Run "npx tsc --noEmit" to see errors');
 
@@ -284,7 +289,7 @@ function runTests() {
     });
 
     success('All tests passed');
-  } catch (err) {
+  } catch {
     error('Tests failed!');
     error('Run "npm run test" to see failures');
 

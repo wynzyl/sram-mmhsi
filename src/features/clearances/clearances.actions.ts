@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import { studentClearances, assessments, enrollments } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
@@ -27,7 +26,6 @@ import type {
 import {
   getClearanceForValidation,
   clearanceExistsForEnrollment,
-  getEnrollmentsWithBalance,
 } from "./clearances.queries";
 
 // ─── Generate Clearance Action ────────────────────────────────────────────────

@@ -44,7 +44,7 @@ async function checkColumnExists(table: string, column: string): Promise<boolean
       AND column_name = ${column}
     ) as exists;
   `);
-  return (result as any).exists;
+  return (result as { exists: boolean }).exists;
 }
 
 async function applyMigrations() {

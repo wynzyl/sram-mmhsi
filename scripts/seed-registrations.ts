@@ -71,7 +71,8 @@ const GUARDIAN_FIRST_NAMES_M = [
   "Jose", "Roberto", "Ricardo", "Eduardo", "Francisco", "Antonio", "Manuel",
   "Fernando", "Ernesto", "Alfredo", "Domingo", "Rodolfo", "Benjamin",
 ];
-const RELATIONSHIPS = ["Mother", "Father", "Guardian"] as const;
+// RELATIONSHIPS type is used in GuardianData type below
+type Relationship = "Mother" | "Father" | "Guardian";
 const OCCUPATIONS = [
   "Teacher", "Engineer", "Nurse", "Business Owner", "Government Employee",
   "OFW", "Self-employed", "Accountant", "Doctor", "Lawyer", "IT Professional",
@@ -93,7 +94,7 @@ const ADDRESSES = [
 type GuardianData = {
   firstName: string;
   lastName: string;
-  relationship: (typeof RELATIONSHIPS)[number];
+  relationship: Relationship;
   address: string;
   occupation: string;
   contactNumber: string;
@@ -173,7 +174,7 @@ function buildSeedData(): SeedRow[] {
   }
   // Guard against duplicate (first+middle+last) keys in the deterministic pool.
   const seen = new Set<string>();
-  return rows.map((r, i) => {
+  return rows.map((r) => {
     let key = `${r.firstName}|${r.middleName}|${r.lastName}`;
     let suffix = 0;
     while (seen.has(key)) {

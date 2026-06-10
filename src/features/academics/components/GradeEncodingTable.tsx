@@ -86,7 +86,7 @@ export default function GradeEncodingTable({
   const handleSaveDraft = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const gradesToSave: any[] = [];
+    const gradesToSave: { studentId: string; gradingPeriod: string; grade: number | null }[] = [];
     
     students.forEach((student) => {
       const val = formData.get(`grade_${student.id}_${activeTab}`);

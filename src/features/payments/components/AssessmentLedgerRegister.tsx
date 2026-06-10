@@ -371,7 +371,7 @@ export default function AssessmentLedgerRegister({
                 Balance Transferred
               </p>
               <p style={{ fontSize: "0.875rem", lineHeight: "1.5", color: "var(--foreground)" }}>
-                This assessment's outstanding balance was transferred to a newer school year on{" "}
+                This assessment&apos;s outstanding balance was transferred to a newer school year on{" "}
                 {formatDate(assessment.transferredAt, {
                   year: "numeric",
                   month: "long",
@@ -434,7 +434,7 @@ export default function AssessmentLedgerRegister({
                 <p style={{ fontWeight: 600, marginBottom: "0.25rem" }}>This action will:</p>
                 <ul style={{ margin: 0, paddingLeft: "1.25rem" }}>
                   <li>Mark the assessment as cancelled</li>
-                  <li>Revert enrollment status from "assessed" to "pending"</li>
+                  <li>Revert enrollment status from &quot;assessed&quot; to &quot;pending&quot;</li>
                   {hasBalanceForwardItems && (
                     <li>Reverse all balance forwards (restore prior year balances)</li>
                   )}

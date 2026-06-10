@@ -10,12 +10,10 @@ import { db } from "@/lib/db";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
   feeTemplates,
-  feeTemplateItems,
   schoolYearFeeSchedules,
-  feeScheduleOverrides,
   feeItemTypes,
 } from "@/lib/db/schema";
-import { eq, and, desc, asc, sql, isNull } from "drizzle-orm";
+import { eq, and, asc, sql, isNull } from "drizzle-orm";
 import type { PaginationParams, PaginatedResult } from "@/lib/types/pagination";
 import { calculateOffset, calculatePagination } from "@/lib/types/pagination";
 
@@ -125,7 +123,7 @@ export async function getFeeTemplateById(id: string) {
 export async function getActiveFeeTemplatesByBand(assessmentBand: string) {
   return await db.query.feeTemplates.findMany({
     where: and(
-      eq(feeTemplates.assessmentBand, assessmentBand as any),
+      eq(feeTemplates.assessmentBand, assessmentBand as typeof feeTemplates.assessmentBand.enumValues[number]),
       eq(feeTemplates.isActive, true)
     ),
     with: {
@@ -204,7 +202,7 @@ export async function getAllFeeItemTypes() {
 export async function getFeeItemTypesByCategory(category: string) {
   return await db.query.feeItemTypes.findMany({
     where: and(
-      eq(feeItemTypes.category, category as any),
+      eq(feeItemTypes.category, category as typeof feeItemTypes.category.enumValues[number]),
       eq(feeItemTypes.isActive, true)
     ),
     orderBy: (t, { asc }) => [asc(t.displayOrder), asc(t.name)],

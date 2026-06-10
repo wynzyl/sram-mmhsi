@@ -35,14 +35,9 @@ import type {
 import {
   hasPendingCancellationRequest,
   getRefundCutoffConfig,
-  getEnrollmentForCancellation,
   getCancellationRequestForValidation,
-  calculateRefundPreview,
 } from "./enrollment-cancellation.queries";
-import {
-  lockEnrollment,
-  lockAssessment,
-} from "@/lib/utils/tx-helpers";
+import { lockEnrollment } from "@/lib/utils/tx-helpers";
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 

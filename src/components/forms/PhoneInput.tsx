@@ -67,7 +67,7 @@ export function PhoneInput({
 
   // Sync display value when parent value changes externally
   useEffect(() => {
-    setDisplayValue(formatPhoneInput(value));
+    setDisplayValue(formatPhoneInput(value)); // eslint-disable-line react-hooks/set-state-in-effect -- Sync prop to display
   }, [value]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {

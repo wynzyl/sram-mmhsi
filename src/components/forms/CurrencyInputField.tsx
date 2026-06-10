@@ -65,19 +65,19 @@ export function CurrencyInputField({
   const [displayValue, setDisplayValue] = useState<string>("");
   const [isFocused, setIsFocused] = useState(false);
 
-  // Initialize display value from prop
+  // Initialize display value from prop - syncs external value to display format
   useEffect(() => {
     if (!isFocused) {
       const numericValue = typeof value === "string" ? parseFloat(value) : value;
       if (!isNaN(numericValue) && numericValue > 0) {
-        setDisplayValue(formatCurrency(numericValue));
+        setDisplayValue(formatCurrency(numericValue)); // eslint-disable-line react-hooks/set-state-in-effect -- Sync prop to display
       } else {
-        setDisplayValue("");
+        setDisplayValue("");  
       }
     }
   }, [value, isFocused]);
 
-  const handleFocus = (e: FocusEvent<HTMLInputElement>) => {
+  const handleFocus = () => {
     setIsFocused(true);
     // Convert to plain number for editing
     const numericValue = parseCurrency(displayValue);

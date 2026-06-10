@@ -61,7 +61,7 @@ export function RefundCutoffSettingsForm({ initialStartDate, initialCutoffDays }
               <p className="font-medium">How refund cutoff works</p>
               <p className="mt-1 text-blue-700">
                 When an enrollment is cancelled, the system checks if the cancellation date
-                is before the cutoff date. If yes, payments for fee items marked as "refundable"
+                is before the cutoff date. If yes, payments for fee items marked as &quot;refundable&quot;
                 can be refunded. Non-refundable fees (like registration) are always kept.
               </p>
             </div>

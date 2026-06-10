@@ -35,6 +35,7 @@ export function GuardianCard({
   onEdit,
   onRemove,
   className,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for API compatibility
   compact: _compact = false,
 }: GuardianCardProps) {
   const fullName = [guardian.firstName, guardian.middleName, guardian.lastName]

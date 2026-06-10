@@ -212,8 +212,6 @@ export async function addFeeScheduleItemAction(
     return { errors: result.errors };
   }
 
-  const parsed = result;
-
   try {
     const [newItem] = await db
       .insert(feeScheduleItems)

@@ -13,7 +13,7 @@ import {
   payments,
   discountRequests,
 } from "@/lib/db/schema";
-import { eq, and, ne, isNotNull, isNull, desc, asc, inArray } from "drizzle-orm";
+import { eq, and, ne, isNotNull, isNull, asc } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "./assessments.queries";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -128,7 +128,7 @@ export async function createAssessmentFromEnrollmentAction(
   }
 
   // ─── Check for Balance Forward (Old Students - Multi-Year Support) ─────────
-  let balanceForwardItems: Array<{
+  const balanceForwardItems: Array<{
     description: string;
     amount: string;
     sourceAssessmentId: string;

@@ -158,7 +158,7 @@ async function seed() {
     });
 
     // 6. Create a Student & Enrollment
-    let [student] = await db.insert(students).values({
+    const [student] = await db.insert(students).values({
       referenceNumber: `STD-${Date.now()}`,
       firstName: "John",
       lastName: "Doe",
@@ -176,8 +176,9 @@ async function seed() {
     console.log("✅ Teacher seeded successfully!");
     console.log(`   Username : teacher1`);
     console.log(`   Password : Teacher@2026!`);
-  } catch (e: any) {
-    if (e.code === "23505") {
+  } catch (e: unknown) {
+    const errorCode = e && typeof e === "object" && "code" in e ? (e as { code: string }).code : null;
+    if (errorCode === "23505") {
       console.log("Data already seeded.");
     } else {
       console.error(e);

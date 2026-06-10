@@ -131,6 +131,7 @@ export async function getDiscountTypeById(
 
 // Alias for user join
 const requestedByUser = users;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Reserved for future use in decided-by joins
 const decidedByUser = users;
 
 /**

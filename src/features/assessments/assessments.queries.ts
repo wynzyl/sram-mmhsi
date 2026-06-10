@@ -10,7 +10,6 @@ import {
   schoolYearFeeSchedules,
   feeTemplateItems,
   feeScheduleOverrides,
-  feeItemTypes,
 } from "@/lib/db/schema";
 import { eq, desc, asc, sql, and, isNull, or, ilike, type SQL } from "drizzle-orm";
 import type { FeeAssessmentBand } from "@/lib/constants/assessment-bands";

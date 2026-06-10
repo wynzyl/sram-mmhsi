@@ -513,8 +513,9 @@ export async function voidPaymentAction(
     invalidateTag(CACHE_TAGS.ENROLLMENTS);
 
     return { success: true, message: "Payment voided successfully." };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[cashier] Failed to void payment", { error: String(error) });
-    return { message: error.message || "An unexpected error occurred. Please try again." };
+    const message = error instanceof Error ? error.message : String(error);
+    return { message: message || "An unexpected error occurred. Please try again." };
   }
 }
