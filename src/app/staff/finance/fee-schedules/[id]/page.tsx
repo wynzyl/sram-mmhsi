@@ -10,6 +10,7 @@ import {
 } from "@/features/finance/fee-templates/fee-templates.actions";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
+import { formatDate } from "@/lib/utils/date";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -24,15 +25,6 @@ function formatPHP(amount: number) {
     style: "currency",
     currency: "PHP",
   }).format(amount);
-}
-
-function formatDate(date: Date | string | null) {
-  if (!date) return "—";
-  return new Intl.DateTimeFormat("en-PH", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(date));
 }
 
 export default async function FeeScheduleDetailPage({ params }: PageProps) {

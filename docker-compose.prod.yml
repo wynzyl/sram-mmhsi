@@ -101,5 +101,18 @@ services:
     networks:
       - srams-network
 
+  metabase:
+    image: metabase/metabase:latest
+    restart: always
+    ports:
+      - "3000:3000" # Exposes Metabase on port 3001 of your Ubuntu host
+    env_file:
+      - .env.production
+    depends_on:
+      srams_db:
+        condition: service_healthy
+    networks:
+      - srams-network
+
 volumes:
   db-data:

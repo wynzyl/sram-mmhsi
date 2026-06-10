@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { schoolYears } from "@/lib/db/schema";
-import { desc, eq, isNull } from "drizzle-orm";
+import { desc, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { getSchoolYearFeeSchedules } from "@/features/finance/fee-templates/fee-templates.queries";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 import { formatDate } from "@/lib/utils/date";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
 import { deactivateFeeScheduleAction } from "@/features/finance/fee-templates/fee-templates.actions";
 
@@ -24,11 +26,6 @@ export default async function StaffFeeSchedulesPage() {
   if (!hasPermission(session.role, "fee_schedules:manage")) {
     redirect("/staff/dashboard");
   }
-
-  const allSchoolYears = await db.query.schoolYears.findMany({
-    where: isNull(schoolYears.deletedAt),
-    orderBy: [desc(schoolYears.startDate)],
-  });
 
   return (
     <div className="px-8 py-6 max-w-[1200px] mx-auto">
@@ -69,9 +66,40 @@ export default async function StaffFeeSchedulesPage() {
       </div>
 
       {/* School years */}
-      <div className="flex flex-col gap-6">
-        {allSchoolYears.map(async (schoolYear) => {
-          const schedules = await getSchoolYearFeeSchedules(schoolYear.id);
+      <Suspense fallback={<FeeSchedulesByYearFallback />}>
+        <FeeSchedulesByYear />
+      </Suspense>
+    </div>
+  );
+}
+
+async function FeeSchedulesByYear() {
+  const allSchoolYears = await db.query.schoolYears.findMany({
+    where: isNull(schoolYears.deletedAt),
+    orderBy: [desc(schoolYears.startDate)],
+  });
+
+  // Resolve every year's schedules up front (in parallel) so the JSX below renders
+  // synchronously. Returning Promises from an inline `.map()` callback as React
+  // children is an anti-pattern that stalls dynamic rendering under `cacheComponents`.
+  const schedulesByYear = await Promise.all(
+    allSchoolYears.map((schoolYear) => getSchoolYearFeeSchedules(schoolYear.id)),
+  );
+
+  if (allSchoolYears.length === 0) {
+    return (
+      <div className="bg-card border border-border rounded-md">
+        <div className="p-8 text-center">
+          <p className="text-sm text-muted-foreground mb-2">No school years configured. Set up school years first.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {allSchoolYears.map((schoolYear, index) => {
+          const schedules = schedulesByYear[index];
 
           return (
             <div key={schoolYear.id} className="bg-card border border-border rounded-md">
@@ -168,15 +196,28 @@ export default async function StaffFeeSchedulesPage() {
             </div>
           );
         })}
+    </div>
+  );
+}
 
-        {allSchoolYears.length === 0 && (
-          <div className="bg-card border border-border rounded-md">
-            <div className="p-8 text-center">
-              <p className="text-sm text-muted-foreground mb-2">No school years configured. Set up school years first.</p>
+function FeeSchedulesByYearFallback() {
+  return (
+    <div className="flex flex-col gap-6">
+      {[0, 1].map((i) => (
+        <div key={i} className="bg-card border border-border rounded-md">
+          <div className="flex justify-between items-center gap-4 px-5 py-4 border-b border-border">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <div className="p-5">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+              {[0, 1, 2].map((j) => (
+                <Skeleton key={j} className="h-36 w-full rounded-md" />
+              ))}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
