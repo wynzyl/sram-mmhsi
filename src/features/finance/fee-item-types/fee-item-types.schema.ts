@@ -14,7 +14,7 @@ export const CreateFeeItemTypeSchema = z.object({
   category: z.enum(FEE_ITEM_CATEGORIES, { message: "Select a valid category" }),
   isDiscount: z.boolean().default(false),
   isRefundable: z.boolean().default(true),
-  displayOrder: z.number().int().min(0).default(0),
+  displayOrder: z.coerce.number().int().min(0).default(0),
 });
 
 export const UpdateFeeItemTypeSchema = z.object({

@@ -44,7 +44,7 @@ const defaultFeeTypes = [
     name: "Books and Materials",
     category: "materials" as const,
     isDiscount: false,
-    displayOrder: 7,
+    displayOrder: 4,
   },
 
   // Other
@@ -53,14 +53,21 @@ const defaultFeeTypes = [
     name: "Balance Forward from Previous Year",
     category: "other" as const,
     isDiscount: false,
-    displayOrder: 0, // Show first in assessments
+    displayOrder: 6, // Show first in assessments
   },
   {
     code: "OTHER",
     name: "Other Fees",
     category: "other" as const,
     isDiscount: false,
-    displayOrder: 99,
+    displayOrder: 5,
+  },
+  {
+    code: "ACCTS_RECEIVABLE",
+    name: "Accounts Receivable",
+    category: "other" as const,
+    isDiscount: false,
+    displayOrder: 7,
   },
 ];
 
