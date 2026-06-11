@@ -18,10 +18,12 @@ services:
   db:
     image: postgres:15-alpine
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-722811}
-      POSTGRES_DB: ${POSTGRES_DB:-SRAMS_DB}
+    env_file:
+      - .env.local
+    # environment:
+    #   POSTGRES_USER: ${POSTGRES_USER:-postgres}
+    #   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-722811}
+    #   POSTGRES_DB: ${POSTGRES_DB:-SRAMS_DB}
     ports:
       # Expose on 5434 to avoid clashing with a local Postgres on 5432
       - "5434:5432"
@@ -39,8 +41,8 @@ services:
     image: sram-mmhsi-app:dev
     env_file:
       - .env.local
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+    # environment:
+    #   DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@srams_db:5432/${POSTGRES_DB:-SRAMS_DB}
     depends_on:
       db:
         condition: service_healthy
@@ -58,7 +60,7 @@ services:
       - .env.local
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+      # DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
     depends_on:
       db:
         condition: service_healthy
@@ -107,8 +109,8 @@ services:
     image: sram-mmhsi-app:dev
     env_file:
       - .env.local
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+    # environment:
+    #   DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
     depends_on:
       db:
         condition: service_healthy
@@ -119,8 +121,8 @@ services:
     image: sram-mmhsi-app:dev
     env_file:
       - .env.local
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
+    # environment:
+    #   DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-722811}@db:5432/${POSTGRES_DB:-SRAMS_DB}
     depends_on:
       db:
         condition: service_healthy
