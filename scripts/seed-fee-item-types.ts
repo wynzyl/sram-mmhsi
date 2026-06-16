@@ -63,8 +63,8 @@ const defaultFeeTypes = [
     displayOrder: 5,
   },
   {
-    code: "ACCTS_RECEIVABLE",
-    name: "Accounts Receivable",
+    code: "BACK_ACCTS",
+    name: "Back Accounts Receivable",
     category: "other" as const,
     isDiscount: false,
     displayOrder: 7,
