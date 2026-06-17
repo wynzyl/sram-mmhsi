@@ -18,6 +18,9 @@ export type TablePaginationProps = {
   maxVisiblePages?: number;
   /** Label for items (default: "entries") */
   itemLabel?: string;
+  /** Query param used for the page number (default: "page"). Allows two
+   *  independently paginated tables to coexist on one page. */
+  pageParam?: string;
 };
 
 /**

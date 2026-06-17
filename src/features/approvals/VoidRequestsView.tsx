@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -60,7 +61,7 @@ export default async function VoidRequestsView({
       {/* Tab Navigation */}
       <div className="mb-6">
         <nav className="flex gap-1 border-b border-border" aria-label="Void request tabs">
-          <a
+          <Link
             href="/staff/approvals?section=void&tab=pending"
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === "pending"
@@ -74,8 +75,8 @@ export default async function VoidRequestsView({
                 {pendingRequests.length}
               </span>
             )}
-          </a>
-          <a
+          </Link>
+          <Link
             href="/staff/approvals?section=void&tab=history"
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === "history"
@@ -84,7 +85,7 @@ export default async function VoidRequestsView({
             }`}
           >
             History
-          </a>
+          </Link>
         </nav>
       </div>
 

@@ -72,11 +72,9 @@ export default async function ApprovalsPage({
     redirect("/staff");
   }
 
-  const requested = params.section as Section | undefined;
-  const active =
-    requested && visibleSections.some((s) => s.key === requested)
-      ? requested
-      : visibleSections[0].key;
+  const active: Section =
+    visibleSections.find((s) => s.key === params.section)?.key ??
+    visibleSections[0].key;
 
   return (
     <PageContainer>

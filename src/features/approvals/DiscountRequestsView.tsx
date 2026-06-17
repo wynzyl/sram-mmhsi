@@ -44,7 +44,7 @@ export default async function DiscountRequestsView({
   const params = await searchParams;
   const activeSchoolYearId = await getActiveSchoolYearId();
   const tab: TabType = isValidTab(params.tab) ? params.tab : "pending";
-  const pageNumber = params.page ? parseInt(params.page, 10) : 1;
+  const pageNumber = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
 
   const counts = await getDiscountRequestCounts(activeSchoolYearId ?? undefined);
 
