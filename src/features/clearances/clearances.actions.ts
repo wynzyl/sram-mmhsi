@@ -128,7 +128,7 @@ export async function generateClearanceAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/clearances");
+    revalidatePath("/staff/approvals");
     revalidatePath(`/staff/students/${studentId}/clearances`);
 
     return {
@@ -217,7 +217,7 @@ export async function resolveClearanceAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/clearances");
+    revalidatePath("/staff/approvals");
     revalidatePath(`/admin/clearances/${clearanceId}`);
 
     return {
@@ -330,7 +330,7 @@ export async function batchGenerateEOYClearancesAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/clearances");
+    revalidatePath("/staff/approvals");
     revalidatePath("/admin/settings");
 
     return {

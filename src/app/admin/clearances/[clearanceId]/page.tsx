@@ -29,7 +29,7 @@ export default async function ClearanceDetailPage({ params }: PageProps) {
   const session = await requireSession();
 
   if (!hasPermission(session.role, "clearances:read")) {
-    redirect("/admin/clearances");
+    redirect("/staff/approvals?section=clearance");
   }
 
   const { clearanceId } = await params;
@@ -45,7 +45,7 @@ export default async function ClearanceDetailPage({ params }: PageProps) {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex items-center gap-4">
-        <Link href="/admin/clearances">
+        <Link href="/staff/approvals?section=clearance">
           <Button variant="ghost" size="sm" className="gap-1">
             <ArrowLeft className="h-4 w-4" />
             Back to List

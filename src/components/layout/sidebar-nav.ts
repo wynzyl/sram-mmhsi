@@ -47,11 +47,9 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [{ href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" }],
     },
     {
-      label: "Finance",
+      label: "Approvals",
       items: [
-        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
-        { href: "/admin/cancellation-requests", label: "Cancellation Requests", icon: "cancellation-requests" },
-        { href: "/admin/clearances", label: "Clearances", icon: "clearances" },
+        { href: "/staff/approvals", label: "Approvals", icon: "void-requests" },
       ],
     },
     {
@@ -77,7 +75,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [{ href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" }],
     },
     {
-      label: "Academic",
+      label: "Records",
       items: [
         { href: "/staff/students", label: "Students", icon: "students" },
         { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
@@ -85,26 +83,18 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       ],
     },
     {
-      label: "Finance",
+      label: "Billing",
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
-        { href: "/staff/student-ledgers", label: "Student Ledger", icon: "assessments" },
-        { href: "/staff/finance/fee-schedules", label: "Fee Schedules", icon: "fee-schedules" },
-        { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
-        { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
-        { href: "/staff/finance/discount-types", label: "Discount Types", icon: "discounts" },
-        { href: "/staff/finance/discount-requests", label: "Discount Requests", icon: "discounts" },
-        { href: "/admin/cancellation-requests", label: "Cancellation Requests", icon: "cancellation-requests" },
-        { href: "/admin/clearances", label: "Clearances", icon: "clearances" },
+        { href: "/staff/payments", label: "Payments", icon: "payments" },
+        { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
+        { href: "/staff/finance/setup", label: "Billing Setup", icon: "fee-schedules" },
       ],
     },
     {
-      label: "Cashier",
+      label: "Approvals",
       items: [
-        { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
-        { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
-        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
-        { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
+        { href: "/staff/approvals", label: "Approvals", icon: "void-requests" },
       ],
     },
     {
@@ -129,35 +119,24 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [{ href: "/staff/dashboard", label: "Dashboard", icon: "dashboard" }],
     },
     {
-      label: "Academic",
+      label: "Records",
       items: [
         { href: "/staff/students", label: "Students", icon: "students" },
         { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
-        {
-          href: "/staff/enrollments",
-          label: "Enrollments",
-          icon: "enrollments",
-          notActiveWhen: { param: "status", value: "cancelled" },
-        },
-        {
-          href: "/staff/enrollments?status=cancelled",
-          label: "Cancelled Enrollments",
-          icon: "enrollments",
-        },
+        { href: "/staff/enrollments", label: "Enrollments", icon: "enrollments" },
       ],
     },
     {
-      label: "Finance",
+      label: "Billing",
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
+        { href: "/staff/payments", label: "Payments", icon: "payments" },
       ],
     },
     {
-      label: "Cashier",
+      label: "Approvals",
       items: [
-        { href: "/staff/payments/dashboard", label: "Cashier Dashboard", icon: "dashboard" },
-        { href: "/staff/payments", label: "Payment Queue", icon: "payments" },
-        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
+        { href: "/staff/approvals", label: "Approvals", icon: "void-requests" },
       ],
     },
     {
@@ -180,16 +159,17 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [{ href: "/staff/finance", label: "Dashboard", icon: "dashboard" }],
     },
     {
-      label: "Finance",
+      label: "Billing",
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
-        { href: "/staff/student-ledgers", label: "Student Ledger", icon: "assessments" },
-        { href: "/staff/finance/fee-schedules", label: "Fee Schedules", icon: "fee-schedules" },
-        { href: "/staff/finance/fee-item-types", label: "Fee Item Types", icon: "fee-item-types" },
-        { href: "/staff/finance/booklets", label: "OR Booklets", icon: "booklets" },
-        { href: "/staff/finance/discount-types", label: "Discount Types", icon: "discounts" },
-        { href: "/staff/finance/discount-requests", label: "Discount Requests", icon: "discounts" },
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
+        { href: "/staff/finance/setup", label: "Billing Setup", icon: "fee-schedules" },
+      ],
+    },
+    {
+      label: "Approvals",
+      items: [
+        { href: "/staff/approvals", label: "Approvals", icon: "void-requests" },
       ],
     },
     {
@@ -204,16 +184,17 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
 
   cashier: [
     {
-      label: "Overview",
-      items: [{ href: "/staff/payments/dashboard", label: "Dashboard", icon: "dashboard" }],
-    },
-    {
       label: "Cashier",
       items: [
         { href: "/staff/payments", label: "Payments", icon: "payments" },
         { href: "/staff/student-ledgers", label: "Student Ledger", icon: "assessments" },
-        { href: "/staff/void-requests", label: "Void Requests", icon: "void-requests" },
         { href: "/staff/finance/invoices", label: "Invoices", icon: "invoices" },
+      ],
+    },
+    {
+      label: "Approvals",
+      items: [
+        { href: "/staff/approvals", label: "Approvals", icon: "void-requests" },
       ],
     },
   ],

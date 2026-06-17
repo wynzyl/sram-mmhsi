@@ -423,7 +423,7 @@ export default function AssessmentDraftForm({
                           {canReviewDiscounts && (
                             <div className="flex shrink-0 gap-1">
                               <a
-                                href={`/staff/finance/discount-requests?highlight=${req.id}`}
+                                href="/staff/approvals?section=discount"
                                 className="rounded bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700"
                               >
                                 Review
@@ -448,7 +448,7 @@ export default function AssessmentDraftForm({
                     approved or rejected before creating an assessment.
                     {canReviewDiscounts && (
                       <a
-                        href="/staff/finance/discount-requests"
+                        href="/staff/approvals?section=discount"
                         className="ml-2 font-semibold underline hover:no-underline"
                       >
                         Go to Discount Queue →

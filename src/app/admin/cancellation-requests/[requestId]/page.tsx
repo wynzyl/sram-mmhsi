@@ -20,7 +20,7 @@ export default async function CancellationRequestDetailPage({
 
   // Only admin/super_admin can access
   if (!["admin", "super_admin"].includes(session.role)) {
-    redirect("/admin/cancellation-requests");
+    redirect("/staff/approvals?section=cancellation");
   }
 
   const { requestId } = await params;
@@ -34,7 +34,7 @@ export default async function CancellationRequestDetailPage({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex items-center gap-4">
-        <Link href="/admin/cancellation-requests">
+        <Link href="/staff/approvals?section=cancellation">
           <Button variant="ghost" size="sm" className="gap-1">
             <ArrowLeft className="h-4 w-4" />
             Back to List

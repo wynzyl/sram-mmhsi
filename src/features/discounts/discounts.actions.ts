@@ -432,7 +432,7 @@ export async function createDiscountRequestAction(
     logger.info("[discounts] Step 3 complete");
 
     revalidatePath("/staff/registrar/enrollments");
-    revalidatePath("/staff/finance/discount-requests");
+    revalidatePath("/staff/approvals");
     // Discount request flips enrollment's hasDiscountsPending flag (used by queue counts).
     invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return {
@@ -524,7 +524,7 @@ export async function approveDiscountRequestAction(
       },
     });
 
-    revalidatePath("/staff/finance/discount-requests");
+    revalidatePath("/staff/approvals");
     revalidatePath("/staff/registrar/enrollments");
     invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return {
@@ -602,7 +602,7 @@ export async function rejectDiscountRequestAction(
       },
     });
 
-    revalidatePath("/staff/finance/discount-requests");
+    revalidatePath("/staff/approvals");
     revalidatePath("/staff/registrar/enrollments");
     invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return { success: true, message: "Discount request rejected." };
@@ -689,7 +689,7 @@ export async function bulkApproveDiscountsAction(
       },
     });
 
-    revalidatePath("/staff/finance/discount-requests");
+    revalidatePath("/staff/approvals");
     revalidatePath("/staff/registrar/enrollments");
     invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return {
@@ -788,7 +788,7 @@ export async function cancelDiscountRequestAction(
       targetId: parsed.data.discountRequestId,
     });
 
-    revalidatePath("/staff/finance/discount-requests");
+    revalidatePath("/staff/approvals");
     revalidatePath("/staff/registrar/enrollments");
     invalidateTag(CACHE_TAGS.ENROLLMENTS);
     return { success: true, message: "Discount request cancelled." };
@@ -1272,7 +1272,7 @@ export async function applyApprovedDiscountToExistingAssessment(
         },
       });
 
-      revalidatePath("/staff/finance/discount-requests");
+      revalidatePath("/staff/approvals");
       revalidatePath("/staff/finance/assessments");
       revalidatePath("/staff/registrar/enrollments");
       // Dashboard A/R figures shift when a discount is applied.

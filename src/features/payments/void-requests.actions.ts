@@ -142,7 +142,7 @@ export async function requestVoidAction(
       }, { throwOnFail: true });
     });
 
-    revalidatePath("/staff/void-requests");
+    revalidatePath("/staff/approvals");
     revalidatePath("/staff/assessments");
     return { success: true, message: "Void request submitted. An administrator will review your request." };
   } catch (error: unknown) {
@@ -344,7 +344,7 @@ export async function approveVoidRequestAction(
       }
     });
 
-    revalidatePath("/staff/void-requests");
+    revalidatePath("/staff/approvals");
     if (assessmentIdForRevalidation) {
       revalidatePath(`/staff/assessments/${assessmentIdForRevalidation}`);
     }
@@ -430,7 +430,7 @@ export async function rejectVoidRequestAction(
       }, { throwOnFail: true });
     });
 
-    revalidatePath("/staff/void-requests");
+    revalidatePath("/staff/approvals");
     return { success: true, message: "Void request rejected." };
   } catch (error: unknown) {
     logger.error("[void-request] Failed to reject void request", { error: String(error) });
@@ -500,7 +500,7 @@ export async function cancelVoidRequestAction(
       }, { throwOnFail: true });
     });
 
-    revalidatePath("/staff/void-requests");
+    revalidatePath("/staff/approvals");
     revalidatePath("/staff/assessments");
     return { success: true, message: "Void request cancelled." };
   } catch (error: unknown) {
