@@ -57,6 +57,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
         { href: "/staff/reports/payment-collection", label: "Payment Collection", icon: "reports" },
+        { href: "/staff/reports/accounts-receivable", label: "Accounts Receivable", icon: "reports" },
         { href: "/staff/reports/student-list", label: "Student List", icon: "reports" },
       ],
     },
@@ -102,6 +103,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
         { href: "/staff/reports/payment-collection", label: "Payment Collection", icon: "reports" },
+        { href: "/staff/reports/accounts-receivable", label: "Accounts Receivable", icon: "reports" },
         { href: "/staff/reports/student-list", label: "Student List", icon: "reports" },
       ],
     },
@@ -144,6 +146,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
         { href: "/staff/reports/payment-collection", label: "Payment Collection", icon: "reports" },
+        { href: "/staff/reports/accounts-receivable", label: "Accounts Receivable", icon: "reports" },
         { href: "/staff/reports/student-list", label: "Student List", icon: "reports" },
       ],
     },
@@ -177,6 +180,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
         { href: "/staff/reports/payment-collection", label: "Payment Collection", icon: "reports" },
+        { href: "/staff/reports/accounts-receivable", label: "Accounts Receivable", icon: "reports" },
         { href: "/staff/reports/student-list", label: "Student List", icon: "reports" },
       ],
     },
