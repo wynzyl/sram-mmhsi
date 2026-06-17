@@ -51,6 +51,7 @@ export function TablePagination({
   baseUrl,
   maxVisiblePages = 5,
   itemLabel = "entries",
+  pageParam = "page",
 }: TablePaginationProps) {
   if (totalRecords === 0 || totalPages <= 0) {
     return null;
@@ -62,7 +63,8 @@ export function TablePagination({
 
   // Build URL with page parameter
   const separator = baseUrl.includes("?") ? "&" : "?";
-  const createPageUrl = (page: number) => `${baseUrl}${separator}page=${page}`;
+  const createPageUrl = (page: number) =>
+    `${baseUrl}${separator}${pageParam}=${page}`;
 
   // Generate visible page numbers
   const pageNumbers = generatePageNumbers(currentPage, totalPages, maxVisiblePages);
