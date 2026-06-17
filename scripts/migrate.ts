@@ -5,8 +5,9 @@
  * there is nothing to apply. Uses drizzle-orm's postgres-js migrator against the
  * same `drizzle/` folder + `drizzle.__drizzle_migrations` bookkeeping table.
  *
- * Env loading mirrors drizzle.config.ts: load .env.local on the host and rewrite
- * the Docker hostname (@db:) to the exposed localhost port.
+ * Env loading mirrors drizzle.config.ts: on the host, rewrite the Docker hostname
+ * (@db:) to the exposed localhost port. Inside a container the compose-injected
+ * hostname is already correct per stack (dev: db, prod: srams_db), so leave it as-is.
  */
 import { config } from "dotenv";
 import { expand } from "dotenv-expand";
@@ -27,8 +28,8 @@ if (!raw) {
   process.exit(1);
 }
 const databaseUrl = isInsideDocker
-  ? raw.replace("@db:", "@srams_db:")   // Docker: use service hostname
-  : raw.replace("@db:", "@localhost:"); // Host: use localhost
+  ? raw                                  // Docker: compose injects the correct service hostname (dev: db, prod: srams_db)
+  : raw.replace("@db:", "@localhost:"); // Host: reach the mapped port on localhost
 
 async function main() {
   // Migrations require a single sequential connection.

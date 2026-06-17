@@ -30,9 +30,10 @@ if (!isInsideDocker) {
 const raw = process.env.DATABASE_URL;
 if (!raw) throw new Error("DATABASE_URL not set");
 
-// Resolve hostname: Docker uses service name, host uses localhost
+// Resolve hostname: inside Docker the compose-injected hostname is already
+// correct per stack (dev: db, prod: srams_db); on host, use localhost.
 const connectionString = isInsideDocker
-  ? raw.replace("@db:", "@srams_db:")
+  ? raw
   : raw.replace("@db:", "@localhost:");
 
 logDbTarget("seed", connectionString);
