@@ -37,13 +37,10 @@ services:
     image: sram-mmhsi-app:dev
     env_file:
       - .env.local
-<<<<<<< HEAD
-=======
     environment:
       # Override .env.local's host-side localhost URL: inside the compose network
       # the database is the `db` service on its internal port 5432.
       DATABASE_URL: postgresql://postgres:722811@db:5432/SRAMS_DB
->>>>>>> f8ad9bec87c7e2fcd7bb23710b158f27aee06d0d
     depends_on:
       db:
         condition: service_healthy
@@ -61,12 +58,8 @@ services:
       - .env.local
     environment:
       NODE_ENV: development
-<<<<<<< HEAD
-  
-=======
       # Override .env.local's host-side localhost URL: reach the `db` service.
       DATABASE_URL: postgresql://postgres:722811@db:5432/SRAMS_DB
->>>>>>> f8ad9bec87c7e2fcd7bb23710b158f27aee06d0d
     depends_on:
       db:
         condition: service_healthy
@@ -115,11 +108,8 @@ services:
     image: sram-mmhsi-app:dev
     env_file:
       - .env.local
-<<<<<<< HEAD
-=======
     environment:
       DATABASE_URL: postgresql://postgres:722811@db:5432/SRAMS_DB
->>>>>>> f8ad9bec87c7e2fcd7bb23710b158f27aee06d0d
     depends_on:
       db:
         condition: service_healthy
@@ -130,12 +120,8 @@ services:
     image: sram-mmhsi-app:dev
     env_file:
       - .env.local
-<<<<<<< HEAD
-    
-=======
     environment:
       DATABASE_URL: postgresql://postgres:722811@db:5432/SRAMS_DB
->>>>>>> f8ad9bec87c7e2fcd7bb23710b158f27aee06d0d
     depends_on:
       db:
         condition: service_healthy
