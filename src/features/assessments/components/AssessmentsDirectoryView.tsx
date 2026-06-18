@@ -99,6 +99,11 @@ export function AssessmentsDirectoryView({ basePath }: { basePath: AssessmentsBa
             </Link>
           );
         })}
+        {/* Student Ledger is a per-student view of the same assessment data; surfaced
+            here as a tab so it no longer needs its own sidebar item. */}
+        <Link href="/staff/student-ledgers" className="tab-link">
+          Student Ledger
+        </Link>
       </nav>
 
       {query.isFetching && !isInitialLoading && (

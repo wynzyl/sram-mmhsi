@@ -24,7 +24,7 @@ export default async function CancellationSettingsPage() {
     <div className="px-8 py-6 max-w-[800px] mx-auto flex flex-col gap-6">
       {/* Back link */}
       <Link
-        href="/admin/cancellation-requests"
+        href="/staff/approvals?section=cancellation"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -61,13 +61,13 @@ export default async function CancellationSettingsPage() {
           </li>
           <li>
             • Cancellation requests are reviewed in{" "}
-            <Link href="/admin/cancellation-requests" className="text-primary hover:underline">
+            <Link href="/staff/approvals?section=cancellation" className="text-primary hover:underline">
               Cancellation Requests
             </Link>
           </li>
           <li>
             • Outstanding balances after cancellation create{" "}
-            <Link href="/admin/clearances" className="text-primary hover:underline">
+            <Link href="/staff/approvals?section=clearance" className="text-primary hover:underline">
               Clearance Records
             </Link>
           </li>

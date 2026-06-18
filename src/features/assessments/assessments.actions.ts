@@ -496,7 +496,7 @@ export async function createAssessmentFromEnrollmentAction(
 
     revalidatePath("/staff/assessments");
     revalidatePath("/staff/enrollments");
-    revalidatePath("/staff/finance/discount-requests");
+    revalidatePath("/staff/approvals");
     revalidatePath(`/staff/students/${enrollmentRow.studentId}`);
     if (newAssessmentId) {
       revalidatePath(`/staff/assessments/${newAssessmentId}`);
@@ -1042,7 +1042,7 @@ export async function cancelAssessmentAction(
     if (assessment.enrollmentId) {
       revalidatePath(`/staff/enrollments/${assessment.enrollmentId}`);
     }
-    revalidatePath("/staff/finance/discount-requests");
+    revalidatePath("/staff/approvals");
     // Use forceUpdateTag for enrollments (read-your-own-writes - immediate consistency)
     // Use invalidateTag for dashboard (stale-while-revalidate is acceptable)
     forceUpdateTag(CACHE_TAGS.ENROLLMENTS);

@@ -18,6 +18,9 @@ export type TablePaginationProps = {
   maxVisiblePages?: number;
   /** Label for items (default: "entries") */
   itemLabel?: string;
+  /** Query param used for the page number (default: "page"). Allows two
+   *  independently paginated tables to coexist on one page. */
+  pageParam?: string;
 };
 
 /**
@@ -48,6 +51,7 @@ export function TablePagination({
   baseUrl,
   maxVisiblePages = 5,
   itemLabel = "entries",
+  pageParam = "page",
 }: TablePaginationProps) {
   if (totalRecords === 0 || totalPages <= 0) {
     return null;
@@ -59,7 +63,8 @@ export function TablePagination({
 
   // Build URL with page parameter
   const separator = baseUrl.includes("?") ? "&" : "?";
-  const createPageUrl = (page: number) => `${baseUrl}${separator}page=${page}`;
+  const createPageUrl = (page: number) =>
+    `${baseUrl}${separator}${pageParam}=${page}`;
 
   // Generate visible page numbers
   const pageNumbers = generatePageNumbers(currentPage, totalPages, maxVisiblePages);

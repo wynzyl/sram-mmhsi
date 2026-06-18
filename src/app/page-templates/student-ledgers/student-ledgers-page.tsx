@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -51,6 +52,15 @@ export async function StudentLedgersPage({ searchParams }: StudentLedgersPagePro
         title="Student Ledger"
         subtitle="Search and view student assessment ledgers to track payments and outstanding balances."
       />
+
+      <nav className="tab-nav mb-2 flex flex-wrap gap-1" aria-label="Assessment views">
+        <Link href="/staff/assessments" className="tab-link">
+          Assessments
+        </Link>
+        <Link href="/staff/student-ledgers" className="tab-link tab-link-active">
+          Student Ledger
+        </Link>
+      </nav>
 
       <StudentLedgersView
         assessments={assessments}
