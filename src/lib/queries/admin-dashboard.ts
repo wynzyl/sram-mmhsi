@@ -143,8 +143,10 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
         total: sql<string>`COALESCE(SUM(${assessments.totalAmount}::numeric), 0)`,
       })
       .from(assessments)
+      .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
       .where(
         and(
+          eq(enrollments.status, "enrolled"),
           eq(assessments.schoolYearId, activeSchoolYear.id),
           ne(assessments.billingStatus, "cancelled")
         )
@@ -155,10 +157,12 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
         total: sql<string>`COALESCE(SUM(${assessments.balance}::numeric), 0)`,
       })
       .from(assessments)
+      .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
       .where(
         and(
+          eq(enrollments.status, "enrolled"),
           eq(assessments.schoolYearId, activeSchoolYear.id),
-          ne(assessments.billingStatus, "cancelled"),
+          eq(assessments.billingStatus, "outstanding"), // Only outstanding (excludes assessed students)
           gt(assessments.balance, "0"),
           isNull(assessments.transferredAt) // Exclude transferred balances
         )
@@ -170,10 +174,12 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
         amount: sql<string>`COALESCE(SUM(${assessments.balance}::numeric), 0)`,
       })
       .from(assessments)
+      .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
       .where(
         and(
+          eq(enrollments.status, "enrolled"),
           eq(assessments.schoolYearId, activeSchoolYear.id),
-          ne(assessments.billingStatus, "cancelled"),
+          eq(assessments.billingStatus, "outstanding"), // Only outstanding (excludes assessed students)
           gt(assessments.balance, "0"),
           isNull(assessments.transferredAt), // Exclude transferred balances
           sql`EXISTS (

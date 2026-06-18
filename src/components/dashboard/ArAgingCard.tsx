@@ -2,11 +2,10 @@ import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import type { ArAgingBucketKey, ArAgingResult } from "@/lib/queries/finance-dashboard";
 
 /**
- * AR aging severity scale: current balances are healthy (green), escalating
- * through deep-red as buckets age — keeps the brand palette, signals risk.
+ * AR aging severity scale: escalates through deep-red as buckets age —
+ * keeps the brand palette, signals risk.
  */
 const BUCKET_BAR_COLOR: Record<ArAgingBucketKey, string> = {
-  current: "bg-success",
   d1_30: "bg-primary/40",
   d31_60: "bg-primary/60",
   d61_90: "bg-primary/80",
@@ -18,11 +17,11 @@ interface ArAgingCardProps {
 }
 
 /**
- * Accounts Receivable aging breakdown — outstanding balances bucketed by how
- * long they are overdue, rendered as labelled horizontal bars.
+ * Accounts Receivable aging breakdown — outstanding balances bucketed by days
+ * since last payment, rendered as labelled horizontal bars.
  */
 export function ArAgingCard({ data }: ArAgingCardProps) {
-  const { buckets, totalOutstanding, totalOverdue } = data;
+  const { buckets, totalOutstanding } = data;
   const maxAmount = Math.max(...buckets.map((b) => b.amount), 0);
 
   return (
@@ -70,14 +69,6 @@ export function ArAgingCard({ data }: ArAgingCardProps) {
                 </div>
               );
             })}
-          </div>
-
-          <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs">
-            <span className="text-muted-foreground">Total overdue</span>
-            <CurrencyDisplay
-              amount={totalOverdue}
-              className="font-semibold text-primary"
-            />
           </div>
         </>
       )}

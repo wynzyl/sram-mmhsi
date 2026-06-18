@@ -1,18 +1,10 @@
 # Production Docker Compose for SRAMS (run on the Ubuntu server)
 # All container env comes from `env_file: .env.production` (this project keeps
-# only .env.local / .env.production — no root .env). Avoid ${VAR} interpolation
-# in this file: it reads the shell / a root .env, NOT service env_file, and
-# silently resolves to "" without an --env-file flag.
+# the .env.production file in sync with the production environment).
 # Usage:
 #   docker compose -f docker-compose.prod.yml up -d --build
 #   docker compose -f docker-compose.prod.yml run --rm migrate npm run db:seed
-#
-# `name:` below pins the compose project, so no -p flag is needed and re-running
-# from any shell can't collide with the fixed container_names. The value matches
-# the Ubuntu server's repo directory name, so the server's existing project and
-# its data volume (sram-mmhsi_db-data) carry over with zero migration steps.
-# NEVER pass -p — it overrides this pin and recreates the name conflicts.
-# (Local dev uses docker-compose.yml under project "srams-dev" — see that file.)
+
 
 name: sram-mmhsi
 
@@ -25,10 +17,7 @@ services:
     image: postgres:15-alpine
     container_name: srams_db
     restart: always
-    # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB come from .env.production.
-    # NOTE: POSTGRES_DB must match the database that already exists in the data
-    # volume (the cluster was initialized with SRAMS_DB — names are
-    # case-sensitive, and POSTGRES_DB is ignored once the data dir exists).
+    
     env_file:
       - .env.production
     ports:
@@ -87,7 +76,19 @@ services:
         condition: service_completed_successfully
     networks:
       - srams-network
-      - proxy-network
+      # - proxy-network
+  nginx:
+      image: nginx:alpine
+      container_name: nginx_proxy
+      restart: unless-stopped
+      ports:
+        - "80:80" # Exposed to Host ONLY for local LAN computers (via hosts file)
+      volumes:
+        - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      depends_on:
+        - app
+      networks:
+        - srams-network
 
   metabase:
     image: metabase/metabase:latest
@@ -101,7 +102,7 @@ services:
         condition: service_healthy
     networks:
       - srams-network
-      - proxy-network
+      # - proxy-network
 
 volumes:
   db-data:

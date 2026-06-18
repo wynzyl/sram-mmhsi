@@ -8,12 +8,7 @@ import { assessments, payments } from "@/lib/db/schema";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type ArAgingBucketKey =
-  | "current"
-  | "d1_30"
-  | "d31_60"
-  | "d61_90"
-  | "d90_plus";
+export type ArAgingBucketKey = "d1_30" | "d31_60" | "d61_90" | "d90_plus";
 
 export type ArAgingBucket = {
   key: ArAgingBucketKey;
@@ -26,8 +21,6 @@ export type ArAgingResult = {
   buckets: ArAgingBucket[];
   /** Sum of all outstanding balances (every bucket). */
   totalOutstanding: number;
-  /** Sum of overdue balances (all buckets except `current`). */
-  totalOverdue: number;
 };
 
 export type CollectionMethodBreakdown = {
@@ -45,11 +38,10 @@ export type CollectionSummaryResult = {
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const AR_AGING_BUCKETS: { key: ArAgingBucketKey; label: string }[] = [
-  { key: "current", label: "Current / Not yet due" },
-  { key: "d1_30", label: "1–30 days overdue" },
-  { key: "d31_60", label: "31–60 days overdue" },
-  { key: "d61_90", label: "61–90 days overdue" },
-  { key: "d90_plus", label: "90+ days overdue" },
+  { key: "d1_30", label: "1–30 days" },
+  { key: "d31_60", label: "31–60 days" },
+  { key: "d61_90", label: "61–90 days" },
+  { key: "d90_plus", label: "90+ days" },
 ];
 
 const COLLECTION_METHODS: { method: string; label: string }[] = [
@@ -70,11 +62,11 @@ function toNumber(value: unknown): number {
 
 /**
  * Accounts Receivable aging: outstanding assessment balances for the active
- * school year, bucketed by how long overdue they are.
+ * school year, bucketed by days since last payment.
  *
- * Each assessment is aged by the earliest UNSETTLED invoice due date linked to
- * it (mirrors the overdue logic in getAdminDashboardMetrics). Assessments with
- * no due date — or a due date in the future — are treated as "current".
+ * Only includes enrolled students. Aging is computed from the most recent
+ * posted payment date. Assessments with no payments are excluded (they haven't
+ * started paying yet, so no aging applies).
  *
  * Cached with the shared DASHBOARD tag (invalidated by payment post/void and
  * assessment mutations), revalidated every ~60s.
@@ -85,34 +77,35 @@ export async function getArAging(schoolYearId: string): Promise<ArAgingResult> {
   cacheLife("minutes");
 
   const rows = (await db.execute(sql`
-    WITH assessment_due AS (
+    WITH assessment_aging AS (
       SELECT
         a.id,
         a.balance::numeric AS balance,
         (
-          SELECT MIN(i.due_date)
-          FROM invoices i
-          WHERE i.assessment_id = a.id
-            AND i.status <> 'settled'
-            AND i.due_date IS NOT NULL
-        ) AS due_date
+          SELECT MAX(p.payment_date)
+          FROM payments p
+          WHERE p.assessment_id = a.id
+            AND p.status = 'posted'
+        ) AS last_payment_date
       FROM assessments a
+      JOIN enrollments e ON a.enrollment_id = e.id
       WHERE a.school_year_id = ${schoolYearId}
-        AND a.billing_status <> 'cancelled'
+        AND e.status = 'enrolled'
+        AND a.billing_status = 'outstanding'
         AND a.balance::numeric > 0
         AND a.transferred_at IS NULL
     )
     SELECT
       CASE
-        WHEN due_date IS NULL OR due_date >= NOW() THEN 'current'
-        WHEN NOW() - due_date <= INTERVAL '30 days' THEN 'd1_30'
-        WHEN NOW() - due_date <= INTERVAL '60 days' THEN 'd31_60'
-        WHEN NOW() - due_date <= INTERVAL '90 days' THEN 'd61_90'
+        WHEN NOW() - last_payment_date <= INTERVAL '30 days' THEN 'd1_30'
+        WHEN NOW() - last_payment_date <= INTERVAL '60 days' THEN 'd31_60'
+        WHEN NOW() - last_payment_date <= INTERVAL '90 days' THEN 'd61_90'
         ELSE 'd90_plus'
       END AS bucket,
       COUNT(*)::int AS cnt,
       COALESCE(SUM(balance), 0) AS amount
-    FROM assessment_due
+    FROM assessment_aging
+    WHERE last_payment_date IS NOT NULL
     GROUP BY bucket
   `)) as unknown as Array<{ bucket: string; cnt: number; amount: string }>;
 
@@ -132,11 +125,8 @@ export async function getArAging(schoolYearId: string): Promise<ArAgingResult> {
   }));
 
   const totalOutstanding = buckets.reduce((sum, b) => sum + b.amount, 0);
-  const totalOverdue = buckets
-    .filter((b) => b.key !== "current")
-    .reduce((sum, b) => sum + b.amount, 0);
 
-  return { buckets, totalOutstanding, totalOverdue };
+  return { buckets, totalOutstanding };
 }
 
 /**
