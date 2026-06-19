@@ -1,4 +1,3 @@
-/*
 CREATE TYPE "public"."assessment_billing_status" AS ENUM('outstanding', 'fully_paid', 'cancelled', 'balance_forwarded');--> statement-breakpoint
 CREATE TYPE "public"."booklet_status" AS ENUM('active', 'exhausted', 'voided');--> statement-breakpoint
 CREATE TYPE "public"."enrollment_status" AS ENUM('pending', 'assessed', 'enrolled', 'cancelled');--> statement-breakpoint
@@ -614,4 +613,3 @@ CREATE INDEX "void_requests_pending_status_idx" ON "void_requests" USING btree (
 -- Custom sequences for reference number generation
 CREATE SEQUENCE IF NOT EXISTS "student_ref_seq" START WITH 1;--> statement-breakpoint
 CREATE SEQUENCE IF NOT EXISTS "bfx_reference_seq" START WITH 1;
-*/
