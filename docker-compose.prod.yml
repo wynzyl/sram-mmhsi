@@ -76,20 +76,8 @@ services:
         condition: service_completed_successfully
     networks:
       - srams-network
-      # - proxy-network
-  nginx:
-      image: nginx:alpine
-      container_name: nginx_proxy
-      restart: unless-stopped
-      ports:
-        - "80:80" # Exposed to Host ONLY for local LAN computers (via hosts file)
-      volumes:
-        - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      depends_on:
-        - app
-      networks:
-        - srams-network
-
+      - proxy-network
+ 
   metabase:
     image: metabase/metabase:latest
     restart: always
@@ -102,7 +90,7 @@ services:
         condition: service_healthy
     networks:
       - srams-network
-      # - proxy-network
+      - proxy-network
 
 volumes:
   db-data:
