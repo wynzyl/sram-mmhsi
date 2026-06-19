@@ -1,6 +1,6 @@
 {
-  "id": "3a6371bb-a306-46d3-adff-b8e65d923d54",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "c7e6c2b9-2ac3-43a8-aae7-920c2469e8ce",
+  "prevId": "533a04c3-cec0-471f-b70d-75abde31bf6f",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -57,13 +57,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "is_refundable": {
-          "name": "is_refundable",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
         },
         "source_assessment_id": {
           "name": "source_assessment_id",
@@ -192,7 +185,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "assessment_items_fee_schedule_item_id_fee_schedule_items_id_fk": {
@@ -452,7 +445,6 @@
             }
           ],
           "isUnique": true,
-          "where": "cancelled_at IS NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1406,233 +1398,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.enrollment_cancellation_requests": {
-      "name": "enrollment_cancellation_requests",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "enrollment_id": {
-          "name": "enrollment_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "requested_by": {
-          "name": "requested_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "requested_at": {
-          "name": "requested_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "reason_type": {
-          "name": "reason_type",
-          "type": "cancellation_reason_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "remarks": {
-          "name": "remarks",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "enrollment_cancellation_request_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "reviewed_by": {
-          "name": "reviewed_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reviewed_at": {
-          "name": "reviewed_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "review_remarks": {
-          "name": "review_remarks",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "ecr_enrollment_pending_uidx": {
-          "name": "ecr_enrollment_pending_uidx",
-          "columns": [
-            {
-              "expression": "enrollment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"enrollment_cancellation_requests\".\"status\" = 'pending' AND \"enrollment_cancellation_requests\".\"deleted_at\" IS NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "ecr_enrollment_idx": {
-          "name": "ecr_enrollment_idx",
-          "columns": [
-            {
-              "expression": "enrollment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "ecr_status_idx": {
-          "name": "ecr_status_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "ecr_pending_idx": {
-          "name": "ecr_pending_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"enrollment_cancellation_requests\".\"status\" = 'pending' AND \"enrollment_cancellation_requests\".\"deleted_at\" IS NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "ecr_requested_by_idx": {
-          "name": "ecr_requested_by_idx",
-          "columns": [
-            {
-              "expression": "requested_by",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "enrollment_cancellation_requests_enrollment_id_enrollments_id_fk": {
-          "name": "enrollment_cancellation_requests_enrollment_id_enrollments_id_fk",
-          "tableFrom": "enrollment_cancellation_requests",
-          "tableTo": "enrollments",
-          "columnsFrom": [
-            "enrollment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "enrollment_cancellation_requests_requested_by_users_id_fk": {
-          "name": "enrollment_cancellation_requests_requested_by_users_id_fk",
-          "tableFrom": "enrollment_cancellation_requests",
-          "tableTo": "users",
-          "columnsFrom": [
-            "requested_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "enrollment_cancellation_requests_reviewed_by_users_id_fk": {
-          "name": "enrollment_cancellation_requests_reviewed_by_users_id_fk",
-          "tableFrom": "enrollment_cancellation_requests",
-          "tableTo": "users",
-          "columnsFrom": [
-            "reviewed_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "enrollment_cancellation_requests_deleted_by_users_id_fk": {
-          "name": "enrollment_cancellation_requests_deleted_by_users_id_fk",
-          "tableFrom": "enrollment_cancellation_requests",
-          "tableTo": "users",
-          "columnsFrom": [
-            "deleted_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.enrollments": {
       "name": "enrollments",
       "schema": "",
@@ -2010,13 +1775,6 @@
           "notNull": true,
           "default": false
         },
-        "is_refundable": {
-          "name": "is_refundable",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
         "display_order": {
           "name": "display_order",
           "type": "integer",
@@ -2230,7 +1988,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "fee_schedule_items_created_by_users_id_fk": {
@@ -2392,7 +2150,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "fee_schedule_overrides_fee_template_item_id_fee_template_items_id_fk": {
@@ -2750,7 +2508,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "fee_template_items_fee_item_type_id_fee_item_types_id_fk": {
@@ -3624,18 +3382,6 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -3674,22 +3420,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "pg_deleted_at_idx": {
-          "name": "pg_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"parents_guardians\".\"deleted_at\" IS NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -3725,19 +3455,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "parents_guardians_deleted_by_users_id_fk": {
-          "name": "parents_guardians_deleted_by_users_id_fk",
-          "tableFrom": "parents_guardians",
-          "tableTo": "users",
-          "columnsFrom": [
-            "deleted_by"
           ],
           "columnsTo": [
             "id"
@@ -3817,7 +3534,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "payment_allocations_assessment_item_id_assessment_items_id_fk": {
@@ -3917,12 +3634,6 @@
         },
         "remarks": {
           "name": "remarks",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "idempotency_key": {
-          "name": "idempotency_key",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -4033,22 +3744,6 @@
           ],
           "isUnique": true,
           "where": "\"payments\".\"reference_number\" is not null",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "payments_idempotency_key_uidx": {
-          "name": "payments_idempotency_key_uidx",
-          "columns": [
-            {
-              "expression": "idempotency_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"payments\".\"idempotency_key\" IS NOT NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -4819,7 +4514,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "school_year_fee_schedules_fee_template_id_fee_templates_id_fk": {
@@ -5239,293 +4934,6 @@
             "id"
           ],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.student_clearances": {
-      "name": "student_clearances",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "student_id": {
-          "name": "student_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "enrollment_id": {
-          "name": "enrollment_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "school_year_id": {
-          "name": "school_year_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "clearance_type": {
-          "name": "clearance_type",
-          "type": "clearance_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "outstanding_amount": {
-          "name": "outstanding_amount",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "clearance_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "resolved_by": {
-          "name": "resolved_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resolved_at": {
-          "name": "resolved_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resolution_type": {
-          "name": "resolution_type",
-          "type": "resolution_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resolution_remarks": {
-          "name": "resolution_remarks",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "clearances_student_idx": {
-          "name": "clearances_student_idx",
-          "columns": [
-            {
-              "expression": "student_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clearances_enrollment_idx": {
-          "name": "clearances_enrollment_idx",
-          "columns": [
-            {
-              "expression": "enrollment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clearances_school_year_idx": {
-          "name": "clearances_school_year_idx",
-          "columns": [
-            {
-              "expression": "school_year_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clearances_status_idx": {
-          "name": "clearances_status_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clearances_pending_idx": {
-          "name": "clearances_pending_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"student_clearances\".\"status\" = 'pending' AND \"student_clearances\".\"deleted_at\" IS NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clearances_enrollment_type_uidx": {
-          "name": "clearances_enrollment_type_uidx",
-          "columns": [
-            {
-              "expression": "enrollment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "clearance_type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"student_clearances\".\"deleted_at\" IS NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "student_clearances_student_id_students_id_fk": {
-          "name": "student_clearances_student_id_students_id_fk",
-          "tableFrom": "student_clearances",
-          "tableTo": "students",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "student_clearances_enrollment_id_enrollments_id_fk": {
-          "name": "student_clearances_enrollment_id_enrollments_id_fk",
-          "tableFrom": "student_clearances",
-          "tableTo": "enrollments",
-          "columnsFrom": [
-            "enrollment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "student_clearances_school_year_id_school_years_id_fk": {
-          "name": "student_clearances_school_year_id_school_years_id_fk",
-          "tableFrom": "student_clearances",
-          "tableTo": "school_years",
-          "columnsFrom": [
-            "school_year_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "student_clearances_resolved_by_users_id_fk": {
-          "name": "student_clearances_resolved_by_users_id_fk",
-          "tableFrom": "student_clearances",
-          "tableTo": "users",
-          "columnsFrom": [
-            "resolved_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "student_clearances_created_by_users_id_fk": {
-          "name": "student_clearances_created_by_users_id_fk",
-          "tableFrom": "student_clearances",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "student_clearances_deleted_by_users_id_fk": {
-          "name": "student_clearances_deleted_by_users_id_fk",
-          "tableFrom": "student_clearances",
-          "tableTo": "users",
-          "columnsFrom": [
-            "deleted_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -6375,64 +5783,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.system_settings": {
-      "name": "system_settings",
-      "schema": "",
-      "columns": {
-        "key": {
-          "name": "key",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "value": {
-          "name": "value",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_by": {
-          "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "system_settings_updated_by_users_id_fk": {
-          "name": "system_settings_updated_by_users_id_fk",
-          "tableFrom": "system_settings",
-          "tableTo": "users",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.teacher_assignments": {
       "name": "teacher_assignments",
       "schema": "",
@@ -7028,41 +6378,6 @@
         "voided"
       ]
     },
-    "public.cancellation_reason_type": {
-      "name": "cancellation_reason_type",
-      "schema": "public",
-      "values": [
-        "transfer",
-        "financial",
-        "medical",
-        "relocation",
-        "personal",
-        "administrative",
-        "non_compliance",
-        "disciplinary",
-        "other"
-      ]
-    },
-    "public.clearance_status": {
-      "name": "clearance_status",
-      "schema": "public",
-      "values": [
-        "cleared",
-        "pending",
-        "waived"
-      ]
-    },
-    "public.clearance_type": {
-      "name": "clearance_type",
-      "schema": "public",
-      "values": [
-        "end_of_year",
-        "enrollment_cancellation",
-        "transfer_out",
-        "graduation",
-        "other"
-      ]
-    },
     "public.discount_base_type": {
       "name": "discount_base_type",
       "schema": "public",
@@ -7085,19 +6400,10 @@
       "values": [
         "pending",
         "approved",
+        "locked",
         "rejected",
         "cancelled",
         "reversed"
-      ]
-    },
-    "public.enrollment_cancellation_request_status": {
-      "name": "enrollment_cancellation_request_status",
-      "schema": "public",
-      "values": [
-        "pending",
-        "approved",
-        "rejected",
-        "cancelled"
       ]
     },
     "public.enrollment_status": {
@@ -7124,7 +6430,6 @@
       "schema": "public",
       "values": [
         "casa",
-        "advance_casa",
         "lower_elementary",
         "higher_elementary",
         "junior_high",
@@ -7199,15 +6504,6 @@
         "pending",
         "approved",
         "rejected"
-      ]
-    },
-    "public.resolution_type": {
-      "name": "resolution_type",
-      "schema": "public",
-      "values": [
-        "paid",
-        "waived",
-        "written_off"
       ]
     },
     "public.role": {

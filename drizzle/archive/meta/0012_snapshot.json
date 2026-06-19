@@ -1,6 +1,6 @@
 {
-  "id": "3a6371bb-a306-46d3-adff-b8e65d923d54",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "8b699743-0fc5-4381-bf56-c7a14b694e44",
+  "prevId": "3e248762-96fa-456b-b390-a39488b53f68",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -192,7 +192,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "assessment_items_fee_schedule_item_id_fee_schedule_items_id_fk": {
@@ -1584,7 +1584,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "enrollment_cancellation_requests_requested_by_users_id_fk": {
@@ -2230,7 +2230,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "fee_schedule_items_created_by_users_id_fk": {
@@ -2392,7 +2392,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "fee_schedule_overrides_fee_template_item_id_fee_template_items_id_fk": {
@@ -2750,7 +2750,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "fee_template_items_fee_item_type_id_fee_item_types_id_fk": {
@@ -3624,18 +3624,6 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -3674,22 +3662,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "pg_deleted_at_idx": {
-          "name": "pg_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"parents_guardians\".\"deleted_at\" IS NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -3725,19 +3697,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "parents_guardians_deleted_by_users_id_fk": {
-          "name": "parents_guardians_deleted_by_users_id_fk",
-          "tableFrom": "parents_guardians",
-          "tableTo": "users",
-          "columnsFrom": [
-            "deleted_by"
           ],
           "columnsTo": [
             "id"
@@ -3817,7 +3776,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "payment_allocations_assessment_item_id_assessment_items_id_fk": {
@@ -3917,12 +3876,6 @@
         },
         "remarks": {
           "name": "remarks",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "idempotency_key": {
-          "name": "idempotency_key",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -4033,22 +3986,6 @@
           ],
           "isUnique": true,
           "where": "\"payments\".\"reference_number\" is not null",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "payments_idempotency_key_uidx": {
-          "name": "payments_idempotency_key_uidx",
-          "columns": [
-            {
-              "expression": "idempotency_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"payments\".\"idempotency_key\" IS NOT NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -4819,7 +4756,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "school_year_fee_schedules_fee_template_id_fee_templates_id_fk": {
@@ -7124,7 +7061,6 @@
       "schema": "public",
       "values": [
         "casa",
-        "advance_casa",
         "lower_elementary",
         "higher_elementary",
         "junior_high",
