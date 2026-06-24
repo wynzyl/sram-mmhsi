@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { StudentPhotoUpload } from "./StudentPhotoUpload";
 
 export type StudentEditHeroProps = {
   backHref: string;
@@ -11,6 +12,12 @@ export type StudentEditHeroProps = {
   initials: string;
   referenceNumber: string;
   isActive: boolean;
+  /** Student ID for photo upload API */
+  studentId: string;
+  /** Current photo URL or null */
+  photoUrl: string | null;
+  /** Whether the user can edit photos (has students:update permission) */
+  canEditPhoto: boolean;
 };
 
 /**
@@ -24,6 +31,9 @@ export function StudentEditHero({
   initials,
   referenceNumber,
   isActive,
+  studentId,
+  photoUrl,
+  canEditPhoto,
 }: StudentEditHeroProps) {
   return (
     <>
@@ -42,12 +52,13 @@ export function StudentEditHero({
         <div className="relative px-4 pb-4 pt-0 sm:px-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end">
-              <div
-                className="-mt-12 flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl border-4 border-card bg-muted font-display text-3xl font-bold tracking-tight text-foreground shadow-md sm:-mt-14 sm:h-32 sm:w-32 print:border-border"
-                aria-hidden
-              >
-                {initials || "—"}
-              </div>
+              <StudentPhotoUpload
+                studentId={studentId}
+                referenceNumber={referenceNumber}
+                currentPhotoUrl={photoUrl}
+                initials={initials}
+                canEdit={canEditPhoto}
+              />
               <div className="min-w-0 space-y-2 pb-1 sm:pb-3">
                 <p className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Edit student

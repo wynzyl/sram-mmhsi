@@ -1,16 +1,24 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-06-05
+> Last updated: 2026-06-24
 
 ## Current phase
 
-**Core school operations (Phases 1–8)** are implemented in code: auth, student records, registrations listing + creation through student onboarding, enrollments, assessments, fees, cashier/OR posting, invoices, and teacher grade encoding.
+**Core school operations (Phases 1–8)** are implemented in code: auth, student records, registrations listing + creation through student onboarding, enrollments, assessments, fees, cashier/OR posting, invoices, and teacher grade encoding. **Student photo upload is now live** with sharp-based optimization and Docker volume persistence.
 
 **Deployment preparation (Phase 12) is now underway** — the production Docker stack (multi-stage `runner` image, one-shot migrate job, nginx reverse proxy on :80, host bind-mounted Postgres data) is built, running, and verified. **Auth hardening (Phase 2) is closed:** login rate limiting and the forced password-change gate are live. **The Playwright E2E suite is committed** with synthetic test-data provisioning and a CI workflow.
 
 **Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, formal OR **receipt** print view, and the remaining Phase 10 reports (enrollment summary, grade summary).
 
-## Latest updates (2026-06-05)
+## Latest updates (2026-06-24)
+
+- [x] **Student photo upload feature complete** — Full photo upload pipeline with `sharp` image processing (resize 400x400, auto-select smallest format from WebP/PNG/JPEG), magic-byte validation (rejects non-image files), EXIF stripping, and audit logging. API route at `/api/students/[studentId]/photo` (POST/DELETE). Client component `StudentPhotoUpload` with drag-drop, file picker, and crop preview.
+- [x] **Production Docker photo upload fixes** — Three-layer configuration required: (1) `nginx.conf` — `client_max_body_size 5M` (default 1MB blocks uploads); (2) `next.config.ts` — `experimental.serverActions.bodySizeLimit: '3mb'`; (3) `docker-entrypoint.sh` — fixes volume ownership (`chown -R nextjs:nextjs /app/public/uploads`) before dropping to nextjs user via `su-exec`.
+- [x] **Nginx static file serving** — Next.js does NOT serve runtime-uploaded files from `public/` in production. Nginx now serves `/uploads/*` directly from the shared `uploads_data` volume (mounted read-only to nginx). Added MIME types including WebP.
+- [x] **Schema migration** — `drizzle/0001_add_student_photo_url.sql` adds `photo_url` column to `students` table.
+- [x] **Documentation** — Added CLAUDE.md gotcha #9 documenting the three-layer photo upload configuration for Docker.
+
+## Previous updates (2026-06-05)
 
 - [x] **Production deployment stack live (Phase 12 kickoff)** — Dockerfile `runner` stage builds the Next.js app against an **ephemeral build-time Postgres** (so `next build` can prerender with a real schema). `docker-compose.prod.yml` runs: `srams_db` (Postgres 15) → one-shot `migrate` job → `app` → **nginx reverse proxy on :80** (`nginx.conf`); all services share an isolated `srams-network` and load `.env.production`. Verified end-to-end: migrate exits 0, app healthy behind nginx, login page served at `http://localhost`.
 - [x] **Postgres data moved to a host bind mount** — prod DB data now lives at `./.postgres_data` (git-ignored) instead of a Docker named volume; the previous volume `sram-mmhsi_db-data` was physically copied over and is retained as a backup. **Gotcha fixed:** the cluster's database name is case-sensitive **`SRAMS_DB`** — pointing compose at lowercase `srams_db` fails with `3D000` because `POSTGRES_DB` is ignored once the data dir is initialized. The prod DB is intentionally **not host-exposed**; inspect via `docker exec srams_db psql -U postgres -d SRAMS_DB`.
@@ -131,7 +139,7 @@ if (!schoolYearId) {
 
 ### Phase 2–8 — Operational modules (high level)
 
-- [x] **Students** — create/update with guardians, duplicate checks, list/profile/edit (`actions/students.ts`, `admin/students/*`)
+- [x] **Students** — create/update with guardians, duplicate checks, list/profile/edit, **photo upload** with sharp optimization and Docker volume persistence (`actions/students.ts`, `admin/students/*`, `/api/students/[studentId]/photo`)
 - [x] **Registrations list + intake visibility** — paginated approved-registration queues for `admin` and `staff` (`admin/registrations`, `staff/registrations`)
 - [x] **Registration creation on student onboarding** — student creation now inserts an approved `registrations` row in the same transaction (`actions/students.ts`)
 - [x] **Enrollments** — queue-based list-first workflow with automatic eligibility detection, global search/grade filters, one-click confirmation drawer, status transitions (pending → assessed → enrolled), and cancellation (`src/lib/queries/enrollment-queue.ts`, `actions/enrollment-confirmation.ts`, `components/enrollments/EnrollmentConfirmationDrawer.tsx`, `/staff/enrollments`)

@@ -69,6 +69,7 @@ export async function InternalStudentProfilePage(props: {
       religion: true,
       previousSchool: true,
       submittedDocumentsNotes: true,
+      photoUrl: true,
       isActive: true,
       createdAt: true,
     },

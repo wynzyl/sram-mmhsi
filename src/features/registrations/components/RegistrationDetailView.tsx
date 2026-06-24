@@ -9,6 +9,7 @@ import { DataCard } from "@/components/ui/editorial/DataCard";
 import { DocumentProgressRing } from "@/features/registrations/components/DocumentProgressRing";
 import { GuardianCard } from "@/features/registrations/components/GuardianCard";
 import { StatusIndicator } from "@/components/ui/editorial/StatusIndicator";
+import { StudentAvatar } from "@/features/students/components/StudentAvatar";
 import type {
   StudentRecordStudent,
   GuardianRow,
@@ -250,11 +251,12 @@ export function RegistrationDetailView({
         <div className="relative px-4 pb-1 pt-0 sm:px-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end">
-              <div
-                className="-mt-12 flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl border-4 border-card bg-muted font-display text-3xl font-bold tracking-tight text-foreground shadow-md sm:-mt-14 sm:h-32 sm:w-32 print:border-border"
-                aria-hidden
-              >
-                {initials || "—"}
+              <div className="-mt-12 sm:-mt-14">
+                <StudentAvatar
+                  photoUrl={student.photoUrl}
+                  initials={initials}
+                  size="lg"
+                />
               </div>
               <div className="min-w-0 space-y-2 pb-1 sm:pb-3">
                 <div className="flex flex-wrap items-center gap-2">

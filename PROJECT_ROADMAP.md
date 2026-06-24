@@ -2,9 +2,12 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-06-05
+> Last sync: 2026-06-24
 
-### Current update highlights (2026-06-05)
+### Current update highlights (2026-06-24)
+- **Student photo upload feature complete** — Profile photos now upload, optimize (sharp/WebP), and persist across container restarts. Three-layer fix for production Docker: nginx `client_max_body_size 5M` + Next.js `serverActions.bodySizeLimit: '3mb'` + volume permissions via `docker-entrypoint.sh` (runs `chown` before dropping to nextjs user). Nginx serves `/uploads/*` directly from the shared volume (Next.js doesn't serve runtime-uploaded files from `public/`). Documented in CLAUDE.md gotcha #9.
+
+### Previous highlights (2026-06-05)
 - **Production deployment stack live (Phase 12 kickoff)** — Dockerfile `runner` stage (app built against an ephemeral build-time Postgres), `docker-compose.prod.yml` (Postgres 15 → one-shot migrate job → app → **nginx reverse proxy on :80**), `.env.production`. DB data lives in the **named volume `db-data`** (2026-06-06 layout; the earlier `./.postgres_data` bind mount is superseded). Gotcha documented: database name is case-sensitive `SRAMS_DB`; `POSTGRES_DB` is ignored on an already-initialized data dir. Prod DB published on host port **5433** (internal `srams_db:5432`; 5432 = native host Postgres, 5434 = dev stack db). Run with `docker compose -f docker-compose.prod.yml up -d --build`.
 - **Phase 2 auth hardening closed** — login rate limiting wired (`checkLoginRateLimits`, per-IP + per-username); forced password-change gate live in `proxy.ts`; security headers (CSP, HSTS, X-Frame-Options) in `next.config.ts`; privilege-escalation fix in `users.actions.ts`.
 - **E2E suite committed** — Playwright specs (`role-redirects`, `enrollment-assessment-payment` with DB-level assertions) + deterministic provisioning (`e2e_*` users, E2E-CASA students, `ZZ` booklet) + CI workflow (`.github/workflows/ci.yml`).
@@ -89,6 +92,7 @@
 - [x] Audit events: student created / updated
 - [x] Student list/search table (TanStack Table)
 - [x] Student profile + edit pages
+- [x] **Student photo upload** — API route (`/api/students/[studentId]/photo`) with sharp optimization (resize 400x400, WebP/PNG/JPEG selection), magic-byte validation, audit logging; `StudentPhotoUpload` component with drag-drop and crop preview; photos persist in Docker volume (`uploads_data`) served by nginx
 - [x] Registration queue pages for admin/staff (`/admin/registrations`, `/staff/registrations`) with school-year filtering + pagination
 
 ---
@@ -210,6 +214,7 @@
 
 - [x] Production Docker configuration — Dockerfile `runner` stage (ephemeral build-time Postgres so `next build` prerenders against a real schema) + `docker-compose.prod.yml` (db → one-shot migrate job → app); DB data in named volume `db-data` (2026-06-06 layout; old `./.postgres_data` bind mount superseded); DB published on host port 5433
 - [x] Reverse proxy setup (nginx) — `nginx.conf` + `nginx_proxy` service on :80 (LAN access)
+- [x] **Static file serving for uploads** — nginx serves `/uploads/*` directly from `uploads_data` volume (Next.js doesn't serve runtime-uploaded files); `docker-entrypoint.sh` fixes volume permissions at startup via `su-exec`
 - [x] Security headers (CSP, HSTS, X-Frame-Options) — `next.config.ts`
 - [ ] Production environment checklist
 - [ ] Database backup strategy documentation (named volume copy exists; formal strategy + restore drill still to document)

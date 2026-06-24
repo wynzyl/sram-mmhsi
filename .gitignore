@@ -63,3 +63,7 @@ docs/**/*.md
 *.dump
 *.bak
 !drizzle/*.sql
+
+# Student photo uploads (keep .gitkeep only)
+public/uploads/students/*
+!public/uploads/students/.gitkeep

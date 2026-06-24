@@ -17,7 +17,8 @@ WORKDIR /app
 # (next.config.ts) prerenders `"use cache"` DB-backed pages (e.g. the dashboards)
 # at build time, so the build needs a reachable, migrated database. This Postgres
 # lives entirely in the throwaway builder stage and never ships in the runner image.
-RUN apk add --no-cache postgresql su-exec
+# Also install vips-dev for sharp native bindings compilation.
+RUN apk add --no-cache postgresql su-exec vips-dev
 
 COPY package*.json ./
 RUN npm install --production=false
@@ -46,6 +47,11 @@ RUN set -eux; \
 # --- Runtime stage ---
 FROM node:24-alpine AS runner
 WORKDIR /app
+# Install dependencies for sharp native bindings and privilege drop:
+# - libc6-compat: glibc compatibility layer for Alpine
+# - vips-dev: libvips for sharp image processing
+# - su-exec: lightweight privilege drop (used by entrypoint to fix volume permissions)
+RUN apk add --no-cache libc6-compat vips-dev su-exec
 # Create non-root user and group
 RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
 # Copy only production dependencies and built output
@@ -54,7 +60,7 @@ COPY --from=builder /app/package*.json ./
 # .next must be writable by the runtime user: Next writes refreshed "use cache"
 # / ISR prerenders back into .next/server at request time (EACCES otherwise).
 COPY --from=builder --chown=nextjs:nextjs /app/.next ./.next
-COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nextjs /app/public ./public
 COPY --from=builder /app/next.config.ts ./next.config.ts
 # Next.js 16 proxy (formerly middleware.ts) - handles auth redirects and session management
 COPY --from=builder /app/proxy.ts ./proxy.ts
@@ -68,11 +74,21 @@ COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 # fails with "Cannot find module '@/lib/...'".
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
+# Ensure upload directory exists (permissions will be fixed at runtime by entrypoint
+# since Docker volume mounts override build-time ownership)
+RUN mkdir -p /app/public/uploads/students
+
+# Copy entrypoint script that fixes volume permissions and drops to nextjs user
+# Use sed to convert Windows CRLF to Unix LF (Windows git may add CR)
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Expose the default Next.js port
 EXPOSE 3000
 
-# Switch to non-root user
-USER nextjs
+# Entrypoint fixes volume permissions then drops to nextjs user
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Healthcheck via /api/readiness: verifies the DB is reachable (SELECT 1) and
 # doubles as a pool keepalive — the 30s probe keeps a warm connection in the

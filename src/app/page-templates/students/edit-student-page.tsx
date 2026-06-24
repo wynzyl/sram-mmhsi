@@ -4,6 +4,8 @@ import { students, parentsGuardians, studentGuardianLinks, enrollments } from "@
 import { and, eq, isNull } from "drizzle-orm";
 import EditStudentForm from "@/features/students/components/EditStudentForm";
 import { StudentEditHero } from "@/features/students/components/StudentEditHero";
+import { getCurrentUser } from "@/lib/auth/session";
+import { hasPermission } from "@/lib/rbac/permissions";
 
 /** Thin route pages must verify `students:update` before rendering. */
 export async function InternalEditStudentPage(props: {
@@ -11,6 +13,7 @@ export async function InternalEditStudentPage(props: {
   studentsBasePrefix: "/staff/students";
 }) {
   const { studentId: id, studentsBasePrefix } = props;
+  const user = await getCurrentUser();
 
   const student = await db.query.students.findFirst({
     where: eq(students.id, id),
@@ -33,6 +36,7 @@ export async function InternalEditStudentPage(props: {
       religion: true,
       previousSchool: true,
       submittedDocumentsNotes: true,
+      photoUrl: true,
 
       isActive: true,
     },
@@ -87,6 +91,8 @@ export async function InternalEditStudentPage(props: {
     .join("")
     .toUpperCase();
 
+  const canEditPhoto = user ? hasPermission(user.role, "students:update") : false;
+
   return (
     <div className="page-container space-y-8">
       <StudentEditHero
@@ -97,6 +103,9 @@ export async function InternalEditStudentPage(props: {
         initials={initials}
         referenceNumber={student.referenceNumber}
         isActive={student.isActive}
+        studentId={student.id}
+        photoUrl={student.photoUrl}
+        canEditPhoto={canEditPhoto}
       />
 
       <EditStudentForm

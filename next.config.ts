@@ -32,10 +32,7 @@ const cspDirectives = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
-  // NOTE: no `output: 'standalone'` — the Docker runtime uses `next start` with the
-  // full node_modules (the `migrate` service reuses the same image and needs tsx +
-  // drizzle + postgres, which the lean standalone trace would omit). Standalone +
-  // `next start` is unsupported and emits a warning, so it's intentionally omitted.
+  
   cacheComponents: true,
   // Exclude @react-pdf/renderer from bundling (has native dependencies)
   serverExternalPackages: ["@react-pdf/renderer"],
@@ -83,6 +80,10 @@ const nextConfig: NextConfig = {
     turbopackFileSystemCacheForDev: true,
     // Enable filesystem caching for `next build`
     // turbopackFileSystemCacheForBuild: true,
+    // Allow larger file uploads (default is 1MB, our max is 2MB)
+    serverActions: {
+      bodySizeLimit: '3mb',
+    },
   },
 
   // Fallback webpack config for when using --webpack flag

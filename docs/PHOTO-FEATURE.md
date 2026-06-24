@@ -12,7 +12,7 @@ Add the ability for registrars to upload and update student profile photos with 
 - Select image from file picker OR drag-drop onto image container
 - Confirmation dialog before uploading (shows preview)
 - Store in `public/uploads/students/` folder
-- Filename: `{referenceNumber}.{ext}` (e.g., `SRAMS-2026-00001.webp`)
+- Filename: `{referenceNumber}.{ext}` (e.g., `000001.webp`)
 - Support PNG, JPEG, WebP input (SVG rejected for security)
 - Auto-optimize to smallest format using Sharp library
 - Max file size: 2MB

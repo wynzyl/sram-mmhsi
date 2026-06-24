@@ -304,6 +304,8 @@ export const students = pgTable(
     previousSchool: text("previous_school"),
     /** Free-text notes on submitted documents (reports, certs, etc.). */
     submittedDocumentsNotes: text("submitted_documents_notes"),
+    /** URL path to student profile photo (e.g., /uploads/students/0000001.webp). */
+    photoUrl: text("photo_url"),
     userId: uuid("user_id").references(() => users.id),   // linked portal account
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").notNull().defaultNow(),

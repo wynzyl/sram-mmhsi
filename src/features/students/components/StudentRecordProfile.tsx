@@ -4,6 +4,7 @@ import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { StudentRecordTabShell, type StudentRecordTabDef } from "@/features/students/components/StudentRecordTabShell";
+import { StudentAvatar } from "@/features/students/components/StudentAvatar";
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import type { StudentRequirementsSnapshot } from "@/features/registrations/registrations.queries";
 import {
@@ -32,6 +33,7 @@ export type StudentRecordStudent = {
   religion: string | null;
   previousSchool: string | null;
   submittedDocumentsNotes: string | null;
+  photoUrl: string | null;
   isActive: boolean;
   createdAt: Date;
 };
@@ -623,10 +625,11 @@ export function StudentRecordProfile({
         <div className="student-record-hero-rule" aria-hidden />
         <div className="student-record-hero-unified">
           <div className="student-record-hero-primary">
-            <div className="student-record-seal" aria-hidden>
-              {student.firstName[0]}
-              {student.lastName[0]}
-            </div>
+            <StudentAvatar
+              photoUrl={student.photoUrl}
+              initials={`${student.firstName[0]}${student.lastName[0]}`}
+              size="lg"
+            />
             <div className="student-record-hero-copy-block">
               <p className="student-record-kicker">Student record</p>
               <h1 className="student-record-name">{fullName}</h1>
