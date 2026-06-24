@@ -251,6 +251,8 @@ export function StudentPhotoUpload({
       height={128}
       className="h-full w-full rounded-xl object-cover"
       priority
+      // Runtime-uploaded photos must bypass Next.js Image Optimization
+      unoptimized
     />
   ) : (
     <span className={initialsStyles} aria-hidden>
@@ -357,6 +359,8 @@ export function StudentPhotoUpload({
                   alt="Preview"
                   fill
                   className="object-cover"
+                  // Blob URLs bypass optimization anyway, but be explicit
+                  unoptimized
                 />
               </div>
             </div>

@@ -65,6 +65,9 @@ export function StudentAvatar({
           height={pixels}
           className="h-full w-full object-cover"
           priority={size !== "sm"}
+          // Runtime-uploaded photos must bypass Next.js Image Optimization
+          // (optimization only works for images present at build time)
+          unoptimized
         />
       </div>
     );
