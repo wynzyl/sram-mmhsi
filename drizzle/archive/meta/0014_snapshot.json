@@ -1,6 +1,6 @@
 {
-  "id": "3a6371bb-a306-46d3-adff-b8e65d923d54",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "45d24d62-832b-40af-9074-9c9599c5d104",
+  "prevId": "22fbac0d-b963-499b-a649-d4c76a8dcc8e",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -3921,12 +3921,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "idempotency_key": {
-          "name": "idempotency_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "voided_at": {
           "name": "voided_at",
           "type": "timestamp",
@@ -4033,22 +4027,6 @@
           ],
           "isUnique": true,
           "where": "\"payments\".\"reference_number\" is not null",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "payments_idempotency_key_uidx": {
-          "name": "payments_idempotency_key_uidx",
-          "columns": [
-            {
-              "expression": "idempotency_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"payments\".\"idempotency_key\" IS NOT NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
