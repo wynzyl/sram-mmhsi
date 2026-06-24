@@ -76,7 +76,7 @@ services:
         condition: service_completed_successfully
     networks:
       - srams-network
-      - proxy-network
+      # - proxy-network
  
   metabase:
     image: metabase/metabase:latest
@@ -90,7 +90,7 @@ services:
         condition: service_healthy
     networks:
       - srams-network
-      - proxy-network
+      # - proxy-network
 
 volumes:
   db-data:
