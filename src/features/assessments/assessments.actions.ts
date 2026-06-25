@@ -34,6 +34,11 @@ import {
 } from "@/features/discounts";
 import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
 import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
+import {
+  assertStudentMutable,
+  StudentArchivedException,
+  formatArchiveError,
+} from "@/features/archive/archive.guards";
 
 export async function createAssessmentFromEnrollmentAction(
   _prevState: AssessmentFormState,
@@ -87,6 +92,16 @@ export async function createAssessmentFromEnrollmentAction(
 
   if (!enrollmentRow) {
     return { message: "Enrollment not found." };
+  }
+
+  // Check if student is archived (blocked action - cannot create assessment for archived student)
+  try {
+    await assertStudentMutable(enrollmentRow.studentId, "create_assessment");
+  } catch (error) {
+    if (error instanceof StudentArchivedException) {
+      return formatArchiveError(error) as AssessmentFormState;
+    }
+    throw error;
   }
 
   const gradeRow = await db.query.gradeLevels.findFirst({
@@ -816,7 +831,17 @@ export async function cancelAssessmentAction(
     return { message: "Assessment not found." };
   }
 
-  // 4. Validate assessment billingStatus is 'outstanding'
+  // 4. Check if student is archived (blocked action)
+  try {
+    await assertStudentMutable(assessment.studentId, "cancel_assessment");
+  } catch (error) {
+    if (error instanceof StudentArchivedException) {
+      return formatArchiveError(error) as CancelAssessmentFormState;
+    }
+    throw error;
+  }
+
+  // 5. Validate assessment billingStatus is 'outstanding'
   if (assessment.cancelledAt || assessment.billingStatus === "cancelled") {
     return { message: "This assessment has already been cancelled." };
   }

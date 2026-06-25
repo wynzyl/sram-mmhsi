@@ -38,6 +38,11 @@ import {
   getCancellationRequestForValidation,
 } from "./enrollment-cancellation.queries";
 import { lockEnrollment } from "@/lib/utils/tx-helpers";
+import {
+  assertStudentMutable,
+  StudentArchivedException,
+  formatArchiveError,
+} from "@/features/archive/archive.guards";
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -98,7 +103,10 @@ export async function requestEnrollmentCancellationAction(
         throw new Error("Enrollment not found.");
       }
 
-      // 2. Validate school year is active
+      // 2. Check if student is archived (blocked action)
+      await assertStudentMutable(enrollment.studentId, "cancel_enrollment");
+
+      // 3. Validate school year is active
       const schoolYearActive = await isSchoolYearActive(enrollment.schoolYearId);
       if (!schoolYearActive) {
         throw new Error("Cannot cancel enrollments from inactive school years.");
@@ -164,6 +172,9 @@ export async function requestEnrollmentCancellationAction(
       requestId,
     };
   } catch (error: unknown) {
+    if (error instanceof StudentArchivedException) {
+      return formatArchiveError(error) as RequestEnrollmentCancellationFormState;
+    }
     logger.error("[enrollment-cancellation] Failed to create cancellation request", { error: String(error) });
     const msg = error instanceof Error ? error.message : String(error);
     return { message: msg || "An unexpected error occurred. Please try again." };
@@ -204,13 +215,16 @@ export async function directCancelEnrollmentAction(
         throw new Error("Enrollment not found.");
       }
 
-      // 2. Validate school year is active
+      // 2. Check if student is archived (blocked action)
+      await assertStudentMutable(enrollment.studentId, "cancel_enrollment");
+
+      // 3. Validate school year is active
       const schoolYearActive = await isSchoolYearActive(enrollment.schoolYearId);
       if (!schoolYearActive) {
         throw new Error("Cannot cancel enrollments from inactive school years.");
       }
 
-      // 3. Validate enrollment status - only pending/assessed allowed for direct cancellation
+      // 4. Validate enrollment status - only pending/assessed allowed for direct cancellation
       if (enrollment.status === "enrolled") {
         throw new Error(
           "Enrolled enrollments require admin approval. Please submit a cancellation request instead."
@@ -331,6 +345,9 @@ export async function directCancelEnrollmentAction(
 
     return result;
   } catch (error: unknown) {
+    if (error instanceof StudentArchivedException) {
+      return formatArchiveError(error) as DirectCancelEnrollmentFormState;
+    }
     logger.error("[enrollment-cancellation] Failed to cancel enrollment directly", { error: String(error) });
     const msg = error instanceof Error ? error.message : String(error);
     return { message: msg || "An unexpected error occurred. Please try again." };

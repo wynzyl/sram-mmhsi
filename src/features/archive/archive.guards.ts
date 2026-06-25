@@ -1,0 +1,124 @@
+/**
+ * Archive Guards
+ *
+ * Guard functions to enforce transaction rules for archived students.
+ *
+ * **Transaction Rules for Archived Students (status !== active):**
+ * - ALLOWED: Payments (settle balances), Document Requests, Grade Encoding
+ * - BLOCKED: Void OR, Cancel Enrollment, Cancel Assessment, Re-enroll, Re-assess
+ */
+
+import { db } from "@/lib/db";
+import { students } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { isArchivedStatus, type StudentStatus } from "@/lib/constants/student-status";
+
+export type ArchiveBlockedAction =
+  | "void_or"
+  | "cancel_enrollment"
+  | "cancel_assessment"
+  | "re_enroll"
+  | "re_assess"
+  | "create_enrollment"
+  | "create_assessment";
+
+export const ARCHIVE_BLOCKED_ACTION_LABELS: Record<ArchiveBlockedAction, string> = {
+  void_or: "Void Official Receipt",
+  cancel_enrollment: "Cancel Enrollment",
+  cancel_assessment: "Cancel Assessment",
+  re_enroll: "Re-enroll Student",
+  re_assess: "Re-assess Student",
+  create_enrollment: "Create Enrollment",
+  create_assessment: "Create Assessment",
+};
+
+export class StudentArchivedException extends Error {
+  public readonly code = "STUDENT_ARCHIVED";
+  public readonly studentId: string;
+  public readonly studentStatus: StudentStatus;
+  public readonly blockedAction: ArchiveBlockedAction;
+
+  constructor(
+    studentId: string,
+    studentStatus: StudentStatus,
+    blockedAction: ArchiveBlockedAction
+  ) {
+    const actionLabel = ARCHIVE_BLOCKED_ACTION_LABELS[blockedAction];
+    super(
+      `Cannot ${actionLabel}: Student is archived (status: ${studentStatus})`
+    );
+    this.name = "StudentArchivedException";
+    this.studentId = studentId;
+    this.studentStatus = studentStatus;
+    this.blockedAction = blockedAction;
+  }
+}
+
+/**
+ * Get a student's current status
+ */
+export async function getStudentStatus(
+  studentId: string
+): Promise<StudentStatus | null> {
+  const [student] = await db
+    .select({ status: students.status })
+    .from(students)
+    .where(eq(students.id, studentId))
+    .limit(1);
+
+  return student?.status ?? null;
+}
+
+/**
+ * Assert that a student is mutable (not archived).
+ * Throws StudentArchivedException if the student is archived.
+ *
+ * @param studentId - The student ID to check
+ * @param action - The action being attempted (for error messaging)
+ * @throws StudentArchivedException if student is archived
+ */
+export async function assertStudentMutable(
+  studentId: string,
+  action: ArchiveBlockedAction
+): Promise<void> {
+  const status = await getStudentStatus(studentId);
+
+  if (status === null) {
+    // Student not found - let the calling action handle this
+    return;
+  }
+
+  if (isArchivedStatus(status)) {
+    throw new StudentArchivedException(studentId, status, action);
+  }
+}
+
+/**
+ * Check if a student is archived without throwing
+ *
+ * @param studentId - The student ID to check
+ * @returns true if student is archived, false otherwise
+ */
+export async function isStudentArchived(studentId: string): Promise<boolean> {
+  const status = await getStudentStatus(studentId);
+  return status !== null && isArchivedStatus(status);
+}
+
+/**
+ * Format an archive error for use in action return values
+ */
+export function formatArchiveError(error: StudentArchivedException): {
+  ok: false;
+  error: {
+    code: string;
+    message: string;
+  };
+} {
+  return {
+    ok: false,
+    error: {
+      code: error.code,
+      message: error.message,
+    },
+  };
+}

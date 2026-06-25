@@ -35,6 +35,11 @@ import { logger } from "@/lib/observability/logger";
 import { validateGradeProgression } from "@/lib/utils/enrollment-grade";
 import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
 import { parseIntakeDocumentStatus } from "./enrollments.schema";
+import {
+  assertStudentMutable,
+  StudentArchivedException,
+  formatArchiveError,
+} from "@/features/archive/archive.guards";
 
 const OUTSTANDING_PAYMENT_EPSILON = 0.009;
 const MIN_CANCEL_REMARKS_WITH_BALANCE = 15;
@@ -87,6 +92,16 @@ export async function createEnrollmentAction(
     intakeEscCertificate,
     previousSchool,
   } = parsed.data;
+
+  // Check if student is archived (blocked action - cannot create enrollment for archived student)
+  try {
+    await assertStudentMutable(studentId, "create_enrollment");
+  } catch (error) {
+    if (error instanceof StudentArchivedException) {
+      return formatArchiveError(error) as EnrollmentFormState;
+    }
+    throw error;
+  }
 
   let intakeDocuments: EnrollmentIntakeDocuments | null = null;
   if (studentType === "new_student" || studentType === "transferee") {

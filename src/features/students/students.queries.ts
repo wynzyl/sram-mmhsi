@@ -82,6 +82,7 @@ export async function fetchStudentDirectoryPage(params: {
 
   const studentListWhere = and(
     eq(students.isActive, true),
+    eq(students.status, "active"),  // Filter out archived students
     ...(searchWhere ? [searchWhere] : [])
   );
 

@@ -16,6 +16,8 @@ import {
 import { relations, sql } from "drizzle-orm";
 import { FEE_ASSESSMENT_BANDS } from "@/lib/constants/assessment-bands";
 import { CANCELLATION_REASONS } from "@/lib/constants/cancellation-reasons";
+import { STUDENT_STATUSES } from "@/lib/constants/student-status";
+import { DOCUMENT_REQUEST_TYPES, DOCUMENT_REQUEST_STATUSES } from "@/lib/constants/document-requests";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -135,6 +137,15 @@ export const enrollmentCancellationRequestStatusEnum = pgEnum("enrollment_cancel
   "rejected",
   "cancelled",
 ]);
+
+/** Student status - lifecycle tracking (active, archived states) */
+export const studentStatusEnum = pgEnum("student_status", STUDENT_STATUSES);
+
+/** Document request types for student/alumni document requests */
+export const documentRequestTypeEnum = pgEnum("document_request_type", DOCUMENT_REQUEST_TYPES);
+
+/** Document request status workflow */
+export const documentRequestStatusEnum = pgEnum("document_request_status", DOCUMENT_REQUEST_STATUSES);
 
 /** Student clearance types */
 export const clearanceTypeEnum = pgEnum("clearance_type", [
@@ -308,6 +319,16 @@ export const students = pgTable(
     photoUrl: text("photo_url"),
     userId: uuid("user_id").references(() => users.id),   // linked portal account
     isActive: boolean("is_active").notNull().default(true),
+    /** Student lifecycle status: active, graduated, transferred, withdrawn, cancelled, inactive */
+    status: studentStatusEnum("status").notNull().default("active"),
+    /** Timestamp when student was archived (status changed from active) */
+    archivedAt: timestamp("archived_at"),
+    /** User who archived the student */
+    archivedBy: uuid("archived_by").references(() => users.id),
+    /** Reason for archiving the student */
+    archiveReason: text("archive_reason"),
+    /** School year when the student was archived (for EOY batch operations) */
+    archivedSchoolYearId: uuid("archived_school_year_id").references(() => schoolYears.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -318,6 +339,7 @@ export const students = pgTable(
   (t) => [
     uniqueIndex("students_ref_idx").on(t.referenceNumber),
     index("students_name_idx").on(t.lastName, t.firstName),
+    index("students_status_idx").on(t.status),
     // NOTE: Additional indexes created via migration 0010:
     // - students_name_dob_active_uidx: UNIQUE(LOWER(first_name), LOWER(last_name), date_of_birth) WHERE deleted_at IS NULL
     // - students_name_dob_lookup_idx: INDEX for duplicate detection queries
@@ -1197,6 +1219,74 @@ export const studentClearances = pgTable(
   ]
 );
 
+// ─── Document Requests ────────────────────────────────────────────────────────
+
+/**
+ * Document requests track requests for official school documents.
+ * Used for students and alumni (archived students) to request:
+ * - Form 137 (Permanent Record)
+ * - Form 138 (Report Card)
+ * - Good Moral Certificate
+ * - Certificate of Enrollment
+ * - Certificate of Completion
+ * - Diploma copies
+ *
+ * **Release Gate:**
+ * Documents can only be released when student has no outstanding balance
+ * and all clearances are resolved.
+ */
+export const documentRequests = pgTable(
+  "document_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentId: uuid("student_id").notNull().references(() => students.id),
+    schoolYearId: uuid("school_year_id").references(() => schoolYears.id),
+    documentType: documentRequestTypeEnum("document_type").notNull(),
+    /** Purpose of the document request (for records) */
+    purpose: text("purpose"),
+    /** Number of copies requested */
+    copies: integer("copies").notNull().default(1),
+    status: documentRequestStatusEnum("status").notNull().default("requested"),
+    /** Fee amount for this document request */
+    feeAmount: numeric("fee_amount", { precision: 12, scale: 2 }),
+    /** Payment reference (if fee was paid) */
+    paymentId: uuid("payment_id").references(() => payments.id),
+    /** Document control number (e.g., DOC-2024-0001) */
+    documentNumber: text("document_number"),
+    /** Additional remarks */
+    remarks: text("remarks"),
+    /** Rejection reason (when status = rejected) */
+    rejectedReason: text("rejected_reason"),
+    /** Request tracking */
+    requestedBy: uuid("requested_by").notNull().references(() => users.id),
+    requestedAt: timestamp("requested_at").notNull().defaultNow(),
+    /** Processing tracking */
+    processedBy: uuid("processed_by").references(() => users.id),
+    processedAt: timestamp("processed_at"),
+    /** Release tracking */
+    releasedBy: uuid("released_by").references(() => users.id),
+    releasedAt: timestamp("released_at"),
+    /** Timestamps */
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    /** Soft delete */
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    index("doc_requests_student_idx").on(t.studentId),
+    index("doc_requests_status_idx").on(t.status),
+    index("doc_requests_school_year_idx").on(t.schoolYearId),
+    index("doc_requests_requested_at_idx").on(t.requestedAt),
+    index("doc_requests_pending_idx")
+      .on(t.status)
+      .where(sql`${t.status} IN ('requested', 'processing', 'ready') AND ${t.deletedAt} IS NULL`),
+    // Unique document number when assigned
+    uniqueIndex("doc_requests_doc_number_uidx")
+      .on(t.documentNumber)
+      .where(sql`${t.documentNumber} IS NOT NULL`),
+  ]
+);
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 // Fee Templates Relations
@@ -1420,10 +1510,20 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
     fields: [students.userId],
     references: [users.id],
   }),
+  archivedByUser: one(users, {
+    fields: [students.archivedBy],
+    references: [users.id],
+    relationName: "student_archiver",
+  }),
+  archivedSchoolYear: one(schoolYears, {
+    fields: [students.archivedSchoolYearId],
+    references: [schoolYears.id],
+  }),
   enrollments: many(enrollments),
   discountRequests: many(discountRequests),
   studentDiscounts: many(studentDiscounts),
   clearances: many(studentClearances),
+  documentRequests: many(documentRequests),
 }));
 
 // Enrollment Cancellation Request Relations
@@ -1467,5 +1567,36 @@ export const studentClearancesRelations = relations(studentClearances, ({ one })
     fields: [studentClearances.createdBy],
     references: [users.id],
     relationName: "clearance_creator",
+  }),
+}));
+
+// Document Request Relations
+export const documentRequestsRelations = relations(documentRequests, ({ one }) => ({
+  student: one(students, {
+    fields: [documentRequests.studentId],
+    references: [students.id],
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [documentRequests.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  payment: one(payments, {
+    fields: [documentRequests.paymentId],
+    references: [payments.id],
+  }),
+  requestedByUser: one(users, {
+    fields: [documentRequests.requestedBy],
+    references: [users.id],
+    relationName: "docRequest_requester",
+  }),
+  processedByUser: one(users, {
+    fields: [documentRequests.processedBy],
+    references: [users.id],
+    relationName: "docRequest_processor",
+  }),
+  releasedByUser: one(users, {
+    fields: [documentRequests.releasedBy],
+    references: [users.id],
+    relationName: "docRequest_releaser",
   }),
 }));

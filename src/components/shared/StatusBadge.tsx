@@ -13,6 +13,8 @@ type StudentType = "new_student" | "transferee" | "old_student";
 type RequestStatus = "pending" | "approved" | "rejected" | "cancelled" | "withdrawn";
 type ClearanceStatus = "pending" | "cleared" | "waived";
 type DiscountStatus = "pending" | "approved" | "rejected" | "cancelled" | "reversed";
+type StudentArchiveStatus = "active" | "graduated" | "transferred" | "withdrawn" | "cancelled" | "inactive";
+type DocumentRequestStatus = "requested" | "processing" | "ready" | "released" | "rejected" | "cancelled";
 
 interface StatusBadgeProps {
   status:
@@ -24,6 +26,8 @@ interface StatusBadgeProps {
     | RequestStatus
     | ClearanceStatus
     | DiscountStatus
+    | StudentArchiveStatus
+    | DocumentRequestStatus
     | string;
   type?:
     | "payment"
@@ -34,7 +38,9 @@ interface StatusBadgeProps {
     | "request"
     | "clearance"
     | "discount"
-    | "voidRequest";
+    | "voidRequest"
+    | "studentArchive"
+    | "documentRequest";
 }
 
 const statusConfig = {
@@ -92,6 +98,24 @@ const statusConfig = {
   voidRequest: {
     pending: { variant: "warning" as const, label: "Pending" },
     approved: { variant: "success" as const, label: "Approved" },
+    rejected: { variant: "danger" as const, label: "Rejected" },
+    cancelled: { variant: "secondary" as const, label: "Cancelled" },
+  },
+  // Student archive status
+  studentArchive: {
+    active: { variant: "success" as const, label: "Active" },
+    graduated: { variant: "info" as const, label: "Graduated" },
+    transferred: { variant: "secondary" as const, label: "Transferred" },
+    withdrawn: { variant: "warning" as const, label: "Withdrawn" },
+    cancelled: { variant: "danger" as const, label: "Cancelled" },
+    inactive: { variant: "secondary" as const, label: "Inactive" },
+  },
+  // Document request status
+  documentRequest: {
+    requested: { variant: "warning" as const, label: "Requested" },
+    processing: { variant: "info" as const, label: "Processing" },
+    ready: { variant: "success" as const, label: "Ready" },
+    released: { variant: "success" as const, label: "Released" },
     rejected: { variant: "danger" as const, label: "Rejected" },
     cancelled: { variant: "secondary" as const, label: "Cancelled" },
   },

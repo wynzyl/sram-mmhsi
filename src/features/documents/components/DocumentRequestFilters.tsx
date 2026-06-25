@@ -1,0 +1,187 @@
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useTransition } from "react";
+import {
+  DOCUMENT_REQUEST_TYPES,
+  DOCUMENT_REQUEST_STATUSES,
+  DOCUMENT_REQUEST_TYPE_LABELS,
+  DOCUMENT_REQUEST_STATUS_LABELS,
+  type DocumentRequestStatus,
+  type DocumentRequestType,
+} from "@/lib/constants/document-requests";
+
+type SchoolYearOption = { id: string; label: string };
+
+export function DocumentRequestFilters({
+  schoolYearOptions,
+}: {
+  schoolYearOptions: SchoolYearOption[];
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  const currentStatus = searchParams.get("status") ?? "";
+  const currentType = searchParams.get("type") ?? "";
+  const currentSchoolYear = searchParams.get("sy") ?? "";
+  const currentSearch = searchParams.get("q") ?? "";
+
+  function updateParams(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    // Reset to page 1 when filters change
+    params.delete("page");
+
+    startTransition(() => {
+      router.push(`?${params.toString()}`);
+    });
+  }
+
+  function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const search = formData.get("search") as string;
+    updateParams("q", search);
+  }
+
+  function clearFilters() {
+    startTransition(() => {
+      router.push("?");
+    });
+  }
+
+  const hasActiveFilters =
+    currentStatus || currentType || currentSchoolYear || currentSearch;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end gap-3">
+        {/* Search */}
+        <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[200px]">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
+            Search
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              name="search"
+              defaultValue={currentSearch}
+              placeholder="Student name, ref number, or doc number..."
+              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={isPending}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              Search
+            </button>
+          </div>
+        </form>
+
+        {/* Status Filter */}
+        <div className="min-w-[150px]">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
+            Status
+          </label>
+          <select
+            value={currentStatus}
+            onChange={(e) => updateParams("status", e.target.value)}
+            disabled={isPending}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="">All Statuses</option>
+            {DOCUMENT_REQUEST_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {DOCUMENT_REQUEST_STATUS_LABELS[status]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Document Type Filter */}
+        <div className="min-w-[200px]">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
+            Document Type
+          </label>
+          <select
+            value={currentType}
+            onChange={(e) => updateParams("type", e.target.value)}
+            disabled={isPending}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="">All Types</option>
+            {DOCUMENT_REQUEST_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {DOCUMENT_REQUEST_TYPE_LABELS[type]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* School Year Filter */}
+        <div className="min-w-[150px]">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
+            School Year
+          </label>
+          <select
+            value={currentSchoolYear}
+            onChange={(e) => updateParams("sy", e.target.value)}
+            disabled={isPending}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="">All School Years</option>
+            {schoolYearOptions.map((sy) => (
+              <option key={sy.id} value={sy.id}>
+                {sy.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Active Filters & Clear */}
+      {hasActiveFilters && (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Active filters:</span>
+          {currentStatus && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
+              {DOCUMENT_REQUEST_STATUS_LABELS[currentStatus as DocumentRequestStatus]}
+            </span>
+          )}
+          {currentType && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
+              {DOCUMENT_REQUEST_TYPE_LABELS[currentType as DocumentRequestType]}
+            </span>
+          )}
+          {currentSchoolYear && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
+              {schoolYearOptions.find((sy) => sy.id === currentSchoolYear)?.label}
+            </span>
+          )}
+          {currentSearch && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
+              &quot;{currentSearch}&quot;
+            </span>
+          )}
+          <button
+            onClick={clearFilters}
+            disabled={isPending}
+            className="text-destructive hover:underline disabled:opacity-50"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
+      {isPending && (
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      )}
+    </div>
+  );
+}
