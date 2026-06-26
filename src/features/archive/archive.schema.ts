@@ -95,6 +95,35 @@ export type BatchCancelNoShowFormState =
     enrollmentIds?: string[];
   };
 
+// ─── Batch Archive Non-Returning Schema ─────────────────────────────────────
+
+/**
+ * Schema for archiving students who were enrolled in a previous school year
+ * but did not return (no enrollment) in the current school year.
+ */
+export const batchArchiveNonReturningSchema = z.object({
+  previousSchoolYearId: z.string().uuid("Invalid previous school year ID"),
+  currentSchoolYearId: z.string().uuid("Invalid current school year ID"),
+  status: z.enum(ARCHIVED_STUDENT_STATUSES, {
+    message: "Please select an archive status",
+  }),
+  remarks: z
+    .string()
+    .trim()
+    .max(500, "Remarks must be at most 500 characters")
+    .optional(),
+});
+
+export type BatchArchiveNonReturningInput = z.infer<
+  typeof batchArchiveNonReturningSchema
+>;
+
+export type BatchArchiveNonReturningFormState =
+  BaseFormState<BatchArchiveNonReturningInput> & {
+    archivedCount?: number;
+    studentIds?: string[];
+  };
+
 // ─── Archive Filter Schema ──────────────────────────────────────────────────
 
 export const archiveFilterSchema = z.object({

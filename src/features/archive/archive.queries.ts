@@ -352,7 +352,10 @@ export async function getGraduationCandidates(
 
 /**
  * Get candidates for batch no-show cancellation
- * Returns assessments that were created but never received any payment
+ * Returns enrollments that were created but never received any payment.
+ * Includes:
+ * - Pending enrollments (registered but never assessed)
+ * - Assessed enrollments with $0 paid
  */
 export async function getNoShowCandidates(schoolYearId: string): Promise<
   Array<{
@@ -362,8 +365,9 @@ export async function getNoShowCandidates(schoolYearId: string): Promise<
     firstName: string;
     lastName: string;
     gradeLevelName: string;
-    assessmentId: string;
-    totalAmount: string;
+    enrollmentStatus: "pending" | "assessed";
+    assessmentId: string | null;
+    totalAmount: string | null;
   }>
 > {
   const candidates = await db
@@ -374,21 +378,105 @@ export async function getNoShowCandidates(schoolYearId: string): Promise<
       firstName: students.firstName,
       lastName: students.lastName,
       gradeLevelName: gradeLevels.name,
+      enrollmentStatus: enrollments.status,
       assessmentId: assessments.id,
       totalAmount: assessments.totalAmount,
     })
     .from(enrollments)
     .innerJoin(students, eq(enrollments.studentId, students.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .innerJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
+    .leftJoin(
+      assessments,
+      and(
+        eq(assessments.enrollmentId, enrollments.id),
+        isNull(assessments.cancelledAt)
+      )
+    )
     .where(
       and(
         eq(enrollments.schoolYearId, schoolYearId),
-        eq(enrollments.status, "assessed"),
-        eq(assessments.totalPaid, "0"),
-        isNull(assessments.cancelledAt),
+        // Include both pending and assessed (with no payment)
+        or(
+          // Pending enrollments (never assessed)
+          eq(enrollments.status, "pending"),
+          // Assessed enrollments with $0 paid
+          and(
+            eq(enrollments.status, "assessed"),
+            eq(assessments.totalPaid, "0")
+          )
+        ),
         eq(students.status, "active"),
         isNull(students.deletedAt)
+      )
+    )
+    .orderBy(asc(students.lastName), asc(students.firstName));
+
+  return candidates as Array<{
+    enrollmentId: string;
+    studentId: string;
+    referenceNumber: string;
+    firstName: string;
+    lastName: string;
+    gradeLevelName: string;
+    enrollmentStatus: "pending" | "assessed";
+    assessmentId: string | null;
+    totalAmount: string | null;
+  }>;
+}
+
+/**
+ * Get candidates for batch archive of non-returning students
+ * Returns active students who were enrolled in the previous school year
+ * but have NO enrollment in the current school year.
+ */
+export async function getNonReturningStudents(
+  previousSchoolYearId: string,
+  currentSchoolYearId: string
+): Promise<
+  Array<{
+    studentId: string;
+    referenceNumber: string;
+    firstName: string;
+    lastName: string;
+    gradeLevelName: string;
+    lastEnrollmentStatus: string;
+  }>
+> {
+  // Subquery: students who have an enrollment in the current school year
+  const studentsInCurrentYear = db
+    .select({ studentId: enrollments.studentId })
+    .from(enrollments)
+    .where(
+      and(
+        eq(enrollments.schoolYearId, currentSchoolYearId),
+        ne(enrollments.status, "cancelled")
+      )
+    );
+
+  // Main query: find students enrolled in previous year but NOT in current year
+  const candidates = await db
+    .select({
+      studentId: students.id,
+      referenceNumber: students.referenceNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      gradeLevelName: gradeLevels.name,
+      lastEnrollmentStatus: enrollments.status,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+    .where(
+      and(
+        // Was enrolled in previous school year
+        eq(enrollments.schoolYearId, previousSchoolYearId),
+        // With a non-cancelled enrollment
+        ne(enrollments.status, "cancelled"),
+        // Student is currently active
+        eq(students.status, "active"),
+        isNull(students.deletedAt),
+        // NOT in current school year (using NOT IN subquery)
+        sql`${students.id} NOT IN (${studentsInCurrentYear})`
       )
     )
     .orderBy(asc(students.lastName), asc(students.firstName));

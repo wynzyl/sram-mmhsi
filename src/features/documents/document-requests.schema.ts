@@ -38,6 +38,7 @@ export type CreateDocumentRequestInput = z.infer<typeof createDocumentRequestSch
 
 /**
  * Schema for processing a document request (requested → processing)
+ * Note: documentNumber is auto-generated on the server
  */
 export const processDocumentRequestSchema = z.object({
   requestId: z.string().uuid("Invalid request ID"),
@@ -46,11 +47,6 @@ export const processDocumentRequestSchema = z.object({
     .min(0, "Fee amount cannot be negative")
     .max(100000, "Fee amount exceeds maximum")
     .optional(),
-  documentNumber: z
-    .string()
-    .min(1, "Document number is required")
-    .max(50, "Document number is too long")
-    .optional(),
   remarks: z.string().max(1000, "Remarks must be at most 1000 characters").optional(),
 });
 
@@ -58,13 +54,10 @@ export type ProcessDocumentRequestInput = z.infer<typeof processDocumentRequestS
 
 /**
  * Schema for marking a document as ready (processing → ready)
+ * Note: documentNumber is already set at process stage (auto-generated)
  */
 export const readyDocumentRequestSchema = z.object({
   requestId: z.string().uuid("Invalid request ID"),
-  documentNumber: z
-    .string()
-    .min(1, "Document number is required when marking ready")
-    .max(50, "Document number is too long"),
   remarks: z.string().max(1000, "Remarks must be at most 1000 characters").optional(),
 });
 

@@ -129,7 +129,7 @@ function DocumentRequestActions({ request }: { request: DocumentRequestListItem 
       return (
         <div className="flex gap-2">
           <Link
-            href={`/staff/archive/documents/${request.id}/process`}
+            href={`/staff/archive/documents/${request.id}`}
             className="text-sm text-primary hover:underline"
           >
             Process
@@ -140,7 +140,7 @@ function DocumentRequestActions({ request }: { request: DocumentRequestListItem 
       return (
         <div className="flex gap-2">
           <Link
-            href={`/staff/archive/documents/${request.id}/ready`}
+            href={`/staff/archive/documents/${request.id}`}
             className="text-sm text-primary hover:underline"
           >
             Mark Ready
@@ -151,7 +151,7 @@ function DocumentRequestActions({ request }: { request: DocumentRequestListItem 
       return (
         <div className="flex gap-2">
           <Link
-            href={`/staff/archive/documents/${request.id}/release`}
+            href={`/staff/archive/documents/${request.id}`}
             className="text-sm text-primary hover:underline"
           >
             Release

@@ -11,6 +11,7 @@ import {
   assessments,
   enrollments,
   students,
+  studentClearances,
 } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -23,14 +24,17 @@ import {
   unarchiveStudentSchema,
   batchArchiveGraduatesSchema,
   batchCancelNoShowSchema,
+  batchArchiveNonReturningSchema,
   type ArchiveStudentFormState,
   type UnarchiveStudentFormState,
   type BatchArchiveGraduatesFormState,
   type BatchCancelNoShowFormState,
+  type BatchArchiveNonReturningFormState,
 } from "./archive.schema";
 import {
   getGraduationCandidates,
   getNoShowCandidates,
+  getNonReturningStudents,
 } from "./archive.queries";
 
 // ─── Archive Student Action ─────────────────────────────────────────────────
@@ -309,39 +313,80 @@ export async function batchArchiveGraduatesAction(
     };
   }
 
-  // Archive all candidates
   const now = new Date();
   const studentIds = candidates.map((c) => c.studentId);
-  const archiveReason =
-    remarks || "Graduated - End of Year batch archive";
+  const archiveReason = remarks || "Graduated - End of Year batch archive";
+  const { inArray } = await import("drizzle-orm");
 
-  // Update in batches of 100 to avoid memory issues
-  const batchSize = 100;
-  for (let i = 0; i < studentIds.length; i += batchSize) {
-    const batchIds = studentIds.slice(i, i + batchSize);
-    await db
-      .update(students)
-      .set({
-        status: "graduated" as StudentStatus,
-        archivedAt: now,
-        archivedBy: session.userId,
-        archiveReason,
-        archivedSchoolYearId: schoolYearId,
-        updatedAt: now,
-        updatedBy: session.userId,
+  // ─── Generate clearance records for each candidate ───────────────────────
+  // Get existing clearances to avoid duplicates
+  const existingClearances = await db
+    .select({ studentId: studentClearances.studentId })
+    .from(studentClearances)
+    .where(
+      and(
+        inArray(studentClearances.studentId, studentIds),
+        eq(studentClearances.schoolYearId, schoolYearId),
+        eq(studentClearances.clearanceType, "graduation"),
+        isNull(studentClearances.deletedAt)
+      )
+    );
+
+  const studentsWithClearance = new Set(
+    existingClearances.map((c) => c.studentId)
+  );
+  const studentsNeedingClearance = candidates.filter(
+    (c) => !studentsWithClearance.has(c.studentId)
+  );
+
+  let clearancesGenerated = 0;
+
+  // Get enrollment IDs and balances for students needing clearance
+  if (studentsNeedingClearance.length > 0) {
+    const studentIdsNeedingClearance = studentsNeedingClearance.map(
+      (c) => c.studentId
+    );
+
+    const enrollmentData = await db
+      .select({
+        enrollmentId: enrollments.id,
+        studentId: enrollments.studentId,
+        balance: assessments.balance,
       })
+      .from(enrollments)
+      .innerJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
       .where(
         and(
-          eq(students.status, "active"),
-          isNull(students.deletedAt),
-          // Use SQL IN for batch
-          eq(students.id, batchIds[0]) // This is a simplification; in production you'd use inArray
+          eq(enrollments.schoolYearId, schoolYearId),
+          inArray(enrollments.studentId, studentIdsNeedingClearance),
+          isNull(assessments.cancelledAt)
         )
       );
-  }
 
-  // Use inArray for proper batch update
-  const { inArray } = await import("drizzle-orm");
+    // Generate clearance for each student
+    const clearanceValues = enrollmentData.map((enrollment) => {
+      const balance = Number(enrollment.balance);
+      const clearanceStatus = balance <= 0 ? "cleared" : "pending";
+
+      return {
+        studentId: enrollment.studentId,
+        enrollmentId: enrollment.enrollmentId,
+        schoolYearId,
+        clearanceType: "graduation" as const,
+        outstandingAmount: enrollment.balance,
+        status: clearanceStatus as "cleared" | "pending",
+        createdBy: session.userId,
+      };
+    });
+
+    if (clearanceValues.length > 0) {
+      await db.insert(studentClearances).values(clearanceValues);
+      clearancesGenerated = clearanceValues.length;
+    }
+  }
+  // ─── END: Clearance generation ───────────────────────────────────────────
+
+  // Archive all candidates
   await db
     .update(students)
     .set({
@@ -368,12 +413,14 @@ export async function batchArchiveGraduatesAction(
       schoolYearId,
       gradeLevelId,
       count: studentIds.length,
+      clearancesGenerated,
       studentIds: studentIds.slice(0, 10), // Log first 10 for reference
     },
   });
 
   revalidatePath("/staff/students");
   revalidatePath("/staff/archive");
+  revalidatePath("/staff/approvals"); // Revalidate clearances page
 
   return {
     success: true,
@@ -409,12 +456,12 @@ export async function batchCancelNoShowAction(
 
   const { schoolYearId, remarks } = parsed.data;
 
-  // Get no-show candidates (assessed but never paid)
+  // Get no-show candidates (pending or assessed but never paid)
   const candidates = await getNoShowCandidates(schoolYearId);
 
   if (candidates.length === 0) {
     return {
-      message: "No 'assessed but never paid' enrollments found.",
+      message: "No 'no-show' enrollments found (pending or assessed but never paid).",
       cancelledCount: 0,
       enrollmentIds: [],
     };
@@ -422,9 +469,12 @@ export async function batchCancelNoShowAction(
 
   const now = new Date();
   const enrollmentIds = candidates.map((c) => c.enrollmentId);
-  const assessmentIds = candidates.map((c) => c.assessmentId);
+  // Filter out null assessmentIds (pending enrollments have no assessment)
+  const assessmentIds = candidates
+    .map((c) => c.assessmentId)
+    .filter((id): id is string => id !== null);
   const cancelRemarks =
-    remarks || "No show - EOY batch cancellation (assessed but never paid)";
+    remarks || "No show - EOY batch cancellation (pending or assessed but never paid)";
 
   // Use inArray for proper batch update
   const { inArray } = await import("drizzle-orm");
@@ -442,17 +492,19 @@ export async function batchCancelNoShowAction(
     })
     .where(inArray(enrollments.id, enrollmentIds));
 
-  // Cancel assessments
-  await db
-    .update(assessments)
-    .set({
-      billingStatus: "cancelled",
-      cancelledAt: now,
-      cancelledBy: session.userId,
-      updatedAt: now,
-      updatedBy: session.userId,
-    })
-    .where(inArray(assessments.id, assessmentIds));
+  // Cancel assessments (only if there are any)
+  if (assessmentIds.length > 0) {
+    await db
+      .update(assessments)
+      .set({
+        billingStatus: "cancelled",
+        cancelledAt: now,
+        cancelledBy: session.userId,
+        updatedAt: now,
+        updatedBy: session.userId,
+      })
+      .where(inArray(assessments.id, assessmentIds));
+  }
 
   // Archive the students as "cancelled"
   const studentIds = [...new Set(candidates.map((c) => c.studentId))];
@@ -462,7 +514,7 @@ export async function batchCancelNoShowAction(
       status: "cancelled" as StudentStatus,
       archivedAt: now,
       archivedBy: session.userId,
-      archiveReason: "No show - assessed but never paid",
+      archiveReason: "No show - pending or assessed but never paid",
       archivedSchoolYearId: schoolYearId,
       updatedAt: now,
       updatedBy: session.userId,
@@ -470,6 +522,10 @@ export async function batchCancelNoShowAction(
     .where(
       and(eq(students.status, "active"), inArray(students.id, studentIds))
     );
+
+  // Count pending vs assessed for audit
+  const pendingCount = candidates.filter((c) => c.enrollmentStatus === "pending").length;
+  const assessedCount = candidates.filter((c) => c.enrollmentStatus === "assessed").length;
 
   // Audit log (batch operation)
   await logAudit({
@@ -481,6 +537,8 @@ export async function batchCancelNoShowAction(
     newState: {
       schoolYearId,
       enrollmentCount: enrollmentIds.length,
+      pendingCount,
+      assessedCount,
       studentCount: studentIds.length,
       enrollmentIds: enrollmentIds.slice(0, 10),
     },
@@ -494,5 +552,101 @@ export async function batchCancelNoShowAction(
     success: true,
     cancelledCount: enrollmentIds.length,
     enrollmentIds,
+  };
+}
+
+// ─── Batch Archive Non-Returning Students Action ────────────────────────────
+
+export async function batchArchiveNonReturningAction(
+  _prevState: BatchArchiveNonReturningFormState,
+  formData: FormData
+): Promise<BatchArchiveNonReturningFormState> {
+  const session = await requireSession();
+
+  // Permission check
+  if (!hasPermission(session.role, "archive:manage")) {
+    return {
+      message: "You do not have permission to batch archive students.",
+    };
+  }
+
+  // Validate input
+  const parsed = batchArchiveNonReturningSchema.safeParse({
+    previousSchoolYearId: formData.get("previousSchoolYearId"),
+    currentSchoolYearId: formData.get("currentSchoolYearId"),
+    status: formData.get("status"),
+    remarks: formData.get("remarks") || undefined,
+  });
+
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { previousSchoolYearId, currentSchoolYearId, status, remarks } =
+    parsed.data;
+
+  // Get non-returning students
+  const candidates = await getNonReturningStudents(
+    previousSchoolYearId,
+    currentSchoolYearId
+  );
+
+  if (candidates.length === 0) {
+    return {
+      message:
+        "No non-returning students found (all students from the previous year are enrolled in the current year).",
+      archivedCount: 0,
+      studentIds: [],
+    };
+  }
+
+  const now = new Date();
+  const studentIds = candidates.map((c) => c.studentId);
+  const archiveReason =
+    remarks ||
+    `Non-returning student - EOY batch archive (was enrolled in previous year but not in current year)`;
+
+  // Use inArray for proper batch update
+  const { inArray } = await import("drizzle-orm");
+
+  // Archive all non-returning students with the selected status
+  await db
+    .update(students)
+    .set({
+      status: status as StudentStatus,
+      archivedAt: now,
+      archivedBy: session.userId,
+      archiveReason,
+      archivedSchoolYearId: previousSchoolYearId,
+      updatedAt: now,
+      updatedBy: session.userId,
+    })
+    .where(
+      and(eq(students.status, "active"), inArray(students.id, studentIds))
+    );
+
+  // Audit log (batch operation)
+  await logAudit({
+    actor: session.userId,
+    actorRole: session.role,
+    action: "archive:batch_non_returning",
+    targetEntity: "students",
+    targetId: `batch:${studentIds.length}`,
+    newState: {
+      previousSchoolYearId,
+      currentSchoolYearId,
+      status,
+      count: studentIds.length,
+      studentIds: studentIds.slice(0, 10), // Log first 10 for reference
+    },
+  });
+
+  revalidatePath("/staff/students");
+  revalidatePath("/staff/archive");
+
+  return {
+    success: true,
+    archivedCount: studentIds.length,
+    studentIds,
   };
 }

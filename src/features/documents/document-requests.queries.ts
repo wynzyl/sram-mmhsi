@@ -129,6 +129,25 @@ export async function checkDocumentReleaseEligibility(
   return { canRelease: true };
 }
 
+/**
+ * Check if a document request can be processed.
+ * All clearances must be "cleared" or "waived" (not "pending").
+ */
+export async function checkDocumentProcessingEligibility(
+  studentId: string
+): Promise<{ canProcess: true } | { canProcess: false; reason: string }> {
+  const hasPending = await hasPendingClearances(studentId);
+  if (hasPending) {
+    return {
+      canProcess: false,
+      reason:
+        "Cannot process document while student has pending clearances. All clearances must be cleared or waived first.",
+    };
+  }
+
+  return { canProcess: true };
+}
+
 // ─── Document Request Queries ────────────────────────────────────────────────
 
 /**
@@ -370,6 +389,7 @@ export async function getDocumentRequestForValidation(
   studentId: string;
   status: DocumentRequestStatus;
   documentType: DocumentRequestType;
+  documentNumber: string | null;
 } | null> {
   const [result] = await db
     .select({
@@ -377,6 +397,7 @@ export async function getDocumentRequestForValidation(
       studentId: documentRequests.studentId,
       status: documentRequests.status,
       documentType: documentRequests.documentType,
+      documentNumber: documentRequests.documentNumber,
     })
     .from(documentRequests)
     .where(
@@ -508,6 +529,9 @@ import {
   enrollments,
   gradeLevels,
   sections,
+  gradeRecords,
+  teacherAssignments,
+  subjects,
 } from "@/lib/db/schema";
 import type { DocumentExportData } from "./document.export";
 
@@ -593,6 +617,15 @@ export async function getDocumentExportData(
     section = latestEnrollment.sectionName;
   }
 
+  // For Form 138 (Report Card), fetch grade records
+  let grades: DocumentExportData["grades"];
+  if (row.documentType === "form_138" && row.schoolYearId) {
+    grades = await fetchStudentGradesForReportCard(
+      row.studentId,
+      row.schoolYearId
+    );
+  }
+
   return {
     requestId: row.id,
     documentType: row.documentType as DocumentRequestType,
@@ -605,5 +638,129 @@ export async function getDocumentExportData(
     purpose: row.purpose,
     releasedAt: row.releasedAt,
     copies: row.copies,
+    grades,
   };
+}
+
+/**
+ * Fetch student grades for Form 138 (Report Card)
+ * Aggregates Q1-Q4 grades per subject and calculates final grade
+ */
+async function fetchStudentGradesForReportCard(
+  studentId: string,
+  schoolYearId: string
+): Promise<DocumentExportData["grades"]> {
+  // Get all grade records for the student in the school year
+  const gradeData = await db
+    .select({
+      subjectId: teacherAssignments.subjectId,
+      subjectName: subjects.name,
+      subjectCode: subjects.code,
+      gradingPeriod: gradeRecords.gradingPeriod,
+      grade: gradeRecords.grade,
+    })
+    .from(gradeRecords)
+    .innerJoin(
+      teacherAssignments,
+      eq(gradeRecords.teacherAssignmentId, teacherAssignments.id)
+    )
+    .innerJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
+    .where(
+      and(
+        eq(gradeRecords.studentId, studentId),
+        eq(gradeRecords.schoolYearId, schoolYearId)
+      )
+    )
+    .orderBy(subjects.name, gradeRecords.gradingPeriod);
+
+  if (gradeData.length === 0) {
+    return undefined;
+  }
+
+  // Group by subject and aggregate quarters
+  const subjectGrades = new Map<
+    string,
+    {
+      subject: string;
+      q1: number | null;
+      q2: number | null;
+      q3: number | null;
+      q4: number | null;
+    }
+  >();
+
+  for (const record of gradeData) {
+    const key = record.subjectId;
+    if (!subjectGrades.has(key)) {
+      subjectGrades.set(key, {
+        subject: record.subjectName,
+        q1: null,
+        q2: null,
+        q3: null,
+        q4: null,
+      });
+    }
+
+    const entry = subjectGrades.get(key)!;
+    const gradeValue = record.grade ? Number(record.grade) : null;
+
+    switch (record.gradingPeriod) {
+      case "Q1":
+        entry.q1 = gradeValue;
+        break;
+      case "Q2":
+        entry.q2 = gradeValue;
+        break;
+      case "Q3":
+        entry.q3 = gradeValue;
+        break;
+      case "Q4":
+        entry.q4 = gradeValue;
+        break;
+    }
+  }
+
+  // Calculate final grade and remarks for each subject
+  const result: NonNullable<DocumentExportData["grades"]> = [];
+
+  for (const entry of subjectGrades.values()) {
+    const quarters = [entry.q1, entry.q2, entry.q3, entry.q4].filter(
+      (q): q is number => q !== null
+    );
+
+    let finalGrade: number | null = null;
+    let remarks: string | null = null;
+
+    if (quarters.length > 0) {
+      // Calculate average of available quarters
+      finalGrade = Math.round(
+        quarters.reduce((sum, q) => sum + q, 0) / quarters.length
+      );
+
+      // Determine remarks based on DepEd scale
+      if (finalGrade >= 90) {
+        remarks = "Outstanding";
+      } else if (finalGrade >= 85) {
+        remarks = "Very Satisfactory";
+      } else if (finalGrade >= 80) {
+        remarks = "Satisfactory";
+      } else if (finalGrade >= 75) {
+        remarks = "Fairly Satisfactory";
+      } else {
+        remarks = "Did Not Meet Expectations";
+      }
+    }
+
+    result.push({
+      subject: entry.subject,
+      q1: entry.q1,
+      q2: entry.q2,
+      q3: entry.q3,
+      q4: entry.q4,
+      final: finalGrade,
+      remarks,
+    });
+  }
+
+  return result.length > 0 ? result : undefined;
 }

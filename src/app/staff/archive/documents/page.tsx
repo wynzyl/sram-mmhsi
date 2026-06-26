@@ -24,6 +24,7 @@ export default async function DocumentRequestsPage({
     type?: string;
     sy?: string;
     q?: string;
+    studentId?: string;
   }>;
 }) {
   const session = await requireSession();
@@ -39,6 +40,7 @@ export default async function DocumentRequestsPage({
   const documentType = params.type as DocumentRequestType | undefined;
   const schoolYearId = params.sy;
   const search = params.q;
+  const studentId = params.studentId;
 
   // Fetch data
   const [requestsData, summary, schoolYearOptions] = await Promise.all([
@@ -49,6 +51,7 @@ export default async function DocumentRequestsPage({
       documentType,
       schoolYearId,
       search,
+      studentId,
     }),
     getDocumentRequestsSummary(),
     getSchoolYearOptions(),

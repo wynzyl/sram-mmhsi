@@ -1,4 +1,6 @@
-import { sql } from "drizzle-orm";
+import { sql, like, desc } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { documentRequests } from "@/lib/db/schema";
 
 /**
  * Generates a student reference number as a 7-digit plain number.
@@ -39,4 +41,36 @@ export async function generateNextBfxNumber(
   );
   const nextSeq = Number(result[0]?.nextval ?? 1);
   return `BFX-${String(nextSeq).padStart(5, "0")}`;
+}
+
+/**
+ * Generates the next document number for document requests.
+ * Format: DOC-YYYY-NNNNN (e.g., DOC-2026-00001)
+ * Sequence resets to 00001 each calendar year.
+ */
+export async function generateNextDocumentNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = `DOC-${year}-`;
+
+  // Find max sequence for current year by querying existing document numbers
+  const existingDocs = await db.query.documentRequests.findMany({
+    where: like(documentRequests.documentNumber, `${prefix}%`),
+    columns: { documentNumber: true },
+  });
+
+  let maxSeq = 0;
+  for (const doc of existingDocs) {
+    if (doc.documentNumber) {
+      const parts = doc.documentNumber.split("-");
+      if (parts.length === 3) {
+        const seq = parseInt(parts[2], 10);
+        if (!isNaN(seq) && seq > maxSeq) {
+          maxSeq = seq;
+        }
+      }
+    }
+  }
+
+  const nextSeq = maxSeq + 1;
+  return `${prefix}${String(nextSeq).padStart(5, "0")}`;
 }

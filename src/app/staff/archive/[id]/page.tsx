@@ -23,6 +23,11 @@ import {
   schoolYears,
 } from "@/lib/db/schema";
 import { and, desc, eq, isNull, ne, sum } from "drizzle-orm";
+import {
+  getStudentDocumentRequests,
+  getSchoolYearOptions,
+} from "@/features/documents/document-requests.queries";
+import { ArchivedStudentDocumentRequests } from "./ArchivedStudentDocumentRequests";
 
 export const metadata: Metadata = {
   title: "Archived Student",
@@ -53,7 +58,7 @@ export default async function ArchivedStudentPage({ params }: PageProps) {
   }
 
   // Fetch related data
-  const [enrollmentHistory, outstandingBalance, recentPayments] =
+  const [enrollmentHistory, outstandingBalance, recentPayments, documentRequestsData, schoolYearOptions] =
     await Promise.all([
       // Enrollment history
       db
@@ -101,10 +106,17 @@ export default async function ArchivedStudentPage({ params }: PageProps) {
         )
         .orderBy(desc(payments.paymentDate))
         .limit(5),
+
+      // Document requests
+      getStudentDocumentRequests(id),
+
+      // School year options for document request dialog
+      getSchoolYearOptions(),
     ]);
 
   const balance = parseFloat(outstandingBalance[0]?.total ?? "0");
   const canManage = hasPermission(session.role, "archive:manage");
+  const canCreateDocRequest = hasPermission(session.role, "documents:create");
   const fullName = [student.firstName, student.middleName, student.lastName]
     .filter(Boolean)
     .join(" ");
@@ -361,6 +373,15 @@ export default async function ArchivedStudentPage({ params }: PageProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Document Requests */}
+      <ArchivedStudentDocumentRequests
+        studentId={student.id}
+        studentName={fullName}
+        documentRequests={documentRequestsData}
+        schoolYearOptions={schoolYearOptions}
+        canCreateRequest={canCreateDocRequest}
+      />
     </div>
   );
 }

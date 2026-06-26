@@ -13,6 +13,7 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
+import { generateNextDocumentNumber } from "@/lib/utils/reference";
 import {
   createDocumentRequestSchema,
   processDocumentRequestSchema,
@@ -30,6 +31,7 @@ import {
 import {
   getDocumentRequestForValidation,
   checkDocumentReleaseEligibility,
+  checkDocumentProcessingEligibility,
 } from "./document-requests.queries";
 import { canProgressRequest, canCancelRequest, canReleaseDocument } from "@/lib/constants/document-requests";
 
@@ -111,7 +113,6 @@ export async function processDocumentRequestAction(
   const parsed = processDocumentRequestSchema.safeParse({
     requestId: formData.get("requestId"),
     feeAmount: formData.get("feeAmount") ? Number(formData.get("feeAmount")) : undefined,
-    documentNumber: formData.get("documentNumber") || undefined,
     remarks: formData.get("remarks") || undefined,
   });
 
@@ -119,7 +120,7 @@ export async function processDocumentRequestAction(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
-  const { requestId, feeAmount, documentNumber, remarks } = parsed.data;
+  const { requestId, feeAmount, remarks } = parsed.data;
 
   // Get current request
   const request = await getDocumentRequestForValidation(requestId);
@@ -132,13 +133,24 @@ export async function processDocumentRequestAction(
     return { message: `Cannot process request with status "${request.status}".` };
   }
 
+  // Check processing eligibility (clearances must be resolved)
+  const processingEligibility = await checkDocumentProcessingEligibility(
+    request.studentId
+  );
+  if (!processingEligibility.canProcess) {
+    return { message: processingEligibility.reason };
+  }
+
+  // Auto-generate document number
+  const documentNumber = await generateNextDocumentNumber();
+
   // Update the request
   await db
     .update(documentRequests)
     .set({
       status: "processing",
       feeAmount: feeAmount?.toString() ?? null,
-      documentNumber: documentNumber ?? null,
+      documentNumber,
       remarks: remarks ?? null,
       processedBy: session.userId,
       processedAt: new Date(),
@@ -177,7 +189,6 @@ export async function readyDocumentRequestAction(
   // Parse and validate input
   const parsed = readyDocumentRequestSchema.safeParse({
     requestId: formData.get("requestId"),
-    documentNumber: formData.get("documentNumber"),
     remarks: formData.get("remarks") || undefined,
   });
 
@@ -185,7 +196,7 @@ export async function readyDocumentRequestAction(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
-  const { requestId, documentNumber, remarks } = parsed.data;
+  const { requestId, remarks } = parsed.data;
 
   // Get current request
   const request = await getDocumentRequestForValidation(requestId);
@@ -198,12 +209,16 @@ export async function readyDocumentRequestAction(
     return { message: `Cannot mark as ready from status "${request.status}".` };
   }
 
-  // Update the request
+  // Document number should already be set from process stage
+  if (!request.documentNumber) {
+    return { message: "Document number was not assigned during processing." };
+  }
+
+  // Update the request (documentNumber is preserved from process stage)
   await db
     .update(documentRequests)
     .set({
       status: "ready",
-      documentNumber,
       remarks: remarks ?? null,
     })
     .where(eq(documentRequests.id, requestId));
@@ -216,7 +231,7 @@ export async function readyDocumentRequestAction(
     targetEntity: "document_requests",
     targetId: requestId,
     previousState: { status: request.status },
-    newState: { status: "ready", documentNumber },
+    newState: { status: "ready", documentNumber: request.documentNumber },
   });
 
   revalidatePath("/staff/archive/documents");
@@ -392,14 +407,12 @@ export async function cancelDocumentRequestAction(
     return { message: `Cannot cancel request with status "${request.status}".` };
   }
 
-  // Update the request
+  // Update the request status (don't soft-delete - status is sufficient for cancelled state)
   await db
     .update(documentRequests)
     .set({
       status: "cancelled",
       remarks: remarks ?? null,
-      deletedAt: new Date(),
-      deletedBy: session.userId,
     })
     .where(eq(documentRequests.id, requestId));
 
@@ -415,6 +428,7 @@ export async function cancelDocumentRequestAction(
   });
 
   revalidatePath("/staff/archive/documents");
+  revalidatePath(`/staff/archive/documents/${requestId}`);
 
   return { success: true };
 }

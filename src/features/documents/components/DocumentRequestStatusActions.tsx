@@ -24,9 +24,13 @@ import type { DocumentRequestDetail } from "../document-requests.queries";
 export function ProcessDocumentRequestForm({
   request,
   onSuccess,
+  canProcess = true,
+  processBlockReason,
 }: {
   request: DocumentRequestDetail;
   onSuccess?: () => void;
+  canProcess?: boolean;
+  processBlockReason?: string;
 }) {
   const router = useRouter();
   const [state, action, isPending] = useActionState<
@@ -41,6 +45,20 @@ export function ProcessDocumentRequestForm({
       onSuccess?.();
     },
   });
+
+  // Show block message if processing is not allowed
+  if (!canProcess) {
+    return (
+      <div className="rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
+        <h4 className="font-medium text-amber-800 dark:text-amber-200">
+          Cannot Process Document
+        </h4>
+        <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+          {processBlockReason}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form action={action} className="space-y-4">
@@ -61,23 +79,6 @@ export function ProcessDocumentRequestForm({
         {state.errors?.feeAmount && (
           <p className="mt-1 text-sm text-destructive">
             {state.errors.feeAmount[0]}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          Document Number (Optional)
-        </label>
-        <input
-          type="text"
-          name="documentNumber"
-          placeholder="e.g., DOC-2024-0001"
-          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-        />
-        {state.errors?.documentNumber && (
-          <p className="mt-1 text-sm text-destructive">
-            {state.errors.documentNumber[0]}
           </p>
         )}
       </div>
@@ -130,24 +131,17 @@ export function ReadyDocumentRequestForm({
     <form action={action} className="space-y-4">
       <input type="hidden" name="requestId" value={request.id} />
 
-      <div>
-        <label className="block text-sm font-medium">
-          Document Number <span className="text-destructive">*</span>
-        </label>
-        <input
-          type="text"
-          name="documentNumber"
-          required
-          defaultValue={request.documentNumber ?? ""}
-          placeholder="e.g., DOC-2024-0001"
-          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-        />
-        {state.errors?.documentNumber && (
-          <p className="mt-1 text-sm text-destructive">
-            {state.errors.documentNumber[0]}
-          </p>
-        )}
-      </div>
+      {/* Document number is auto-generated at process stage - display read-only */}
+      {request.documentNumber && (
+        <div>
+          <label className="block text-sm font-medium text-muted-foreground">
+            Document Number
+          </label>
+          <div className="mt-1 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm font-mono">
+            {request.documentNumber}
+          </div>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium">Remarks</label>
@@ -362,14 +356,19 @@ export function PrintDocumentButton({
   requestId,
   documentNumber,
   variant = "primary",
+  disabled = false,
+  disabledReason,
 }: {
   requestId: string;
   documentNumber?: string | null;
   variant?: "primary" | "secondary";
+  disabled?: boolean;
+  disabledReason?: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePrint = useCallback(async () => {
+    if (disabled) return;
     setIsLoading(true);
     try {
       // Open the PDF in a new tab for print/download
@@ -379,29 +378,37 @@ export function PrintDocumentButton({
       // Small delay to prevent button flicker
       setTimeout(() => setIsLoading(false), 500);
     }
-  }, [requestId]);
+  }, [requestId, disabled]);
 
   const buttonClass =
     variant === "primary"
-      ? "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-      : "rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50";
+      ? "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+      : "rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed";
 
   return (
-    <button
-      type="button"
-      onClick={handlePrint}
-      disabled={isLoading}
-      className={buttonClass}
-    >
-      {isLoading ? (
-        "Opening..."
-      ) : (
-        <>
-          <span className="mr-2">📄</span>
-          {documentNumber ? `Print ${documentNumber}` : "Print Document"}
-        </>
+    <div className="w-full">
+      <button
+        type="button"
+        onClick={handlePrint}
+        disabled={isLoading || disabled}
+        className={`${buttonClass} w-full`}
+        title={disabled ? disabledReason : undefined}
+      >
+        {isLoading ? (
+          "Opening..."
+        ) : (
+          <>
+            <span className="mr-2">📄</span>
+            {documentNumber ? `Print ${documentNumber}` : "Print Document"}
+          </>
+        )}
+      </button>
+      {disabled && disabledReason && (
+        <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+          {disabledReason}
+        </p>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -411,13 +418,18 @@ export function PrintDocumentButton({
 export function DownloadDocumentButton({
   requestId,
   documentNumber,
+  disabled = false,
+  disabledReason,
 }: {
   requestId: string;
   documentNumber?: string | null;
+  disabled?: boolean;
+  disabledReason?: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDownload = useCallback(async () => {
+    if (disabled) return;
     setIsLoading(true);
     try {
       const url = `/staff/archive/documents/${requestId}/export?format=pdf`;
@@ -452,23 +464,31 @@ export function DownloadDocumentButton({
     } finally {
       setIsLoading(false);
     }
-  }, [requestId]);
+  }, [requestId, disabled]);
 
   return (
-    <button
-      type="button"
-      onClick={handleDownload}
-      disabled={isLoading}
-      className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-    >
-      {isLoading ? (
-        "Downloading..."
-      ) : (
-        <>
-          <span className="mr-2">⬇️</span>
-          {documentNumber ? `Download ${documentNumber}` : "Download PDF"}
-        </>
+    <div className="w-full">
+      <button
+        type="button"
+        onClick={handleDownload}
+        disabled={isLoading || disabled}
+        className="w-full rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+        title={disabled ? disabledReason : undefined}
+      >
+        {isLoading ? (
+          "Downloading..."
+        ) : (
+          <>
+            <span className="mr-2">⬇️</span>
+            {documentNumber ? `Download ${documentNumber}` : "Download PDF"}
+          </>
+        )}
+      </button>
+      {disabled && disabledReason && (
+        <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+          {disabledReason}
+        </p>
       )}
-    </button>
+    </div>
   );
 }
