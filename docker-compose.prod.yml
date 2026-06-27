@@ -82,19 +82,19 @@ services:
       - srams-network
       # - proxy-network
  
-  metabase:
-    image: metabase/metabase:latest
-    restart: always
-    ports:
-      - "3005:3000" # Exposes Metabase on port 3005 of your Ubuntu host
-    env_file:
-      - .env.production
-    depends_on:
-      srams_db:
-        condition: service_healthy
-    networks:
-      - srams-network
-      # - proxy-network
+  # metabase:
+  #   image: metabase/metabase:latest
+  #   restart: always
+  #   ports:
+  #     - "3005:3000" # Exposes Metabase on port 3005 of your Ubuntu host
+  #   env_file:
+  #     - .env.production
+  #   depends_on:
+  #     srams_db:
+  #       condition: service_healthy
+  #   networks:
+  #     - srams-network
+  #     # - proxy-network
   nginx:
         image: nginx:alpine
         container_name: nginx_proxy
