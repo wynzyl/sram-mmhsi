@@ -8,21 +8,17 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
-import { getArchivedStudent } from "@/features/archive/archive.queries";
+import {
+  getArchivedStudent,
+  getStudentEnrollmentHistory,
+  getStudentOutstandingBalanceTotal,
+  getStudentRecentPayments,
+} from "@/features/archive/archive.queries";
 import { UnarchiveStudentDialog } from "@/features/archive/components/UnarchiveStudentDialog";
 import {
   STUDENT_STATUS_LABELS,
   isArchivedStatus,
 } from "@/lib/constants/student-status";
-import { db } from "@/lib/db";
-import {
-  assessments,
-  enrollments,
-  gradeLevels,
-  payments,
-  schoolYears,
-} from "@/lib/db/schema";
-import { and, desc, eq, isNull, ne, sum } from "drizzle-orm";
 import {
   getStudentDocumentRequests,
   getSchoolYearOptions,
@@ -60,61 +56,14 @@ export default async function ArchivedStudentPage({ params }: PageProps) {
   // Fetch related data
   const [enrollmentHistory, outstandingBalance, recentPayments, documentRequestsData, schoolYearOptions] =
     await Promise.all([
-      // Enrollment history
-      db
-        .select({
-          id: enrollments.id,
-          status: enrollments.status,
-          schoolYearLabel: schoolYears.label,
-          gradeLevelName: gradeLevels.name,
-          enrolledAt: enrollments.enrolledAt,
-          cancelledAt: enrollments.cancelledAt,
-        })
-        .from(enrollments)
-        .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
-        .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-        .where(eq(enrollments.studentId, id))
-        .orderBy(desc(schoolYears.startDate))
-        .limit(10),
-
-      // Outstanding balance
-      db
-        .select({
-          total: sum(assessments.balance),
-        })
-        .from(assessments)
-        .where(
-          and(
-            eq(assessments.studentId, id),
-            eq(assessments.billingStatus, "outstanding"),
-            isNull(assessments.cancelledAt)
-          )
-        ),
-
-      // Recent payments
-      db
-        .select({
-          id: payments.id,
-          orNumber: payments.orNumber,
-          amount: payments.amount,
-          paymentDate: payments.paymentDate,
-          status: payments.status,
-        })
-        .from(payments)
-        .where(
-          and(eq(payments.studentId, id), ne(payments.status, "reversed"))
-        )
-        .orderBy(desc(payments.paymentDate))
-        .limit(5),
-
-      // Document requests
+      getStudentEnrollmentHistory(id),
+      getStudentOutstandingBalanceTotal(id),
+      getStudentRecentPayments(id),
       getStudentDocumentRequests(id),
-
-      // School year options for document request dialog
       getSchoolYearOptions(),
     ]);
 
-  const balance = parseFloat(outstandingBalance[0]?.total ?? "0");
+  const balance = parseFloat(outstandingBalance);
   const canManage = hasPermission(session.role, "archive:manage");
   const canCreateDocRequest = hasPermission(session.role, "documents:create");
   const fullName = [student.firstName, student.middleName, student.lastName]

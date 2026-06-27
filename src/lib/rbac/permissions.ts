@@ -164,7 +164,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "invoices:read", "invoices:send",
     "booklets:manage", "fee_schedules:manage",
     "discounts:read", "discounts:review", "discounts:manage", "discounts:apply",
-    "clearances:read", "clearances:create",
+    "clearances:read", "clearances:create", "clearances:resolve",
     "archive:read",
     "documents:read", "documents:release",
     "reports:view", "reports:finance",

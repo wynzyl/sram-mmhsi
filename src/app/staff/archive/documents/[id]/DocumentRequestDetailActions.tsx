@@ -128,26 +128,36 @@ export function DocumentRequestDetailActions({
         )}
 
         {/* Print/Download for ready documents */}
-        {request.status === "ready" && request.documentNumber && (
-          <div className="border-t pt-4">
-            <h4 className="mb-2 text-sm font-medium">Preview Document</h4>
-            <div className="flex flex-col gap-2">
-              <PrintDocumentButton
-                requestId={request.id}
-                documentNumber={request.documentNumber}
-                variant="secondary"
-                disabled={hasOutstandingBalance}
-                disabledReason={balanceBlockReason}
-              />
-              <DownloadDocumentButton
-                requestId={request.id}
-                documentNumber={request.documentNumber}
-                disabled={hasOutstandingBalance}
-                disabledReason={balanceBlockReason}
-              />
+        {request.status === "ready" && request.documentNumber && (() => {
+          // Preview/download is blocked by the full release-eligibility check
+          // (outstanding balance AND pending clearances), not balance alone.
+          const previewDisabled =
+            hasOutstandingBalance || !releaseEligibility.canRelease;
+          const previewDisabledReason = hasOutstandingBalance
+            ? balanceBlockReason
+            : releaseEligibility.reason;
+
+          return (
+            <div className="border-t pt-4">
+              <h4 className="mb-2 text-sm font-medium">Preview Document</h4>
+              <div className="flex flex-col gap-2">
+                <PrintDocumentButton
+                  requestId={request.id}
+                  documentNumber={request.documentNumber}
+                  variant="secondary"
+                  disabled={previewDisabled}
+                  disabledReason={previewDisabledReason}
+                />
+                <DownloadDocumentButton
+                  requestId={request.id}
+                  documentNumber={request.documentNumber}
+                  disabled={previewDisabled}
+                  disabledReason={previewDisabledReason}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Secondary Actions */}
         {canProcess && canProgressRequest(request.status) && (

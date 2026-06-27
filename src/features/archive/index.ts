@@ -22,6 +22,7 @@ export {
   unarchiveStudentSchema,
   batchArchiveGraduatesSchema,
   batchCancelNoShowSchema,
+  batchArchiveNonReturningSchema,
   archiveFilterSchema,
   type ArchiveStudentInput,
   type ArchiveStudentFormState,
@@ -31,6 +32,8 @@ export {
   type BatchArchiveGraduatesFormState,
   type BatchCancelNoShowInput,
   type BatchCancelNoShowFormState,
+  type BatchArchiveNonReturningInput,
+  type BatchArchiveNonReturningFormState,
   type ArchiveFilterInput,
   type ArchiveSummary,
 } from "./archive.schema";
@@ -42,6 +45,7 @@ export {
   getArchivedStudent,
   getGraduationCandidates,
   getNoShowCandidates,
+  getNonReturningStudents,
   ARCHIVE_DIRECTORY_PAGE_SIZE,
   type ArchivedStudentRow,
   type ArchiveSchoolYearOption,
@@ -53,4 +57,5 @@ export {
   unarchiveStudentAction,
   batchArchiveGraduatesAction,
   batchCancelNoShowAction,
+  batchArchiveNonReturningAction,
 } from "./archive.actions";

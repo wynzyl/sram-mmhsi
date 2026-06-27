@@ -99,7 +99,7 @@ export async function createAssessmentFromEnrollmentAction(
     await assertStudentMutable(enrollmentRow.studentId, "create_assessment");
   } catch (error) {
     if (error instanceof StudentArchivedException) {
-      return formatArchiveError(error) as AssessmentFormState;
+      return { message: formatArchiveError(error).error.message };
     }
     throw error;
   }
@@ -836,7 +836,7 @@ export async function cancelAssessmentAction(
     await assertStudentMutable(assessment.studentId, "cancel_assessment");
   } catch (error) {
     if (error instanceof StudentArchivedException) {
-      return formatArchiveError(error) as CancelAssessmentFormState;
+      return { message: formatArchiveError(error).error.message };
     }
     throw error;
   }

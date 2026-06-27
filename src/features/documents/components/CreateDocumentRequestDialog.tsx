@@ -2,6 +2,14 @@
 
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useFormToast } from "@/hooks/useFormToast";
 import { createDocumentRequestAction } from "../document-requests.actions";
 import type { CreateDocumentRequestFormState } from "../document-requests.schema";
@@ -41,14 +49,16 @@ export function CreateDocumentRequestDialog({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg rounded-lg bg-background p-6 shadow-xl">
-        <h2 className="text-xl font-semibold">Create Document Request</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Requesting document for <strong>{studentName}</strong>
-        </p>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create Document Request</DialogTitle>
+          <DialogDescription>
+            Requesting document for <strong>{studentName}</strong>
+          </DialogDescription>
+        </DialogHeader>
 
-        <form action={action} className="mt-6 space-y-4">
+        <form action={action} className="space-y-4">
           <input type="hidden" name="studentId" value={studentId} />
 
           {/* Document Type */}
@@ -157,7 +167,7 @@ export function CreateDocumentRequestDialog({
           </div>
 
           {/* Actions */}
-          <div className="mt-6 flex justify-end gap-3">
+          <DialogFooter>
             <button
               type="button"
               onClick={onClose}
@@ -173,9 +183,9 @@ export function CreateDocumentRequestDialog({
             >
               {isPending ? "Creating..." : "Create Request"}
             </button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

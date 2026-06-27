@@ -10,6 +10,7 @@ import {
   assessments,
   enrollments,
   gradeLevels,
+  payments,
   schoolYears,
   students,
 } from "@/lib/db/schema";
@@ -78,7 +79,8 @@ export async function fetchArchivedStudentsPage(
     ne(students.status, "active"),
   ];
 
-  if (params.status && params.status !== "active") {
+  // archiveFilterSchema rejects "active", so params.status is archive-only here.
+  if (params.status) {
     conditions.push(eq(students.status, params.status as StudentStatus));
   }
 
@@ -115,9 +117,12 @@ export async function fetchArchivedStudentsPage(
     .groupBy(assessments.studentId)
     .as("balance_sq");
 
-  // Subquery for last enrollment info
+  // Subquery for last enrollment info.
+  // DISTINCT ON (student_id) guarantees exactly one row per student — the most
+  // recent non-cancelled enrollment — so the join below cannot duplicate a
+  // student's archive row or cause a list/count pagination mismatch.
   const lastEnrollmentSubquery = db
-    .select({
+    .selectDistinctOn([enrollments.studentId], {
       studentId: enrollments.studentId,
       gradeLevelId: enrollments.gradeLevelId,
       schoolYearId: enrollments.schoolYearId,
@@ -129,7 +134,7 @@ export async function fetchArchivedStudentsPage(
         isNull(enrollments.cancelledAt)
       )
     )
-    .orderBy(desc(enrollments.createdAt))
+    .orderBy(asc(enrollments.studentId), desc(enrollments.createdAt))
     .as("last_enrollment_sq");
 
   const [schoolYearOptions, listRows, countResult] = await Promise.all([
@@ -287,7 +292,13 @@ export async function getArchivedStudent(studentId: string) {
     })
     .from(students)
     .leftJoin(schoolYears, eq(students.archivedSchoolYearId, schoolYears.id))
-    .where(and(eq(students.id, studentId), isNull(students.deletedAt)));
+    .where(
+      and(
+        eq(students.id, studentId),
+        isNull(students.deletedAt),
+        ne(students.status, "active"),
+      ),
+    );
 
   return student ?? null;
 }
@@ -482,4 +493,94 @@ export async function getNonReturningStudents(
     .orderBy(asc(students.lastName), asc(students.firstName));
 
   return candidates;
+}
+
+/**
+ * Fetch active (non-deleted) school year options for archive filters and batch dialogs.
+ * Ordered by most recent start date first.
+ */
+export async function getArchiveSchoolYearOptions(): Promise<
+  Array<{ id: string; label: string }>
+> {
+  return db
+    .select({ id: schoolYears.id, label: schoolYears.label })
+    .from(schoolYears)
+    .where(isNull(schoolYears.deletedAt))
+    .orderBy(desc(schoolYears.startDate));
+}
+
+/**
+ * Fetch grade level options for archive batch dialogs, ordered by grade order.
+ * `gradeLevels` is a static reference table with no soft-delete column.
+ */
+export async function getArchiveGradeLevelOptions(): Promise<
+  Array<{ id: string; name: string }>
+> {
+  return db
+    .select({ id: gradeLevels.id, name: gradeLevels.name })
+    .from(gradeLevels)
+    .orderBy(asc(gradeLevels.order));
+}
+
+/**
+ * Fetch a student's recent enrollment history (most recent school years first)
+ * for the archived-student detail page.
+ */
+export async function getStudentEnrollmentHistory(studentId: string) {
+  return db
+    .select({
+      id: enrollments.id,
+      status: enrollments.status,
+      schoolYearLabel: schoolYears.label,
+      gradeLevelName: gradeLevels.name,
+      enrolledAt: enrollments.enrolledAt,
+      cancelledAt: enrollments.cancelledAt,
+    })
+    .from(enrollments)
+    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+    .where(eq(enrollments.studentId, studentId))
+    .orderBy(desc(schoolYears.startDate))
+    .limit(10);
+}
+
+/**
+ * Sum a student's outstanding (non-cancelled) assessment balances.
+ * Returns the raw decimal string total, or "0" when none.
+ */
+export async function getStudentOutstandingBalanceTotal(
+  studentId: string
+): Promise<string> {
+  const [result] = await db
+    .select({ total: sum(assessments.balance) })
+    .from(assessments)
+    .where(
+      and(
+        eq(assessments.studentId, studentId),
+        eq(assessments.billingStatus, "outstanding"),
+        isNull(assessments.cancelledAt)
+      )
+    );
+
+  return result?.total ?? "0";
+}
+
+/**
+ * Fetch a student's most recent non-reversed payments for the archived-student
+ * detail page. (`payments` has no soft-delete column; reversed payments are
+ * excluded via status.)
+ */
+export async function getStudentRecentPayments(studentId: string) {
+  return db
+    .select({
+      id: payments.id,
+      orNumber: payments.orNumber,
+      amount: payments.amount,
+      paymentDate: payments.paymentDate,
+      status: payments.status,
+    })
+    .from(payments)
+    .where(and(eq(payments.studentId, studentId), ne(payments.status, "reversed")))
+    .orderBy(desc(payments.paymentDate))
+    .limit(5);
 }

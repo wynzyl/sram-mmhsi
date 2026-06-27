@@ -6,7 +6,6 @@
 
 import { z } from "zod";
 import {
-  STUDENT_STATUSES,
   ARCHIVED_STUDENT_STATUSES,
   type StudentStatus,
 } from "@/lib/constants/student-status";
@@ -127,7 +126,9 @@ export type BatchArchiveNonReturningFormState =
 // ─── Archive Filter Schema ──────────────────────────────────────────────────
 
 export const archiveFilterSchema = z.object({
-  status: z.enum(STUDENT_STATUSES).optional(),
+  // Archive directory is archived-only: reject "active" so status=active cannot
+  // reach the query filter logic (aligns with ARCHIVED_STUDENT_STATUSES).
+  status: z.enum(ARCHIVED_STUDENT_STATUSES).optional(),
   schoolYearId: z.string().uuid().optional(),
   search: z.string().trim().optional(),
   page: z.coerce.number().int().positive().default(1),

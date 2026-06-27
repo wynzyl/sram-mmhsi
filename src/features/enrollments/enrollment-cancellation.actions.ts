@@ -103,8 +103,9 @@ export async function requestEnrollmentCancellationAction(
         throw new Error("Enrollment not found.");
       }
 
-      // 2. Check if student is archived (blocked action)
-      await assertStudentMutable(enrollment.studentId, "cancel_enrollment");
+      // 2. Check if student is archived (blocked action) — run inside the tx
+      //    so the check shares the enrollment row lock and cannot race a concurrent archive.
+      await assertStudentMutable(enrollment.studentId, "cancel_enrollment", tx);
 
       // 3. Validate school year is active
       const schoolYearActive = await isSchoolYearActive(enrollment.schoolYearId);
@@ -173,7 +174,7 @@ export async function requestEnrollmentCancellationAction(
     };
   } catch (error: unknown) {
     if (error instanceof StudentArchivedException) {
-      return formatArchiveError(error) as RequestEnrollmentCancellationFormState;
+      return { message: formatArchiveError(error).error.message };
     }
     logger.error("[enrollment-cancellation] Failed to create cancellation request", { error: String(error) });
     const msg = error instanceof Error ? error.message : String(error);
@@ -215,8 +216,9 @@ export async function directCancelEnrollmentAction(
         throw new Error("Enrollment not found.");
       }
 
-      // 2. Check if student is archived (blocked action)
-      await assertStudentMutable(enrollment.studentId, "cancel_enrollment");
+      // 2. Check if student is archived (blocked action) — run inside the tx
+      //    so the check shares the enrollment row lock and cannot race a concurrent archive.
+      await assertStudentMutable(enrollment.studentId, "cancel_enrollment", tx);
 
       // 3. Validate school year is active
       const schoolYearActive = await isSchoolYearActive(enrollment.schoolYearId);
@@ -346,7 +348,7 @@ export async function directCancelEnrollmentAction(
     return result;
   } catch (error: unknown) {
     if (error instanceof StudentArchivedException) {
-      return formatArchiveError(error) as DirectCancelEnrollmentFormState;
+      return { message: formatArchiveError(error).error.message };
     }
     logger.error("[enrollment-cancellation] Failed to cancel enrollment directly", { error: String(error) });
     const msg = error instanceof Error ? error.message : String(error);

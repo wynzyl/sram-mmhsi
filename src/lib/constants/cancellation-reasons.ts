@@ -56,7 +56,7 @@ export const CANCELLATION_REASON_DESCRIPTIONS: Record<CancellationReason, string
   administrative: "Enrollment created in error",
   non_compliance: "Failed to submit required documents",
   disciplinary: "Behavioral issues (admin-initiated)",
-  no_show: "Assessed but never paid - used in EOY batch cancellation",
+  no_show: "Pending or assessed but never paid - used in EOY batch cancellation",
   other: "Other reason - requires explanation in remarks",
 };
 

@@ -35,6 +35,7 @@ import type {
   DocumentRequestSummary,
 } from "./document-requests.schema";
 import { hasPendingClearances } from "@/features/clearances/clearances.queries";
+import { formatCurrency } from "@/lib/utils/currency";
 
 export const DOCUMENT_REQUEST_PAGE_SIZE = 20;
 
@@ -111,9 +112,7 @@ export async function checkDocumentReleaseEligibility(
   if (balance > 0.01) {
     return {
       canRelease: false,
-      reason: `Student has an outstanding balance of ₱${balance.toLocaleString("en-PH", {
-        minimumFractionDigits: 2,
-      })}`,
+      reason: `Student has an outstanding balance of ${formatCurrency(balance)}`,
     };
   }
 
@@ -390,6 +389,7 @@ export async function getDocumentRequestForValidation(
   status: DocumentRequestStatus;
   documentType: DocumentRequestType;
   documentNumber: string | null;
+  requestedBy: string;
 } | null> {
   const [result] = await db
     .select({
@@ -398,6 +398,7 @@ export async function getDocumentRequestForValidation(
       status: documentRequests.status,
       documentType: documentRequests.documentType,
       documentNumber: documentRequests.documentNumber,
+      requestedBy: documentRequests.requestedBy,
     })
     .from(documentRequests)
     .where(
@@ -488,22 +489,36 @@ export async function getPendingDocumentRequestsCount(): Promise<number> {
 export async function getStudentDocumentRequests(
   studentId: string
 ): Promise<StudentDocumentSummary> {
+  // Compute counts in the database so they cover ALL of the student's requests,
+  // not just the first page of rows.
+  const [counts] = await db
+    .select({
+      total: count(),
+      pending: sql<number>`COUNT(*) FILTER (WHERE ${documentRequests.status} IN ('requested', 'processing', 'ready'))`,
+      released: sql<number>`COUNT(*) FILTER (WHERE ${documentRequests.status} = 'released')`,
+    })
+    .from(documentRequests)
+    .where(
+      and(
+        eq(documentRequests.studentId, studentId),
+        isNull(documentRequests.deletedAt)
+      )
+    );
+
+  const totalRequests = Number(counts?.total ?? 0);
+
+  // Fetch the full request list (no artificial page cap) using the same row
+  // shape as the paginated list. pageSize must be positive, so floor at 1.
   const result = await fetchDocumentRequestsPage({
     page: 1,
-    pageSize: 100,
+    pageSize: Math.max(totalRequests, 1),
     studentId,
   });
 
-  const pendingRequests = result.rows.filter(
-    (r) => r.status === "requested" || r.status === "processing" || r.status === "ready"
-  ).length;
-
-  const releasedRequests = result.rows.filter((r) => r.status === "released").length;
-
   return {
     totalRequests: result.totalCount,
-    pendingRequests,
-    releasedRequests,
+    pendingRequests: Number(counts?.pending ?? 0),
+    releasedRequests: Number(counts?.released ?? 0),
     requests: result.rows,
   };
 }
@@ -668,7 +683,10 @@ async function fetchStudentGradesForReportCard(
     .where(
       and(
         eq(gradeRecords.studentId, studentId),
-        eq(gradeRecords.schoolYearId, schoolYearId)
+        eq(gradeRecords.schoolYearId, schoolYearId),
+        // Only locked (final) grades may appear on Form 138 — exclude editable
+        // draft/submitted records per the draft → submitted → locked lifecycle.
+        eq(gradeRecords.status, "locked")
       )
     )
     .orderBy(subjects.name, gradeRecords.gradingPeriod);

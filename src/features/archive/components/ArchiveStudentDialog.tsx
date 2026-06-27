@@ -45,28 +45,15 @@ export function ArchiveStudentDialog({
   onSuccess,
 }: ArchiveStudentDialogProps) {
   const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<string>("");
-  const [schoolYearId, setSchoolYearId] = useState<string>("");
+  // Incremented on each open so the keyed form below remounts, giving every
+  // dialog session a fresh useActionState (no leftover errors/message).
+  const [formKey, setFormKey] = useState(0);
 
-  const [state, action, isPending] = useActionState<
-    ArchiveStudentFormState,
-    FormData
-  >(archiveStudentAction, {});
-
-  useFormToast(state, {
-    successMessage: `${studentName} has been archived.`,
-    onSuccess: () => {
-      setOpen(false);
-      onSuccess?.();
-    },
-  });
-
-  // Handle dialog open/close - reset form when opening
+  // Handle dialog open/close - remount the form when opening
   function handleOpenChange(isOpen: boolean) {
     setOpen(isOpen);
     if (isOpen) {
-      setStatus("");
-      setSchoolYearId("");
+      setFormKey((k) => k + 1);
     }
   }
 
@@ -85,7 +72,52 @@ export function ArchiveStudentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={action} className="space-y-4">
+        <ArchiveStudentForm
+          key={formKey}
+          studentId={studentId}
+          studentName={studentName}
+          schoolYearOptions={schoolYearOptions}
+          onArchived={() => {
+            setOpen(false);
+            onSuccess?.();
+          }}
+          onCancel={() => setOpen(false)}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface ArchiveStudentFormProps {
+  studentId: string;
+  studentName: string;
+  schoolYearOptions: Array<{ id: string; label: string }>;
+  onArchived: () => void;
+  onCancel: () => void;
+}
+
+function ArchiveStudentForm({
+  studentId,
+  studentName,
+  schoolYearOptions,
+  onArchived,
+  onCancel,
+}: ArchiveStudentFormProps) {
+  const [status, setStatus] = useState<string>("");
+  const [schoolYearId, setSchoolYearId] = useState<string>("");
+
+  const [state, action, isPending] = useActionState<
+    ArchiveStudentFormState,
+    FormData
+  >(archiveStudentAction, {});
+
+  useFormToast(state, {
+    successMessage: `${studentName} has been archived.`,
+    onSuccess: onArchived,
+  });
+
+  return (
+    <form action={action} className="space-y-4">
           <input type="hidden" name="studentId" value={studentId} />
           <input type="hidden" name="schoolYearId" value={schoolYearId} />
 
@@ -169,7 +201,7 @@ export function ArchiveStudentDialog({
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setOpen(false)}
+              onClick={onCancel}
               disabled={isPending}
             >
               Cancel
@@ -179,7 +211,5 @@ export function ArchiveStudentDialog({
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
   );
 }

@@ -16,6 +16,7 @@ import {
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { logPermissionDenied } from "@/lib/errors/audit-failures";
 import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import type { StudentStatus } from "@/lib/constants/student-status";
@@ -47,6 +48,12 @@ export async function archiveStudentAction(
 
   // Permission check
   if (!hasPermission(session.role, "archive:manage")) {
+    await logPermissionDenied(
+      session,
+      "archive:manage",
+      "students",
+      String(formData.get("studentId") ?? "")
+    );
     return { message: "You do not have permission to archive students." };
   }
 
@@ -133,6 +140,12 @@ export async function unarchiveStudentAction(
 
   // Permission check
   if (!hasPermission(session.role, "archive:manage")) {
+    await logPermissionDenied(
+      session,
+      "archive:manage",
+      "students",
+      String(formData.get("studentId") ?? "")
+    );
     return { message: "You do not have permission to unarchive students." };
   }
 
@@ -170,86 +183,118 @@ export async function unarchiveStudentAction(
 
   const now = new Date();
   const isNoShowStudent = existingStudent.archiveReason?.toLowerCase().includes("no show");
+  const { inArray } = await import("drizzle-orm");
 
-  // If this was a no-show student, restore their enrollment and assessment
-  if (isNoShowStudent && existingStudent.archivedSchoolYearId) {
-    const { inArray } = await import("drizzle-orm");
-
-    // Find cancelled enrollments for this student in the archived school year
-    const cancelledEnrollments = await db
-      .select({
-        id: enrollments.id,
-      })
-      .from(enrollments)
-      .where(
-        and(
-          eq(enrollments.studentId, studentId),
-          eq(enrollments.schoolYearId, existingStudent.archivedSchoolYearId),
-          eq(enrollments.status, "cancelled")
-        )
-      );
-
-    if (cancelledEnrollments.length > 0) {
-      const enrollmentIds = cancelledEnrollments.map((e) => e.id);
-
-      // Restore enrollments to "assessed" status
-      await db
-        .update(enrollments)
-        .set({
-          status: "assessed",
-          cancelledAt: null,
-          cancelledBy: null,
-          cancelRemarks: null,
-          updatedAt: now,
-          updatedBy: session.userId,
-        })
-        .where(inArray(enrollments.id, enrollmentIds));
-
-      // Find and restore cancelled assessments for these enrollments
-      const cancelledAssessments = await db
+  // Wrap all related writes in a single transaction so a failure mid-way (e.g.
+  // enrollments restored but student not, or vice versa) rolls back entirely.
+  await db.transaction(async (tx) => {
+    // If this was a no-show student, restore their enrollment and assessment
+    if (isNoShowStudent && existingStudent.archivedSchoolYearId) {
+      // Find cancelled enrollments for this student in the archived school year
+      const cancelledEnrollments = await tx
         .select({
-          id: assessments.id,
+          id: enrollments.id,
         })
-        .from(assessments)
+        .from(enrollments)
         .where(
           and(
-            eq(assessments.studentId, studentId),
-            inArray(assessments.enrollmentId, enrollmentIds),
-            eq(assessments.billingStatus, "cancelled")
+            eq(enrollments.studentId, studentId),
+            eq(enrollments.schoolYearId, existingStudent.archivedSchoolYearId),
+            eq(enrollments.status, "cancelled")
           )
         );
 
-      if (cancelledAssessments.length > 0) {
-        const assessmentIds = cancelledAssessments.map((a) => a.id);
+      if (cancelledEnrollments.length > 0) {
+        const enrollmentIds = cancelledEnrollments.map((e) => e.id);
 
-        // Restore assessments to "outstanding" status
-        await db
-          .update(assessments)
-          .set({
-            billingStatus: "outstanding",
-            cancelledAt: null,
-            cancelledBy: null,
-            updatedAt: now,
-            updatedBy: session.userId,
+        // Find the cancelled assessments for these enrollments first. The no-show
+        // batch cancels both "pending" (no assessment) and "assessed" enrollments,
+        // so an enrollment's original lifecycle state is derived from whether it
+        // has an assessment — restore "assessed" only for those that do, and
+        // "pending" for the rest (avoid promoting pending enrollments).
+        const cancelledAssessments = await tx
+          .select({
+            id: assessments.id,
+            enrollmentId: assessments.enrollmentId,
           })
-          .where(inArray(assessments.id, assessmentIds));
+          .from(assessments)
+          .where(
+            and(
+              eq(assessments.studentId, studentId),
+              inArray(assessments.enrollmentId, enrollmentIds),
+              eq(assessments.billingStatus, "cancelled")
+            )
+          );
+
+        const assessedEnrollmentIds = [
+          ...new Set(cancelledAssessments.map((a) => a.enrollmentId)),
+        ];
+        const pendingEnrollmentIds = enrollmentIds.filter(
+          (id) => !assessedEnrollmentIds.includes(id)
+        );
+
+        // Restore enrollments that had an assessment to "assessed"
+        if (assessedEnrollmentIds.length > 0) {
+          await tx
+            .update(enrollments)
+            .set({
+              status: "assessed",
+              cancelledAt: null,
+              cancelledBy: null,
+              cancelRemarks: null,
+              updatedAt: now,
+              updatedBy: session.userId,
+            })
+            .where(inArray(enrollments.id, assessedEnrollmentIds));
+        }
+
+        // Restore enrollments that never had an assessment to "pending"
+        if (pendingEnrollmentIds.length > 0) {
+          await tx
+            .update(enrollments)
+            .set({
+              status: "pending",
+              cancelledAt: null,
+              cancelledBy: null,
+              cancelRemarks: null,
+              updatedAt: now,
+              updatedBy: session.userId,
+            })
+            .where(inArray(enrollments.id, pendingEnrollmentIds));
+        }
+
+        if (cancelledAssessments.length > 0) {
+          const assessmentIds = cancelledAssessments.map((a) => a.id);
+
+          // Restore assessments to "outstanding" status
+          await tx
+            .update(assessments)
+            .set({
+              billingStatus: "outstanding",
+              cancelledAt: null,
+              cancelledBy: null,
+              updatedAt: now,
+              updatedBy: session.userId,
+            })
+            .where(inArray(assessments.id, assessmentIds));
+        }
       }
     }
-  }
 
-  // Unarchive the student
-  await db
-    .update(students)
-    .set({
-      status: "active",
-      archivedAt: null,
-      archivedBy: null,
-      archiveReason: null,
-      archivedSchoolYearId: null,
-      updatedAt: now,
-      updatedBy: session.userId,
-    })
-    .where(eq(students.id, studentId));
+    // Unarchive the student
+    await tx
+      .update(students)
+      .set({
+        status: "active",
+        archivedAt: null,
+        archivedBy: null,
+        archiveReason: null,
+        archivedSchoolYearId: null,
+        updatedAt: now,
+        updatedBy: session.userId,
+      })
+      .where(eq(students.id, studentId));
+  });
 
   // Audit log
   await logAudit({
@@ -286,6 +331,12 @@ export async function batchArchiveGraduatesAction(
 
   // Permission check
   if (!hasPermission(session.role, "archive:manage")) {
+    await logPermissionDenied(
+      session,
+      "archive:manage",
+      "students",
+      `school_year:${String(formData.get("schoolYearId") ?? "")}`
+    );
     return { message: "You do not have permission to batch archive students." };
   }
 
@@ -340,6 +391,15 @@ export async function batchArchiveGraduatesAction(
   );
 
   let clearancesGenerated = 0;
+  let clearanceValues: Array<{
+    studentId: string;
+    enrollmentId: string;
+    schoolYearId: string;
+    clearanceType: "graduation";
+    outstandingAmount: string;
+    status: "cleared" | "pending";
+    createdBy: string;
+  }> = [];
 
   // Get enrollment IDs and balances for students needing clearance
   if (studentsNeedingClearance.length > 0) {
@@ -364,7 +424,7 @@ export async function batchArchiveGraduatesAction(
       );
 
     // Generate clearance for each student
-    const clearanceValues = enrollmentData.map((enrollment) => {
+    clearanceValues = enrollmentData.map((enrollment) => {
       const balance = Number(enrollment.balance);
       const clearanceStatus = balance <= 0 ? "cleared" : "pending";
 
@@ -378,29 +438,34 @@ export async function batchArchiveGraduatesAction(
         createdBy: session.userId,
       };
     });
-
-    if (clearanceValues.length > 0) {
-      await db.insert(studentClearances).values(clearanceValues);
-      clearancesGenerated = clearanceValues.length;
-    }
   }
   // ─── END: Clearance generation ───────────────────────────────────────────
 
-  // Archive all candidates
-  await db
-    .update(students)
-    .set({
-      status: "graduated" as StudentStatus,
-      archivedAt: now,
-      archivedBy: session.userId,
-      archiveReason,
-      archivedSchoolYearId: schoolYearId,
-      updatedAt: now,
-      updatedBy: session.userId,
-    })
-    .where(
-      and(eq(students.status, "active"), inArray(students.id, studentIds))
-    );
+  // Wrap clearance creation + student archive in a single transaction so a
+  // failure cannot leave clearances inserted without the students archived
+  // (or vice versa).
+  await db.transaction(async (tx) => {
+    if (clearanceValues.length > 0) {
+      await tx.insert(studentClearances).values(clearanceValues);
+      clearancesGenerated = clearanceValues.length;
+    }
+
+    // Archive all candidates
+    await tx
+      .update(students)
+      .set({
+        status: "graduated" as StudentStatus,
+        archivedAt: now,
+        archivedBy: session.userId,
+        archiveReason,
+        archivedSchoolYearId: schoolYearId,
+        updatedAt: now,
+        updatedBy: session.userId,
+      })
+      .where(
+        and(eq(students.status, "active"), inArray(students.id, studentIds))
+      );
+  });
 
   // Audit log (batch operation)
   await logAudit({
@@ -437,8 +502,19 @@ export async function batchCancelNoShowAction(
 ): Promise<BatchCancelNoShowFormState> {
   const session = await requireSession();
 
-  // Permission check - requires admin level
-  if (!hasPermission(session.role, "enrollments:cancel")) {
+  // Permission check - this flow both cancels enrollments AND archives the
+  // students, so it requires both privileges (archive:manage gates the archive
+  // state change, consistent with the other archive actions in this file).
+  if (
+    !hasPermission(session.role, "enrollments:cancel") ||
+    !hasPermission(session.role, "archive:manage")
+  ) {
+    await logPermissionDenied(
+      session,
+      "enrollments:cancel+archive:manage",
+      "enrollments",
+      `school_year:${String(formData.get("schoolYearId") ?? "")}`
+    );
     return {
       message: "You do not have permission to batch cancel enrollments.",
     };
@@ -478,50 +554,55 @@ export async function batchCancelNoShowAction(
 
   // Use inArray for proper batch update
   const { inArray } = await import("drizzle-orm");
+  const studentIds = [...new Set(candidates.map((c) => c.studentId))];
 
-  // Cancel enrollments
-  await db
-    .update(enrollments)
-    .set({
-      status: "cancelled",
-      cancelledAt: now,
-      cancelledBy: session.userId,
-      cancelRemarks,
-      updatedAt: now,
-      updatedBy: session.userId,
-    })
-    .where(inArray(enrollments.id, enrollmentIds));
-
-  // Cancel assessments (only if there are any)
-  if (assessmentIds.length > 0) {
-    await db
-      .update(assessments)
+  // Wrap enrollment cancel + assessment cancel + student archive in a single
+  // transaction so a partial failure cannot leave enrollments cancelled while
+  // the students remain active (or any other inconsistent combination).
+  await db.transaction(async (tx) => {
+    // Cancel enrollments
+    await tx
+      .update(enrollments)
       .set({
-        billingStatus: "cancelled",
+        status: "cancelled",
         cancelledAt: now,
         cancelledBy: session.userId,
+        cancelRemarks,
         updatedAt: now,
         updatedBy: session.userId,
       })
-      .where(inArray(assessments.id, assessmentIds));
-  }
+      .where(inArray(enrollments.id, enrollmentIds));
 
-  // Archive the students as "cancelled"
-  const studentIds = [...new Set(candidates.map((c) => c.studentId))];
-  await db
-    .update(students)
-    .set({
-      status: "cancelled" as StudentStatus,
-      archivedAt: now,
-      archivedBy: session.userId,
-      archiveReason: "No show - pending or assessed but never paid",
-      archivedSchoolYearId: schoolYearId,
-      updatedAt: now,
-      updatedBy: session.userId,
-    })
-    .where(
-      and(eq(students.status, "active"), inArray(students.id, studentIds))
-    );
+    // Cancel assessments (only if there are any)
+    if (assessmentIds.length > 0) {
+      await tx
+        .update(assessments)
+        .set({
+          billingStatus: "cancelled",
+          cancelledAt: now,
+          cancelledBy: session.userId,
+          updatedAt: now,
+          updatedBy: session.userId,
+        })
+        .where(inArray(assessments.id, assessmentIds));
+    }
+
+    // Archive the students as "cancelled"
+    await tx
+      .update(students)
+      .set({
+        status: "cancelled" as StudentStatus,
+        archivedAt: now,
+        archivedBy: session.userId,
+        archiveReason: "No show - pending or assessed but never paid",
+        archivedSchoolYearId: schoolYearId,
+        updatedAt: now,
+        updatedBy: session.userId,
+      })
+      .where(
+        and(eq(students.status, "active"), inArray(students.id, studentIds))
+      );
+  });
 
   // Count pending vs assessed for audit
   const pendingCount = candidates.filter((c) => c.enrollmentStatus === "pending").length;
@@ -565,6 +646,12 @@ export async function batchArchiveNonReturningAction(
 
   // Permission check
   if (!hasPermission(session.role, "archive:manage")) {
+    await logPermissionDenied(
+      session,
+      "archive:manage",
+      "students",
+      `school_year:${String(formData.get("previousSchoolYearId") ?? "")}`
+    );
     return {
       message: "You do not have permission to batch archive students.",
     };

@@ -83,6 +83,7 @@ export function canEnroll(status: StudentStatus): boolean {
  * (All statuses allow document requests)
  */
 export function canRequestDocuments(_status: StudentStatus): boolean {
+  void _status; // intentionally unused — all statuses allow document requests
   return true;
 }
 
@@ -91,5 +92,6 @@ export function canRequestDocuments(_status: StudentStatus): boolean {
  * (All statuses allow payments to settle balances)
  */
 export function canMakePayments(_status: StudentStatus): boolean {
+  void _status; // intentionally unused — all statuses allow payments to settle balances
   return true;
 }

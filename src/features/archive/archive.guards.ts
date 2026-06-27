@@ -10,7 +10,7 @@
 
 import { db } from "@/lib/db";
 import { students } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { isArchivedStatus, type StudentStatus } from "@/lib/constants/student-status";
 
 export type ArchiveBlockedAction =
@@ -55,15 +55,29 @@ export class StudentArchivedException extends Error {
 }
 
 /**
- * Get a student's current status
+ * Minimal executor type that works with both the module-level `db` and a
+ * transaction handle (`tx`), so the guard can run inside the caller's
+ * transaction/lock scope instead of escaping it on a separate connection.
+ */
+type GuardExecutor = Pick<typeof db, "select">;
+
+/**
+ * Get a student's current status.
+ *
+ * @param studentId - The student ID to check
+ * @param executor - Optional transaction handle; defaults to the module-level
+ *   `db`. Pass the caller's `tx` so the read participates in the same
+ *   transaction (and sees its row locks), preventing a race with a concurrent
+ *   archive.
  */
 export async function getStudentStatus(
-  studentId: string
+  studentId: string,
+  executor: GuardExecutor = db
 ): Promise<StudentStatus | null> {
-  const [student] = await db
+  const [student] = await executor
     .select({ status: students.status })
     .from(students)
-    .where(eq(students.id, studentId))
+    .where(and(eq(students.id, studentId), isNull(students.deletedAt)))
     .limit(1);
 
   return student?.status ?? null;
@@ -75,13 +89,16 @@ export async function getStudentStatus(
  *
  * @param studentId - The student ID to check
  * @param action - The action being attempted (for error messaging)
+ * @param executor - Optional transaction handle; pass the caller's `tx` so the
+ *   archive check runs inside the same transaction/lock scope as the mutation.
  * @throws StudentArchivedException if student is archived
  */
 export async function assertStudentMutable(
   studentId: string,
-  action: ArchiveBlockedAction
+  action: ArchiveBlockedAction,
+  executor: GuardExecutor = db
 ): Promise<void> {
-  const status = await getStudentStatus(studentId);
+  const status = await getStudentStatus(studentId, executor);
 
   if (status === null) {
     // Student not found - let the calling action handle this

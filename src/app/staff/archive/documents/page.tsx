@@ -182,6 +182,7 @@ function PaginationLink({
   if (params.type) searchParams.set("type", params.type);
   if (params.sy) searchParams.set("sy", params.sy);
   if (params.q) searchParams.set("q", params.q);
+  if (params.studentId) searchParams.set("studentId", params.studentId);
 
   return (
     <Link

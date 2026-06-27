@@ -93,6 +93,9 @@ export function BatchArchiveDialog({
     if (remarks) {
       formData.set("remarks", remarks);
     }
+    // Close the confirmation modal before dispatching so a failure state
+    // (inline errors / message in the main dialog) isn't hidden behind it.
+    setConfirmOpen(false);
     startTransition(() => {
       action(formData);
     });

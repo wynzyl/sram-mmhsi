@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDateTime } from "@/lib/utils/date";
+import { formatCurrency } from "@/lib/utils/currency";
 import {
   getDocumentRequestById,
   checkDocumentReleaseEligibility,
@@ -72,7 +73,7 @@ export default async function DocumentRequestDetailPage({ params }: PageProps) {
   const outstandingBalance = await getStudentOutstandingBalance(request.studentId);
   const hasOutstandingBalance = outstandingBalance > 0.01;
   const balanceBlockReason = hasOutstandingBalance
-    ? `Student has an outstanding balance of ₱${outstandingBalance.toLocaleString("en-PH", { minimumFractionDigits: 2 })}. Print/download is disabled until balance is settled.`
+    ? `Student has an outstanding balance of ${formatCurrency(outstandingBalance)}. Print/download is disabled until balance is settled.`
     : undefined;
 
   const canProcess = hasPermission(session.role, "documents:process");

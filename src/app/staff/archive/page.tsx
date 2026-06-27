@@ -7,6 +7,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import {
   fetchArchivedStudentsPage,
   getArchiveSummary,
+  getArchiveSchoolYearOptions,
+  getArchiveGradeLevelOptions,
 } from "@/features/archive/archive.queries";
 import {
   ArchiveDirectoryTable,
@@ -18,9 +20,6 @@ import {
   STUDENT_STATUS_LABELS,
   type StudentStatus,
 } from "@/lib/constants/student-status";
-import { db } from "@/lib/db";
-import { gradeLevels, schoolYears } from "@/lib/db/schema";
-import { isNull, desc, asc } from "drizzle-orm";
 
 export const metadata: Metadata = {
   title: "Archive Directory",
@@ -51,22 +50,19 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
   const [archiveData, summary, allSchoolYears, allGradeLevels] =
     await Promise.all([
       fetchArchivedStudentsPage({
-        status: params.status as StudentStatus | undefined,
+        // Archive directory is archived-only; ignore a stray ?status=active.
+        status:
+          params.status && params.status !== "active"
+            ? (params.status as Exclude<StudentStatus, "active">)
+            : undefined,
         schoolYearId: params.schoolYearId,
         search: params.search,
         page,
         pageSize: 20,
       }),
       getArchiveSummary(),
-      db
-        .select({ id: schoolYears.id, label: schoolYears.label })
-        .from(schoolYears)
-        .where(isNull(schoolYears.deletedAt))
-        .orderBy(desc(schoolYears.startDate)),
-      db
-        .select({ id: gradeLevels.id, name: gradeLevels.name })
-        .from(gradeLevels)
-        .orderBy(asc(gradeLevels.order)),
+      getArchiveSchoolYearOptions(),
+      getArchiveGradeLevelOptions(),
     ]);
 
   const canManage = hasPermission(session.role, "archive:manage");

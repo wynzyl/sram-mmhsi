@@ -35,6 +35,7 @@ async function checkStudent() {
       LEFT JOIN school_years sy ON sy.id = e.school_year_id
       LEFT JOIN assessments a ON a.enrollment_id = e.id AND a.cancelled_at IS NULL
       WHERE s.reference_number = '0000001'
+        AND s.deleted_at IS NULL
       ORDER BY sy.start_date DESC
     `;
     
@@ -56,6 +57,7 @@ async function checkStudent() {
       JOIN enrollments e ON e.id = a.enrollment_id
       JOIN students s ON s.id = e.student_id
       WHERE s.reference_number = '0000001'
+        AND s.deleted_at IS NULL
       ORDER BY p.payment_date DESC
     `;
     

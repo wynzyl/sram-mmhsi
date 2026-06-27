@@ -1,6 +1,15 @@
 import postgres from 'postgres';
+import { config } from 'dotenv';
+import { expand } from 'dotenv-expand';
 
-const sql = postgres('postgresql://postgres:722811@localhost:5432/SRAMS_DB', { max: 1 });
+expand(config({ path: '.env.local' }));
+
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  throw new Error('DATABASE_URL is not set. Define it in .env.local or the runtime environment.');
+}
+
+const sql = postgres(DATABASE_URL, { max: 1 });
 
 // Check a student with balance forward - Elena Mendoza (SRAMS-2026-00005)
 async function check() {

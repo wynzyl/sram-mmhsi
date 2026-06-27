@@ -81,11 +81,6 @@ export function UnarchiveStudentDialog({
             )}
           </div>
 
-          {/* Error message */}
-          {state.message && (
-            <p className="text-sm text-destructive">{state.message}</p>
-          )}
-
           <DialogFooter>
             <Button
               type="button"

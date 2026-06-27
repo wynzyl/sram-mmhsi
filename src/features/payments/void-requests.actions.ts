@@ -84,8 +84,9 @@ export async function requestVoidAction(
         throw new Error("Payment not found.");
       }
 
-      // 2. Check if student is archived (blocked action)
-      await assertStudentMutable(payment.studentId, "void_or");
+      // 2. Check if student is archived (blocked action) — run inside the tx
+      //    so the check shares the payment row lock and cannot race a concurrent archive.
+      await assertStudentMutable(payment.studentId, "void_or", tx);
 
       // 3. Validate payment state
       if (payment.kind !== "payment") {
@@ -155,7 +156,7 @@ export async function requestVoidAction(
     return { success: true, message: "Void request submitted. An administrator will review your request." };
   } catch (error: unknown) {
     if (error instanceof StudentArchivedException) {
-      return formatArchiveError(error) as RequestVoidFormState;
+      return { message: formatArchiveError(error).error.message };
     }
     logger.error("[void-request] Failed to create void request", { error: String(error) });
     const msg = error instanceof Error ? error.message : String(error);

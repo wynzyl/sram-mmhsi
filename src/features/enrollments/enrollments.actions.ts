@@ -98,7 +98,7 @@ export async function createEnrollmentAction(
     await assertStudentMutable(studentId, "create_enrollment");
   } catch (error) {
     if (error instanceof StudentArchivedException) {
-      return formatArchiveError(error) as EnrollmentFormState;
+      return { message: formatArchiveError(error).error.message };
     }
     throw error;
   }

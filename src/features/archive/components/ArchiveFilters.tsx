@@ -36,6 +36,16 @@ export function ArchiveFilters({
 
   const [search, setSearch] = useState(currentSearch ?? "");
 
+  // Keep the input in sync with the URL-derived value so it doesn't drift from
+  // the active filter when currentSearch changes (e.g. back/forward navigation
+  // or external query updates) while this component stays mounted. Adjusting
+  // state during render (rather than in an effect) avoids a cascading re-render.
+  const [prevSearch, setPrevSearch] = useState(currentSearch ?? "");
+  if ((currentSearch ?? "") !== prevSearch) {
+    setPrevSearch(currentSearch ?? "");
+    setSearch(currentSearch ?? "");
+  }
+
   const updateFilters = useCallback(
     (updates: Record<string, string | undefined>) => {
       const params = new URLSearchParams(searchParams.toString());

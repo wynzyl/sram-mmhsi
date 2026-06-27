@@ -31,6 +31,7 @@ async function check() {
       JOIN enrollments e ON e.id = a.enrollment_id
       JOIN students s ON s.id = e.student_id
       WHERE p.kind = 'balance_forward'
+        AND s.deleted_at IS NULL
       ORDER BY p.created_at DESC
       LIMIT 10
     `;
@@ -52,6 +53,7 @@ async function check() {
       JOIN students s ON s.id = e.student_id
       JOIN school_years sy ON sy.id = e.school_year_id
       WHERE a.billing_status = 'balance_forwarded'
+        AND s.deleted_at IS NULL
       ORDER BY a.transferred_at DESC
       LIMIT 10
     `;

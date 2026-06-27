@@ -57,7 +57,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Archive",
       items: [
-        { href: "/staff/archive", label: "Archived Students", icon: "archive" },
+        { href: "/staff/archive", label: "Archived Students", icon: "archive", pathMatch: "exact" },
         { href: "/staff/archive/documents", label: "Document Requests", icon: "documents" },
       ],
     },
@@ -110,7 +110,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Archive",
       items: [
-        { href: "/staff/archive", label: "Archived Students", icon: "archive" },
+        { href: "/staff/archive", label: "Archived Students", icon: "archive", pathMatch: "exact" },
         { href: "/staff/archive/documents", label: "Document Requests", icon: "documents" },
       ],
     },
@@ -160,7 +160,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Archive",
       items: [
-        { href: "/staff/archive", label: "Archived Students", icon: "archive" },
+        { href: "/staff/archive", label: "Archived Students", icon: "archive", pathMatch: "exact" },
         { href: "/staff/archive/documents", label: "Document Requests", icon: "documents" },
       ],
     },
