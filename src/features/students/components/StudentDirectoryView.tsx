@@ -33,7 +33,6 @@ export function StudentDirectoryView({
 
   // ─── Filters from URL (URL is the source of truth) ──────────────────
   const q = searchParams.get("q") ?? "";
-  const rawYear = searchParams.get("schoolYearId") || undefined;
   const gradeLevelId = searchParams.get("gradeLevelId") || undefined;
   const currentPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
 
@@ -47,14 +46,8 @@ export function StudentDirectoryView({
     : "asc";
   const activeSort: StudentDirectoryActiveSort = sortBy ? { by: sortBy, dir: sortDir } : null;
 
-  // Three cases for the year filter:
-  // - "all"     → explicit "All school years": no year filter.
-  // - <uuid>    → that specific year.
-  // - absent    → initial load defaults to the active year (keeps freshness "current").
-  const isAllYears = rawYear === "all";
-  const effectiveSchoolYearId = isAllYears
-    ? undefined
-    : rawYear ?? activeSchoolYearId ?? undefined;
+  // Always filter by active school year (no "all years" option)
+  const effectiveSchoolYearId = activeSchoolYearId ?? undefined;
 
   const query = useStudents({
     q,
@@ -69,14 +62,13 @@ export function StudentDirectoryView({
   const rows = data?.rows ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = data?.totalPages ?? 0;
-  const schoolYearOptions = data?.schoolYearOptions ?? [];
   const gradeLevelOptions = data?.gradeLevelOptions ?? [];
   const canCreate = data?.canCreate ?? false;
 
   // ─── Derived display values ─────────────────────────────────────────
   const qTrim = q.trim();
   const qParam = qTrim || undefined;
-  const hasFilters = qTrim !== "" || rawYear != null || gradeLevelId != null;
+  const hasFilters = qTrim !== "" || gradeLevelId != null;
 
   // If the requested page is out of range, snap back to the last page.
   useEffect(() => {
@@ -84,7 +76,6 @@ export function StudentDirectoryView({
       router.replace(
         studentDirectoryListHref(basePath, {
           q: qParam,
-          schoolYearId: rawYear,
           gradeLevelId,
           sortBy,
           sortDir: sortBy ? sortDir : undefined,
@@ -92,25 +83,15 @@ export function StudentDirectoryView({
         })
       );
     }
-  }, [totalCount, totalPages, currentPage, basePath, qParam, rawYear, gradeLevelId, sortBy, sortDir, router]);
+  }, [totalCount, totalPages, currentPage, basePath, qParam, gradeLevelId, sortBy, sortDir, router]);
 
-  const selectedYearLabel =
-    !isAllYears && effectiveSchoolYearId != null
-      ? schoolYearOptions.find((y) => y.id === effectiveSchoolYearId)?.label
-      : null;
   const selectedGradeLabel =
     gradeLevelId != null ? gradeLevelOptions.find((g) => g.id === gradeLevelId)?.name : null;
 
-  let subtitleFilter = "";
-  if (selectedYearLabel && selectedGradeLabel) {
-    subtitleFilter = `${selectedYearLabel} · ${selectedGradeLabel}`;
-  } else if (selectedYearLabel) {
-    subtitleFilter = selectedYearLabel;
-  } else if (selectedGradeLabel) {
-    subtitleFilter = selectedGradeLabel;
-  } else {
-    subtitleFilter = "All enrolled school years";
-  }
+  // Display active school year in subtitle
+  const subtitleFilter = selectedGradeLabel
+    ? `Current School Year · ${selectedGradeLabel}`
+    : "Current School Year";
 
   // ─── Sort header link builder (toggles direction, resets to page 1) ──
   function sortHref(by: StudentSortBy): string {
@@ -118,7 +99,6 @@ export function StudentDirectoryView({
       activeSort?.by === by && activeSort.dir === "asc" ? "desc" : "asc";
     return studentDirectoryListHref(basePath, {
       q: qParam,
-      schoolYearId: rawYear,
       gradeLevelId,
       sortBy: by,
       sortDir: nextDir,
@@ -130,12 +110,10 @@ export function StudentDirectoryView({
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const nextQ = (form.get("q") as string | null)?.trim() || undefined;
-    const nextYear = (form.get("schoolYearId") as string | null) || undefined;
     const nextGrade = (form.get("gradeLevelId") as string | null) || undefined;
     router.push(
       studentDirectoryListHref(basePath, {
         q: nextQ,
-        schoolYearId: nextYear,
         gradeLevelId: nextGrade,
         sortBy,
         sortDir: sortBy ? sortDir : undefined,
@@ -186,23 +164,6 @@ export function StudentDirectoryView({
                 defaultValue={q}
                 autoComplete="off"
               />
-            </div>
-
-            <div className="w-full sm:w-44 sm:flex-none">
-              <select
-                name="schoolYearId"
-                defaultValue={isAllYears ? "all" : (rawYear ?? activeSchoolYearId ?? "")}
-                aria-label="Filter by school year"
-                onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                className="form-control min-h-10 w-full bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
-              >
-                <option value="all">All school years</option>
-                {schoolYearOptions.map((y) => (
-                  <option key={y.id} value={y.id}>
-                    {y.label}
-                  </option>
-                ))}
-              </select>
             </div>
 
             <div className="w-full sm:w-40 sm:flex-none">
@@ -306,7 +267,6 @@ export function StudentDirectoryView({
               totalPages={totalPages}
               totalCount={totalCount}
               q={qParam}
-              schoolYearId={rawYear}
               gradeLevelId={gradeLevelId}
               sortBy={sortBy}
               sortDir={sortBy ? sortDir : undefined}
