@@ -20,7 +20,6 @@ export function StudentDirectoryPagination({
   totalPages,
   totalCount,
   q,
-  schoolYearId,
   gradeLevelId,
   sortBy,
   sortDir,
@@ -30,7 +29,6 @@ export function StudentDirectoryPagination({
   totalPages: number;
   totalCount: number;
   q?: string;
-  schoolYearId?: string;
   gradeLevelId?: string;
   sortBy?: StudentSortBy;
   sortDir?: StudentSortDir;
@@ -43,7 +41,6 @@ export function StudentDirectoryPagination({
   const hrefForPage = (page: number) =>
     studentDirectoryListHref(basePath, {
       q,
-      schoolYearId,
       gradeLevelId,
       sortBy,
       sortDir,

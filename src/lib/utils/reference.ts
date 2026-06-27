@@ -40,3 +40,15 @@ export async function generateNextBfxNumber(
   const nextSeq = Number(result[0]?.nextval ?? 1);
   return `BFX-${String(nextSeq).padStart(5, "0")}`;
 }
+
+/**
+ * Formats a document number from a year and sequence.
+ * Format: DOC-YYYY-NNNNN (e.g., DOC-2026-00001)
+ *
+ * Pure formatter only — sequence allocation lives in the document-request
+ * action/query layer so the number is assigned atomically inside the same
+ * transaction as the write.
+ */
+export function formatDocumentNumber(year: number, sequence: number): string {
+  return `DOC-${year}-${String(sequence).padStart(5, "0")}`;
+}

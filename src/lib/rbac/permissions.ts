@@ -70,6 +70,20 @@ export type Permission =
   | "clearances:read"
   | "clearances:create"
   | "clearances:resolve"
+  // Archive
+  /** View archived students and archive directory */
+  | "archive:read"
+  /** Archive/unarchive students, batch EOY operations */
+  | "archive:manage"
+  // Document Requests
+  /** View document requests */
+  | "documents:read"
+  /** Create new document requests */
+  | "documents:create"
+  /** Process document requests (move to processing status) */
+  | "documents:process"
+  /** Release documents (final step, requires clearance) */
+  | "documents:release"
   // Admin
   | "users:manage"
   | "school_years:manage"
@@ -98,6 +112,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "booklets:manage",
     "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
     "clearances:read", "clearances:create", "clearances:resolve",
+    "archive:read", "archive:manage",
+    "documents:read", "documents:create", "documents:process", "documents:release",
     "reports:view", "reports:finance", "reports:academic",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage", "system:manage",
@@ -120,6 +136,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "booklets:manage",
     "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
     "clearances:read", "clearances:create", "clearances:resolve",
+    "archive:read", "archive:manage",
+    "documents:read", "documents:create", "documents:process", "documents:release",
     "fee_schedules:manage",
     "school_years:manage",
     "reports:view", "reports:finance", "reports:academic",
@@ -133,6 +151,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "payments:read", "payments:post", "payments:void", "payments:void_request",
     "discounts:read", "discounts:request",
     "clearances:read",
+    "archive:read", "archive:manage",
+    "documents:read", "documents:create", "documents:process",
     "grades:read",
     "reports:view", "reports:academic",
     "sections:manage", "school_years:manage",
@@ -144,7 +164,9 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "invoices:read", "invoices:send",
     "booklets:manage", "fee_schedules:manage",
     "discounts:read", "discounts:review", "discounts:manage", "discounts:apply",
-    "clearances:read", "clearances:create",
+    "clearances:read", "clearances:create", "clearances:resolve",
+    "archive:read",
+    "documents:read", "documents:release",
     "reports:view", "reports:finance",
   ],
   cashier: [
@@ -152,6 +174,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "assessments:read",
     "payments:read", "payments:post", "payments:void", "payments:void_request",
     "invoices:read",
+    "archive:read",
+    "documents:read",
     "reports:view", "reports:finance",
   ],
   teacher: [

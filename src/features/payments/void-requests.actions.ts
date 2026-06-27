@@ -44,6 +44,11 @@ import {
   assertRequestIsPending,
   guardAgainstSelfAction,
 } from "@/lib/utils/request-guards";
+import {
+  assertStudentMutable,
+  StudentArchivedException,
+  formatArchiveError,
+} from "@/features/archive/archive.guards";
 
 // ─── Request Void Action ───────────────────────────────────────────────────────
 
@@ -79,7 +84,11 @@ export async function requestVoidAction(
         throw new Error("Payment not found.");
       }
 
-      // 2. Validate payment state
+      // 2. Check if student is archived (blocked action) — run inside the tx
+      //    so the check shares the payment row lock and cannot race a concurrent archive.
+      await assertStudentMutable(payment.studentId, "void_or", tx);
+
+      // 3. Validate payment state
       if (payment.kind !== "payment") {
         throw new Error("Cannot request void on a reversal entry. Only original payments can be voided.");
       }
@@ -146,6 +155,9 @@ export async function requestVoidAction(
     revalidatePath("/staff/assessments");
     return { success: true, message: "Void request submitted. An administrator will review your request." };
   } catch (error: unknown) {
+    if (error instanceof StudentArchivedException) {
+      return { message: formatArchiveError(error).error.message };
+    }
     logger.error("[void-request] Failed to create void request", { error: String(error) });
     const msg = error instanceof Error ? error.message : String(error);
     return { message: msg || "An unexpected error occurred. Please try again." };

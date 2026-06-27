@@ -21,7 +21,9 @@ export type NavIconName =
   | "reports"
   | "discounts"
   | "cancellation-requests"
-  | "clearances";
+  | "clearances"
+  | "archive"
+  | "documents";
 
 /** One level of nested links (e.g. Register Student). Deeper nesting is not rendered. */
 export type NavItem = {
@@ -50,6 +52,13 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Approvals",
       items: [
         { href: "/staff/approvals", label: "Approvals", icon: "void-requests" },
+      ],
+    },
+    {
+      label: "Archive",
+      items: [
+        { href: "/staff/archive", label: "Archived Students", icon: "archive", pathMatch: "exact" },
+        { href: "/staff/archive/documents", label: "Document Requests", icon: "documents" },
       ],
     },
     {
@@ -99,6 +108,13 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       ],
     },
     {
+      label: "Archive",
+      items: [
+        { href: "/staff/archive", label: "Archived Students", icon: "archive", pathMatch: "exact" },
+        { href: "/staff/archive/documents", label: "Document Requests", icon: "documents" },
+      ],
+    },
+    {
       label: "Reports",
       items: [
         { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
@@ -139,6 +155,13 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Approvals",
       items: [
         { href: "/staff/approvals", label: "Approvals", icon: "void-requests" },
+      ],
+    },
+    {
+      label: "Archive",
+      items: [
+        { href: "/staff/archive", label: "Archived Students", icon: "archive", pathMatch: "exact" },
+        { href: "/staff/archive/documents", label: "Document Requests", icon: "documents" },
       ],
     },
     {

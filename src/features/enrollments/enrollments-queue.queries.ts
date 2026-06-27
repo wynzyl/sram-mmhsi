@@ -483,6 +483,9 @@ function enrollmentTabConditions(
   const conditions = [
     eq(enrollments.schoolYearId, activeSchoolYearId),
     eq(enrollments.status, status),
+    // Filter out archived students (align with Student Directory)
+    eq(students.isActive, true),
+    eq(students.status, "active"),
   ];
   const search = studentSearchCondition(filters?.search);
   if (search) conditions.push(search);
