@@ -26,6 +26,12 @@ import {
   or,
   sql,
 } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+
+// Create aliases for the three user JOINs in fetchDocumentRequestsPage
+const requestedByUser = alias(users, "requestedByUser");
+const processedByUser = alias(users, "processedByUser");
+const releasedByUser = alias(users, "releasedByUser");
 import {
   DOCUMENT_REQUEST_STATUSES,
   DOCUMENT_REQUEST_TYPES,
@@ -221,36 +227,32 @@ export async function fetchDocumentRequestsPage(
         feeAmount: documentRequests.feeAmount,
         documentNumber: documentRequests.documentNumber,
         requestedAt: documentRequests.requestedAt,
-        requestedBy: documentRequests.requestedBy,
         processedAt: documentRequests.processedAt,
-        processedBy: documentRequests.processedBy,
         releasedAt: documentRequests.releasedAt,
-        releasedBy: documentRequests.releasedBy,
+        // Inline user names via LEFT JOINs (eliminates N+1 pattern)
+        requestedByUsername: requestedByUser.username,
+        processedByUsername: processedByUser.username,
+        releasedByUsername: releasedByUser.username,
       })
       .from(documentRequests)
       .innerJoin(students, eq(documentRequests.studentId, students.id))
+      .leftJoin(
+        requestedByUser,
+        eq(documentRequests.requestedBy, requestedByUser.id)
+      )
+      .leftJoin(
+        processedByUser,
+        eq(documentRequests.processedBy, processedByUser.id)
+      )
+      .leftJoin(
+        releasedByUser,
+        eq(documentRequests.releasedBy, releasedByUser.id)
+      )
       .where(whereClause)
       .orderBy(desc(documentRequests.requestedAt))
       .limit(pageSize)
       .offset(offset),
   ]);
-
-  // Get user names for requestedBy, processedBy, releasedBy
-  const userIds = [
-    ...rows.map((r) => r.requestedBy),
-    ...rows.filter((r) => r.processedBy).map((r) => r.processedBy!),
-    ...rows.filter((r) => r.releasedBy).map((r) => r.releasedBy!),
-  ].filter(Boolean);
-
-  const userNameMap = new Map<string, string>();
-  if (userIds.length > 0) {
-    const usersData = await db
-      .select({ id: users.id, username: users.username })
-      .from(users)
-      .where(inArray(users.id, userIds));
-
-    usersData.forEach((u) => userNameMap.set(u.id, u.username));
-  }
 
   const totalCount = countResult[0]?.count ?? 0;
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -268,15 +270,11 @@ export async function fetchDocumentRequestsPage(
       feeAmount: r.feeAmount,
       documentNumber: r.documentNumber,
       requestedAt: r.requestedAt,
-      requestedByName: userNameMap.get(r.requestedBy) ?? "Unknown",
+      requestedByName: r.requestedByUsername ?? "Unknown",
       processedAt: r.processedAt,
-      processedByName: r.processedBy
-        ? (userNameMap.get(r.processedBy) ?? "Unknown")
-        : null,
+      processedByName: r.processedByUsername ?? null,
       releasedAt: r.releasedAt,
-      releasedByName: r.releasedBy
-        ? (userNameMap.get(r.releasedBy) ?? "Unknown")
-        : null,
+      releasedByName: r.releasedByUsername ?? null,
     })),
     totalCount,
     totalPages,
@@ -498,13 +496,21 @@ export async function getPendingDocumentRequestsCount(): Promise<number> {
 }
 
 /**
- * Get document requests for a student
+ * Get document requests for a student (summary + recent requests)
+ *
+ * PERFORMANCE: Only fetches the most recent 5 requests for display.
+ * Counts are computed via SQL aggregations to cover ALL requests without
+ * loading full records. Use fetchDocumentRequestsPage() directly for
+ * paginated full history views.
  */
 export async function getStudentDocumentRequests(
   studentId: string
 ): Promise<StudentDocumentSummary> {
+  // Limit to match what the UI displays (avoids N+1 on large histories)
+  const DISPLAY_LIMIT = 5;
+
   // Compute counts in the database so they cover ALL of the student's requests,
-  // not just the first page of rows.
+  // not just the limited rows we fetch for display.
   const [counts] = await db
     .select({
       total: count(),
@@ -519,18 +525,15 @@ export async function getStudentDocumentRequests(
       )
     );
 
-  const totalRequests = Number(counts?.total ?? 0);
-
-  // Fetch the full request list (no artificial page cap) using the same row
-  // shape as the paginated list. pageSize must be positive, so floor at 1.
+  // Fetch only the most recent requests for display (not all records)
   const result = await fetchDocumentRequestsPage({
     page: 1,
-    pageSize: Math.max(totalRequests, 1),
+    pageSize: DISPLAY_LIMIT,
     studentId,
   });
 
   return {
-    totalRequests: result.totalCount,
+    totalRequests: Number(counts?.total ?? 0),
     pendingRequests: Number(counts?.pending ?? 0),
     releasedRequests: Number(counts?.released ?? 0),
     requests: result.rows,
