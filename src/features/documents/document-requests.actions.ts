@@ -12,8 +12,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { logPermissionDenied } from "@/lib/errors/audit-failures";
-import { revalidatePath } from "next/cache";
-import { CACHE_TAGS, forceUpdateTag } from "@/lib/cache/cache-tags";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { and, eq, like, sql } from "drizzle-orm";
 import { formatDocumentNumber } from "@/lib/utils/reference";
 import {
@@ -119,10 +118,11 @@ export async function createDocumentRequestAction(
     newState: { studentId, documentType, copies },
   });
 
-  // Force immediate cache invalidation for read-your-own-writes
-  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
-  revalidatePath("/staff/archive/documents");
-  revalidatePath(`/staff/archive/${studentId}`);
+  // Invalidate cache tag for document requests (non-blocking)
+  // Note: forceUpdateTag/revalidatePath removed as they block the response in production.
+  // The client calls router.refresh() after success which handles the page refresh.
+  // Use invalidateTag for stale-while-revalidate behavior (non-blocking).
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true, requestId: newRequest.id };
 }
@@ -246,9 +246,8 @@ export async function processDocumentRequestAction(
     newState: { status: "processing", feeAmount, documentNumber },
   });
 
-  // Force immediate cache invalidation for read-your-own-writes
-  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
-  revalidatePath("/staff/archive/documents");
+  // Non-blocking cache invalidation - client handles page refresh
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true };
 }
@@ -331,9 +330,8 @@ export async function readyDocumentRequestAction(
     newState: { status: "ready", documentNumber: request.documentNumber },
   });
 
-  // Force immediate cache invalidation for read-your-own-writes
-  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
-  revalidatePath("/staff/archive/documents");
+  // Non-blocking cache invalidation - client handles page refresh
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true };
 }
@@ -419,10 +417,8 @@ export async function releaseDocumentRequestAction(
     newState: { status: "released" },
   });
 
-  // Force immediate cache invalidation for read-your-own-writes
-  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
-  revalidatePath("/staff/archive/documents");
-  revalidatePath(`/staff/archive/documents/${requestId}`);
+  // Non-blocking cache invalidation - client handles page refresh
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true };
 }
@@ -502,9 +498,8 @@ export async function rejectDocumentRequestAction(
     newState: { status: "rejected", rejectedReason },
   });
 
-  // Force immediate cache invalidation for read-your-own-writes
-  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
-  revalidatePath("/staff/archive/documents");
+  // Non-blocking cache invalidation - client handles page refresh
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true };
 }
@@ -585,10 +580,8 @@ export async function cancelDocumentRequestAction(
     newState: { status: "cancelled" },
   });
 
-  // Force immediate cache invalidation for read-your-own-writes
-  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
-  revalidatePath("/staff/archive/documents");
-  revalidatePath(`/staff/archive/documents/${requestId}`);
+  // Non-blocking cache invalidation - client handles page refresh
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true };
 }

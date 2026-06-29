@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -33,6 +33,7 @@ export function CreateDocumentRequestDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const [state, action, isPending] = useActionState<
     CreateDocumentRequestFormState,
     FormData
@@ -43,8 +44,11 @@ export function CreateDocumentRequestDialog({
   useFormToast(state, {
     successMessage: "Document request created successfully",
     onSuccess: () => {
-      router.refresh();
+      // Close dialog first, then refresh in a transition to avoid blocking
       onClose();
+      startTransition(() => {
+        router.refresh();
+      });
     },
   });
 

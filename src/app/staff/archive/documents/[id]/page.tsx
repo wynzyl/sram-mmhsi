@@ -47,34 +47,32 @@ export default async function DocumentRequestDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  // Check release eligibility if the document is ready
-  let releaseEligibility: { canRelease: boolean; reason?: string } = {
-    canRelease: false,
-  };
-  if (request.status === "ready") {
-    const eligibilityResult = await checkDocumentReleaseEligibility(
-      request.studentId
-    );
-    releaseEligibility = eligibilityResult.canRelease
+  // Parallelize eligibility checks - all depend on studentId which we now have
+  const [releaseEligibilityResult, processingEligibilityResult, outstandingBalance] =
+    await Promise.all([
+      // Check release eligibility if the document is ready
+      request.status === "ready"
+        ? checkDocumentReleaseEligibility(request.studentId)
+        : Promise.resolve({ canRelease: false } as const),
+      // Check processing eligibility if the document is in requested status
+      request.status === "requested"
+        ? checkDocumentProcessingEligibility(request.studentId)
+        : Promise.resolve({ canProcess: true } as const),
+      // Always check student balance (for print/download restriction)
+      getStudentOutstandingBalance(request.studentId),
+    ]);
+
+  // Transform results
+  const releaseEligibility: { canRelease: boolean; reason?: string } =
+    releaseEligibilityResult.canRelease
       ? { canRelease: true }
-      : { canRelease: false, reason: eligibilityResult.reason };
-  }
+      : { canRelease: false, reason: "reason" in releaseEligibilityResult ? releaseEligibilityResult.reason : undefined };
 
-  // Check processing eligibility if the document is in requested status
-  let processingEligibility: { canProcess: boolean; reason?: string } = {
-    canProcess: true,
-  };
-  if (request.status === "requested") {
-    const eligibilityResult = await checkDocumentProcessingEligibility(
-      request.studentId
-    );
-    processingEligibility = eligibilityResult.canProcess
+  const processingEligibility: { canProcess: boolean; reason?: string } =
+    processingEligibilityResult.canProcess
       ? { canProcess: true }
-      : { canProcess: false, reason: eligibilityResult.reason };
-  }
+      : { canProcess: false, reason: "reason" in processingEligibilityResult ? processingEligibilityResult.reason : undefined };
 
-  // Always check student balance (for print/download restriction)
-  const outstandingBalance = await getStudentOutstandingBalance(request.studentId);
   const hasOutstandingBalance = outstandingBalance > 0.01;
   const balanceBlockReason = hasOutstandingBalance
     ? `Student has an outstanding balance of ${formatCurrency(outstandingBalance)}. Print/download is disabled until balance is settled.`

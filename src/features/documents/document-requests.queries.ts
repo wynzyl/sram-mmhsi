@@ -370,31 +370,32 @@ export async function getDocumentRequestById(
 
   if (!row) return null;
 
-  // Get school year label
-  let schoolYearLabel: string | null = null;
-  if (row.schoolYearId) {
-    const [sy] = await db
-      .select({ label: schoolYears.label })
-      .from(schoolYears)
-      .where(eq(schoolYears.id, row.schoolYearId))
-      .limit(1);
-    schoolYearLabel = sy?.label ?? null;
-  }
-
-  // Get user names
+  // Parallelize school year and user name lookups
   const userIds = [row.requestedBy, row.processedBy, row.releasedBy].filter(
     Boolean
   ) as string[];
+
+  const [schoolYearResult, usersData] = await Promise.all([
+    // Get school year label
+    row.schoolYearId
+      ? db
+          .select({ label: schoolYears.label })
+          .from(schoolYears)
+          .where(eq(schoolYears.id, row.schoolYearId))
+          .limit(1)
+      : Promise.resolve([]),
+    // Get user names
+    userIds.length > 0
+      ? db
+          .select({ id: users.id, username: users.username })
+          .from(users)
+          .where(inArray(users.id, userIds))
+      : Promise.resolve([]),
+  ]);
+
+  const schoolYearLabel = schoolYearResult[0]?.label ?? null;
   const userNameMap = new Map<string, string>();
-
-  if (userIds.length > 0) {
-    const usersData = await db
-      .select({ id: users.id, username: users.username })
-      .from(users)
-      .where(inArray(users.id, userIds));
-
-    usersData.forEach((u) => userNameMap.set(u.id, u.username));
-  }
+  usersData.forEach((u) => userNameMap.set(u.id, u.username));
 
   return {
     id: row.id,
