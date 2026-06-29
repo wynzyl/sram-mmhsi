@@ -34,6 +34,7 @@ import {
   getDocumentRequestForValidation,
   checkDocumentReleaseEligibility,
   checkDocumentProcessingEligibility,
+  checkDocumentRequestCreationEligibility,
 } from "./document-requests.queries";
 import { canProgressRequest, canCancelRequest, canReleaseDocument } from "@/lib/constants/document-requests";
 
@@ -67,6 +68,13 @@ export async function createDocumentRequestAction(
       String(formData.get("studentId") ?? "")
     );
     return { message: "You do not have permission to create document requests." };
+  }
+
+  // Check eligibility for document request creation (archived students without valid enrollment)
+  const studentIdParam = String(formData.get("studentId") ?? "");
+  const eligibility = await checkDocumentRequestCreationEligibility(studentIdParam);
+  if (!eligibility.canCreate) {
+    return { message: eligibility.reason };
   }
 
   // Parse and validate input

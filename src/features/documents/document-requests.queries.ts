@@ -44,6 +44,8 @@ import type {
 } from "./document-requests.schema";
 import { hasPendingClearances } from "@/features/clearances/clearances.queries";
 import { formatCurrency } from "@/lib/utils/currency";
+import { isArchivedStatus } from "@/lib/constants/student-status";
+import { hasValidEnrollmentHistory } from "@/features/archive/archive.queries";
 
 export const DOCUMENT_REQUEST_PAGE_SIZE = 20;
 
@@ -153,6 +155,46 @@ export async function checkDocumentProcessingEligibility(
   }
 
   return { canProcess: true };
+}
+
+/**
+ * Check if a document request can be created for a student.
+ *
+ * For archived students, document requests are only allowed if the student
+ * has a valid enrollment history (enrolled status or payment on record).
+ *
+ * Students without valid enrollment history cannot request documents:
+ * - No enrollments at all
+ * - Only pending enrollments
+ * - Assessed enrollments with zero payment
+ * - Only cancelled enrollments
+ */
+export async function checkDocumentRequestCreationEligibility(
+  studentId: string
+): Promise<{ canCreate: true } | { canCreate: false; reason: string }> {
+  // Get student status
+  const student = await db.query.students.findFirst({
+    where: and(eq(students.id, studentId), isNull(students.deletedAt)),
+    columns: { status: true },
+  });
+
+  if (!student) {
+    return { canCreate: false, reason: "Student not found." };
+  }
+
+  // For archived students, check valid enrollment history
+  if (isArchivedStatus(student.status)) {
+    const hasValid = await hasValidEnrollmentHistory(studentId);
+    if (!hasValid) {
+      return {
+        canCreate: false,
+        reason:
+          "Document requests are disabled for students without a valid enrollment history (no enrolled status or payment on record).",
+      };
+    }
+  }
+
+  return { canCreate: true };
 }
 
 // ─── Document Request Queries ────────────────────────────────────────────────

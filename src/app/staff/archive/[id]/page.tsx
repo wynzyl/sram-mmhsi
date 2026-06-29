@@ -22,6 +22,7 @@ import {
 import {
   getStudentDocumentRequests,
   getSchoolYearOptions,
+  checkDocumentRequestCreationEligibility,
 } from "@/features/documents/document-requests.queries";
 import { ArchivedStudentDocumentRequests } from "./ArchivedStudentDocumentRequests";
 
@@ -54,18 +55,30 @@ export default async function ArchivedStudentPage({ params }: PageProps) {
   }
 
   // Fetch related data
-  const [enrollmentHistory, outstandingBalance, recentPayments, documentRequestsData, schoolYearOptions] =
-    await Promise.all([
-      getStudentEnrollmentHistory(id),
-      getStudentOutstandingBalanceTotal(id),
-      getStudentRecentPayments(id),
-      getStudentDocumentRequests(id),
-      getSchoolYearOptions(),
-    ]);
+  const [
+    enrollmentHistory,
+    outstandingBalance,
+    recentPayments,
+    documentRequestsData,
+    schoolYearOptions,
+    docRequestEligibility,
+  ] = await Promise.all([
+    getStudentEnrollmentHistory(id),
+    getStudentOutstandingBalanceTotal(id),
+    getStudentRecentPayments(id),
+    getStudentDocumentRequests(id),
+    getSchoolYearOptions(),
+    // Only check eligibility if user has permission
+    hasPermission(session.role, "documents:create")
+      ? checkDocumentRequestCreationEligibility(id)
+      : Promise.resolve({ canCreate: false } as const),
+  ]);
 
   const balance = parseFloat(outstandingBalance);
   const canManage = hasPermission(session.role, "archive:manage");
-  const canCreateDocRequest = hasPermission(session.role, "documents:create");
+  // User needs both permission AND eligibility to create document requests
+  const canCreateDocRequest =
+    hasPermission(session.role, "documents:create") && docRequestEligibility.canCreate;
   const fullName = [student.firstName, student.middleName, student.lastName]
     .filter(Boolean)
     .join(" ");
