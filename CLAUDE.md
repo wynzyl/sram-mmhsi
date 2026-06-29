@@ -758,6 +758,33 @@ Seeds: students, enrollments, assessments (for testing).
    - **Volume permissions:** Docker named volumes are owned by root; `docker-entrypoint.sh` runs `chown -R nextjs:nextjs /app/public/uploads` at container start before dropping to nextjs user via `su-exec`
    - **Static file serving:** Next.js does NOT serve runtime-uploaded files from `public/` in production; nginx serves `/uploads/*` directly from the shared volume (`uploads_data:/app/public/uploads:ro` in docker-compose). If photos upload but don't display, check nginx has the volume mounted and the `/uploads/` location block exists.
    - **Next.js Image `unoptimized` prop:** Next.js Image Optimization (`/_next/image`) only works for images present at build time. Runtime-uploaded photos return 400 errors. **Always use `unoptimized` prop** on `<Image>` components displaying uploaded photos (see `StudentAvatar.tsx`, `StudentPhotoUpload.tsx`). (Fixed 2026-06-24.)
+10. **Parallel DB Queries in Server Components:** When a page needs multiple pieces of data, **always use `Promise.all`** to parallelize independent queries. Sequential `await` calls add latency (each round-trip is ~10-50ms). Pattern:
+    ```typescript
+    // ❌ BAD: Sequential queries (200ms+ total)
+    const request = await getRequest(id);
+    const eligibility = await checkEligibility(request.studentId);
+    const balance = await getBalance(request.studentId);
+
+    // ✅ GOOD: Parallel queries (50ms total)
+    const request = await getRequest(id);
+    const [eligibility, balance] = await Promise.all([
+      checkEligibility(request.studentId),
+      getBalance(request.studentId),
+    ]);
+    ```
+    This applies to page components, query functions with multiple sub-queries, and anywhere multiple independent DB calls occur. The document detail page (`/staff/archive/documents/[id]`) was fixed for this pattern (2026-06-29).
+11. **Blocking Cache Invalidation in Server Actions (Production Freeze):** Next.js 16's `updateTag()` (used by `forceUpdateTag` in `src/lib/cache/cache-tags.ts`) is a **BLOCKING operation** that can cause server actions to hang indefinitely in production Docker, leaving forms stuck on "Creating..." / "Marking Ready..." etc. The server action completes (DB writes succeed) but the response never reaches the client. **Use `invalidateTag()` (stale-while-revalidate, non-blocking) instead of `forceUpdateTag()` for server actions where the client handles page refresh via `router.refresh()`.** Similarly, avoid `revalidatePath()` in actions that need fast response times. Pattern:
+    ```typescript
+    // ❌ BAD: Blocks response (causes "Creating..." freeze)
+    forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
+    revalidatePath("/staff/archive/documents");
+    return { success: true };
+
+    // ✅ GOOD: Non-blocking (client calls router.refresh())
+    invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
+    return { success: true };
+    ```
+    All document request actions (`createDocumentRequestAction`, `processDocumentRequestAction`, `readyDocumentRequestAction`, `releaseDocumentRequestAction`, `rejectDocumentRequestAction`, `cancelDocumentRequestAction`) were fixed for this pattern (2026-06-29).
 
 ### Integration Points (Future)
 

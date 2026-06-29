@@ -93,7 +93,7 @@ ENTRYPOINT ["docker-entrypoint.sh"]
 # Healthcheck via /api/readiness: verifies the DB is reachable (SELECT 1) and
 # doubles as a pool keepalive — the 30s probe keeps a warm connection in the
 # shared postgres pool so the first user transaction never pays a TCP connect.
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/readiness || exit 1
 
 # Run the production server

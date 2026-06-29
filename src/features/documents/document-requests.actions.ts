@@ -12,7 +12,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { logPermissionDenied } from "@/lib/errors/audit-failures";
-import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { and, eq, like, sql } from "drizzle-orm";
 import { formatDocumentNumber } from "@/lib/utils/reference";
 import {
@@ -33,6 +33,7 @@ import {
   getDocumentRequestForValidation,
   checkDocumentReleaseEligibility,
   checkDocumentProcessingEligibility,
+  checkDocumentRequestCreationEligibility,
 } from "./document-requests.queries";
 import { canProgressRequest, canCancelRequest, canReleaseDocument } from "@/lib/constants/document-requests";
 
@@ -66,6 +67,13 @@ export async function createDocumentRequestAction(
       String(formData.get("studentId") ?? "")
     );
     return { message: "You do not have permission to create document requests." };
+  }
+
+  // Check eligibility for document request creation (archived students without valid enrollment)
+  const studentIdParam = String(formData.get("studentId") ?? "");
+  const eligibility = await checkDocumentRequestCreationEligibility(studentIdParam);
+  if (!eligibility.canCreate) {
+    return { message: eligibility.reason };
   }
 
   // Parse and validate input
@@ -110,8 +118,11 @@ export async function createDocumentRequestAction(
     newState: { studentId, documentType, copies },
   });
 
-  revalidatePath("/staff/archive/documents");
-  revalidatePath(`/staff/archive/${studentId}`);
+  // Invalidate cache tag for document requests (non-blocking)
+  // Note: forceUpdateTag/revalidatePath removed as they block the response in production.
+  // The client calls router.refresh() after success which handles the page refresh.
+  // Use invalidateTag for stale-while-revalidate behavior (non-blocking).
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true, requestId: newRequest.id };
 }
@@ -235,7 +246,8 @@ export async function processDocumentRequestAction(
     newState: { status: "processing", feeAmount, documentNumber },
   });
 
-  revalidatePath("/staff/archive/documents");
+  // Non-blocking cache invalidation - client handles page refresh
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true };
 }
@@ -318,7 +330,8 @@ export async function readyDocumentRequestAction(
     newState: { status: "ready", documentNumber: request.documentNumber },
   });
 
-  revalidatePath("/staff/archive/documents");
+  // Non-blocking cache invalidation - client handles page refresh
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true };
 }
@@ -404,7 +417,8 @@ export async function releaseDocumentRequestAction(
     newState: { status: "released" },
   });
 
-  revalidatePath("/staff/archive/documents");
+  // Non-blocking cache invalidation - client handles page refresh
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true };
 }
@@ -484,7 +498,8 @@ export async function rejectDocumentRequestAction(
     newState: { status: "rejected", rejectedReason },
   });
 
-  revalidatePath("/staff/archive/documents");
+  // Non-blocking cache invalidation - client handles page refresh
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true };
 }
@@ -565,8 +580,8 @@ export async function cancelDocumentRequestAction(
     newState: { status: "cancelled" },
   });
 
-  revalidatePath("/staff/archive/documents");
-  revalidatePath(`/staff/archive/documents/${requestId}`);
+  // Non-blocking cache invalidation - client handles page refresh
+  invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
 
   return { success: true };
 }

@@ -229,9 +229,19 @@ export async function countPendingVoidRequests(): Promise<number> {
  * Gets a single void request by ID with full details.
  */
 export async function getVoidRequestById(requestId: string) {
+  // Explicit column selection - excludes unused audit columns (reversalPaymentId)
   const rows = await db.execute(sql`
     SELECT
-      vr.*,
+      vr.id,
+      vr.payment_id,
+      vr.request_reason,
+      vr.status,
+      vr.requested_by,
+      vr.requested_at,
+      vr.decided_by,
+      vr.decided_at,
+      vr.decision_remarks,
+      vr.cancelled_at,
       p.or_number,
       p.amount,
       p.payment_method,

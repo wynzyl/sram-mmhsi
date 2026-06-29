@@ -266,7 +266,8 @@ export async function getArchiveSummary(): Promise<ArchiveSummary> {
 }
 
 /**
- * Get a single archived student by ID with full details
+ * Get a single archived student by ID with full details.
+ * Note: Does NOT filter by status so the page can handle redirects for restored students.
  */
 export async function getArchivedStudent(studentId: string) {
   const [student] = await db
@@ -296,7 +297,6 @@ export async function getArchivedStudent(studentId: string) {
       and(
         eq(students.id, studentId),
         isNull(students.deletedAt),
-        ne(students.status, "active"),
       ),
     );
 
@@ -583,4 +583,46 @@ export async function getStudentRecentPayments(studentId: string) {
     .where(and(eq(payments.studentId, studentId), ne(payments.status, "reversed")))
     .orderBy(desc(payments.paymentDate))
     .limit(5);
+}
+
+/**
+ * Check if a student has any valid enrollment history (for document request eligibility).
+ *
+ * A student has "valid enrollment" if they have at least one enrollment that:
+ * - Has status = 'enrolled' (first payment automatically transitions assessed → enrolled), OR
+ * - Has an associated assessment with totalPaid > 0
+ *
+ * This is used to determine if archived students can create document requests.
+ * Students with only pending enrollments, assessed enrollments with no payment,
+ * or no enrollments at all are NOT eligible.
+ */
+export async function hasValidEnrollmentHistory(
+  studentId: string
+): Promise<boolean> {
+  // Query for any enrollment that is either:
+  // 1. Already enrolled status, OR
+  // 2. Has an assessment with some payment (totalPaid > 0)
+  const [result] = await db
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .leftJoin(
+      assessments,
+      and(
+        eq(assessments.enrollmentId, enrollments.id),
+        isNull(assessments.cancelledAt)
+      )
+    )
+    .where(
+      and(
+        eq(enrollments.studentId, studentId),
+        isNull(enrollments.cancelledAt),
+        or(
+          eq(enrollments.status, "enrolled"),
+          sql`(${assessments.totalPaid} IS NOT NULL AND CAST(${assessments.totalPaid} AS DECIMAL) > 0)`
+        )
+      )
+    )
+    .limit(1);
+
+  return !!result;
 }

@@ -14,17 +14,10 @@ import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { useDebounce } from "@/hooks/useDebounce";
+import type { CashierQueueRow } from "../payments.queries";
 
-export type CashierQueueRow = {
-  assessmentId: string;
-  studentName: string;
-  referenceNumber: string;
-  gradeLevel: string;
-  schoolYear: string;
-  billingStatus: string;
-  balance: number;
-  totalPaid: number;
-};
+// Re-export type for consumers of this component
+export type { CashierQueueRow };
 
 interface CashierQueueTableProps {
   rows: CashierQueueRow[];
@@ -82,6 +75,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
         <div className="flex justify-end">
           <Link
             href={`/staff/payments/process/${row.original.assessmentId}`}
+            prefetch={false}
             className={cn(buttonVariants({ size: "sm" }))}
           >
             Process payment

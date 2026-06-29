@@ -18,7 +18,13 @@ services:
     image: postgres:15-alpine
     container_name: srams_db
     restart: always
-    
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1'
+        reservations:
+          memory: 512M
     env_file:
       - .env.production
     ports:
@@ -59,6 +65,13 @@ services:
       target: runner # Ensure your Dockerfile has a 'runner' stage
     container_name: srams_app
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: '2'
+        reservations:
+          memory: 512M
     # DATABASE_URL comes from .env.production (internal port — see migrate note).
     env_file:
       - .env.production
@@ -81,34 +94,25 @@ services:
     networks:
       - srams-network
       # - proxy-network
- 
-  # metabase:
-  #   image: metabase/metabase:latest
-  #   restart: always
-  #   ports:
-  #     - "3005:3000" # Exposes Metabase on port 3005 of your Ubuntu host
-  #   env_file:
-  #     - .env.production
-  #   depends_on:
-  #     srams_db:
-  #       condition: service_healthy
-  #   networks:
-  #     - srams-network
-  #     # - proxy-network
   nginx:
-        image: nginx:alpine
-        container_name: nginx_proxy
-        restart: unless-stopped
-        ports:
-          - "80:80" # Exposed to Host ONLY for local LAN computers (via hosts file)
-        volumes:
-          - ./nginx.conf:/etc/nginx/nginx.conf:ro
-          # Serve uploaded files directly (bypasses Next.js for static assets)
-          - uploads_data:/app/public/uploads:ro
-        depends_on:
-          - app
-        networks:
-          - srams-network
+    image: nginx:alpine
+    container_name: nginx_proxy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    ports:
+      - "80:80" # Exposed to Host ONLY for local LAN computers (via hosts file)
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Serve uploaded files directly (bypasses Next.js for static assets)
+      - uploads_data:/app/public/uploads:ro
+    depends_on:
+      - app
+    networks:
+      - srams-network
 
 volumes:
   db-data:

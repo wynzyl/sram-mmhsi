@@ -50,6 +50,7 @@ function SortableHeader({
     <th className={`${headClass} ${className ?? ""}`}>
       <Link
         href={sortHref(column)}
+        prefetch={false}
         className="group inline-flex items-center gap-1.5 rounded transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
         aria-label={`Sort by ${label}`}
         aria-sort={isActive ? (state === "asc" ? "ascending" : "descending") : "none"}

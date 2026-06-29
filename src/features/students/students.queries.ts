@@ -28,7 +28,6 @@ export type StudentDirectoryRow = {
   lastName: string;
   address: string | null;
   telNumber: string | null;
-  email: string | null;
   isActive: boolean;
   schoolYearLabel: string | null;
   gradeLevelName: string | null;
@@ -128,7 +127,6 @@ export async function fetchStudentDirectoryPage(params: {
         lastName: students.lastName,
         address: students.address,
         telNumber: students.mobileNumber,
-        email: students.email,
         isActive: students.isActive,
         schoolYearLabel: schoolYears.label,
         gradeLevelName: gradeLevels.name,
@@ -163,7 +161,6 @@ export async function fetchStudentDirectoryPage(params: {
     lastName: r.lastName,
     address: r.address,
     telNumber: r.telNumber,
-    email: r.email,
     isActive: r.isActive,
     schoolYearLabel: r.schoolYearLabel,
     gradeLevelName: r.gradeLevelName,

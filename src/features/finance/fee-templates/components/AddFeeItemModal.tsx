@@ -12,7 +12,6 @@ type FeeItemType = {
   name: string;
   category: string;
   isDiscount: boolean;
-  displayOrder: number;
 };
 
 type AddFeeItemModalProps = {

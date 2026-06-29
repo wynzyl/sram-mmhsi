@@ -1,9 +1,7 @@
 import { NextResponse, connection } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { db } from "@/lib/db";
-import { feeItemTypes } from "@/lib/db/schema";
-import { asc } from "drizzle-orm";
+import { getAllFeeItemTypesAdmin } from "@/features/finance/fee-item-types/fee-item-types.queries";
 
 export async function GET() {
   await connection(); // Requires auth - exclude from prerendering
@@ -22,9 +20,8 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const data = await db.query.feeItemTypes.findMany({
-      orderBy: [asc(feeItemTypes.displayOrder), asc(feeItemTypes.name)],
-    });
+    // Reuse the shared query helper so columns stay aligned with FeeItemTypeListRow
+    const data = await getAllFeeItemTypesAdmin();
 
     return NextResponse.json({
       data,

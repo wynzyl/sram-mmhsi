@@ -52,6 +52,7 @@ export function ArchivedStudentDocumentRequests({
             )}
             <Link
               href={`/staff/archive/documents?studentId=${studentId}`}
+              prefetch={false}
               className={buttonVariants({ variant: "secondary", size: "sm" })}
             >
               View All
@@ -94,6 +95,7 @@ export function ArchivedStudentDocumentRequests({
                       <td className="p-2">
                         <Link
                           href={`/staff/archive/documents/${request.id}`}
+                          prefetch={false}
                           className="text-primary hover:underline"
                         >
                           View
@@ -108,6 +110,7 @@ export function ArchivedStudentDocumentRequests({
                   Showing 5 of {documentRequests.totalRequests} requests.{" "}
                   <Link
                     href={`/staff/archive/documents?studentId=${studentId}`}
+                    prefetch={false}
                     className="text-primary hover:underline"
                   >
                     View all

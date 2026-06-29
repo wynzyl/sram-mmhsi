@@ -5,6 +5,8 @@
  */
 
 import "server-only";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   documentRequests,
@@ -42,6 +44,8 @@ import type {
 } from "./document-requests.schema";
 import { hasPendingClearances } from "@/features/clearances/clearances.queries";
 import { formatCurrency } from "@/lib/utils/currency";
+import { isArchivedStatus } from "@/lib/constants/student-status";
+import { hasValidEnrollmentHistory } from "@/features/archive/archive.queries";
 
 export const DOCUMENT_REQUEST_PAGE_SIZE = 20;
 
@@ -151,6 +155,46 @@ export async function checkDocumentProcessingEligibility(
   }
 
   return { canProcess: true };
+}
+
+/**
+ * Check if a document request can be created for a student.
+ *
+ * For archived students, document requests are only allowed if the student
+ * has a valid enrollment history (enrolled status or payment on record).
+ *
+ * Students without valid enrollment history cannot request documents:
+ * - No enrollments at all
+ * - Only pending enrollments
+ * - Assessed enrollments with zero payment
+ * - Only cancelled enrollments
+ */
+export async function checkDocumentRequestCreationEligibility(
+  studentId: string
+): Promise<{ canCreate: true } | { canCreate: false; reason: string }> {
+  // Get student status
+  const student = await db.query.students.findFirst({
+    where: and(eq(students.id, studentId), isNull(students.deletedAt)),
+    columns: { status: true },
+  });
+
+  if (!student) {
+    return { canCreate: false, reason: "Student not found." };
+  }
+
+  // For archived students, check valid enrollment history
+  if (isArchivedStatus(student.status)) {
+    const hasValid = await hasValidEnrollmentHistory(studentId);
+    if (!hasValid) {
+      return {
+        canCreate: false,
+        reason:
+          "Document requests are disabled for students without a valid enrollment history (no enrolled status or payment on record).",
+      };
+    }
+  }
+
+  return { canCreate: true };
 }
 
 // ─── Document Request Queries ────────────────────────────────────────────────
@@ -282,10 +326,16 @@ export async function fetchDocumentRequestsPage(
 
 /**
  * Get document request by ID
+ * Cached with short TTL for read-your-own-writes pattern.
+ * Use forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS) after mutations.
  */
 export async function getDocumentRequestById(
   requestId: string
 ): Promise<DocumentRequestDetail | null> {
+  "use cache";
+  cacheTag(CACHE_TAGS.DOCUMENT_REQUESTS);
+  cacheLife("seconds"); // Very short cache for transactional data
+
   const [row] = await db
     .select({
       id: documentRequests.id,
@@ -320,31 +370,32 @@ export async function getDocumentRequestById(
 
   if (!row) return null;
 
-  // Get school year label
-  let schoolYearLabel: string | null = null;
-  if (row.schoolYearId) {
-    const [sy] = await db
-      .select({ label: schoolYears.label })
-      .from(schoolYears)
-      .where(eq(schoolYears.id, row.schoolYearId))
-      .limit(1);
-    schoolYearLabel = sy?.label ?? null;
-  }
-
-  // Get user names
+  // Parallelize school year and user name lookups
   const userIds = [row.requestedBy, row.processedBy, row.releasedBy].filter(
     Boolean
   ) as string[];
+
+  const [schoolYearResult, usersData] = await Promise.all([
+    // Get school year label
+    row.schoolYearId
+      ? db
+          .select({ label: schoolYears.label })
+          .from(schoolYears)
+          .where(eq(schoolYears.id, row.schoolYearId))
+          .limit(1)
+      : Promise.resolve([]),
+    // Get user names
+    userIds.length > 0
+      ? db
+          .select({ id: users.id, username: users.username })
+          .from(users)
+          .where(inArray(users.id, userIds))
+      : Promise.resolve([]),
+  ]);
+
+  const schoolYearLabel = schoolYearResult[0]?.label ?? null;
   const userNameMap = new Map<string, string>();
-
-  if (userIds.length > 0) {
-    const usersData = await db
-      .select({ id: users.id, username: users.username })
-      .from(users)
-      .where(inArray(users.id, userIds));
-
-    usersData.forEach((u) => userNameMap.set(u.id, u.username));
-  }
+  usersData.forEach((u) => userNameMap.set(u.id, u.username));
 
   return {
     id: row.id,
@@ -415,8 +466,14 @@ export async function getDocumentRequestForValidation(
 
 /**
  * Get document requests summary statistics
+ * Cached with short TTL for read-your-own-writes pattern.
+ * Use forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS) after mutations.
  */
 export async function getDocumentRequestsSummary(): Promise<DocumentRequestSummary> {
+  "use cache";
+  cacheTag(CACHE_TAGS.DOCUMENT_REQUESTS);
+  cacheLife("seconds"); // Very short cache for transactional data
+
   // Count by status
   const statusCounts = await db
     .select({
