@@ -5,6 +5,8 @@
  */
 
 import "server-only";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   documentRequests,
@@ -284,10 +286,16 @@ export async function fetchDocumentRequestsPage(
 
 /**
  * Get document request by ID
+ * Cached with short TTL for read-your-own-writes pattern.
+ * Use forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS) after mutations.
  */
 export async function getDocumentRequestById(
   requestId: string
 ): Promise<DocumentRequestDetail | null> {
+  "use cache";
+  cacheTag(CACHE_TAGS.DOCUMENT_REQUESTS);
+  cacheLife("seconds"); // Very short cache for transactional data
+
   const [row] = await db
     .select({
       id: documentRequests.id,
@@ -417,8 +425,14 @@ export async function getDocumentRequestForValidation(
 
 /**
  * Get document requests summary statistics
+ * Cached with short TTL for read-your-own-writes pattern.
+ * Use forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS) after mutations.
  */
 export async function getDocumentRequestsSummary(): Promise<DocumentRequestSummary> {
+  "use cache";
+  cacheTag(CACHE_TAGS.DOCUMENT_REQUESTS);
+  cacheLife("seconds"); // Very short cache for transactional data
+
   // Count by status
   const statusCounts = await db
     .select({

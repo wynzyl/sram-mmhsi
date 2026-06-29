@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { connection } from "next/server";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,9 @@ interface PageProps {
 }
 
 export default async function DocumentRequestDetailPage({ params }: PageProps) {
+  // Force dynamic rendering - document requests are transactional data
+  await connection();
+
   const session = await requireSession();
 
   if (!hasPermission(session.role, "documents:read")) {

@@ -288,6 +288,7 @@ export function Sidebar({ role, username }: SidebarProps) {
                   <div key={item.href} className="flex flex-col">
                     <Link
                       href={item.href}
+                      prefetch={false}
                       className={cn(
                         "flex items-center gap-2.5 py-1.5 px-4 text-[0.825rem] font-medium no-underline rounded-lg mx-1.5 transition-colors",
                         "text-gray-800 dark:text-muted-foreground",
@@ -305,6 +306,7 @@ export function Sidebar({ role, username }: SidebarProps) {
                           <Link
                             key={child.href}
                             href={child.href}
+                            prefetch={false}
                             className={cn(
                               "block py-1 px-2.5 pl-3.5 text-xs font-medium text-muted-foreground no-underline rounded-r-md transition-colors",
                               "hover:bg-muted/70 hover:text-primary",
@@ -325,6 +327,7 @@ export function Sidebar({ role, username }: SidebarProps) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={false}
                   className={cn(
                     "flex items-center gap-2.5 py-1.5 px-4 text-[0.825rem] font-medium no-underline rounded-lg mx-1.5 transition-colors",
                     "text-gray-800 dark:text-muted-foreground",

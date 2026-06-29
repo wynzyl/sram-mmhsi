@@ -27,6 +27,7 @@ import {
  * - FEE_TEMPLATES   -> src/features/finance/fee-templates/fee-templates.queries.ts (getFeeTemplatesForDropdown)
  * - FEE_ITEM_TYPES  -> src/features/finance/fee-templates/fee-templates.queries.ts (getAllFeeItemTypes)
  * - DISCOUNT_TYPES  -> src/features/discounts/discounts.queries.ts (getActiveDiscountTypes, getAllDiscountTypes)
+ * - DOCUMENT_REQUESTS -> src/features/documents/document-requests.queries.ts (getDocumentRequestById, getDocumentRequestsSummary)
  */
 export const CACHE_TAGS = {
   /** Admin/Staff dashboard metrics */
@@ -49,6 +50,9 @@ export const CACHE_TAGS = {
 
   /** Discount type catalog (global config — rarely changes) */
   DISCOUNT_TYPES: "discount-types",
+
+  /** Document requests (transactional — use forceUpdateTag for read-your-own-writes) */
+  DOCUMENT_REQUESTS: "document-requests",
 } as const;
 
 export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];

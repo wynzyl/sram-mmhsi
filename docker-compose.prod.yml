@@ -81,34 +81,20 @@ services:
     networks:
       - srams-network
       # - proxy-network
- 
-  metabase:
-    image: metabase/metabase:latest
-    restart: always
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    restart: unless-stopped
     ports:
-      - "3005:3000" # Exposes Metabase on port 3005 of your Ubuntu host
-    env_file:
-      - .env.production
+      - "80:80" # Exposed to Host ONLY for local LAN computers (via hosts file)
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Serve uploaded files directly (bypasses Next.js for static assets)
+      - uploads_data:/app/public/uploads:ro
     depends_on:
-      srams_db:
-        condition: service_healthy
+      - app
     networks:
       - srams-network
-      # - proxy-network
-  nginx:
-        image: nginx:alpine
-        container_name: nginx_proxy
-        restart: unless-stopped
-        ports:
-          - "80:80" # Exposed to Host ONLY for local LAN computers (via hosts file)
-        volumes:
-          - ./nginx.conf:/etc/nginx/nginx.conf:ro
-          # Serve uploaded files directly (bypasses Next.js for static assets)
-          - uploads_data:/app/public/uploads:ro
-        depends_on:
-          - app
-        networks:
-          - srams-network
 
 volumes:
   db-data:

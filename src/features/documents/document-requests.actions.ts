@@ -13,6 +13,7 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { logPermissionDenied } from "@/lib/errors/audit-failures";
 import { revalidatePath } from "next/cache";
+import { CACHE_TAGS, forceUpdateTag } from "@/lib/cache/cache-tags";
 import { and, eq, like, sql } from "drizzle-orm";
 import { formatDocumentNumber } from "@/lib/utils/reference";
 import {
@@ -110,6 +111,8 @@ export async function createDocumentRequestAction(
     newState: { studentId, documentType, copies },
   });
 
+  // Force immediate cache invalidation for read-your-own-writes
+  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
   revalidatePath("/staff/archive/documents");
   revalidatePath(`/staff/archive/${studentId}`);
 
@@ -235,6 +238,8 @@ export async function processDocumentRequestAction(
     newState: { status: "processing", feeAmount, documentNumber },
   });
 
+  // Force immediate cache invalidation for read-your-own-writes
+  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
   revalidatePath("/staff/archive/documents");
 
   return { success: true };
@@ -318,6 +323,8 @@ export async function readyDocumentRequestAction(
     newState: { status: "ready", documentNumber: request.documentNumber },
   });
 
+  // Force immediate cache invalidation for read-your-own-writes
+  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
   revalidatePath("/staff/archive/documents");
 
   return { success: true };
@@ -404,7 +411,10 @@ export async function releaseDocumentRequestAction(
     newState: { status: "released" },
   });
 
+  // Force immediate cache invalidation for read-your-own-writes
+  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
   revalidatePath("/staff/archive/documents");
+  revalidatePath(`/staff/archive/documents/${requestId}`);
 
   return { success: true };
 }
@@ -484,6 +494,8 @@ export async function rejectDocumentRequestAction(
     newState: { status: "rejected", rejectedReason },
   });
 
+  // Force immediate cache invalidation for read-your-own-writes
+  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
   revalidatePath("/staff/archive/documents");
 
   return { success: true };
@@ -565,6 +577,8 @@ export async function cancelDocumentRequestAction(
     newState: { status: "cancelled" },
   });
 
+  // Force immediate cache invalidation for read-your-own-writes
+  forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
   revalidatePath("/staff/archive/documents");
   revalidatePath(`/staff/archive/documents/${requestId}`);
 

@@ -71,6 +71,7 @@ export function ArchiveDirectoryTable({
                     <div>
                       <Link
                         href={`/staff/archive/${row.id}`}
+                        prefetch={false}
                         className="font-medium text-foreground hover:text-primary hover:underline"
                       >
                         {formatStudentName(row)}
@@ -122,6 +123,7 @@ export function ArchiveDirectoryTable({
                 <td className="py-3 pr-4">
                   <Link
                     href={`/staff/archive/${row.id}`}
+                    prefetch={false}
                     className="text-sm text-primary hover:underline"
                   >
                     View

@@ -1,6 +1,7 @@
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import {
   fetchDocumentRequestsPage,
   getDocumentRequestsSummary,
@@ -27,6 +28,9 @@ export default async function DocumentRequestsPage({
     studentId?: string;
   }>;
 }) {
+  // Force dynamic rendering - document requests are transactional data
+  await connection();
+
   const session = await requireSession();
 
   // Permission check
