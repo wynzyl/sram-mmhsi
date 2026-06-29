@@ -16,6 +16,7 @@ export function StudentDirectoryRowActions({
     <div className="flex items-center justify-end gap-0.5">
       <Link
         href={`${studentBasePath}/${studentId}`}
+        prefetch={false}
         className={iconClass}
         aria-label="View profile"
         title="View profile"
@@ -31,6 +32,7 @@ export function StudentDirectoryRowActions({
       </Link>
       <Link
         href={`${studentBasePath}/${studentId}/edit`}
+        prefetch={false}
         className={iconClass}
         aria-label="Edit student"
         title="Edit student"
@@ -42,6 +44,7 @@ export function StudentDirectoryRowActions({
       </Link>
       <Link
         href={`${enrollBase}?studentId=${studentId}`}
+        prefetch={false}
         className={iconClass}
         aria-label="New enrollment"
         title="New enrollment"

@@ -48,6 +48,7 @@ export function StudentRowActionsMenu({
         >
           <Link
             href={`${studentBasePath}/${studentId}`}
+            prefetch={false}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 px-4 py-2.5 text-foreground hover:bg-muted transition-colors"
@@ -61,6 +62,7 @@ export function StudentRowActionsMenu({
 
           <Link
             href={`${studentBasePath}/${studentId}/edit`}
+            prefetch={false}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 px-4 py-2.5 text-foreground hover:bg-muted transition-colors"
@@ -76,6 +78,7 @@ export function StudentRowActionsMenu({
 
           <Link
             href={`${enrollBase}?studentId=${studentId}`}
+            prefetch={false}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 px-4 py-2.5 text-primary hover:bg-primary/10 transition-colors font-medium"

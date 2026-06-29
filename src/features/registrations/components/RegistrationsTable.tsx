@@ -106,6 +106,7 @@ export default function RegistrationsTable({
                       <div className="min-w-0">
                         <Link
                           href={`${studentBasePath}/${reg.studentId}`}
+                          prefetch={false}
                           className="block truncate font-semibold text-foreground hover:text-primary transition-colors"
                         >
                           {reg.studentName}

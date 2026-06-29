@@ -340,6 +340,9 @@ export const students = pgTable(
     uniqueIndex("students_ref_idx").on(t.referenceNumber),
     index("students_name_idx").on(t.lastName, t.firstName),
     index("students_status_idx").on(t.status),
+    // Archive query performance indexes (added for production Docker optimization)
+    index("students_archived_at_idx").on(t.archivedAt),
+    index("students_archive_sy_status_idx").on(t.archivedSchoolYearId, t.status),
     // NOTE: Additional indexes created via migration 0010:
     // - students_name_dob_active_uidx: UNIQUE(LOWER(first_name), LOWER(last_name), date_of_birth) WHERE deleted_at IS NULL
     // - students_name_dob_lookup_idx: INDEX for duplicate detection queries

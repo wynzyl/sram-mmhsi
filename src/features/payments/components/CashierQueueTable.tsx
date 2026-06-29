@@ -75,6 +75,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
         <div className="flex justify-end">
           <Link
             href={`/staff/payments/process/${row.original.assessmentId}`}
+            prefetch={false}
             className={cn(buttonVariants({ size: "sm" }))}
           >
             Process payment

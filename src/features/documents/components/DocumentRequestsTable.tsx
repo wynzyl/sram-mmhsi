@@ -62,6 +62,7 @@ export function DocumentRequestsTable({
                     <div>
                       <Link
                         href={`/staff/archive/${row.studentId}`}
+                        prefetch={false}
                         className="font-medium text-foreground hover:text-primary hover:underline"
                       >
                         {row.studentName}
@@ -130,6 +131,7 @@ function DocumentRequestActions({ request }: { request: DocumentRequestListItem 
         <div className="flex gap-2">
           <Link
             href={`/staff/archive/documents/${request.id}`}
+            prefetch={false}
             className="text-sm text-primary hover:underline"
           >
             Process
@@ -141,6 +143,7 @@ function DocumentRequestActions({ request }: { request: DocumentRequestListItem 
         <div className="flex gap-2">
           <Link
             href={`/staff/archive/documents/${request.id}`}
+            prefetch={false}
             className="text-sm text-primary hover:underline"
           >
             Mark Ready
@@ -152,6 +155,7 @@ function DocumentRequestActions({ request }: { request: DocumentRequestListItem 
         <div className="flex gap-2">
           <Link
             href={`/staff/archive/documents/${request.id}`}
+            prefetch={false}
             className="text-sm text-primary hover:underline"
           >
             Release
@@ -164,6 +168,7 @@ function DocumentRequestActions({ request }: { request: DocumentRequestListItem 
       return (
         <Link
           href={`/staff/archive/documents/${request.id}`}
+          prefetch={false}
           className="text-sm text-muted-foreground hover:underline"
         >
           View

@@ -98,10 +98,10 @@ function EnrolledActions({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <Link href={`/staff/students/${en.studentId}`} className="btn-ghost btn-sm">
+        <Link href={`/staff/students/${en.studentId}`} prefetch={false} className="btn-ghost btn-sm">
           Student
         </Link>
-        <Link href="/staff/assessments?view=ledgers" className="btn-ghost btn-sm">
+        <Link href="/staff/assessments?view=ledgers" prefetch={false} className="btn-ghost btn-sm">
           Ledgers
         </Link>
       </div>
@@ -135,7 +135,7 @@ function EnrollmentActionsCell({
   canOverrideEnrolled: boolean;
 }) {
   const viewStudent = (
-    <Link href={`/staff/students/${en.studentId}`} className="btn-ghost btn-sm">
+    <Link href={`/staff/students/${en.studentId}`} prefetch={false} className="btn-ghost btn-sm">
       Student
     </Link>
   );
@@ -147,6 +147,7 @@ function EnrollmentActionsCell({
         {canManage && (
           <Link
             href={`/staff/enrollments/new?studentId=${en.studentId}`}
+            prefetch={false}
             className="table-action-link"
           >
             Re-enroll
@@ -173,7 +174,7 @@ function EnrollmentActionsCell({
     return (
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap gap-1.5">
-          <Link href={`/staff/assessments/new/${en.id}`} className="btn-secondary btn-sm">
+          <Link href={`/staff/assessments/new/${en.id}`} prefetch={false} className="btn-secondary btn-sm">
             Build assessment
           </Link>
           {viewStudent}
@@ -197,7 +198,7 @@ function EnrollmentActionsCell({
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-1.5">
           {en.assessmentId ? (
-            <Link href={`/staff/assessments/${en.assessmentId}`} className="btn-primary btn-sm">
+            <Link href={`/staff/assessments/${en.assessmentId}`} prefetch={false} className="btn-primary btn-sm">
               Ledger / pay
             </Link>
           ) : (

@@ -1,0 +1,2 @@
+CREATE INDEX "students_archived_at_idx" ON "students" USING btree ("archived_at");--> statement-breakpoint
+CREATE INDEX "students_archive_sy_status_idx" ON "students" USING btree ("archived_school_year_id","status");

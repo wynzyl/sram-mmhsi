@@ -34,6 +34,27 @@ import type {
 // ─── Discount Types Queries ───────────────────────────────────────────────────
 
 /**
+ * Shared `DiscountTypeView` projection for discount-type queries.
+ * Explicit column selection - excludes audit fields (updatedAt, createdBy,
+ * updatedBy, deletedBy). Keep this aligned with `DiscountTypeView` as the DTO
+ * evolves so every discount-type query stays consistent.
+ */
+const discountTypeViewColumns = {
+  id: discountTypes.id,
+  code: discountTypes.code,
+  name: discountTypes.name,
+  description: discountTypes.description,
+  calculationType: discountTypes.calculationType,
+  baseType: discountTypes.baseType,
+  defaultValue: discountTypes.defaultValue,
+  isActive: discountTypes.isActive,
+  requiresDocumentation: discountTypes.requiresDocumentation,
+  isStackable: discountTypes.isStackable,
+  displayOrder: discountTypes.displayOrder,
+  createdAt: discountTypes.createdAt,
+} as const;
+
+/**
  * Get all active discount types for selection.
  * Cached for 1 hour; invalidated via revalidateTag(CACHE_TAGS.DISCOUNT_TYPES)
  * when discount types are created/updated/deleted.
@@ -43,22 +64,8 @@ export async function getActiveDiscountTypes(): Promise<DiscountTypeView[]> {
   cacheTag(CACHE_TAGS.DISCOUNT_TYPES);
   cacheLife("hours"); // 1 hour revalidate
 
-  // Explicit column selection - excludes audit fields (updatedAt, createdBy, updatedBy, deletedBy)
   return await db
-    .select({
-      id: discountTypes.id,
-      code: discountTypes.code,
-      name: discountTypes.name,
-      description: discountTypes.description,
-      calculationType: discountTypes.calculationType,
-      baseType: discountTypes.baseType,
-      defaultValue: discountTypes.defaultValue,
-      isActive: discountTypes.isActive,
-      requiresDocumentation: discountTypes.requiresDocumentation,
-      isStackable: discountTypes.isStackable,
-      displayOrder: discountTypes.displayOrder,
-      createdAt: discountTypes.createdAt,
-    })
+    .select(discountTypeViewColumns)
     .from(discountTypes)
     .where(and(eq(discountTypes.isActive, true), isNull(discountTypes.deletedAt)))
     .orderBy(discountTypes.displayOrder, discountTypes.name);
@@ -74,22 +81,8 @@ export async function getAllDiscountTypes(): Promise<DiscountTypeView[]> {
   cacheTag(CACHE_TAGS.DISCOUNT_TYPES);
   cacheLife("hours"); // 1 hour revalidate
 
-  // Explicit column selection - excludes audit fields (updatedAt, createdBy, updatedBy, deletedBy)
   return await db
-    .select({
-      id: discountTypes.id,
-      code: discountTypes.code,
-      name: discountTypes.name,
-      description: discountTypes.description,
-      calculationType: discountTypes.calculationType,
-      baseType: discountTypes.baseType,
-      defaultValue: discountTypes.defaultValue,
-      isActive: discountTypes.isActive,
-      requiresDocumentation: discountTypes.requiresDocumentation,
-      isStackable: discountTypes.isStackable,
-      displayOrder: discountTypes.displayOrder,
-      createdAt: discountTypes.createdAt,
-    })
+    .select(discountTypeViewColumns)
     .from(discountTypes)
     .where(isNull(discountTypes.deletedAt))
     .orderBy(discountTypes.displayOrder, discountTypes.name);
@@ -101,22 +94,8 @@ export async function getAllDiscountTypes(): Promise<DiscountTypeView[]> {
 export async function getDiscountTypeById(
   id: string
 ): Promise<DiscountTypeView | null> {
-  // Explicit column selection - excludes audit fields (updatedAt, createdBy, updatedBy, deletedBy)
   const [row] = await db
-    .select({
-      id: discountTypes.id,
-      code: discountTypes.code,
-      name: discountTypes.name,
-      description: discountTypes.description,
-      calculationType: discountTypes.calculationType,
-      baseType: discountTypes.baseType,
-      defaultValue: discountTypes.defaultValue,
-      isActive: discountTypes.isActive,
-      requiresDocumentation: discountTypes.requiresDocumentation,
-      isStackable: discountTypes.isStackable,
-      displayOrder: discountTypes.displayOrder,
-      createdAt: discountTypes.createdAt,
-    })
+    .select(discountTypeViewColumns)
     .from(discountTypes)
     .where(and(eq(discountTypes.id, id), isNull(discountTypes.deletedAt)))
     .limit(1);
