@@ -12,23 +12,13 @@ import type {
   UpdateFeeItemTypeFormState,
   ToggleFeeItemTypeFormState,
 } from "../fee-item-types.schema";
+import type { FeeItemTypeListRow } from "../fee-item-types.queries";
 
 // ─────────────────────────────────────────────────────────────────
-// Types
+// Types — Re-export query DTO for consumers
 // ─────────────────────────────────────────────────────────────────
 
-export type FeeItemType = {
-  id: string;
-  code: string;
-  name: string;
-  category: string;
-  isDiscount: boolean;
-  isRefundable: boolean;
-  displayOrder: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+export type FeeItemType = FeeItemTypeListRow;
 
 export type FeeItemTypesResponse = {
   data: FeeItemType[];

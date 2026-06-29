@@ -22,7 +22,18 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Explicit column selection - excludes audit fields (createdAt, updatedAt, createdBy, updatedBy)
     const data = await db.query.feeItemTypes.findMany({
+      columns: {
+        id: true,
+        code: true,
+        name: true,
+        category: true,
+        isDiscount: true,
+        isRefundable: true,
+        displayOrder: true,
+        isActive: true,
+      },
       orderBy: [asc(feeItemTypes.displayOrder), asc(feeItemTypes.name)],
     });
 

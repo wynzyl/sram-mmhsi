@@ -27,9 +27,12 @@ export async function getAllFeeTemplates() {
   return await db.query.feeTemplates.findMany({
     with: {
       items: {
+        columns: { id: true, defaultAmount: true, order: true, feeItemTypeId: true },
         where: (items, { isNull }) => isNull(items.deletedAt),
         with: {
-          feeItemType: true,
+          feeItemType: {
+            columns: { id: true, name: true, code: true, category: true, isDiscount: true },
+          },
         },
         orderBy: (items, { asc }) => [asc(items.order)],
       },
@@ -60,8 +63,13 @@ export async function getFeeTemplatesPaginated(
   const templates = await db.query.feeTemplates.findMany({
     with: {
       items: {
+        columns: { id: true, defaultAmount: true, order: true, feeItemTypeId: true },
         where: (items, { isNull }) => isNull(items.deletedAt),
-        with: { feeItemType: true },
+        with: {
+          feeItemType: {
+            columns: { id: true, name: true, code: true, category: true, isDiscount: true },
+          },
+        },
         orderBy: (items, { asc }) => [asc(items.order)],
       },
     },
@@ -110,9 +118,12 @@ export async function getFeeTemplateById(id: string) {
     where: eq(feeTemplates.id, id),
     with: {
       items: {
+        columns: { id: true, defaultAmount: true, order: true, feeItemTypeId: true },
         where: (items, { isNull }) => isNull(items.deletedAt),
         with: {
-          feeItemType: true,
+          feeItemType: {
+            columns: { id: true, name: true, code: true, category: true, isDiscount: true },
+          },
         },
         orderBy: (items, { asc }) => [asc(items.order)],
       },
@@ -128,9 +139,12 @@ export async function getActiveFeeTemplatesByBand(assessmentBand: string) {
     ),
     with: {
       items: {
+        columns: { id: true, defaultAmount: true, order: true, feeItemTypeId: true },
         where: (items, { isNull }) => isNull(items.deletedAt),
         with: {
-          feeItemType: true,
+          feeItemType: {
+            columns: { id: true, name: true, code: true, category: true, isDiscount: true },
+          },
         },
         orderBy: (items, { asc }) => [asc(items.order)],
       },
@@ -148,9 +162,12 @@ export async function getSchoolYearFeeSchedules(schoolYearId: string) {
       feeTemplate: {
         with: {
           items: {
+            columns: { id: true, defaultAmount: true, order: true, feeItemTypeId: true },
             where: (items, { isNull }) => isNull(items.deletedAt),
             with: {
-              feeItemType: true,
+              feeItemType: {
+                columns: { id: true, name: true, code: true, category: true, isDiscount: true },
+              },
             },
             orderBy: (items, { asc }) => [asc(items.order)],
           },
@@ -169,9 +186,12 @@ export async function getFeeScheduleById(id: string) {
       feeTemplate: {
         with: {
           items: {
+            columns: { id: true, defaultAmount: true, order: true, feeItemTypeId: true },
             where: (items, { isNull }) => isNull(items.deletedAt),
             with: {
-              feeItemType: true,
+              feeItemType: {
+                columns: { id: true, name: true, code: true, category: true, isDiscount: true },
+              },
             },
             orderBy: (items, { asc }) => [asc(items.order)],
           },
@@ -194,6 +214,16 @@ export async function getAllFeeItemTypes() {
   cacheLife("fee-templates"); // Custom 10-min profile
 
   return await db.query.feeItemTypes.findMany({
+    columns: {
+      id: true,
+      code: true,
+      name: true,
+      category: true,
+      isDiscount: true,
+      isRefundable: true,
+      displayOrder: true,
+      isActive: true,
+    },
     where: eq(feeItemTypes.isActive, true),
     orderBy: (t, { asc }) => [asc(t.displayOrder), asc(t.name)],
   });
@@ -201,6 +231,16 @@ export async function getAllFeeItemTypes() {
 
 export async function getFeeItemTypesByCategory(category: string) {
   return await db.query.feeItemTypes.findMany({
+    columns: {
+      id: true,
+      code: true,
+      name: true,
+      category: true,
+      isDiscount: true,
+      isRefundable: true,
+      displayOrder: true,
+      isActive: true,
+    },
     where: and(
       eq(feeItemTypes.category, category as typeof feeItemTypes.category.enumValues[number]),
       eq(feeItemTypes.isActive, true)

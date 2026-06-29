@@ -431,12 +431,15 @@ export async function resolveFeeScheduleForAssessment(
   // ─── Step 2: Load Template Items with Fee Type Details ───────────────────
 
   const templateItems = await executor.query.feeTemplateItems.findMany({
+    columns: { id: true, feeItemTypeId: true, defaultAmount: true, order: true },
     where: and(
       eq(feeTemplateItems.feeTemplateId, schedule.feeTemplateId),
       isNull(feeTemplateItems.deletedAt)
     ),
     with: {
-      feeItemType: true, // Join with fee_item_types to get name/description
+      feeItemType: {
+        columns: { code: true, name: true, isDiscount: true, isRefundable: true },
+      },
     },
     orderBy: (t, { asc }) => [asc(t.order), asc(t.createdAt)],
   });
@@ -448,6 +451,7 @@ export async function resolveFeeScheduleForAssessment(
   // ─── Step 3: Load Overrides for This Schedule ────────────────────────────
 
   const overrides = await executor.query.feeScheduleOverrides.findMany({
+    columns: { feeTemplateItemId: true, overrideAmount: true },
     where: eq(feeScheduleOverrides.scheduleId, schedule.id),
   });
 

@@ -17,7 +17,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { logPermissionDenied } from "@/lib/errors/audit-failures";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import type { StudentStatus } from "@/lib/constants/student-status";
 import {
@@ -190,7 +190,9 @@ export async function unarchiveStudentAction(
   await db.transaction(async (tx) => {
     // If this was a no-show student, restore their enrollment and assessment
     if (isNoShowStudent && existingStudent.archivedSchoolYearId) {
-      // Find cancelled enrollments for this student in the archived school year
+      // Find the most recent cancelled enrollment for this student in the archived school year.
+      // Only ONE enrollment can be non-cancelled per student/school year (unique constraint),
+      // so we restore only the most recent one to avoid constraint violations.
       const cancelledEnrollments = await tx
         .select({
           id: enrollments.id,
@@ -202,7 +204,9 @@ export async function unarchiveStudentAction(
             eq(enrollments.schoolYearId, existingStudent.archivedSchoolYearId),
             eq(enrollments.status, "cancelled")
           )
-        );
+        )
+        .orderBy(sql`${enrollments.updatedAt} DESC NULLS LAST`)
+        .limit(1);
 
       if (cancelledEnrollments.length > 0) {
         const enrollmentIds = cancelledEnrollments.map((e) => e.id);
@@ -239,9 +243,9 @@ export async function unarchiveStudentAction(
             .update(enrollments)
             .set({
               status: "assessed",
-              cancelledAt: null,
-              cancelledBy: null,
-              cancelRemarks: null,
+              cancelledAt: sql`NULL::timestamp`,
+              cancelledBy: sql`NULL::uuid`,
+              cancelRemarks: sql`NULL::text`,
               updatedAt: now,
               updatedBy: session.userId,
             })
@@ -254,9 +258,9 @@ export async function unarchiveStudentAction(
             .update(enrollments)
             .set({
               status: "pending",
-              cancelledAt: null,
-              cancelledBy: null,
-              cancelRemarks: null,
+              cancelledAt: sql`NULL::timestamp`,
+              cancelledBy: sql`NULL::uuid`,
+              cancelRemarks: sql`NULL::text`,
               updatedAt: now,
               updatedBy: session.userId,
             })
@@ -271,8 +275,8 @@ export async function unarchiveStudentAction(
             .update(assessments)
             .set({
               billingStatus: "outstanding",
-              cancelledAt: null,
-              cancelledBy: null,
+              cancelledAt: sql`NULL::timestamp`,
+              cancelledBy: sql`NULL::uuid`,
               updatedAt: now,
               updatedBy: session.userId,
             })
@@ -286,10 +290,10 @@ export async function unarchiveStudentAction(
       .update(students)
       .set({
         status: "active",
-        archivedAt: null,
-        archivedBy: null,
-        archiveReason: null,
-        archivedSchoolYearId: null,
+        archivedAt: sql`NULL::timestamp`,
+        archivedBy: sql`NULL::uuid`,
+        archiveReason: sql`NULL::text`,
+        archivedSchoolYearId: sql`NULL::uuid`,
         updatedAt: now,
         updatedBy: session.userId,
       })

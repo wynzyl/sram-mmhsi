@@ -11,7 +11,6 @@ type FeeItemType = {
   isRefundable: boolean;
   displayOrder: number;
   isActive: boolean;
-  createdAt: Date | string;
 };
 
 type Props = {

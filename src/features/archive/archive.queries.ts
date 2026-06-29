@@ -266,7 +266,8 @@ export async function getArchiveSummary(): Promise<ArchiveSummary> {
 }
 
 /**
- * Get a single archived student by ID with full details
+ * Get a single archived student by ID with full details.
+ * Note: Does NOT filter by status so the page can handle redirects for restored students.
  */
 export async function getArchivedStudent(studentId: string) {
   const [student] = await db
@@ -296,7 +297,6 @@ export async function getArchivedStudent(studentId: string) {
       and(
         eq(students.id, studentId),
         isNull(students.deletedAt),
-        ne(students.status, "active"),
       ),
     );
 

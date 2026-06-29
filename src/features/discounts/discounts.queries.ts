@@ -43,26 +43,25 @@ export async function getActiveDiscountTypes(): Promise<DiscountTypeView[]> {
   cacheTag(CACHE_TAGS.DISCOUNT_TYPES);
   cacheLife("hours"); // 1 hour revalidate
 
-  const rows = await db
-    .select()
+  // Explicit column selection - excludes audit fields (updatedAt, createdBy, updatedBy, deletedBy)
+  return await db
+    .select({
+      id: discountTypes.id,
+      code: discountTypes.code,
+      name: discountTypes.name,
+      description: discountTypes.description,
+      calculationType: discountTypes.calculationType,
+      baseType: discountTypes.baseType,
+      defaultValue: discountTypes.defaultValue,
+      isActive: discountTypes.isActive,
+      requiresDocumentation: discountTypes.requiresDocumentation,
+      isStackable: discountTypes.isStackable,
+      displayOrder: discountTypes.displayOrder,
+      createdAt: discountTypes.createdAt,
+    })
     .from(discountTypes)
     .where(and(eq(discountTypes.isActive, true), isNull(discountTypes.deletedAt)))
     .orderBy(discountTypes.displayOrder, discountTypes.name);
-
-  return rows.map((r) => ({
-    id: r.id,
-    code: r.code,
-    name: r.name,
-    description: r.description,
-    calculationType: r.calculationType,
-    baseType: r.baseType,
-    defaultValue: r.defaultValue,
-    isActive: r.isActive,
-    requiresDocumentation: r.requiresDocumentation,
-    isStackable: r.isStackable,
-    displayOrder: r.displayOrder,
-    createdAt: r.createdAt,
-  }));
 }
 
 /**
@@ -75,26 +74,25 @@ export async function getAllDiscountTypes(): Promise<DiscountTypeView[]> {
   cacheTag(CACHE_TAGS.DISCOUNT_TYPES);
   cacheLife("hours"); // 1 hour revalidate
 
-  const rows = await db
-    .select()
+  // Explicit column selection - excludes audit fields (updatedAt, createdBy, updatedBy, deletedBy)
+  return await db
+    .select({
+      id: discountTypes.id,
+      code: discountTypes.code,
+      name: discountTypes.name,
+      description: discountTypes.description,
+      calculationType: discountTypes.calculationType,
+      baseType: discountTypes.baseType,
+      defaultValue: discountTypes.defaultValue,
+      isActive: discountTypes.isActive,
+      requiresDocumentation: discountTypes.requiresDocumentation,
+      isStackable: discountTypes.isStackable,
+      displayOrder: discountTypes.displayOrder,
+      createdAt: discountTypes.createdAt,
+    })
     .from(discountTypes)
     .where(isNull(discountTypes.deletedAt))
     .orderBy(discountTypes.displayOrder, discountTypes.name);
-
-  return rows.map((r) => ({
-    id: r.id,
-    code: r.code,
-    name: r.name,
-    description: r.description,
-    calculationType: r.calculationType,
-    baseType: r.baseType,
-    defaultValue: r.defaultValue,
-    isActive: r.isActive,
-    requiresDocumentation: r.requiresDocumentation,
-    isStackable: r.isStackable,
-    displayOrder: r.displayOrder,
-    createdAt: r.createdAt,
-  }));
 }
 
 /**
@@ -103,28 +101,27 @@ export async function getAllDiscountTypes(): Promise<DiscountTypeView[]> {
 export async function getDiscountTypeById(
   id: string
 ): Promise<DiscountTypeView | null> {
+  // Explicit column selection - excludes audit fields (updatedAt, createdBy, updatedBy, deletedBy)
   const [row] = await db
-    .select()
+    .select({
+      id: discountTypes.id,
+      code: discountTypes.code,
+      name: discountTypes.name,
+      description: discountTypes.description,
+      calculationType: discountTypes.calculationType,
+      baseType: discountTypes.baseType,
+      defaultValue: discountTypes.defaultValue,
+      isActive: discountTypes.isActive,
+      requiresDocumentation: discountTypes.requiresDocumentation,
+      isStackable: discountTypes.isStackable,
+      displayOrder: discountTypes.displayOrder,
+      createdAt: discountTypes.createdAt,
+    })
     .from(discountTypes)
     .where(and(eq(discountTypes.id, id), isNull(discountTypes.deletedAt)))
     .limit(1);
 
-  if (!row) return null;
-
-  return {
-    id: row.id,
-    code: row.code,
-    name: row.name,
-    description: row.description,
-    calculationType: row.calculationType,
-    baseType: row.baseType,
-    defaultValue: row.defaultValue,
-    isActive: row.isActive,
-    requiresDocumentation: row.requiresDocumentation,
-    isStackable: row.isStackable,
-    displayOrder: row.displayOrder,
-    createdAt: row.createdAt,
-  };
+  return row ?? null;
 }
 
 // ─── Discount Requests Queries ────────────────────────────────────────────────
