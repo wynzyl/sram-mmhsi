@@ -187,20 +187,20 @@ export default function CancellationRequestDetailView({
         <Card className={cn(
           "border-2",
           request.refundPreview.isEligibleForRefund
-            ? "border-green-200 bg-green-50/30"
-            : "border-amber-200 bg-amber-50/30"
+            ? "border-green-200 bg-green-50/30 dark:border-green-500/40 dark:bg-green-500/10"
+            : "border-amber-200 bg-amber-50/30 dark:border-amber-500/40 dark:bg-amber-500/10"
         )}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               {request.refundPreview.isEligibleForRefund ? (
                 <>
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="text-green-700">Eligible for Partial Refund</span>
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <span className="text-green-700 dark:text-green-300">Eligible for Partial Refund</span>
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="h-5 w-5 text-amber-600" />
-                  <span className="text-amber-700">Past Refund Cutoff</span>
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-amber-700 dark:text-amber-300">Past Refund Cutoff</span>
                 </>
               )}
             </CardTitle>
@@ -255,7 +255,7 @@ export default function CancellationRequestDetailView({
                 <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Item Breakdown
                 </p>
-                <div className="divide-y rounded-md border bg-white">
+                <div className="divide-y rounded-md border bg-muted/40">
                   {request.refundPreview.itemBreakdown.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between px-3 py-2 text-sm">
                       <div className="flex items-center gap-2">

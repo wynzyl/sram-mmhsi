@@ -60,9 +60,9 @@ export default async function CancellationRequestsView() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card className={pendingRequests.length > 0 ? "border-amber-200 bg-amber-50/30" : ""}>
+        <Card className={pendingRequests.length > 0 ? "border-amber-200 bg-amber-50/30 dark:border-amber-500/40 dark:bg-amber-500/10" : ""}>
           <CardContent className="flex items-center gap-3 pt-6">
-            <div className="rounded-full bg-amber-100 p-2">
+            <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-500/15">
               <Clock className="h-5 w-5 text-amber-600" />
             </div>
             <div>
@@ -75,7 +75,7 @@ export default async function CancellationRequestsView() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <div className="rounded-full bg-green-100 p-2">
+            <div className="rounded-full bg-green-100 p-2 dark:bg-green-500/15">
               <CheckCircle className="h-5 w-5 text-green-600" />
             </div>
             <div>
@@ -88,7 +88,7 @@ export default async function CancellationRequestsView() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <div className="rounded-full bg-red-100 p-2">
+            <div className="rounded-full bg-red-100 p-2 dark:bg-red-500/15">
               <XCircle className="h-5 w-5 text-red-600" />
             </div>
             <div>
@@ -101,11 +101,11 @@ export default async function CancellationRequestsView() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <div className="rounded-full bg-gray-100 p-2">
-              <AlertTriangle className="h-5 w-5 text-gray-600" />
+            <div className="rounded-full bg-gray-100 p-2 dark:bg-muted">
+              <AlertTriangle className="h-5 w-5 text-gray-600 dark:text-muted-foreground" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-600">
+              <p className="text-2xl font-bold text-gray-600 dark:text-muted-foreground">
                 {cancelledCount}
               </p>
               <p className="text-xs text-muted-foreground">Withdrawn</p>
@@ -116,14 +116,14 @@ export default async function CancellationRequestsView() {
 
       {/* Pending Requests Alert */}
       {pendingRequests.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-500/40 dark:bg-amber-500/10">
           <div className="flex items-start gap-3">
-            <Clock className="mt-0.5 h-5 w-5 text-amber-600" />
+            <Clock className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-400" />
             <div>
-              <p className="font-medium text-amber-800">
+              <p className="font-medium text-amber-800 dark:text-amber-300">
                 {pendingRequests.length} request{pendingRequests.length > 1 ? "s" : ""} awaiting review
               </p>
-              <p className="mt-1 text-sm text-amber-700">
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-400/90">
                 These students cannot make financial transactions until their requests are processed.
               </p>
             </div>
