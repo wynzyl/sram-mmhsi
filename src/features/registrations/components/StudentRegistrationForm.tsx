@@ -204,7 +204,11 @@ export default function StudentRegistrationForm({
 
   useFormToast(state, {
     successMessage: "Student registered successfully",
-    onSuccess: () => router.push(successRedirectTo ?? "/staff/registrations"),
+    onSuccess: () => {
+      form.reset(); // Clear TanStack Form state
+      setCurrentStep(1); // Reset wizard step
+      router.push(successRedirectTo ?? "/staff/registrations");
+    },
   });
 
   const form = useForm({
