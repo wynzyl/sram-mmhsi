@@ -1,16 +1,28 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-06-24
+> Last updated: 2026-07-03
 
 ## Current phase
 
-**Core school operations (Phases 1–8)** are implemented in code: auth, student records, registrations listing + creation through student onboarding, enrollments, assessments, fees, cashier/OR posting, invoices, and teacher grade encoding. **Student photo upload is now live** with sharp-based optimization and Docker volume persistence.
+**Core school operations (Phases 1–8)** are implemented in code: auth, student records, registrations listing + creation through student onboarding, enrollments, assessments, fees, cashier/OR posting, invoices, and teacher grade encoding. **Student photo upload is live** with sharp-based optimization and Docker volume persistence.
 
-**Deployment preparation (Phase 12) is now underway** — the production Docker stack (multi-stage `runner` image, one-shot migrate job, nginx reverse proxy on :80, host bind-mounted Postgres data) is built, running, and verified. **Auth hardening (Phase 2) is closed:** login rate limiting and the forced password-change gate are live. **The Playwright E2E suite is committed** with synthetic test-data provisioning and a CI workflow.
+**Student Archival & End-of-Year (EOY) Processing is complete** — full student lifecycle management with status transitions (active → graduated/transferred/withdrawn/cancelled/inactive), batch archive operations, and a dedicated archive directory at `/staff/archive/`. **Document Requests feature is complete** — full workflow (request → processing → ready → released) with eligibility gates for archived and active students, routes at `/staff/archive/documents/`.
+
+**Deployment (Phase 12) is production-ready** — the Docker stack (multi-stage `runner` image, one-shot migrate job, nginx reverse proxy on :80) is built, running, and hardened with resource limits (memory/CPU caps for all services). **Auth hardening (Phase 2) is closed:** login rate limiting and the forced password-change gate are live. **The Playwright E2E suite is committed** with synthetic test-data provisioning and a CI workflow.
 
 **Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, formal OR **receipt** print view, and the remaining Phase 10 reports (enrollment summary, grade summary).
 
-## Latest updates (2026-06-24)
+## Latest updates (2026-07-03)
+
+- [x] **Student Archival & EOY Processing complete** — Full student lifecycle management with status transitions (active, graduated, transferred, withdrawn, cancelled, inactive), batch archive operations, and archive directory at `/staff/archive/`
+- [x] **Document Requests feature complete** — Full workflow (request → processing → ready → released) with eligibility gates for archived/active students, routes at `/staff/archive/documents/`
+- [x] **Registration form reset bug fix** — Fixed form not resetting after successful submission due to bfcache/soft navigation; resolved with `key={Date.now()}` + `form.reset()` in success handler
+- [x] **Dark mode enhancements** — Updated Cancellation Requests views with proper dark mode support
+- [x] **Production hardening** — Docker Compose resource limits (memory/CPU caps for all services), Nginx configuration enhancements (timeouts, compression, caching)
+- [x] **Archive performance indexes** — Migration `0003_add_archive_indexes.sql` adds indexes for archive queries
+- [x] **Blocking cache invalidation fix** — Documented gotcha #11 for `forceUpdateTag()` causing server action hangs in production Docker; use `invalidateTag()` instead
+
+## Previous updates (2026-06-24)
 
 - [x] **Student photo upload feature complete** — Full photo upload pipeline with `sharp` image processing (resize 400x400, auto-select smallest format from WebP/PNG/JPEG), magic-byte validation (rejects non-image files), EXIF stripping, and audit logging. API route at `/api/students/[studentId]/photo` (POST/DELETE). Client component `StudentPhotoUpload` with drag-drop, file picker, and crop preview.
 - [x] **Production Docker photo upload fixes** — Three-layer configuration required: (1) `nginx.conf` — `client_max_body_size 5M` (default 1MB blocks uploads); (2) `next.config.ts` — `experimental.serverActions.bodySizeLimit: '3mb'`; (3) `docker-entrypoint.sh` — fixes volume ownership (`chown -R nextjs:nextjs /app/public/uploads`) before dropping to nextjs user via `su-exec`.
@@ -150,6 +162,8 @@ if (!schoolYearId) {
 - [x] **Users** — admin user CRUD, password reset / `forcePasswordChange` field (`actions/users.ts`)
 - [x] **Staff route coverage** — staff aliases/pages exist for key operational flows (`/staff/students`, `/staff/enrollments`, `/staff/payments`, `/staff/registrations`, `/staff/finance`, `/staff/grades`)
 - [x] **Portal shell** — authenticated `/portal/dashboard` page with role-aware links
+- [x] **Student Archival & EOY Processing** — lifecycle statuses (active, graduated, transferred, withdrawn, cancelled, inactive), batch archive operations, archive directory at `/staff/archive/` (`src/features/archive/`)
+- [x] **Document Requests** — full workflow (request → processing → ready → released), eligibility gates, routes at `/staff/archive/documents/` (`src/features/archive/documents/`)
 
 ### Phase 10 — Reporting & exports (foundation)
 
@@ -177,6 +191,8 @@ if (!schoolYearId) {
 - [ ] **Portal expansion** — `/portal/dashboard` exists, but `/portal/assessments`, `/portal/payments`, and `/portal/grades` pages are not implemented yet
 - [x] **Dashboards** — Admin dashboard KPIs are live, and a reusable collection-summary + AR-aging insights section now renders on `/admin/dashboard` and `/staff/finance` (the latter promoted from a link hub to a real dashboard). Remaining Phase 10 items: enrollment summary and grade summary reports
 - [x] **E2E** — Playwright suite committed (role redirects + full enrollment→assessment→payment scenario); grades flow not yet covered
+- [x] **Student Archival** — Complete with lifecycle statuses, batch operations, archive directory
+- [x] **Document Requests** — Complete with full workflow, eligibility gates, and release tracking
 
 ---
 

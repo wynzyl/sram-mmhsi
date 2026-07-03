@@ -44,43 +44,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Critical Business Feature:** Official Receipt (OR) booklet management is a first-class accounting control feature — every payment must consume a serialized OR number from an active booklet.
 
-### Current Delivery Snapshot (2026-05-13)
+### Current Delivery Snapshot (2026-07-03)
 
 **Core Features:**
 
-- Core operations (auth, students, registrations queue, enrollments, assessments, payments/OR, invoices, grades) are implemented.
+- Core operations (auth, students, registrations queue, enrollments, assessments, payments/OR, invoices, grades) are implemented and production-ready.
+- **Student Archival & EOY Processing** complete: lifecycle statuses (active, graduated, transferred, withdrawn, cancelled, inactive), batch archive operations, archive directory at `/staff/archive/`
+- **Document Requests** complete: full workflow (request → processing → ready → released) with eligibility gates for archived/active students
 - Registration creation is integrated in student onboarding; dedicated intake/review actions are still pending.
-- Portal currently has `/portal/dashboard`; portal detail pages (`/portal/assessments`, `/portal/payments`, `/portal/grades`) are pending.
-- Authentication hardening still pending: login rate-limit integration and forced password-change gate.
-- E2E Playwright test suite is not yet committed.
+- Portal has `/portal/dashboard`; detail pages (`/portal/assessments`, `/portal/payments`, `/portal/grades`) pending.
+- Authentication hardening complete: login rate limiting and forced password-change gate are live.
+- E2E Playwright test suite committed with CI workflow.
 
-**Performance Optimization (2026-05-13):**
+**Recent Updates (2026-07-03):**
 
-- ✅ **Enrollment queue query optimized** — `getReadyToEnrollStudents()` uses SQL-level UNION ALL + LIMIT/OFFSET instead of loading all records into memory
-- ✅ **Memory improvement** — From ~47MB to ~50KB per page load (5000 students)
-- ✅ **Document completeness in SQL** — Moved to CASE expression, removed JS helper
+- ✅ **Student Archival** — Status lifecycle (active, graduated, transferred, withdrawn, cancelled, inactive), batch operations, archive directory
+- ✅ **Document Requests** — Full workflow with eligibility/release gates, routes at `/staff/archive/documents/`
+- ✅ **Production Hardening** — Docker resource limits (memory/CPU caps), Nginx tuning (timeouts, compression, caching)
+- ✅ **Archive performance indexes** — Migration `0003_add_archive_indexes.sql`
+- ✅ **Bug Fix** — Registration form reset after submission (bfcache/soft navigation fix)
 
-**Refactoring Status:**
+**Prior Milestones:**
 
-- ✅ **Phase 3.1 Complete:** All 11 action files use centralized `logAudit()` utility
-- ✅ **Phase 3.2 Complete:** All 9 validator files use `BaseFormState` and common schemas
-- ✅ **Phase 3.3 Partial:** 1/16 forms migrated, comprehensive migration guide created
-- ✅ **Phase 3.4 Complete:** All duplicate button components replaced with `ConfirmActionButton`
-- ✅ **Build & Tests:** TypeScript compiles with no errors, all 13 Vitest tests pass
-
-**Folder Restructure (2026-05-09):**
-
-- ✅ **Phase 1-4:** All features migrated to `src/features/` structure
-- ✅ **Phase 5:** Import paths updated
-- ✅ **Phase 6:** Cleanup complete - removed duplicate schemas and unused files
-- ✅ **Architecture:** Hybrid schema approach - shared schemas in `src/lib/validators/`, feature-specific in `src/features/*/`
-
-**Library Migration (2026-05-11):**
-
-- ✅ **Complete:** Migrated `lib/` to `src/lib/` for unified source structure
-- ✅ **58 files** moved with git history preserved
-- ✅ All application code now under `src/` directory
-- ✅ Path alias `@/lib/*` updated in tsconfig.json
+- ✅ **Performance Optimization (2026-05-13):** Enrollment queue query with SQL-level pagination (47MB → 50KB memory)
+- ✅ **Folder Restructure (2026-05-09):** All features migrated to `src/features/` structure
+- ✅ **Library Migration (2026-05-11):** All 58 files moved to `src/lib/`
 
 ## Important Documentation References
 

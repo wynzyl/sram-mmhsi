@@ -2,9 +2,17 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-06-24
+> Last sync: 2026-07-03
 
-### Current update highlights (2026-06-24)
+### Current update highlights (2026-07-03)
+- **Student Archival & EOY Processing complete** — Status lifecycle (active → graduated/transferred/withdrawn/cancelled/inactive), batch archive operations, archive directory at `/staff/archive/`
+- **Document Requests complete** — Full workflow (request → processing → ready → released) with eligibility gates for archived/active students, routes at `/staff/archive/documents/`
+- **Production hardening** — Docker Compose resource limits (memory/CPU caps for all services), Nginx configuration enhancements (timeouts, compression, caching)
+- **Archive performance indexes** — Migration `0003_add_archive_indexes.sql` optimizes archive queries
+- **Registration form reset bug fix** — Fixed bfcache/soft navigation issue with `key={Date.now()}` + `form.reset()` in success handler
+- **Dark mode enhancements** — Cancellation Requests views updated with proper dark mode support
+
+### Previous highlights (2026-06-24)
 - **Student photo upload feature complete** — Profile photos now upload, optimize (sharp/WebP), and persist across container restarts. Three-layer fix for production Docker: nginx `client_max_body_size 5M` + Next.js `serverActions.bodySizeLimit: '3mb'` + volume permissions via `docker-entrypoint.sh` (runs `chown` before dropping to nextjs user). Nginx serves `/uploads/*` directly from the shared volume (Next.js doesn't serve runtime-uploaded files from `public/`). Documented in CLAUDE.md gotcha #9.
 
 ### Previous highlights (2026-06-05)
@@ -94,6 +102,8 @@
 - [x] Student profile + edit pages
 - [x] **Student photo upload** — API route (`/api/students/[studentId]/photo`) with sharp optimization (resize 400x400, WebP/PNG/JPEG selection), magic-byte validation, audit logging; `StudentPhotoUpload` component with drag-drop and crop preview; photos persist in Docker volume (`uploads_data`) served by nginx
 - [x] Registration queue pages for admin/staff (`/admin/registrations`, `/staff/registrations`) with school-year filtering + pagination
+- [x] **Student Archival & EOY Processing** — lifecycle statuses (active, graduated, transferred, withdrawn, cancelled, inactive), batch archive operations, archive directory at `/staff/archive/` (`src/features/archive/`)
+- [x] **Document Requests** — full workflow (request → processing → ready → released), eligibility gates for archived/active students, routes at `/staff/archive/documents/` (`src/features/archive/documents/`)
 
 ---
 
@@ -216,5 +226,7 @@
 - [x] Reverse proxy setup (nginx) — `nginx.conf` + `nginx_proxy` service on :80 (LAN access)
 - [x] **Static file serving for uploads** — nginx serves `/uploads/*` directly from `uploads_data` volume (Next.js doesn't serve runtime-uploaded files); `docker-entrypoint.sh` fixes volume permissions at startup via `su-exec`
 - [x] Security headers (CSP, HSTS, X-Frame-Options) — `next.config.ts`
+- [x] **Docker resource limits** — Memory and CPU caps for all services in `docker-compose.prod.yml`
+- [x] **Nginx configuration hardening** — Timeouts, gzip compression, static file caching
 - [ ] Production environment checklist
 - [ ] Database backup strategy documentation (named volume copy exists; formal strategy + restore drill still to document)
