@@ -131,6 +131,9 @@ export async function getAssessmentsList(
   // Build WHERE conditions array
   const conditions: SQL[] = [];
 
+  // Filter out archived students - only show active students
+  conditions.push(eq(students.status, "active"));
+
   // School year filter: use provided ID or fall back to active
   if (schoolYearId) {
     conditions.push(eq(assessments.schoolYearId, schoolYearId));
@@ -255,13 +258,16 @@ export async function getPendingAssessmentQueue(params: {
 
   const whereConditions = and(
     eq(enrollments.status, "pending"),
-    eq(enrollments.schoolYearId, activeSchoolYear.id)
+    eq(enrollments.schoolYearId, activeSchoolYear.id),
+    // Filter out archived students - only show active students
+    eq(students.status, "active")
   );
 
   const [countResult, pendingRows] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)` })
       .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
       .where(whereConditions),
     db
       .select({
@@ -331,6 +337,7 @@ export async function getAssessmentTabCounts(
   }
 
   // Single query with CASE expressions for all counts
+  // Join with students table to filter out archived students
   const [result] = await db
     .select({
       unpaid: sql<number>`SUM(CASE WHEN ${assessments.totalPaid} = 0 AND ${assessments.billingStatus} NOT IN ('cancelled', 'balance_forwarded') THEN 1 ELSE 0 END)`,
@@ -340,7 +347,14 @@ export async function getAssessmentTabCounts(
       forwarded: sql<number>`SUM(CASE WHEN ${assessments.billingStatus} = 'balance_forwarded' THEN 1 ELSE 0 END)`,
     })
     .from(assessments)
-    .where(eq(assessments.schoolYearId, syId));
+    .innerJoin(students, eq(assessments.studentId, students.id))
+    .where(
+      and(
+        eq(assessments.schoolYearId, syId),
+        // Filter out archived students - only count active students
+        eq(students.status, "active")
+      )
+    );
 
   return {
     unpaid: Number(result?.unpaid ?? 0),

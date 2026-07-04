@@ -42,6 +42,11 @@ import {
 } from "@/lib/utils/enrollment-status";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
+import {
+  assertStudentMutable,
+  StudentArchivedException,
+  formatArchiveError,
+} from "@/features/archive/archive.guards";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -426,6 +431,9 @@ export async function voidPaymentAction(
         throw new Error("Payment is already voided.");
       }
 
+      // Check if student is archived (blocked action - cannot void payments for archived students)
+      await assertStudentMutable(payment.studentId, "void_or", tx);
+
       // Check for pending cancellation request (blocks voids too)
       if (payment.assessmentId) {
         const assessmentForCancel = await tx.query.assessments.findFirst({
@@ -514,6 +522,10 @@ export async function voidPaymentAction(
 
     return { success: true, message: "Payment voided successfully." };
   } catch (error: unknown) {
+    // Handle archived student error
+    if (error instanceof StudentArchivedException) {
+      return { message: formatArchiveError(error).error.message };
+    }
     logger.error("[cashier] Failed to void payment", { error: String(error) });
     const message = error instanceof Error ? error.message : String(error);
     return { message: message || "An unexpected error occurred. Please try again." };

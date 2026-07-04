@@ -301,6 +301,7 @@ export async function getReadyToEnrollStudents(
         WHERE r.school_year_id = ${activeSchoolYearId}
           AND r.status = 'approved'
           AND s.is_active = true
+          AND s.status = 'active'
           AND s.id NOT IN (SELECT student_id FROM enrolled_this_year)
       ),
 
@@ -335,6 +336,7 @@ export async function getReadyToEnrollStudents(
         WHERE syc.previous_id IS NOT NULL
           AND e.status = 'enrolled'
           AND s.is_active = true
+          AND s.status = 'active'
           -- Exclude Grade 12 completers (no next grade available)
           AND gl."order" < (SELECT max_order FROM max_grade)
           -- Exclude students already enrolled this year
@@ -393,6 +395,7 @@ export async function getReadyToEnrollStudents(
         WHERE r.school_year_id = ${activeSchoolYearId}
           AND r.status = 'approved'
           AND s.is_active = true
+          AND s.status = 'active'
           AND s.id NOT IN (SELECT student_id FROM enrolled_this_year)
       ),
       old_students AS (
@@ -404,6 +407,7 @@ export async function getReadyToEnrollStudents(
         WHERE syc.previous_id IS NOT NULL
           AND e.status = 'enrolled'
           AND s.is_active = true
+          AND s.status = 'active'
           AND gl."order" < (SELECT max_order FROM max_grade)
           AND s.id NOT IN (SELECT student_id FROM enrolled_this_year)
       )
@@ -836,6 +840,7 @@ export async function getEnrollmentQueueCounts(): Promise<{
   ] = await Promise.all([
     // Ready to enroll: new/transferee approved registrations (not yet enrolled, active)
     // + old students enrolled last year (not yet in current year, not Grade 12 completers)
+    // NOTE: Filter by both is_active AND status = 'active' to exclude archived students
     db.execute<{ total: string }>(sql`
       WITH
         new_transferee AS (
@@ -845,6 +850,7 @@ export async function getEnrollmentQueueCounts(): Promise<{
           WHERE r.school_year_id = ${activeSchoolYearId}
             AND r.status = 'approved'
             AND s.is_active = true
+            AND s.status = 'active'
             AND NOT EXISTS (
               SELECT 1 FROM enrollments e2
               WHERE e2.student_id = r.student_id
@@ -876,6 +882,7 @@ export async function getEnrollmentQueueCounts(): Promise<{
           WHERE syc.previous_id IS NOT NULL
             AND e.status = 'enrolled'
             AND s.is_active = true
+            AND s.status = 'active'
             AND gl."order" < (SELECT max_order FROM max_grade)
             AND NOT EXISTS (
               SELECT 1 FROM enrollments e2
@@ -895,14 +902,17 @@ export async function getEnrollmentQueueCounts(): Promise<{
         return 0;
       }),
 
-    // Pending: enrollments with pending status
+    // Pending: enrollments with pending status (excluding archived students)
     db
       .select({ count: sql<number>`count(*)` })
       .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
       .where(
         and(
           eq(enrollments.schoolYearId, activeSchoolYearId),
-          eq(enrollments.status, "pending")
+          eq(enrollments.status, "pending"),
+          eq(students.isActive, true),
+          eq(students.status, "active")
         )
       )
       .then(([result]) => Number(result?.count || 0))
@@ -911,14 +921,17 @@ export async function getEnrollmentQueueCounts(): Promise<{
         return 0;
       }),
 
-    // Assessed: enrollments with assessed status
+    // Assessed: enrollments with assessed status (excluding archived students)
     db
       .select({ count: sql<number>`count(*)` })
       .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
       .where(
         and(
           eq(enrollments.schoolYearId, activeSchoolYearId),
-          eq(enrollments.status, "assessed")
+          eq(enrollments.status, "assessed"),
+          eq(students.isActive, true),
+          eq(students.status, "active")
         )
       )
       .then(([result]) => Number(result?.count || 0))
@@ -927,14 +940,17 @@ export async function getEnrollmentQueueCounts(): Promise<{
         return 0;
       }),
 
-    // Enrolled: enrollments with enrolled status
+    // Enrolled: enrollments with enrolled status (excluding archived students)
     db
       .select({ count: sql<number>`count(*)` })
       .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
       .where(
         and(
           eq(enrollments.schoolYearId, activeSchoolYearId),
-          eq(enrollments.status, "enrolled")
+          eq(enrollments.status, "enrolled"),
+          eq(students.isActive, true),
+          eq(students.status, "active")
         )
       )
       .then(([result]) => Number(result?.count || 0))
@@ -943,14 +959,17 @@ export async function getEnrollmentQueueCounts(): Promise<{
         return 0;
       }),
 
-    // Cancelled: enrollments with cancelled status
+    // Cancelled: enrollments with cancelled status (excluding archived students)
     db
       .select({ count: sql<number>`count(*)` })
       .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
       .where(
         and(
           eq(enrollments.schoolYearId, activeSchoolYearId),
-          eq(enrollments.status, "cancelled")
+          eq(enrollments.status, "cancelled"),
+          eq(students.isActive, true),
+          eq(students.status, "active")
         )
       )
       .then(([result]) => Number(result?.count || 0))
@@ -1078,6 +1097,7 @@ export async function getReadyToEnrollList(
         WHERE r.school_year_id = ${activeSchoolYearId}
           AND r.status = 'approved'
           AND s.is_active = true
+          AND s.status = 'active'
           AND s.id NOT IN (SELECT student_id FROM enrolled_this_year)
       ),
 
@@ -1107,6 +1127,7 @@ export async function getReadyToEnrollList(
         WHERE syc.previous_id IS NOT NULL
           AND e.status = 'enrolled'
           AND s.is_active = true
+          AND s.status = 'active'
           -- Exclude Grade 12 completers (no next grade available)
           AND gl."order" < (SELECT max_order FROM max_grade)
           -- Exclude students already enrolled this year
@@ -1269,6 +1290,7 @@ export async function getReadyToEnrollDetail(
     WHERE syc.previous_id IS NOT NULL
       AND e.status = 'enrolled'
       AND s.is_active = true
+      AND s.status = 'active'
     ORDER BY e.created_at DESC
     LIMIT 1
   `);

@@ -27,6 +27,11 @@ import { buildCreateStudentFormSnapshot } from "./students.utils";
 import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
 import { logger } from "@/lib/observability/logger";
 import type { GuardianInput } from "./students.schema";
+import {
+  assertStudentMutable,
+  StudentArchivedException,
+  formatArchiveError,
+} from "@/features/archive/archive.guards";
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -457,6 +462,16 @@ export async function updateStudentAction(
 
   if (!existingStudent) {
     return { message: "Student not found." };
+  }
+
+  // Check if student is archived (blocked action - cannot edit profile for archived students)
+  try {
+    await assertStudentMutable(studentId, "edit_profile");
+  } catch (error) {
+    if (error instanceof StudentArchivedException) {
+      return { message: formatArchiveError(error).error.message };
+    }
+    throw error;
   }
 
   const hasEnrolledEnrollment = await db.query.enrollments.findFirst({

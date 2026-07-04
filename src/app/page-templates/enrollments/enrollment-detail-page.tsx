@@ -12,6 +12,7 @@ import {
 } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { isArchivedStatus } from "@/lib/constants/student-status";
 import {
   getStudentDiscountsByAssessment,
   getDiscountRequestsByEnrollment,
@@ -63,6 +64,7 @@ export async function InternalEnrollmentDetailPage(props: {
       studentFirstName: students.firstName,
       studentLastName: students.lastName,
       studentRef: students.referenceNumber,
+      studentStatus: students.status,
       schoolYearLabel: schoolYears.label,
       gradeLevelName: gradeLevels.name,
       sectionName: sections.name,
@@ -102,15 +104,18 @@ export async function InternalEnrollmentDetailPage(props: {
       getPendingCancellationRequest(enrollmentId),
     ]);
 
-  const canRequestPermission = hasPermission(session.role, "discounts:request");
-  const canRequest = canRequestPermission && gate.allowed;
-  const requestBlockReason = !gate.allowed ? gate.reason : undefined;
-  const canReverse = hasPermission(session.role, "discounts:manage");
+  // Check if student is archived - disable transactional actions for archived students
+  const isStudentArchived = isArchivedStatus(enrollment.studentStatus);
 
-  // Cancellation permissions
-  const canCancelEnrollment = hasPermission(session.role, "enrollments:cancel");
+  const canRequestPermission = hasPermission(session.role, "discounts:request");
+  const canRequest = canRequestPermission && gate.allowed && !isStudentArchived;
+  const requestBlockReason = !gate.allowed ? gate.reason : undefined;
+  const canReverse = hasPermission(session.role, "discounts:manage") && !isStudentArchived;
+
+  // Cancellation permissions - disable for archived students
+  const canCancelEnrollment = hasPermission(session.role, "enrollments:cancel") && !isStudentArchived;
   const canWithdrawRequest =
-    pendingCancellationRequest?.requestedBy === session.userId;
+    pendingCancellationRequest?.requestedBy === session.userId && !isStudentArchived;
 
   const studentBasePath = studentRecordsBasePath ?? "/staff/students";
   const studentName = `${enrollment.studentLastName}, ${enrollment.studentFirstName}`;

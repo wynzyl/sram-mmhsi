@@ -59,6 +59,11 @@ export type NewAssessmentPageBlockedContext =
       status: "school_year_not_active";
       reason: "school_year_not_active";
       message: string;
+    }
+  | {
+      status: "student_archived";
+      reason: "student_archived";
+      message: string;
     };
 
 /** Pre-calculated discount amount for display in the assessment draft */
@@ -136,6 +141,7 @@ export async function loadNewAssessmentPageContext(
       firstName: students.firstName,
       lastName: students.lastName,
       referenceNumber: students.referenceNumber,
+      studentStatus: students.status,
       schoolYearId: enrollments.schoolYearId,
       gradeLevelId: enrollments.gradeLevelId,
       syLabel: schoolYears.label,
@@ -152,6 +158,16 @@ export async function loadNewAssessmentPageContext(
   if (row.length === 0) return null;
 
   const e = row[0];
+
+  // Block assessment creation for archived students
+  if (e.studentStatus !== "active") {
+    return {
+      status: "student_archived",
+      reason: "student_archived",
+      message: `This student has been archived (status: ${e.studentStatus}). Assessments cannot be created for archived students.`,
+    };
+  }
+
   if (e.enrollmentStatus !== "pending") {
     return {
       status: "not_pending",
