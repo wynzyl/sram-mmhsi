@@ -665,6 +665,8 @@ export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
       index("assessments_billing_status_idx").on(t.billingStatus), // PERFORMANCE: Outstanding balance queries
       index("assessments_student_billing_idx").on(t.studentId, t.billingStatus), // PERFORMANCE: Student balance lookups
       index("assessments_transferred_at_idx").on(t.transferredAt), // PERFORMANCE: Filter active assessments (WHERE transferredAt IS NULL)
+      // PERFORMANCE: Finance reports by school year + billing status
+      index("assessments_sy_billing_idx").on(t.schoolYearId, t.billingStatus),
       // DB-level: All transfer fields must be NULL or all NOT NULL
       check(
         "assessments_transfer_fields_atomic",
@@ -853,6 +855,10 @@ export const payments = pgTable(
     index("payments_assessment_status_idx").on(t.assessmentId, t.status), // PERFORMANCE: Assessment reconciliation
     index("payments_reverses_payment_idx").on(t.reversesPaymentId), // PERFORMANCE: Reversal lookups
     index("payments_kind_idx").on(t.kind), // PERFORMANCE: Filter payment vs reversal
+    // PERFORMANCE: Daily reconciliation queries (posted payments by date)
+    index("payments_posted_date_idx")
+      .on(t.paymentDate)
+      .where(sql`${t.status} = 'posted'`),
   ]
 );
 
@@ -924,6 +930,10 @@ export const teacherAssignments = pgTable(
     index("ta_active_idx")
       .on(t.teacherId)
       .where(sql`${t.deletedAt} IS NULL`),
+    // PERFORMANCE: Grade encoding queries by section + school year
+    index("ta_section_sy_idx").on(t.sectionId, t.schoolYearId),
+    // PERFORMANCE: Admin assignment queries by school year
+    index("ta_school_year_idx").on(t.schoolYearId),
   ]
 );
 
@@ -1063,6 +1073,8 @@ export const discountRequests = pgTable(
     index("discount_requests_pending_idx")
       .on(t.status)
       .where(sql`${t.status} = 'pending'`),
+    // PERFORMANCE: Discount type lookups
+    index("discount_requests_type_idx").on(t.discountTypeId),
   ]
 );
 

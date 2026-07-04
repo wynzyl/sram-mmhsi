@@ -119,60 +119,63 @@ export async function getClearances(
     .limit(params.pageSize)
     .offset(offset);
 
-  // Get enrollment info for each clearance
+  // Collect IDs for parallel queries
   const enrollmentIds = rows.filter((r) => r.enrollmentId).map((r) => r.enrollmentId!);
+  const schoolYearIds = rows
+    .filter((r) => r.schoolYearId && !r.enrollmentId)
+    .map((r) => r.schoolYearId!);
+  const resolvedByIds = rows.filter((r) => r.resolvedBy).map((r) => r.resolvedBy!);
+
+  // Run all lookup queries in parallel for better performance
+  const [enrollmentInfo, syInfo, usersData] = await Promise.all([
+    // Get enrollment info for each clearance
+    enrollmentIds.length > 0
+      ? db
+          .select({
+            id: enrollments.id,
+            gradeLevelName: gradeLevels.name,
+            schoolYearLabel: schoolYears.label,
+          })
+          .from(enrollments)
+          .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+          .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+          .where(inArray(enrollments.id, enrollmentIds))
+      : Promise.resolve([]),
+
+    // Get school year labels for clearances without enrollment
+    schoolYearIds.length > 0
+      ? db
+          .select({ id: schoolYears.id, label: schoolYears.label })
+          .from(schoolYears)
+          .where(inArray(schoolYears.id, schoolYearIds))
+      : Promise.resolve([]),
+
+    // Get resolved by user names
+    resolvedByIds.length > 0
+      ? db
+          .select({ id: users.id, username: users.username })
+          .from(users)
+          .where(inArray(users.id, resolvedByIds))
+      : Promise.resolve([]),
+  ]);
+
+  // Build lookup maps from parallel query results
   const enrollmentInfoMap = new Map<
     string,
     { gradeLevelName: string; schoolYearLabel: string }
   >();
+  enrollmentInfo.forEach((e) =>
+    enrollmentInfoMap.set(e.id, {
+      gradeLevelName: e.gradeLevelName,
+      schoolYearLabel: e.schoolYearLabel,
+    })
+  );
 
-  if (enrollmentIds.length > 0) {
-    const enrollmentInfo = await db
-      .select({
-        id: enrollments.id,
-        gradeLevelName: gradeLevels.name,
-        schoolYearLabel: schoolYears.label,
-      })
-      .from(enrollments)
-      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-      .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
-      .where(inArray(enrollments.id, enrollmentIds));
-
-    enrollmentInfo.forEach((e) =>
-      enrollmentInfoMap.set(e.id, {
-        gradeLevelName: e.gradeLevelName,
-        schoolYearLabel: e.schoolYearLabel,
-      })
-    );
-  }
-
-  // Get school year labels for clearances without enrollment
-  const schoolYearIds = rows
-    .filter((r) => r.schoolYearId && !r.enrollmentId)
-    .map((r) => r.schoolYearId!);
   const schoolYearMap = new Map<string, string>();
+  syInfo.forEach((sy) => schoolYearMap.set(sy.id, sy.label));
 
-  if (schoolYearIds.length > 0) {
-    const syInfo = await db
-      .select({ id: schoolYears.id, label: schoolYears.label })
-      .from(schoolYears)
-      .where(inArray(schoolYears.id, schoolYearIds));
-
-    syInfo.forEach((sy) => schoolYearMap.set(sy.id, sy.label));
-  }
-
-  // Get resolved by user names
-  const resolvedByIds = rows.filter((r) => r.resolvedBy).map((r) => r.resolvedBy!);
   const resolvedByMap = new Map<string, string>();
-
-  if (resolvedByIds.length > 0) {
-    const usersData = await db
-      .select({ id: users.id, username: users.username })
-      .from(users)
-      .where(inArray(users.id, resolvedByIds));
-
-    usersData.forEach((u) => resolvedByMap.set(u.id, u.username));
-  }
+  usersData.forEach((u) => resolvedByMap.set(u.id, u.username));
 
   const data: ClearanceListItem[] = rows.map((r) => {
     const enrollmentInfo = r.enrollmentId ? enrollmentInfoMap.get(r.enrollmentId) : null;

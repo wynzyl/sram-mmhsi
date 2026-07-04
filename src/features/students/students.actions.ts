@@ -59,6 +59,16 @@ export async function createStudentAction(
   // 2. Parse raw form data — guardians come in as JSON string from the client
   const guardiansRaw = formData.get("guardians");
   let guardiansParsed: unknown[] = [];
+
+  // Prevent DoS via large JSON payload (50KB limit)
+  const MAX_GUARDIANS_JSON_SIZE = 50_000;
+  if (typeof guardiansRaw === "string" && guardiansRaw.length > MAX_GUARDIANS_JSON_SIZE) {
+    return {
+      errors: { guardians: ["Guardian data exceeds maximum size."] },
+      fieldValues: buildCreateStudentFormSnapshot(formData, []),
+    };
+  }
+
   try {
     guardiansParsed = JSON.parse(guardiansRaw as string);
   } catch {
@@ -395,6 +405,13 @@ export async function updateStudentAction(
   // 2. Parse raw form data — guardians come in as JSON string from the client
   const guardiansRaw = formData.get("guardians");
   let guardiansParsed: unknown[] = [];
+
+  // Prevent DoS via large JSON payload (50KB limit)
+  const MAX_GUARDIANS_JSON_SIZE = 50_000;
+  if (typeof guardiansRaw === "string" && guardiansRaw.length > MAX_GUARDIANS_JSON_SIZE) {
+    return { errors: { guardians: ["Guardian data exceeds maximum size."] } };
+  }
+
   try {
     guardiansParsed = JSON.parse(guardiansRaw as string);
   } catch {

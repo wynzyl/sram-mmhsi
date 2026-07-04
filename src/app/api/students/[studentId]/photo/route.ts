@@ -78,10 +78,12 @@ export async function POST(
       },
     });
 
+    // Return 403 for missing student to prevent user enumeration attacks
+    // (attacker cannot distinguish "not found" from "not permitted")
     if (!student) {
       return NextResponse.json(
-        { success: false, error: "Student not found" },
-        { status: 404 }
+        { success: false, error: "Access denied" },
+        { status: 403 }
       );
     }
 
@@ -234,10 +236,12 @@ export async function DELETE(
       },
     });
 
+    // Return 403 for missing student to prevent user enumeration attacks
+    // (attacker cannot distinguish "not found" from "not permitted")
     if (!student) {
       return NextResponse.json(
-        { success: false, error: "Student not found" },
-        { status: 404 }
+        { success: false, error: "Access denied" },
+        { status: 403 }
       );
     }
 

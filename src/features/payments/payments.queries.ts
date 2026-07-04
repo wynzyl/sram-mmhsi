@@ -8,7 +8,7 @@ import {
   schoolYears,
   students,
 } from "@/lib/db/schema";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import type { Role } from "@/lib/constants/roles";
 import { getPortalStudentIds, getPortalStudentLabels } from "@/lib/queries/portal-student";
 import { calculateOffset } from "@/lib/types/pagination";
@@ -90,7 +90,9 @@ export async function fetchCashierQueueData(
       .where(
         and(
           eq(payments.status, "posted"),
-          sql`DATE(${payments.paymentDate}) = CURRENT_DATE`
+          // Use range query instead of DATE() function to enable index use
+          gte(payments.paymentDate, sql`CURRENT_DATE`),
+          lt(payments.paymentDate, sql`CURRENT_DATE + INTERVAL '1 day'`)
         )
       )
       .then((r) => r[0]),
@@ -178,7 +180,9 @@ export async function fetchCashierQueueData(
       .where(
         and(
           eq(payments.status, "posted"),
-          sql`DATE(${payments.paymentDate}) = CURRENT_DATE`
+          // Use range query instead of DATE() function to enable index use
+          gte(payments.paymentDate, sql`CURRENT_DATE`),
+          lt(payments.paymentDate, sql`CURRENT_DATE + INTERVAL '1 day'`)
         )
       )
       .orderBy(desc(payments.paymentDate), desc(payments.createdAt))
