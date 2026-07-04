@@ -57,7 +57,6 @@ export async function InternalNewStudentRegistrationPage(props: {
       </header>
 
       <StudentRegistrationForm
-        key={Date.now()}
         afterCreateStudentBasePath={afterCreateStudentBasePath}
         currentSchoolYear={currentSchoolYear}
         gradeLevels={glRows}

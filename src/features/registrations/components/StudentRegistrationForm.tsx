@@ -39,6 +39,8 @@ import { useFormToast } from "@/hooks/useFormToast";
 type IntakeStatus = "received" | "not_applicable" | "to_follow" | "";
 
 type GuardianValues = {
+  /** Stable client-only id for React keys; stripped before submit. */
+  _clientId: string;
   firstName: string;
   middleName: string;
   lastName: string;
@@ -76,6 +78,7 @@ type FormValues = {
 };
 
 const emptyGuardian = (isPrimary = false): GuardianValues => ({
+  _clientId: crypto.randomUUID(),
   firstName: "",
   middleName: "",
   lastName: "",
@@ -246,7 +249,13 @@ export default function StudentRegistrationForm({
         "intakeQualifiedVoucher", "intakeEscCertificate",
       ];
       for (const k of scalarKeys) fd.set(k, String(value[k] ?? ""));
-      fd.set("guardians", JSON.stringify(value.guardians));
+      // Strip client-only `_clientId` so only server-expected fields are sent.
+      const guardiansPayload = value.guardians.map((g) => {
+        const { _clientId, ...guardian } = g;
+        void _clientId;
+        return guardian;
+      });
+      fd.set("guardians", JSON.stringify(guardiansPayload));
       if (currentSchoolYear) fd.set("schoolYearId", currentSchoolYear.id);
       fd.set("registrationIntent", lockedRegistrationType);
       fd.set("registrationStudentType", lockedRegistrationType);
@@ -553,7 +562,7 @@ export default function StudentRegistrationForm({
                       </div>
 
                       {arrayField.state.value.map((g, i) => (
-                        <div key={g.email || `guardian-${i}`} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                        <div key={g._clientId} className="rounded-xl border border-border bg-card p-5 shadow-sm">
                           <div className="mb-4 flex items-center justify-between border-b border-border pb-4">
                             <h4 className="font-display text-lg font-bold text-foreground">
                               Guardian {i + 1}
