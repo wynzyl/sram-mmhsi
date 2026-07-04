@@ -30,6 +30,9 @@ import type { GuardianInput } from "./students.schema";
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
+/** Prevent DoS via large guardians JSON payload (50KB limit). */
+const MAX_GUARDIANS_JSON_SIZE = 50_000;
+
 /**
  * Gets the next student sequence number atomically using PostgreSQL sequence.
  * This prevents race conditions when creating students concurrently.
@@ -60,8 +63,6 @@ export async function createStudentAction(
   const guardiansRaw = formData.get("guardians");
   let guardiansParsed: unknown[] = [];
 
-  // Prevent DoS via large JSON payload (50KB limit)
-  const MAX_GUARDIANS_JSON_SIZE = 50_000;
   if (typeof guardiansRaw === "string" && guardiansRaw.length > MAX_GUARDIANS_JSON_SIZE) {
     return {
       errors: { guardians: ["Guardian data exceeds maximum size."] },
@@ -406,8 +407,6 @@ export async function updateStudentAction(
   const guardiansRaw = formData.get("guardians");
   let guardiansParsed: unknown[] = [];
 
-  // Prevent DoS via large JSON payload (50KB limit)
-  const MAX_GUARDIANS_JSON_SIZE = 50_000;
   if (typeof guardiansRaw === "string" && guardiansRaw.length > MAX_GUARDIANS_JSON_SIZE) {
     return { errors: { guardians: ["Guardian data exceeds maximum size."] } };
   }

@@ -34,11 +34,16 @@ export function ArchiveFilters({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  // Use currentSearch as the key to reset local state when URL changes externally
-  // (e.g. back/forward navigation). This is React's recommended pattern for
-  // "resetting state based on props" without using useEffect or setState during render.
-  // The search input is uncontrolled except for the initial value derived from URL.
+  // Keep the search input in sync with the URL-derived prop. When the URL
+  // changes externally (e.g. back/forward navigation), `currentSearch` changes
+  // and we adjust local state during render — React's recommended pattern for
+  // "adjusting state when a prop changes" without useEffect.
   const [search, setSearch] = useState(currentSearch ?? "");
+  const [syncedSearch, setSyncedSearch] = useState(currentSearch ?? "");
+  if ((currentSearch ?? "") !== syncedSearch) {
+    setSyncedSearch(currentSearch ?? "");
+    setSearch(currentSearch ?? "");
+  }
 
   const updateFilters = useCallback(
     (updates: Record<string, string | undefined>) => {

@@ -58,6 +58,23 @@ export type CashierQueueParams = {
 };
 
 // ─────────────────────────────────────────────────────────────────
+// Query helpers
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * SQL predicate matching payments whose `paymentDate` falls on "today".
+ * Uses a half-open range (`>= CURRENT_DATE` and `< CURRENT_DATE + 1 day`)
+ * instead of `DATE()` so the paymentDate index can be used. Centralized so
+ * the definition of "today" only needs to change in one place.
+ */
+function paymentDateIsToday() {
+  return [
+    gte(payments.paymentDate, sql`CURRENT_DATE`),
+    lt(payments.paymentDate, sql`CURRENT_DATE + INTERVAL '1 day'`),
+  ] as const;
+}
+
+// ─────────────────────────────────────────────────────────────────
 // Queries
 // ─────────────────────────────────────────────────────────────────
 
@@ -88,12 +105,7 @@ export async function fetchCashierQueueData(
       })
       .from(payments)
       .where(
-        and(
-          eq(payments.status, "posted"),
-          // Use range query instead of DATE() function to enable index use
-          gte(payments.paymentDate, sql`CURRENT_DATE`),
-          lt(payments.paymentDate, sql`CURRENT_DATE + INTERVAL '1 day'`)
-        )
+        and(eq(payments.status, "posted"), ...paymentDateIsToday())
       )
       .then((r) => r[0]),
 
@@ -178,12 +190,7 @@ export async function fetchCashierQueueData(
       .from(payments)
       .innerJoin(students, eq(payments.studentId, students.id))
       .where(
-        and(
-          eq(payments.status, "posted"),
-          // Use range query instead of DATE() function to enable index use
-          gte(payments.paymentDate, sql`CURRENT_DATE`),
-          lt(payments.paymentDate, sql`CURRENT_DATE + INTERVAL '1 day'`)
-        )
+        and(eq(payments.status, "posted"), ...paymentDateIsToday())
       )
       .orderBy(desc(payments.paymentDate), desc(payments.createdAt))
       .limit(20),
