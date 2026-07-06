@@ -39,6 +39,8 @@ export type LedgerPaymentRow = {
   kind?: string;
   /** For reversal rows: links to the original payment */
   reversesPaymentId?: string | null;
+  /** Manual entry flag: true when payment was entered retroactively from offline receipt */
+  isManualEntry?: boolean;
 };
 
 export type PendingVoidRequestInfo = {

@@ -11,6 +11,7 @@ interface ReceiptBooklet {
   endNumber: number;
   nextNumber: number;
   status: string;
+  usageMode: "auto_only" | "manual_only";
   createdAt: Date;
 }
 

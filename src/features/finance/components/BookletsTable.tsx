@@ -13,6 +13,7 @@ interface ReceiptBooklet {
   endNumber: number;
   nextNumber: number;
   status: string;
+  usageMode: "auto_only" | "manual_only";
   createdAt: Date;
 }
 
@@ -33,6 +34,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
               <th>Start Number</th>
               <th>End Number</th>
               <th>Next OR</th>
+              <th>Mode</th>
               <th>Status</th>
               <th>Created At</th>
             </tr>
@@ -40,7 +42,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
           <tbody>
             {booklets.length === 0 ? (
               <tr>
-                <td colSpan={7} className="table-empty">
+                <td colSpan={8} className="table-empty">
                   No receipt booklets found.
                 </td>
               </tr>
@@ -55,6 +57,11 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
                     <td className="font-mono">{String(booklet.endNumber).padStart(w, "0")}</td>
                     <td className={`font-mono ${booklet.status === "active" ? "text-primary" : ""}`}>
                       {booklet.status === "active" ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber) : "—"}
+                    </td>
+                    <td>
+                      <span className={`badge ${booklet.usageMode === "auto_only" ? "badge-info" : "badge-warning"}`}>
+                        {booklet.usageMode === "auto_only" ? "Auto" : "Manual"}
+                      </span>
                     </td>
                     <td>
                       <span className={`badge capitalize ${getReceiptStatusClasses(booklet.status)}`}>{booklet.status}</span>
@@ -93,6 +100,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
               <th className="px-4 py-3 font-medium">Booklet ID</th>
               <th className="px-4 py-3 font-medium">Range</th>
               <th className="px-4 py-3 font-medium">Current</th>
+              <th className="px-4 py-3 font-medium">Mode</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 text-right font-medium">Action</th>
             </tr>
@@ -100,7 +108,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
           <tbody>
             {booklets.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
                   No receipt booklets found.
                 </td>
               </tr>
@@ -118,6 +126,15 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
                   <td className="p-4 align-middle">
                     <span className="inline-flex min-w-[92px] items-center justify-center border border-border bg-muted px-2 py-1 font-mono text-[13px] text-foreground">
                       {booklet.status === "active" ? formatStoredOrNumber(booklet.prefix, booklet.nextNumber) : "--"}
+                    </span>
+                  </td>
+                  <td className="p-4 align-middle">
+                    <span className={`inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium ${
+                      booklet.usageMode === "auto_only"
+                        ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
+                        : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                    }`}>
+                      {booklet.usageMode === "auto_only" ? "Auto" : "Manual"}
                     </span>
                   </td>
                   <td className="p-4 align-middle">

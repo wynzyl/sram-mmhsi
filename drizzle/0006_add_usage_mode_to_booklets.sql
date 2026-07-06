@@ -1,0 +1,2 @@
+CREATE TYPE "public"."booklet_usage_mode" AS ENUM('auto_only', 'manual_only');--> statement-breakpoint
+ALTER TABLE "receipt_booklets" ADD COLUMN "usage_mode" "booklet_usage_mode" DEFAULT 'auto_only' NOT NULL;

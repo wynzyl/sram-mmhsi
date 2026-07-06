@@ -36,6 +36,20 @@
       "when": 1783146159528,
       "tag": "0004_add_query_performance_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783312137522,
+      "tag": "0005_add_manual_entry_flag_to_payments",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783316084070,
+      "tag": "0006_add_usage_mode_to_booklets",
+      "breakpoints": true
     }
   ]
 }

@@ -10,7 +10,7 @@ import {
   enrollments,
   invoices,
 } from "@/lib/db/schema";
-import { eq, and, lte, gte, ne } from "drizzle-orm";
+import { eq, and, lte, gte, ne, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -27,7 +27,7 @@ import type {
 } from "./payments.schema";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
-import { formatStoredOrNumber } from "@/lib/utils/or-number";
+import { formatStoredOrNumber, parseOrNumber } from "@/lib/utils/or-number";
 import { assertEnrollmentAllowsPayment } from "@/lib/utils/enrollment-payment";
 import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
 import {
@@ -66,7 +66,7 @@ export async function createBookletAction(
 
   const parsed = result;
 
-  const { startNumber, endNumber } = parsed.data;
+  const { startNumber, endNumber, usageMode } = parsed.data;
   const prefix = parsed.data.prefix.toUpperCase();
   const seriesCanonical = formatBookletSeriesCanonical(prefix, startNumber, endNumber);
 
@@ -113,6 +113,7 @@ export async function createBookletAction(
         endNumber,
         nextNumber: startNumber,
         status: "active",
+        usageMode,
         createdBy: session.userId,
         updatedBy: session.userId,
       })
@@ -128,6 +129,7 @@ export async function createBookletAction(
         ...parsed.data,
         prefix,
         series: seriesCanonical,
+        usageMode,
       },
     }, { throwOnFail: true });
 
@@ -155,8 +157,19 @@ export async function postPaymentAction(
     return { errors: result.errors };
   }
 
-  const { studentId, assessmentId, bookletId, amount, paymentMethod, referenceNumber, remarks, idempotencyKey } =
-    result.data;
+  const {
+    studentId,
+    assessmentId,
+    bookletId,
+    amount,
+    paymentMethod,
+    referenceNumber,
+    remarks,
+    idempotencyKey,
+    isManualEntry,
+    manualPaymentDate,
+    manualOrNumber,
+  } = result.data;
 
   try {
     let orNumberToAssign: string | undefined;
@@ -228,33 +241,154 @@ export async function postPaymentAction(
         }
       }
 
-      // 2. Fetch Selected Active Booklet (locking it for update to prevent race conditions on OR number)
-      const activeBooklet = await lockReceiptBooklet(tx, bookletId, "active");
+      // ─── Manual Entry vs Auto-Assign OR ────────────────────────────────────
+      if (isManualEntry) {
+        // === MANUAL ENTRY PATH ===
+        // 1. Parse and validate OR number format
+        const parsed = parseOrNumber(manualOrNumber!);
+        if (!parsed) {
+          throw new Error("Invalid OR number format. Expected: 'XX 00000' (e.g. AK 00050).");
+        }
 
-      if (!activeBooklet) {
-        throw new Error("The selected receipt booklet is either invalid or no longer active. Please refresh and select another.");
+        // 2. Find booklet containing this OR number
+        const matchingBooklets = await tx
+          .select({
+            id: receiptBooklets.id,
+            prefix: receiptBooklets.prefix,
+            series: receiptBooklets.series,
+            startNumber: receiptBooklets.startNumber,
+            endNumber: receiptBooklets.endNumber,
+            usageMode: receiptBooklets.usageMode,
+          })
+          .from(receiptBooklets)
+          .where(
+            and(
+              eq(receiptBooklets.prefix, parsed.prefix),
+              sql`${receiptBooklets.startNumber} <= ${parsed.sequence}`,
+              sql`${receiptBooklets.endNumber} >= ${parsed.sequence}`
+            )
+          )
+          .limit(1);
+
+        const matchingBooklet = matchingBooklets[0];
+        if (!matchingBooklet) {
+          throw new Error(
+            `MANUAL_OR_NO_BOOKLET: OR number ${manualOrNumber} does not belong to any registered booklet. ` +
+            `Register the booklet (prefix ${parsed.prefix}, range including ${parsed.sequence}) first, or check the OR number.`
+          );
+        }
+
+        // 2b. Validate booklet usage mode - manual entry requires manual_only booklet
+        if (matchingBooklet.usageMode !== "manual_only") {
+          throw new Error(
+            `MANUAL_OR_WRONG_MODE: OR number ${manualOrNumber} belongs to booklet "${matchingBooklet.series}" ` +
+            `which is set for auto-assign only. Use a manual-entry booklet instead.`
+          );
+        }
+
+        // 3. Check OR number not already used
+        const existingPayment = await tx.query.payments.findFirst({
+          where: eq(payments.orNumber, manualOrNumber!),
+          columns: { id: true },
+        });
+        if (existingPayment) {
+          throw new Error(`MANUAL_OR_DUPLICATE: OR number ${manualOrNumber} is already recorded on another payment.`);
+        }
+
+        orNumberToAssign = manualOrNumber!;
+        bookletIdToAssign = matchingBooklet.id;
+
+        // 4. Update booklet's nextNumber if manual OR >= current nextNumber
+        // This ensures the UI doesn't show already-consumed ORs as available
+        const bookletForUpdate = await tx
+          .select({
+            nextNumber: receiptBooklets.nextNumber,
+            startNumber: receiptBooklets.startNumber,
+            endNumber: receiptBooklets.endNumber,
+            prefix: receiptBooklets.prefix,
+          })
+          .from(receiptBooklets)
+          .where(eq(receiptBooklets.id, matchingBooklet.id))
+          .for("update")
+          .limit(1)
+          .then((rows) => rows[0]);
+
+        if (bookletForUpdate && parsed.sequence >= bookletForUpdate.nextNumber) {
+          // Find all consumed OR numbers in this booklet's range
+          const consumedOrs = await tx
+            .select({ orNumber: payments.orNumber })
+            .from(payments)
+            .where(
+              and(
+                eq(payments.bookletId, matchingBooklet.id),
+                sql`${payments.orNumber} IS NOT NULL`
+              )
+            );
+
+          // Parse consumed OR sequences into a Set for O(1) lookup
+          const consumedSet = new Set<number>();
+          for (const row of consumedOrs) {
+            if (row.orNumber) {
+              const parsedOr = parseOrNumber(row.orNumber);
+              if (parsedOr) consumedSet.add(parsedOr.sequence);
+            }
+          }
+          // Also include the one we're about to insert
+          consumedSet.add(parsed.sequence);
+
+          // Find the next available OR number in sequence
+          let newNextNumber = bookletForUpdate.nextNumber;
+          while (
+            newNextNumber <= bookletForUpdate.endNumber &&
+            consumedSet.has(newNextNumber)
+          ) {
+            newNextNumber++;
+          }
+
+          // Update booklet if nextNumber changed
+          if (newNextNumber !== bookletForUpdate.nextNumber) {
+            const newStatus = newNextNumber > bookletForUpdate.endNumber ? "exhausted" : "active";
+            await tx
+              .update(receiptBooklets)
+              .set({
+                nextNumber: newNextNumber,
+                status: newStatus,
+                updatedBy: session.userId,
+                updatedAt: new Date(),
+              })
+              .where(eq(receiptBooklets.id, matchingBooklet.id));
+          }
+        }
+      } else {
+        // === AUTO-ASSIGN PATH (existing logic) ===
+        // 2. Fetch Selected Active Booklet (locking it for update to prevent race conditions on OR number)
+        const activeBooklet = await lockReceiptBooklet(tx, bookletId!, "active");
+
+        if (!activeBooklet) {
+          throw new Error("The selected receipt booklet is either invalid or no longer active. Please refresh and select another.");
+        }
+
+        bookletIdToAssign = activeBooklet.id;
+        const currentNext = activeBooklet.nextNumber;
+        const endNum = activeBooklet.endNumber;
+        const bookletPrefix = String(activeBooklet.prefix ?? "").trim() || String(activeBooklet.series ?? "").trim();
+
+        orNumberToAssign = formatStoredOrNumber(bookletPrefix, currentNext);
+
+        // 3. Update Booklet Next Number / Status
+        const nextNum = currentNext + 1;
+        const newStatus = nextNum > endNum ? "exhausted" : "active";
+
+        await tx
+          .update(receiptBooklets)
+          .set({
+            nextNumber: nextNum,
+            status: newStatus,
+            updatedBy: session.userId,
+            updatedAt: new Date(),
+          })
+          .where(eq(receiptBooklets.id, bookletIdToAssign));
       }
-
-      bookletIdToAssign = activeBooklet.id;
-      const currentNext = activeBooklet.nextNumber;
-      const endNum = activeBooklet.endNumber;
-      const bookletPrefix = String(activeBooklet.prefix ?? "").trim() || String(activeBooklet.series ?? "").trim();
-
-      orNumberToAssign = formatStoredOrNumber(bookletPrefix, currentNext);
-
-      // 3. Update Booklet Next Number / Status
-      const nextNum = currentNext + 1;
-      const newStatus = nextNum > endNum ? "exhausted" : "active";
-
-      await tx
-        .update(receiptBooklets)
-        .set({
-          nextNumber: nextNum,
-          status: newStatus,
-          updatedBy: session.userId,
-          updatedAt: new Date(),
-        })
-        .where(eq(receiptBooklets.id, bookletIdToAssign as string));
 
       // 4. Create Payment Record
       const [newPayment] = await tx
@@ -268,10 +402,11 @@ export async function postPaymentAction(
           amount: String(amount),
           paymentMethod,
           referenceNumber,
-          paymentDate: new Date(),
+          paymentDate: isManualEntry ? manualPaymentDate! : new Date(),
           status: "posted",
           remarks,
           idempotencyKey,
+          isManualEntry,
           createdBy: session.userId,
           updatedBy: session.userId,
         })
@@ -318,14 +453,16 @@ export async function postPaymentAction(
         );
       }
 
-      // 7. Audit Log
+      // 7. Audit Log (add manual entry context)
       await logAudit({
         actor: session.userId,
         actorRole: session.role,
         action: "payment_posted",
         targetEntity: "payments",
         targetId: newPayment.id,
-        context: `OR: ${orNumberToAssign}`,
+        context: isManualEntry
+          ? `Manual entry: OR ${orNumberToAssign}, dated ${manualPaymentDate!.toISOString().split("T")[0]}`
+          : `OR: ${orNumberToAssign}`,
       }, { throwOnFail: true });
     });
 
@@ -339,6 +476,8 @@ export async function postPaymentAction(
 
     revalidatePath(`/staff/assessments/${assessmentId}`);
     revalidatePath("/staff/finance/invoices");
+    // Booklets page shows nextNumber; update it after any payment post (especially manual entries)
+    revalidatePath("/staff/finance/booklets");
     // Dashboard KPIs reflect collections; an enrollment can flip to "enrolled" via payment.
     invalidateTag(CACHE_TAGS.DASHBOARD);
     // SWR is enough here: the cashier lands on /staff/payments next, which does
@@ -372,6 +511,30 @@ export async function postPaymentAction(
     logger.error("[cashier] Failed to post payment", { error: String(error) });
 
     const msg = error instanceof Error ? error.message : String(error);
+
+    // Handle manual entry specific errors
+    if (msg.startsWith("MANUAL_OR_NO_BOOKLET:")) {
+      return {
+        errors: {
+          manualOrNumber: [msg.replace("MANUAL_OR_NO_BOOKLET: ", "")],
+        },
+      };
+    }
+    if (msg.startsWith("MANUAL_OR_DUPLICATE:")) {
+      return {
+        errors: {
+          manualOrNumber: [msg.replace("MANUAL_OR_DUPLICATE: ", "")],
+        },
+      };
+    }
+    if (msg.startsWith("MANUAL_OR_WRONG_MODE:")) {
+      return {
+        errors: {
+          manualOrNumber: [msg.replace("MANUAL_OR_WRONG_MODE: ", "")],
+        },
+      };
+    }
+
     if (msg.startsWith("REF_DUPLICATE:")) {
       return {
         errors: {

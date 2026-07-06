@@ -76,6 +76,7 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
     .limit(1)
     .then((r) => r[0] ?? null);
 
+  // Only show auto_only booklets in the cashier dropdown (manual_only reserved for offline entry)
   const activeBooklets = await db
     .select({
       id: receiptBooklets.id,
@@ -88,6 +89,7 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
     .where(
       and(
         eq(receiptBooklets.status, "active"),
+        eq(receiptBooklets.usageMode, "auto_only"),
         lte(receiptBooklets.nextNumber, receiptBooklets.endNumber) // PERFORMANCE: Filter out exhausted booklets
       )
     )

@@ -80,6 +80,12 @@ export const bookletStatusEnum = pgEnum("booklet_status", [
   "voided",
 ]);
 
+/** Booklet usage mode: auto_only for cashier auto-assign, manual_only for offline reconciliation */
+export const bookletUsageModeEnum = pgEnum("booklet_usage_mode", [
+  "auto_only",
+  "manual_only",
+]);
+
 export const orStatusEnum = pgEnum("or_status", [
   "available",
   "consumed",
@@ -733,6 +739,8 @@ export const receiptBooklets = pgTable(
     endNumber: integer("end_number").notNull(),
     nextNumber: integer("next_number").notNull(),
     status: bookletStatusEnum("status").notNull().default("active"),
+    /** Usage mode: auto_only for cashier auto-assign dropdown, manual_only for offline reconciliation */
+    usageMode: bookletUsageModeEnum("usage_mode").notNull().default("auto_only"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -826,6 +834,8 @@ export const payments = pgTable(
     reversedBy: uuid("reversed_by").references(() => users.id),
     /** Links to the void request that triggered this reversal */
     reversedByRequestId: uuid("reversed_by_request_id"), // FK added after voidRequests table
+    /** Manual entry flag: true when payment was entered retroactively from offline receipt */
+    isManualEntry: boolean("is_manual_entry").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),

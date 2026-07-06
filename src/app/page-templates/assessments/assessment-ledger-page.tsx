@@ -91,6 +91,7 @@ export async function InternalAssessmentLedgerPage(props: {
         processedByUsername: users.username,
         kind: payments.kind,
         reversesPaymentId: payments.reversesPaymentId,
+        isManualEntry: payments.isManualEntry,
       })
       .from(payments)
       .leftJoin(users, eq(payments.createdBy, users.id))
@@ -140,6 +141,7 @@ export async function InternalAssessmentLedgerPage(props: {
     endNumber: number;
   }[] = [];
   if (canPost) {
+    // Only show auto_only booklets in the cashier dropdown (manual_only reserved for offline entry)
     activeBooklets = await db
       .select({
         id: receiptBooklets.id,
@@ -152,6 +154,7 @@ export async function InternalAssessmentLedgerPage(props: {
       .where(
         and(
           eq(receiptBooklets.status, "active"),
+          eq(receiptBooklets.usageMode, "auto_only"),
           lte(receiptBooklets.nextNumber, receiptBooklets.endNumber)
         )
       )
@@ -169,6 +172,7 @@ export async function InternalAssessmentLedgerPage(props: {
     processedBy: p.processedByUsername ?? null,
     kind: p.kind,
     reversesPaymentId: p.reversesPaymentId,
+    isManualEntry: p.isManualEntry,
   }));
 
   return (

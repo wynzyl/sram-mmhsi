@@ -30,6 +30,8 @@ interface Payment {
   kind?: string;
   /** For reversal rows: links to the original payment */
   reversesPaymentId?: string | null;
+  /** Manual entry flag: true when payment was entered retroactively from offline receipt */
+  isManualEntry?: boolean;
 }
 
 interface PendingVoidRequest {
@@ -225,7 +227,14 @@ export default function PaymentsHistoryTable({
           }
 
           return payment.orNumber ? (
-            <ReferenceCode code={payment.orNumber} />
+            <span className="inline-flex items-center gap-2">
+              <ReferenceCode code={payment.orNumber} />
+              {payment.isManualEntry && (
+                <Badge variant="warning" className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] px-1.5 h-5">
+                  Manual
+                </Badge>
+              )}
+            </span>
           ) : (
             <span className="text-muted-foreground">-</span>
           );

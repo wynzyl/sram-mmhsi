@@ -30,6 +30,10 @@ export function normalizeBookletSeriesInput(series: string): string {
 
 // ─── Receipt Booklet Validators ───────────────────────────────────────────────
 
+/** Valid booklet usage modes */
+export const BOOKLET_USAGE_MODES = ["auto_only", "manual_only"] as const;
+export type BookletUsageMode = (typeof BOOKLET_USAGE_MODES)[number];
+
 export const CreateBookletSchema = z
   .object({
     series: z
@@ -50,6 +54,7 @@ export const CreateBookletSchema = z
       .int("End number must be a whole number")
       .min(1, "End number must be at least 1")
       .max(OR_SEQUENCE_MAX, `End number must be at most ${OR_SEQUENCE_MAX} (5-digit OR)`),
+    usageMode: z.enum(BOOKLET_USAGE_MODES).default("auto_only"),
   })
   .refine((data) => data.endNumber >= data.startNumber, {
     message: "End number must be greater than or equal to start number",
