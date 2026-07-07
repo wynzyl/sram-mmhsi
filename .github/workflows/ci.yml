@@ -92,7 +92,7 @@ jobs:
         env:
           # Dummy env vars for build (not real secrets)
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/srams_ci
-          AUTH_SECRET: ci-build-secret-not-real
+          AUTH_SECRET: "lP9XyESSY9lT1FHTy3HifckKg/5rRLPuys2y/BOneQk="
           APP_BASE_URL: http://localhost:3000
 
   migration-check:
