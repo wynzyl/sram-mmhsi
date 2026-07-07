@@ -1,5 +1,4 @@
 import { requireSession } from "@/lib/auth/session";
-import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import {
   getBfxTransfersReport,
@@ -26,8 +25,9 @@ export default async function BalanceForwardsReportPage({
 }: PageProps) {
   const session = await requireSession();
 
-  // Permission check - finance_officer, admin, or super_admin
-  if (!hasPermission(session.role, "reports:view")) {
+  // Only super_admin, admin, and finance_officer can access finance reports
+  const FINANCE_REPORT_ROLES: readonly string[] = ["super_admin", "admin", "finance_officer"];
+  if (!FINANCE_REPORT_ROLES.includes(session.role)) {
     redirect("/staff/dashboard");
   }
 

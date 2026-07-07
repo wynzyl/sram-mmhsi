@@ -1,5 +1,4 @@
 import { requireSession } from "@/lib/auth/session";
-import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import { getSchoolYears } from "@/lib/queries/schoolYears";
 import {
@@ -26,7 +25,9 @@ export default async function AccountsReceivableReportPage({
 }: PageProps) {
   const session = await requireSession();
 
-  if (!hasPermission(session.role, "reports:view")) {
+  // Only super_admin, admin, and finance_officer can access finance reports
+  const FINANCE_REPORT_ROLES: readonly string[] = ["super_admin", "admin", "finance_officer"];
+  if (!FINANCE_REPORT_ROLES.includes(session.role)) {
     redirect("/staff/dashboard");
   }
 

@@ -141,6 +141,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "fee_schedules:manage",
     "school_years:manage",
     "reports:view", "reports:finance", "reports:academic",
+    "users:manage",
     "system:manage",
   ],
   registrar: [
