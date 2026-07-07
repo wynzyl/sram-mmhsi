@@ -1,0 +1,1 @@
+CREATE INDEX "payments_booklet_idx" ON "payments" USING btree ("booklet_id");

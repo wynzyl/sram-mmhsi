@@ -57,6 +57,20 @@
       "when": 1783401700308,
       "tag": "0007_add_user_default_booklet",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783407986379,
+      "tag": "0008_add_users_default_booklet_fk",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783408810528,
+      "tag": "0009_add_payments_booklet_index",
+      "breakpoints": true
     }
   ]
 }

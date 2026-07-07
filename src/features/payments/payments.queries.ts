@@ -387,29 +387,40 @@ export async function getManualEntrySuggestions(): Promise<ManualEntrySuggestion
     )
     .orderBy(asc(receiptBooklets.createdAt));
 
-  // 3. For each booklet, compute next available OR number
-  const suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[] = [];
+  // 3. Batch-fetch all consumed OR numbers for every manual booklet in one query
+  //    (avoids an N+1 query per booklet), then group the sequences by booklet.
+  const consumedBySequence = new Map<string, Set<number>>();
+  const bookletIds = manualBooklets.map((b) => b.id);
 
-  for (const booklet of manualBooklets) {
-    // Find all consumed OR numbers in this booklet's range
+  if (bookletIds.length > 0) {
     const consumedOrs = await db
-      .select({ orNumber: payments.orNumber })
+      .select({ bookletId: payments.bookletId, orNumber: payments.orNumber })
       .from(payments)
       .where(
         and(
-          eq(payments.bookletId, booklet.id),
+          inArray(payments.bookletId, bookletIds),
           sql`${payments.orNumber} IS NOT NULL`
         )
       );
 
-    // Parse consumed OR sequences into a Set for O(1) lookup
-    const consumedSet = new Set<number>();
     for (const row of consumedOrs) {
-      if (row.orNumber) {
-        const parsed = parseOrNumber(row.orNumber);
-        if (parsed) consumedSet.add(parsed.sequence);
+      if (!row.bookletId || !row.orNumber) continue;
+      const parsed = parseOrNumber(row.orNumber);
+      if (!parsed) continue;
+      let set = consumedBySequence.get(row.bookletId);
+      if (!set) {
+        set = new Set<number>();
+        consumedBySequence.set(row.bookletId, set);
       }
+      set.add(parsed.sequence);
     }
+  }
+
+  // 4. For each booklet, compute next available OR number from the grouped set
+  const suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[] = [];
+
+  for (const booklet of manualBooklets) {
+    const consumedSet = consumedBySequence.get(booklet.id) ?? new Set<number>();
 
     // Find the next available OR number in sequence
     let nextAvailable = booklet.nextNumber;

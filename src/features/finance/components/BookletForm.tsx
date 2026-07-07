@@ -2,10 +2,11 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ClipboardPlus, Info, UserRound } from "lucide-react";
+import { CalendarDays, ClipboardPlus, Info } from "lucide-react";
 import { createBookletAction } from "@/features/payments/payments.actions";
 import type { BookletFormState } from "@/lib/validators/cashier";
 import { cn } from "@/lib/utils/cn";
+import { UsageModeField, AssignedCashierField } from "./BookletFormFields";
 
 interface BookletFormProps {
   variant?: "default" | "dashboard";
@@ -112,48 +113,13 @@ export default function BookletForm({
           {state.errors?.prefix && <p className="form-error">{state.errors.prefix[0]}</p>}
         </div>
 
-        <div className="form-group mt-4">
-          <label className="form-label" htmlFor="usageMode">
-            Usage Mode <span className="required">*</span>
-          </label>
-          <select
-            id="usageMode"
-            name="usageMode"
-            className={`form-control ${state.errors?.usageMode ? "form-control-error" : ""}`}
-            defaultValue="auto_only"
-          >
-            <option value="auto_only">Auto-assign only (cashier posting)</option>
-            <option value="manual_only">Manual entry only (offline reconciliation)</option>
-          </select>
-          <p className="form-hint text-muted mt-1 text-xs">
-            <strong>Auto-assign:</strong> Appears in cashier dropdown for system-assigned OR numbers.<br />
-            <strong>Manual entry:</strong> Reserved for offline receipts entered retroactively.
-          </p>
-          {state.errors?.usageMode && <p className="form-error">{state.errors.usageMode[0]}</p>}
-        </div>
+        <UsageModeField variant="default" error={state.errors?.usageMode} />
 
-        <div className="form-group mt-4">
-          <label className="form-label" htmlFor="assignedCashierId">
-            Assign to Cashier (Optional)
-          </label>
-          <select
-            id="assignedCashierId"
-            name="assignedCashierId"
-            className={`form-control ${state.errors?.assignedCashierId ? "form-control-error" : ""}`}
-            defaultValue=""
-          >
-            <option value="">— No assignment —</option>
-            {cashiers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.username} ({c.email})
-              </option>
-            ))}
-          </select>
-          <p className="form-hint text-muted mt-1 text-xs">
-            Sets this booklet as the cashier&apos;s default for payment posting.
-          </p>
-          {state.errors?.assignedCashierId && <p className="form-error">{state.errors.assignedCashierId[0]}</p>}
-        </div>
+        <AssignedCashierField
+          variant="default"
+          cashiers={cashiers}
+          error={state.errors?.assignedCashierId}
+        />
 
         <div className="form-grid mt-4">
           <div className="form-group">
@@ -311,44 +277,13 @@ export default function BookletForm({
           </div>
         </div>
 
-        <div>
-          <label className="block text-[0.8125rem] font-medium text-foreground mb-1.5" htmlFor="usageMode">
-            Usage Mode
-          </label>
-          <select
-            id="usageMode"
-            name="usageMode"
-            className={cn(inputBaseClasses, state.errors?.usageMode && "border-destructive")}
-            defaultValue="auto_only"
-          >
-            <option value="auto_only">Auto-assign only (cashier posting)</option>
-            <option value="manual_only">Manual entry only (offline reconciliation)</option>
-          </select>
-          {state.errors?.usageMode && <p className="mt-1 text-xs text-rose-300">{state.errors.usageMode[0]}</p>}
-        </div>
+        <UsageModeField variant="dashboard" error={state.errors?.usageMode} />
 
-        <div>
-          <label className="block text-[0.8125rem] font-medium text-foreground mb-1.5" htmlFor="assignedCashierId">
-            Assign to Cashier (Optional)
-          </label>
-          <div className="relative">
-            <select
-              id="assignedCashierId"
-              name="assignedCashierId"
-              className={cn(inputBaseClasses, "pr-10", state.errors?.assignedCashierId && "border-destructive")}
-              defaultValue=""
-            >
-              <option value="">— No assignment —</option>
-              {cashiers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.username} ({c.email})
-                </option>
-              ))}
-            </select>
-            <UserRound className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-500" />
-          </div>
-          {state.errors?.assignedCashierId && <p className="mt-1 text-xs text-rose-300">{state.errors.assignedCashierId[0]}</p>}
-        </div>
+        <AssignedCashierField
+          variant="dashboard"
+          cashiers={cashiers}
+          error={state.errors?.assignedCashierId}
+        />
 
         <button type="submit" className="btn-primary mt-2 flex h-14 w-full items-center justify-center gap-2" disabled={pending}>
           <ClipboardPlus className="h-4 w-4" />

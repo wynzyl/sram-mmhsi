@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD CONSTRAINT "users_default_booklet_id_receipt_booklets_id_fk" FOREIGN KEY ("default_booklet_id") REFERENCES "public"."receipt_booklets"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "users_default_booklet_uidx" ON "users" USING btree ("default_booklet_id") WHERE "users"."default_booklet_id" IS NOT NULL;
