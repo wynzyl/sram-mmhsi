@@ -29,6 +29,13 @@ interface PostPaymentFormProps {
   onCancel?: () => void;
   /** Called after a successful post (e.g. close modal + refresh). */
   onPosted?: () => void;
+  /** Default booklet ID for pre-selection (from cashier's assigned default) */
+  defaultBookletId?: string | null;
+  /** Manual entry suggestions for pre-filling date and OR number */
+  manualSuggestions?: {
+    lastManualPaymentDate: string | null;
+    suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[];
+  };
 }
 
 
@@ -39,6 +46,8 @@ export default function PostPaymentForm({
   activeBooklets,
   onCancel,
   onPosted,
+  defaultBookletId,
+  manualSuggestions,
 }: PostPaymentFormProps) {
   const initialState: PaymentFormState = {};
   const [state, action, pending] = useActionState(postPaymentAction, initialState);
@@ -48,10 +57,32 @@ export default function PostPaymentForm({
   const [amountToPay, setAmountToPay] = useState(String(balance));
   const [amountTendered, setAmountTendered] = useState("");
 
+  // Default booklet selection (pre-select if valid and in activeBooklets)
+  const [selectedBookletId, setSelectedBookletId] = useState<string>(() => {
+    if (defaultBookletId && activeBooklets.some(b => b.id === defaultBookletId)) {
+      return defaultBookletId;
+    }
+    return activeBooklets[0]?.id ?? "";
+  });
+
   // Manual entry state
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualPaymentDate, setManualPaymentDate] = useState("");
   const [manualOrNumber, setManualOrNumber] = useState("");
+
+  // Handler for toggling manual entry - auto-fills suggestions on first enable
+  const handleManualEntryToggle = (checked: boolean) => {
+    setIsManualEntry(checked);
+    // Auto-fill suggestions when enabling manual entry (only if fields are empty)
+    if (checked && manualSuggestions) {
+      if (manualSuggestions.lastManualPaymentDate && !manualPaymentDate) {
+        setManualPaymentDate(manualSuggestions.lastManualPaymentDate);
+      }
+      if (manualSuggestions.suggestedOrNumbers[0] && !manualOrNumber) {
+        setManualOrNumber(manualSuggestions.suggestedOrNumbers[0].nextOr);
+      }
+    }
+  };
 
   // One key per form mount: a retried submit replays as the SAME payment
   // server-side instead of consuming a second OR (audit finding F7).
@@ -132,7 +163,7 @@ export default function PostPaymentForm({
           type="checkbox"
           id="isManualEntryToggle"
           checked={isManualEntry}
-          onChange={(e) => setIsManualEntry(e.target.checked)}
+          onChange={(e) => handleManualEntryToggle(e.target.checked)}
           className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
         />
         <label htmlFor="isManualEntryToggle" className="text-sm font-medium">
@@ -201,6 +232,8 @@ export default function PostPaymentForm({
               className="form-control"
               required
               disabled={activeBooklets.length === 0}
+              value={selectedBookletId}
+              onChange={(e) => setSelectedBookletId(e.target.value)}
             >
               {activeBooklets.map((b) => (
                 <option key={b.id} value={b.id}>

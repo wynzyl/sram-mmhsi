@@ -74,13 +74,20 @@ type GuardExecutor = Pick<typeof db, "select">;
  */
 export async function getStudentStatus(
   studentId: string,
-  executor: GuardExecutor = db
+  executor: GuardExecutor = db,
+  forUpdate = false
 ): Promise<StudentStatus | null> {
-  const [student] = await executor
+  const query = executor
     .select({ status: students.status })
     .from(students)
     .where(and(eq(students.id, studentId), isNull(students.deletedAt)))
     .limit(1);
+
+  // Acquire a row lock so a concurrent archive UPDATE cannot commit between
+  // this check and the caller's later mutation (TOCTOU). Requires running
+  // inside a transaction; a plain read participates in the tx but does not
+  // block writers.
+  const [student] = await (forUpdate ? query.for("update") : query);
 
   return student?.status ?? null;
 }
@@ -93,14 +100,18 @@ export async function getStudentStatus(
  * @param action - The action being attempted (for error messaging)
  * @param executor - Optional transaction handle; pass the caller's `tx` so the
  *   archive check runs inside the same transaction/lock scope as the mutation.
+ * @param forUpdate - When true, locks the student row (`SELECT ... FOR UPDATE`)
+ *   so it cannot be archived between this check and the caller's later mutation.
+ *   Only meaningful when `executor` is a transaction handle.
  * @throws StudentArchivedException if student is archived
  */
 export async function assertStudentMutable(
   studentId: string,
   action: ArchiveBlockedAction,
-  executor: GuardExecutor = db
+  executor: GuardExecutor = db,
+  forUpdate = false
 ): Promise<void> {
-  const status = await getStudentStatus(studentId, executor);
+  const status = await getStudentStatus(studentId, executor, forUpdate);
 
   if (status === null) {
     // Student not found - let the calling action handle this

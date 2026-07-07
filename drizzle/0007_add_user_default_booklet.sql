@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "default_booklet_id" uuid;--> statement-breakpoint
+ALTER TABLE "users" ADD CONSTRAINT "users_default_booklet_id_fk" FOREIGN KEY ("default_booklet_id") REFERENCES "receipt_booklets"("id") ON DELETE SET NULL;

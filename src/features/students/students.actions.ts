@@ -515,8 +515,10 @@ export async function updateStudentAction(
     // 6. Transaction: Archive check + all mutations use same connection
     // This prevents race conditions where a student is archived between the check and writes
     await db.transaction(async (tx) => {
-      // Re-check archive status inside transaction to prevent TOCTOU race
-      await assertStudentMutable(studentId, "edit_profile", tx);
+      // Re-check archive status inside transaction to prevent TOCTOU race.
+      // Lock the student row (FOR UPDATE) so a concurrent archive cannot commit
+      // between this check and the update below.
+      await assertStudentMutable(studentId, "edit_profile", tx, true);
 
       // Check active status change constraint inside transaction
       const hasEnrolledEnrollment = await tx.query.enrollments.findFirst({

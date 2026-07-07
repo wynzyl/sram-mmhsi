@@ -188,6 +188,8 @@ export const users = pgTable(
     role: roleEnum("role").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     forcePasswordChange: boolean("force_password_change").notNull().default(false),
+    /** Default OR booklet for cashiers (auto-selected in payment form) */
+    defaultBookletId: uuid("default_booklet_id"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by"),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),

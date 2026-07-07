@@ -37,6 +37,13 @@ export type CashierPaymentProcessingViewProps = {
       }
     | null;
   activeBooklets: ActiveBooklet[];
+  /** Default booklet ID for pre-selection (from cashier's assigned default) */
+  defaultBookletId?: string | null;
+  /** Manual entry suggestions for pre-filling date and OR number */
+  manualSuggestions?: {
+    lastManualPaymentDate: string | null;
+    suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[];
+  } | null;
 };
 
 export function CashierPaymentProcessingView({
@@ -49,6 +56,8 @@ export function CashierPaymentProcessingView({
   totals,
   lastPayment,
   activeBooklets,
+  defaultBookletId,
+  manualSuggestions,
 }: CashierPaymentProcessingViewProps) {
   const router = useRouter();
 
@@ -114,6 +123,8 @@ export function CashierPaymentProcessingView({
                   activeBooklets={activeBooklets}
                   onCancel={() => router.push("/staff/payments")}
                   onPosted={() => router.push("/staff/payments")}
+                  defaultBookletId={defaultBookletId}
+                  manualSuggestions={manualSuggestions ?? undefined}
                 />
               </CardContent>
             </Card>
