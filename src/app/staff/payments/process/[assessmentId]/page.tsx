@@ -85,7 +85,7 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
     // Get booklets accessible to this user (own assigned + unassigned booklets)
     getAccessibleBookletsForUser(session.userId),
     getCashierDefaultBookletId(session.userId),
-    getManualEntrySuggestions(),
+    getManualEntrySuggestions(session.userId),
   ]);
 
   return (

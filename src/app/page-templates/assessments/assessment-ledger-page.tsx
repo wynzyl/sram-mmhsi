@@ -154,7 +154,7 @@ export async function InternalAssessmentLedgerPage(props: {
       // Get booklets accessible to this user (own assigned + unassigned booklets)
       getAccessibleBookletsForUser(session.userId),
       getCashierDefaultBookletId(session.userId),
-      getManualEntrySuggestions(),
+      getManualEntrySuggestions(session.userId),
     ]);
 
     activeBooklets = bookletRows;

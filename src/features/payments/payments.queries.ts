@@ -354,8 +354,14 @@ export type ManualEntrySuggestions = {
 /**
  * Get suggestions for manual payment entry.
  * Returns the last manual payment date and next available OR numbers from manual_only booklets.
+ *
+ * Access control: suggestions exclude manual_only booklets assigned to OTHER users,
+ * mirroring getAccessibleBookletsForUser() for auto_only booklets. Assigned booklets
+ * are exclusive to their assigned user; unassigned booklets can be used by anyone.
  */
-export async function getManualEntrySuggestions(): Promise<ManualEntrySuggestions> {
+export async function getManualEntrySuggestions(
+  userId: string
+): Promise<ManualEntrySuggestions> {
   // 1. Get most recent manual payment date
   const lastManual = await db
     .select({ paymentDate: payments.paymentDate })
@@ -368,7 +374,10 @@ export async function getManualEntrySuggestions(): Promise<ManualEntrySuggestion
     ? lastManual[0].paymentDate.toISOString().split("T")[0]
     : null;
 
-  // 2. Get active manual_only booklets
+  // 2. Get active manual_only booklets accessible to this user
+  //    (own assigned + unassigned; exclude booklets assigned to others)
+  const excludedIds = await getBookletIdsAssignedToOthers(userId);
+
   const manualBooklets = await db
     .select({
       id: receiptBooklets.id,
@@ -382,7 +391,10 @@ export async function getManualEntrySuggestions(): Promise<ManualEntrySuggestion
     .where(
       and(
         eq(receiptBooklets.status, "active"),
-        eq(receiptBooklets.usageMode, "manual_only")
+        eq(receiptBooklets.usageMode, "manual_only"),
+        excludedIds.length > 0
+          ? notInArray(receiptBooklets.id, excludedIds)
+          : undefined
       )
     )
     .orderBy(asc(receiptBooklets.createdAt));
