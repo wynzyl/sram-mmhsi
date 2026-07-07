@@ -6,16 +6,20 @@ import {
   payments,
   students,
   schoolYears,
-  receiptBooklets,
   users,
   feeItemTypes,
   enrollments,
 } from "@/lib/db/schema";
-import { eq, desc, asc, and, lte } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentLedgerRegister from "@/features/payments/components/AssessmentLedgerRegister";
 import { getPendingVoidRequestsForPayments } from "@/features/payments/void-requests.queries";
+import {
+  getAccessibleBookletsForUser,
+  getCashierDefaultBookletId,
+  getManualEntrySuggestions,
+} from "@/features/payments/payments.queries";
 import { getStudentDiscountsByAssessment } from "@/features/discounts";
 import { isArchivedStatus } from "@/lib/constants/student-status";
 
@@ -140,25 +144,22 @@ export async function InternalAssessmentLedgerPage(props: {
     nextNumber: number;
     endNumber: number;
   }[] = [];
+  let defaultBookletId: string | null = null;
+  let manualSuggestions: Awaited<ReturnType<typeof getManualEntrySuggestions>> | null = null;
+
   if (canPost) {
-    // Only show auto_only booklets in the cashier dropdown (manual_only reserved for offline entry)
-    activeBooklets = await db
-      .select({
-        id: receiptBooklets.id,
-        series: receiptBooklets.series,
-        prefix: receiptBooklets.prefix,
-        nextNumber: receiptBooklets.nextNumber,
-        endNumber: receiptBooklets.endNumber,
-      })
-      .from(receiptBooklets)
-      .where(
-        and(
-          eq(receiptBooklets.status, "active"),
-          eq(receiptBooklets.usageMode, "auto_only"),
-          lte(receiptBooklets.nextNumber, receiptBooklets.endNumber)
-        )
-      )
-      .orderBy(asc(receiptBooklets.createdAt));
+    // Fetch accessible booklets, default booklet, and manual suggestions in parallel
+    // Note: getAccessibleBookletsForUser() filters out booklets assigned to other users
+    const [bookletRows, cashierDefaultBookletId, suggestions] = await Promise.all([
+      // Get booklets accessible to this user (own assigned + unassigned booklets)
+      getAccessibleBookletsForUser(session.userId),
+      getCashierDefaultBookletId(session.userId),
+      getManualEntrySuggestions(),
+    ]);
+
+    activeBooklets = bookletRows;
+    defaultBookletId = cashierDefaultBookletId;
+    manualSuggestions = suggestions;
   }
 
   const ledgerPayments = paymentRecords.map((p) => ({
@@ -206,6 +207,8 @@ export async function InternalAssessmentLedgerPage(props: {
         canReverseDiscount={canReverseDiscount}
         canRequestDiscount={canRequestDiscount}
         canCancel={canCancel}
+        defaultBookletId={defaultBookletId}
+        manualSuggestions={manualSuggestions}
       />
     </div>
   );

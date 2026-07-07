@@ -15,6 +15,7 @@ interface ReceiptBooklet {
   status: string;
   usageMode: "auto_only" | "manual_only";
   createdAt: Date;
+  assignedToUsername: string | null;
 }
 
 interface BookletsTableProps {
@@ -35,6 +36,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
               <th>End Number</th>
               <th>Next OR</th>
               <th>Mode</th>
+              <th>Assigned To</th>
               <th>Status</th>
               <th>Created At</th>
             </tr>
@@ -42,7 +44,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
           <tbody>
             {booklets.length === 0 ? (
               <tr>
-                <td colSpan={8} className="table-empty">
+                <td colSpan={9} className="table-empty">
                   No receipt booklets found.
                 </td>
               </tr>
@@ -62,6 +64,13 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
                       <span className={`badge ${booklet.usageMode === "auto_only" ? "badge-info" : "badge-warning"}`}>
                         {booklet.usageMode === "auto_only" ? "Auto" : "Manual"}
                       </span>
+                    </td>
+                    <td>
+                      {booklet.assignedToUsername ? (
+                        <span className="badge badge-purple">{booklet.assignedToUsername}</span>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
                     </td>
                     <td>
                       <span className={`badge capitalize ${getReceiptStatusClasses(booklet.status)}`}>{booklet.status}</span>
@@ -101,6 +110,8 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
               <th className="px-4 py-3 font-medium">Range</th>
               <th className="px-4 py-3 font-medium">Current</th>
               <th className="px-4 py-3 font-medium">Mode</th>
+              <th className="px-4 py-3 font-medium">Assigned To</th>
+              <th className="px-4 py-3 font-medium">Date Issued</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 text-right font-medium">Action</th>
             </tr>
@@ -108,7 +119,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
           <tbody>
             {booklets.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                <td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">
                   No receipt booklets found.
                 </td>
               </tr>
@@ -136,6 +147,18 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
                     }`}>
                       {booklet.usageMode === "auto_only" ? "Auto" : "Manual"}
                     </span>
+                  </td>
+                  <td className="p-4 align-middle">
+                    {booklet.assignedToUsername ? (
+                      <span className="inline-flex items-center rounded-md border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-300">
+                        {booklet.assignedToUsername}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="p-4 align-middle text-sm text-muted-foreground">
+                    {formatDate(booklet.createdAt, { year: "numeric", month: "short", day: "numeric" })}
                   </td>
                   <td className="p-4 align-middle">
                     <span className={`inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium capitalize ${getReceiptStatusClasses(booklet.status)}`}>

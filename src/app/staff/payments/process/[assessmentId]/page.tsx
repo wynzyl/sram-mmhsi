@@ -6,15 +6,19 @@ import {
   enrollments,
   gradeLevels,
   payments,
-  receiptBooklets,
   schoolYears,
   students,
 } from "@/lib/db/schema";
-import { asc, desc, eq, and, lte } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { CashierPaymentProcessingView } from "@/features/payments/components/CashierPaymentProcessingView";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { formatDate } from "@/lib/utils/date";
+import {
+  getAccessibleBookletsForUser,
+  getCashierDefaultBookletId,
+  getManualEntrySuggestions,
+} from "@/features/payments/payments.queries";
 
 interface PageProps {
   params: Promise<{ assessmentId: string }>;
@@ -62,38 +66,27 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
     redirect("/staff/payments");
   }
 
-  const lastPayment = await db
-    .select({
-      amount: payments.amount,
-      paymentMethod: payments.paymentMethod,
-      paymentDate: payments.paymentDate,
-      orNumber: payments.orNumber,
-      status: payments.status,
-    })
-    .from(payments)
-    .where(eq(payments.assessmentId, assessmentId))
-    .orderBy(desc(payments.createdAt))
-    .limit(1)
-    .then((r) => r[0] ?? null);
-
-  // Only show auto_only booklets in the cashier dropdown (manual_only reserved for offline entry)
-  const activeBooklets = await db
-    .select({
-      id: receiptBooklets.id,
-      series: receiptBooklets.series,
-      prefix: receiptBooklets.prefix,
-      nextNumber: receiptBooklets.nextNumber,
-      endNumber: receiptBooklets.endNumber,
-    })
-    .from(receiptBooklets)
-    .where(
-      and(
-        eq(receiptBooklets.status, "active"),
-        eq(receiptBooklets.usageMode, "auto_only"),
-        lte(receiptBooklets.nextNumber, receiptBooklets.endNumber) // PERFORMANCE: Filter out exhausted booklets
-      )
-    )
-    .orderBy(asc(receiptBooklets.createdAt));
+  // Fetch last payment, accessible booklets, default booklet, and manual suggestions in parallel
+  // Note: getAccessibleBookletsForUser() filters out booklets assigned to other users
+  const [lastPayment, activeBooklets, defaultBookletId, manualSuggestions] = await Promise.all([
+    db
+      .select({
+        amount: payments.amount,
+        paymentMethod: payments.paymentMethod,
+        paymentDate: payments.paymentDate,
+        orNumber: payments.orNumber,
+        status: payments.status,
+      })
+      .from(payments)
+      .where(eq(payments.assessmentId, assessmentId))
+      .orderBy(desc(payments.createdAt))
+      .limit(1)
+      .then((r) => r[0] ?? null),
+    // Get booklets accessible to this user (own assigned + unassigned booklets)
+    getAccessibleBookletsForUser(session.userId),
+    getCashierDefaultBookletId(session.userId),
+    getManualEntrySuggestions(),
+  ]);
 
   return (
     <div className="page-container max-w-7xl">
@@ -120,6 +113,8 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
             : null
         }
         activeBooklets={activeBooklets}
+        defaultBookletId={defaultBookletId}
+        manualSuggestions={manualSuggestions}
       />
     </div>
   );

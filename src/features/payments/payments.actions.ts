@@ -9,6 +9,7 @@ import {
   assessments,
   enrollments,
   invoices,
+  users,
 } from "@/lib/db/schema";
 import { eq, and, lte, gte, ne, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
@@ -47,6 +48,7 @@ import {
   StudentArchivedException,
   formatArchiveError,
 } from "@/features/archive/archive.guards";
+import { getBookletIdsAssignedToOthers } from "./payments.queries";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -66,7 +68,7 @@ export async function createBookletAction(
 
   const parsed = result;
 
-  const { startNumber, endNumber, usageMode } = parsed.data;
+  const { startNumber, endNumber, usageMode, assignedCashierId } = parsed.data;
   const prefix = parsed.data.prefix.toUpperCase();
   const seriesCanonical = formatBookletSeriesCanonical(prefix, startNumber, endNumber);
 
@@ -132,6 +134,27 @@ export async function createBookletAction(
         usageMode,
       },
     }, { throwOnFail: true });
+
+    // If a cashier was selected, set this booklet as their default
+    if (assignedCashierId) {
+      await db
+        .update(users)
+        .set({
+          defaultBookletId: newBooklet.id,
+          updatedBy: session.userId,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, assignedCashierId));
+
+      await logAudit({
+        actor: session.userId,
+        actorRole: session.role,
+        action: "cashier_default_booklet_assigned",
+        targetEntity: "users",
+        targetId: assignedCashierId,
+        newState: { defaultBookletId: newBooklet.id, bookletSeries: seriesCanonical },
+      });
+    }
 
     revalidatePath("/staff/finance/booklets");
     return { success: true, message: "Receipt booklet created successfully." };
@@ -259,6 +282,7 @@ export async function postPaymentAction(
             startNumber: receiptBooklets.startNumber,
             endNumber: receiptBooklets.endNumber,
             usageMode: receiptBooklets.usageMode,
+            status: receiptBooklets.status,
           })
           .from(receiptBooklets)
           .where(
@@ -278,6 +302,14 @@ export async function postPaymentAction(
           );
         }
 
+        // 2a. Reject inactive booklets (voided/exhausted) — only active booklets may be consumed
+        if (matchingBooklet.status !== "active") {
+          throw new Error(
+            `MANUAL_OR_INACTIVE_BOOKLET: OR number ${manualOrNumber} belongs to booklet "${matchingBooklet.series}" ` +
+            `which is ${matchingBooklet.status} and can no longer be used. Use an active booklet instead.`
+          );
+        }
+
         // 2b. Validate booklet usage mode - manual entry requires manual_only booklet
         if (matchingBooklet.usageMode !== "manual_only") {
           throw new Error(
@@ -286,20 +318,22 @@ export async function postPaymentAction(
           );
         }
 
-        // 3. Check OR number not already used
-        const existingPayment = await tx.query.payments.findFirst({
-          where: eq(payments.orNumber, manualOrNumber!),
-          columns: { id: true },
-        });
-        if (existingPayment) {
-          throw new Error(`MANUAL_OR_DUPLICATE: OR number ${manualOrNumber} is already recorded on another payment.`);
+        // 2c. Verify user can access this booklet (not assigned to someone else)
+        const excludedBookletIds = await getBookletIdsAssignedToOthers(session.userId);
+        if (excludedBookletIds.includes(matchingBooklet.id)) {
+          throw new Error(
+            `MANUAL_OR_BOOKLET_RESTRICTED: OR number ${manualOrNumber} belongs to booklet "${matchingBooklet.series}" ` +
+            `which is assigned to another user. Use your assigned booklet or an unassigned one.`
+          );
         }
 
-        orNumberToAssign = manualOrNumber!;
-        bookletIdToAssign = matchingBooklet.id;
-
-        // 4. Update booklet's nextNumber if manual OR >= current nextNumber
-        // This ensures the UI doesn't show already-consumed ORs as available
+        // 3. Lock the owning booklet row BEFORE the duplicate check so that
+        // concurrent submissions of the same manual OR serialize here. A manual
+        // OR belongs to exactly one booklet (matched by prefix + range above),
+        // so contenders for the same OR all block on this same row lock — the
+        // duplicate check below then runs one-at-a-time, closing the TOCTOU
+        // window between the read and the insert. (The partial unique index
+        // `payments_or_number_idx` is the final backstop; see the catch path.)
         const bookletForUpdate = await tx
           .select({
             nextNumber: receiptBooklets.nextNumber,
@@ -313,6 +347,20 @@ export async function postPaymentAction(
           .limit(1)
           .then((rows) => rows[0]);
 
+        // 4. Check OR number not already used (inside the locked section)
+        const existingPayment = await tx.query.payments.findFirst({
+          where: eq(payments.orNumber, manualOrNumber!),
+          columns: { id: true },
+        });
+        if (existingPayment) {
+          throw new Error(`MANUAL_OR_DUPLICATE: OR number ${manualOrNumber} is already recorded on another payment.`);
+        }
+
+        orNumberToAssign = manualOrNumber!;
+        bookletIdToAssign = matchingBooklet.id;
+
+        // 5. Update booklet's nextNumber if manual OR >= current nextNumber
+        // This ensures the UI doesn't show already-consumed ORs as available
         if (bookletForUpdate && parsed.sequence >= bookletForUpdate.nextNumber) {
           // Find all consumed OR numbers in this booklet's range
           const consumedOrs = await tx
@@ -361,7 +409,15 @@ export async function postPaymentAction(
         }
       } else {
         // === AUTO-ASSIGN PATH (existing logic) ===
-        // 2. Fetch Selected Active Booklet (locking it for update to prevent race conditions on OR number)
+        // 2a. Verify user can access this booklet (not assigned to someone else)
+        const excludedBookletIds = await getBookletIdsAssignedToOthers(session.userId);
+        if (excludedBookletIds.includes(bookletId!)) {
+          throw new Error(
+            "BOOKLET_ACCESS_DENIED: This booklet is assigned to another user and cannot be used."
+          );
+        }
+
+        // 2b. Fetch Selected Active Booklet (locking it for update to prevent race conditions on OR number)
         const activeBooklet = await lockReceiptBooklet(tx, bookletId!, "active");
 
         if (!activeBooklet) {
@@ -534,6 +590,27 @@ export async function postPaymentAction(
         },
       };
     }
+    if (msg.startsWith("MANUAL_OR_INACTIVE_BOOKLET:")) {
+      return {
+        errors: {
+          manualOrNumber: [msg.replace("MANUAL_OR_INACTIVE_BOOKLET: ", "")],
+        },
+      };
+    }
+    if (msg.startsWith("MANUAL_OR_BOOKLET_RESTRICTED:")) {
+      return {
+        errors: {
+          manualOrNumber: [msg.replace("MANUAL_OR_BOOKLET_RESTRICTED: ", "")],
+        },
+      };
+    }
+    if (msg.startsWith("BOOKLET_ACCESS_DENIED:")) {
+      return {
+        errors: {
+          bookletId: [msg.replace("BOOKLET_ACCESS_DENIED: ", "")],
+        },
+      };
+    }
 
     if (msg.startsWith("REF_DUPLICATE:")) {
       return {
@@ -557,6 +634,22 @@ export async function postPaymentAction(
       return {
         errors: {
           referenceNumber: ["This reference number is already used by another payment."],
+        },
+      };
+    }
+
+    // Backstop for the OR-number partial unique index (`payments_or_number_idx`).
+    // If two submissions still race past the in-transaction check, the DB
+    // rejects the second insert — surface it as a manual OR field error.
+    if (
+      (combined.includes("payments_or_number_idx") || combined.includes("or_number")) &&
+      (combined.includes("already exists") ||
+        combined.includes("duplicate key") ||
+        combined.includes("unique constraint"))
+    ) {
+      return {
+        errors: {
+          manualOrNumber: ["This OR number is already recorded on another payment."],
         },
       };
     }
