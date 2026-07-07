@@ -238,6 +238,12 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
     // Check both the error message and nested cause for connection errors
     const isConnectionError = (err: unknown): boolean => {
       if (!(err instanceof Error)) return false;
+
+      // Check for AggregateError with nested connection errors
+      if (err instanceof AggregateError) {
+        return err.errors.some((e) => isConnectionError(e));
+      }
+
       const message = err.message.toLowerCase();
       const patterns = [
         "econnrefused",
@@ -247,6 +253,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
         "getaddrinfo",
       ];
       if (patterns.some((p) => message.includes(p))) return true;
+
       // Check nested cause (Drizzle wraps errors)
       if ("cause" in err && err.cause instanceof Error) {
         return isConnectionError(err.cause);
