@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { getCurrentUser } from "@/lib/auth/session";
+import { canAccessFinanceReports } from "@/lib/rbac/permissions";
 import {
   getAllBfxData,
   getBfxSummary,
@@ -30,9 +31,7 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  // Only super_admin, admin, and finance_officer can access finance reports
-  const FINANCE_REPORT_ROLES: readonly string[] = ["super_admin", "admin", "finance_officer"];
-  if (!FINANCE_REPORT_ROLES.includes(user.role)) {
+  if (!canAccessFinanceReports(user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

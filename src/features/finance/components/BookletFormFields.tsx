@@ -45,6 +45,8 @@ export function UsageModeField({
     </option>
   ));
 
+  const errorId = "usageMode-error";
+
   if (variant === "dashboard") {
     return (
       <div>
@@ -56,10 +58,16 @@ export function UsageModeField({
           name="usageMode"
           className={cn(dashboardInputClasses, error && "border-destructive")}
           defaultValue={defaultValue}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
         >
           {options}
         </select>
-        {error && <p className="mt-1 text-xs text-rose-300">{error[0]}</p>}
+        {error && (
+          <p id={errorId} className="mt-1 text-xs text-rose-300">
+            {error[0]}
+          </p>
+        )}
       </div>
     );
   }
@@ -74,6 +82,8 @@ export function UsageModeField({
         name="usageMode"
         className={`form-control ${error ? "form-control-error" : ""}`}
         defaultValue={defaultValue}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
       >
         {options}
       </select>
@@ -81,7 +91,11 @@ export function UsageModeField({
         <strong>Auto-assign:</strong> Appears in cashier dropdown for system-assigned OR numbers.<br />
         <strong>Manual entry:</strong> Reserved for offline receipts entered retroactively.
       </p>
-      {error && <p className="form-error">{error[0]}</p>}
+      {error && (
+        <p id={errorId} className="form-error">
+          {error[0]}
+        </p>
+      )}
     </div>
   );
 }
@@ -115,6 +129,8 @@ export function AssignedCashierField({
     </>
   );
 
+  const errorId = "assignedCashierId-error";
+
   if (variant === "dashboard") {
     return (
       <div>
@@ -127,12 +143,18 @@ export function AssignedCashierField({
             name="assignedCashierId"
             className={cn(dashboardInputClasses, "pr-10", error && "border-destructive")}
             defaultValue={defaultValue}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
           >
             {options}
           </select>
           <UserRound className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-500" />
         </div>
-        {error && <p className="mt-1 text-xs text-rose-300">{error[0]}</p>}
+        {error && (
+          <p id={errorId} className="mt-1 text-xs text-rose-300">
+            {error[0]}
+          </p>
+        )}
       </div>
     );
   }
@@ -147,13 +169,19 @@ export function AssignedCashierField({
         name="assignedCashierId"
         className={`form-control ${error ? "form-control-error" : ""}`}
         defaultValue={defaultValue}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
       >
         {options}
       </select>
       <p className="form-hint text-muted mt-1 text-xs">
         Sets this booklet as the cashier&apos;s default for payment posting.
       </p>
-      {error && <p className="form-error">{error[0]}</p>}
+      {error && (
+        <p id={errorId} className="form-error">
+          {error[0]}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { getCurrentUser } from "@/lib/auth/session";
+import { canAccessPaymentReports } from "@/lib/rbac/permissions";
 import {
   getAllPaymentCollectionData,
   getPaymentCollectionSummary,
@@ -32,9 +33,7 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  // Only super_admin, admin, registrar, and cashier can access payment collection report
-  const PAYMENT_REPORT_ROLES: readonly string[] = ["super_admin", "admin", "registrar", "cashier"];
-  if (!PAYMENT_REPORT_ROLES.includes(user.role)) {
+  if (!canAccessPaymentReports(user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

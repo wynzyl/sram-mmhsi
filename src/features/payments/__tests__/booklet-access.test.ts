@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 
 /**
  * Unit tests for OR Booklet Access Control
@@ -9,41 +9,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * - Server rejects booklet usage by non-assigned users
  */
 
-// Mock the database module
-vi.mock("@/lib/db", () => ({
-  db: {
-    select: vi.fn(),
-    query: {
-      users: {
-        findFirst: vi.fn(),
-      },
-    },
-  },
-}));
-
-// Import after mocking
-import { db } from "@/lib/db";
-
-// Helper to create mock chainable query
-function createMockQuery<T>(result: T) {
-  const chain = {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockResolvedValue(result),
-  };
-  return chain;
-}
-
 describe("Booklet Access Control - Business Logic", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe("getBookletIdsAssignedToOthers", () => {
     it("should return booklet IDs assigned to other users", async () => {
       // This tests the logic that filters out booklets assigned to other users
-      const currentUserId = "user-123";
       const otherUserBooklets = [
         { defaultBookletId: "booklet-A" },
         { defaultBookletId: "booklet-B" },
@@ -169,7 +138,6 @@ describe("Booklet Access Control - Business Logic", () => {
 
     it("should allow access when booklet is assigned to current user", () => {
       // User's own booklet should NOT be in the excluded list
-      const currentUserId = "user-123";
       const currentUserBookletId = "booklet-C";
 
       // excludedBookletIds only contains booklets assigned to OTHER users
@@ -220,10 +188,7 @@ describe("Booklet Access Control - Business Logic", () => {
 
     it("should handle multiple users with assigned booklets", () => {
       // Simulate: User A has booklet-1, User B has booklet-2, User C has booklet-3
-      // Current user is User A
-      const currentUserId = "user-A";
-
-      // Other users' assigned booklets (excludes current user's)
+      // Current user is User A; other users' assigned booklets (excludes current user's)
       const otherUsersBooklets = [
         { userId: "user-B", defaultBookletId: "booklet-2" },
         { userId: "user-C", defaultBookletId: "booklet-3" },

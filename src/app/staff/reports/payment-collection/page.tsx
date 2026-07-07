@@ -1,5 +1,6 @@
 import { requireSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
+import { canAccessPaymentReports } from "@/lib/rbac/permissions";
 import {
   getPaymentCollectionReport,
   getPaymentCollectionSummary,
@@ -28,9 +29,7 @@ export default async function PaymentCollectionReportPage({
 }: PageProps) {
   const session = await requireSession();
 
-  // Only super_admin, admin, registrar, and cashier can access payment collection report
-  const PAYMENT_REPORT_ROLES: readonly string[] = ["super_admin", "admin", "registrar", "cashier"];
-  if (!PAYMENT_REPORT_ROLES.includes(session.role)) {
+  if (!canAccessPaymentReports(session.role)) {
     redirect("/staff/dashboard");
   }
 
