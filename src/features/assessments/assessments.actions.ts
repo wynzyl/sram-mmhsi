@@ -510,16 +510,15 @@ export async function createAssessmentFromEnrollmentAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/staff/assessments");
-    revalidatePath("/staff/enrollments");
-    revalidatePath("/staff/approvals");
-    revalidatePath(`/staff/students/${enrollmentRow.studentId}`);
-    if (newAssessmentId) {
-      revalidatePath(`/staff/assessments/${newAssessmentId}`);
-    }
+    // Cache invalidation — NON-BLOCKING only (CLAUDE.md Gotcha #11).
+    // The blocking `forceUpdateTag`/`updateTag` + `revalidatePath` calls can
+    // hang this action under the production build (DB commits but the action
+    // never returns, leaving the form stuck on "Saving…"). The client
+    // (`AssessmentDraftForm`) already drives its own refresh via
+    // `router.replace()` + TanStack `invalidateQueries` on success, so
+    // stale-while-revalidate invalidation is sufficient.
     // Assessment creation flips enrollment status (pending → assessed) and feeds dashboard KPIs.
-    // Use forceUpdateTag for enrollments (read-your-own-writes - immediate consistency)
-    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, assessmentId: newAssessmentId };
