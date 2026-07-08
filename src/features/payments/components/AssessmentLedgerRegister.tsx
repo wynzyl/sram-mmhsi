@@ -103,8 +103,13 @@ export type AssessmentLedgerRegisterProps = {
     lastManualPaymentDate: string | null;
     suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[];
   } | null;
-  /** Whether this is a cancelled enrollment AND student has an active enrollment for the same school year.
-   * If true, the "Receive payment" button is disabled — payment should go to the active enrollment instead. */
+  /** ID of the most recent voidable payment (accounting integrity: void in reverse order). */
+  mostRecentVoidablePaymentId?: string | null;
+  /**
+   * True when this assessment's enrollment is cancelled AND the student has an
+   * active enrollment for the same school year. Payments/invoices are blocked
+   * here — settle on the active enrollment instead. Computed server-side.
+   */
   cancelledWithActiveEnrollment?: boolean;
 };
 
@@ -137,6 +142,7 @@ export default function AssessmentLedgerRegister({
   canCancel = false,
   defaultBookletId,
   manualSuggestions,
+  mostRecentVoidablePaymentId,
   cancelledWithActiveEnrollment = false,
 }: AssessmentLedgerRegisterProps) {
   const router = useRouter();
@@ -660,6 +666,7 @@ export default function AssessmentLedgerRegister({
               pendingVoidByPaymentId={pendingVoidByPaymentId}
               currentUserId={currentUserId}
               embedded
+              mostRecentVoidablePaymentId={mostRecentVoidablePaymentId}
             />
           </div>
           <div className="flex items-center justify-between flex-wrap gap-y-2 gap-x-4 px-5 py-4 border-t border-border bg-muted/25">

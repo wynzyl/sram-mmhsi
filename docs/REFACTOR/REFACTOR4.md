@@ -1,7 +1,7 @@
-Act as a Senior Frontend Engineer and Software Architect specializing in code refactoring, DRY (Don't Repeat Yourself) principles, and creating scalable, reusable component libraries.
+Act as a Full stack NextJS Senior Frontend Engineer, Software Architect and Database Design Engineer specializing in code refactoring, DRY (Don't Repeat Yourself) principles, and creating scalable, reusable component libraries.
 
 The Goal:
-I need to refactor a growing application. Currently, several features (Assessment, Enrollment, Payments, Enrollment Cancellation) share heavily duplicated code for both UI elements and business logic. My goal is to clean up the codebase, make it highly readable, and ensure it is easy to maintain for future updates.
+I need to refactor a growing application. Currently, several features (Assessment, Enrollment, Payments, Enrollment Cancellation, Assessment Cancellation, Void OR, EOY Feature, OR Booklet Assignment) share heavily duplicated code for both UI elements and business logic. My goal is to clean up the codebase, make it highly readable, and ensure it is easy to maintain for future updates.
 
 The Tech Stack:
 The application is built using Next.js, Postgres, Drizzle ORM, Tailwindcss, Shadcn UI, Tanstack Query, Tanstack Form .
@@ -13,7 +13,6 @@ UI Components: We have duplicated code for tables, pagination, and various butto
 Business Logic: There is duplicated logic for handling actions like applying a discount, canceling a discount, processing an OR (Official Receipt) Payment, and executing an OR VOID. I want to extract this logic into reusable utility functions or custom hooks.
 
 Your Task:
-I am going to provide you with snippets of the duplicated code one by one. For each snippet, I want you to:
 
 Analyze: Identify the common patterns and what specific parts of the code change between features (the dynamic data) versus what stays the same (the static structure).
 
@@ -34,5 +33,5 @@ Use best practices and design patterns appropriate for NextJS Fullstack.
 If you understand these instructions, reply with "I'm ready! Please paste the first piece of duplicated code you would like to refactor (e.g., the table components or the discount logic)."
 
 
-❯              You are Senior Frontend Engineer and Software Architect specializing in Nextjs Fullstack, Do NOT Change the business logic and make NO Mistake. Implement Refactor plan in a sequential order starting in PHASE 1, then test   
+❯ You are Senior Frontend Engineer and Software Architect specializing in Nextjs Fullstack, Do NOT Change the business logic and make NO Mistake. Implement Refactor plan in a sequential order starting in PHASE 1, then test   
   before next Phase.  
