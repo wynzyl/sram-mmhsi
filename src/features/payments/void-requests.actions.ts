@@ -36,7 +36,7 @@ import {
   createReversalPaymentEntry,
   markPaymentAsReversed,
 } from "@/lib/utils/payment-helpers";
-import { isPaymentMostRecentVoidable } from "@/lib/utils/payment-void-checks";
+import { isPaymentMostRecentVoidable } from "@/features/payments/payments.queries";
 import { revertToAssessedOnVoid } from "@/lib/utils/enrollment-status";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
@@ -246,6 +246,23 @@ export async function approveVoidRequestAction(
             "approve void request"
           );
           assessmentIdForRevalidation = assessment.id;
+
+          // 6a. Re-verify this is still the most recent voidable payment.
+          //     A newer payment may have been posted between the void request
+          //     and this approval; voiding out of reverse-chronological order
+          //     would break accounting integrity (mirrors requestVoidAction).
+          const isLatest = await isPaymentMostRecentVoidable(
+            originalPayment.id,
+            assessment.id,
+            tx
+          );
+
+          if (!isLatest) {
+            throw new Error(
+              "Cannot approve this void: a more recent payment now exists. " +
+              "Payments must be voided in reverse chronological order."
+            );
+          }
 
           // 7. Update original payment to "reversed" status
           await markPaymentAsReversed(tx, originalPayment.id, session.userId, requestId);
