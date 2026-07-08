@@ -145,7 +145,7 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/srams_e2e
-      AUTH_SECRET: "lP9XyESSY9lT1FHTy3HifckKg/5rRLPuys2y/BOneQk="
+      AUTH_SECRET: "fAKeSeCRET9lT1FHTy3HifckKg/5rRLPuys2y/BOneQk="
       APP_BASE_URL: http://127.0.0.1:3005
     steps:
       - name: Checkout code
