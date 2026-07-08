@@ -29,7 +29,10 @@ import type {
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { formatStoredOrNumber, parseOrNumber } from "@/lib/utils/or-number";
-import { assertEnrollmentAllowsPayment } from "@/lib/utils/enrollment-payment";
+import {
+  assertEnrollmentAllowsPayment,
+  hasActiveEnrollmentForSchoolYear,
+} from "@/lib/utils/enrollment-payment";
 import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
 import {
   lockReceiptBooklet,
@@ -248,6 +251,23 @@ export async function postPaymentAction(
         enrollmentForPayment?.id ?? assessment.enrollmentId ?? null,
         assessment.enrollmentId ?? null
       );
+
+      // If enrollment is cancelled, verify no active enrollment exists for the same school year.
+      // The student should pay on the active enrollment instead.
+      if (enrollmentForPayment?.status === "cancelled") {
+        const hasActive = await hasActiveEnrollmentForSchoolYear(
+          tx,
+          assessment.studentId,
+          assessment.schoolYearId,
+          enrollmentForPayment.id
+        );
+
+        if (hasActive) {
+          throw new Error(
+            "CANCELLED_HAS_ACTIVE: Cannot post payment on cancelled enrollment. Student has an active enrollment for this school year — please process payment there instead."
+          );
+        }
+      }
 
       // Check for pending cancellation request (blocks all payments)
       await assertNoPendingCancellation(assessment.enrollmentId, "record payment");
@@ -609,6 +629,13 @@ export async function postPaymentAction(
         errors: {
           bookletId: [msg.replace("BOOKLET_ACCESS_DENIED: ", "")],
         },
+      };
+    }
+
+    // Cancelled enrollment with active enrollment for same school year
+    if (msg.startsWith("CANCELLED_HAS_ACTIVE:")) {
+      return {
+        message: msg.replace("CANCELLED_HAS_ACTIVE: ", ""),
       };
     }
 

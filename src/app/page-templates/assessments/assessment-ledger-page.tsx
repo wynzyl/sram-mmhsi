@@ -22,6 +22,7 @@ import {
 } from "@/features/payments/payments.queries";
 import { getStudentDiscountsByAssessment } from "@/features/discounts";
 import { isArchivedStatus } from "@/lib/constants/student-status";
+import { hasActiveEnrollmentForSchoolYear } from "@/lib/utils/enrollment-payment";
 
 export async function InternalAssessmentLedgerPage(props: {
   assessmentId: string;
@@ -40,6 +41,7 @@ export async function InternalAssessmentLedgerPage(props: {
       id: assessments.id,
       studentId: assessments.studentId,
       enrollmentId: assessments.enrollmentId,
+      schoolYearId: assessments.schoolYearId,
       totalAmount: assessments.totalAmount,
       totalPaid: assessments.totalPaid,
       balance: assessments.balance,
@@ -61,6 +63,17 @@ export async function InternalAssessmentLedgerPage(props: {
     .then((res) => res[0]);
 
   if (!assessment) notFound();
+
+  // Check if this is a cancelled enrollment with an active enrollment for the same school year.
+  // If so, payments should be blocked (pay on the active enrollment instead).
+  const cancelledWithActiveEnrollment =
+    assessment.enrollmentStatus === "cancelled" &&
+    (await hasActiveEnrollmentForSchoolYear(
+      db,
+      assessment.studentId,
+      assessment.schoolYearId,
+      assessment.enrollmentId
+    ));
 
   // Run independent queries in parallel for better performance
   const [balanceForwardType, items, paymentRecords] = await Promise.all([
@@ -209,6 +222,7 @@ export async function InternalAssessmentLedgerPage(props: {
         canCancel={canCancel}
         defaultBookletId={defaultBookletId}
         manualSuggestions={manualSuggestions}
+        cancelledWithActiveEnrollment={cancelledWithActiveEnrollment}
       />
     </div>
   );
