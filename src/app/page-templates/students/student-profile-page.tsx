@@ -14,6 +14,7 @@ import {
 import { eq, desc, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { isArchivedStatus, type StudentStatus } from "@/lib/constants/student-status";
 import {
   type StudentRecordStudent,
   type GuardianRow,
@@ -71,11 +72,15 @@ export async function InternalStudentProfilePage(props: {
       submittedDocumentsNotes: true,
       photoUrl: true,
       isActive: true,
+      status: true,
       createdAt: true,
     },
   });
 
   if (!studentRow) notFound();
+
+  // Check if student is archived - disable transactional actions for archived students
+  const isStudentArchived = isArchivedStatus(studentRow.status as StudentStatus);
 
   const student: StudentRecordStudent = {
     ...studentRow,
@@ -237,18 +242,19 @@ export async function InternalStudentProfilePage(props: {
     createdAt: new Date(inv.createdAt),
   }));
 
+  // Disable transactional actions for archived students (read-only access preserved)
   const flags: StudentRecordFlags = {
     canReadAssessments,
-    canCreateAssessment,
+    canCreateAssessment: canCreateAssessment && !isStudentArchived,
     canReadInvoices,
-    canEnroll,
-    canEditStudent,
-    canPostPayments,
-    canUpdateEnrollment,
+    canEnroll: canEnroll && !isStudentArchived,
+    canEditStudent: canEditStudent && !isStudentArchived,
+    canPostPayments: canPostPayments && !isStudentArchived,
+    canUpdateEnrollment: canUpdateEnrollment && !isStudentArchived,
     canReadDiscounts,
-    canRequestDiscounts,
-    canManageDiscounts,
-    canCancelEnrollment,
+    canRequestDiscounts: canRequestDiscounts && !isStudentArchived,
+    canManageDiscounts: canManageDiscounts && !isStudentArchived,
+    canCancelEnrollment: canCancelEnrollment && !isStudentArchived,
   };
 
   // Find pending enrollment (no assessment yet) for discount requests

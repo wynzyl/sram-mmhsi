@@ -63,6 +63,8 @@ export async function RegistrationQueuePage(props: {
 
   const registrationFilters = [
     eq(registrations.status, "approved"),
+    // Filter out archived students - only show active students
+    eq(students.status, "active"),
     ...(schoolYearId != null ? [eq(registrations.schoolYearId, schoolYearId)] : []),
     ...(notEnrolledInActiveYear != null ? [notEnrolledInActiveYear] : []),
   ];

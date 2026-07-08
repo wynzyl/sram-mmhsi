@@ -1,6 +1,6 @@
 import { requireSession } from "@/lib/auth/session";
-import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
+import { canAccessPaymentReports } from "@/lib/rbac/permissions";
 import {
   getPaymentCollectionReport,
   getPaymentCollectionSummary,
@@ -29,8 +29,7 @@ export default async function PaymentCollectionReportPage({
 }: PageProps) {
   const session = await requireSession();
 
-  // Permission check
-  if (!hasPermission(session.role, "reports:view")) {
+  if (!canAccessPaymentReports(session.role)) {
     redirect("/staff/dashboard");
   }
 

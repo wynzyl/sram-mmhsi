@@ -5,10 +5,13 @@ import {
   enrollments,
   gradeLevels,
   payments,
+  receiptBooklets,
   schoolYears,
   students,
+  users,
 } from "@/lib/db/schema";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, ne, notInArray, sql } from "drizzle-orm";
+import { parseOrNumber } from "@/lib/utils/or-number";
 import type { Role } from "@/lib/constants/roles";
 import { getPortalStudentIds, getPortalStudentLabels } from "@/lib/queries/portal-student";
 import { calculateOffset } from "@/lib/types/pagination";
@@ -58,6 +61,23 @@ export type CashierQueueParams = {
 };
 
 // ─────────────────────────────────────────────────────────────────
+// Query helpers
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * SQL predicate matching payments whose `paymentDate` falls on "today".
+ * Uses a half-open range (`>= CURRENT_DATE` and `< CURRENT_DATE + 1 day`)
+ * instead of `DATE()` so the paymentDate index can be used. Centralized so
+ * the definition of "today" only needs to change in one place.
+ */
+function paymentDateIsToday() {
+  return [
+    gte(payments.paymentDate, sql`CURRENT_DATE`),
+    lt(payments.paymentDate, sql`CURRENT_DATE + INTERVAL '1 day'`),
+  ] as const;
+}
+
+// ─────────────────────────────────────────────────────────────────
 // Queries
 // ─────────────────────────────────────────────────────────────────
 
@@ -88,10 +108,7 @@ export async function fetchCashierQueueData(
       })
       .from(payments)
       .where(
-        and(
-          eq(payments.status, "posted"),
-          sql`DATE(${payments.paymentDate}) = CURRENT_DATE`
-        )
+        and(eq(payments.status, "posted"), ...paymentDateIsToday())
       )
       .then((r) => r[0]),
 
@@ -176,10 +193,7 @@ export async function fetchCashierQueueData(
       .from(payments)
       .innerJoin(students, eq(payments.studentId, students.id))
       .where(
-        and(
-          eq(payments.status, "posted"),
-          sql`DATE(${payments.paymentDate}) = CURRENT_DATE`
-        )
+        and(eq(payments.status, "posted"), ...paymentDateIsToday())
       )
       .orderBy(desc(payments.paymentDate), desc(payments.createdAt))
       .limit(20),
@@ -296,4 +310,215 @@ export async function getPortalPayments(
   });
 
   return { rows, showStudentColumn: studentIds.length > 1, hasLinkedStudents: true };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Booklet Assignment & Manual Entry Suggestions
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Get users who can be assigned booklets (registrar, cashier, admin) for booklet assignment dropdown.
+ */
+export async function getCashiersForBookletAssignment(): Promise<
+  { id: string; username: string; email: string }[]
+> {
+  return db
+    .select({ id: users.id, username: users.username, email: users.email })
+    .from(users)
+    .where(
+      and(
+        eq(users.isActive, true),
+        inArray(users.role, ["registrar", "cashier", "admin"]),
+        isNull(users.deletedAt)
+      )
+    )
+    .orderBy(asc(users.username));
+}
+
+/**
+ * Get the default booklet ID for a cashier (used to pre-select in payment form).
+ */
+export async function getCashierDefaultBookletId(userId: string): Promise<string | null> {
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { defaultBookletId: true },
+  });
+  return user?.defaultBookletId ?? null;
+}
+
+export type ManualEntrySuggestions = {
+  lastManualPaymentDate: string | null;
+  suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[];
+};
+
+/**
+ * Get suggestions for manual payment entry.
+ * Returns the last manual payment date and next available OR numbers from manual_only booklets.
+ *
+ * Access control: suggestions exclude manual_only booklets assigned to OTHER users,
+ * mirroring getAccessibleBookletsForUser() for auto_only booklets. Assigned booklets
+ * are exclusive to their assigned user; unassigned booklets can be used by anyone.
+ */
+export async function getManualEntrySuggestions(
+  userId: string
+): Promise<ManualEntrySuggestions> {
+  // 1. Get most recent manual payment date
+  const lastManual = await db
+    .select({ paymentDate: payments.paymentDate })
+    .from(payments)
+    .where(eq(payments.isManualEntry, true))
+    .orderBy(desc(payments.paymentDate))
+    .limit(1);
+
+  const lastManualPaymentDate = lastManual[0]?.paymentDate
+    ? lastManual[0].paymentDate.toISOString().split("T")[0]
+    : null;
+
+  // 2. Get active manual_only booklets accessible to this user
+  //    (own assigned + unassigned; exclude booklets assigned to others)
+  const excludedIds = await getBookletIdsAssignedToOthers(userId);
+
+  const manualBooklets = await db
+    .select({
+      id: receiptBooklets.id,
+      series: receiptBooklets.series,
+      prefix: receiptBooklets.prefix,
+      startNumber: receiptBooklets.startNumber,
+      endNumber: receiptBooklets.endNumber,
+      nextNumber: receiptBooklets.nextNumber,
+    })
+    .from(receiptBooklets)
+    .where(
+      and(
+        eq(receiptBooklets.status, "active"),
+        eq(receiptBooklets.usageMode, "manual_only"),
+        excludedIds.length > 0
+          ? notInArray(receiptBooklets.id, excludedIds)
+          : undefined
+      )
+    )
+    .orderBy(asc(receiptBooklets.createdAt));
+
+  // 3. Batch-fetch all consumed OR numbers for every manual booklet in one query
+  //    (avoids an N+1 query per booklet), then group the sequences by booklet.
+  const consumedBySequence = new Map<string, Set<number>>();
+  const bookletIds = manualBooklets.map((b) => b.id);
+
+  if (bookletIds.length > 0) {
+    const consumedOrs = await db
+      .select({ bookletId: payments.bookletId, orNumber: payments.orNumber })
+      .from(payments)
+      .where(
+        and(
+          inArray(payments.bookletId, bookletIds),
+          sql`${payments.orNumber} IS NOT NULL`
+        )
+      );
+
+    for (const row of consumedOrs) {
+      if (!row.bookletId || !row.orNumber) continue;
+      const parsed = parseOrNumber(row.orNumber);
+      if (!parsed) continue;
+      let set = consumedBySequence.get(row.bookletId);
+      if (!set) {
+        set = new Set<number>();
+        consumedBySequence.set(row.bookletId, set);
+      }
+      set.add(parsed.sequence);
+    }
+  }
+
+  // 4. For each booklet, compute next available OR number from the grouped set
+  const suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[] = [];
+
+  for (const booklet of manualBooklets) {
+    const consumedSet = consumedBySequence.get(booklet.id) ?? new Set<number>();
+
+    // Find the next available OR number in sequence
+    let nextAvailable = booklet.nextNumber;
+    while (nextAvailable <= booklet.endNumber && consumedSet.has(nextAvailable)) {
+      nextAvailable++;
+    }
+
+    // If there's an available OR in this booklet
+    if (nextAvailable <= booklet.endNumber) {
+      const paddedNum = String(nextAvailable).padStart(5, "0");
+      suggestedOrNumbers.push({
+        bookletId: booklet.id,
+        series: booklet.series,
+        nextOr: `${booklet.prefix} ${paddedNum}`,
+      });
+    }
+  }
+
+  return { lastManualPaymentDate, suggestedOrNumbers };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Booklet Access Control
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Get all booklet IDs that are assigned to users OTHER than the current user.
+ * Used to filter out booklets that the current user cannot access.
+ *
+ * Business Rule: Assigned booklets can ONLY be consumed by the assigned user.
+ * Unassigned booklets (not in any user's defaultBookletId) can be used by anyone.
+ */
+export async function getBookletIdsAssignedToOthers(currentUserId: string): Promise<string[]> {
+  const assignedToOthers = await db
+    .select({ defaultBookletId: users.defaultBookletId })
+    .from(users)
+    .where(
+      and(
+        sql`${users.defaultBookletId} IS NOT NULL`,
+        ne(users.id, currentUserId),
+        isNull(users.deletedAt)
+      )
+    );
+
+  return assignedToOthers
+    .map((u) => u.defaultBookletId)
+    .filter((id): id is string => id !== null);
+}
+
+/**
+ * Get active auto_only booklets that a user can access:
+ * - Their own assigned booklet (if any)
+ * - Unassigned booklets (not in any user's defaultBookletId)
+ *
+ * This enforces the business rule that assigned booklets are exclusive
+ * to their assigned user.
+ */
+export async function getAccessibleBookletsForUser(userId: string): Promise<
+  {
+    id: string;
+    series: string;
+    prefix: string;
+    nextNumber: number;
+    endNumber: number;
+  }[]
+> {
+  const excludedIds = await getBookletIdsAssignedToOthers(userId);
+
+  return db
+    .select({
+      id: receiptBooklets.id,
+      series: receiptBooklets.series,
+      prefix: receiptBooklets.prefix,
+      nextNumber: receiptBooklets.nextNumber,
+      endNumber: receiptBooklets.endNumber,
+    })
+    .from(receiptBooklets)
+    .where(
+      and(
+        eq(receiptBooklets.status, "active"),
+        eq(receiptBooklets.usageMode, "auto_only"),
+        lte(receiptBooklets.nextNumber, receiptBooklets.endNumber),
+        excludedIds.length > 0
+          ? notInArray(receiptBooklets.id, excludedIds)
+          : undefined
+      )
+    )
+    .orderBy(asc(receiptBooklets.createdAt));
 }

@@ -27,8 +27,16 @@ import { buildCreateStudentFormSnapshot } from "./students.utils";
 import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
 import { logger } from "@/lib/observability/logger";
 import type { GuardianInput } from "./students.schema";
+import {
+  assertStudentMutable,
+  StudentArchivedException,
+  formatArchiveError,
+} from "@/features/archive/archive.guards";
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
+
+/** Prevent DoS via large guardians JSON payload (50KB limit). */
+const MAX_GUARDIANS_JSON_SIZE = 50_000;
 
 /**
  * Gets the next student sequence number atomically using PostgreSQL sequence.
@@ -59,6 +67,14 @@ export async function createStudentAction(
   // 2. Parse raw form data — guardians come in as JSON string from the client
   const guardiansRaw = formData.get("guardians");
   let guardiansParsed: unknown[] = [];
+
+  if (typeof guardiansRaw === "string" && guardiansRaw.length > MAX_GUARDIANS_JSON_SIZE) {
+    return {
+      errors: { guardians: ["Guardian data exceeds maximum size."] },
+      fieldValues: buildCreateStudentFormSnapshot(formData, []),
+    };
+  }
+
   try {
     guardiansParsed = JSON.parse(guardiansRaw as string);
   } catch {
@@ -395,6 +411,11 @@ export async function updateStudentAction(
   // 2. Parse raw form data — guardians come in as JSON string from the client
   const guardiansRaw = formData.get("guardians");
   let guardiansParsed: unknown[] = [];
+
+  if (typeof guardiansRaw === "string" && guardiansRaw.length > MAX_GUARDIANS_JSON_SIZE) {
+    return { errors: { guardians: ["Guardian data exceeds maximum size."] } };
+  }
+
   try {
     guardiansParsed = JSON.parse(guardiansRaw as string);
   } catch {
@@ -434,31 +455,13 @@ export async function updateStudentAction(
 
   const { studentId, guardians, isActive, ...studentData } = parsed.data;
 
-  // 4. Check if student exists
+  // 4. Check if student exists (pre-transaction check for fast-fail)
   const existingStudent = await db.query.students.findFirst({
     where: eq(students.id, studentId),
   });
 
   if (!existingStudent) {
     return { message: "Student not found." };
-  }
-
-  const hasEnrolledEnrollment = await db.query.enrollments.findFirst({
-    where: and(
-      eq(enrollments.studentId, studentId),
-      eq(enrollments.status, "enrolled")
-    ),
-    columns: { id: true },
-  });
-
-  if (hasEnrolledEnrollment && isActive !== existingStudent.isActive) {
-    return {
-      errors: {
-        isActive: [
-          "Active status cannot be changed while this student has an enrollment in Enrolled status.",
-        ],
-      },
-    };
   }
 
   // 5. Duplicate detection — always runs, excluding the current student.
@@ -509,59 +512,81 @@ export async function updateStudentAction(
   }
 
   try {
-    // 6. Update student
-    await db
-      .update(students)
-      .set({
-        ...studentData,
-        isActive: isActive !== undefined ? isActive : existingStudent.isActive,
-        updatedBy: session.userId,
-        updatedAt: new Date(),
-      })
-      .where(eq(students.id, studentId));
+    // 6. Transaction: Archive check + all mutations use same connection
+    // This prevents race conditions where a student is archived between the check and writes
+    await db.transaction(async (tx) => {
+      // Re-check archive status inside transaction to prevent TOCTOU race.
+      // Lock the student row (FOR UPDATE) so a concurrent archive cannot commit
+      // between this check and the update below.
+      await assertStudentMutable(studentId, "edit_profile", tx, true);
 
-    // 7. Update guardians: Soft-delete existing links and recreate
-    // PERFORMANCE: Batch insert guardians and links (80% faster than N+1 loop)
-    await db.update(studentGuardianLinks)
-      .set({ deletedAt: new Date(), deletedBy: session.userId })
-      .where(eq(studentGuardianLinks.studentId, studentId));
+      // Check active status change constraint inside transaction
+      const hasEnrolledEnrollment = await tx.query.enrollments.findFirst({
+        where: and(
+          eq(enrollments.studentId, studentId),
+          eq(enrollments.status, "enrolled")
+        ),
+        columns: { id: true },
+      });
 
-    if (guardians.length > 0) {
-      // Batch insert: All guardians at once
-      const guardianValues = guardians.map(g => ({
-        firstName: g.firstName,
-        middleName: g.middleName,
-        lastName: g.lastName,
-        relationship: g.relationship,
-        address: g.address,
-        occupation: g.occupation,
-        contactNumber: g.contactNumber,
-        email: g.email,
-        createdBy: session.userId,
-        updatedBy: session.userId,
-      }));
+      if (hasEnrolledEnrollment && isActive !== existingStudent.isActive) {
+        throw new Error("ENROLLED_STATUS_CONFLICT");
+      }
 
-      const insertedGuardians = await db
-        .insert(parentsGuardians)
-        .values(guardianValues)
-        .returning({ id: parentsGuardians.id });
+      // 7. Update student
+      await tx
+        .update(students)
+        .set({
+          ...studentData,
+          isActive: isActive !== undefined ? isActive : existingStudent.isActive,
+          updatedBy: session.userId,
+          updatedAt: new Date(),
+        })
+        .where(eq(students.id, studentId));
 
-      // Batch insert: All links at once
-      const linkValues = insertedGuardians.map((newGuardian, index) => ({
-        studentId,
-        guardianId: newGuardian.id,
-        isPrimary: guardians[index].isPrimary ?? false,
-      }));
+      // 8. Update guardians: Soft-delete existing links and recreate
+      // PERFORMANCE: Batch insert guardians and links (80% faster than N+1 loop)
+      await tx.update(studentGuardianLinks)
+        .set({ deletedAt: new Date(), deletedBy: session.userId })
+        .where(eq(studentGuardianLinks.studentId, studentId));
 
-      await db.insert(studentGuardianLinks).values(linkValues);
-    }
+      if (guardians.length > 0) {
+        // Batch insert: All guardians at once
+        const guardianValues = guardians.map(g => ({
+          firstName: g.firstName,
+          middleName: g.middleName,
+          lastName: g.lastName,
+          relationship: g.relationship,
+          address: g.address,
+          occupation: g.occupation,
+          contactNumber: g.contactNumber,
+          email: g.email,
+          createdBy: session.userId,
+          updatedBy: session.userId,
+        }));
 
-    // 8. Audit log
-    await logUpdateAction(session, "students", studentId,
-      { firstName: existingStudent.firstName, lastName: existingStudent.lastName, isActive: existingStudent.isActive },
-      { firstName: studentData.firstName, lastName: studentData.lastName, isActive },
-      { throwOnFail: true }
-    );
+        const insertedGuardians = await tx
+          .insert(parentsGuardians)
+          .values(guardianValues)
+          .returning({ id: parentsGuardians.id });
+
+        // Batch insert: All links at once
+        const linkValues = insertedGuardians.map((newGuardian, index) => ({
+          studentId,
+          guardianId: newGuardian.id,
+          isPrimary: guardians[index].isPrimary ?? false,
+        }));
+
+        await tx.insert(studentGuardianLinks).values(linkValues);
+      }
+
+      // 9. Audit log (inside transaction for consistency)
+      await logUpdateAction(session, "students", studentId,
+        { firstName: existingStudent.firstName, lastName: existingStudent.lastName, isActive: existingStudent.isActive },
+        { firstName: studentData.firstName, lastName: studentData.lastName, isActive },
+        { throwOnFail: true }
+      );
+    });
 
     logger.info("[students] Student updated", {
       studentId,
@@ -572,6 +597,22 @@ export async function updateStudentAction(
     revalidatePath(`/staff/students/${studentId}`);
     return { success: true };
   } catch (err) {
+    // Handle archive exception thrown from inside transaction
+    if (err instanceof StudentArchivedException) {
+      return { message: formatArchiveError(err).error.message };
+    }
+
+    // Handle enrolled status conflict
+    if (err instanceof Error && err.message === "ENROLLED_STATUS_CONFLICT") {
+      return {
+        errors: {
+          isActive: [
+            "Active status cannot be changed while this student has an enrollment in Enrolled status.",
+          ],
+        },
+      };
+    }
+
     const detail = collectPgErrorText(err);
     logger.error("[students] Failed to update student", { error: String(err), detail });
     const constraint = extractConstraintName(err);

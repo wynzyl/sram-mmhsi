@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { students, parentsGuardians, studentGuardianLinks, enrollments } from "@/lib/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
@@ -6,6 +6,7 @@ import EditStudentForm from "@/features/students/components/EditStudentForm";
 import { StudentEditHero } from "@/features/students/components/StudentEditHero";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { isArchivedStatus, type StudentStatus } from "@/lib/constants/student-status";
 
 /** Thin route pages must verify `students:update` before rendering. */
 export async function InternalEditStudentPage(props: {
@@ -39,10 +40,16 @@ export async function InternalEditStudentPage(props: {
       photoUrl: true,
 
       isActive: true,
+      status: true,
     },
   });
 
   if (!student) notFound();
+
+  // Block editing for archived students - redirect back to profile with a message
+  if (isArchivedStatus(student.status as StudentStatus)) {
+    redirect(`${studentsBasePrefix}/${id}?archived=true`);
+  }
 
   const guardians = await db
     .select({

@@ -59,6 +59,11 @@ export type NewAssessmentPageBlockedContext =
       status: "school_year_not_active";
       reason: "school_year_not_active";
       message: string;
+    }
+  | {
+      status: "student_archived";
+      reason: "student_archived";
+      message: string;
     };
 
 /** Pre-calculated discount amount for display in the assessment draft */
@@ -136,6 +141,7 @@ export async function loadNewAssessmentPageContext(
       firstName: students.firstName,
       lastName: students.lastName,
       referenceNumber: students.referenceNumber,
+      studentStatus: students.status,
       schoolYearId: enrollments.schoolYearId,
       gradeLevelId: enrollments.gradeLevelId,
       syLabel: schoolYears.label,
@@ -152,6 +158,16 @@ export async function loadNewAssessmentPageContext(
   if (row.length === 0) return null;
 
   const e = row[0];
+
+  // Block assessment creation for archived students
+  if (e.studentStatus !== "active") {
+    return {
+      status: "student_archived",
+      reason: "student_archived",
+      message: `This student has been archived (status: ${e.studentStatus}). Assessments cannot be created for archived students.`,
+    };
+  }
+
   if (e.enrollmentStatus !== "pending") {
     return {
       status: "not_pending",
@@ -159,8 +175,29 @@ export async function loadNewAssessmentPageContext(
     };
   }
 
-  // Check school year is active (defense in depth)
-  const activeSchoolYear = await getActiveSchoolYear();
+  // Run school year check and guardian lookup in parallel for better performance
+  const [activeSchoolYear, primaryRow] = await Promise.all([
+    // Check school year is active (defense in depth)
+    getActiveSchoolYear(),
+    // Get primary guardian
+    db
+      .select({
+        firstName: parentsGuardians.firstName,
+        lastName: parentsGuardians.lastName,
+        isPrimary: studentGuardianLinks.isPrimary,
+      })
+      .from(studentGuardianLinks)
+      .innerJoin(parentsGuardians, eq(studentGuardianLinks.guardianId, parentsGuardians.id))
+      .where(
+        and(
+          eq(studentGuardianLinks.studentId, e.studentId),
+          isNull(studentGuardianLinks.deletedAt),
+        ),
+      )
+      .orderBy(desc(studentGuardianLinks.isPrimary), asc(studentGuardianLinks.createdAt))
+      .limit(1),
+  ]);
+
   if (!activeSchoolYear || e.schoolYearId !== activeSchoolYear.id) {
     return {
       status: "school_year_not_active",
@@ -169,23 +206,6 @@ export async function loadNewAssessmentPageContext(
         "This enrollment belongs to an inactive school year. Assessments can only be created for the current active school year.",
     };
   }
-
-  const primaryRow = await db
-    .select({
-      firstName: parentsGuardians.firstName,
-      lastName: parentsGuardians.lastName,
-      isPrimary: studentGuardianLinks.isPrimary,
-    })
-    .from(studentGuardianLinks)
-    .innerJoin(parentsGuardians, eq(studentGuardianLinks.guardianId, parentsGuardians.id))
-    .where(
-      and(
-        eq(studentGuardianLinks.studentId, e.studentId),
-        isNull(studentGuardianLinks.deletedAt),
-      ),
-    )
-    .orderBy(desc(studentGuardianLinks.isPrimary), asc(studentGuardianLinks.createdAt))
-    .limit(1);
 
   const primaryGuardianLabel =
     primaryRow[0] != null

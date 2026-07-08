@@ -1,6 +1,6 @@
 import { requireSession } from "@/lib/auth/session";
-import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
+import { canAccessFinanceReports } from "@/lib/rbac/permissions";
 import { getSchoolYears } from "@/lib/queries/schoolYears";
 import {
   getAccountsReceivableReport,
@@ -26,7 +26,7 @@ export default async function AccountsReceivableReportPage({
 }: PageProps) {
   const session = await requireSession();
 
-  if (!hasPermission(session.role, "reports:view")) {
+  if (!canAccessFinanceReports(session.role)) {
     redirect("/staff/dashboard");
   }
 

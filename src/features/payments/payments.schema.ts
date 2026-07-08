@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { OR_SEQUENCE_PAD } from "@/lib/utils/or-number";
+import { OR_SEQUENCE_PAD, OR_NUMBER_REGEX } from "@/lib/utils/or-number";
 import type { BaseFormState } from "@/lib/validators/common-schemas";
 
 const BOOKLET_RECEIPT_COUNT = 50;
@@ -30,6 +30,10 @@ export function normalizeBookletSeriesInput(series: string): string {
 
 // ─── Receipt Booklet Validators ───────────────────────────────────────────────
 
+/** Valid booklet usage modes */
+export const BOOKLET_USAGE_MODES = ["auto_only", "manual_only"] as const;
+export type BookletUsageMode = (typeof BOOKLET_USAGE_MODES)[number];
+
 export const CreateBookletSchema = z
   .object({
     series: z
@@ -50,6 +54,12 @@ export const CreateBookletSchema = z
       .int("End number must be a whole number")
       .min(1, "End number must be at least 1")
       .max(OR_SEQUENCE_MAX, `End number must be at most ${OR_SEQUENCE_MAX} (5-digit OR)`),
+    usageMode: z.enum(BOOKLET_USAGE_MODES).default("auto_only"),
+    /** Optional cashier to assign this booklet as their default */
+    assignedCashierId: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined ? undefined : v),
+      z.string().uuid("Invalid cashier").optional()
+    ),
   })
   .refine((data) => data.endNumber >= data.startNumber, {
     message: "End number must be greater than or equal to start number",
@@ -81,7 +91,11 @@ export const PostPaymentSchema = z
   .object({
     studentId: z.string().uuid("Student is required"),
     assessmentId: z.string().uuid("Assessment is required"),
-    bookletId: z.string().uuid("Booklet selection is required"),
+    /** Booklet selection - required for auto-assign mode, ignored for manual entry */
+    bookletId: z.preprocess((v) => {
+      if (v === "" || v === null || v === undefined) return undefined;
+      return String(v).trim();
+    }, z.string().uuid("Booklet selection is required").optional()),
     amount: z.coerce.number().min(0.01, "Amount must be greater than 0"),
     paymentMethod: z.enum(["cash", "check", "bank_transfer", "gcash", "other"], {
       message: "Invalid payment method",
@@ -107,8 +121,68 @@ export const PostPaymentSchema = z
       if (v === "" || v === null || v === undefined) return undefined;
       return v;
     }, z.string().uuid().optional()),
+
+    // ─── Manual Entry Fields ───────────────────────────────────────────────────
+    /** Toggle for manual/offline entry mode */
+    isManualEntry: z.preprocess(
+      (v) => v === "true" || v === true,
+      z.boolean().default(false)
+    ),
+    /** Manual payment date (required when isManualEntry=true) */
+    manualPaymentDate: z.preprocess((v) => {
+      if (!v || v === "") return undefined;
+      return new Date(v as string);
+    }, z.date().optional()),
+    /** Manual OR number entry (required when isManualEntry=true), format: "XX 00000" */
+    manualOrNumber: z.preprocess((v) => {
+      if (!v || v === "") return undefined;
+      return String(v).trim().toUpperCase();
+    }, z.string().optional()),
   })
   .superRefine((data, ctx) => {
+    // ─── Manual Entry Validation ─────────────────────────────────────────────
+    if (data.isManualEntry) {
+      // Manual payment date required
+      if (!data.manualPaymentDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["manualPaymentDate"],
+          message: "Payment date is required for manual entries.",
+        });
+      } else if (data.manualPaymentDate > new Date()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["manualPaymentDate"],
+          message: "Payment date cannot be in the future.",
+        });
+      }
+
+      // Manual OR number required and must match format
+      if (!data.manualOrNumber) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["manualOrNumber"],
+          message: "OR number is required for manual entries.",
+        });
+      } else if (!OR_NUMBER_REGEX.test(data.manualOrNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["manualOrNumber"],
+          message: "OR must be format 'XX 00000' (e.g. AK 00050).",
+        });
+      }
+    } else {
+      // Auto-assign mode: bookletId required
+      if (!data.bookletId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["bookletId"],
+          message: "Booklet selection is required.",
+        });
+      }
+    }
+
+    // ─── Reference Number Validation ─────────────────────────────────────────
     if (data.paymentMethod === "gcash" || data.paymentMethod === "bank_transfer") {
       if (!data.referenceNumber) {
         ctx.addIssue({
@@ -119,6 +193,7 @@ export const PostPaymentSchema = z
       }
     }
 
+    // ─── Cash Tendered Validation ────────────────────────────────────────────
     if (data.paymentMethod !== "cash") return;
     const tendered = data.amountTendered;
     if (tendered === undefined || Number.isNaN(tendered)) {

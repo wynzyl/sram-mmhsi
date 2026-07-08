@@ -80,6 +80,12 @@ export const bookletStatusEnum = pgEnum("booklet_status", [
   "voided",
 ]);
 
+/** Booklet usage mode: auto_only for cashier auto-assign, manual_only for offline reconciliation */
+export const bookletUsageModeEnum = pgEnum("booklet_usage_mode", [
+  "auto_only",
+  "manual_only",
+]);
+
 export const orStatusEnum = pgEnum("or_status", [
   "available",
   "consumed",
@@ -182,6 +188,15 @@ export const users = pgTable(
     role: roleEnum("role").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     forcePasswordChange: boolean("force_password_change").notNull().default(false),
+    /**
+     * Default OR booklet for cashiers (auto-selected in payment form).
+     * FK to receiptBooklets.id via an AnyPgColumn thunk because receiptBooklets
+     * is declared after users and also references users (createdBy/updatedBy) —
+     * the thunk defers resolution and breaks the declaration cycle.
+     */
+    defaultBookletId: uuid("default_booklet_id").references(
+      (): AnyPgColumn => receiptBooklets.id
+    ),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by"),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -193,6 +208,12 @@ export const users = pgTable(
     uniqueIndex("users_email_idx").on(t.email),
     uniqueIndex("users_username_idx").on(t.username),
     index("users_role_idx").on(t.role),
+    // Booklet assignment is one-to-one: a booklet may be the default for at most
+    // one user (enforces the exclusive-access rule in getBookletIdsAssignedToOthers).
+    // Partial so multiple users may have no default booklet (NULL).
+    uniqueIndex("users_default_booklet_uidx")
+      .on(t.defaultBookletId)
+      .where(sql`${t.defaultBookletId} IS NOT NULL`),
   ]
 );
 
@@ -665,6 +686,8 @@ export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
       index("assessments_billing_status_idx").on(t.billingStatus), // PERFORMANCE: Outstanding balance queries
       index("assessments_student_billing_idx").on(t.studentId, t.billingStatus), // PERFORMANCE: Student balance lookups
       index("assessments_transferred_at_idx").on(t.transferredAt), // PERFORMANCE: Filter active assessments (WHERE transferredAt IS NULL)
+      // PERFORMANCE: Finance reports by school year + billing status
+      index("assessments_sy_billing_idx").on(t.schoolYearId, t.billingStatus),
       // DB-level: All transfer fields must be NULL or all NOT NULL
       check(
         "assessments_transfer_fields_atomic",
@@ -731,6 +754,8 @@ export const receiptBooklets = pgTable(
     endNumber: integer("end_number").notNull(),
     nextNumber: integer("next_number").notNull(),
     status: bookletStatusEnum("status").notNull().default("active"),
+    /** Usage mode: auto_only for cashier auto-assign dropdown, manual_only for offline reconciliation */
+    usageMode: bookletUsageModeEnum("usage_mode").notNull().default("auto_only"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -824,6 +849,8 @@ export const payments = pgTable(
     reversedBy: uuid("reversed_by").references(() => users.id),
     /** Links to the void request that triggered this reversal */
     reversedByRequestId: uuid("reversed_by_request_id"), // FK added after voidRequests table
+    /** Manual entry flag: true when payment was entered retroactively from offline receipt */
+    isManualEntry: boolean("is_manual_entry").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -853,6 +880,11 @@ export const payments = pgTable(
     index("payments_assessment_status_idx").on(t.assessmentId, t.status), // PERFORMANCE: Assessment reconciliation
     index("payments_reverses_payment_idx").on(t.reversesPaymentId), // PERFORMANCE: Reversal lookups
     index("payments_kind_idx").on(t.kind), // PERFORMANCE: Filter payment vs reversal
+    index("payments_booklet_idx").on(t.bookletId), // PERFORMANCE: Consumed-OR lookups per booklet (manual entry suggestions)
+    // PERFORMANCE: Daily reconciliation queries (posted payments by date)
+    index("payments_posted_date_idx")
+      .on(t.paymentDate)
+      .where(sql`${t.status} = 'posted'`),
   ]
 );
 
@@ -924,6 +956,10 @@ export const teacherAssignments = pgTable(
     index("ta_active_idx")
       .on(t.teacherId)
       .where(sql`${t.deletedAt} IS NULL`),
+    // PERFORMANCE: Grade encoding queries by section + school year
+    index("ta_section_sy_idx").on(t.sectionId, t.schoolYearId),
+    // PERFORMANCE: Admin assignment queries by school year
+    index("ta_school_year_idx").on(t.schoolYearId),
   ]
 );
 
@@ -1063,6 +1099,8 @@ export const discountRequests = pgTable(
     index("discount_requests_pending_idx")
       .on(t.status)
       .where(sql`${t.status} = 'pending'`),
+    // PERFORMANCE: Discount type lookups
+    index("discount_requests_type_idx").on(t.discountTypeId),
   ]
 );
 

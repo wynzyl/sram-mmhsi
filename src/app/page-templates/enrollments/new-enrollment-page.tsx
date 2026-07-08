@@ -29,7 +29,13 @@ export async function InternalNewEnrollmentPage(props: {
       previousSchool: students.previousSchool,
     })
     .from(students)
-    .where(eq(students.isActive, true))
+    .where(
+      and(
+        eq(students.isActive, true),
+        // Filter out archived students - only show active students
+        eq(students.status, "active")
+      )
+    )
     .orderBy(asc(students.lastName), asc(students.firstName));
 
   const activeSyRows = await db

@@ -29,6 +29,48 @@
       "when": 1782710401637,
       "tag": "0003_add_archive_performance_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783146159528,
+      "tag": "0004_add_query_performance_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783312137522,
+      "tag": "0005_add_manual_entry_flag_to_payments",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783316084070,
+      "tag": "0006_add_usage_mode_to_booklets",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783401700308,
+      "tag": "0007_add_user_default_booklet",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783407986379,
+      "tag": "0008_add_users_default_booklet_fk",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783408810528,
+      "tag": "0009_add_payments_booklet_index",
+      "breakpoints": true
     }
   ]
 }

@@ -126,6 +126,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "System",
       items: [
+        { href: "/admin/users", label: "Users", icon: "users" },
         { href: "/staff/school-years", label: "School Years", icon: "school-years" },
       ],
     },
@@ -167,9 +168,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Reports",
       items: [
-        { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
         { href: "/staff/reports/payment-collection", label: "Payment Collection", icon: "reports" },
-        { href: "/staff/reports/accounts-receivable", label: "Accounts Receivable", icon: "reports" },
         { href: "/staff/reports/student-list", label: "Student List", icon: "reports" },
       ],
     },
@@ -202,7 +201,6 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Reports",
       items: [
         { href: "/staff/reports/balance-forwards", label: "Balance Forwards", icon: "reports" },
-        { href: "/staff/reports/payment-collection", label: "Payment Collection", icon: "reports" },
         { href: "/staff/reports/accounts-receivable", label: "Accounts Receivable", icon: "reports" },
         { href: "/staff/reports/student-list", label: "Student List", icon: "reports" },
       ],
@@ -222,6 +220,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Approvals",
       items: [
         { href: "/staff/approvals", label: "Approvals", icon: "void-requests" },
+      ],
+    },
+    {
+      label: "Reports",
+      items: [
+        { href: "/staff/reports/payment-collection", label: "Payment Collection", icon: "reports" },
       ],
     },
   ],

@@ -39,6 +39,8 @@ export type LedgerPaymentRow = {
   kind?: string;
   /** For reversal rows: links to the original payment */
   reversesPaymentId?: string | null;
+  /** Manual entry flag: true when payment was entered retroactively from offline receipt */
+  isManualEntry?: boolean;
 };
 
 export type PendingVoidRequestInfo = {
@@ -94,6 +96,13 @@ export type AssessmentLedgerRegisterProps = {
   canRequestDiscount: boolean;
   /** Gates the Cancel Assessment button. `assessments:cancel` (finance_officer / admin). */
   canCancel?: boolean;
+  /** Default booklet ID for pre-selection (from cashier's assigned default) */
+  defaultBookletId?: string | null;
+  /** Manual entry suggestions for pre-filling date and OR number */
+  manualSuggestions?: {
+    lastManualPaymentDate: string | null;
+    suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[];
+  } | null;
 };
 
 function lineSignedAmount(item: LedgerLineItem): number {
@@ -123,6 +132,8 @@ export default function AssessmentLedgerRegister({
   canReverseDiscount,
   canRequestDiscount,
   canCancel = false,
+  defaultBookletId,
+  manualSuggestions,
 }: AssessmentLedgerRegisterProps) {
   const router = useRouter();
   const [payOpen, setPayOpen] = useState(false);
@@ -673,6 +684,8 @@ export default function AssessmentLedgerRegister({
                 activeBooklets={activeBooklets}
                 onCancel={closePayment}
                 onPosted={onPosted}
+                defaultBookletId={defaultBookletId}
+                manualSuggestions={manualSuggestions ?? undefined}
               />
             </div>
           </div>

@@ -2,10 +2,11 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ClipboardPlus, Info, UserRound } from "lucide-react";
+import { CalendarDays, ClipboardPlus, Info } from "lucide-react";
 import { createBookletAction } from "@/features/payments/payments.actions";
 import type { BookletFormState } from "@/lib/validators/cashier";
 import { cn } from "@/lib/utils/cn";
+import { UsageModeField, AssignedCashierField } from "./BookletFormFields";
 
 interface BookletFormProps {
   variant?: "default" | "dashboard";
@@ -13,6 +14,8 @@ interface BookletFormProps {
   redirectTo?: string;
   /** Optional callback invoked on successful submit (takes the latest form state). */
   onSuccess?: (state: BookletFormState) => void;
+  /** List of cashiers available for booklet assignment */
+  cashiers?: { id: string; username: string; email: string }[];
 }
 
 const inputBaseClasses = "block w-full px-3.5 py-2.5 rounded-md border border-border bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25";
@@ -35,6 +38,7 @@ export default function BookletForm({
   variant = "default",
   redirectTo = "/staff/finance/booklets",
   onSuccess,
+  cashiers = [],
 }: BookletFormProps) {
   const router = useRouter();
   const initialState: BookletFormState = {};
@@ -108,6 +112,14 @@ export default function BookletForm({
           </p>
           {state.errors?.prefix && <p className="form-error">{state.errors.prefix[0]}</p>}
         </div>
+
+        <UsageModeField variant="default" error={state.errors?.usageMode} />
+
+        <AssignedCashierField
+          variant="default"
+          cashiers={cashiers}
+          error={state.errors?.assignedCashierId}
+        />
 
         <div className="form-grid mt-4">
           <div className="form-group">
@@ -265,17 +277,13 @@ export default function BookletForm({
           </div>
         </div>
 
-        <div>
-          <label className="block text-[0.8125rem] font-medium text-foreground mb-1.5" htmlFor="assignedTo">
-            Assigned To (Staff/Cashier)
-          </label>
-          <div className="relative">
-            <select id="assignedTo" className={cn(inputBaseClasses, "pr-10 opacity-60 cursor-not-allowed bg-muted")} disabled defaultValue="">
-              <option value="">Select Cashier (assignment soon)</option>
-            </select>
-            <UserRound className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-500" />
-          </div>
-        </div>
+        <UsageModeField variant="dashboard" error={state.errors?.usageMode} />
+
+        <AssignedCashierField
+          variant="dashboard"
+          cashiers={cashiers}
+          error={state.errors?.assignedCashierId}
+        />
 
         <button type="submit" className="btn-primary mt-2 flex h-14 w-full items-center justify-center gap-2" disabled={pending}>
           <ClipboardPlus className="h-4 w-4" />

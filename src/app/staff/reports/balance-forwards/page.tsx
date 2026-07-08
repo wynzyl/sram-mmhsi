@@ -1,6 +1,6 @@
 import { requireSession } from "@/lib/auth/session";
-import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
+import { canAccessFinanceReports } from "@/lib/rbac/permissions";
 import {
   getBfxTransfersReport,
   getBfxSummary,
@@ -26,8 +26,7 @@ export default async function BalanceForwardsReportPage({
 }: PageProps) {
   const session = await requireSession();
 
-  // Permission check - finance_officer, admin, or super_admin
-  if (!hasPermission(session.role, "reports:view")) {
+  if (!canAccessFinanceReports(session.role)) {
     redirect("/staff/dashboard");
   }
 

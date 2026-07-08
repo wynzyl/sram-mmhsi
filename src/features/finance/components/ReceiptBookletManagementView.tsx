@@ -11,17 +11,21 @@ interface ReceiptBooklet {
   endNumber: number;
   nextNumber: number;
   status: string;
+  usageMode: "auto_only" | "manual_only";
   createdAt: Date;
+  assignedToUsername: string | null;
 }
 
 interface ReceiptBookletManagementViewProps {
   booklets: ReceiptBooklet[];
   footerNote: string;
+  cashiers?: { id: string; username: string; email: string }[];
 }
 
 export function ReceiptBookletManagementView({
   booklets,
   footerNote,
+  cashiers = [],
 }: ReceiptBookletManagementViewProps) {
   const activeCount = booklets.filter((b) => b.status === "active").length;
   const lowStockCount = booklets.filter(
@@ -58,6 +62,7 @@ export function ReceiptBookletManagementView({
           <BookletForm
             variant="dashboard"
             redirectTo="/staff/finance/booklets"
+            cashiers={cashiers}
           />
           <BookletsTable booklets={booklets} variant="dashboard" />
         </div>

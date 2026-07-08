@@ -141,6 +141,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "fee_schedules:manage",
     "school_years:manage",
     "reports:view", "reports:finance", "reports:academic",
+    "users:manage",
     "system:manage",
   ],
   registrar: [
@@ -195,6 +196,37 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "grades:read",
   ],
 };
+
+/**
+ * Report-page access allowlists.
+ *
+ * Centralized here so report pages and their `export` route handlers cannot
+ * drift out of sync. Guards should call {@link canAccessFinanceReports} /
+ * {@link canAccessPaymentReports} (or reference these arrays) rather than
+ * defining their own inline lists.
+ */
+export const FINANCE_REPORT_ROLES: readonly Role[] = [
+  "super_admin",
+  "admin",
+  "finance_officer",
+];
+
+export const PAYMENT_REPORT_ROLES: readonly Role[] = [
+  "super_admin",
+  "admin",
+  "registrar",
+  "cashier",
+];
+
+export function canAccessFinanceReports(role: Role): boolean {
+  const normalizedRole = normalizeRole(role);
+  return normalizedRole ? FINANCE_REPORT_ROLES.includes(normalizedRole) : false;
+}
+
+export function canAccessPaymentReports(role: Role): boolean {
+  const normalizedRole = normalizeRole(role);
+  return normalizedRole ? PAYMENT_REPORT_ROLES.includes(normalizedRole) : false;
+}
 
 export function hasPermission(role: Role, permission: Permission): boolean {
   const normalizedRole = normalizeRole(role);

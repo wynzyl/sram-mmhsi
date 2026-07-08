@@ -6,17 +6,22 @@ import {
   payments,
   students,
   schoolYears,
-  receiptBooklets,
   users,
   feeItemTypes,
   enrollments,
 } from "@/lib/db/schema";
-import { eq, desc, asc, and, lte } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentLedgerRegister from "@/features/payments/components/AssessmentLedgerRegister";
 import { getPendingVoidRequestsForPayments } from "@/features/payments/void-requests.queries";
+import {
+  getAccessibleBookletsForUser,
+  getCashierDefaultBookletId,
+  getManualEntrySuggestions,
+} from "@/features/payments/payments.queries";
 import { getStudentDiscountsByAssessment } from "@/features/discounts";
+import { isArchivedStatus } from "@/lib/constants/student-status";
 
 export async function InternalAssessmentLedgerPage(props: {
   assessmentId: string;
@@ -43,6 +48,7 @@ export async function InternalAssessmentLedgerPage(props: {
       transferredToAssessmentId: assessments.transferredToAssessmentId,
       studentName: students.lastName,
       studentFirstName: students.firstName,
+      studentStatus: students.status,
       schoolYear: schoolYears.label,
       enrollmentStatus: enrollments.status,
     })
@@ -89,6 +95,7 @@ export async function InternalAssessmentLedgerPage(props: {
         processedByUsername: users.username,
         kind: payments.kind,
         reversesPaymentId: payments.reversesPaymentId,
+        isManualEntry: payments.isManualEntry,
       })
       .from(payments)
       .leftJoin(users, eq(payments.createdBy, users.id))
@@ -96,11 +103,15 @@ export async function InternalAssessmentLedgerPage(props: {
       .orderBy(desc(payments.createdAt)),
   ]);
 
-  const canPost = hasPermission(session.role, "payments:post");
-  const canRequestVoid = hasPermission(session.role, "payments:void_request");
-  const canReverseDiscount = hasPermission(session.role, "discounts:manage");
-  const canRequestDiscount = hasPermission(session.role, "discounts:request");
-  const canCancel = hasPermission(session.role, "assessments:cancel");
+  // Check if student is archived - disable transactional actions for archived students
+  const isStudentArchived = isArchivedStatus(assessment.studentStatus);
+
+  // Disable posting, voiding, and cancellation for archived students
+  const canPost = hasPermission(session.role, "payments:post") && !isStudentArchived;
+  const canRequestVoid = hasPermission(session.role, "payments:void_request") && !isStudentArchived;
+  const canReverseDiscount = hasPermission(session.role, "discounts:manage") && !isStudentArchived;
+  const canRequestDiscount = hasPermission(session.role, "discounts:request") && !isStudentArchived;
+  const canCancel = hasPermission(session.role, "assessments:cancel") && !isStudentArchived;
 
   // Fetch pending void requests for displayed payments + applied discounts in parallel
   const paymentIds = paymentRecords.map((p) => p.id);
@@ -133,23 +144,22 @@ export async function InternalAssessmentLedgerPage(props: {
     nextNumber: number;
     endNumber: number;
   }[] = [];
+  let defaultBookletId: string | null = null;
+  let manualSuggestions: Awaited<ReturnType<typeof getManualEntrySuggestions>> | null = null;
+
   if (canPost) {
-    activeBooklets = await db
-      .select({
-        id: receiptBooklets.id,
-        series: receiptBooklets.series,
-        prefix: receiptBooklets.prefix,
-        nextNumber: receiptBooklets.nextNumber,
-        endNumber: receiptBooklets.endNumber,
-      })
-      .from(receiptBooklets)
-      .where(
-        and(
-          eq(receiptBooklets.status, "active"),
-          lte(receiptBooklets.nextNumber, receiptBooklets.endNumber)
-        )
-      )
-      .orderBy(asc(receiptBooklets.createdAt));
+    // Fetch accessible booklets, default booklet, and manual suggestions in parallel
+    // Note: getAccessibleBookletsForUser() filters out booklets assigned to other users
+    const [bookletRows, cashierDefaultBookletId, suggestions] = await Promise.all([
+      // Get booklets accessible to this user (own assigned + unassigned booklets)
+      getAccessibleBookletsForUser(session.userId),
+      getCashierDefaultBookletId(session.userId),
+      getManualEntrySuggestions(session.userId),
+    ]);
+
+    activeBooklets = bookletRows;
+    defaultBookletId = cashierDefaultBookletId;
+    manualSuggestions = suggestions;
   }
 
   const ledgerPayments = paymentRecords.map((p) => ({
@@ -163,6 +173,7 @@ export async function InternalAssessmentLedgerPage(props: {
     processedBy: p.processedByUsername ?? null,
     kind: p.kind,
     reversesPaymentId: p.reversesPaymentId,
+    isManualEntry: p.isManualEntry,
   }));
 
   return (
@@ -196,6 +207,8 @@ export async function InternalAssessmentLedgerPage(props: {
         canReverseDiscount={canReverseDiscount}
         canRequestDiscount={canRequestDiscount}
         canCancel={canCancel}
+        defaultBookletId={defaultBookletId}
+        manualSuggestions={manualSuggestions}
       />
     </div>
   );

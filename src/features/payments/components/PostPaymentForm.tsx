@@ -29,6 +29,13 @@ interface PostPaymentFormProps {
   onCancel?: () => void;
   /** Called after a successful post (e.g. close modal + refresh). */
   onPosted?: () => void;
+  /** Default booklet ID for pre-selection (from cashier's assigned default) */
+  defaultBookletId?: string | null;
+  /** Manual entry suggestions for pre-filling date and OR number */
+  manualSuggestions?: {
+    lastManualPaymentDate: string | null;
+    suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[];
+  };
 }
 
 
@@ -39,6 +46,8 @@ export default function PostPaymentForm({
   activeBooklets,
   onCancel,
   onPosted,
+  defaultBookletId,
+  manualSuggestions,
 }: PostPaymentFormProps) {
   const initialState: PaymentFormState = {};
   const [state, action, pending] = useActionState(postPaymentAction, initialState);
@@ -47,6 +56,34 @@ export default function PostPaymentForm({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [amountToPay, setAmountToPay] = useState(String(balance));
   const [amountTendered, setAmountTendered] = useState("");
+
+  // Default booklet selection (pre-select if valid and in activeBooklets)
+  const [selectedBookletId, setSelectedBookletId] = useState<string>(() => {
+    if (defaultBookletId && activeBooklets.some(b => b.id === defaultBookletId)) {
+      return defaultBookletId;
+    }
+    return activeBooklets[0]?.id ?? "";
+  });
+
+  // Manual entry state
+  const [isManualEntry, setIsManualEntry] = useState(false);
+  const [manualPaymentDate, setManualPaymentDate] = useState("");
+  const [manualOrNumber, setManualOrNumber] = useState("");
+
+  // Handler for toggling manual entry - auto-fills suggestions on first enable
+  const handleManualEntryToggle = (checked: boolean) => {
+    setIsManualEntry(checked);
+    // Auto-fill suggestions when enabling manual entry (only if fields are empty)
+    if (checked && manualSuggestions) {
+      if (manualSuggestions.lastManualPaymentDate && !manualPaymentDate) {
+        setManualPaymentDate(manualSuggestions.lastManualPaymentDate);
+      }
+      if (manualSuggestions.suggestedOrNumbers[0] && !manualOrNumber) {
+        setManualOrNumber(manualSuggestions.suggestedOrNumbers[0].nextOr);
+      }
+    }
+  };
+
   // One key per form mount: a retried submit replays as the SAME payment
   // server-side instead of consuming a second OR (audit finding F7).
   // Generated after mount — an SSR-generated UUID would differ from the
@@ -111,6 +148,7 @@ export default function PostPaymentForm({
       <input type="hidden" name="studentId" value={studentId} />
       <input type="hidden" name="assessmentId" value={assessmentId} />
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
+      <input type="hidden" name="isManualEntry" value={String(isManualEntry)} />
 
       <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted px-4 py-3">
         <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Amount due (balance)</span>
@@ -119,31 +157,94 @@ export default function PostPaymentForm({
         </span>
       </div>
 
-      <FormField label="OR booklet" required error={state.errors?.bookletId}>
-        {activeBooklets.length === 0 ? (
-          <div className="cashier-pay-alert cashier-pay-alert-error" role="status">
-            <p>
-              No active receipt booklets. Ask Finance to activate a booklet before accepting
-              payment.
-            </p>
+      {/* Manual Entry Toggle */}
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3">
+        <input
+          type="checkbox"
+          id="isManualEntryToggle"
+          checked={isManualEntry}
+          onChange={(e) => handleManualEntryToggle(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+        />
+        <label htmlFor="isManualEntryToggle" className="text-sm font-medium">
+          Manual entry (offline payment)
+        </label>
+      </div>
+
+      {/* Manual Entry Fields */}
+      {isManualEntry && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+            Offline Payment Details
+          </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField
+              label="Payment date"
+              required
+              error={state.errors?.manualPaymentDate}
+            >
+              <Input
+                type="date"
+                id="manualPaymentDate"
+                name="manualPaymentDate"
+                value={manualPaymentDate}
+                onChange={(e) => setManualPaymentDate(e.target.value)}
+                max={new Date().toISOString().split("T")[0]}
+                required={isManualEntry}
+              />
+            </FormField>
+
+            <FormField
+              label="OR number"
+              required
+              error={state.errors?.manualOrNumber}
+              hint="Format: AK 00050"
+            >
+              <Input
+                type="text"
+                id="manualOrNumber"
+                name="manualOrNumber"
+                value={manualOrNumber}
+                onChange={(e) => setManualOrNumber(e.target.value.toUpperCase())}
+                placeholder="AK 00050"
+                required={isManualEntry}
+                className="font-mono"
+              />
+            </FormField>
           </div>
-        ) : (
-          <select
-            id="bookletId"
-            name="bookletId"
-            className="form-control"
-            required
-            disabled={activeBooklets.length === 0}
-          >
-            {activeBooklets.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.series} — Next OR:{" "}
-                {formatStoredOrNumber(b.prefix, b.nextNumber)}
-              </option>
-            ))}
-          </select>
-        )}
-      </FormField>
+        </div>
+      )}
+
+      {/* OR Booklet - only show when NOT manual entry */}
+      {!isManualEntry && (
+        <FormField label="OR booklet" required error={state.errors?.bookletId}>
+          {activeBooklets.length === 0 ? (
+            <div className="cashier-pay-alert cashier-pay-alert-error" role="status">
+              <p>
+                No active receipt booklets. Ask Finance to activate a booklet before accepting
+                payment.
+              </p>
+            </div>
+          ) : (
+            <select
+              id="bookletId"
+              name="bookletId"
+              className="form-control"
+              required
+              disabled={activeBooklets.length === 0}
+              value={selectedBookletId}
+              onChange={(e) => setSelectedBookletId(e.target.value)}
+            >
+              {activeBooklets.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.series} — Next OR:{" "}
+                  {formatStoredOrNumber(b.prefix, b.nextNumber)}
+                </option>
+              ))}
+            </select>
+          )}
+        </FormField>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <FormField
@@ -259,7 +360,8 @@ export default function PostPaymentForm({
         loading={pending}
         // !hydrated: block pre-hydration submits (full-page POST fallback) on
         // this financial form — see useHydrated (audit finding F6).
-        submitDisabled={activeBooklets.length === 0 || !hydrated}
+        // Allow posting when manual entry is enabled (doesn't need active booklets).
+        submitDisabled={(!isManualEntry && activeBooklets.length === 0) || !hydrated}
       />
     </form>
   );
