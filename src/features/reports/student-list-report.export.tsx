@@ -31,10 +31,11 @@ function buildSubtitle(meta: StudentListReportMeta): string {
 // ─── PDF (Track 1) ─────────────────────────────────────────────────────────────
 
 const pdfColumns: ReportColumn<StudentListRow>[] = [
-  { header: "Student Name", width: "22%", cell: (r) => r.studentName },
+  { header: "Student Name", width: "18%", cell: (r) => r.studentName },
+  { header: "Student ID", width: "10%", mono: true, cell: (r) => r.studentRef },
   { header: "Grade", width: "9%", cell: (r) => r.gradeLevel },
-  { header: "Address", width: "22%", cell: (r) => r.address },
-  { header: "Guardian Name", width: "18%", cell: (r) => r.guardianName },
+  { header: "Address", width: "18%", cell: (r) => r.address },
+  { header: "Guardian Name", width: "16%", cell: (r) => r.guardianName },
   { header: "Contact No.", width: "13%", cell: (r) => r.guardianContact },
   { header: "Email", width: "16%", cell: (r) => r.guardianEmail },
 ];
@@ -68,10 +69,11 @@ export function StudentListPdfDocument({
 // ─── XLSX (Track 2) ────────────────────────────────────────────────────────────
 
 const xlsxColumns: XlsxColumn<StudentListRow>[] = [
-  { header: "Student Name", width: 30, value: (r) => r.studentName },
+  { header: "Student Name", width: 28, value: (r) => r.studentName },
+  { header: "Student ID", width: 14, value: (r) => r.studentRef },
   { header: "Grade", width: 12, value: (r) => r.gradeLevel },
-  { header: "Address", width: 36, value: (r) => r.address },
-  { header: "Guardian Name", width: 26, value: (r) => r.guardianName },
+  { header: "Address", width: 32, value: (r) => r.address },
+  { header: "Guardian Name", width: 24, value: (r) => r.guardianName },
   { header: "Contact No.", width: 16, value: (r) => r.guardianContact },
   { header: "Email", width: 26, value: (r) => r.guardianEmail },
 ];

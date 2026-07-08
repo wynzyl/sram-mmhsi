@@ -13,6 +13,7 @@ import { calculateOffset } from "@/lib/types/pagination";
 
 export type StudentListRow = {
   studentId: string;
+  studentRef: string; // 7-digit Student ID (e.g. "0000001")
   studentName: string; // "DELA CRUZ, Juan Miguel" (Lastname, Firstname Middlename)
   gradeLevel: string;
   address: string; // student address
@@ -77,6 +78,7 @@ function enrollmentConditions(schoolYearId: string, gradeLevelId?: string) {
 
 function mapRow(row: {
   studentId: string;
+  referenceNumber: string;
   studentFirstName: string;
   studentMiddleName: string | null;
   studentLastName: string;
@@ -99,6 +101,7 @@ function mapRow(row: {
 
   return {
     studentId: row.studentId,
+    studentRef: row.referenceNumber,
     studentName: `${row.studentLastName}, ${firstAndMiddle}`,
     gradeLevel: row.gradeLevel,
     address: row.studentAddress ?? "",
@@ -110,6 +113,7 @@ function mapRow(row: {
 
 const SELECT_SHAPE = (guardian: ReturnType<typeof primaryGuardianSubquery>) => ({
   studentId: students.id,
+  referenceNumber: students.referenceNumber,
   studentFirstName: students.firstName,
   studentMiddleName: students.middleName,
   studentLastName: students.lastName,

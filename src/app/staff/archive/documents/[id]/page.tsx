@@ -130,7 +130,7 @@ export default async function DocumentRequestDetailPage({ params }: PageProps) {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Reference Number
+                  Student ID
                 </p>
                 <p className="font-mono">{request.studentRef}</p>
               </div>

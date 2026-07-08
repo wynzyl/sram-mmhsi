@@ -300,7 +300,7 @@ function GoodMoralCertificate({
         <Text style={styles.certStatement}>
           This is to certify that{" "}
           <Text style={{ fontWeight: "bold" }}>{data.studentName}</Text>, with
-          Student Reference No.{" "}
+          Student ID{" "}
           <Text style={{ fontWeight: "bold" }}>{data.studentReferenceNumber}</Text>
           {data.gradeLevel && (
             <>
@@ -390,7 +390,7 @@ function EnrollmentCertificate({
         <Text style={styles.certStatement}>
           This is to certify that{" "}
           <Text style={{ fontWeight: "bold" }}>{data.studentName}</Text>, with
-          Student Reference No.{" "}
+          Student ID{" "}
           <Text style={{ fontWeight: "bold" }}>{data.studentReferenceNumber}</Text>
           , is officially enrolled at{" "}
           <Text style={{ fontWeight: "bold" }}>{SCHOOL_NAME}</Text>
@@ -480,7 +480,7 @@ function CompletionCertificate({
         <Text style={styles.certStatement}>
           This is to certify that{" "}
           <Text style={{ fontWeight: "bold" }}>{data.studentName}</Text>, with
-          Student Reference No.{" "}
+          Student ID{" "}
           <Text style={{ fontWeight: "bold" }}>{data.studentReferenceNumber}</Text>
           , has successfully completed the requirements of{" "}
           {data.gradeLevel ? (
@@ -562,7 +562,7 @@ function Form137Document({
             <Text style={styles.detailValue}>{data.studentName}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Reference No.</Text>
+            <Text style={styles.detailLabel}>Student ID</Text>
             <Text style={styles.detailValue}>{data.studentReferenceNumber}</Text>
           </View>
           {data.gradeLevel && (
@@ -651,7 +651,7 @@ function Form138Document({
             <Text style={styles.detailValue}>{data.studentName}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Reference No.</Text>
+            <Text style={styles.detailLabel}>Student ID</Text>
             <Text style={styles.detailValue}>{data.studentReferenceNumber}</Text>
           </View>
           {data.gradeLevel && (
@@ -796,7 +796,7 @@ function DiplomaCopyDocument({
         <Text style={styles.certStatement}>
           This is to certify that{" "}
           <Text style={{ fontWeight: "bold" }}>{data.studentName}</Text>, with
-          Student Reference No.{" "}
+          Student ID{" "}
           <Text style={{ fontWeight: "bold" }}>{data.studentReferenceNumber}</Text>
           , has successfully completed the requirements for graduation from{" "}
           <Text style={{ fontWeight: "bold" }}>{SCHOOL_NAME}</Text>
@@ -880,7 +880,7 @@ function OtherDocument({
             <Text style={styles.detailValue}>{data.studentName}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Reference No.</Text>
+            <Text style={styles.detailLabel}>Student ID</Text>
             <Text style={styles.detailValue}>{data.studentReferenceNumber}</Text>
           </View>
           {data.gradeLevel && (

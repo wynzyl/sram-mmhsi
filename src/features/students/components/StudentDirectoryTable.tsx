@@ -87,7 +87,7 @@ export function StudentDirectoryTable({
               sortHref={sortHref}
               className="pl-4"
             />
-            <th className={headClass}>ID number</th>
+            <th className={headClass}>Student ID</th>
             <th className={headClass}>Grade</th>
             <th className={headClass}>Address</th>
             <SortableHeader

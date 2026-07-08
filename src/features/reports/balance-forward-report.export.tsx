@@ -89,7 +89,7 @@ const xlsxColumns: XlsxColumn<BfxTransferRow>[] = [
   { header: "BFX #", width: 16, value: (r) => r.bfxNumber || "" },
   { header: "Date", width: 14, value: (r) => reportDate(r.transferDate) },
   { header: "Student", width: 28, value: (r) => r.studentName },
-  { header: "Student Ref", width: 18, value: (r) => r.studentRef },
+  { header: "Student ID", width: 18, value: (r) => r.studentRef },
   { header: "Source School Year", width: 16, value: (r) => r.sourceSchoolYearLabel },
   {
     header: "Amount",

@@ -139,7 +139,7 @@ export default async function ArchivedStudentPage({ params }: PageProps) {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">
-                Reference Number
+                Student ID
               </p>
               <p className="font-mono">{student.referenceNumber}</p>
             </div>
