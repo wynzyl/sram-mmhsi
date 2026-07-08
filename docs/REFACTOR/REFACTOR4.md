@@ -10,6 +10,9 @@ What Needs Refactoring:
 
 UI Components: We have duplicated code for tables, pagination, and various buttons across these different pages. I want to extract these into generic, reusable UI components.
 
+UI Design: 
+Use global css, component and No inline design pattern.
+
 Business Logic: There is duplicated logic for handling actions like applying a discount, canceling a discount, processing an OR (Official Receipt) Payment, and executing an OR VOID. I want to extract this logic into reusable utility functions or custom hooks.
 
 Your Task:
