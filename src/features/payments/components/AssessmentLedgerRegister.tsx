@@ -160,8 +160,9 @@ export default function AssessmentLedgerRegister({
   const isFullyPaid = assessment.billingStatus === "fully_paid";
   const isCancelled = assessment.billingStatus === "cancelled";
   const isTransferred = assessment.transferredAt != null;
-  // Allow payments for cancelled enrollments to settle outstanding balances/clearances
-  const canOpenPay = canPost && !isFullyPaid && !isTransferred && balanceNum > 0;
+  // Allow payments for cancelled enrollments to settle outstanding balances/clearances,
+  // UNLESS the student has an active enrollment for the same school year (pay there instead).
+  const canOpenPay = canPost && !isFullyPaid && !isTransferred && balanceNum > 0 && !cancelledWithActiveEnrollment;
 
   // Check for balance forward items (visual indicator only - action handles reversal)
   const hasBalanceForwardItems = items.some(
@@ -273,7 +274,12 @@ export default function AssessmentLedgerRegister({
               Receive payment
             </button>
           )}
-          <GenerateInvoiceButton assessmentId={assessment.id} balance={balanceNum} />
+          <GenerateInvoiceButton
+            assessmentId={assessment.id}
+            balance={balanceNum}
+            disabled={cancelledWithActiveEnrollment}
+            disabledReason="Student has an active enrollment for this school year"
+          />
           {canShowCancelButton && !cancelOpen && (
             <button
               type="button"
@@ -403,6 +409,54 @@ export default function AssessmentLedgerRegister({
                     </Link>
                   </>
                 )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cancelled with Active Enrollment Warning Banner ── */}
+      {cancelledWithActiveEnrollment && (
+        <div
+          style={{
+            padding: "1rem 1.25rem",
+            marginBottom: "1.5rem",
+            borderRadius: "6px",
+            border: "1px solid color-mix(in srgb, #f59e0b 30%, transparent)",
+            background: "color-mix(in srgb, #f59e0b 8%, transparent)",
+          }}
+        >
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#f59e0b"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ flexShrink: 0, marginTop: "2px" }}
+              aria-hidden
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>
+              <p style={{ fontWeight: 600, marginBottom: "0.25rem", color: "#f59e0b" }}>
+                Payments Not Available
+              </p>
+              <p style={{ fontSize: "0.875rem", lineHeight: "1.5", color: "var(--foreground)" }}>
+                This enrollment was cancelled. The student has an active enrollment for this school year.
+                {" "}Please process payments on the active enrollment instead.
+                {" "}
+                <Link
+                  href={`/staff/enrollments/${enrollmentId}`}
+                  className="text-primary underline"
+                >
+                  ← Back to enrollment
+                </Link>
               </p>
             </div>
           </div>

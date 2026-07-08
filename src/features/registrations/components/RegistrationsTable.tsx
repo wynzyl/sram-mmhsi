@@ -69,7 +69,7 @@ export default function RegistrationsTable({
         <thead>
           <tr className="border-b border-border bg-muted">
             <th className="pl-4 font-semibold tracking-wide text-gray-600 dark:text-gray-400">Student</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Reference</th>
+            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Student ID</th>
             <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Grade Level</th>
             <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">School Year</th>
             <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Type</th>

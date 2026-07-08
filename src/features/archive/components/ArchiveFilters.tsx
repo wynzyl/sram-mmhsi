@@ -95,7 +95,7 @@ export function ArchiveFilters({
           <Input
             id="archive-search"
             type="search"
-            placeholder="Name or reference number..."
+            placeholder="Name or student ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1"

@@ -205,7 +205,7 @@ export async function InternalInvoiceDetailPage(props: {
             <div className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1.5 text-[0.85rem]">
               <span className="text-muted-foreground font-medium">Student Name</span>
               <span className="text-foreground font-semibold">{studentName}</span>
-              <span className="text-muted-foreground font-medium">Reference No.</span>
+              <span className="text-muted-foreground font-medium">Student ID</span>
               <span className="text-foreground font-mono text-[0.82rem]">
                 {invoice.studentReferenceNumber}
               </span>

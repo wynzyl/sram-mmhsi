@@ -241,7 +241,7 @@ export default function EnrollmentsTable({
       <table className="data-table" id="enrollments-table">
         <thead>
           <tr>
-            <th>Reference No.</th>
+            <th>Student ID</th>
             <th>Student</th>
             <th>School Year</th>
             <th>Grade / Section</th>

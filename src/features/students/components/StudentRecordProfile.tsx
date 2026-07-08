@@ -649,7 +649,7 @@ export function StudentRecordProfile({
 
               <div className="student-record-hero-meta">
                 <div className="student-record-meta-tile">
-                  <span className="student-record-meta-label">Reference</span>
+                  <span className="student-record-meta-label">Student ID</span>
                   <span className="student-record-meta-value">
                     <ReferenceCode code={student.referenceNumber} />
                   </span>

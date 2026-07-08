@@ -102,7 +102,7 @@ const xlsxColumns: XlsxColumn<PaymentCollectionRow>[] = [
   { header: "OR #", width: 14, value: (r) => r.orNumber || "" },
   { header: "Date", width: 14, value: (r) => reportDate(r.collectionDate) },
   { header: "Student", width: 28, value: (r) => r.studentName },
-  { header: "Student Ref", width: 18, value: (r) => r.studentRef },
+  { header: "Student ID", width: 18, value: (r) => r.studentRef },
   { header: "Grade", width: 12, value: (r) => r.gradeLevel },
   { header: "School Year", width: 12, value: (r) => r.schoolYear },
   {

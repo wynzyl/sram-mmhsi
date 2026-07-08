@@ -1,3 +1,16 @@
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
+import { enrollments } from "@/lib/db/schema";
+import type { ExtractTablesWithRelations } from "drizzle-orm";
+import type { PgTransaction } from "drizzle-orm/pg-core";
+import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
+import type * as schema from "@/lib/db/schema";
+
+type DatabaseTransaction = PgTransaction<
+  PostgresJsQueryResultHKT,
+  typeof schema,
+  ExtractTablesWithRelations<typeof schema>
+>;
+
 const ENROLLMENT_STATUSES_THAT_ALLOW_PAYMENT = new Set<string>([
   "assessed",
   "enrolled",
@@ -26,4 +39,29 @@ export function assertEnrollmentAllowsPayment(
       "Payments may only be posted when the enrollment is assessed, enrolled, or cancelled (outstanding balance settlement)."
     );
   }
+}
+
+/**
+ * Checks if student has an active enrollment (assessed or enrolled) for the same school year.
+ * Used to block payments on cancelled enrollments when an active one exists —
+ * the payment should be posted to the active enrollment instead.
+ *
+ * @param dbOrTx - Database connection or transaction
+ */
+export async function hasActiveEnrollmentForSchoolYear(
+  dbOrTx: DatabaseTransaction | { query: DatabaseTransaction["query"] },
+  studentId: string,
+  schoolYearId: string,
+  excludeEnrollmentId?: string
+): Promise<boolean> {
+  const activeEnrollment = await dbOrTx.query.enrollments.findFirst({
+    where: and(
+      eq(enrollments.studentId, studentId),
+      eq(enrollments.schoolYearId, schoolYearId),
+      inArray(enrollments.status, ["assessed", "enrolled"]),
+      excludeEnrollmentId ? ne(enrollments.id, excludeEnrollmentId) : undefined
+    ),
+    columns: { id: true },
+  });
+  return activeEnrollment != null;
 }

@@ -20,6 +20,7 @@ import {
   getDiscountRequestGate,
 } from "@/features/discounts";
 import { getPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
+import { hasActiveEnrollmentForSchoolYear } from "@/lib/utils/enrollment-payment";
 import EnrollmentDiscountsSection from "@/features/discounts/components/EnrollmentDiscountsSection";
 import StudentDiscountsList from "@/features/discounts/components/StudentDiscountsList";
 import EnrollmentCancellationSection from "@/features/enrollments/components/EnrollmentCancellationSection";
@@ -65,6 +66,7 @@ export async function InternalEnrollmentDetailPage(props: {
       studentLastName: students.lastName,
       studentRef: students.referenceNumber,
       studentStatus: students.status,
+      schoolYearId: enrollments.schoolYearId,
       schoolYearLabel: schoolYears.label,
       gradeLevelName: gradeLevels.name,
       sectionName: sections.name,
@@ -79,6 +81,17 @@ export async function InternalEnrollmentDetailPage(props: {
     .then((rows) => rows[0]);
 
   if (!enrollment) notFound();
+
+  // Check if this is a cancelled enrollment with an active enrollment for the same school year.
+  // If so, discount requests should be blocked (request on the active enrollment instead).
+  const cancelledWithActiveEnrollment =
+    enrollment.status === "cancelled" &&
+    (await hasActiveEnrollmentForSchoolYear(
+      db,
+      enrollment.studentId,
+      enrollment.schoolYearId,
+      enrollment.id
+    ));
 
   const [assessment] = await db
     .select({
@@ -108,8 +121,13 @@ export async function InternalEnrollmentDetailPage(props: {
   const isStudentArchived = isArchivedStatus(enrollment.studentStatus);
 
   const canRequestPermission = hasPermission(session.role, "discounts:request");
-  const canRequest = canRequestPermission && gate.allowed && !isStudentArchived;
-  const requestBlockReason = !gate.allowed ? gate.reason : undefined;
+  const canRequest = canRequestPermission && gate.allowed && !isStudentArchived && !cancelledWithActiveEnrollment;
+  // Determine the block reason (cancelled with active takes priority)
+  const requestBlockReason = cancelledWithActiveEnrollment
+    ? "Student has an active enrollment for this school year. Request discounts on the active enrollment instead."
+    : !gate.allowed
+      ? gate.reason
+      : undefined;
   const canReverse = hasPermission(session.role, "discounts:manage") && !isStudentArchived;
 
   // Cancellation permissions - disable for archived students

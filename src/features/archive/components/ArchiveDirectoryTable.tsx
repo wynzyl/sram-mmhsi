@@ -39,7 +39,7 @@ export function ArchiveDirectoryTable({
         <thead>
           <tr className="border-b border-border bg-muted">
             <th className={`${headClass} pl-4`}>Student</th>
-            <th className={headClass}>Reference</th>
+            <th className={headClass}>Student ID</th>
             <th className={headClass}>Status</th>
             <th className={headClass}>Last Grade</th>
             <th className={headClass}>Archived</th>

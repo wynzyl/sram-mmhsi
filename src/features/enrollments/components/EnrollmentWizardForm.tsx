@@ -810,7 +810,7 @@ function ReviewSummary({
 }) {
   const rows: Array<{ label: string; value: string }> = [
     { label: "Student", value: selectedStudentName ?? "—" },
-    { label: "Reference", value: referenceNumber ?? "—" },
+    { label: "Student ID", value: referenceNumber ?? "—" },
     { label: "School Year", value: schoolYearLabel ?? "—" },
     { label: "Grade Level", value: gradeLevelName ?? "—" },
     { label: "Type", value: TYPE_LABEL[studentType] },
@@ -839,7 +839,7 @@ function ReviewSummary({
             <dd
               className={cn(
                 "col-span-2 text-foreground",
-                row.label === "Reference" && "font-mono",
+                row.label === "Student ID" && "font-mono",
                 row.label === "Student" && "font-display text-base font-semibold uppercase"
               )}
             >

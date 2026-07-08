@@ -167,7 +167,7 @@ export function InvoiceDocument({
             <Text style={styles.detailValue}>{data.studentName}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Reference No.</Text>
+            <Text style={styles.detailLabel}>Student ID</Text>
             <Text style={styles.detailValue}>{data.studentReferenceNumber}</Text>
           </View>
         </View>

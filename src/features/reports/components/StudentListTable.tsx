@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
+import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { StudentListRow } from "../student-list-report.queries";
 
@@ -23,6 +24,13 @@ export function StudentListTable({ data }: StudentListTableProps) {
           >
             {row.original.studentName}
           </Link>
+        ),
+      },
+      {
+        header: "Student ID",
+        accessorKey: "studentRef",
+        cell: ({ row }) => (
+          <ReferenceCode code={row.original.studentRef} />
         ),
       },
       {
