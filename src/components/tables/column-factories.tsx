@@ -347,3 +347,258 @@ export function createTextColumn<T>(
     },
   };
 }
+
+// ─── OR Number Column ────────────────────────────────────────────────────────
+
+interface ORNumberColumnOptions {
+  /** Column header text. Defaults to "OR Number" */
+  header?: string;
+  /** Column ID. Defaults to "orNumber" */
+  id?: string;
+}
+
+/**
+ * Creates a column for displaying OR (Official Receipt) numbers
+ * Renders using ReferenceCode component for consistent monospace styling
+ *
+ * @example
+ * ```tsx
+ * createORNumberColumn<PaymentRow>("orNumber")
+ * createORNumberColumn<PaymentRow>("orNumber", { header: "Receipt #" })
+ * ```
+ */
+export function createORNumberColumn<T>(
+  accessor: keyof T,
+  options: ORNumberColumnOptions = {}
+): ColumnDef<T> {
+  const { header = "OR Number", id } = options;
+
+  return {
+    header,
+    id: id ?? String(accessor),
+    accessorKey: accessor as string,
+    cell: ({ row }) => {
+      const value = row.original[accessor] as string | null | undefined;
+      if (!value) {
+        return <span className="text-muted-foreground">-</span>;
+      }
+      return <ReferenceCode code={value} />;
+    },
+  };
+}
+
+// ─── Action Date Column ──────────────────────────────────────────────────────
+
+interface ActionDateColumnOptions {
+  /** Column header text. Required */
+  header: string;
+  /** Column ID. Defaults to accessor key */
+  id?: string;
+  /** Whether to show time on a second line. Defaults to true */
+  showTime?: boolean;
+  /** Placeholder for null dates. Defaults to "—" */
+  placeholder?: string;
+}
+
+/**
+ * Creates a column for displaying action dates with optional time on second line
+ * Commonly used for "Requested At", "Approved At", "Created At" columns
+ *
+ * @example
+ * ```tsx
+ * createActionDateColumn<VoidRequest>("requestedAt", { header: "Requested At" })
+ * createActionDateColumn<Payment>("postedAt", { header: "Posted", showTime: false })
+ * ```
+ */
+export function createActionDateColumn<T>(
+  accessor: keyof T | AccessorFn<T, Date | string | null | undefined>,
+  options: ActionDateColumnOptions
+): ColumnDef<T> {
+  const {
+    header,
+    id,
+    showTime = true,
+    placeholder = "—",
+  } = options;
+
+  const cellRenderer = ({ row }: { row: { original: T; index: number } }) => {
+    const value =
+      typeof accessor === "function"
+        ? accessor(row.original, row.index)
+        : (row.original[accessor] as Date | string | null | undefined);
+
+    if (!value) {
+      return <span className="text-muted-foreground">{placeholder}</span>;
+    }
+
+    const dateObj = value instanceof Date ? value : new Date(value);
+
+    if (!Number.isFinite(dateObj.getTime())) {
+      return <span className="text-muted-foreground">{placeholder}</span>;
+    }
+
+    const dateStr = formatDate(dateObj, {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    });
+
+    if (!showTime) {
+      return <span className="text-sm">{dateStr}</span>;
+    }
+
+    const timeStr = formatDate(dateObj, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return (
+      <div className="text-sm">
+        <div>{dateStr}</div>
+        <div className="text-xs text-muted-foreground">{timeStr}</div>
+      </div>
+    );
+  };
+
+  if (typeof accessor === "function") {
+    return {
+      id: id ?? "actionDate",
+      accessorFn: accessor,
+      header,
+      cell: cellRenderer,
+    } as ColumnDef<T>;
+  }
+
+  return {
+    id: id ?? String(accessor),
+    accessorKey: accessor as string,
+    header,
+    cell: cellRenderer,
+  } as ColumnDef<T>;
+}
+
+// ─── Remarks/Reason Column ───────────────────────────────────────────────────
+
+interface RemarksColumnOptions {
+  /** Column header text. Defaults to "Reason" */
+  header?: string;
+  /** Column ID. Defaults to accessor key */
+  id?: string;
+  /** Maximum width CSS class. Defaults to "max-w-[200px]" */
+  maxWidth?: string;
+  /** Whether to truncate long text. Defaults to true */
+  truncate?: boolean;
+  /** Placeholder for empty values. Defaults to "—" */
+  placeholder?: string;
+}
+
+/**
+ * Creates a column for displaying remarks, reasons, or notes
+ * Supports truncation with title tooltip for long text
+ *
+ * @example
+ * ```tsx
+ * createRemarksColumn<VoidRequest>("requestReason", { header: "Reason" })
+ * createRemarksColumn<CancellationRequest>("remarks", {
+ *   header: "Notes",
+ *   maxWidth: "max-w-[300px]",
+ * })
+ * ```
+ */
+export function createRemarksColumn<T>(
+  accessor: keyof T,
+  options: RemarksColumnOptions = {}
+): ColumnDef<T> {
+  const {
+    header = "Reason",
+    id,
+    maxWidth = "max-w-[200px]",
+    truncate = true,
+    placeholder = "—",
+  } = options;
+
+  return {
+    header,
+    id: id ?? String(accessor),
+    accessorKey: accessor as string,
+    cell: ({ row }) => {
+      const value = row.original[accessor] as string | null | undefined;
+      if (!value) {
+        return <span className="text-muted-foreground">{placeholder}</span>;
+      }
+
+      const className = truncate
+        ? `text-sm ${maxWidth} truncate block`
+        : "text-sm";
+
+      return (
+        <span className={className} title={truncate ? value : undefined}>
+          {value}
+        </span>
+      );
+    },
+  };
+}
+
+// ─── Requested By Column ─────────────────────────────────────────────────────
+
+interface RequestedByRow {
+  requestedByUsername?: string;
+  requestedByName?: string;
+  requestedAt?: Date | string;
+}
+
+interface RequestedByColumnOptions {
+  /** Column header text. Defaults to "Requested By" */
+  header?: string;
+  /** Key for username. Defaults to "requestedByUsername" */
+  usernameKey?: "requestedByUsername" | "requestedByName";
+  /** Key for date. Defaults to "requestedAt" */
+  dateKey?: string;
+  /** Whether to show the date below the name. Defaults to true */
+  showDate?: boolean;
+}
+
+/**
+ * Creates a column for displaying who requested an action and when
+ * Commonly used in approval queue tables
+ *
+ * @example
+ * ```tsx
+ * createRequestedByColumn<VoidRequest>()
+ * createRequestedByColumn<CancellationRequest>({ usernameKey: "requestedByName" })
+ * ```
+ */
+export function createRequestedByColumn<T extends RequestedByRow>(
+  options: RequestedByColumnOptions = {}
+): ColumnDef<T> {
+  const {
+    header = "Requested By",
+    usernameKey = "requestedByUsername",
+    dateKey = "requestedAt",
+    showDate = true,
+  } = options;
+
+  return {
+    header,
+    id: "requestedBy",
+    accessorFn: (row) => row[usernameKey] ?? "",
+    cell: ({ row }) => {
+      const username = row.original[usernameKey];
+      const dateValue = row.original[dateKey as keyof T] as Date | string | undefined;
+
+      return (
+        <div className="text-sm">
+          <div>{username ?? "—"}</div>
+          {showDate && dateValue && (
+            <div className="text-xs text-muted-foreground">
+              {formatDate(
+                dateValue instanceof Date ? dateValue : new Date(dateValue)
+              )}
+            </div>
+          )}
+        </div>
+      );
+    },
+  };
+}

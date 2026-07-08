@@ -5,9 +5,13 @@ import { cancelVoidRequestAction } from "../void-requests.actions";
 import type { CancelVoidRequestFormState } from "../void-requests.schema";
 import type { PendingVoidRequest } from "../void-requests.queries";
 import { DataTable } from "@/components/shared/DataTable";
-import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { formatDate } from "@/lib/utils/date";
+import {
+  createORNumberColumn,
+  createRemarksColumn,
+  createActionDateColumn,
+  createStudentColumn,
+} from "@/components/tables/column-factories";
 import { useFormToast } from "@/hooks/useFormToast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,16 +39,7 @@ export default function MyVoidRequestsTable({
 
   const columns = useMemo<ColumnDef<PendingVoidRequest>[]>(
     () => [
-      {
-        header: "OR Number",
-        accessorKey: "orNumber",
-        cell: ({ row }) =>
-          row.original.orNumber ? (
-            <ReferenceCode code={row.original.orNumber} />
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          ),
-      },
+      createORNumberColumn<PendingVoidRequest>("orNumber"),
       {
         header: "Amount",
         accessorKey: "amount",
@@ -55,42 +50,9 @@ export default function MyVoidRequestsTable({
           />
         ),
       },
-      {
-        header: "Student",
-        accessorKey: "studentName",
-        cell: ({ row }) => (
-          <div>
-            <div className="font-medium">{row.original.studentName}</div>
-            <div className="text-xs text-muted-foreground">
-              {row.original.studentRef}
-            </div>
-          </div>
-        ),
-      },
-      {
-        header: "Reason",
-        accessorKey: "requestReason",
-        cell: ({ row }) => (
-          <span className="text-sm max-w-[200px] truncate block" title={row.original.requestReason}>
-            {row.original.requestReason}
-          </span>
-        ),
-      },
-      {
-        header: "Requested At",
-        accessorKey: "requestedAt",
-        cell: ({ row }) => {
-          const date = new Date(row.original.requestedAt);
-          return (
-            <div className="text-sm">
-              <div>{formatDate(date, { year: "numeric", month: "numeric", day: "numeric" })}</div>
-              <div className="text-xs text-muted-foreground">
-                {formatDate(date, { hour: "2-digit", minute: "2-digit" })}
-              </div>
-            </div>
-          );
-        },
-      },
+      createStudentColumn<PendingVoidRequest>({ refKey: "studentRef" }),
+      createRemarksColumn<PendingVoidRequest>("requestReason", { header: "Reason" }),
+      createActionDateColumn<PendingVoidRequest>("requestedAt", { header: "Requested At" }),
       {
         header: "Status",
         id: "status",
