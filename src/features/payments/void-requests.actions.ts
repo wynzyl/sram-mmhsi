@@ -36,6 +36,7 @@ import {
   createReversalPaymentEntry,
   markPaymentAsReversed,
 } from "@/lib/utils/payment-helpers";
+import { isPaymentMostRecentVoidable } from "@/lib/utils/payment-void-checks";
 import { revertToAssessedOnVoid } from "@/lib/utils/enrollment-status";
 import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
 import { ASSESSMENT_BALANCE_FULLY_PAID_EPSILON } from "@/lib/utils/assessment-billing";
@@ -97,7 +98,23 @@ export async function requestVoidAction(
         throw new Error(`Cannot request void on a ${payment.status} payment. Only posted payments can be voided.`);
       }
 
-      // 3. Check if assessment is transferred
+      // 3a. Verify this is the most recent voidable payment (accounting integrity)
+      if (payment.assessmentId) {
+        const isLatest = await isPaymentMostRecentVoidable(
+          paymentId,
+          payment.assessmentId,
+          tx
+        );
+
+        if (!isLatest) {
+          throw new Error(
+            "Cannot void this payment: a more recent payment exists. " +
+            "You must void payments in reverse chronological order."
+          );
+        }
+      }
+
+      // 3b. Check if assessment is transferred
       if (payment.assessmentId) {
         const transferStatus = await lockAssessmentTransferStatus(tx, payment.assessmentId);
         assertAssessmentNotTransferred(

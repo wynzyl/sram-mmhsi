@@ -103,6 +103,8 @@ export type AssessmentLedgerRegisterProps = {
     lastManualPaymentDate: string | null;
     suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[];
   } | null;
+  /** ID of the most recent voidable payment (accounting integrity: void in reverse order). */
+  mostRecentVoidablePaymentId?: string | null;
 };
 
 function lineSignedAmount(item: LedgerLineItem): number {
@@ -134,6 +136,7 @@ export default function AssessmentLedgerRegister({
   canCancel = false,
   defaultBookletId,
   manualSuggestions,
+  mostRecentVoidablePaymentId,
 }: AssessmentLedgerRegisterProps) {
   const router = useRouter();
   const [payOpen, setPayOpen] = useState(false);
@@ -602,6 +605,7 @@ export default function AssessmentLedgerRegister({
               pendingVoidByPaymentId={pendingVoidByPaymentId}
               currentUserId={currentUserId}
               embedded
+              mostRecentVoidablePaymentId={mostRecentVoidablePaymentId}
             />
           </div>
           <div className="flex items-center justify-between flex-wrap gap-y-2 gap-x-4 px-5 py-4 border-t border-border bg-muted/25">

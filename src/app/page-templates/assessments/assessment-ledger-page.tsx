@@ -176,6 +176,14 @@ export async function InternalAssessmentLedgerPage(props: {
     isManualEntry: p.isManualEntry,
   }));
 
+  // Compute most recent voidable payment ID for void request UI gating.
+  // Only the most recent posted payment can be voided (accounting integrity).
+  // paymentRecords is ordered by createdAt DESC, so first posted payment is most recent.
+  const mostRecentVoidablePaymentId =
+    paymentRecords.find(
+      (p) => p.status === "posted" && p.kind === "payment"
+    )?.id ?? null;
+
   return (
     <div className="page-container">
       <AssessmentLedgerRegister
@@ -209,6 +217,7 @@ export async function InternalAssessmentLedgerPage(props: {
         canCancel={canCancel}
         defaultBookletId={defaultBookletId}
         manualSuggestions={manualSuggestions}
+        mostRecentVoidablePaymentId={mostRecentVoidablePaymentId}
       />
     </div>
   );

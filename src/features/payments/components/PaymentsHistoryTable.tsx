@@ -48,6 +48,8 @@ interface VoidActionsCellProps {
   payment: Payment;
   pendingRequest?: PendingVoidRequest;
   currentUserId?: string;
+  /** Whether this payment is the most recent voidable (accounting: void in reverse order). */
+  isMostRecentVoidable: boolean;
 }
 
 /**
@@ -59,6 +61,7 @@ const VoidActionsCell = memo(function VoidActionsCell({
   payment,
   pendingRequest,
   currentUserId,
+  isMostRecentVoidable,
 }: VoidActionsCellProps) {
   const requestConfirm = useInlineConfirm();
   const cancelConfirm = useInlineConfirm();
@@ -100,6 +103,17 @@ const VoidActionsCell = memo(function VoidActionsCell({
 
   // No actions for already voided/reversed
   if (payment.status === "voided" || payment.status === "reversed") {
+    return null;
+  }
+
+  // Hide void button for non-most-recent payments (must void in reverse chronological order)
+  // Only applies to posted payments - pending requests still show for older payments
+  if (
+    payment.status === "posted" &&
+    payment.kind === "payment" &&
+    !isMostRecentVoidable &&
+    !pendingRequest
+  ) {
     return null;
   }
 
@@ -184,6 +198,8 @@ interface PaymentsHistoryTableProps {
   currentUserId?: string;
   /** Lay flush inside ledger (no extra top margin). */
   embedded?: boolean;
+  /** ID of the most recent voidable payment (accounting integrity: void in reverse order). */
+  mostRecentVoidablePaymentId?: string | null;
 }
 
 export default function PaymentsHistoryTable({
@@ -192,6 +208,7 @@ export default function PaymentsHistoryTable({
   pendingVoidByPaymentId = {},
   currentUserId,
   embedded = false,
+  mostRecentVoidablePaymentId,
 }: PaymentsHistoryTableProps) {
   // Columns are now stable - action state moved to VoidActionsCell component
   const columns = useMemo<ColumnDef<Payment>[]>(() => {
@@ -357,11 +374,13 @@ export default function PaymentsHistoryTable({
         cell: ({ row }) => {
           const payment = row.original;
           const pendingRequest = pendingVoidByPaymentId[payment.id];
+          const isMostRecentVoidable = payment.id === mostRecentVoidablePaymentId;
           return (
             <VoidActionsCell
               payment={payment}
               pendingRequest={pendingRequest}
               currentUserId={currentUserId}
+              isMostRecentVoidable={isMostRecentVoidable}
             />
           );
         },
@@ -369,7 +388,7 @@ export default function PaymentsHistoryTable({
     }
 
     return baseColumns;
-  }, [canRequestVoid, pendingVoidByPaymentId, currentUserId]);
+  }, [canRequestVoid, pendingVoidByPaymentId, currentUserId, mostRecentVoidablePaymentId]);
 
   return (
     <div className={embedded ? undefined : "mt-6"}>
