@@ -105,6 +105,12 @@ export type AssessmentLedgerRegisterProps = {
   } | null;
   /** ID of the most recent voidable payment (accounting integrity: void in reverse order). */
   mostRecentVoidablePaymentId?: string | null;
+  /**
+   * True when this assessment's enrollment is cancelled AND the student has an
+   * active enrollment for the same school year. Payments/invoices are blocked
+   * here — settle on the active enrollment instead. Computed server-side.
+   */
+  cancelledWithActiveEnrollment?: boolean;
 };
 
 function lineSignedAmount(item: LedgerLineItem): number {
@@ -137,6 +143,7 @@ export default function AssessmentLedgerRegister({
   defaultBookletId,
   manualSuggestions,
   mostRecentVoidablePaymentId,
+  cancelledWithActiveEnrollment = false,
 }: AssessmentLedgerRegisterProps) {
   const router = useRouter();
   const [payOpen, setPayOpen] = useState(false);

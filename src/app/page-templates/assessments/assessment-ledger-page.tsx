@@ -231,6 +231,7 @@ export async function InternalAssessmentLedgerPage(props: {
         defaultBookletId={defaultBookletId}
         manualSuggestions={manualSuggestions}
         mostRecentVoidablePaymentId={mostRecentVoidablePaymentId}
+        cancelledWithActiveEnrollment={cancelledWithActiveEnrollment}
       />
     </div>
   );
