@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useMemo, memo } from "react";
 import Link from "next/link";
+import type { ColumnDef } from "@tanstack/react-table";
 import { updateEnrollmentStatusAction } from "../enrollments.actions";
 import CancelEnrollmentForm from "./CancelEnrollmentForm";
 import type { EnrollmentStatus } from "./CancelEnrollmentForm";
 import { formatDate } from "@/lib/utils/date";
+import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { TableEmptyState } from "@/components/shared/TableEmptyState";
+import { ReferenceCode } from "@/components/shared/ReferenceCode";
+import {
+  createTextColumn,
+  createStatusColumn,
+  createDateColumn,
+} from "@/components/tables/column-factories";
 
 interface Enrollment {
   id: string;
@@ -40,8 +47,17 @@ interface EnrollmentsTableProps {
   canOverrideEnrolled: boolean;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// OverrideEnrollBlock - Memoized to prevent column regeneration
+// ─────────────────────────────────────────────────────────────────────────────
 
-function OverrideEnrollBlock({ enrollmentId, sections }: { enrollmentId: string; sections: Section[] }) {
+const OverrideEnrollBlock = memo(function OverrideEnrollBlock({
+  enrollmentId,
+  sections,
+}: {
+  enrollmentId: string;
+  sections: Section[];
+}) {
   const [state, action, pending] = useActionState(updateEnrollmentStatusAction, {});
   const [showPick, setShowPick] = useState(false);
 
@@ -84,9 +100,13 @@ function OverrideEnrollBlock({ enrollmentId, sections }: { enrollmentId: string;
       )}
     </div>
   );
-}
+});
 
-function EnrolledActions({
+// ─────────────────────────────────────────────────────────────────────────────
+// EnrolledActions - Memoized to prevent column regeneration
+// ─────────────────────────────────────────────────────────────────────────────
+
+const EnrolledActions = memo(function EnrolledActions({
   en,
   canCancel,
   canCancelWithBalance,
@@ -117,23 +137,29 @@ function EnrolledActions({
       )}
     </div>
   );
-}
+});
 
-function EnrollmentActionsCell({
-  en,
-  sections,
-  canManage,
-  canCancel,
-  canCancelWithBalance,
-  canOverrideEnrolled,
-}: {
+// ─────────────────────────────────────────────────────────────────────────────
+// EnrollmentActionsCell - Memoized to prevent column regeneration on state changes
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface EnrollmentActionsCellProps {
   en: Enrollment;
   sections: Section[];
   canManage: boolean;
   canCancel: boolean;
   canCancelWithBalance: boolean;
   canOverrideEnrolled: boolean;
-}) {
+}
+
+const EnrollmentActionsCell = memo(function EnrollmentActionsCell({
+  en,
+  sections,
+  canManage,
+  canCancel,
+  canCancelWithBalance,
+  canOverrideEnrolled,
+}: EnrollmentActionsCellProps) {
   const viewStudent = (
     <Link href={`/staff/students/${en.studentId}`} prefetch={false} className="btn-ghost btn-sm">
       Student
@@ -224,7 +250,7 @@ function EnrollmentActionsCell({
   }
 
   return <div className="flex gap-1.5">{viewStudent}</div>;
-}
+});
 
 export default function EnrollmentsTable({
   enrollments,
@@ -236,61 +262,67 @@ export default function EnrollmentsTable({
 }: EnrollmentsTableProps) {
   const showActions = canManage || canCancel || canOverrideEnrolled;
 
+  const columns = useMemo<ColumnDef<Enrollment>[]>(() => {
+    const baseColumns: ColumnDef<Enrollment>[] = [
+      {
+        header: "Student ID",
+        id: "referenceNumber",
+        accessorKey: "referenceNumber",
+        cell: ({ row }) => <ReferenceCode code={row.original.referenceNumber} />,
+      },
+      {
+        header: "Student",
+        id: "studentName",
+        accessorKey: "studentName",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.studentName}</span>
+        ),
+      },
+      createTextColumn<Enrollment>("schoolYear", { header: "School Year" }),
+      {
+        header: "Grade / Section",
+        id: "gradeSection",
+        accessorFn: (row) => `${row.gradeLevel} ${row.section ?? ""}`,
+        cell: ({ row }) => (
+          <span>
+            {row.original.gradeLevel}
+            {row.original.section && (
+              <span className="text-muted-foreground"> — {row.original.section}</span>
+            )}
+          </span>
+        ),
+      },
+      createStatusColumn<Enrollment>("status", { header: "Status", type: "enrollment" }),
+      createDateColumn<Enrollment>("enrolledAt", { header: "Enrolled On" }),
+    ];
+
+    if (showActions) {
+      baseColumns.push({
+        header: "Actions",
+        id: "actions",
+        cell: ({ row }) => (
+          <EnrollmentActionsCell
+            en={row.original}
+            sections={sections}
+            canManage={canManage}
+            canCancel={canCancel}
+            canCancelWithBalance={canCancelWithBalance}
+            canOverrideEnrolled={canOverrideEnrolled}
+          />
+        ),
+      });
+    }
+
+    return baseColumns;
+  }, [showActions, sections, canManage, canCancel, canCancelWithBalance, canOverrideEnrolled]);
+
   return (
-    <div className="table-wrapper">
-      <table className="data-table" id="enrollments-table">
-        <thead>
-          <tr>
-            <th>Student ID</th>
-            <th>Student</th>
-            <th>School Year</th>
-            <th>Grade / Section</th>
-            <th>Status</th>
-            <th>Enrolled On</th>
-            {showActions && <th>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {enrollments.length === 0 ? (
-            <TableEmptyState
-              message="No enrollment records found."
-              colSpan={showActions ? 7 : 6}
-            />
-          ) : (
-            enrollments.map((en) => (
-              <tr key={en.id} className="table-row-hover">
-                <td>
-                  <code className="reference-code">{en.referenceNumber}</code>
-                </td>
-                <td className="student-name">{en.studentName}</td>
-                <td>{en.schoolYear}</td>
-                <td>
-                  {en.gradeLevel}
-                  {en.section && <span className="text-muted"> — {en.section}</span>}
-                </td>
-                <td>
-                  <StatusBadge type="enrollment" status={en.status} />
-                </td>
-                <td className="text-muted">
-                  {en.enrolledAt ? formatDate(en.enrolledAt) : "—"}
-                </td>
-                {showActions && (
-                  <td>
-                    <EnrollmentActionsCell
-                      en={en}
-                      sections={sections}
-                      canManage={canManage}
-                      canCancel={canCancel}
-                      canCancelWithBalance={canCancelWithBalance}
-                      canOverrideEnrolled={canOverrideEnrolled}
-                    />
-                  </td>
-                )}
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      data={enrollments}
+      searchable={false}
+      enablePagination={enrollments.length > 20}
+      pageSize={20}
+    />
   );
 }

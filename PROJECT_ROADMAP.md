@@ -2,9 +2,12 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-07-03
+> Last sync: 2026-07-08
 
-### Current update highlights (2026-07-03)
+### Current update highlights (2026-07-08)
+- **Void OR reverse-chronological enforcement** — Payments must be voided in reverse chronological order (most recent first). Server-side validation blocks out-of-order void requests with a clear error message. UI hides "Request Void" button on older payments. Helper functions in `src/features/payments/payments.queries.ts`. Maintains accounting integrity.
+
+### Previous highlights (2026-07-03)
 - **Student Archival & EOY Processing complete** — Status lifecycle (active → graduated/transferred/withdrawn/cancelled/inactive), batch archive operations, archive directory at `/staff/archive/`
 - **Document Requests complete** — Full workflow (request → processing → ready → released) with eligibility gates for archived/active students, routes at `/staff/archive/documents/`
 - **Production hardening** — Docker Compose resource limits (memory/CPU caps for all services), Nginx configuration enhancements (timeouts, compression, caching)
@@ -147,6 +150,7 @@
 - [x] Payment posting UI (Cashier) — embedded on assessment ledger (`AssessmentLedgerRegister` / `PostPaymentForm`)
 - [x] Shared internal assessment-ledger composition to support consistent payment posting and RBAC checks
 - [x] Payment void workflow
+- [x] **Reverse-chronological void ordering** — payments must be voided in reverse order (most recent first); server-side validation in `requestVoidAction` + `approveVoidRequestAction`; UI hides void button on older payments (`isPaymentMostRecentVoidable` helper)
 - [x] OR status tracking (consumed, voided)
 - [x] Payment allocation to assessment items
 - [x] Ledger balance recalculation

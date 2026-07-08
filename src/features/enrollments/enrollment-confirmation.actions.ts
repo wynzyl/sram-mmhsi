@@ -1,7 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { CACHE_TAGS, invalidateTag, forceUpdateTag } from "@/lib/cache/cache-tags";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   enrollments,
@@ -302,15 +301,14 @@ export async function confirmEnrollmentAction(
       actorId: session.userId,
     });
 
-    // Revalidate paths
-    revalidatePath("/staff/enrollments");
-    revalidatePath("/staff/students");
-    revalidatePath(`/staff/students/${studentId}`);
-    if (registrationId) {
-      revalidatePath("/staff/registrations");
-    }
-    // Use forceUpdateTag for enrollments (read-your-own-writes - immediate consistency)
-    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
+    // Cache invalidation — NON-BLOCKING only (CLAUDE.md Gotcha #11).
+    // `forceUpdateTag`/`updateTag` and `revalidatePath` are BLOCKING and can
+    // hang the server action indefinitely under the production build: the DB
+    // write commits but the action never returns, leaving the drawer stuck on
+    // "Confirming..." (the toast/redirect never fire). The client already calls
+    // `router.refresh()` in `ReadyToEnrollTableClient.handleSuccess`, so
+    // stale-while-revalidate invalidation is sufficient here.
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     // Confirmation creates a new enrollment row — dashboard headcount KPIs change.
     invalidateTag(CACHE_TAGS.DASHBOARD);
 

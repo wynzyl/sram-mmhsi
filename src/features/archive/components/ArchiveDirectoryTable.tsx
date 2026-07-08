@@ -1,14 +1,14 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
 import { getInitials } from "@/lib/utils/name";
 import type { ArchivedStudentRow } from "../archive.queries";
-
-const headClass =
-  "font-semibold tracking-wide text-gray-600 dark:text-gray-400";
 
 function formatStudentName(row: ArchivedStudentRow): string {
   const parts = [row.lastName, row.firstName];
@@ -23,117 +23,126 @@ function formatStudentName(row: ArchivedStudentRow): string {
 
 export function ArchiveDirectoryTable({
   rows,
-  emptyMessage = "No archived students found.",
 }: {
   rows: ArchivedStudentRow[];
-  emptyMessage?: string;
 }) {
-  const colSpan = 7;
+  const columns = useMemo<ColumnDef<ArchivedStudentRow>[]>(
+    () => [
+      {
+        header: "Student",
+        id: "student",
+        accessorFn: (row) => `${row.lastName}, ${row.firstName}`,
+        cell: ({ row }) => {
+          const data = row.original;
+          return (
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                {getInitials(`${data.firstName} ${data.lastName}`)}
+              </div>
+              <div>
+                <Link
+                  href={`/staff/archive/${data.id}`}
+                  prefetch={false}
+                  className="font-medium text-foreground hover:text-primary hover:underline"
+                >
+                  {formatStudentName(data)}
+                </Link>
+                {data.lastEnrollmentSchoolYear && (
+                  <p className="text-xs text-muted-foreground">
+                    {data.lastEnrollmentSchoolYear}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        header: "Student ID",
+        id: "referenceNumber",
+        accessorKey: "referenceNumber",
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">{row.original.referenceNumber}</span>
+        ),
+      },
+      {
+        header: "Status",
+        id: "status",
+        accessorKey: "status",
+        cell: ({ row }) => (
+          <StatusBadge status={row.original.status} type="studentArchive" />
+        ),
+      },
+      {
+        header: "Last Grade",
+        id: "lastGrade",
+        accessorKey: "lastEnrollmentGradeLevel",
+        cell: ({ row }) => (
+          <span className="text-sm">
+            {row.original.lastEnrollmentGradeLevel ?? "—"}
+          </span>
+        ),
+      },
+      {
+        header: "Archived",
+        id: "archivedAt",
+        accessorKey: "archivedAt",
+        cell: ({ row }) => {
+          const data = row.original;
+          if (!data.archivedAt) {
+            return <span className="text-muted-foreground">—</span>;
+          }
+          return (
+            <div>
+              <span className="text-sm">{formatDate(data.archivedAt)}</span>
+              {data.archivedSchoolYearLabel && (
+                <p className="text-xs text-muted-foreground">
+                  SY: {data.archivedSchoolYearLabel}
+                </p>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        header: "Balance",
+        id: "balance",
+        accessorFn: (row) => parseFloat(row.outstandingBalance),
+        cell: ({ row }) => {
+          const balance = parseFloat(row.original.outstandingBalance);
+          if (balance > 0) {
+            return (
+              <span className="font-medium text-destructive">
+                <CurrencyDisplay amount={balance} />
+              </span>
+            );
+          }
+          return <span className="text-muted-foreground">—</span>;
+        },
+      },
+      {
+        header: "Actions",
+        id: "actions",
+        cell: ({ row }) => (
+          <Link
+            href={`/staff/archive/${row.original.id}`}
+            prefetch={false}
+            className="text-sm text-primary hover:underline"
+          >
+            View
+          </Link>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
-    <div className="overflow-x-auto">
-      <table
-        className="data-table w-full text-left text-sm"
-        id="archive-directory-table"
-      >
-        <thead>
-          <tr className="border-b border-border bg-muted">
-            <th className={`${headClass} pl-4`}>Student</th>
-            <th className={headClass}>Student ID</th>
-            <th className={headClass}>Status</th>
-            <th className={headClass}>Last Grade</th>
-            <th className={headClass}>Archived</th>
-            <th className={headClass}>Balance</th>
-            <th className={`${headClass} pr-4`}>Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {rows.length === 0 ? (
-            <tr>
-              <td
-                colSpan={colSpan}
-                className="py-8 text-center text-muted-foreground"
-              >
-                {emptyMessage}
-              </td>
-            </tr>
-          ) : (
-            rows.map((row) => (
-              <tr
-                key={row.id}
-                className="transition-colors hover:bg-muted/50"
-              >
-                <td className="py-3 pl-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                      {getInitials(`${row.firstName} ${row.lastName}`)}
-                    </div>
-                    <div>
-                      <Link
-                        href={`/staff/archive/${row.id}`}
-                        prefetch={false}
-                        className="font-medium text-foreground hover:text-primary hover:underline"
-                      >
-                        {formatStudentName(row)}
-                      </Link>
-                      {row.lastEnrollmentSchoolYear && (
-                        <p className="text-xs text-muted-foreground">
-                          {row.lastEnrollmentSchoolYear}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="py-3">
-                  <span className="font-mono text-xs">{row.referenceNumber}</span>
-                </td>
-                <td className="py-3">
-                  <StatusBadge status={row.status} type="studentArchive" />
-                </td>
-                <td className="py-3">
-                  <span className="text-sm">
-                    {row.lastEnrollmentGradeLevel ?? "—"}
-                  </span>
-                </td>
-                <td className="py-3">
-                  {row.archivedAt ? (
-                    <div>
-                      <span className="text-sm">
-                        {formatDate(row.archivedAt)}
-                      </span>
-                      {row.archivedSchoolYearLabel && (
-                        <p className="text-xs text-muted-foreground">
-                          SY: {row.archivedSchoolYearLabel}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="py-3">
-                  {parseFloat(row.outstandingBalance) > 0 ? (
-                    <span className="font-medium text-destructive">
-                      <CurrencyDisplay amount={parseFloat(row.outstandingBalance)} />
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="py-3 pr-4">
-                  <Link
-                    href={`/staff/archive/${row.id}`}
-                    prefetch={false}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    View
-                  </Link>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      data={rows}
+      searchable={false}
+      enablePagination={false}
+    />
   );
 }

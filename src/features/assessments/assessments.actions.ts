@@ -26,6 +26,7 @@ import type { AssessmentFormState, CancelAssessmentFormState } from "./assessmen
 import { formatCurrency } from "@/lib/utils/currency";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { reverseBalanceForwardItems } from "@/lib/utils/balance-forward";
 import { parseFormData } from "@/lib/utils/form-validation";
 import { generateNextBfxNumber } from "@/lib/utils/reference";
 import {
@@ -509,16 +510,15 @@ export async function createAssessmentFromEnrollmentAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/staff/assessments");
-    revalidatePath("/staff/enrollments");
-    revalidatePath("/staff/approvals");
-    revalidatePath(`/staff/students/${enrollmentRow.studentId}`);
-    if (newAssessmentId) {
-      revalidatePath(`/staff/assessments/${newAssessmentId}`);
-    }
+    // Cache invalidation — NON-BLOCKING only (CLAUDE.md Gotcha #11).
+    // The blocking `forceUpdateTag`/`updateTag` + `revalidatePath` calls can
+    // hang this action under the production build (DB commits but the action
+    // never returns, leaving the form stuck on "Saving…"). The client
+    // (`AssessmentDraftForm`) already drives its own refresh via
+    // `router.replace()` + TanStack `invalidateQueries` on success, so
+    // stale-while-revalidate invalidation is sufficient.
     // Assessment creation flips enrollment status (pending → assessed) and feeds dashboard KPIs.
-    // Use forceUpdateTag for enrollments (read-your-own-writes - immediate consistency)
-    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, assessmentId: newAssessmentId };
@@ -604,81 +604,18 @@ export async function reverseBalanceTransferAction(
         throw new Error("No balance forward items found to reverse.");
       }
 
-      // 5. For each source assessment, restore balance and delete BFX receipt
-      for (const bfItem of balanceForwardItems) {
-        if (!bfItem.sourceAssessmentId) continue;
-
-        const sourceAssessment = await tx.query.assessments.findFirst({
-          where: eq(assessments.id, bfItem.sourceAssessmentId),
-        });
-
-        if (!sourceAssessment) {
-          logger.warn(`[reverseBalanceTransfer] Source assessment ${bfItem.sourceAssessmentId} not found, skipping`);
-          continue;
-        }
-
-        // 5a. Find and delete BFX receipt(s) associated with this source assessment
-        const bfxReceipts = await tx.query.payments.findMany({
-          where: and(
-            eq(payments.assessmentId, bfItem.sourceAssessmentId),
-            eq(payments.kind, "balance_forward"),
-            eq(payments.status, "balance_forward")
-          ),
-          columns: { id: true, referenceNumber: true },
-        });
-
-        for (const bfxReceipt of bfxReceipts) {
-          await tx
-            .delete(payments)
-            .where(eq(payments.id, bfxReceipt.id));
-
-          // Audit log BFX deletion
-          await logAudit({
-            actor: session.userId,
-            actorRole: session.role,
-            action: "bfx_receipt_deleted",
-            targetEntity: "payments",
-            targetId: bfxReceipt.id,
-            context: bfItem.sourceAssessmentId,
-            newState: {
-              bfxNumber: bfxReceipt.referenceNumber,
-              reason: "balance_transfer_reversed",
-              sourceAssessmentId: bfItem.sourceAssessmentId,
-            },
-          }, { throwOnFail: true });
-        }
-
-        // 5b. Restore source assessment balance and billing status
-        await tx
-          .update(assessments)
-          .set({
-            balance: bfItem.amount, // Restore the transferred amount
-            billingStatus: "outstanding", // Restore to outstanding
-            transferredAt: null,
-            transferredBy: null,
-            transferredToAssessmentId: null,
-            transferRemarks: null,
-            updatedBy: session.userId,
-            updatedAt: new Date(),
-          })
-          .where(eq(assessments.id, bfItem.sourceAssessmentId));
-
-        // 5c. Audit log restoration
-        await logAudit({
-          actor: session.userId,
-          actorRole: session.role,
-          action: "assessment_transfer_reversed",
-          targetEntity: "assessments",
-          targetId: bfItem.sourceAssessmentId,
-          context: assessmentId,
-          newState: {
-            restoredBalance: bfItem.amount,
-            reversedFromAssessmentId: assessmentId,
-            reversedBy: session.userId,
-            deletedBfxCount: bfxReceipts.length,
-          },
-        }, { throwOnFail: true });
-      }
+      // 5. Reverse all balance forward items using shared utility
+      await reverseBalanceForwardItems({
+        tx,
+        balanceForwardItems: balanceForwardItems.map((item) => ({
+          sourceAssessmentId: item.sourceAssessmentId,
+          amount: item.amount,
+        })),
+        targetAssessmentId: assessmentId,
+        userId: session.userId,
+        userRole: session.role,
+        reason: "balance_transfer_reversed",
+      });
 
       // 6. Delete balance forward items from target assessment
       await tx
@@ -902,73 +839,19 @@ export async function cancelAssessmentAction(
         ),
       });
 
-      for (const bfItem of balanceForwardItems) {
-        if (!bfItem.sourceAssessmentId) continue;
-
-        // Find and delete BFX receipt(s) from source assessment
-        const bfxReceipts = await tx.query.payments.findMany({
-          where: and(
-            eq(payments.assessmentId, bfItem.sourceAssessmentId),
-            eq(payments.kind, "balance_forward"),
-            eq(payments.status, "balance_forward")
-          ),
-          columns: { id: true, referenceNumber: true },
+      // Reverse all balance forward items using shared utility
+      if (balanceForwardItems.length > 0) {
+        await reverseBalanceForwardItems({
+          tx,
+          balanceForwardItems: balanceForwardItems.map((item) => ({
+            sourceAssessmentId: item.sourceAssessmentId,
+            amount: item.amount,
+          })),
+          targetAssessmentId: assessmentId,
+          userId: session.userId,
+          userRole: session.role,
+          reason: "assessment_cancellation",
         });
-
-        for (const bfxReceipt of bfxReceipts) {
-          await tx.delete(payments).where(eq(payments.id, bfxReceipt.id));
-
-          await logAudit(
-            {
-              actor: session.userId,
-              actorRole: session.role,
-              action: "bfx_receipt_deleted",
-              targetEntity: "payments",
-              targetId: bfxReceipt.id,
-              context: bfItem.sourceAssessmentId,
-              newState: {
-                bfxNumber: bfxReceipt.referenceNumber,
-                reason: "assessment_cancellation",
-                sourceAssessmentId: bfItem.sourceAssessmentId,
-                cancelledAssessmentId: assessmentId,
-              },
-            },
-            { throwOnFail: true }
-          );
-        }
-
-        // Restore source assessment balance and billing status
-        await tx
-          .update(assessments)
-          .set({
-            balance: bfItem.amount, // Restore the transferred amount
-            billingStatus: "outstanding",
-            transferredAt: null,
-            transferredBy: null,
-            transferredToAssessmentId: null,
-            transferRemarks: null,
-            updatedBy: session.userId,
-            updatedAt: new Date(),
-          })
-          .where(eq(assessments.id, bfItem.sourceAssessmentId));
-
-        await logAudit(
-          {
-            actor: session.userId,
-            actorRole: session.role,
-            action: "assessment_transfer_reversed",
-            targetEntity: "assessments",
-            targetId: bfItem.sourceAssessmentId,
-            context: assessmentId,
-            newState: {
-              restoredBalance: bfItem.amount,
-              reversedFromAssessmentId: assessmentId,
-              reason: "assessment_cancellation",
-              deletedBfxCount: bfxReceipts.length,
-            },
-          },
-          { throwOnFail: true }
-        );
       }
 
       // Delete balance forward line items from this assessment
