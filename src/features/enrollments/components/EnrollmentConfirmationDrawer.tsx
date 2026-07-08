@@ -14,11 +14,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useFormToast } from "@/hooks/useFormToast";
+import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import {
   confirmEnrollmentAction,
   fetchReadyToEnrollDetailAction,
 } from "../enrollment-confirmation.actions";
-import { formatCurrency } from "@/lib/utils/currency";
 import { queryKeys } from "@/lib/query/keys";
 import type { ConfirmEnrollmentFormState } from "../enrollments.schema";
 import type { ReadyToEnrollListRow } from "../enrollments-queue.queries";
@@ -83,7 +83,7 @@ export default function EnrollmentConfirmationDrawer({
   const gradeLevelName = isOldStudent ? student.suggestedGradeName : student.registrationGradeName;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isPending && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
@@ -219,8 +219,11 @@ export default function EnrollmentConfirmationDrawer({
                   <h4 className="text-sm font-semibold text-amber-900">Outstanding Balance</h4>
                   <p className="mt-1 text-sm text-amber-800">
                     This student has an outstanding balance of{" "}
-                    <strong>{formatCurrency(Number(student.outstandingAmount ?? 0))}</strong> from the
-                    previous school year.
+                    <CurrencyDisplay
+                      amount={Number(student.outstandingAmount ?? 0)}
+                      className="font-bold"
+                    />{" "}
+                    from the previous school year.
                   </p>
                   <p className="mt-2 text-xs text-amber-700">
                     You may proceed with enrollment. A payment plan can be arranged with the finance office.

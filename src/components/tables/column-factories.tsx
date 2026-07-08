@@ -586,15 +586,19 @@ export function createRequestedByColumn<T extends RequestedByRow>(
     cell: ({ row }) => {
       const username = row.original[usernameKey];
       const dateValue = row.original[dateKey as keyof T] as Date | string | undefined;
+      const dateObj = dateValue
+        ? dateValue instanceof Date
+          ? dateValue
+          : new Date(dateValue)
+        : undefined;
+      const hasValidDate = dateObj !== undefined && Number.isFinite(dateObj.getTime());
 
       return (
         <div className="text-sm">
           <div>{username ?? "—"}</div>
-          {showDate && dateValue && (
+          {showDate && hasValidDate && (
             <div className="text-xs text-muted-foreground">
-              {formatDate(
-                dateValue instanceof Date ? dateValue : new Date(dateValue)
-              )}
+              {formatDate(dateObj)}
             </div>
           )}
         </div>

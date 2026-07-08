@@ -25,7 +25,6 @@ export function ArchiveDirectoryTable({
   rows,
 }: {
   rows: ArchivedStudentRow[];
-  emptyMessage?: string;
 }) {
   const columns = useMemo<ColumnDef<ArchivedStudentRow>[]>(
     () => [

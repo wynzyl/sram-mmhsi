@@ -141,14 +141,7 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          <ArchiveDirectoryTable
-            rows={archiveData.rows}
-            emptyMessage={
-              params.search || params.status || params.schoolYearId
-                ? "No archived students match your filters."
-                : "No archived students found."
-            }
-          />
+          <ArchiveDirectoryTable rows={archiveData.rows} />
         </CardContent>
       </Card>
 
