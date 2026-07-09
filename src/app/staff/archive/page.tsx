@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { TablePagination } from "@/components/ui/TablePagination";
 import {
   fetchArchivedStudentsPage,
   getArchiveSummary,
@@ -58,7 +59,7 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
         schoolYearId: params.schoolYearId,
         search: params.search,
         page,
-        pageSize: 20,
+        pageSize: 25,
       }),
       getArchiveSummary(),
       getArchiveSchoolYearOptions(),
@@ -146,46 +147,27 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
       </Card>
 
       {/* Pagination */}
-      {archiveData.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing page {archiveData.currentPage} of {archiveData.totalPages} (
-            {archiveData.totalCount} total)
-          </p>
-          <div className="flex gap-2">
-            {archiveData.currentPage > 1 && (
-              <a
-                href={`/staff/archive?${new URLSearchParams({
-                  ...(params.status && { status: params.status }),
-                  ...(params.schoolYearId && {
-                    schoolYearId: params.schoolYearId,
-                  }),
-                  ...(params.search && { search: params.search }),
-                  page: String(archiveData.currentPage - 1),
-                }).toString()}`}
-                className={buttonVariants({ variant: "secondary", size: "sm" })}
-              >
-                Previous
-              </a>
-            )}
-            {archiveData.currentPage < archiveData.totalPages && (
-              <a
-                href={`/staff/archive?${new URLSearchParams({
-                  ...(params.status && { status: params.status }),
-                  ...(params.schoolYearId && {
-                    schoolYearId: params.schoolYearId,
-                  }),
-                  ...(params.search && { search: params.search }),
-                  page: String(archiveData.currentPage + 1),
-                }).toString()}`}
-                className={buttonVariants({ variant: "secondary", size: "sm" })}
-              >
-                Next
-              </a>
-            )}
-          </div>
-        </div>
-      )}
+      <TablePagination
+        currentPage={archiveData.currentPage}
+        totalPages={archiveData.totalPages}
+        totalRecords={archiveData.totalCount}
+        pageSize={25}
+        baseUrl={buildBaseUrl(params)}
+        itemLabel="students"
+      />
     </div>
   );
+}
+
+function buildBaseUrl(params: {
+  status?: string;
+  schoolYearId?: string;
+  search?: string;
+}): string {
+  const searchParams = new URLSearchParams();
+  if (params.status) searchParams.set("status", params.status);
+  if (params.schoolYearId) searchParams.set("schoolYearId", params.schoolYearId);
+  if (params.search) searchParams.set("search", params.search);
+  const qs = searchParams.toString();
+  return `/staff/archive${qs ? `?${qs}` : ""}`;
 }
