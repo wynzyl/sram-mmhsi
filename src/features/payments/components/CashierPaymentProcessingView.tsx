@@ -461,7 +461,7 @@ export function CashierPaymentProcessingView({
                           Amount to pay <span className="text-destructive">*</span>
                         </label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-semibold text-emerald-600">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-black text-emerald-600">
                             ₱
                           </span>
                           <Input
@@ -469,7 +469,7 @@ export function CashierPaymentProcessingView({
                             inputMode="decimal"
                             value={formatWithCommas(amountToPay)}
                             onChange={(e) => setAmountToPay(stripFormatting(e.target.value))}
-                            className="h-12 pl-8 font-mono text-xl font-semibold text-emerald-600"
+                            className="h-14 pl-10 font-mono text-3xl font-black text-emerald-600"
                             placeholder="0.00"
                             autoComplete="off"
                           />
@@ -489,7 +489,7 @@ export function CashierPaymentProcessingView({
                             Amount tendered <span className="text-destructive">*</span>
                           </label>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-semibold text-emerald-600">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-black text-emerald-600">
                               ₱
                             </span>
                             <Input
@@ -497,7 +497,7 @@ export function CashierPaymentProcessingView({
                               inputMode="decimal"
                               value={formatWithCommas(amountTendered)}
                               onChange={(e) => setAmountTendered(stripFormatting(e.target.value))}
-                              className="h-12 pl-8 font-mono text-xl font-semibold text-emerald-600"
+                              className="h-14 pl-10 font-mono text-3xl font-black text-emerald-600"
                               placeholder="0.00"
                             />
                           </div>
