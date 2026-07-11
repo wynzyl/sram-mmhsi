@@ -53,6 +53,7 @@ export function CurriculumDetailClient({
         groups={groups}
         curriculumStatus={curriculum.status}
         curriculumId={curriculum.id}
+        availableGradeLevels={canManageSubjects ? gradeLevels : undefined}
         onAddSubject={canManageSubjects ? handleAddSubject : undefined}
         onEditSubject={canManageSubjects ? handleEditSubject : undefined}
       />

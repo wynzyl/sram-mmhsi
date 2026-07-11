@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useMemo } from "react";
 import { cn } from "@/lib/utils/cn";
 import type { SubjectListRow } from "../curriculums.types";
 import type { CurriculumStatus } from "../curriculums.schema";
@@ -19,11 +19,18 @@ interface GradeLevelGroup {
   subjects: SubjectListRow[];
 }
 
+interface GradeLevelOption {
+  id: string;
+  name: string;
+}
+
 interface SubjectsByGradeLevelProps {
   groups: GradeLevelGroup[];
   curriculumStatus: CurriculumStatus;
   /** Reserved for future use (e.g., reordering) */
   curriculumId: string;
+  /** All available grade levels - used to show empty grade levels in draft mode */
+  availableGradeLevels?: GradeLevelOption[];
   onAddSubject?: (gradeLevelId: string) => void;
   onEditSubject?: (subject: SubjectListRow) => void;
 }
@@ -32,13 +39,44 @@ export function SubjectsByGradeLevel({
   groups,
   curriculumStatus,
   curriculumId: _curriculumId,
+  availableGradeLevels = [],
   onAddSubject,
   onEditSubject,
 }: SubjectsByGradeLevelProps) {
-  const [expandedGrades, setExpandedGrades] = useState<Set<string>>(
-    new Set(groups.map((g) => g.gradeLevelId))
-  );
   const isDraft = curriculumStatus === "draft";
+
+  // In draft mode, merge available grade levels with existing groups
+  // This allows adding subjects to grade levels that don't have subjects yet
+  const displayGroups = useMemo(() => {
+    if (!isDraft || availableGradeLevels.length === 0) {
+      return groups;
+    }
+
+    // Create a map of existing groups
+    const existingGroupMap = new Map(
+      groups.map((g) => [g.gradeLevelId, g])
+    );
+
+    // Merge available grade levels with existing groups
+    const merged: GradeLevelGroup[] = availableGradeLevels.map((gl) => {
+      const existing = existingGroupMap.get(gl.id);
+      if (existing) {
+        return existing;
+      }
+      // Create empty group for grade level without subjects
+      return {
+        gradeLevelId: gl.id,
+        gradeLevelName: gl.name,
+        subjects: [],
+      };
+    });
+
+    return merged;
+  }, [groups, availableGradeLevels, isDraft]);
+
+  const [expandedGrades, setExpandedGrades] = useState<Set<string>>(
+    new Set(displayGroups.map((g) => g.gradeLevelId))
+  );
 
   const toggleGrade = (gradeLevelId: string) => {
     setExpandedGrades((prev) => {
@@ -52,7 +90,13 @@ export function SubjectsByGradeLevel({
     });
   };
 
-  if (groups.length === 0) {
+  // Count total subjects across all groups
+  const totalSubjects = groups.reduce(
+    (sum, g) => sum + g.subjects.filter((s) => !s.isDeleted).length,
+    0
+  );
+
+  if (displayGroups.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         <p className="text-sm">No subjects defined yet.</p>
@@ -69,9 +113,19 @@ export function SubjectsByGradeLevel({
     );
   }
 
+  // Show helpful message for new draft curriculums
+  const showEmptyDraftHint = isDraft && totalSubjects === 0;
+
   return (
     <div className="space-y-4">
-      {groups.map((group) => {
+      {showEmptyDraftHint && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-2">
+          <p className="text-sm text-primary">
+            <span className="font-medium">Getting started:</span> Click on any grade level below and use &quot;+ Add Subject&quot; to add subjects to your curriculum.
+          </p>
+        </div>
+      )}
+      {displayGroups.map((group) => {
         const isExpanded = expandedGrades.has(group.gradeLevelId);
         const activeSubjects = group.subjects.filter((s) => !s.isDeleted);
         const deletedSubjects = group.subjects.filter((s) => s.isDeleted);
