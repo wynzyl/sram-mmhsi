@@ -53,6 +53,12 @@ export const CACHE_TAGS = {
 
   /** Document requests (transactional — use forceUpdateTag for read-your-own-writes) */
   DOCUMENT_REQUESTS: "document-requests",
+
+  /** Curriculum definitions and versions */
+  CURRICULUMS: "curriculums",
+
+  /** Curriculum adoptions (school year + grade level bindings) */
+  CURRICULUM_ADOPTIONS: "curriculum-adoptions",
 } as const;
 
 export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];

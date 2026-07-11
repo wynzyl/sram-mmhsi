@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { assignTeacherAction } from "../subjects/subjects.actions";
+import { assignTeacherAction } from "../grades/grades.actions";
 
 export default function AssignTeacherForm({
   teachers,

@@ -71,6 +71,13 @@
       "when": 1783408810528,
       "tag": "0009_add_payments_booklet_index",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783742518813,
+      "tag": "0010_curriculum_versioning",
+      "breakpoints": true
     }
   ]
 }

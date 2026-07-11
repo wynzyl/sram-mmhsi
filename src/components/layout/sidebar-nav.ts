@@ -5,7 +5,7 @@ export type NavIconName =
   | "students"
   | "registrations"
   | "enrollments"
-  | "subjects"
+  | "curriculums"
   | "assignments"
   | "fee-schedules"
   | "booklets"
@@ -51,7 +51,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Academics",
       items: [
-        { href: "/staff/academics/subjects", label: "Subjects", icon: "subjects" },
+        { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
       ],
     },
     {
@@ -101,7 +101,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Academics",
       items: [
-        { href: "/staff/academics/subjects", label: "Subjects", icon: "subjects" },
+        { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
       ],
     },
     {
@@ -160,7 +160,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Academics",
       items: [
-        { href: "/staff/academics/subjects", label: "Subjects", icon: "subjects" },
+        { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
       ],
     },
     {

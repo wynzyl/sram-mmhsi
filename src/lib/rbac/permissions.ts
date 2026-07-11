@@ -15,6 +15,14 @@ export type Permission =
   | "registrations:read"
   | "registrations:create"
   | "registrations:review"
+  // Curriculums
+  | "curriculums:read"
+  | "curriculums:create"
+  | "curriculums:edit"
+  | "curriculums:publish"
+  | "curriculums:archive"
+  | "curriculums:adopt"
+  | "subjects:manage"
   // Enrollments
   | "enrollments:read"
   | "enrollments:create"
@@ -97,6 +105,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   super_admin: [
     "students:read", "students:create", "students:update", "students:delete",
     "registrations:read", "registrations:create", "registrations:review",
+    "curriculums:read", "curriculums:create", "curriculums:edit", "curriculums:publish", "curriculums:archive", "curriculums:adopt", "subjects:manage",
     "enrollments:read",
     "enrollments:create",
     "enrollments:update",
@@ -121,6 +130,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   admin: [
     "students:read", "students:create", "students:update", "students:delete",
     "registrations:read", "registrations:create", "registrations:review",
+    "curriculums:read", "curriculums:create", "curriculums:edit", "curriculums:publish", "curriculums:archive", "curriculums:adopt", "subjects:manage",
     "enrollments:read",
     "enrollments:create",
     "enrollments:update",
@@ -147,6 +157,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   registrar: [
     "students:read", "students:create", "students:update",
     "registrations:read", "registrations:create", "registrations:review",
+    "curriculums:read",
     "enrollments:read", "enrollments:create", "enrollments:update", "enrollments:confirm", "enrollments:cancel",
     "assessments:read", "assessments:create",
     "payments:read", "payments:post", "payments:void", "payments:void_request",
@@ -181,6 +192,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   ],
   teacher: [
     "students:read",
+    "curriculums:read",
     "grades:read", "grades:encode", "grades:submit",
   ],
   student: [

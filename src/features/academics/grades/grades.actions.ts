@@ -9,11 +9,13 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import {
   SaveGradesSchema,
   SubmitGradesSchema,
+  AssignTeacherSchema,
   type SaveGradesFormState,
   type SubmitGradesFormState,
+  type AssignTeacherFormState,
 } from "@/lib/validators/academics";
 import { logger } from "@/lib/observability/logger";
-import { logAudit } from "@/lib/utils/audit-logger";
+import { logAudit, logCreateAction } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
 
 // ─── Save Grades (Draft) ────────────────────────────────────────────────────
@@ -274,5 +276,60 @@ export async function submitGradesAction(
     logger.error("[teacher] Failed to submit grades", { error: String(error) });
     const message = error instanceof Error ? error.message : String(error);
     return { message: message || "An unexpected error occurred." };
+  }
+}
+
+// ─── Assign Teacher ─────────────────────────────────────────────────────────
+
+export async function assignTeacherAction(
+  _prevState: AssignTeacherFormState,
+  formData: FormData
+): Promise<AssignTeacherFormState> {
+  const session = await requireSession();
+  if (!hasPermission(session.role, "assignments:manage")) {
+    return { message: "You do not have permission to manage teacher assignments." };
+  }
+
+  const result = parseFormData(AssignTeacherSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
+  }
+
+  const data = result.data;
+
+  // Check duplicate
+  const existing = await db.query.teacherAssignments.findFirst({
+    where: and(
+      eq(teacherAssignments.teacherId, data.teacherId),
+      eq(teacherAssignments.subjectId, data.subjectId),
+      eq(teacherAssignments.sectionId, data.sectionId),
+      eq(teacherAssignments.schoolYearId, data.schoolYearId),
+      isNull(teacherAssignments.deletedAt)
+    ),
+  });
+
+  if (existing) {
+    return { errors: { _form: ["This assignment already exists."] } };
+  }
+
+  try {
+    const [newAssignment] = await db
+      .insert(teacherAssignments)
+      .values({
+        teacherId: data.teacherId,
+        subjectId: data.subjectId,
+        sectionId: data.sectionId,
+        schoolYearId: data.schoolYearId,
+        createdBy: session.userId,
+      })
+      .returning({ id: teacherAssignments.id });
+
+    await logCreateAction(session, "teacher_assignments", newAssignment.id, data, { throwOnFail: true });
+
+    revalidatePath("/staff/academics/assignments");
+    return { success: true, message: "Teacher assigned successfully." };
+  } catch (error) {
+    logger.error("[academics] Failed to assign teacher", { error });
+    return { message: "An unexpected error occurred." };
   }
 }

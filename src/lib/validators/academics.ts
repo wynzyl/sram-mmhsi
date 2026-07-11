@@ -1,22 +1,6 @@
 import { z } from "zod";
 import type { BaseFormState } from "./common-schemas";
 
-// ─── Admin: Subject Management ──────────────────────────────────────────────
-
-export const CreateSubjectSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  code: z.string().min(2, "Code must be at least 2 characters."),
-  gradeLevelId: z.string().uuid("Grade level is required."),
-});
-
-export type CreateSubjectFormState = BaseFormState<z.infer<typeof CreateSubjectSchema>>;
-
-export const DeleteSubjectSchema = z.object({
-  subjectId: z.string().uuid("Subject ID is required."),
-});
-
-export type DeleteSubjectFormState = BaseFormState<z.infer<typeof DeleteSubjectSchema>>;
-
 // ─── Admin: Teacher Assignments ─────────────────────────────────────────────
 
 export const AssignTeacherSchema = z.object({

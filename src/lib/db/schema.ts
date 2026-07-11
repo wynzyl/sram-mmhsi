@@ -74,6 +74,13 @@ export const gradeStatusEnum = pgEnum("grade_status", [
   "locked",
 ]);
 
+/** Curriculum lifecycle: draft → published → archived */
+export const curriculumStatusEnum = pgEnum("curriculum_status", [
+  "draft",
+  "published",
+  "archived",
+]);
+
 export const bookletStatusEnum = pgEnum("booklet_status", [
   "active",
   "exhausted",
@@ -282,13 +289,45 @@ export const sections = pgTable(
   ]
 );
 
-export const curriculums = pgTable("curriculums", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  effectiveSchoolYearId: uuid("effective_school_year_id").references(() => schoolYears.id).notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  createdBy: uuid("created_by").references(() => users.id),
-});
+export const curriculums = pgTable(
+  "curriculums",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    status: curriculumStatusEnum("status").notNull().default("draft"),
+    /** Version number within the same version chain (1, 2, 3...) */
+    version: integer("version").notNull().default(1),
+    /** Root of the version chain (points to the original v1 curriculum, or self for v1) */
+    rootId: uuid("root_id"), // Self-reference - FK enforced in migration
+    /** Predecessor version (null for v1, points to parent version for clones) */
+    predecessorId: uuid("predecessor_id"), // Self-reference - FK enforced in migration
+    /** @deprecated Legacy column - use curriculum_adoptions table instead */
+    effectiveSchoolYearId: uuid("effective_school_year_id").references(() => schoolYears.id),
+    /** Audit: when published */
+    publishedAt: timestamp("published_at"),
+    publishedBy: uuid("published_by").references(() => users.id),
+    /** Audit: when archived */
+    archivedAt: timestamp("archived_at"),
+    archivedBy: uuid("archived_by").references(() => users.id),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+  },
+  (t) => [
+    index("curriculums_status_idx").on(t.status),
+    index("curriculums_root_idx").on(t.rootId),
+    // Only one draft allowed per predecessor (prevents multiple parallel drafts from same source)
+    uniqueIndex("curriculums_pred_draft_uidx")
+      .on(t.predecessorId)
+      .where(sql`${t.status} = 'draft' AND ${t.predecessorId} IS NOT NULL`),
+    // Unique name within the same status (prevents duplicate draft names)
+    uniqueIndex("curriculums_name_status_uidx")
+      .on(t.name, t.status)
+      .where(sql`${t.status} = 'draft'`),
+  ]
+);
 
 export const subjects = pgTable(
   "subjects",
@@ -296,19 +335,59 @@ export const subjects = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     code: text("code").notNull(),
+    description: text("description"),
     curriculumId: uuid("curriculum_id").references(() => curriculums.id).notNull(),
     gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
+    /** Credit units for this subject (e.g., 1.0, 1.5, 3.0) */
+    units: numeric("units", { precision: 4, scale: 2 }).notNull().default("0"),
+    /** Display order within the grade level (for sorting subjects) */
+    sequenceOrder: integer("sequence_order").notNull().default(0),
+    /** Whether this is a core/required subject vs elective */
+    isCore: boolean("is_core").notNull().default(true),
+    /** Optional grading weight (future use for weighted averages) */
+    gradingWeight: numeric("grading_weight", { precision: 5, scale: 2 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
     deletedAt: timestamp("deleted_at"),
     deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
     index("subjects_curriculum_idx").on(t.curriculumId),
+    // Composite index for curriculum + grade level (common query pattern)
+    index("subjects_curriculum_grade_idx").on(t.curriculumId, t.gradeLevelId),
     // Partial index for active subjects (soft delete optimization)
     index("subjects_active_idx")
       .on(t.id)
       .where(sql`${t.deletedAt} IS NULL`),
+    // Unique subject code within curriculum (active subjects only)
+    uniqueIndex("subjects_curriculum_code_uidx")
+      .on(t.curriculumId, t.code)
+      .where(sql`${t.deletedAt} IS NULL`),
+  ]
+);
+
+/**
+ * Curriculum adoptions bind a published curriculum to a school year + grade level.
+ * Decouples curriculum from school year for proper version management.
+ * One adoption per (school_year_id, grade_level_id) - enforced by unique index.
+ */
+export const curriculumAdoptions = pgTable(
+  "curriculum_adoptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    gradeLevelId: uuid("grade_level_id").notNull().references(() => gradeLevels.id),
+    curriculumId: uuid("curriculum_id").notNull().references(() => curriculums.id),
+    adoptedAt: timestamp("adopted_at").notNull().defaultNow(),
+    adoptedBy: uuid("adopted_by").notNull().references(() => users.id),
+  },
+  (t) => [
+    // One curriculum adoption per grade level per school year
+    uniqueIndex("curriculum_adoptions_sy_grade_uidx").on(t.schoolYearId, t.gradeLevelId),
+    index("curriculum_adoptions_curriculum_idx").on(t.curriculumId),
+    index("curriculum_adoptions_sy_idx").on(t.schoolYearId),
   ]
 );
 
@@ -1399,6 +1478,91 @@ export const assessmentsRelations = relations(assessments, ({ one, many }) => ({
 
 export const schoolYearsRelations = relations(schoolYears, ({ many }) => ({
   feeSchedules: many(schoolYearFeeSchedules),
+  curriculumAdoptions: many(curriculumAdoptions),
+}));
+
+// Curriculum Relations
+export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
+  /** The root curriculum of this version chain (self for v1) */
+  root: one(curriculums, {
+    fields: [curriculums.rootId],
+    references: [curriculums.id],
+    relationName: "curriculum_root",
+  }),
+  /** The parent version this was cloned from */
+  predecessor: one(curriculums, {
+    fields: [curriculums.predecessorId],
+    references: [curriculums.id],
+    relationName: "curriculum_predecessor",
+  }),
+  /** All versions in this curriculum's chain (where rootId matches) */
+  versionChain: many(curriculums, {
+    relationName: "curriculum_root",
+  }),
+  /** Successor versions cloned from this curriculum */
+  successors: many(curriculums, {
+    relationName: "curriculum_predecessor",
+  }),
+  /** Subjects belonging to this curriculum */
+  subjects: many(subjects),
+  /** Adoption bindings to school years */
+  adoptions: many(curriculumAdoptions),
+  /** @deprecated Legacy school year reference */
+  effectiveSchoolYear: one(schoolYears, {
+    fields: [curriculums.effectiveSchoolYearId],
+    references: [schoolYears.id],
+  }),
+  publishedByUser: one(users, {
+    fields: [curriculums.publishedBy],
+    references: [users.id],
+    relationName: "curriculum_publisher",
+  }),
+  archivedByUser: one(users, {
+    fields: [curriculums.archivedBy],
+    references: [users.id],
+    relationName: "curriculum_archiver",
+  }),
+  createdByUser: one(users, {
+    fields: [curriculums.createdBy],
+    references: [users.id],
+    relationName: "curriculum_creator",
+  }),
+}));
+
+export const subjectsRelations = relations(subjects, ({ one }) => ({
+  curriculum: one(curriculums, {
+    fields: [subjects.curriculumId],
+    references: [curriculums.id],
+  }),
+  gradeLevel: one(gradeLevels, {
+    fields: [subjects.gradeLevelId],
+    references: [gradeLevels.id],
+  }),
+  createdByUser: one(users, {
+    fields: [subjects.createdBy],
+    references: [users.id],
+    relationName: "subject_creator",
+  }),
+}));
+
+export const curriculumAdoptionsRelations = relations(curriculumAdoptions, ({ one }) => ({
+  schoolYear: one(schoolYears, {
+    fields: [curriculumAdoptions.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  gradeLevel: one(gradeLevels, {
+    fields: [curriculumAdoptions.gradeLevelId],
+    references: [gradeLevels.id],
+  }),
+  curriculum: one(curriculums, {
+    fields: [curriculumAdoptions.curriculumId],
+    references: [curriculums.id],
+  }),
+  adoptedByUser: one(users, {
+    fields: [curriculumAdoptions.adoptedBy],
+    references: [users.id],
+    relationName: "adoption_adopter",
+  }),
 }));
 
 // Void Request Relations
