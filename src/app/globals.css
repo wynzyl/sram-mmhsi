@@ -848,3 +848,342 @@
   outline-offset: 2px;
   border-radius: 2px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PILL TABS
+   Rounded pill-style tab navigation (e.g., grade level selector)
+   ═══════════════════════════════════════════════════════════════ */
+
+.pill-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background-color: var(--muted);
+  border-radius: 9999px;
+  width: fit-content;
+}
+
+.pill-tab {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.pill-tab:hover {
+  color: var(--foreground);
+  background-color: var(--background);
+}
+
+.pill-tab-active {
+  color: white;
+  background-color: var(--primary);
+  font-weight: 600;
+}
+
+.pill-tab-active:hover {
+  color: white;
+  background-color: var(--primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INFO BANNER
+   Contextual information banner with icon
+   ═══════════════════════════════════════════════════════════════ */
+
+.info-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  background-color: var(--muted);
+  border-radius: var(--radius);
+}
+
+.info-banner-icon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary);
+}
+
+.info-banner-text {
+  color: var(--muted-foreground);
+}
+
+.info-banner-emphasis {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PROMO CARD
+   Dark promotional/feature card with gradient background
+   ═══════════════════════════════════════════════════════════════ */
+
+.promo-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+  border-radius: var(--radius);
+  color: white;
+}
+
+.promo-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.03) 100%);
+  pointer-events: none;
+}
+
+.promo-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 0.5rem;
+}
+
+.promo-card-text {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
+.promo-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  text-decoration: none;
+  transition: gap 0.15s ease;
+}
+
+.promo-card-link:hover {
+  gap: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TIP BANNER
+   Dismissible tip/hint banner at bottom of page
+   ═══════════════════════════════════════════════════════════════ */
+
+.tip-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background-color: color-mix(in srgb, var(--primary) 8%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  border-radius: var(--radius);
+}
+
+.tip-banner-icon {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.25rem;
+  background-color: var(--primary);
+  color: white;
+  border-radius: 9999px;
+}
+
+.tip-banner-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tip-banner-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.tip-banner-text {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.tip-banner-close {
+  flex-shrink: 0;
+  padding: 0.25rem;
+  background: transparent;
+  border: none;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.tip-banner-close:hover {
+  color: var(--foreground);
+  background-color: var(--muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SUBJECT ICON
+   Colored icon container for subject list items
+   ═══════════════════════════════════════════════════════════════ */
+
+.subject-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.subject-icon-globe {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.subject-icon-language {
+  background-color: #fce7f3;
+  color: #db2777;
+}
+
+.subject-icon-book {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.subject-icon-calculator {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.subject-icon-flask {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.subject-icon-music {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+}
+
+.subject-icon-heart {
+  background-color: #fce7f3;
+  color: #ec4899;
+}
+
+.subject-icon-tools {
+  background-color: #f3e8ff;
+  color: #9333ea;
+}
+
+.subject-icon-default {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOGGLE TABS
+   Segmented control / toggle group (e.g., Primary/Intermediate)
+   ═══════════════════════════════════════════════════════════════ */
+
+.toggle-tabs {
+  display: inline-flex;
+  padding: 0.25rem;
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.toggle-tab {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.toggle-tab:hover {
+  color: var(--foreground);
+}
+
+.toggle-tab-active {
+  color: var(--foreground);
+  background-color: var(--background);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STAT CARD VARIANTS
+   Additional stat card styles for different contexts
+   ═══════════════════════════════════════════════════════════════ */
+
+.stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stat-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: var(--muted);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.stat-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-card-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.stat-card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0.25rem 0 0;
+  line-height: 1;
+}
+
+.stat-card-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}

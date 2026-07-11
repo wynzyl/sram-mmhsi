@@ -1,74 +1,136 @@
-import { CreateSubjectForm } from "@/features/academics";
-import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
-import { deleteSubjectAction } from "@/features/academics";
+import { Suspense } from "react";
+import Link from "next/link";
+import { ChevronRight, Info, Lightbulb, BookOpen, Hash } from "lucide-react";
+import {
+  AddSubjectButton,
+  GradeTabsNav,
+  SubjectsTable,
+} from "@/features/academics";
 import {
   getGradeLevelsForDropdown,
-  getSubjectsList,
+  getSubjectsByGradeLevel,
+  getSubjectsCountByGradeLevel,
+  getTotalSubjectsCount,
 } from "@/features/academics/subjects/subjects.queries";
 import { requireSession } from "@/lib/auth/session";
 
-export default async function StaffSubjectManagementPage() {
+interface PageProps {
+  searchParams: Promise<{ grade?: string }>;
+}
+
+export default async function StaffSubjectManagementPage({
+  searchParams,
+}: PageProps) {
   await requireSession();
 
-  const [gradeLevelsList, subjectsList] = await Promise.all([
-    getGradeLevelsForDropdown(),
-    getSubjectsList(),
+  const params = await searchParams;
+  const gradeLevelsList = await getGradeLevelsForDropdown();
+
+  // Default to first grade level if none selected
+  const selectedGradeId = params.grade || gradeLevelsList[0]?.id || null;
+  const selectedGrade = gradeLevelsList.find((gl) => gl.id === selectedGradeId);
+
+  // Fetch data based on selected grade
+  const [subjectsList, subjectsCount, totalCount] = await Promise.all([
+    selectedGradeId ? getSubjectsByGradeLevel(selectedGradeId) : Promise.resolve([]),
+    selectedGradeId ? getSubjectsCountByGradeLevel(selectedGradeId) : Promise.resolve(0),
+    getTotalSubjectsCount(),
   ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Subject Management</h1>
+    <div className="page-container space-y-6">
+      {/* Header Section */}
+      <header className="page-header">
+        <div>
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+            <Link href="/staff/academics" className="hover:text-foreground transition-colors">
+              Academics
+            </Link>
+            <ChevronRight className="h-4 w-4" />
+            <span className="text-primary font-medium">Subject Registry</span>
+          </nav>
+
+          {/* Page Title */}
+          <h1 className="page-title">
+            {selectedGrade?.name || "All"} Subject Registry
+          </h1>
+        </div>
+      </header>
+
+      {/* Stats Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Total Subjects Card */}
+        <div className="stat-card">
+          <div className="stat-card-icon">
+            <BookOpen className="h-5 w-5 text-primary" />
+          </div>
+          <div className="stat-card-content">
+            <p className="stat-card-label">Total Subjects</p>
+            <p className="stat-card-value">{totalCount}</p>
+          </div>
+        </div>
+
+        {/* Grade Subjects Card */}
+        <div className="stat-card">
+          <div className="stat-card-icon">
+            <Hash className="h-5 w-5 text-primary" />
+          </div>
+          <div className="stat-card-content">
+            <p className="stat-card-label">{selectedGrade?.name || "Selected"} Subjects</p>
+            <p className="stat-card-value">{subjectsCount}</p>
+          </div>
+        </div>
+
+        {/* Promo Card */}
+        <div className="promo-card">
+          <h3 className="promo-card-title">Curriculum Management</h3>
+          <p className="promo-card-text">
+            Manage subjects per grade level. Add new subjects or remove existing ones as needed.
+          </p>
+          <Link href="/staff/academics" className="promo-card-link">
+            View Academics
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
 
-      <CreateSubjectForm gradeLevels={gradeLevelsList} />
+      {/* Grade Tabs + Add Button */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Suspense fallback={<div className="pill-tabs animate-pulse h-10 w-64 bg-muted rounded-full" />}>
+          <GradeTabsNav
+            gradeLevels={gradeLevelsList}
+            selectedGradeId={selectedGradeId}
+          />
+        </Suspense>
 
-      <div className="overflow-hidden rounded-lg bg-white shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Subject Name</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Subject Code</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Grade Level</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {subjectsList.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-500">
-                  No subjects found.
-                </td>
-              </tr>
-            ) : (
-              subjectsList.map((subject) => (
-                <tr key={subject.id}>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{subject.name}</div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="text-sm text-gray-500">{subject.code}</div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
-                      {subject.gradeLevel?.name || "Unassigned"}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                    <InlineConfirmButton
-                      action={deleteSubjectAction}
-                      confirmMessage="Are you sure you want to delete this subject?"
-                      hiddenFields={{ subjectId: subject.id }}
-                      label="Delete"
-                      loadingLabel="Deleting..."
-                      variant="danger"
-                    />
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <AddSubjectButton gradeLevels={gradeLevelsList} />
+      </div>
+
+      {/* Info Banner */}
+      <div className="info-banner">
+        <Info className="info-banner-icon" />
+        <span className="info-banner-text">
+          Currently viewing:{" "}
+          <span className="info-banner-emphasis">
+            {selectedGrade?.name || "All"} Curriculum
+          </span>{" "}
+          (DepEd Standard)
+        </span>
+      </div>
+
+      {/* Subjects Table */}
+      <SubjectsTable subjects={subjectsList} />
+
+      {/* Tip Banner */}
+      <div className="tip-banner">
+        <Lightbulb className="tip-banner-icon" />
+        <div className="tip-banner-content">
+          <p className="tip-banner-title">Did you know?</p>
+          <p className="tip-banner-text">
+            You can seed standard DepEd subjects using the command: npm run db:seed-subjects
+          </p>
+        </div>
       </div>
     </div>
   );

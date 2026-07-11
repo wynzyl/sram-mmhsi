@@ -49,6 +49,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [{ href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" }],
     },
     {
+      label: "Academics",
+      items: [
+        { href: "/staff/academics/subjects", label: "Subjects", icon: "subjects" },
+      ],
+    },
+    {
       label: "Approvals",
       items: [
         { href: "/staff/approvals", label: "Approvals", icon: "void-requests" },
@@ -90,6 +96,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/students", label: "Students", icon: "students" },
         { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
         { href: "/staff/enrollments", label: "Enrollments", icon: "enrollments" },
+      ],
+    },
+    {
+      label: "Academics",
+      items: [
+        { href: "/staff/academics/subjects", label: "Subjects", icon: "subjects" },
       ],
     },
     {
@@ -143,6 +155,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/students", label: "Students", icon: "students" },
         { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
         { href: "/staff/enrollments", label: "Enrollments", icon: "enrollments" },
+      ],
+    },
+    {
+      label: "Academics",
+      items: [
+        { href: "/staff/academics/subjects", label: "Subjects", icon: "subjects" },
       ],
     },
     {

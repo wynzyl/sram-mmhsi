@@ -16,6 +16,10 @@ export type {
 } from "./subjects/subjects.queries";
 
 // Components
+export { default as AddSubjectButton } from "./components/AddSubjectButton";
 export { default as AssignTeacherForm } from "./components/AssignTeacherForm";
 export { default as CreateSubjectForm } from "./components/CreateSubjectForm";
 export { default as GradeEncodingTable } from "./components/GradeEncodingTable";
+export { default as GradeTabsNav } from "./components/GradeTabsNav";
+export { default as SubjectIcon } from "./components/SubjectIcon";
+export { default as SubjectsTable } from "./components/SubjectsTable";
