@@ -308,7 +308,9 @@ export async function publishCurriculumAction(
     return { message: "You do not have permission to publish curriculums." };
   }
 
-  const result = parseFormData(PublishCurriculumSchema, formData);
+  const result = parseFormData(PublishCurriculumSchema, formData, {
+    arrayFields: ["adoptForGradeLevels"],
+  });
   if (!result.success) {
     return { errors: result.errors };
   }

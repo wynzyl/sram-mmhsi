@@ -6,7 +6,9 @@ import {
   getCurriculumById,
   getCurriculumVersionChain,
   getGradeLevelsForDropdown,
+  getActiveSchoolYear,
 } from "@/features/academics/curriculums";
+import { validatePublishPreflight } from "@/features/academics/curriculums/curriculum-preflight";
 import { CurriculumStatusBadge } from "@/features/academics/curriculums/components/CurriculumStatusBadge";
 import { CurriculumVersionChain } from "@/features/academics/curriculums/components/CurriculumVersionChain";
 import { CurriculumDetailClient } from "./CurriculumDetailClient";
@@ -24,9 +26,10 @@ export default async function CurriculumDetailPage({ params }: PageProps) {
     redirect("/staff/dashboard");
   }
 
-  const [curriculum, gradeLevels] = await Promise.all([
+  const [curriculum, gradeLevels, activeSchoolYear] = await Promise.all([
     getCurriculumById(id),
     getGradeLevelsForDropdown(),
+    getActiveSchoolYear(),
   ]);
 
   if (!curriculum) {
@@ -36,6 +39,22 @@ export default async function CurriculumDetailPage({ params }: PageProps) {
   const versionChain = curriculum.rootId
     ? await getCurriculumVersionChain(curriculum.rootId)
     : [];
+
+  // Run preflight validation for draft curriculums
+  const preflight =
+    curriculum.status === "draft"
+      ? validatePublishPreflight(
+          curriculum.status,
+          curriculum.subjects
+            .filter((s) => !s.isDeleted)
+            .map((s) => ({
+              id: s.id,
+              code: s.code,
+              gradeLevelId: s.gradeLevelId,
+              gradeLevelName: s.gradeLevelName ?? "",
+            }))
+        )
+      : null;
 
   // Group subjects by grade level
   const subjectsByGrade = new Map<string, typeof curriculum.subjects>();
@@ -110,14 +129,7 @@ export default async function CurriculumDetailPage({ params }: PageProps) {
               Edit Details
             </Link>
           )}
-          {curriculum.status === "draft" && canPublish && (
-            <button
-              type="button"
-              className="px-3 py-1.5 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
-            >
-              Publish
-            </button>
-          )}
+          {/* Publish button is now in CurriculumDetailClient to enable dialog interaction */}
           {curriculum.status === "published" && canEdit && (
             <Link
               href={`/staff/academics/curriculums/${id}/clone`}
@@ -182,6 +194,9 @@ export default async function CurriculumDetailPage({ params }: PageProps) {
             groups={groups}
             gradeLevels={gradeLevels}
             canManageSubjects={canManageSubjects && curriculum.status === "draft"}
+            canPublish={canPublish}
+            preflight={preflight ?? undefined}
+            activeSchoolYear={activeSchoolYear}
           />
         </div>
       </div>
