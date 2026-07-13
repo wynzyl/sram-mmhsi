@@ -6,7 +6,9 @@ import { useActionState } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
 import { postPaymentAction } from "../payments.actions";
 import type { PaymentFormState } from "../payments.schema";
+import type { CashDiscountEligibility } from "../payments.queries";
 import { NumericKeypad } from "./NumericKeypad";
+import { CashDiscountPreviewCard } from "./CashDiscountPreviewCard";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { Button } from "@/components/ui/button";
@@ -16,7 +18,7 @@ import { FormField } from "@/components/forms/FormField";
 import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { formatCurrency, roundToTwoDecimals } from "@/lib/utils/currency";
 import { generateUuid } from "@/lib/utils/uuid";
-import { ArrowLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft, Copy, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 type PaymentMethod = "cash" | "check" | "bank_transfer" | "gcash" | "other";
@@ -97,6 +99,11 @@ export function CashierPaymentProcessingView({
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualPaymentDate, setManualPaymentDate] = useState("");
   const [manualOrNumber, setManualOrNumber] = useState("");
+
+  // Cash discount eligibility state
+  const [cashDiscountEligibility, setCashDiscountEligibility] = useState<CashDiscountEligibility | null>(null);
+  const [cashDiscountLoading, setCashDiscountLoading] = useState(false);
+  const [applyCashDiscount, setApplyCashDiscount] = useState(false);
 
   // One key per form mount: a retried submit replays as the SAME payment
   // server-side instead of consuming a second OR (audit finding F7).
@@ -195,6 +202,51 @@ export function CashierPaymentProcessingView({
     }
   };
 
+  // Check cash discount eligibility when amount equals or exceeds balance
+  const checkCashDiscountEligibility = useCallback(async () => {
+    // Skip eligibility check if discount is already confirmed
+    if (applyCashDiscount) {
+      return;
+    }
+
+    const payNum = parseFloat(amountToPay);
+    const EPSILON = 0.01;
+
+    // Only check if amount is approximately equal to or exceeds balance
+    if (isNaN(payNum) || payNum < totals.balance - EPSILON) {
+      setCashDiscountEligibility(null);
+      return;
+    }
+
+    setCashDiscountLoading(true);
+    try {
+      const response = await fetch(
+        `/api/cashier/cash-discount?assessmentId=${assessmentId}&amount=${payNum}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.discountDetails?.cutoffDate) {
+          data.discountDetails.cutoffDate = new Date(data.discountDetails.cutoffDate);
+        }
+        setCashDiscountEligibility(data);
+      } else {
+        setCashDiscountEligibility(null);
+      }
+    } catch {
+      setCashDiscountEligibility(null);
+    } finally {
+      setCashDiscountLoading(false);
+    }
+  }, [amountToPay, totals.balance, assessmentId, applyCashDiscount]);
+
+  // Debounced eligibility check on amount change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkCashDiscountEligibility();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [checkCashDiscountEligibility]);
+
   // Success state
   if (state.success) {
     return (
@@ -286,10 +338,46 @@ export function CashierPaymentProcessingView({
             <input type="hidden" name="assessmentId" value={assessmentId} />
             <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
             <input type="hidden" name="isManualEntry" value={String(isManualEntry)} />
+            <input type="hidden" name="applyCashDiscount" value={String(applyCashDiscount)} />
             <input type="hidden" name="paymentMethod" value={paymentMethod} />
             <input type="hidden" name="amount" value={amountToPay} />
             {paymentMethod === "cash" && (
               <input type="hidden" name="amountTendered" value={amountTendered} />
+            )}
+
+            {/* Cash Discount Preview */}
+            {cashDiscountLoading && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-4 py-3">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Checking discount eligibility...</span>
+              </div>
+            )}
+
+            {!cashDiscountLoading && cashDiscountEligibility?.eligible && cashDiscountEligibility.discountDetails && (
+              <div className="mb-4">
+                <CashDiscountPreviewCard
+                  baseAmount={cashDiscountEligibility.discountDetails.baseAmount}
+                  discountValue={cashDiscountEligibility.discountDetails.discountValue}
+                  calculationType={cashDiscountEligibility.discountDetails.calculationType}
+                  baseType={cashDiscountEligibility.discountDetails.baseType}
+                  cashDiscountAmount={cashDiscountEligibility.discountDetails.cashDiscountAmount}
+                  currentBalance={cashDiscountEligibility.discountDetails.currentBalance}
+                  newBalance={cashDiscountEligibility.discountDetails.newBalance}
+                  paymentRequired={cashDiscountEligibility.discountDetails.paymentRequired}
+                  cutoffDate={cashDiscountEligibility.discountDetails.cutoffDate}
+                  isConfirmed={applyCashDiscount}
+                  onConfirm={() => {
+                    setApplyCashDiscount(true);
+                    if (cashDiscountEligibility?.discountDetails) {
+                      setAmountToPay(String(cashDiscountEligibility.discountDetails.paymentRequired));
+                    }
+                  }}
+                  onDecline={() => {
+                    setApplyCashDiscount(false);
+                    setAmountToPay(String(totals.balance));
+                  }}
+                />
+              </div>
             )}
 
             <div className="grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-12">
@@ -458,7 +546,7 @@ export function CashierPaymentProcessingView({
                       {/* Amount to Pay - always shown first */}
                       <div className="mb-3">
                         <label className="mb-1.5 block text-sm font-medium">
-                          Amount to pay <span className="text-destructive">*</span>
+                          Amount to pay {applyCashDiscount && "(after discount)"} <span className="text-destructive">*</span>
                         </label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-black text-emerald-600">

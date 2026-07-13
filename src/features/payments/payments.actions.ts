@@ -485,12 +485,15 @@ export async function postPaymentAction(
 
       // 3.5. Apply Full Payment Cash Discount (if requested and eligible)
       let actualPaymentAmount = amount;
+      const assessmentBalance = Number(assessment.balance);
 
       if (applyCashDiscount) {
         // Re-verify eligibility inside transaction (defensive)
+        // Use the assessment's full balance for eligibility check, not the submitted amount
+        // (the submitted amount may already be the discounted amount from the UI)
         const eligibility = await checkFullPaymentCashDiscountEligibility(
           assessmentId,
-          amount
+          assessmentBalance
         );
 
         if (!eligibility.eligible) {

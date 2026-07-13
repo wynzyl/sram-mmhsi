@@ -113,13 +113,18 @@ export default function PostPaymentForm({
 
   // Check cash discount eligibility when amount equals or exceeds balance
   const checkCashDiscountEligibility = useCallback(async () => {
+    // Skip eligibility check if discount is already confirmed
+    // (the user manually updates amount via onConfirm/onDecline, not this check)
+    if (applyCashDiscount) {
+      return;
+    }
+
     const payNum = parseFloat(amountToPay);
     const EPSILON = 0.01;
 
     // Only check if amount is approximately equal to or exceeds balance
     if (isNaN(payNum) || payNum < balance - EPSILON) {
       setCashDiscountEligibility(null);
-      setApplyCashDiscount(false);
       return;
     }
 
@@ -143,7 +148,7 @@ export default function PostPaymentForm({
     } finally {
       setCashDiscountLoading(false);
     }
-  }, [amountToPay, balance, assessmentId]);
+  }, [amountToPay, balance, assessmentId, applyCashDiscount]);
 
   // Debounced eligibility check on amount change
   useEffect(() => {
@@ -235,8 +240,18 @@ export default function PostPaymentForm({
           paymentRequired={cashDiscountEligibility.discountDetails.paymentRequired}
           cutoffDate={cashDiscountEligibility.discountDetails.cutoffDate}
           isConfirmed={applyCashDiscount}
-          onConfirm={() => setApplyCashDiscount(true)}
-          onDecline={() => setApplyCashDiscount(false)}
+          onConfirm={() => {
+            setApplyCashDiscount(true);
+            // Update the amount to pay field to the discounted amount
+            if (cashDiscountEligibility?.discountDetails) {
+              setAmountToPay(String(cashDiscountEligibility.discountDetails.paymentRequired));
+            }
+          }}
+          onDecline={() => {
+            setApplyCashDiscount(false);
+            // Restore the original balance
+            setAmountToPay(String(balance));
+          }}
         />
       )}
 
