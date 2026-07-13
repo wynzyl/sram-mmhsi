@@ -138,6 +138,13 @@ export const PostPaymentSchema = z
       if (!v || v === "") return undefined;
       return String(v).trim().toUpperCase();
     }, z.string().optional()),
+
+    // ─── Full Payment Cash Discount ───────────────────────────────────────────
+    /** Apply full payment cash discount if eligible */
+    applyCashDiscount: z.preprocess(
+      (v) => v === "true" || v === true,
+      z.boolean().default(false)
+    ),
   })
   .superRefine((data, ctx) => {
     // ─── Manual Entry Validation ─────────────────────────────────────────────

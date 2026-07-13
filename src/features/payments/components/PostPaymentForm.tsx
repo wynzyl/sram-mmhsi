@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useCallback } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
 import { postPaymentAction } from "../payments.actions";
 import type { PaymentFormState } from "../payments.schema";
+import type { CashDiscountEligibility } from "../payments.queries";
 import { FormField } from "@/components/forms/FormField";
 import { FormActions } from "@/components/forms/FormActions";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,8 @@ import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatCurrency, roundToTwoDecimals } from "@/lib/utils/currency";
 import { generateUuid } from "@/lib/utils/uuid";
+import { CashDiscountPreviewCard } from "./CashDiscountPreviewCard";
+import { Loader2 } from "lucide-react";
 
 type PaymentMethod = "cash" | "check" | "bank_transfer" | "gcash" | "other";
 
@@ -70,6 +73,11 @@ export default function PostPaymentForm({
   const [manualPaymentDate, setManualPaymentDate] = useState("");
   const [manualOrNumber, setManualOrNumber] = useState("");
 
+  // Cash discount eligibility state
+  const [cashDiscountEligibility, setCashDiscountEligibility] = useState<CashDiscountEligibility | null>(null);
+  const [cashDiscountLoading, setCashDiscountLoading] = useState(false);
+  const [applyCashDiscount, setApplyCashDiscount] = useState(false);
+
   // Handler for toggling manual entry - auto-fills suggestions on first enable
   const handleManualEntryToggle = (checked: boolean) => {
     setIsManualEntry(checked);
@@ -103,7 +111,56 @@ export default function PostPaymentForm({
     }
   }, [state.success, onPosted]);
 
-  const payNum = Number.parseFloat(amountToPay) || 0;
+  // Check cash discount eligibility when amount equals or exceeds balance
+  const checkCashDiscountEligibility = useCallback(async () => {
+    const payNum = parseFloat(amountToPay);
+    const EPSILON = 0.01;
+
+    // Only check if amount is approximately equal to or exceeds balance
+    if (isNaN(payNum) || payNum < balance - EPSILON) {
+      setCashDiscountEligibility(null);
+      setApplyCashDiscount(false);
+      return;
+    }
+
+    setCashDiscountLoading(true);
+    try {
+      const response = await fetch(
+        `/api/cashier/cash-discount?assessmentId=${assessmentId}&amount=${payNum}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        // Parse cutoff date back from ISO string
+        if (data.discountDetails?.cutoffDate) {
+          data.discountDetails.cutoffDate = new Date(data.discountDetails.cutoffDate);
+        }
+        setCashDiscountEligibility(data);
+      } else {
+        setCashDiscountEligibility(null);
+      }
+    } catch {
+      setCashDiscountEligibility(null);
+    } finally {
+      setCashDiscountLoading(false);
+    }
+  }, [amountToPay, balance, assessmentId]);
+
+  // Debounced eligibility check on amount change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkCashDiscountEligibility();
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [checkCashDiscountEligibility]);
+
+  // Determine effective payment amount (reduced if cash discount applies)
+  const rawPayNum = Number.parseFloat(amountToPay) || 0;
+  const effectivePayNum =
+    applyCashDiscount && cashDiscountEligibility?.discountDetails
+      ? cashDiscountEligibility.discountDetails.paymentRequired
+      : rawPayNum;
+  const payNum = effectivePayNum;
   const tenderNum = Number.parseFloat(amountTendered) || 0;
   const change =
     paymentMethod === "cash" && tenderNum >= payNum && payNum > 0
@@ -149,6 +206,7 @@ export default function PostPaymentForm({
       <input type="hidden" name="assessmentId" value={assessmentId} />
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <input type="hidden" name="isManualEntry" value={String(isManualEntry)} />
+      <input type="hidden" name="applyCashDiscount" value={String(applyCashDiscount)} />
 
       <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted px-4 py-3">
         <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Amount due (balance)</span>
@@ -156,6 +214,31 @@ export default function PostPaymentForm({
           <CurrencyDisplay amount={balance} />
         </span>
       </div>
+
+      {/* Cash Discount Preview */}
+      {cashDiscountLoading && (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-4 py-3">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Checking discount eligibility...</span>
+        </div>
+      )}
+
+      {!cashDiscountLoading && cashDiscountEligibility?.eligible && cashDiscountEligibility.discountDetails && (
+        <CashDiscountPreviewCard
+          baseAmount={cashDiscountEligibility.discountDetails.baseAmount}
+          discountValue={cashDiscountEligibility.discountDetails.discountValue}
+          calculationType={cashDiscountEligibility.discountDetails.calculationType}
+          baseType={cashDiscountEligibility.discountDetails.baseType}
+          cashDiscountAmount={cashDiscountEligibility.discountDetails.cashDiscountAmount}
+          currentBalance={cashDiscountEligibility.discountDetails.currentBalance}
+          newBalance={cashDiscountEligibility.discountDetails.newBalance}
+          paymentRequired={cashDiscountEligibility.discountDetails.paymentRequired}
+          cutoffDate={cashDiscountEligibility.discountDetails.cutoffDate}
+          isConfirmed={applyCashDiscount}
+          onConfirm={() => setApplyCashDiscount(true)}
+          onDecline={() => setApplyCashDiscount(false)}
+        />
+      )}
 
       {/* Manual Entry Toggle */}
       <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3">
@@ -248,10 +331,14 @@ export default function PostPaymentForm({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <FormField
-          label="Amount to pay"
+          label={applyCashDiscount ? "Amount to pay (before discount)" : "Amount to pay"}
           required
           error={state.errors?.amount}
-          hint={`Maximum ${formatCurrency(balance)}`}
+          hint={
+            applyCashDiscount && cashDiscountEligibility?.discountDetails
+              ? `Collect: ${formatCurrency(cashDiscountEligibility.discountDetails.paymentRequired)}`
+              : `Maximum ${formatCurrency(balance)}`
+          }
         >
           <Input
             type="number"
@@ -261,10 +348,14 @@ export default function PostPaymentForm({
             min="0.01"
             max={balance}
             value={amountToPay}
-            onChange={(e) => setAmountToPay(e.target.value)}
+            onChange={(e) => {
+              setAmountToPay(e.target.value);
+              // Reset discount confirmation when amount changes
+              setApplyCashDiscount(false);
+            }}
             error={!!state.errors?.amount}
             required
-            className="font-mono text-base"
+            className={`font-mono text-base ${applyCashDiscount ? "bg-emerald-50 dark:bg-emerald-950/20" : ""}`}
           />
         </FormField>
 
@@ -293,7 +384,11 @@ export default function PostPaymentForm({
               label="Amount tendered"
               required
               error={state.errors?.amountTendered}
-              hint="Cash received · must be at least the amount to pay"
+              hint={
+                applyCashDiscount && cashDiscountEligibility?.discountDetails
+                  ? `Cash received · at least ${formatCurrency(cashDiscountEligibility.discountDetails.paymentRequired)}`
+                  : "Cash received · must be at least the amount to pay"
+              }
             >
               <Input
                 type="number"

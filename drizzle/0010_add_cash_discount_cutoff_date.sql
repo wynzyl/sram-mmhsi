@@ -1,0 +1,1 @@
+ALTER TABLE "school_years" ADD COLUMN "cash_discount_cutoff_date" timestamp;

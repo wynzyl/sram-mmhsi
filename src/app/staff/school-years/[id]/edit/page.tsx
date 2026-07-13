@@ -35,6 +35,7 @@ export default async function EditStaffSchoolYearPage({ params }: PageProps) {
       startDate: true,
       endDate: true,
       isActive: true,
+      cashDiscountCutoffDate: true,
     },
   });
 

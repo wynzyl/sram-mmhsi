@@ -83,6 +83,25 @@ export default function SchoolYearForm() {
       </div>
 
       <div className="form-group mt-4">
+        <label className="form-label" htmlFor="cashDiscountCutoffDate">
+          Cash Discount Cutoff Date
+        </label>
+        <input
+          type="date"
+          id="cashDiscountCutoffDate"
+          name="cashDiscountCutoffDate"
+          className={`form-control ${state.errors?.cashDiscountCutoffDate ? "form-control-error" : ""}`}
+        />
+        {state.errors?.cashDiscountCutoffDate && (
+          <p className="form-error">{state.errors.cashDiscountCutoffDate[0]}</p>
+        )}
+        <p className="form-hint">
+          Students who pay their full balance before this date qualify for the
+          full payment cash discount. Leave empty to disable the cash discount.
+        </p>
+      </div>
+
+      <div className="form-group mt-4">
         <label className="form-checkbox">
           <input type="checkbox" name="isActive" value="true" />
           <span>Set as active school year</span>
