@@ -659,6 +659,8 @@ export async function checkFullPaymentCashDiscountEligibility(
       enrollmentId: assessments.enrollmentId,
       cashDiscountCutoffDate: schoolYears.cashDiscountCutoffDate,
       schoolYearLabel: schoolYears.label,
+      schoolYearIsActive: schoolYears.isActive,
+      schoolYearStartDate: schoolYears.startDate,
     })
     .from(assessments)
     .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
@@ -676,6 +678,14 @@ export async function checkFullPaymentCashDiscountEligibility(
   }
   if (assessmentRow.transferredAt) {
     return { eligible: false, reason: "Assessment balance was transferred." };
+  }
+
+  // 2b. Check assessment is for the ACTIVE school year
+  if (!assessmentRow.schoolYearIsActive) {
+    return {
+      eligible: false,
+      reason: `Cash discount is only available for the active school year. This assessment is for ${assessmentRow.schoolYearLabel}.`,
+    };
   }
 
   const balance = Number(assessmentRow.balance);
@@ -703,6 +713,17 @@ export async function checkFullPaymentCashDiscountEligibility(
     return {
       eligible: false,
       reason: `Cash discount cutoff date (${formatDate(cutoffDate)}) has passed.`,
+    };
+  }
+
+  // 4b. Check today is on or after school year start date
+  const startDate = new Date(assessmentRow.schoolYearStartDate);
+  startDate.setHours(0, 0, 0, 0);
+
+  if (today < startDate) {
+    return {
+      eligible: false,
+      reason: `Cash discount eligibility begins on ${formatDate(startDate)}. School year has not started yet.`,
     };
   }
 
