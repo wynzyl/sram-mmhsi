@@ -2,9 +2,12 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-07-08
+> Last sync: 2026-07-14
 
-### Current update highlights (2026-07-08)
+### Current update highlights (2026-07-14)
+- **Full payment cash discount in CashierPaymentProcessingView** — Cash discount eligibility check and preview card integrated into the main cashier payment modal. When full balance is entered, API checks eligibility, `CashDiscountPreviewCard` displays discount breakdown (base amount, discount value, new balance, amount to collect), and cashier can apply with one click. Server processes via `applyCashDiscount` hidden field.
+
+### Previous highlights (2026-07-08)
 - **Void OR reverse-chronological enforcement** — Payments must be voided in reverse chronological order (most recent first). Server-side validation blocks out-of-order void requests with a clear error message. UI hides "Request Void" button on older payments. Helper functions in `src/features/payments/payments.queries.ts`. Maintains accounting integrity.
 
 ### Previous highlights (2026-07-03)
@@ -147,7 +150,7 @@
 
 - [x] Receipt booklet management (Admin/Finance Officer)
 - [x] OR number auto-assignment on payment post
-- [x] Payment posting UI (Cashier) — embedded on assessment ledger (`AssessmentLedgerRegister` / `PostPaymentForm`)
+- [x] Payment posting UI (Cashier) — embedded on assessment ledger (`AssessmentLedgerRegister` / `PostPaymentForm`) and standalone modal (`CashierPaymentProcessingView`)
 - [x] Shared internal assessment-ledger composition to support consistent payment posting and RBAC checks
 - [x] Payment void workflow
 - [x] **Reverse-chronological void ordering** — payments must be voided in reverse order (most recent first); server-side validation in `requestVoidAction` + `approveVoidRequestAction`; UI hides void button on older payments (`isPaymentMostRecentVoidable` helper)
@@ -155,6 +158,7 @@
 - [x] Payment allocation to assessment items
 - [x] Ledger balance recalculation
 - [x] Idempotent payment posting — client-generated `idempotencyKey` per form mount + `payments_idempotency_key_uidx` (migration `0015`); retried submits return the original payment instead of consuming a second OR
+- [x] **Full payment cash discount** — eligibility check via `/api/cashier/cash-discount`, `CashDiscountPreviewCard` component with discount breakdown, one-click application in both `PostPaymentForm` and `CashierPaymentProcessingView`
 - [ ] Dedicated receipt generation/print view (button label references print; formal OR receipt layout TBD)
 - [x] Audit events: payment posted/voided, booklet consumed/exhausted
 
