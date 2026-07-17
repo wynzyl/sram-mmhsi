@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SubjectsByGradeLevel } from "@/features/academics/curriculums/components/SubjectsByGradeLevel";
 import { SubjectFormDialog } from "@/features/academics/curriculums/components/SubjectFormDialog";
 import { PublishCurriculumDialog } from "@/features/academics/curriculums/components/PublishCurriculumDialog";
+import { ArchiveCurriculumDialog } from "@/features/academics/curriculums/components/ArchiveCurriculumDialog";
 import type { CurriculumDetail, SubjectListRow } from "@/features/academics/curriculums/curriculums.types";
 import type { PreflightResult } from "@/features/academics/curriculums/curriculum-preflight";
 
@@ -29,6 +30,7 @@ interface CurriculumDetailClientProps {
   gradeLevels: GradeLevelOption[];
   canManageSubjects: boolean;
   canPublish?: boolean;
+  canArchive?: boolean;
   preflight?: PreflightResult;
   activeSchoolYear?: SchoolYear | null;
 }
@@ -39,6 +41,7 @@ export function CurriculumDetailClient({
   gradeLevels,
   canManageSubjects,
   canPublish,
+  canArchive,
   preflight,
   activeSchoolYear,
 }: CurriculumDetailClientProps) {
@@ -48,6 +51,7 @@ export function CurriculumDetailClient({
     subject?: SubjectListRow;
   } | null>(null);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
 
   const handleAddSubject = (gradeLevelId: string) => {
     setDialogState({ mode: "add", gradeLevelId: gradeLevelId || undefined });
@@ -94,6 +98,14 @@ export function CurriculumDetailClient({
         />
       )}
 
+      {showArchiveDialog && (
+        <ArchiveCurriculumDialog
+          curriculumId={curriculum.id}
+          curriculumName={curriculum.name}
+          onClose={() => setShowArchiveDialog(false)}
+        />
+      )}
+
       {/* Publish button - rendered here so it can trigger the dialog */}
       {curriculum.status === "draft" && canPublish && preflight && (
         <div className="fixed bottom-6 right-6 z-40">
@@ -116,6 +128,19 @@ export function CurriculumDetailClient({
               />
             </svg>
             Publish Curriculum
+          </button>
+        </div>
+      )}
+
+      {/* Archive button - rendered here so it can trigger the confirmation dialog */}
+      {curriculum.status === "published" && canArchive && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowArchiveDialog(true)}
+            className="px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-destructive"
+          >
+            Archive Curriculum
           </button>
         </div>
       )}

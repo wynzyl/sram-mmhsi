@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -39,10 +40,19 @@ export default async function CurriculumAdoptionsPage({
     );
   }
 
-  // Determine selected school year (from URL or default to active)
+  // Validate the requested school year (reject malformed UUIDs) and fall back
+  // to the active year (or the first available) so the displayed and queried
+  // years always match.
+  const requestedYearId = z
+    .string()
+    .uuid()
+    .safeParse(params.schoolYearId).data;
   const activeYear = schoolYears.find((sy) => sy.isActive);
-  const selectedYearId = params.schoolYearId ?? activeYear?.id ?? schoolYears[0].id;
-  const selectedSchoolYear = schoolYears.find((sy) => sy.id === selectedYearId) ?? schoolYears[0];
+  const requestedYear = requestedYearId
+    ? schoolYears.find((sy) => sy.id === requestedYearId)
+    : undefined;
+  const selectedSchoolYear = requestedYear ?? activeYear ?? schoolYears[0];
+  const selectedYearId = selectedSchoolYear.id;
 
   // Fetch data in parallel
   const [matrixCells, curriculumOptions, lockedGradeLevels] = await Promise.all([

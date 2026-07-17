@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useEffect, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useFormToast } from "@/hooks/useFormToast";
 import { updateAdoptionAction, removeAdoptionAction } from "../adoption.actions";
@@ -41,12 +41,10 @@ export function AdoptionMatrixRow({
   useFormToast(updateState, {
     successMessage: "Curriculum adoption updated",
     onSuccess: () => router.refresh(),
+    // On failure the optimistic selection is stale (no refresh happens), so
+    // restore the dropdown to the authoritative value from the cell.
+    onError: () => setSelectedCurriculumId(cell.curriculumId ?? ""),
   });
-
-  // Sync dropdown with cell when page refreshes
-  useEffect(() => {
-    setSelectedCurriculumId(cell.curriculumId ?? "");
-  }, [cell.curriculumId]);
 
   const handleCurriculumChange = (newCurriculumId: string) => {
     if (newCurriculumId === "" || newCurriculumId === selectedCurriculumId) {

@@ -431,9 +431,14 @@ export async function isCurriculumNameTaken(
 export async function getActiveSchoolYear(): Promise<{
   id: string;
   label: string;
+  startDate: Date;
 } | null> {
   const [row] = await db
-    .select({ id: schoolYears.id, label: schoolYears.label })
+    .select({
+      id: schoolYears.id,
+      label: schoolYears.label,
+      startDate: schoolYears.startDate,
+    })
     .from(schoolYears)
     .where(eq(schoolYears.isActive, true))
     .limit(1);

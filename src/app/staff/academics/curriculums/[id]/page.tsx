@@ -129,7 +129,7 @@ export default async function CurriculumDetailPage({ params }: PageProps) {
               Edit Details
             </Link>
           )}
-          {/* Publish button is now in CurriculumDetailClient to enable dialog interaction */}
+          {/* Publish and Archive buttons are in CurriculumDetailClient to enable dialog interaction */}
           {curriculum.status === "published" && canEdit && (
             <Link
               href={`/staff/academics/curriculums/${id}/clone`}
@@ -137,14 +137,6 @@ export default async function CurriculumDetailPage({ params }: PageProps) {
             >
               Clone to Draft
             </Link>
-          )}
-          {curriculum.status === "published" && canArchive && (
-            <button
-              type="button"
-              className="px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-destructive"
-            >
-              Archive
-            </button>
           )}
         </div>
       </div>
@@ -195,6 +187,7 @@ export default async function CurriculumDetailPage({ params }: PageProps) {
             gradeLevels={gradeLevels}
             canManageSubjects={canManageSubjects && curriculum.status === "draft"}
             canPublish={canPublish}
+            canArchive={canArchive}
             preflight={preflight ?? undefined}
             activeSchoolYear={activeSchoolYear}
           />

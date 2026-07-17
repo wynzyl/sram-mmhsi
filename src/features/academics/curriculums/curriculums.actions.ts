@@ -64,36 +64,41 @@ export async function createCurriculumAction(
   }
 
   try {
-    const [newCurriculum] = await db
-      .insert(curriculums)
-      .values({
-        name,
-        description: description ?? null,
-        status: "draft",
-        version: 1,
-        createdBy: session.userId,
-        updatedBy: session.userId,
-      })
-      .returning({ id: curriculums.id });
+    const newCurriculumId = await db.transaction(async (tx) => {
+      const [newCurriculum] = await tx
+        .insert(curriculums)
+        .values({
+          name,
+          description: description ?? null,
+          status: "draft",
+          version: 1,
+          createdBy: session.userId,
+          updatedBy: session.userId,
+        })
+        .returning({ id: curriculums.id });
 
-    // Set rootId to self (this is v1 of its own chain)
-    await db
-      .update(curriculums)
-      .set({ rootId: newCurriculum.id })
-      .where(eq(curriculums.id, newCurriculum.id));
+      // Set rootId to self (this is v1 of its own chain)
+      await tx
+        .update(curriculums)
+        .set({ rootId: newCurriculum.id })
+        .where(eq(curriculums.id, newCurriculum.id));
 
-    await logCreateAction(
-      session,
-      "curriculums",
-      newCurriculum.id,
-      { name, description },
-      { throwOnFail: true }
-    );
+      await logCreateAction(
+        session,
+        "curriculums",
+        newCurriculum.id,
+        { name, description },
+        { throwOnFail: true }
+      );
 
+      return newCurriculum.id;
+    });
+
+    // Cache invalidation runs only after the transaction commits.
     invalidateTag(CACHE_TAGS.CURRICULUMS);
     revalidatePath("/staff/academics/curriculums");
 
-    return { success: true, curriculumId: newCurriculum.id };
+    return { success: true, curriculumId: newCurriculumId };
   } catch (error) {
     logger.error("[curriculums] Failed to create curriculum", { error });
     return { message: "An unexpected error occurred." };
@@ -238,59 +243,63 @@ export async function cloneCurriculumAction(
   }
 
   try {
-    // Create new draft
-    const [newCurriculum] = await db
-      .insert(curriculums)
-      .values({
-        name: draftName,
-        description: source.description,
-        status: "draft",
-        version: nextVersion,
-        rootId: source.rootId ?? source.id,
-        predecessorId: source.id,
-        createdBy: session.userId,
-        updatedBy: session.userId,
-      })
-      .returning({ id: curriculums.id });
-
-    // Get source subjects
+    // Get source subjects (read is safe outside the transaction)
     const sourceSubjects = await db.query.subjects.findMany({
       where: and(
         eq(subjects.curriculumId, sourceCurriculumId),
         isNull(subjects.deletedAt)
       ),
     });
-
-    // Clone subjects
     const subjectsToClone = prepareSubjectsForClone(sourceSubjects);
-    if (subjectsToClone.length > 0) {
-      await db.insert(subjects).values(
-        subjectsToClone.map((s) => ({
-          ...s,
-          curriculumId: newCurriculum.id,
+
+    const newCurriculumId = await db.transaction(async (tx) => {
+      // Create new draft
+      const [newCurriculum] = await tx
+        .insert(curriculums)
+        .values({
+          name: draftName,
+          description: source.description,
+          status: "draft",
+          version: nextVersion,
+          rootId: source.rootId ?? source.id,
+          predecessorId: source.id,
           createdBy: session.userId,
           updatedBy: session.userId,
-        }))
-      );
-    }
+        })
+        .returning({ id: curriculums.id });
 
-    await logCreateAction(
-      session,
-      "curriculums",
-      newCurriculum.id,
-      {
-        clonedFrom: sourceCurriculumId,
-        name: draftName,
-        version: nextVersion,
-        subjectsCloned: subjectsToClone.length,
-      },
-      { throwOnFail: true }
-    );
+      // Clone subjects
+      if (subjectsToClone.length > 0) {
+        await tx.insert(subjects).values(
+          subjectsToClone.map((s) => ({
+            ...s,
+            curriculumId: newCurriculum.id,
+            createdBy: session.userId,
+            updatedBy: session.userId,
+          }))
+        );
+      }
+
+      await logCreateAction(
+        session,
+        "curriculums",
+        newCurriculum.id,
+        {
+          clonedFrom: sourceCurriculumId,
+          name: draftName,
+          version: nextVersion,
+          subjectsCloned: subjectsToClone.length,
+        },
+        { throwOnFail: true }
+      );
+
+      return newCurriculum.id;
+    });
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
     revalidatePath("/staff/academics/curriculums");
 
-    return { success: true, curriculumId: newCurriculum.id };
+    return { success: true, curriculumId: newCurriculumId };
   } catch (error) {
     logger.error("[curriculums] Failed to clone curriculum", { error });
     return { message: "An unexpected error occurred." };
@@ -365,52 +374,66 @@ export async function publishCurriculumAction(
     return { message: "A published curriculum with this name already exists." };
   }
 
-  try {
-    // Publish the curriculum
-    await db
-      .update(curriculums)
-      .set({
-        status: "published",
-        publishedAt: new Date(),
-        publishedBy: session.userId,
-        updatedAt: new Date(),
-        updatedBy: session.userId,
-      })
-      .where(eq(curriculums.id, curriculumId));
-
-    // Create adoptions if requested
-    if (adoptForGradeLevels && adoptForGradeLevels.length > 0 && schoolYearId) {
-      for (const gradeLevelId of adoptForGradeLevels) {
-        // Upsert adoption (replace existing if any)
-        await db
-          .insert(curriculumAdoptions)
-          .values({
-            schoolYearId,
-            gradeLevelId,
-            curriculumId,
-            adoptedBy: session.userId,
-          })
-          .onConflictDoUpdate({
-            target: [curriculumAdoptions.schoolYearId, curriculumAdoptions.gradeLevelId],
-            set: {
-              curriculumId,
-              adoptedAt: new Date(),
-              adoptedBy: session.userId,
-            },
-          });
-      }
-    }
-
-    await logAudit({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "curriculums:publish",
-      targetEntity: "curriculums",
-      targetId: curriculumId,
-      newState: {
-        adoptedFor: adoptForGradeLevels?.length ?? 0,
-        schoolYearId,
+  // Fail closed: never publish while silently skipping requested adoptions.
+  if (adoptForGradeLevels && adoptForGradeLevels.length > 0 && !schoolYearId) {
+    return {
+      errors: {
+        schoolYearId: ["A school year is required to adopt this curriculum."],
       },
+    };
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      // Publish the curriculum
+      await tx
+        .update(curriculums)
+        .set({
+          status: "published",
+          publishedAt: new Date(),
+          publishedBy: session.userId,
+          updatedAt: new Date(),
+          updatedBy: session.userId,
+        })
+        .where(eq(curriculums.id, curriculumId));
+
+      // Create adoptions if requested
+      if (adoptForGradeLevels && adoptForGradeLevels.length > 0 && schoolYearId) {
+        for (const gradeLevelId of adoptForGradeLevels) {
+          // Upsert adoption (replace existing if any)
+          await tx
+            .insert(curriculumAdoptions)
+            .values({
+              schoolYearId,
+              gradeLevelId,
+              curriculumId,
+              adoptedBy: session.userId,
+            })
+            .onConflictDoUpdate({
+              target: [curriculumAdoptions.schoolYearId, curriculumAdoptions.gradeLevelId],
+              set: {
+                curriculumId,
+                adoptedAt: new Date(),
+                adoptedBy: session.userId,
+              },
+            });
+        }
+      }
+
+      await logAudit(
+        {
+          actor: session.userId,
+          actorRole: session.role,
+          action: "curriculums:publish",
+          targetEntity: "curriculums",
+          targetId: curriculumId,
+          newState: {
+            adoptedFor: adoptForGradeLevels?.length ?? 0,
+            schoolYearId,
+          },
+        },
+        { throwOnFail: true }
+      );
     });
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
@@ -458,11 +481,13 @@ export async function archiveCurriculumAction(
     return { errors: { confirmName: ["Name does not match. Please type the exact curriculum name."] } };
   }
 
-  // Get adoptions
+  // Get adoptions (include the school year's start date so we can classify
+  // future vs past adoptions for the archive guard).
   const adoptions = await db
     .select({
       schoolYearId: curriculumAdoptions.schoolYearId,
       schoolYearLabel: schoolYears.label,
+      schoolYearStartDate: schoolYears.startDate,
       gradeLevelId: curriculumAdoptions.gradeLevelId,
       isActive: schoolYears.isActive,
     })
@@ -472,6 +497,11 @@ export async function archiveCurriculumAction(
     .where(eq(curriculumAdoptions.curriculumId, curriculumId));
 
   const activeSchoolYear = await getActiveSchoolYear();
+  // Reference point: the active year's start. Adoptions for years starting after
+  // it are "future" and must block archival.
+  const activeStart = activeSchoolYear?.startDate
+    ? new Date(activeSchoolYear.startDate).getTime()
+    : null;
 
   // Check archive eligibility
   const guardResult = checkArchiveEligibility(
@@ -482,6 +512,10 @@ export async function archiveCurriculumAction(
       gradeLevelId: a.gradeLevelId,
       gradeLevelName: "", // Not needed for check
       isActive: a.isActive,
+      isFuture:
+        activeStart !== null &&
+        !a.isActive &&
+        new Date(a.schoolYearStartDate).getTime() > activeStart,
     })),
     activeSchoolYear?.id ?? null
   );

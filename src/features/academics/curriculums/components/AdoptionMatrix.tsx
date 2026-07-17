@@ -96,7 +96,7 @@ export function AdoptionMatrix({
             <tbody className="divide-y divide-border">
               {matrixCells.map((cell) => (
                 <AdoptionMatrixRow
-                  key={cell.gradeLevelId}
+                  key={`${cell.gradeLevelId}-${cell.curriculumId ?? "none"}`}
                   cell={cell}
                   schoolYearId={selectedSchoolYear.id}
                   curriculumOptions={curriculumOptions}

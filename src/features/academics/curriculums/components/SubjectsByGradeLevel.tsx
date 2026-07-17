@@ -2,6 +2,7 @@
 
 import { useState, useActionState, useMemo } from "react";
 import { cn } from "@/lib/utils/cn";
+import { useFormToast } from "@/hooks/useFormToast";
 import type { SubjectListRow } from "../curriculums.types";
 import type { CurriculumStatus } from "../curriculums.schema";
 import {
@@ -136,12 +137,13 @@ export function SubjectsByGradeLevel({
             className="border border-border rounded-lg overflow-hidden"
           >
             {/* Header */}
-            <button
-              type="button"
-              onClick={() => toggleGrade(group.gradeLevelId)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
+            <div className="w-full flex items-center justify-between px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors">
+              <button
+                type="button"
+                onClick={() => toggleGrade(group.gradeLevelId)}
+                aria-expanded={isExpanded}
+                className="flex items-center gap-3 text-left"
+              >
                 <svg
                   className={cn(
                     "w-4 h-4 text-muted-foreground transition-transform",
@@ -163,19 +165,17 @@ export function SubjectsByGradeLevel({
                   ({activeSubjects.length} subject
                   {activeSubjects.length !== 1 ? "s" : ""})
                 </span>
-              </div>
+              </button>
               {isDraft && onAddSubject && (
-                <span
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddSubject(group.gradeLevelId);
-                  }}
+                <button
+                  type="button"
+                  onClick={() => onAddSubject(group.gradeLevelId)}
                   className="text-xs text-primary hover:underline cursor-pointer"
                 >
                   + Add Subject
-                </span>
+                </button>
               )}
-            </button>
+            </div>
 
             {/* Content */}
             {isExpanded && (
@@ -224,10 +224,12 @@ interface SubjectRowProps {
 }
 
 function SubjectRow({ subject, isDraft, onEdit }: SubjectRowProps) {
-  const [, deleteAction, deleting] = useActionState<
+  const [deleteState, deleteAction, deleting] = useActionState<
     DeleteSubjectFromCurriculumFormState,
     FormData
   >(deleteSubjectFromCurriculumAction, {});
+
+  useFormToast(deleteState, { successMessage: "Subject deleted successfully" });
 
   return (
     <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors">
@@ -284,10 +286,14 @@ function SubjectRow({ subject, isDraft, onEdit }: SubjectRowProps) {
 // ─── Deleted Subject Row ────────────────────────────────────────────────────
 
 function DeletedSubjectRow({ subject }: { subject: SubjectListRow }) {
-  const [, restoreAction, restoring] = useActionState<
+  const [restoreState, restoreAction, restoring] = useActionState<
     RestoreSubjectInCurriculumFormState,
     FormData
   >(restoreSubjectInCurriculumAction, {});
+
+  useFormToast(restoreState, {
+    successMessage: "Subject restored successfully",
+  });
 
   return (
     <div className="flex items-center justify-between py-2 opacity-60">

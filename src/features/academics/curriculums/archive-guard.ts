@@ -11,6 +11,8 @@ export type AdoptionInfo = {
   gradeLevelId: string;
   gradeLevelName: string;
   isActive: boolean; // Is this the active school year?
+  /** Is this adoption for a future (upcoming) school year? Future adoptions block archival. */
+  isFuture?: boolean;
 };
 
 export type ArchiveGuardResult = {
@@ -56,16 +58,20 @@ export function checkArchiveEligibility(
     };
   }
 
-  // Separate adoptions by whether they're for active/future school years
+  // Separate adoptions into active/future (blocking) vs past (informational).
+  // A curriculum cannot be archived while it is adopted for the active OR any
+  // upcoming school year; only past-only adoptions may be archived (with a warning).
   const activeAdoptions: AdoptionInfo[] = [];
+  const futureAdoptions: AdoptionInfo[] = [];
   const inactiveAdoptions: AdoptionInfo[] = [];
 
   for (const adoption of adoptions) {
     if (adoption.isActive || adoption.schoolYearId === activeSchoolYearId) {
       activeAdoptions.push(adoption);
+    } else if (adoption.isFuture) {
+      futureAdoptions.push(adoption);
     } else {
-      // For simplicity, we treat all non-active as inactive/past
-      // In a real implementation, you'd check the school year dates
+      // Non-active, non-future adoptions are treated as historical/past.
       inactiveAdoptions.push(adoption);
     }
   }
@@ -79,8 +85,21 @@ export function checkArchiveEligibility(
     );
   }
 
+  // Block archival if there are future adoptions
+  if (futureAdoptions.length > 0) {
+    const yearLabels = [...new Set(futureAdoptions.map((a) => a.schoolYearLabel))];
+    blockers.push(
+      `Cannot archive: curriculum is adopted for upcoming school year(s): ${yearLabels.join(", ")}. ` +
+      `Assign a different curriculum to those years first.`
+    );
+  }
+
   // Warn about historical adoptions (they'll become orphaned but that's expected)
-  if (inactiveAdoptions.length > 0 && activeAdoptions.length === 0) {
+  if (
+    inactiveAdoptions.length > 0 &&
+    activeAdoptions.length === 0 &&
+    futureAdoptions.length === 0
+  ) {
     const yearLabels = [...new Set(inactiveAdoptions.map((a) => a.schoolYearLabel))];
     warnings.push(
       `This curriculum has historical adoptions from: ${yearLabels.join(", ")}. ` +

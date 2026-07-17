@@ -13,6 +13,7 @@ import { logger } from "@/lib/observability/logger";
 import {
   createSectionSchema,
   updateSectionSchema,
+  deleteSectionSchema,
   type CreateSectionFormState,
   type UpdateSectionFormState,
 } from "./sections.schema";
@@ -60,25 +61,32 @@ export async function createSectionAction(
   }
 
   try {
-    const [newSection] = await db
-      .insert(sections)
-      .values({
-        name,
-        gradeLevelId,
-        schoolYearId,
-        createdBy: session.userId,
-        updatedBy: session.userId,
-        updatedAt: new Date(),
-      })
-      .returning({ id: sections.id });
+    const newSectionId = await db.transaction(async (tx) => {
+      const [newSection] = await tx
+        .insert(sections)
+        .values({
+          name,
+          gradeLevelId,
+          schoolYearId,
+          createdBy: session.userId,
+          updatedBy: session.userId,
+          updatedAt: new Date(),
+        })
+        .returning({ id: sections.id });
 
-    await logAudit({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "sections:create",
-      targetEntity: "sections",
-      targetId: newSection.id,
-      newState: { name, gradeLevelId, schoolYearId },
+      await logAudit(
+        {
+          actor: session.userId,
+          actorRole: session.role,
+          action: "sections:create",
+          targetEntity: "sections",
+          targetId: newSection.id,
+          newState: { name, gradeLevelId, schoolYearId },
+        },
+        { throwOnFail: true }
+      );
+
+      return newSection.id;
     });
 
     revalidatePath("/staff/academics/sections");
@@ -87,7 +95,7 @@ export async function createSectionAction(
     return {
       success: true,
       message: "Section created successfully.",
-      sectionId: newSection.id,
+      sectionId: newSectionId,
     };
   } catch (error) {
     logger.error("[sections] Failed to create section", { error });
@@ -138,25 +146,42 @@ export async function updateSectionAction(
   }
 
   try {
-    await db
-      .update(sections)
-      .set({
-        name,
-        gradeLevelId,
-        schoolYearId,
-        updatedBy: session.userId,
-        updatedAt: new Date(),
-      })
-      .where(eq(sections.id, id));
+    const updated = await db.transaction(async (tx) => {
+      const rows = await tx
+        .update(sections)
+        .set({
+          name,
+          gradeLevelId,
+          schoolYearId,
+          updatedBy: session.userId,
+          updatedAt: new Date(),
+        })
+        // Never update a missing or soft-deleted section.
+        .where(and(eq(sections.id, id), isNull(sections.deletedAt)))
+        .returning({ id: sections.id });
 
-    await logAudit({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "sections:update",
-      targetEntity: "sections",
-      targetId: id,
-      newState: { name, gradeLevelId, schoolYearId },
+      if (rows.length === 0) {
+        return false;
+      }
+
+      await logAudit(
+        {
+          actor: session.userId,
+          actorRole: session.role,
+          action: "sections:update",
+          targetEntity: "sections",
+          targetId: id,
+          newState: { name, gradeLevelId, schoolYearId },
+        },
+        { throwOnFail: true }
+      );
+
+      return true;
     });
+
+    if (!updated) {
+      return { message: "Section not found or has been deleted." };
+    }
 
     revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
@@ -185,8 +210,15 @@ export async function deleteSectionAction(
     };
   }
 
+  // Validate the section ID (reject malformed UUIDs before any DB access)
+  const idResult = deleteSectionSchema.safeParse({ id: sectionId });
+  if (!idResult.success) {
+    return { success: false, message: "Invalid section reference." };
+  }
+  const { id: validSectionId } = idResult.data;
+
   // Check for dependencies (enrollments and teacher assignments)
-  const counts = await getSectionDependencyCounts(sectionId);
+  const counts = await getSectionDependencyCounts(validSectionId);
 
   if (counts.enrollmentCount > 0 || counts.assignmentCount > 0) {
     const parts: string[] = [];
@@ -203,22 +235,41 @@ export async function deleteSectionAction(
   }
 
   try {
-    // Soft delete
-    await db
-      .update(sections)
-      .set({
-        deletedAt: new Date(),
-        deletedBy: session.userId,
-      })
-      .where(eq(sections.id, sectionId));
+    const deleted = await db.transaction(async (tx) => {
+      // Soft delete (only an active, non-deleted section is a valid target)
+      const rows = await tx
+        .update(sections)
+        .set({
+          deletedAt: new Date(),
+          deletedBy: session.userId,
+        })
+        .where(and(eq(sections.id, validSectionId), isNull(sections.deletedAt)))
+        .returning({ id: sections.id });
 
-    await logAudit({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "sections:delete",
-      targetEntity: "sections",
-      targetId: sectionId,
+      if (rows.length === 0) {
+        return false;
+      }
+
+      await logAudit(
+        {
+          actor: session.userId,
+          actorRole: session.role,
+          action: "sections:delete",
+          targetEntity: "sections",
+          targetId: validSectionId,
+        },
+        { throwOnFail: true }
+      );
+
+      return true;
     });
+
+    if (!deleted) {
+      return {
+        success: false,
+        message: "Section not found or has already been deleted.",
+      };
+    }
 
     revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);

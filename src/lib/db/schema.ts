@@ -326,6 +326,8 @@ export const curriculums = pgTable(
   (t) => [
     index("curriculums_status_idx").on(t.status),
     index("curriculums_root_idx").on(t.rootId),
+    // Enforce one version number per version chain (root_id + version unique).
+    uniqueIndex("curriculums_root_version_uidx").on(t.rootId, t.version),
     // Only one draft allowed per predecessor (prevents multiple parallel drafts from same source)
     uniqueIndex("curriculums_pred_draft_uidx")
       .on(t.predecessorId)

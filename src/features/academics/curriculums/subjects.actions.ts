@@ -408,32 +408,65 @@ export async function reorderSubjectsAction(
     return { message: draftCheck.error };
   }
 
-  try {
-    // Update sequence order for each subject
-    for (let i = 0; i < subjectOrder.length; i++) {
-      await db
-        .update(subjects)
-        .set({
-          sequenceOrder: i,
-          updatedAt: new Date(),
-          updatedBy: session.userId,
-        })
-        .where(
-          and(
-            eq(subjects.id, subjectOrder[i]),
-            eq(subjects.curriculumId, curriculumId),
-            eq(subjects.gradeLevelId, gradeLevelId)
-          )
-        );
-    }
+  // Validate that subjectOrder is an exact permutation of the active subjects
+  // for this curriculum + grade level (no duplicates, omissions, or foreign IDs).
+  const activeSubjects = await db
+    .select({ id: subjects.id })
+    .from(subjects)
+    .where(
+      and(
+        eq(subjects.curriculumId, curriculumId),
+        eq(subjects.gradeLevelId, gradeLevelId),
+        isNull(subjects.deletedAt)
+      )
+    );
 
-    await logAudit({
-      actor: session.userId,
-      actorRole: session.role,
-      action: "subjects:reorder",
-      targetEntity: "subjects",
-      targetId: curriculumId,
-      context: `Reordered subjects in grade level ${gradeLevelId}`,
+  const activeIds = new Set(activeSubjects.map((s) => s.id));
+  const orderedIds = new Set(subjectOrder);
+
+  const isExactPermutation =
+    subjectOrder.length === activeIds.size &&
+    orderedIds.size === subjectOrder.length &&
+    subjectOrder.every((id) => activeIds.has(id));
+
+  if (!isExactPermutation) {
+    return {
+      message:
+        "Invalid subject order: it must include each subject in this grade level exactly once.",
+    };
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      // Update sequence order for each subject
+      for (let i = 0; i < subjectOrder.length; i++) {
+        await tx
+          .update(subjects)
+          .set({
+            sequenceOrder: i,
+            updatedAt: new Date(),
+            updatedBy: session.userId,
+          })
+          .where(
+            and(
+              eq(subjects.id, subjectOrder[i]),
+              eq(subjects.curriculumId, curriculumId),
+              eq(subjects.gradeLevelId, gradeLevelId)
+            )
+          );
+      }
+
+      await logAudit(
+        {
+          actor: session.userId,
+          actorRole: session.role,
+          action: "subjects:reorder",
+          targetEntity: "subjects",
+          targetId: curriculumId,
+          context: `Reordered subjects in grade level ${gradeLevelId}`,
+        },
+        { throwOnFail: true }
+      );
     });
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);

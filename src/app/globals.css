@@ -883,13 +883,13 @@
 }
 
 .pill-tab-active {
-  color: white;
+  color: var(--primary-foreground);
   background-color: var(--primary);
   font-weight: 600;
 }
 
 .pill-tab-active:hover {
-  color: white;
+  color: var(--primary-foreground);
   background-color: var(--primary);
 }
 

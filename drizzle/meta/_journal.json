@@ -85,6 +85,13 @@
       "when": 1784264247407,
       "tag": "0011_add_sections_soft_delete_and_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784276970912,
+      "tag": "0012_add_curriculum_root_version_unique",
+      "breakpoints": true
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { gradeRecords, teacherAssignments } from "@/lib/db/schema";
+import { gradeRecords, teacherAssignments, sections } from "@/lib/db/schema";
 import { eq, and, sql, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -297,34 +297,60 @@ export async function assignTeacherAction(
 
   const data = result.data;
 
-  // Check duplicate
-  const existing = await db.query.teacherAssignments.findFirst({
-    where: and(
-      eq(teacherAssignments.teacherId, data.teacherId),
-      eq(teacherAssignments.subjectId, data.subjectId),
-      eq(teacherAssignments.sectionId, data.sectionId),
-      eq(teacherAssignments.schoolYearId, data.schoolYearId),
-      isNull(teacherAssignments.deletedAt)
-    ),
+  // Validate the target section: it must exist, be active, and belong to the
+  // same school year as the assignment (an FK alone can't enforce that).
+  const section = await db.query.sections.findFirst({
+    where: and(eq(sections.id, data.sectionId), isNull(sections.deletedAt)),
+    columns: { id: true, schoolYearId: true },
   });
 
-  if (existing) {
-    return { errors: { _form: ["This assignment already exists."] } };
+  if (!section) {
+    return { errors: { _form: ["The selected section no longer exists."] } };
+  }
+
+  if (section.schoolYearId !== data.schoolYearId) {
+    return {
+      errors: {
+        _form: ["The selected section belongs to a different school year."],
+      },
+    };
   }
 
   try {
-    const [newAssignment] = await db
-      .insert(teacherAssignments)
-      .values({
-        teacherId: data.teacherId,
-        subjectId: data.subjectId,
-        sectionId: data.sectionId,
-        schoolYearId: data.schoolYearId,
-        createdBy: session.userId,
-      })
-      .returning({ id: teacherAssignments.id });
+    // Check duplicate (kept inside the try so DB failures route through the
+    // structured error handler below).
+    const existing = await db.query.teacherAssignments.findFirst({
+      where: and(
+        eq(teacherAssignments.teacherId, data.teacherId),
+        eq(teacherAssignments.subjectId, data.subjectId),
+        eq(teacherAssignments.sectionId, data.sectionId),
+        eq(teacherAssignments.schoolYearId, data.schoolYearId),
+        isNull(teacherAssignments.deletedAt)
+      ),
+    });
 
-    await logCreateAction(session, "teacher_assignments", newAssignment.id, data, { throwOnFail: true });
+    if (existing) {
+      return { errors: { _form: ["This assignment already exists."] } };
+    }
+
+    // Insert + audit are atomic: if the audit write fails, the assignment insert
+    // is rolled back so a retry can't report a spurious "already exists".
+    await db.transaction(async (tx) => {
+      const [newAssignment] = await tx
+        .insert(teacherAssignments)
+        .values({
+          teacherId: data.teacherId,
+          subjectId: data.subjectId,
+          sectionId: data.sectionId,
+          schoolYearId: data.schoolYearId,
+          createdBy: session.userId,
+        })
+        .returning({ id: teacherAssignments.id });
+
+      await logCreateAction(session, "teacher_assignments", newAssignment.id, data, {
+        throwOnFail: true,
+      });
+    });
 
     revalidatePath("/staff/academics/assignments");
     return { success: true, message: "Teacher assigned successfully." };

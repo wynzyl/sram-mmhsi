@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "curriculums_root_version_uidx" ON "curriculums" USING btree ("root_id","version");

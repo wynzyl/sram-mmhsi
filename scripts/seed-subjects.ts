@@ -10,7 +10,9 @@ import {
   schoolYears,
   gradeLevels,
   curriculums,
+  curriculumAdoptions,
   subjects,
+  users,
 } from "../src/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { config } from "dotenv";
@@ -85,7 +87,7 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
   const [activeSchoolYear] = await db
     .select({ id: schoolYears.id, label: schoolYears.label })
     .from(schoolYears)
-    .where(eq(schoolYears.isActive, true))
+    .where(and(eq(schoolYears.isActive, true), isNull(schoolYears.deletedAt)))
     .limit(1);
 
   if (!activeSchoolYear) {
@@ -93,30 +95,65 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
   }
   console.log(`📅 Using school year: ${activeSchoolYear.label}`);
 
+  // ─── Get System Actor (for adoptedBy) ───────────────────────────────────────
+  const [systemUser] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.role, "super_admin"))
+    .limit(1);
+
+  if (!systemUser) {
+    throw new Error(
+      "No super_admin user found. Run db:seed-config first."
+    );
+  }
+
   // ─── Get or Create Curriculum ───────────────────────────────────────────────
+  // Curriculums are associated with a school year through curriculum_adoptions,
+  // not the deprecated effectiveSchoolYearId column. Look up an existing
+  // curriculum by name that already has an adoption for the active school year;
+  // otherwise create a published v1 curriculum (rootId = self).
   const curriculumName = `DepEd K-12 (${activeSchoolYear.label})`;
-  let [curriculum] = await db
-    .select({ id: curriculums.id })
-    .from(curriculums)
+
+  const [existingAdoption] = await db
+    .select({ curriculumId: curriculumAdoptions.curriculumId })
+    .from(curriculumAdoptions)
+    .innerJoin(curriculums, eq(curriculumAdoptions.curriculumId, curriculums.id))
     .where(
       and(
         eq(curriculums.name, curriculumName),
-        eq(curriculums.effectiveSchoolYearId, activeSchoolYear.id)
+        eq(curriculumAdoptions.schoolYearId, activeSchoolYear.id)
       )
     )
     .limit(1);
 
-  if (!curriculum) {
-    [curriculum] = await db
+  let curriculum: { id: string };
+
+  if (existingAdoption) {
+    curriculum = { id: existingAdoption.curriculumId };
+    console.log(`✅ Using existing curriculum: ${curriculumName}`);
+  } else {
+    const [created] = await db
       .insert(curriculums)
       .values({
         name: curriculumName,
-        effectiveSchoolYearId: activeSchoolYear.id,
+        status: "published",
+        version: 1,
+        publishedAt: new Date(),
+        publishedBy: systemUser.id,
+        createdBy: systemUser.id,
+        updatedBy: systemUser.id,
       })
       .returning({ id: curriculums.id });
+
+    // v1 is the root of its own version chain.
+    await db
+      .update(curriculums)
+      .set({ rootId: created.id })
+      .where(eq(curriculums.id, created.id));
+
+    curriculum = { id: created.id };
     console.log(`✅ Created curriculum: ${curriculumName}`);
-  } else {
-    console.log(`✅ Using existing curriculum: ${curriculumName}`);
   }
 
   // ─── Get Grade Levels ───────────────────────────────────────────────────────
@@ -125,6 +162,36 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
     .from(gradeLevels);
 
   const gradeLevelMap = new Map(allGradeLevels.map((gl) => [gl.name, gl.id]));
+
+  // ─── Validate All Expected Grade Levels Exist ───────────────────────────────
+  // Fail fast so we never partially populate a curriculum for a subset of grades.
+  const missingGrades = Object.keys(GRADE_SUBJECT_MAP).filter(
+    (gradeName) => !gradeLevelMap.has(gradeName)
+  );
+  if (missingGrades.length > 0) {
+    throw new Error(
+      `Missing grade levels: ${missingGrades.join(", ")}. Run db:seed-config first.`
+    );
+  }
+
+  // ─── Adopt Curriculum for Each Grade Level (active school year) ──────────────
+  for (const gradeName of Object.keys(GRADE_SUBJECT_MAP)) {
+    const gradeLevelId = gradeLevelMap.get(gradeName)!;
+    await db
+      .insert(curriculumAdoptions)
+      .values({
+        schoolYearId: activeSchoolYear.id,
+        gradeLevelId,
+        curriculumId: curriculum.id,
+        adoptedBy: systemUser.id,
+      })
+      .onConflictDoNothing({
+        target: [
+          curriculumAdoptions.schoolYearId,
+          curriculumAdoptions.gradeLevelId,
+        ],
+      });
+  }
 
   // ─── Get Existing Subjects (to avoid duplicates) ────────────────────────────
   const existingSubjects = await db
@@ -146,15 +213,12 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
   let skippedCount = 0;
 
   for (const [gradeName, subjectList] of Object.entries(GRADE_SUBJECT_MAP)) {
-    const gradeLevelId = gradeLevelMap.get(gradeName);
-    if (!gradeLevelId) {
-      console.warn(`⚠️ Grade level "${gradeName}" not found. Skipping.`);
-      continue;
-    }
-
+    // Existence was validated up-front, so this is guaranteed present.
+    const gradeLevelId = gradeLevelMap.get(gradeName)!;
     const gradeNumber = getGradeNumber(gradeName);
 
-    for (const subject of subjectList) {
+    for (let index = 0; index < subjectList.length; index++) {
+      const subject = subjectList[index];
       // Generate grade-specific code (e.g., FIL1, MTH4)
       const subjectCode = `${subject.code}${gradeNumber}`;
       const subjectKey = `${subjectCode}-${gradeLevelId}`;
@@ -169,6 +233,8 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
         code: subjectCode,
         curriculumId: curriculum.id,
         gradeLevelId: gradeLevelId,
+        // Preserve declared display order instead of the DB default (0).
+        sequenceOrder: index,
       });
 
       existingSubjectKeys.add(subjectKey);

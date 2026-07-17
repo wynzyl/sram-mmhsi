@@ -57,13 +57,28 @@ export type CloneCurriculumFormState = BaseFormState<CloneCurriculumInput> & {
 
 // ─── Curriculum Publish ─────────────────────────────────────────────────────
 
-export const PublishCurriculumSchema = z.object({
-  curriculumId: z.string().uuid("Curriculum ID is required."),
-  /** Optional: Grade level IDs to adopt this curriculum for on publish */
-  adoptForGradeLevels: z.array(z.string().uuid()).optional(),
-  /** School year ID for adoption (required if adoptForGradeLevels is provided) */
-  schoolYearId: z.string().uuid().optional(),
-});
+export const PublishCurriculumSchema = z
+  .object({
+    curriculumId: z.string().uuid("Curriculum ID is required."),
+    /** Optional: Grade level IDs to adopt this curriculum for on publish */
+    adoptForGradeLevels: z.array(z.string().uuid()).optional(),
+    /** School year ID for adoption (required if adoptForGradeLevels is provided) */
+    schoolYearId: z.string().uuid().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // A school year is required whenever grade levels are selected for adoption.
+    if (
+      data.adoptForGradeLevels &&
+      data.adoptForGradeLevels.length > 0 &&
+      !data.schoolYearId
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["schoolYearId"],
+        message: "A school year is required to adopt this curriculum.",
+      });
+    }
+  });
 
 export type PublishCurriculumInput = z.infer<typeof PublishCurriculumSchema>;
 export type PublishCurriculumFormState = BaseFormState<PublishCurriculumInput>;

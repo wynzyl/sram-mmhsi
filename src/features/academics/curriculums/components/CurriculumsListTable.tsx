@@ -12,7 +12,6 @@ import {
 } from "@tanstack/react-table";
 import { useState, useMemo } from "react";
 import { formatDate } from "@/lib/utils/date";
-import { cn } from "@/lib/utils/cn";
 import type { CurriculumListRow } from "../curriculums.types";
 import { CurriculumStatusBadge } from "./CurriculumStatusBadge";
 
@@ -136,6 +135,7 @@ export function CurriculumsListTable({ data, onClone }: CurriculumsListTableProp
       <div className="flex items-center gap-4">
         <input
           type="text"
+          aria-label="Search curriculums"
           placeholder="Search curriculums..."
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
@@ -149,28 +149,49 @@ export function CurriculumsListTable({ data, onClone }: CurriculumsListTableProp
           <thead className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className={cn(
-                      "px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider",
-                      header.column.getCanSort() && "cursor-pointer select-none"
-                    )}
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    <div className="flex items-center gap-1">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
+                {headerGroup.headers.map((header) => {
+                  const canSort = header.column.getCanSort();
+                  const sortDirection = header.column.getIsSorted();
+                  const indicator = sortDirection && (
+                    <span className="text-primary">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
+                  );
+                  const content = flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  );
+
+                  return (
+                    <th
+                      key={header.id}
+                      className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                      aria-sort={
+                        sortDirection === "asc"
+                          ? "ascending"
+                          : sortDirection === "desc"
+                            ? "descending"
+                            : undefined
+                      }
+                    >
+                      {canSort ? (
+                        <button
+                          type="button"
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="flex items-center gap-1 uppercase tracking-wider select-none hover:text-foreground"
+                        >
+                          {content}
+                          {indicator}
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          {content}
+                          {indicator}
+                        </div>
                       )}
-                      {header.column.getIsSorted() && (
-                        <span className="text-primary">
-                          {header.column.getIsSorted() === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                ))}
+                    </th>
+                  );
+                })}
               </tr>
             ))}
           </thead>

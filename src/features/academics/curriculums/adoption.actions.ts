@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
@@ -7,7 +8,7 @@ import {
   curriculumAdoptions,
   gradeRecords,
   teacherAssignments,
-  subjects,
+  sections,
 } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
@@ -21,6 +22,37 @@ import {
   type UpdateAdoptionFormState,
 } from "./curriculums.schema";
 import { checkAdoptionChangeEligibility } from "./archive-guard";
+
+// ─── Grade Record Check ─────────────────────────────────────────────────────
+
+/**
+ * Returns true if any grade records exist for the given school year + grade level.
+ *
+ * The grade level is derived from the SECTION being taught (via
+ * teacherAssignments.sectionId → sections.gradeLevelId), which is the grade
+ * level the curriculum adoption governs — not the subject's own grade level.
+ */
+async function hasGradeRecordsForGradeLevel(
+  schoolYearId: string,
+  gradeLevelId: string
+): Promise<boolean> {
+  const [row] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(gradeRecords)
+    .innerJoin(
+      teacherAssignments,
+      eq(gradeRecords.teacherAssignmentId, teacherAssignments.id)
+    )
+    .innerJoin(sections, eq(teacherAssignments.sectionId, sections.id))
+    .where(
+      and(
+        eq(gradeRecords.schoolYearId, schoolYearId),
+        eq(sections.gradeLevelId, gradeLevelId)
+      )
+    );
+
+  return (row?.count ?? 0) > 0;
+}
 
 // ─── Update Adoption ────────────────────────────────────────────────────────
 
@@ -56,19 +88,10 @@ export async function updateAdoptionAction(
 
   // Check if there are existing grade records for this school year + grade level
   // This would indicate grades have been entered and adoption shouldn't change
-  const existingGrades = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(gradeRecords)
-    .innerJoin(teacherAssignments, eq(gradeRecords.teacherAssignmentId, teacherAssignments.id))
-    .innerJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
-    .where(
-      and(
-        eq(gradeRecords.schoolYearId, schoolYearId),
-        eq(subjects.gradeLevelId, gradeLevelId)
-      )
-    );
-
-  const hasGradeRecords = (existingGrades[0]?.count ?? 0) > 0;
+  const hasGradeRecords = await hasGradeRecordsForGradeLevel(
+    schoolYearId,
+    gradeLevelId
+  );
   const eligibilityError = checkAdoptionChangeEligibility(hasGradeRecords);
 
   if (eligibilityError) {
@@ -85,45 +108,47 @@ export async function updateAdoptionAction(
   });
 
   try {
-    if (existingAdoption) {
-      // Update existing adoption
-      await db
-        .update(curriculumAdoptions)
-        .set({
-          curriculumId,
-          adoptedAt: new Date(),
-          adoptedBy: session.userId,
-        })
-        .where(eq(curriculumAdoptions.id, existingAdoption.id));
+    await db.transaction(async (tx) => {
+      if (existingAdoption) {
+        // Update existing adoption
+        await tx
+          .update(curriculumAdoptions)
+          .set({
+            curriculumId,
+            adoptedAt: new Date(),
+            adoptedBy: session.userId,
+          })
+          .where(eq(curriculumAdoptions.id, existingAdoption.id));
 
-      await logUpdateAction(
-        session,
-        "curriculum_adoptions",
-        existingAdoption.id,
-        { curriculumId: existingAdoption.curriculumId },
-        { curriculumId },
-        { throwOnFail: true }
-      );
-    } else {
-      // Create new adoption
-      const [newAdoption] = await db
-        .insert(curriculumAdoptions)
-        .values({
-          schoolYearId,
-          gradeLevelId,
-          curriculumId,
-          adoptedBy: session.userId,
-        })
-        .returning({ id: curriculumAdoptions.id });
+        await logUpdateAction(
+          session,
+          "curriculum_adoptions",
+          existingAdoption.id,
+          { curriculumId: existingAdoption.curriculumId },
+          { curriculumId },
+          { throwOnFail: true }
+        );
+      } else {
+        // Create new adoption
+        const [newAdoption] = await tx
+          .insert(curriculumAdoptions)
+          .values({
+            schoolYearId,
+            gradeLevelId,
+            curriculumId,
+            adoptedBy: session.userId,
+          })
+          .returning({ id: curriculumAdoptions.id });
 
-      await logCreateAction(
-        session,
-        "curriculum_adoptions",
-        newAdoption.id,
-        { schoolYearId, gradeLevelId, curriculumId },
-        { throwOnFail: true }
-      );
-    }
+        await logCreateAction(
+          session,
+          "curriculum_adoptions",
+          newAdoption.id,
+          { schoolYearId, gradeLevelId, curriculumId },
+          { throwOnFail: true }
+        );
+      }
+    });
 
     invalidateTag(CACHE_TAGS.CURRICULUM_ADOPTIONS);
     invalidateTag(CACHE_TAGS.CURRICULUMS);
@@ -139,71 +164,95 @@ export async function updateAdoptionAction(
 // ─── Roll Forward Adoptions ─────────────────────────────────────────────────
 
 /**
- * Internal function to copy adoptions from one school year to another.
+ * Copies adoptions from one school year to another.
  * Used during school year creation to inherit curriculum assignments.
+ *
+ * This is exported from a "use server" module, so it is reachable as an RPC
+ * endpoint. It requires an authenticated, authorized session and derives the
+ * acting user from that session rather than trusting a caller-supplied ID.
  */
 export async function rollForwardAdoptionsFromPriorYear(
   fromSchoolYearId: string,
-  toSchoolYearId: string,
-  actorId: string
+  toSchoolYearId: string
 ): Promise<{ copied: number; errors: string[] }> {
+  const session = await requireSession();
+  if (!hasPermission(session.role, "curriculums:adopt")) {
+    return {
+      copied: 0,
+      errors: ["You do not have permission to manage curriculum adoptions."],
+    };
+  }
+  const actorId = session.userId;
+
   const errors: string[] = [];
   let copied = 0;
 
   try {
-    // Get all adoptions from the source year
-    const sourceAdoptions = await db.query.curriculumAdoptions.findMany({
-      where: eq(curriculumAdoptions.schoolYearId, fromSchoolYearId),
+    copied = await db.transaction(async (tx) => {
+      let copiedInTx = 0;
+
+      // Get all adoptions from the source year
+      const sourceAdoptions = await tx.query.curriculumAdoptions.findMany({
+        where: eq(curriculumAdoptions.schoolYearId, fromSchoolYearId),
+      });
+
+      for (const adoption of sourceAdoptions) {
+        // Check if curriculum is still published
+        const curriculum = await tx.query.curriculums.findFirst({
+          where: eq(curriculums.id, adoption.curriculumId),
+          columns: { id: true, status: true, name: true },
+        });
+
+        if (!curriculum || curriculum.status !== "published") {
+          errors.push(
+            `Skipped grade level adoption: curriculum "${curriculum?.name ?? adoption.curriculumId}" is no longer published.`
+          );
+          continue;
+        }
+
+        // Check if adoption already exists in target year
+        const existingAdoption = await tx.query.curriculumAdoptions.findFirst({
+          where: and(
+            eq(curriculumAdoptions.schoolYearId, toSchoolYearId),
+            eq(curriculumAdoptions.gradeLevelId, adoption.gradeLevelId)
+          ),
+        });
+
+        if (existingAdoption) {
+          // Skip - already has an adoption
+          continue;
+        }
+
+        // Create adoption in new year
+        await tx.insert(curriculumAdoptions).values({
+          schoolYearId: toSchoolYearId,
+          gradeLevelId: adoption.gradeLevelId,
+          curriculumId: adoption.curriculumId,
+          adoptedBy: actorId,
+        });
+
+        copiedInTx++;
+      }
+
+      if (copiedInTx > 0) {
+        await logAudit(
+          {
+            actor: actorId,
+            actorRole: "system",
+            action: "curriculum_adoptions:roll_forward",
+            targetEntity: "curriculum_adoptions",
+            targetId: toSchoolYearId,
+            context: `Copied ${copiedInTx} adoptions from school year ${fromSchoolYearId}`,
+          },
+          { throwOnFail: true }
+        );
+      }
+
+      return copiedInTx;
     });
 
-    for (const adoption of sourceAdoptions) {
-      // Check if curriculum is still published
-      const curriculum = await db.query.curriculums.findFirst({
-        where: eq(curriculums.id, adoption.curriculumId),
-        columns: { id: true, status: true, name: true },
-      });
-
-      if (!curriculum || curriculum.status !== "published") {
-        errors.push(
-          `Skipped grade level adoption: curriculum "${curriculum?.name ?? adoption.curriculumId}" is no longer published.`
-        );
-        continue;
-      }
-
-      // Check if adoption already exists in target year
-      const existingAdoption = await db.query.curriculumAdoptions.findFirst({
-        where: and(
-          eq(curriculumAdoptions.schoolYearId, toSchoolYearId),
-          eq(curriculumAdoptions.gradeLevelId, adoption.gradeLevelId)
-        ),
-      });
-
-      if (existingAdoption) {
-        // Skip - already has an adoption
-        continue;
-      }
-
-      // Create adoption in new year
-      await db.insert(curriculumAdoptions).values({
-        schoolYearId: toSchoolYearId,
-        gradeLevelId: adoption.gradeLevelId,
-        curriculumId: adoption.curriculumId,
-        adoptedBy: actorId,
-      });
-
-      copied++;
-    }
-
+    // Cache invalidation runs only after the transaction commits.
     if (copied > 0) {
-      await logAudit({
-        actor: actorId,
-        actorRole: "system",
-        action: "curriculum_adoptions:roll_forward",
-        targetEntity: "curriculum_adoptions",
-        targetId: toSchoolYearId,
-        context: `Copied ${copied} adoptions from school year ${fromSchoolYearId}`,
-      });
-
       invalidateTag(CACHE_TAGS.CURRICULUM_ADOPTIONS);
     }
 
@@ -224,9 +273,15 @@ export async function removeAdoptionAction(
     return { success: false, message: "You do not have permission to manage curriculum adoptions." };
   }
 
+  // Validate the incoming ID (reject malformed UUIDs before hitting the DB)
+  const idResult = z.string().uuid().safeParse(adoptionId);
+  if (!idResult.success) {
+    return { success: false, message: "Invalid adoption reference." };
+  }
+
   // Get adoption
   const adoption = await db.query.curriculumAdoptions.findFirst({
-    where: eq(curriculumAdoptions.id, adoptionId),
+    where: eq(curriculumAdoptions.id, idResult.data),
   });
 
   if (!adoption) {
@@ -234,19 +289,12 @@ export async function removeAdoptionAction(
   }
 
   // Check if grades exist
-  const existingGrades = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(gradeRecords)
-    .innerJoin(teacherAssignments, eq(gradeRecords.teacherAssignmentId, teacherAssignments.id))
-    .innerJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
-    .where(
-      and(
-        eq(gradeRecords.schoolYearId, adoption.schoolYearId),
-        eq(subjects.gradeLevelId, adoption.gradeLevelId)
-      )
-    );
+  const gradesExist = await hasGradeRecordsForGradeLevel(
+    adoption.schoolYearId,
+    adoption.gradeLevelId
+  );
 
-  if ((existingGrades[0]?.count ?? 0) > 0) {
+  if (gradesExist) {
     return {
       success: false,
       message: "Cannot remove adoption: grade records exist for this school year and grade level.",
@@ -254,9 +302,15 @@ export async function removeAdoptionAction(
   }
 
   try {
+    // TODO(soft-delete): curriculum_adoptions has no deletedAt/deletedBy columns,
+    // so this is a hard delete. Converting to soft delete requires a schema
+    // migration, a partial (deleted_at IS NULL) unique index on (school_year_id,
+    // grade_level_id), and filtering deletedAt in all active-adoption reads.
+    // Deferred as a follow-up; the grade-lock guard above already protects
+    // adoptions that carry grade history.
     await db
       .delete(curriculumAdoptions)
-      .where(eq(curriculumAdoptions.id, adoptionId));
+      .where(eq(curriculumAdoptions.id, idResult.data));
 
     await logAudit({
       actor: session.userId,
