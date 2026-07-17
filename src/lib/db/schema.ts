@@ -283,9 +283,17 @@ export const sections = pgTable(
     schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at"),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
     index("sections_grade_sy_idx").on(t.gradeLevelId, t.schoolYearId),
+    // Unique section name per grade level + school year (active records only)
+    uniqueIndex("sections_name_grade_sy_uidx")
+      .on(t.name, t.gradeLevelId, t.schoolYearId)
+      .where(sql`${t.deletedAt} IS NULL`),
   ]
 );
 

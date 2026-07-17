@@ -78,6 +78,13 @@
       "when": 1783742518813,
       "tag": "0010_curriculum_versioning",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784264247407,
+      "tag": "0011_add_sections_soft_delete_and_indexes",
+      "breakpoints": true
     }
   ]
 }

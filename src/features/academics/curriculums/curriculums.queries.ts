@@ -8,6 +8,9 @@ import {
   gradeLevels,
   schoolYears,
   users,
+  gradeRecords,
+  teacherAssignments,
+  sections,
 } from "@/lib/db/schema";
 import { eq, and, isNull, asc, desc, sql } from "drizzle-orm";
 
@@ -470,4 +473,34 @@ export async function getGradeLevelsForDropdown(): Promise<
   });
 
   return rows;
+}
+
+/**
+ * Get grade levels that are "locked" for a school year.
+ * A grade level is locked when grades have been submitted or locked for that SY+grade combo.
+ * Returns a Set of grade level IDs that should not allow curriculum changes.
+ */
+export async function getLockedGradeLevelsForSchoolYear(
+  schoolYearId: string
+): Promise<Set<string>> {
+  // Find grade levels where submitted/locked grades exist for this school year
+  // Path: gradeRecords -> teacherAssignments -> sections -> gradeLevelId
+  const lockedRows = await db
+    .selectDistinct({
+      gradeLevelId: sections.gradeLevelId,
+    })
+    .from(gradeRecords)
+    .innerJoin(
+      teacherAssignments,
+      eq(gradeRecords.teacherAssignmentId, teacherAssignments.id)
+    )
+    .innerJoin(sections, eq(teacherAssignments.sectionId, sections.id))
+    .where(
+      and(
+        eq(gradeRecords.schoolYearId, schoolYearId),
+        sql`${gradeRecords.status} IN ('submitted', 'locked')`
+      )
+    );
+
+  return new Set(lockedRows.map((r) => r.gradeLevelId));
 }

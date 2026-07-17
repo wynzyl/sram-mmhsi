@@ -6,6 +6,7 @@ export type NavIconName =
   | "registrations"
   | "enrollments"
   | "curriculums"
+  | "sections"
   | "assignments"
   | "fee-schedules"
   | "booklets"
@@ -51,7 +52,16 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Academics",
       items: [
-        { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
+        {
+          href: "/staff/academics/curriculums",
+          label: "Curriculums",
+          icon: "curriculums",
+          children: [
+            { href: "/staff/academics/curriculums", label: "All Curriculums", icon: "curriculums", pathMatch: "exact" },
+            { href: "/staff/academics/curriculums/adoptions", label: "Adoptions", icon: "curriculums" },
+          ],
+        },
+        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
       ],
     },
     {
@@ -101,7 +111,16 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Academics",
       items: [
-        { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
+        {
+          href: "/staff/academics/curriculums",
+          label: "Curriculums",
+          icon: "curriculums",
+          children: [
+            { href: "/staff/academics/curriculums", label: "All Curriculums", icon: "curriculums", pathMatch: "exact" },
+            { href: "/staff/academics/curriculums/adoptions", label: "Adoptions", icon: "curriculums" },
+          ],
+        },
+        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
       ],
     },
     {
@@ -160,7 +179,16 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Academics",
       items: [
-        { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
+        {
+          href: "/staff/academics/curriculums",
+          label: "Curriculums",
+          icon: "curriculums",
+          children: [
+            { href: "/staff/academics/curriculums", label: "All Curriculums", icon: "curriculums", pathMatch: "exact" },
+            { href: "/staff/academics/curriculums/adoptions", label: "Adoptions", icon: "curriculums" },
+          ],
+        },
+        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
       ],
     },
     {

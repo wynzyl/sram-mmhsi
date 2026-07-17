@@ -59,6 +59,9 @@ export const CACHE_TAGS = {
 
   /** Curriculum adoptions (school year + grade level bindings) */
   CURRICULUM_ADOPTIONS: "curriculum-adoptions",
+
+  /** Sections (classroom sections per grade level per school year) */
+  SECTIONS: "sections",
 } as const;
 
 export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];

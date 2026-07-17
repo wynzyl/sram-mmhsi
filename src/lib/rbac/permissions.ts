@@ -150,6 +150,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "documents:read", "documents:create", "documents:process", "documents:release",
     "fee_schedules:manage",
     "school_years:manage",
+    "sections:manage",
     "reports:view", "reports:finance", "reports:academic",
     "users:manage",
     "system:manage",
