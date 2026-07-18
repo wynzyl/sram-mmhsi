@@ -34,6 +34,7 @@ export function AdoptionMatrixRow({
     cell.curriculumId ?? ""
   );
   const [isRemoving, startRemoveTransition] = useTransition();
+  const [isUpdateTransition, startUpdateTransition] = useTransition();
   const [confirmRemove, setConfirmRemove] = useState(false);
 
   const [updateState, updateAction, isUpdating] = useActionState(updateAdoptionAction, {});
@@ -53,12 +54,14 @@ export function AdoptionMatrixRow({
 
     setSelectedCurriculumId(newCurriculumId);
 
-    // Auto-submit adoption change
+    // Auto-submit adoption change - wrap in startTransition for React 19
     const formData = new FormData();
     formData.append("schoolYearId", schoolYearId);
     formData.append("gradeLevelId", cell.gradeLevelId);
     formData.append("curriculumId", newCurriculumId);
-    updateAction(formData);
+    startUpdateTransition(() => {
+      updateAction(formData);
+    });
   };
 
   const handleRemove = () => {
@@ -78,7 +81,7 @@ export function AdoptionMatrixRow({
     });
   };
 
-  const isPending = isUpdating || isRemoving;
+  const isPending = isUpdating || isUpdateTransition || isRemoving;
 
   return (
     <tr className="hover:bg-muted/30 transition-colors">
