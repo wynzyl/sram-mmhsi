@@ -238,7 +238,7 @@ export async function rollForwardAdoptionsFromPriorYear(
         await logAudit(
           {
             actor: actorId,
-            actorRole: "system",
+            actorRole: session.role,
             action: "curriculum_adoptions:roll_forward",
             targetEntity: "curriculum_adoptions",
             targetId: toSchoolYearId,

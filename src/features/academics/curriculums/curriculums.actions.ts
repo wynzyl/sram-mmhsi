@@ -33,7 +33,7 @@ import {
   generateDraftName,
 } from "./curriculum-clone";
 import { validatePublishPreflight } from "./curriculum-preflight";
-import { checkArchiveEligibility } from "./archive-guard";
+import { checkArchiveEligibility, type AdoptionTiming } from "./archive-guard";
 import {
   isCurriculumNameTaken,
   getPublishedCurriculumNames,
@@ -450,6 +450,26 @@ export async function publishCurriculumAction(
 
 // ─── Archive Curriculum ─────────────────────────────────────────────────────
 
+/**
+ * Classifies an adoption's timing relative to the active school year.
+ * Returns `"unknown"` (which blocks archival) when timing cannot be determined —
+ * e.g. a non-active adoption with no active-year reference point to compare against.
+ * Never silently classifies undetermined timing as historical.
+ */
+function classifyAdoptionTiming(
+  isActive: boolean,
+  schoolYearStartDate: string | Date | null,
+  activeStart: number | null
+): AdoptionTiming {
+  if (isActive) return "active";
+  // Without a reference point, non-active adoptions cannot be classified.
+  if (activeStart === null) return "unknown";
+  const startMs =
+    schoolYearStartDate != null ? new Date(schoolYearStartDate).getTime() : NaN;
+  if (Number.isNaN(startMs)) return "unknown";
+  return startMs > activeStart ? "future" : "historical";
+}
+
 export async function archiveCurriculumAction(
   _prevState: ArchiveCurriculumFormState,
   formData: FormData
@@ -498,7 +518,8 @@ export async function archiveCurriculumAction(
 
   const activeSchoolYear = await getActiveSchoolYear();
   // Reference point: the active year's start. Adoptions for years starting after
-  // it are "future" and must block archival.
+  // it are "future"; before it are "historical". Without a reference point we
+  // cannot classify non-active adoptions — those are "unknown" and block archival.
   const activeStart = activeSchoolYear?.startDate
     ? new Date(activeSchoolYear.startDate).getTime()
     : null;
@@ -511,11 +532,7 @@ export async function archiveCurriculumAction(
       schoolYearLabel: a.schoolYearLabel,
       gradeLevelId: a.gradeLevelId,
       gradeLevelName: "", // Not needed for check
-      isActive: a.isActive,
-      isFuture:
-        activeStart !== null &&
-        !a.isActive &&
-        new Date(a.schoolYearStartDate).getTime() > activeStart,
+      timing: classifyAdoptionTiming(a.isActive, a.schoolYearStartDate, activeStart),
     })),
     activeSchoolYear?.id ?? null
   );

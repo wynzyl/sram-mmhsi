@@ -5,14 +5,27 @@
  * @module features/academics/curriculums/archive-guard
  */
 
+/**
+ * Explicit timing classification for an adoption relative to the active school year.
+ * - `active`     — adoption for the current active school year (blocks archival)
+ * - `future`     — adoption for an upcoming school year (blocks archival)
+ * - `historical` — adoption for a past school year (archivable, with a warning)
+ * - `unknown`    — timing could not be determined (e.g. no active-year reference
+ *                  point); treated conservatively as blocking, never as historical.
+ */
+export type AdoptionTiming = "active" | "future" | "historical" | "unknown";
+
 export type AdoptionInfo = {
   schoolYearId: string;
   schoolYearLabel: string;
   gradeLevelId: string;
   gradeLevelName: string;
-  isActive: boolean; // Is this the active school year?
-  /** Is this adoption for a future (upcoming) school year? Future adoptions block archival. */
-  isFuture?: boolean;
+  /**
+   * Explicit active/future/historical classification. The caller must classify
+   * every adoption; unknown/undetermined timing (`"unknown"`) conservatively
+   * blocks archival rather than being silently treated as historical.
+   */
+  timing: AdoptionTiming;
 };
 
 export type ArchiveGuardResult = {
@@ -58,21 +71,26 @@ export function checkArchiveEligibility(
     };
   }
 
-  // Separate adoptions into active/future (blocking) vs past (informational).
+  // Separate adoptions into active/future/unknown (blocking) vs past (informational).
   // A curriculum cannot be archived while it is adopted for the active OR any
   // upcoming school year; only past-only adoptions may be archived (with a warning).
+  // Timing must be classified explicitly by the caller — an adoption whose timing
+  // is `"unknown"` is treated conservatively as blocking, never as historical.
   const activeAdoptions: AdoptionInfo[] = [];
   const futureAdoptions: AdoptionInfo[] = [];
+  const unknownAdoptions: AdoptionInfo[] = [];
   const inactiveAdoptions: AdoptionInfo[] = [];
 
   for (const adoption of adoptions) {
-    if (adoption.isActive || adoption.schoolYearId === activeSchoolYearId) {
+    if (adoption.timing === "active" || adoption.schoolYearId === activeSchoolYearId) {
       activeAdoptions.push(adoption);
-    } else if (adoption.isFuture) {
+    } else if (adoption.timing === "future") {
       futureAdoptions.push(adoption);
-    } else {
-      // Non-active, non-future adoptions are treated as historical/past.
+    } else if (adoption.timing === "historical") {
       inactiveAdoptions.push(adoption);
+    } else {
+      // Unknown / undetermined timing — cannot be proven historical, so block.
+      unknownAdoptions.push(adoption);
     }
   }
 
@@ -94,11 +112,23 @@ export function checkArchiveEligibility(
     );
   }
 
+  // Block archival if any adoption's timing could not be determined. We cannot
+  // prove these are historical, so we refuse rather than risk orphaning an
+  // active or upcoming adoption.
+  if (unknownAdoptions.length > 0) {
+    const yearLabels = [...new Set(unknownAdoptions.map((a) => a.schoolYearLabel))];
+    blockers.push(
+      `Cannot archive: the timing of adoption(s) for ${yearLabels.join(", ")} could not be ` +
+      `determined (no active school year to compare against). Set an active school year first.`
+    );
+  }
+
   // Warn about historical adoptions (they'll become orphaned but that's expected)
   if (
     inactiveAdoptions.length > 0 &&
     activeAdoptions.length === 0 &&
-    futureAdoptions.length === 0
+    futureAdoptions.length === 0 &&
+    unknownAdoptions.length === 0
   ) {
     const yearLabels = [...new Set(inactiveAdoptions.map((a) => a.schoolYearLabel))];
     warnings.push(
