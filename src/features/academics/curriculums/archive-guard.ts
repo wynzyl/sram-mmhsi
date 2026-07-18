@@ -96,7 +96,16 @@ export function checkArchiveEligibility(
 
   // Block archival if there are active adoptions
   if (activeAdoptions.length > 0) {
-    const gradeNames = [...new Set(activeAdoptions.map((a) => a.gradeLevelName))];
+    // Callers may omit gradeLevelName (some pass "" when it's not otherwise
+    // needed). Fall back to a non-empty identifier derived from gradeLevelId so
+    // the blocker never renders a blank/dangling grade list.
+    const gradeNames = [
+      ...new Set(
+        activeAdoptions.map(
+          (a) => a.gradeLevelName?.trim() || `Grade (${a.gradeLevelId.slice(0, 8)}…)`
+        )
+      ),
+    ];
     blockers.push(
       `Cannot archive: curriculum is adopted for the active school year in ${gradeNames.join(", ")}. ` +
       `Assign a different curriculum to these grade levels first.`
