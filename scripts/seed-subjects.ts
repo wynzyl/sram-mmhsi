@@ -175,7 +175,49 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
     );
   }
 
+  // ─── Adoption Preflight: Detect Conflicting Adoptions ───────────────────────
+  // onConflictDoNothing silently retains ANY existing active adoption for a
+  // (schoolYearId, gradeLevelId) pair — including one pointing at a DIFFERENT
+  // curriculum. That would leave subjects seeded under our curriculum while the
+  // grade's active adoption points elsewhere. Inspect every target grade's
+  // existing adoption up-front and fail on any mismatch, since this seed script
+  // owns the DepEd curriculum adoption configuration.
+  const existingAdoptions = await db
+    .select({
+      gradeLevelId: curriculumAdoptions.gradeLevelId,
+      curriculumId: curriculumAdoptions.curriculumId,
+    })
+    .from(curriculumAdoptions)
+    .where(
+      and(
+        eq(curriculumAdoptions.schoolYearId, activeSchoolYear.id),
+        isNull(curriculumAdoptions.deletedAt)
+      )
+    );
+
+  const adoptionByGrade = new Map(
+    existingAdoptions.map((a) => [a.gradeLevelId, a.curriculumId])
+  );
+
+  const conflictingGrades = Object.keys(GRADE_SUBJECT_MAP).filter(
+    (gradeName) => {
+      const gradeLevelId = gradeLevelMap.get(gradeName)!;
+      const adopted = adoptionByGrade.get(gradeLevelId);
+      return adopted !== undefined && adopted !== curriculum.id;
+    }
+  );
+
+  if (conflictingGrades.length > 0) {
+    throw new Error(
+      `Conflicting curriculum adoptions for ${activeSchoolYear.label}: ` +
+        `${conflictingGrades.join(", ")} already adopt a different curriculum. ` +
+        `Resolve (soft-delete/re-adopt) these adoptions before re-seeding "${curriculumName}".`
+    );
+  }
+
   // ─── Adopt Curriculum for Each Grade Level (active school year) ──────────────
+  // Any grade already adopting THIS curriculum is a no-op via onConflictDoNothing;
+  // conflicting adoptions were rejected by the preflight above.
   for (const gradeName of Object.keys(GRADE_SUBJECT_MAP)) {
     const gradeLevelId = gradeLevelMap.get(gradeName)!;
     await db

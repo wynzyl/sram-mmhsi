@@ -185,6 +185,20 @@ export async function rollForwardAdoptionsFromPriorYear(
   }
   const actorId = session.userId;
 
+  // Validate school year IDs before any DB work so malformed input returns a
+  // clear validation error instead of surfacing a raw Postgres error.
+  const idsResult = z
+    .object({
+      fromSchoolYearId: z.string().uuid(),
+      toSchoolYearId: z.string().uuid(),
+    })
+    .safeParse({ fromSchoolYearId, toSchoolYearId });
+
+  if (!idsResult.success) {
+    return { copied: 0, errors: ["Invalid school year reference."] };
+  }
+  const { fromSchoolYearId: fromId, toSchoolYearId: toId } = idsResult.data;
+
   const errors: string[] = [];
   let copied = 0;
 
@@ -195,7 +209,7 @@ export async function rollForwardAdoptionsFromPriorYear(
       // Get all active adoptions from the source year
       const sourceAdoptions = await tx.query.curriculumAdoptions.findMany({
         where: and(
-          eq(curriculumAdoptions.schoolYearId, fromSchoolYearId),
+          eq(curriculumAdoptions.schoolYearId, fromId),
           isNull(curriculumAdoptions.deletedAt)
         ),
       });
@@ -217,7 +231,7 @@ export async function rollForwardAdoptionsFromPriorYear(
         // Check if an active adoption already exists in target year
         const existingAdoption = await tx.query.curriculumAdoptions.findFirst({
           where: and(
-            eq(curriculumAdoptions.schoolYearId, toSchoolYearId),
+            eq(curriculumAdoptions.schoolYearId, toId),
             eq(curriculumAdoptions.gradeLevelId, adoption.gradeLevelId),
             isNull(curriculumAdoptions.deletedAt)
           ),
@@ -230,7 +244,7 @@ export async function rollForwardAdoptionsFromPriorYear(
 
         // Create adoption in new year
         await tx.insert(curriculumAdoptions).values({
-          schoolYearId: toSchoolYearId,
+          schoolYearId: toId,
           gradeLevelId: adoption.gradeLevelId,
           curriculumId: adoption.curriculumId,
           adoptedBy: actorId,
@@ -246,8 +260,8 @@ export async function rollForwardAdoptionsFromPriorYear(
             actorRole: session.role,
             action: "curriculum_adoptions:roll_forward",
             targetEntity: "curriculum_adoptions",
-            targetId: toSchoolYearId,
-            context: `Copied ${copiedInTx} adoptions from school year ${fromSchoolYearId}`,
+            targetId: toId,
+            context: `Copied ${copiedInTx} adoptions from school year ${fromId}`,
           },
           { throwOnFail: true }
         );
