@@ -163,7 +163,9 @@ export async function POST(
     }
 
     // 11. Update database
-    const photoUrl = getPhotoUrl(student.referenceNumber, optimized.extension);
+    // Append cache-busting timestamp to force browser to fetch fresh image
+    // (nginx serves uploads with Cache-Control: immutable, so same URL = cached forever)
+    const photoUrl = `${getPhotoUrl(student.referenceNumber, optimized.extension)}?v=${Date.now()}`;
     const previousPhotoUrl = student.photoUrl;
 
     await db

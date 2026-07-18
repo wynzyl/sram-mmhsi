@@ -22,11 +22,26 @@ export const CreateSchoolYearSchema = z
       .min(1, "End date is required.")
       .transform((v) => new Date(v)),
     isActive: z.boolean().default(false),
+    /** Cutoff date for full payment cash discount eligibility. Optional. */
+    cashDiscountCutoffDate: z
+      .string()
+      .optional()
+      .transform((v) => (v ? new Date(v) : undefined)),
   })
   .refine((data) => data.endDate > data.startDate, {
     message: "End date must be after start date.",
     path: ["endDate"],
-  });
+  })
+  .refine(
+    (data) =>
+      !data.cashDiscountCutoffDate ||
+      (data.cashDiscountCutoffDate >= data.startDate &&
+        data.cashDiscountCutoffDate <= data.endDate),
+    {
+      message: "Cash discount cutoff date must be within the school year.",
+      path: ["cashDiscountCutoffDate"],
+    }
+  );
 
 export type CreateSchoolYearInput = z.infer<typeof CreateSchoolYearSchema>;
 
@@ -56,11 +71,26 @@ export const UpdateSchoolYearSchema = z
       .min(1, "End date is required.")
       .transform((v) => new Date(v)),
     isActive: z.boolean().optional(),
+    /** Cutoff date for full payment cash discount eligibility. Optional. */
+    cashDiscountCutoffDate: z
+      .string()
+      .optional()
+      .transform((v) => (v ? new Date(v) : undefined)),
   })
   .refine((data) => data.endDate > data.startDate, {
     message: "End date must be after start date.",
     path: ["endDate"],
-  });
+  })
+  .refine(
+    (data) =>
+      !data.cashDiscountCutoffDate ||
+      (data.cashDiscountCutoffDate >= data.startDate &&
+        data.cashDiscountCutoffDate <= data.endDate),
+    {
+      message: "Cash discount cutoff date must be within the school year.",
+      path: ["cashDiscountCutoffDate"],
+    }
+  );
 
 export type UpdateSchoolYearInput = z.infer<typeof UpdateSchoolYearSchema>;
 

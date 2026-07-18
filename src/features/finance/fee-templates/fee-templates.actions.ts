@@ -159,6 +159,7 @@ export async function addFeeTemplateItemAction(
   }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-templates");
+  revalidatePath(`/staff/finance/fee-templates/${parsed.data.feeTemplateId}`);
   invalidateTag(CACHE_TAGS.FEE_TEMPLATES);
 
   return { success: true, itemId };
@@ -237,6 +238,7 @@ export async function removeFeeTemplateItemAction(
   }, { throwOnFail: true });
 
   revalidatePath("/staff/finance/fee-templates");
+  revalidatePath(`/staff/finance/fee-templates/${item.feeTemplateId}`);
   invalidateTag(CACHE_TAGS.FEE_TEMPLATES);
 
   return { success: true };

@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-07-08
+> Last updated: 2026-07-14
 
 ## Current phase
 
@@ -12,7 +12,11 @@
 
 **Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, formal OR **receipt** print view, and the remaining Phase 10 reports (enrollment summary, grade summary).
 
-## Latest updates (2026-07-08)
+## Latest updates (2026-07-14)
+
+- [x] **Full payment cash discount in CashierPaymentProcessingView** — The cash discount eligibility check and preview card are now integrated into the main cashier payment processing modal (`CashierPaymentProcessingView.tsx`). When cashier enters full balance amount, system checks eligibility via `/api/cashier/cash-discount` API, displays `CashDiscountPreviewCard` with discount breakdown, and allows one-click discount application. Hidden form field `applyCashDiscount` submits with payment for server-side processing. Matches functionality in `PostPaymentForm.tsx`.
+
+## Previous updates (2026-07-08)
 
 - [x] **Void OR reverse-chronological enforcement** — Payments must now be voided in reverse chronological order (most recent first). Server-side validation in `requestVoidAction` and `approveVoidRequestAction` blocks out-of-order voids. UI enforcement hides "Request Void" button on older payments until newer ones are voided. Helper `isPaymentMostRecentVoidable()` in `src/features/payments/payments.queries.ts`. Prevents accounting integrity violations where voiding an older payment would leave a "hole" in the ledger.
 
@@ -160,7 +164,7 @@ if (!schoolYearId) {
 - [x] **Registration creation on student onboarding** — student creation now inserts an approved `registrations` row in the same transaction (`actions/students.ts`)
 - [x] **Enrollments** — queue-based list-first workflow with automatic eligibility detection, global search/grade filters, one-click confirmation drawer, status transitions (pending → assessed → enrolled), and cancellation (`src/lib/queries/enrollment-queue.ts`, `actions/enrollment-confirmation.ts`, `components/enrollments/EnrollmentConfirmationDrawer.tsx`, `/staff/enrollments`)
 - [x] **Fee schedules & assessments** — schedules, per-enrollment assessments, items, balances, refreshed assessment draft UX, assessment cancellation with re-assessment support, discount requests with auto-rejection on cancellation (`actions/finance.ts`, `actions/assessments.ts`, `admin/finance/*`, `admin/assessments/*`, `components/assessments/AssessmentDraftForm.tsx`, `src/features/discounts/`)
-- [x] **Cashier & OR** — booklet setup, post/void payment (with reverse-chronological void ordering), allocations, and shared internal ledger composition (`actions/cashier.ts`, booklet pages, payment UI on **assessment** ledger, `src/app/page-templates/assessments/assessment-ledger-page.tsx`)
+- [x] **Cashier & OR** — booklet setup, post/void payment (with reverse-chronological void ordering), allocations, full payment cash discount (eligibility check + preview card + one-click apply), and shared internal ledger composition (`actions/cashier.ts`, booklet pages, payment UI on **assessment** ledger, `src/app/page-templates/assessments/assessment-ledger-page.tsx`, `CashierPaymentProcessingView.tsx`)
 - [x] **Invoices** — generate, send (Nodemailer/Gmail), status (`actions/invoices.ts`, `admin/finance/invoices/*`)
 - [x] **Academics & grades** — subjects, assignments, teacher grade encoding and lock (`actions/academics.ts`, `actions/teacher.ts`, `/staff/grades/*`, admin assignment pages)
 - [x] **Users** — admin user CRUD, password reset / `forcePasswordChange` field (`actions/users.ts`)

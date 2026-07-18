@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { assignTemplateToSchoolYearAction } from "../fee-templates.actions";
 import { useFormToast } from "@/hooks/useFormToast";
 import { SelectField } from "@/components/forms/SelectField";
@@ -38,6 +39,7 @@ export function TemplateAssignmentForm({
   templates,
   schoolYears,
 }: TemplateAssignmentFormProps) {
+  const router = useRouter();
   const [state, action, isPending] = useActionState(assignTemplateToSchoolYearAction, {});
   const [schoolYearId, setSchoolYearId] = useState("");
   const [assessmentBand, setAssessmentBand] = useState("");
@@ -47,6 +49,15 @@ export function TemplateAssignmentForm({
 
   useFormToast(state, {
     successMessage: "Template assigned successfully",
+    onSuccess: () => {
+      // Navigate to the detail page of the newly created schedule
+      if (state.scheduleId) {
+        router.push(`/staff/finance/fee-schedules/${state.scheduleId}`);
+      } else {
+        router.push("/staff/finance/fee-schedules");
+        router.refresh();
+      }
+    },
   });
 
   const filteredTemplates = templates.filter(

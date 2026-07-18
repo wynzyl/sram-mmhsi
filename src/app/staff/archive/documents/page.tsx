@@ -9,6 +9,7 @@ import {
 } from "@/features/documents/document-requests.queries";
 import { DocumentRequestsTable } from "@/features/documents/components/DocumentRequestsTable";
 import { DocumentRequestFilters } from "@/features/documents/components/DocumentRequestFilters";
+import { TablePagination } from "@/components/ui/TablePagination";
 import type { DocumentRequestStatus, DocumentRequestType } from "@/lib/constants/document-requests";
 import Link from "next/link";
 
@@ -50,7 +51,7 @@ export default async function DocumentRequestsPage({
   const [requestsData, summary, schoolYearOptions] = await Promise.all([
     fetchDocumentRequestsPage({
       page,
-      pageSize: 20,
+      pageSize: 25,
       status,
       documentType,
       schoolYearId,
@@ -116,28 +117,35 @@ export default async function DocumentRequestsPage({
       </div>
 
       {/* Pagination */}
-      {requestsData.totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between text-sm">
-          <p className="text-muted-foreground">
-            Showing page {requestsData.currentPage} of {requestsData.totalPages} (
-            {requestsData.totalCount} total requests)
-          </p>
-          <div className="flex gap-2">
-            {requestsData.currentPage > 1 && (
-              <PaginationLink page={requestsData.currentPage - 1} params={params}>
-                Previous
-              </PaginationLink>
-            )}
-            {requestsData.currentPage < requestsData.totalPages && (
-              <PaginationLink page={requestsData.currentPage + 1} params={params}>
-                Next
-              </PaginationLink>
-            )}
-          </div>
-        </div>
-      )}
+      <div className="mt-4">
+        <TablePagination
+          currentPage={requestsData.currentPage}
+          totalPages={requestsData.totalPages}
+          totalRecords={requestsData.totalCount}
+          pageSize={25}
+          baseUrl={buildBaseUrl(params)}
+          itemLabel="requests"
+        />
+      </div>
     </div>
   );
+}
+
+function buildBaseUrl(params: {
+  status?: string;
+  type?: string;
+  sy?: string;
+  q?: string;
+  studentId?: string;
+}): string {
+  const searchParams = new URLSearchParams();
+  if (params.status) searchParams.set("status", params.status);
+  if (params.type) searchParams.set("type", params.type);
+  if (params.sy) searchParams.set("sy", params.sy);
+  if (params.q) searchParams.set("q", params.q);
+  if (params.studentId) searchParams.set("studentId", params.studentId);
+  const qs = searchParams.toString();
+  return `/staff/archive/documents${qs ? `?${qs}` : ""}`;
 }
 
 function SummaryCard({
@@ -171,29 +179,3 @@ function SummaryCard({
   );
 }
 
-function PaginationLink({
-  page,
-  params,
-  children,
-}: {
-  page: number;
-  params: Record<string, string | undefined>;
-  children: React.ReactNode;
-}) {
-  const searchParams = new URLSearchParams();
-  searchParams.set("page", String(page));
-  if (params.status) searchParams.set("status", params.status);
-  if (params.type) searchParams.set("type", params.type);
-  if (params.sy) searchParams.set("sy", params.sy);
-  if (params.q) searchParams.set("q", params.q);
-  if (params.studentId) searchParams.set("studentId", params.studentId);
-
-  return (
-    <Link
-      href={`?${searchParams.toString()}`}
-      className="rounded-md border px-3 py-1.5 hover:bg-muted"
-    >
-      {children}
-    </Link>
-  );
-}

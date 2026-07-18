@@ -44,14 +44,28 @@ import {
   transitionToEnrolledOnPayment,
   revertToAssessedOnVoid,
 } from "@/lib/utils/enrollment-status";
-import { applyAssessmentBalanceDelta } from "@/lib/utils/assessment-balance";
+import {
+  applyAssessmentBalanceDelta,
+  recalcAssessmentTotalsForDiscount,
+} from "@/lib/utils/assessment-balance";
 import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
 import {
   assertStudentMutable,
   StudentArchivedException,
   formatArchiveError,
 } from "@/features/archive/archive.guards";
-import { getBookletIdsAssignedToOthers } from "./payments.queries";
+import {
+  getBookletIdsAssignedToOthers,
+  checkFullPaymentCashDiscountEligibility,
+  getDiscountTypeByCode,
+  FULL_PAYMENT_DISCOUNT_CODE,
+} from "./payments.queries";
+import {
+  discountRequests,
+  studentDiscounts,
+  assessmentItems,
+} from "@/lib/db/schema";
+import { formatDiscountDescription } from "@/features/discounts/utils/discount-calculations";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -195,12 +209,15 @@ export async function postPaymentAction(
     isManualEntry,
     manualPaymentDate,
     manualOrNumber,
+    applyCashDiscount,
   } = result.data;
 
   try {
     let orNumberToAssign: string | undefined;
     let bookletIdToAssign: string | undefined;
     let idempotentReplay = false;
+    let cashDiscountApplied = false;
+    let cashDiscountAmount = 0;
 
     await db.transaction(async (tx) => {
       // 0. Idempotent replay guard (F7): a retried submit with the same client
@@ -466,7 +483,145 @@ export async function postPaymentAction(
           .where(eq(receiptBooklets.id, bookletIdToAssign));
       }
 
+      // 3.5. Apply Full Payment Cash Discount (if requested and eligible)
+      let actualPaymentAmount = amount;
+      const assessmentBalance = Number(assessment.balance);
+
+      if (applyCashDiscount) {
+        // Re-verify eligibility inside transaction (defensive)
+        // Use the assessment's full balance for eligibility check, not the submitted amount
+        // (the submitted amount may already be the discounted amount from the UI)
+        const eligibility = await checkFullPaymentCashDiscountEligibility(
+          assessmentId,
+          assessmentBalance
+        );
+
+        if (!eligibility.eligible) {
+          throw new Error(
+            `CASH_DISCOUNT_INELIGIBLE: ${eligibility.reason ?? "Not eligible for cash discount."}`
+          );
+        }
+
+        // Fetch discount type
+        const discountType = await getDiscountTypeByCode(FULL_PAYMENT_DISCOUNT_CODE);
+        if (!discountType) {
+          throw new Error(
+            "CASH_DISCOUNT_NOT_CONFIGURED: Full payment cash discount type is not configured."
+          );
+        }
+
+        const details = eligibility.discountDetails!;
+
+        // Create a "virtual" discount request for audit trail
+        // (Cash discounts bypass the normal approval workflow)
+        const [cashDiscountRequest] = await tx
+          .insert(discountRequests)
+          .values({
+            studentId,
+            enrollmentId: assessment.enrollmentId!,
+            discountTypeId: discountType.id,
+            assessmentId,
+            status: "approved",
+            requestReason: "Full payment cash discount - auto-approved at payment time",
+            requestedBy: session.userId,
+            requestedAt: new Date(),
+            decidedBy: session.userId,
+            decidedAt: new Date(),
+            baseAmount: String(details.baseAmount),
+            calculatedAmount: String(details.cashDiscountAmount),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .returning({ id: discountRequests.id });
+
+        // Create studentDiscounts snapshot
+        const [studentDiscount] = await tx
+          .insert(studentDiscounts)
+          .values({
+            studentId,
+            assessmentId,
+            discountRequestId: cashDiscountRequest.id,
+            discountTypeCode: FULL_PAYMENT_DISCOUNT_CODE,
+            discountTypeName: discountType.name,
+            calculationType: discountType.calculationType,
+            baseType: discountType.baseType,
+            baseAmount: String(details.baseAmount),
+            discountValue: String(details.discountValue),
+            discountAmount: String(details.cashDiscountAmount),
+            appliedAt: new Date(),
+            appliedBy: session.userId,
+          })
+          .returning({ id: studentDiscounts.id });
+
+        // Format discount description for assessment item
+        const discountDescription = formatDiscountDescription({
+          discountRequestId: cashDiscountRequest.id,
+          discountTypeCode: FULL_PAYMENT_DISCOUNT_CODE,
+          discountTypeName: discountType.name,
+          baseType: discountType.baseType,
+          baseAmount: details.baseAmount,
+          calculationType: discountType.calculationType,
+          discountValue: details.discountValue,
+          discountAmount: details.cashDiscountAmount,
+        });
+
+        // Create negative assessment item (discount line)
+        const [discountItem] = await tx
+          .insert(assessmentItems)
+          .values({
+            assessmentId,
+            description: discountDescription,
+            amount: String(details.cashDiscountAmount), // Positive value, isDiscount flag controls sign
+            isDiscount: true,
+            isRefundable: false,
+            studentDiscountId: studentDiscount.id,
+            createdBy: session.userId,
+            updatedBy: session.userId,
+          })
+          .returning({ id: assessmentItems.id });
+
+        // Link assessment item to student discount
+        await tx
+          .update(studentDiscounts)
+          .set({ assessmentItemId: discountItem.id })
+          .where(eq(studentDiscounts.id, studentDiscount.id));
+
+        // Recalculate assessment totals (applies the discount to balance)
+        await recalcAssessmentTotalsForDiscount(
+          tx,
+          assessmentId,
+          details.cashDiscountAmount,
+          "apply",
+          session.userId
+        );
+
+        // The actual payment amount is the new reduced balance
+        actualPaymentAmount = details.paymentRequired;
+        cashDiscountApplied = true;
+        cashDiscountAmount = details.cashDiscountAmount;
+
+        // Audit the cash discount application
+        await logAudit({
+          actor: session.userId,
+          actorRole: session.role,
+          action: "cash_discount_applied",
+          targetEntity: "student_discounts",
+          targetId: studentDiscount.id,
+          context: `Full payment cash discount applied at payment time`,
+          newState: {
+            discountRequestId: cashDiscountRequest.id,
+            baseAmount: details.baseAmount,
+            discountValue: details.discountValue,
+            cashDiscountAmount: details.cashDiscountAmount,
+            originalBalance: details.currentBalance,
+            newBalance: details.newBalance,
+            paymentRequired: details.paymentRequired,
+          },
+        });
+      }
+
       // 4. Create Payment Record
+      // Note: actualPaymentAmount may differ from input `amount` if cash discount was applied
       const [newPayment] = await tx
         .insert(payments)
         .values({
@@ -475,12 +630,14 @@ export async function postPaymentAction(
           bookletId: bookletIdToAssign,
           orNumber: orNumberToAssign,
           orStatus: "consumed",
-          amount: String(amount),
+          amount: String(actualPaymentAmount),
           paymentMethod,
           referenceNumber,
           paymentDate: isManualEntry ? manualPaymentDate! : new Date(),
           status: "posted",
-          remarks,
+          remarks: cashDiscountApplied
+            ? `${remarks ?? ""} [Cash discount applied: ₱${cashDiscountAmount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}]`.trim()
+            : remarks,
           idempotencyKey,
           isManualEntry,
           createdBy: session.userId,
@@ -489,10 +646,12 @@ export async function postPaymentAction(
         .returning({ id: payments.id });
 
       // 5. Update Assessment Balance
+      // Note: If cash discount was applied, the balance was already adjusted in step 3.5
+      // The payment now settles the reduced balance (actualPaymentAmount)
       const { newBalance } = await applyAssessmentBalanceDelta(
         tx,
         assessmentId,
-        amount, // positive = payment
+        actualPaymentAmount, // positive = payment (may be reduced if discount applied)
         assessment.cancelledAt,
         assessment.transferredAt,
         session.userId
@@ -561,7 +720,12 @@ export async function postPaymentAction(
     // getEnrollmentQueueCounts() to re-run inside this action response (slow
     // "Posting…" spinner) for data the actor never sees.
     invalidateTag(CACHE_TAGS.ENROLLMENTS);
-    return { success: true, message: `Payment posted successfully. OR Number: ${orNumberToAssign}` };
+
+    const successMessage = cashDiscountApplied
+      ? `Payment posted successfully. OR Number: ${orNumberToAssign}. Cash discount of ₱${cashDiscountAmount.toLocaleString("en-PH", { minimumFractionDigits: 2 })} applied.`
+      : `Payment posted successfully. OR Number: ${orNumberToAssign}`;
+
+    return { success: true, message: successMessage };
   } catch (error: unknown) {
     const msg0 = error instanceof Error ? error.message : String(error);
     const detail0 =
@@ -629,6 +793,18 @@ export async function postPaymentAction(
         errors: {
           bookletId: [msg.replace("BOOKLET_ACCESS_DENIED: ", "")],
         },
+      };
+    }
+
+    // Cash discount errors
+    if (msg.startsWith("CASH_DISCOUNT_INELIGIBLE:")) {
+      return {
+        message: msg.replace("CASH_DISCOUNT_INELIGIBLE: ", ""),
+      };
+    }
+    if (msg.startsWith("CASH_DISCOUNT_NOT_CONFIGURED:")) {
+      return {
+        message: msg.replace("CASH_DISCOUNT_NOT_CONFIGURED: ", ""),
       };
     }
 

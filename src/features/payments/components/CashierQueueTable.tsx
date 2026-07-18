@@ -13,11 +13,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
-import { useDebounce } from "@/hooks/useDebounce";
+import { ClientTablePagination } from "@/components/ui/ClientTablePagination";
 import type { CashierQueueRow } from "../payments.queries";
 
 // Re-export type for consumers of this component
 export type { CashierQueueRow };
+
+const PAGE_SIZE = 25;
 
 interface CashierQueueTableProps {
   rows: CashierQueueRow[];
@@ -26,29 +28,61 @@ interface CashierQueueTableProps {
 export function CashierQueueTable({ rows }: CashierQueueTableProps) {
   const [filterMode, setFilterMode] = useState<"all" | "newly_assessed" | "with_balance">("newly_assessed");
   const [searchInput, setSearchInput] = useState("");
-  const debouncedSearch = useDebounce(searchInput, 300);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredRows = useMemo(() => {
-    const normalizedSearch = debouncedSearch.trim().toLowerCase();
+    const normalizedSearch = searchInput.trim().toLowerCase();
+
+    let filtered: CashierQueueRow[];
+
     if (filterMode === "newly_assessed") {
-      return rows.filter(
+      filtered = rows.filter(
         (row) =>
           row.totalPaid <= 0 &&
           (`${row.studentName} ${row.referenceNumber}`).toLowerCase().includes(normalizedSearch)
       );
+      // Keep server order for newly_assessed (by updatedAt)
+      return filtered;
     }
+
     if (filterMode === "with_balance") {
-      return rows.filter(
+      filtered = rows.filter(
         (row) =>
           row.totalPaid > 0 &&
           row.balance > 0 &&
           (`${row.studentName} ${row.referenceNumber}`).toLowerCase().includes(normalizedSearch)
       );
+    } else {
+      // "all" mode
+      filtered = rows.filter((row) =>
+        (`${row.studentName} ${row.referenceNumber}`).toLowerCase().includes(normalizedSearch)
+      );
     }
-    return rows.filter((row) =>
-      (`${row.studentName} ${row.referenceNumber}`).toLowerCase().includes(normalizedSearch)
-    );
-  }, [filterMode, rows, debouncedSearch]);
+
+    // Sort alphabetically by student name (A-Z) for "all" and "with_balance"
+    return filtered.sort((a, b) => a.studentName.localeCompare(b.studentName));
+  }, [filterMode, rows, searchInput]);
+
+  // Calculate pagination - clamp page to valid range
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const effectivePage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedRows = useMemo(() => {
+    const start = (effectivePage - 1) * PAGE_SIZE;
+    return filteredRows.slice(start, start + PAGE_SIZE);
+  }, [filteredRows, effectivePage]);
+
+  // Filter mode change handler - reset page to 1
+  const handleFilterModeChange = (mode: "all" | "newly_assessed" | "with_balance") => {
+    setFilterMode(mode);
+    setCurrentPage(1);
+  };
+
+  // Search change handler - reset page to 1
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+    setCurrentPage(1);
+  };
 
   const columns: ColumnDef<CashierQueueRow>[] = [
     createStudentColumn<CashierQueueRow>({ refKey: "referenceNumber" }),
@@ -91,7 +125,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
         <Input
           type="search"
           value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
+          onChange={(event) => handleSearchChange(event.target.value)}
           placeholder="Search student name / reference number..."
           className="max-w-sm"
         />
@@ -101,7 +135,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
             className={cn(
               buttonVariants({ variant: filterMode === "all" ? "primary" : "secondary", size: "sm" })
             )}
-            onClick={() => setFilterMode("all")}
+            onClick={() => handleFilterModeChange("all")}
           >
             All Queue
           </button>
@@ -113,7 +147,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
                 size: "sm",
               })
             )}
-            onClick={() => setFilterMode("newly_assessed")}
+            onClick={() => handleFilterModeChange("newly_assessed")}
           >
             Newly Assessed
           </button>
@@ -125,7 +159,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
                 size: "sm",
               })
             )}
-            onClick={() => setFilterMode("with_balance")}
+            onClick={() => handleFilterModeChange("with_balance")}
           >
             Student with Balance
           </button>
@@ -134,9 +168,21 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
 
       <DataTable
         columns={columns}
-        data={filteredRows}
-        pageSize={12}
+        data={paginatedRows}
+        enablePagination={false}
       />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <ClientTablePagination
+          currentPage={effectivePage}
+          totalPages={totalPages}
+          totalRecords={filteredRows.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setCurrentPage}
+          itemLabel="students"
+        />
+      )}
     </div>
   );
 }

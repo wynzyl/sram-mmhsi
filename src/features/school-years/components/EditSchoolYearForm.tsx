@@ -11,6 +11,7 @@ interface SchoolYear {
   startDate: Date;
   endDate: Date;
   isActive: boolean;
+  cashDiscountCutoffDate: Date | null;
 }
 
 interface EditSchoolYearFormProps {
@@ -104,6 +105,30 @@ export default function EditSchoolYearForm({ schoolYear, redirectPath }: EditSch
             <p className="form-error">{state.errors.endDate[0]}</p>
           )}
         </div>
+      </div>
+
+      <div className="form-group mt-4">
+        <label className="form-label" htmlFor="cashDiscountCutoffDate">
+          Cash Discount Cutoff Date
+        </label>
+        <input
+          type="date"
+          id="cashDiscountCutoffDate"
+          name="cashDiscountCutoffDate"
+          defaultValue={
+            schoolYear.cashDiscountCutoffDate
+              ? formatDateForInput(schoolYear.cashDiscountCutoffDate)
+              : ""
+          }
+          className={`form-control ${state.errors?.cashDiscountCutoffDate ? "form-control-error" : ""}`}
+        />
+        {state.errors?.cashDiscountCutoffDate && (
+          <p className="form-error">{state.errors.cashDiscountCutoffDate[0]}</p>
+        )}
+        <p className="form-hint">
+          Students who pay their full balance before this date qualify for the
+          full payment cash discount. Leave empty to disable the cash discount.
+        </p>
       </div>
 
       <div className="form-group mt-4">

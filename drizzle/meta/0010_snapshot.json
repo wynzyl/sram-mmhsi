@@ -1,5 +1,5 @@
 {
-  "id": "be5aa56f-6cb0-47ec-ba64-252c08bf1c58",
+  "id": "c617c3e0-3921-4061-ad62-3f31b259e94c",
   "prevId": "94ce7fa8-e448-46f3-ac6b-851d554ac150",
   "version": "7",
   "dialect": "postgresql",
@@ -802,162 +802,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.curriculum_adoptions": {
-      "name": "curriculum_adoptions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "school_year_id": {
-          "name": "school_year_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "grade_level_id": {
-          "name": "grade_level_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "curriculum_id": {
-          "name": "curriculum_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "adopted_at": {
-          "name": "adopted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "adopted_by": {
-          "name": "adopted_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "curriculum_adoptions_sy_grade_uidx": {
-          "name": "curriculum_adoptions_sy_grade_uidx",
-          "columns": [
-            {
-              "expression": "school_year_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "grade_level_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "curriculum_adoptions_curriculum_idx": {
-          "name": "curriculum_adoptions_curriculum_idx",
-          "columns": [
-            {
-              "expression": "curriculum_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "curriculum_adoptions_sy_idx": {
-          "name": "curriculum_adoptions_sy_idx",
-          "columns": [
-            {
-              "expression": "school_year_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "curriculum_adoptions_school_year_id_school_years_id_fk": {
-          "name": "curriculum_adoptions_school_year_id_school_years_id_fk",
-          "tableFrom": "curriculum_adoptions",
-          "tableTo": "school_years",
-          "columnsFrom": [
-            "school_year_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "curriculum_adoptions_grade_level_id_grade_levels_id_fk": {
-          "name": "curriculum_adoptions_grade_level_id_grade_levels_id_fk",
-          "tableFrom": "curriculum_adoptions",
-          "tableTo": "grade_levels",
-          "columnsFrom": [
-            "grade_level_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "curriculum_adoptions_curriculum_id_curriculums_id_fk": {
-          "name": "curriculum_adoptions_curriculum_id_curriculums_id_fk",
-          "tableFrom": "curriculum_adoptions",
-          "tableTo": "curriculums",
-          "columnsFrom": [
-            "curriculum_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "curriculum_adoptions_adopted_by_users_id_fk": {
-          "name": "curriculum_adoptions_adopted_by_users_id_fk",
-          "tableFrom": "curriculum_adoptions",
-          "tableTo": "users",
-          "columnsFrom": [
-            "adopted_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.curriculums": {
       "name": "curriculums",
       "schema": "",
@@ -975,68 +819,11 @@
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "curriculum_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'draft'"
-        },
-        "version": {
-          "name": "version",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "root_id": {
-          "name": "root_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "predecessor_id": {
-          "name": "predecessor_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "effective_school_year_id": {
           "name": "effective_school_year_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
-        },
-        "published_at": {
-          "name": "published_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "published_by": {
-          "name": "published_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "archived_at": {
-          "name": "archived_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "archived_by": {
-          "name": "archived_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -1050,91 +837,9 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_by": {
-          "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
         }
       },
-      "indexes": {
-        "curriculums_status_idx": {
-          "name": "curriculums_status_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "curriculums_root_idx": {
-          "name": "curriculums_root_idx",
-          "columns": [
-            {
-              "expression": "root_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "curriculums_pred_draft_uidx": {
-          "name": "curriculums_pred_draft_uidx",
-          "columns": [
-            {
-              "expression": "predecessor_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"curriculums\".\"status\" = 'draft' AND \"curriculums\".\"predecessor_id\" IS NOT NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "curriculums_name_status_uidx": {
-          "name": "curriculums_name_status_uidx",
-          "columns": [
-            {
-              "expression": "name",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"curriculums\".\"status\" = 'draft'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "curriculums_effective_school_year_id_school_years_id_fk": {
           "name": "curriculums_effective_school_year_id_school_years_id_fk",
@@ -1149,51 +854,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "curriculums_published_by_users_id_fk": {
-          "name": "curriculums_published_by_users_id_fk",
-          "tableFrom": "curriculums",
-          "tableTo": "users",
-          "columnsFrom": [
-            "published_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "curriculums_archived_by_users_id_fk": {
-          "name": "curriculums_archived_by_users_id_fk",
-          "tableFrom": "curriculums",
-          "tableTo": "users",
-          "columnsFrom": [
-            "archived_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "curriculums_created_by_users_id_fk": {
           "name": "curriculums_created_by_users_id_fk",
           "tableFrom": "curriculums",
           "tableTo": "users",
           "columnsFrom": [
             "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "curriculums_updated_by_users_id_fk": {
-          "name": "curriculums_updated_by_users_id_fk",
-          "tableFrom": "curriculums",
-          "tableTo": "users",
-          "columnsFrom": [
-            "updated_by"
           ],
           "columnsTo": [
             "id"
@@ -5656,6 +5322,12 @@
           "notNull": true,
           "default": false
         },
+        "cash_discount_cutoff_date": {
+          "name": "cash_discount_cutoff_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -7106,12 +6778,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "curriculum_id": {
           "name": "curriculum_id",
           "type": "uuid",
@@ -7124,33 +6790,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "units": {
-          "name": "units",
-          "type": "numeric(4, 2)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'0'"
-        },
-        "sequence_order": {
-          "name": "sequence_order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "is_core": {
-          "name": "is_core",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "grading_weight": {
-          "name": "grading_weight",
-          "type": "numeric(5, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -7160,19 +6799,6 @@
         },
         "created_by": {
           "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_by": {
-          "name": "updated_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -7206,27 +6832,6 @@
           "method": "btree",
           "with": {}
         },
-        "subjects_curriculum_grade_idx": {
-          "name": "subjects_curriculum_grade_idx",
-          "columns": [
-            {
-              "expression": "curriculum_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "grade_level_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "subjects_active_idx": {
           "name": "subjects_active_idx",
           "columns": [
@@ -7238,28 +6843,6 @@
             }
           ],
           "isUnique": false,
-          "where": "\"subjects\".\"deleted_at\" IS NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "subjects_curriculum_code_uidx": {
-          "name": "subjects_curriculum_code_uidx",
-          "columns": [
-            {
-              "expression": "curriculum_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "code",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
           "where": "\"subjects\".\"deleted_at\" IS NULL",
           "concurrently": false,
           "method": "btree",
@@ -7299,19 +6882,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "subjects_updated_by_users_id_fk": {
-          "name": "subjects_updated_by_users_id_fk",
-          "tableFrom": "subjects",
-          "tableTo": "users",
-          "columnsFrom": [
-            "updated_by"
           ],
           "columnsTo": [
             "id"
@@ -8106,15 +7676,6 @@
         "transfer_out",
         "graduation",
         "other"
-      ]
-    },
-    "public.curriculum_status": {
-      "name": "curriculum_status",
-      "schema": "public",
-      "values": [
-        "draft",
-        "published",
-        "archived"
       ]
     },
     "public.discount_base_type": {

@@ -1,6 +1,6 @@
 {
-  "id": "d679f987-8c53-4842-afcb-912f6547bdae",
-  "prevId": "b84e2eca-5d3d-4f8d-ad45-02660394c311",
+  "id": "b84e2eca-5d3d-4f8d-ad45-02660394c311",
+  "prevId": "be5aa56f-6cb0-47ec-ba64-252c08bf1c58",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1092,27 +1092,6 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "curriculums_root_version_uidx": {
-          "name": "curriculums_root_version_uidx",
-          "columns": [
-            {
-              "expression": "root_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "version",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}

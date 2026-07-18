@@ -250,6 +250,8 @@ export const schoolYears = pgTable("school_years", {
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   isActive: boolean("is_active").notNull().default(false),
+  /** Cutoff date for full payment cash discount eligibility. Payments before this date qualify. */
+  cashDiscountCutoffDate: timestamp("cash_discount_cutoff_date"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   createdBy: uuid("created_by").references(() => users.id),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

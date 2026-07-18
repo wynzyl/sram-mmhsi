@@ -2,11 +2,15 @@ import "server-only";
 import { db } from "@/lib/db";
 import {
   assessments,
+  assessmentItems,
+  discountTypes,
   enrollments,
+  feeItemTypes,
   gradeLevels,
   payments,
   receiptBooklets,
   schoolYears,
+  studentDiscounts,
   students,
   users,
 } from "@/lib/db/schema";
@@ -16,6 +20,11 @@ import type { DbExecutor } from "@/lib/utils/tx-helpers";
 import type { Role } from "@/lib/constants/roles";
 import { getPortalStudentIds, getPortalStudentLabels } from "@/lib/queries/portal-student";
 import { calculateOffset } from "@/lib/types/pagination";
+import {
+  calculateDiscountBase,
+  calculateDiscountAmount,
+} from "@/features/discounts/utils/discount-calculations";
+import { formatDate } from "@/lib/utils/date";
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -588,4 +597,281 @@ export async function isPaymentMostRecentVoidable(
 ): Promise<boolean> {
   const mostRecentId = await getMostRecentVoidablePaymentId(assessmentId, executor);
   return mostRecentId === paymentId;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Full Payment Cash Discount Eligibility
+// ─────────────────────────────────────────────────────────────────
+
+/** The code for the full payment cash discount in the discountTypes table */
+export const FULL_PAYMENT_DISCOUNT_CODE = "FULL_PAYMENT_DISCOUNT";
+
+export interface CashDiscountEligibility {
+  eligible: boolean;
+  reason?: string;
+  discountDetails?: {
+    discountTypeId: string;
+    discountTypeName: string;
+    calculationType: "fixed_amount" | "percentage";
+    baseType: "tuition_only" | "full_assessment";
+    discountValue: number;
+    /** Tuition or full assessment total (base for percentage calculation) */
+    baseAmount: number;
+    /** Calculated discount amount (discountValue% of baseAmount or fixed) */
+    cashDiscountAmount: number;
+    /** Assessment balance before discount */
+    currentBalance: number;
+    /** New balance after discount is applied */
+    newBalance: number;
+    /** Amount the cashier should collect */
+    paymentRequired: number;
+    /** Cutoff date for the school year */
+    cutoffDate: Date;
+  };
+}
+
+/**
+ * Check if a payment qualifies for the full payment cash discount.
+ *
+ * Eligibility conditions:
+ * 1. Payment amount >= assessment balance (full payment)
+ * 2. Today < school year's cashDiscountCutoffDate
+ * 3. Student does NOT already have FULL_PAYMENT_DISCOUNT on this assessment
+ * 4. Assessment is not cancelled or transferred
+ * 5. FULL_PAYMENT_DISCOUNT type exists and is active in discountTypes
+ *
+ * @param assessmentId - Assessment to check
+ * @param paymentAmount - Amount the student is paying
+ * @returns Eligibility status with discount details if eligible
+ */
+export async function checkFullPaymentCashDiscountEligibility(
+  assessmentId: string,
+  paymentAmount: number
+): Promise<CashDiscountEligibility> {
+  // 1. Fetch assessment with enrollment -> school year -> cutoff date
+  const [assessmentRow] = await db
+    .select({
+      id: assessments.id,
+      balance: assessments.balance,
+      totalAmount: assessments.totalAmount,
+      cancelledAt: assessments.cancelledAt,
+      transferredAt: assessments.transferredAt,
+      enrollmentId: assessments.enrollmentId,
+      cashDiscountCutoffDate: schoolYears.cashDiscountCutoffDate,
+      schoolYearLabel: schoolYears.label,
+      schoolYearIsActive: schoolYears.isActive,
+      schoolYearStartDate: schoolYears.startDate,
+    })
+    .from(assessments)
+    .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
+    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .where(eq(assessments.id, assessmentId))
+    .limit(1);
+
+  if (!assessmentRow) {
+    return { eligible: false, reason: "Assessment not found." };
+  }
+
+  // 2. Check assessment is not cancelled or transferred
+  if (assessmentRow.cancelledAt) {
+    return { eligible: false, reason: "Assessment is cancelled." };
+  }
+  if (assessmentRow.transferredAt) {
+    return { eligible: false, reason: "Assessment balance was transferred." };
+  }
+
+  // 2b. Check assessment is for the ACTIVE school year
+  if (!assessmentRow.schoolYearIsActive) {
+    return {
+      eligible: false,
+      reason: `Cash discount is only available for the active school year. This assessment is for ${assessmentRow.schoolYearLabel}.`,
+    };
+  }
+
+  const balance = Number(assessmentRow.balance);
+
+  // 3. Check payment amount = full balance (using small epsilon for floating point)
+  const BALANCE_EPSILON = 0.01;
+  if (paymentAmount < balance - BALANCE_EPSILON) {
+    return { eligible: false, reason: "Payment amount is less than full balance." };
+  }
+
+  // 4. Check cutoff date exists and today is before it
+  if (!assessmentRow.cashDiscountCutoffDate) {
+    return {
+      eligible: false,
+      reason: `No cash discount cutoff date configured for ${assessmentRow.schoolYearLabel}.`,
+    };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const cutoffDate = new Date(assessmentRow.cashDiscountCutoffDate);
+  cutoffDate.setHours(0, 0, 0, 0);
+
+  if (today >= cutoffDate) {
+    return {
+      eligible: false,
+      reason: `Cash discount cutoff date (${formatDate(cutoffDate)}) has passed.`,
+    };
+  }
+
+  // 4b. Check today is on or after school year start date
+  const startDate = new Date(assessmentRow.schoolYearStartDate);
+  startDate.setHours(0, 0, 0, 0);
+
+  if (today < startDate) {
+    return {
+      eligible: false,
+      reason: `Cash discount eligibility begins on ${formatDate(startDate)}. School year has not started yet.`,
+    };
+  }
+
+  // 5. Check FULL_PAYMENT_DISCOUNT type exists and is active
+  const [discountType] = await db
+    .select({
+      id: discountTypes.id,
+      name: discountTypes.name,
+      calculationType: discountTypes.calculationType,
+      baseType: discountTypes.baseType,
+      defaultValue: discountTypes.defaultValue,
+      isActive: discountTypes.isActive,
+    })
+    .from(discountTypes)
+    .where(
+      and(
+        eq(discountTypes.code, FULL_PAYMENT_DISCOUNT_CODE),
+        isNull(discountTypes.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!discountType) {
+    return {
+      eligible: false,
+      reason: "Full payment cash discount is not configured in the system.",
+    };
+  }
+
+  if (!discountType.isActive) {
+    return {
+      eligible: false,
+      reason: "Full payment cash discount is currently disabled.",
+    };
+  }
+
+  // 6. Check student doesn't already have FULL_PAYMENT_DISCOUNT on this assessment
+  const [existingDiscount] = await db
+    .select({ id: studentDiscounts.id })
+    .from(studentDiscounts)
+    .where(
+      and(
+        eq(studentDiscounts.assessmentId, assessmentId),
+        eq(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE),
+        isNull(studentDiscounts.reversedAt)
+      )
+    )
+    .limit(1);
+
+  if (existingDiscount) {
+    return {
+      eligible: false,
+      reason: "Student already has a full payment cash discount on this assessment.",
+    };
+  }
+
+  // 7. Calculate discount amount
+  // Fetch assessment items for base calculation
+  const assessmentItemRows = await db
+    .select({
+      id: assessmentItems.id,
+      amount: assessmentItems.amount,
+      isDiscount: assessmentItems.isDiscount,
+      feeItemTypeCode: feeItemTypes.code,
+    })
+    .from(assessmentItems)
+    .leftJoin(feeItemTypes, eq(assessmentItems.feeItemTypeId, feeItemTypes.id))
+    .where(eq(assessmentItems.assessmentId, assessmentId));
+
+  const items = assessmentItemRows.map((r) => ({
+    id: r.id,
+    amount: r.amount,
+    isDiscount: r.isDiscount,
+    feeItemTypeCode: r.feeItemTypeCode,
+  }));
+
+  const baseAmount = calculateDiscountBase(items, discountType.baseType);
+  const discountValue = Number(discountType.defaultValue);
+  const cashDiscountAmount = calculateDiscountAmount(
+    baseAmount,
+    discountType.calculationType,
+    discountValue
+  );
+
+  if (cashDiscountAmount <= 0) {
+    return {
+      eligible: false,
+      reason: "Calculated discount amount is zero.",
+    };
+  }
+
+  // New balance = current balance - discount
+  // Payment required = new balance
+  const newBalance = Math.max(0, balance - cashDiscountAmount);
+  const paymentRequired = newBalance;
+
+  return {
+    eligible: true,
+    discountDetails: {
+      discountTypeId: discountType.id,
+      discountTypeName: discountType.name,
+      calculationType: discountType.calculationType,
+      baseType: discountType.baseType,
+      discountValue,
+      baseAmount,
+      cashDiscountAmount,
+      currentBalance: balance,
+      newBalance,
+      paymentRequired,
+      cutoffDate,
+    },
+  };
+}
+
+/**
+ * Get discount type by code.
+ * Used to fetch the FULL_PAYMENT_DISCOUNT config during payment posting.
+ */
+export async function getDiscountTypeByCode(
+  code: string
+): Promise<{
+  id: string;
+  code: string;
+  name: string;
+  calculationType: "fixed_amount" | "percentage";
+  baseType: "tuition_only" | "full_assessment";
+  defaultValue: string;
+  isStackable: boolean;
+} | null> {
+  const [row] = await db
+    .select({
+      id: discountTypes.id,
+      code: discountTypes.code,
+      name: discountTypes.name,
+      calculationType: discountTypes.calculationType,
+      baseType: discountTypes.baseType,
+      defaultValue: discountTypes.defaultValue,
+      isStackable: discountTypes.isStackable,
+    })
+    .from(discountTypes)
+    .where(
+      and(
+        eq(discountTypes.code, code),
+        eq(discountTypes.isActive, true),
+        isNull(discountTypes.deletedAt)
+      )
+    )
+    .limit(1);
+
+  return row ?? null;
 }
