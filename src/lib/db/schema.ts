@@ -18,6 +18,7 @@ import { FEE_ASSESSMENT_BANDS } from "@/lib/constants/assessment-bands";
 import { CANCELLATION_REASONS } from "@/lib/constants/cancellation-reasons";
 import { STUDENT_STATUSES } from "@/lib/constants/student-status";
 import { DOCUMENT_REQUEST_TYPES, DOCUMENT_REQUEST_STATUSES } from "@/lib/constants/document-requests";
+import { GRADING_PERIODS, GRADE_SHEET_STATUSES, GRADE_APPROVAL_ACTIONS } from "@/lib/constants/grading-periods";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -73,6 +74,15 @@ export const gradeStatusEnum = pgEnum("grade_status", [
   "submitted",
   "locked",
 ]);
+
+/** Grading periods (quarters) for academic year */
+export const gradingPeriodEnum = pgEnum("grading_period", GRADING_PERIODS);
+
+/** Grade sheet workflow: draft → submitted → returned/approved → released */
+export const gradeSheetStatusEnum = pgEnum("grade_sheet_status", GRADE_SHEET_STATUSES);
+
+/** Grade approval workflow actions */
+export const gradeApprovalActionEnum = pgEnum("grade_approval_action", GRADE_APPROVAL_ACTIONS);
 
 /** Curriculum lifecycle: draft → published → archived */
 export const curriculumStatusEnum = pgEnum("curriculum_status", [
@@ -1086,6 +1096,136 @@ export const gradeRecords = pgTable(
   ]
 );
 
+// ─── Section Advisers ─────────────────────────────────────────────────────────
+
+/**
+ * Section adviser assignments - one homeroom adviser per section per school year.
+ * Different from teacherAssignments which tracks subject teachers.
+ */
+export const sectionAdvisers = pgTable(
+  "section_advisers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sectionId: uuid("section_id").notNull().references(() => sections.id),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+
+    // Audit
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // One adviser per section per school year (soft delete aware)
+    uniqueIndex("section_advisers_section_sy_uidx")
+      .on(t.sectionId, t.schoolYearId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("section_advisers_user_idx").on(t.userId),
+    index("section_advisers_sy_idx").on(t.schoolYearId),
+  ]
+);
+
+// ─── Grade Sheets & Approval Workflow ─────────────────────────────────────────
+
+/**
+ * Grade sheets - batch grade submission per teacher assignment per grading period.
+ * Tracks workflow status: draft → submitted → returned/approved → released.
+ */
+export const gradeSheets = pgTable(
+  "grade_sheets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    teacherAssignmentId: uuid("teacher_assignment_id").notNull().references(() => teacherAssignments.id),
+    gradingPeriod: gradingPeriodEnum("grading_period").notNull(),
+    status: gradeSheetStatusEnum("status").notNull().default("draft"),
+
+    // Workflow timestamps
+    submittedAt: timestamp("submitted_at"),
+    submittedBy: uuid("submitted_by").references(() => users.id),
+    returnedAt: timestamp("returned_at"),
+    returnedBy: uuid("returned_by").references(() => users.id),
+    returnRemarks: text("return_remarks"),
+    approvedAt: timestamp("approved_at"),
+    approvedBy: uuid("approved_by").references(() => users.id),
+    releasedAt: timestamp("released_at"),
+    releasedBy: uuid("released_by").references(() => users.id),
+
+    // Audit
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+  },
+  (t) => [
+    // One sheet per assignment per grading period
+    uniqueIndex("grade_sheets_assignment_period_uidx")
+      .on(t.teacherAssignmentId, t.gradingPeriod),
+    index("grade_sheets_status_idx").on(t.status),
+    index("grade_sheets_sy_status_idx").on(t.status), // For approval queue queries
+  ]
+);
+
+/**
+ * Grade sheet entries - individual student grades within a grade sheet.
+ * Uses DepEd grading formula: final = written×0.25 + performance×0.50 + quarterly×0.25
+ */
+export const gradeSheetEntries = pgTable(
+  "grade_sheet_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    gradeSheetId: uuid("grade_sheet_id").notNull().references(() => gradeSheets.id),
+    studentId: uuid("student_id").notNull().references(() => students.id),
+
+    // Grade components (DepEd formula)
+    writtenWork: numeric("written_work", { precision: 5, scale: 2 }),
+    performanceTask: numeric("performance_task", { precision: 5, scale: 2 }),
+    quarterlyAssessment: numeric("quarterly_assessment", { precision: 5, scale: 2 }),
+
+    // Computed final grade (stored for performance)
+    finalGrade: numeric("final_grade", { precision: 5, scale: 2 }),
+    remarks: text("remarks"), // Teacher remarks (optional)
+
+    // Audit
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // One entry per student per grade sheet
+    uniqueIndex("grade_sheet_entries_sheet_student_uidx")
+      .on(t.gradeSheetId, t.studentId),
+    index("grade_sheet_entries_student_idx").on(t.studentId),
+  ]
+);
+
+/**
+ * Grade approvals - audit trail of approval workflow actions.
+ * Records every status transition with actor, timestamp, and remarks.
+ */
+export const gradeApprovals = pgTable(
+  "grade_approvals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    gradeSheetId: uuid("grade_sheet_id").notNull().references(() => gradeSheets.id),
+    action: gradeApprovalActionEnum("action").notNull(),
+    remarks: text("remarks"),
+
+    // Actor
+    actorId: uuid("actor_id").notNull().references(() => users.id),
+    actorRole: roleEnum("actor_role").notNull(),
+
+    // Timestamp
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("grade_approvals_sheet_idx").on(t.gradeSheetId),
+    index("grade_approvals_actor_idx").on(t.actorId),
+    index("grade_approvals_created_idx").on(t.createdAt),
+  ]
+);
+
 // ─── Audit Logs ───────────────────────────────────────────────────────────────
 
 export const auditLogs = pgTable(
@@ -1819,5 +1959,81 @@ export const documentRequestsRelations = relations(documentRequests, ({ one }) =
     fields: [documentRequests.releasedBy],
     references: [users.id],
     relationName: "docRequest_releaser",
+  }),
+}));
+
+// Section Adviser Relations
+export const sectionAdvisersRelations = relations(sectionAdvisers, ({ one }) => ({
+  section: one(sections, {
+    fields: [sectionAdvisers.sectionId],
+    references: [sections.id],
+  }),
+  user: one(users, {
+    fields: [sectionAdvisers.userId],
+    references: [users.id],
+    relationName: "adviser_user",
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [sectionAdvisers.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  createdByUser: one(users, {
+    fields: [sectionAdvisers.createdBy],
+    references: [users.id],
+    relationName: "adviser_creator",
+  }),
+}));
+
+// Grade Sheet Relations
+export const gradeSheetsRelations = relations(gradeSheets, ({ one, many }) => ({
+  teacherAssignment: one(teacherAssignments, {
+    fields: [gradeSheets.teacherAssignmentId],
+    references: [teacherAssignments.id],
+  }),
+  entries: many(gradeSheetEntries),
+  approvals: many(gradeApprovals),
+  submittedByUser: one(users, {
+    fields: [gradeSheets.submittedBy],
+    references: [users.id],
+    relationName: "gradeSheet_submitter",
+  }),
+  returnedByUser: one(users, {
+    fields: [gradeSheets.returnedBy],
+    references: [users.id],
+    relationName: "gradeSheet_returner",
+  }),
+  approvedByUser: one(users, {
+    fields: [gradeSheets.approvedBy],
+    references: [users.id],
+    relationName: "gradeSheet_approver",
+  }),
+  releasedByUser: one(users, {
+    fields: [gradeSheets.releasedBy],
+    references: [users.id],
+    relationName: "gradeSheet_releaser",
+  }),
+}));
+
+// Grade Sheet Entry Relations
+export const gradeSheetEntriesRelations = relations(gradeSheetEntries, ({ one }) => ({
+  gradeSheet: one(gradeSheets, {
+    fields: [gradeSheetEntries.gradeSheetId],
+    references: [gradeSheets.id],
+  }),
+  student: one(students, {
+    fields: [gradeSheetEntries.studentId],
+    references: [students.id],
+  }),
+}));
+
+// Grade Approval Relations
+export const gradeApprovalsRelations = relations(gradeApprovals, ({ one }) => ({
+  gradeSheet: one(gradeSheets, {
+    fields: [gradeApprovals.gradeSheetId],
+    references: [gradeSheets.id],
+  }),
+  actor: one(users, {
+    fields: [gradeApprovals.actorId],
+    references: [users.id],
   }),
 }));

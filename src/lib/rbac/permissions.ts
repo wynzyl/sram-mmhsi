@@ -60,7 +60,19 @@ export type Permission =
   | "grades:read"
   | "grades:encode"
   | "grades:submit"
+  /** Review grade sheets (return to teacher with remarks) — coordinator/admin */
+  | "grades:review"
+  /** Approve grade sheets — principal/admin */
+  | "grades:approve"
+  /** Release grades to students — principal/admin */
+  | "grades:release"
+  /** Unlock released grades for editing — admin only */
   | "grades:lock"
+  // Advisers
+  /** View adviser assignments */
+  | "advisers:read"
+  /** Assign/remove section advisers */
+  | "advisers:manage"
   // Receipts
   | "booklets:manage"
   // Reports
@@ -117,7 +129,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "assessments:cancel", "assessments:cancel_with_balance",
     "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
-    "grades:read", "grades:encode", "grades:submit", "grades:lock",
+    "grades:read", "grades:encode", "grades:submit", "grades:review", "grades:approve", "grades:release", "grades:lock",
+    "advisers:read", "advisers:manage",
     "booklets:manage",
     "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
     "clearances:read", "clearances:create", "clearances:resolve",
@@ -142,7 +155,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "assessments:cancel", "assessments:cancel_with_balance",
     "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
-    "grades:read", "grades:encode", "grades:submit", "grades:lock",
+    "grades:read", "grades:encode", "grades:submit", "grades:review", "grades:approve", "grades:release", "grades:lock",
+    "advisers:read", "advisers:manage",
     "booklets:manage",
     "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
     "clearances:read", "clearances:create", "clearances:resolve",
@@ -167,6 +181,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "archive:read", "archive:manage",
     "documents:read", "documents:create", "documents:process",
     "grades:read",
+    "advisers:read",
     "reports:view", "reports:academic",
     "sections:manage", "school_years:manage",
   ],
