@@ -108,55 +108,6 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
     );
   }
 
-  // ─── Get or Create Curriculum ───────────────────────────────────────────────
-  // Curriculums are associated with a school year through curriculum_adoptions,
-  // not the deprecated effectiveSchoolYearId column. Look up an existing
-  // curriculum by name that already has an adoption for the active school year;
-  // otherwise create a published v1 curriculum (rootId = self).
-  const curriculumName = `DepEd K-12 (${activeSchoolYear.label})`;
-
-  const [existingAdoption] = await db
-    .select({ curriculumId: curriculumAdoptions.curriculumId })
-    .from(curriculumAdoptions)
-    .innerJoin(curriculums, eq(curriculumAdoptions.curriculumId, curriculums.id))
-    .where(
-      and(
-        eq(curriculums.name, curriculumName),
-        eq(curriculumAdoptions.schoolYearId, activeSchoolYear.id),
-        isNull(curriculumAdoptions.deletedAt)
-      )
-    )
-    .limit(1);
-
-  let curriculum: { id: string };
-
-  if (existingAdoption) {
-    curriculum = { id: existingAdoption.curriculumId };
-    console.log(`✅ Using existing curriculum: ${curriculumName}`);
-  } else {
-    const [created] = await db
-      .insert(curriculums)
-      .values({
-        name: curriculumName,
-        status: "published",
-        version: 1,
-        publishedAt: new Date(),
-        publishedBy: systemUser.id,
-        createdBy: systemUser.id,
-        updatedBy: systemUser.id,
-      })
-      .returning({ id: curriculums.id });
-
-    // v1 is the root of its own version chain.
-    await db
-      .update(curriculums)
-      .set({ rootId: created.id })
-      .where(eq(curriculums.id, created.id));
-
-    curriculum = { id: created.id };
-    console.log(`✅ Created curriculum: ${curriculumName}`);
-  }
-
   // ─── Get Grade Levels ───────────────────────────────────────────────────────
   const allGradeLevels = await db
     .select({ id: gradeLevels.id, name: gradeLevels.name })
@@ -175,120 +126,192 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
     );
   }
 
-  // ─── Adoption Preflight: Detect Conflicting Adoptions ───────────────────────
-  // onConflictDoNothing silently retains ANY existing active adoption for a
-  // (schoolYearId, gradeLevelId) pair — including one pointing at a DIFFERENT
-  // curriculum. That would leave subjects seeded under our curriculum while the
-  // grade's active adoption points elsewhere. Inspect every target grade's
-  // existing adoption up-front and fail on any mismatch, since this seed script
-  // owns the DepEd curriculum adoption configuration.
-  const existingAdoptions = await db
-    .select({
-      gradeLevelId: curriculumAdoptions.gradeLevelId,
-      curriculumId: curriculumAdoptions.curriculumId,
-    })
-    .from(curriculumAdoptions)
-    .where(
-      and(
-        eq(curriculumAdoptions.schoolYearId, activeSchoolYear.id),
-        isNull(curriculumAdoptions.deletedAt)
-      )
-    );
+  const curriculumName = `DepEd K-12 (${activeSchoolYear.label})`;
 
-  const adoptionByGrade = new Map(
-    existingAdoptions.map((a) => [a.gradeLevelId, a.curriculumId])
-  );
+  // ─── Seed Curriculum, Adoptions, and Subjects (single transaction) ──────────
+  // Curriculum creation, its rootId self-link, per-grade adoptions, and subject
+  // inserts all mutate related rows. Wrapping them in one transaction means any
+  // failure rolls back the published curriculum AND every dependent record,
+  // preventing partial state (e.g. a published curriculum with only some grades
+  // adopted) that a rerun would then read as already-seeded.
+  const { insertedCount, skippedCount, created } = await db.transaction(
+    async (tx) => {
+      // ─── Get or Create Curriculum ───────────────────────────────────────────
+      // Curriculums are associated with a school year through curriculum_adoptions,
+      // not the deprecated effectiveSchoolYearId column. Look up an existing
+      // curriculum by name that already has an adoption for the active school year;
+      // otherwise create a published v1 curriculum (rootId = self).
+      const [existingAdoption] = await tx
+        .select({ curriculumId: curriculumAdoptions.curriculumId })
+        .from(curriculumAdoptions)
+        .innerJoin(
+          curriculums,
+          eq(curriculumAdoptions.curriculumId, curriculums.id)
+        )
+        .where(
+          and(
+            eq(curriculums.name, curriculumName),
+            eq(curriculumAdoptions.schoolYearId, activeSchoolYear.id),
+            isNull(curriculumAdoptions.deletedAt)
+          )
+        )
+        .limit(1);
 
-  const conflictingGrades = Object.keys(GRADE_SUBJECT_MAP).filter(
-    (gradeName) => {
-      const gradeLevelId = gradeLevelMap.get(gradeName)!;
-      const adopted = adoptionByGrade.get(gradeLevelId);
-      return adopted !== undefined && adopted !== curriculum.id;
-    }
-  );
+      let curriculum: { id: string };
+      let createdCurriculum = false;
 
-  if (conflictingGrades.length > 0) {
-    throw new Error(
-      `Conflicting curriculum adoptions for ${activeSchoolYear.label}: ` +
-        `${conflictingGrades.join(", ")} already adopt a different curriculum. ` +
-        `Resolve (soft-delete/re-adopt) these adoptions before re-seeding "${curriculumName}".`
-    );
-  }
+      if (existingAdoption) {
+        curriculum = { id: existingAdoption.curriculumId };
+      } else {
+        const [inserted] = await tx
+          .insert(curriculums)
+          .values({
+            name: curriculumName,
+            status: "published",
+            version: 1,
+            publishedAt: new Date(),
+            publishedBy: systemUser.id,
+            createdBy: systemUser.id,
+            updatedBy: systemUser.id,
+          })
+          .returning({ id: curriculums.id });
 
-  // ─── Adopt Curriculum for Each Grade Level (active school year) ──────────────
-  // Any grade already adopting THIS curriculum is a no-op via onConflictDoNothing;
-  // conflicting adoptions were rejected by the preflight above.
-  for (const gradeName of Object.keys(GRADE_SUBJECT_MAP)) {
-    const gradeLevelId = gradeLevelMap.get(gradeName)!;
-    await db
-      .insert(curriculumAdoptions)
-      .values({
-        schoolYearId: activeSchoolYear.id,
-        gradeLevelId,
-        curriculumId: curriculum.id,
-        adoptedBy: systemUser.id,
-      })
-      .onConflictDoNothing({
-        target: [
-          curriculumAdoptions.schoolYearId,
-          curriculumAdoptions.gradeLevelId,
-        ],
-        // Partial unique index (deleted_at IS NULL) — match its predicate.
-        targetWhere: isNull(curriculumAdoptions.deletedAt),
-      });
-  }
+        // v1 is the root of its own version chain.
+        await tx
+          .update(curriculums)
+          .set({ rootId: inserted.id })
+          .where(eq(curriculums.id, inserted.id));
 
-  // ─── Get Existing Subjects (to avoid duplicates) ────────────────────────────
-  const existingSubjects = await db
-    .select({ code: subjects.code, gradeLevelId: subjects.gradeLevelId })
-    .from(subjects)
-    .where(
-      and(
-        eq(subjects.curriculumId, curriculum.id),
-        isNull(subjects.deletedAt)
-      )
-    );
-
-  const existingSubjectKeys = new Set(
-    existingSubjects.map((s) => `${s.code}-${s.gradeLevelId}`)
-  );
-
-  // ─── Insert Subjects Per Grade Level ────────────────────────────────────────
-  let insertedCount = 0;
-  let skippedCount = 0;
-
-  for (const [gradeName, subjectList] of Object.entries(GRADE_SUBJECT_MAP)) {
-    // Existence was validated up-front, so this is guaranteed present.
-    const gradeLevelId = gradeLevelMap.get(gradeName)!;
-    const gradeNumber = getGradeNumber(gradeName);
-
-    for (let index = 0; index < subjectList.length; index++) {
-      const subject = subjectList[index];
-      // Generate grade-specific code (e.g., FIL1, MTH4)
-      const subjectCode = `${subject.code}${gradeNumber}`;
-      const subjectKey = `${subjectCode}-${gradeLevelId}`;
-
-      if (existingSubjectKeys.has(subjectKey)) {
-        skippedCount++;
-        continue;
+        curriculum = { id: inserted.id };
+        createdCurriculum = true;
       }
 
-      await db.insert(subjects).values({
-        name: subject.name,
-        code: subjectCode,
-        curriculumId: curriculum.id,
-        gradeLevelId: gradeLevelId,
-        // Preserve declared display order instead of the DB default (0).
-        sequenceOrder: index,
-      });
+      // ─── Adoption Preflight: Detect Conflicting Adoptions ───────────────────
+      // onConflictDoNothing silently retains ANY existing active adoption for a
+      // (schoolYearId, gradeLevelId) pair — including one pointing at a DIFFERENT
+      // curriculum. That would leave subjects seeded under our curriculum while the
+      // grade's active adoption points elsewhere. Inspect every target grade's
+      // existing adoption up-front and fail on any mismatch, since this seed script
+      // owns the DepEd curriculum adoption configuration.
+      const existingAdoptions = await tx
+        .select({
+          gradeLevelId: curriculumAdoptions.gradeLevelId,
+          curriculumId: curriculumAdoptions.curriculumId,
+        })
+        .from(curriculumAdoptions)
+        .where(
+          and(
+            eq(curriculumAdoptions.schoolYearId, activeSchoolYear.id),
+            isNull(curriculumAdoptions.deletedAt)
+          )
+        );
 
-      existingSubjectKeys.add(subjectKey);
-      insertedCount++;
+      const adoptionByGrade = new Map(
+        existingAdoptions.map((a) => [a.gradeLevelId, a.curriculumId])
+      );
+
+      const conflictingGrades = Object.keys(GRADE_SUBJECT_MAP).filter(
+        (gradeName) => {
+          const gradeLevelId = gradeLevelMap.get(gradeName)!;
+          const adopted = adoptionByGrade.get(gradeLevelId);
+          return adopted !== undefined && adopted !== curriculum.id;
+        }
+      );
+
+      if (conflictingGrades.length > 0) {
+        // Throwing rolls back the transaction (including any curriculum created above).
+        throw new Error(
+          `Conflicting curriculum adoptions for ${activeSchoolYear.label}: ` +
+            `${conflictingGrades.join(", ")} already adopt a different curriculum. ` +
+            `Resolve (soft-delete/re-adopt) these adoptions before re-seeding "${curriculumName}".`
+        );
+      }
+
+      // ─── Adopt Curriculum for Each Grade Level (active school year) ──────────
+      // Any grade already adopting THIS curriculum is a no-op via onConflictDoNothing;
+      // conflicting adoptions were rejected by the preflight above.
+      for (const gradeName of Object.keys(GRADE_SUBJECT_MAP)) {
+        const gradeLevelId = gradeLevelMap.get(gradeName)!;
+        await tx
+          .insert(curriculumAdoptions)
+          .values({
+            schoolYearId: activeSchoolYear.id,
+            gradeLevelId,
+            curriculumId: curriculum.id,
+            adoptedBy: systemUser.id,
+          })
+          .onConflictDoNothing({
+            target: [
+              curriculumAdoptions.schoolYearId,
+              curriculumAdoptions.gradeLevelId,
+            ],
+            // Partial unique index (deleted_at IS NULL) — match its predicate.
+            targetWhere: isNull(curriculumAdoptions.deletedAt),
+          });
+      }
+
+      // ─── Get Existing Subjects (to avoid duplicates) ────────────────────────
+      const existingSubjects = await tx
+        .select({ code: subjects.code, gradeLevelId: subjects.gradeLevelId })
+        .from(subjects)
+        .where(
+          and(
+            eq(subjects.curriculumId, curriculum.id),
+            isNull(subjects.deletedAt)
+          )
+        );
+
+      const existingSubjectKeys = new Set(
+        existingSubjects.map((s) => `${s.code}-${s.gradeLevelId}`)
+      );
+
+      // ─── Insert Subjects Per Grade Level ────────────────────────────────────
+      let inserted = 0;
+      let skipped = 0;
+
+      for (const [gradeName, subjectList] of Object.entries(GRADE_SUBJECT_MAP)) {
+        // Existence was validated up-front, so this is guaranteed present.
+        const gradeLevelId = gradeLevelMap.get(gradeName)!;
+        const gradeNumber = getGradeNumber(gradeName);
+
+        for (let index = 0; index < subjectList.length; index++) {
+          const subject = subjectList[index];
+          // Generate grade-specific code (e.g., FIL1, MTH4)
+          const subjectCode = `${subject.code}${gradeNumber}`;
+          const subjectKey = `${subjectCode}-${gradeLevelId}`;
+
+          if (existingSubjectKeys.has(subjectKey)) {
+            skipped++;
+            continue;
+          }
+
+          await tx.insert(subjects).values({
+            name: subject.name,
+            code: subjectCode,
+            curriculumId: curriculum.id,
+            gradeLevelId: gradeLevelId,
+            // Preserve declared display order instead of the DB default (0).
+            sequenceOrder: index,
+          });
+
+          existingSubjectKeys.add(subjectKey);
+          inserted++;
+        }
+      }
+
+      return {
+        insertedCount: inserted,
+        skippedCount: skipped,
+        created: createdCurriculum,
+      };
     }
+  );
 
-    console.log(`  📚 ${gradeName}: subjects processed`);
-  }
-
+  console.log(
+    created
+      ? `✅ Created curriculum: ${curriculumName}`
+      : `✅ Using existing curriculum: ${curriculumName}`
+  );
   console.log(`\n✅ Subjects seeding complete!`);
   console.log(`   Created: ${insertedCount} subjects`);
   console.log(`   Skipped: ${skippedCount} (already exist)`);
