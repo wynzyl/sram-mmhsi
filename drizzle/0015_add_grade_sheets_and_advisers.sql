@@ -15,10 +15,7 @@ CREATE TABLE "grade_sheet_entries" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"grade_sheet_id" uuid NOT NULL,
 	"student_id" uuid NOT NULL,
-	"written_work" numeric(5, 2),
-	"performance_task" numeric(5, 2),
-	"quarterly_assessment" numeric(5, 2),
-	"final_grade" numeric(5, 2),
+	"grade" numeric(5, 2),
 	"remarks" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL

@@ -1170,7 +1170,7 @@ export const gradeSheets = pgTable(
 
 /**
  * Grade sheet entries - individual student grades within a grade sheet.
- * Uses DepEd grading formula: final = written×0.25 + performance×0.50 + quarterly×0.25
+ * Teachers enter quarterly grades directly (no component-based computation).
  */
 export const gradeSheetEntries = pgTable(
   "grade_sheet_entries",
@@ -1179,13 +1179,8 @@ export const gradeSheetEntries = pgTable(
     gradeSheetId: uuid("grade_sheet_id").notNull().references(() => gradeSheets.id),
     studentId: uuid("student_id").notNull().references(() => students.id),
 
-    // Grade components (DepEd formula)
-    writtenWork: numeric("written_work", { precision: 5, scale: 2 }),
-    performanceTask: numeric("performance_task", { precision: 5, scale: 2 }),
-    quarterlyAssessment: numeric("quarterly_assessment", { precision: 5, scale: 2 }),
-
-    // Computed final grade (stored for performance)
-    finalGrade: numeric("final_grade", { precision: 5, scale: 2 }),
+    // Direct quarterly grade entry (no computation)
+    grade: numeric("grade", { precision: 5, scale: 2 }),
     remarks: text("remarks"), // Teacher remarks (optional)
 
     // Audit
