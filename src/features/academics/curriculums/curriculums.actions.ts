@@ -411,6 +411,9 @@ export async function publishCurriculumAction(
             })
             .onConflictDoUpdate({
               target: [curriculumAdoptions.schoolYearId, curriculumAdoptions.gradeLevelId],
+              // The unique index is partial (deleted_at IS NULL); the conflict
+              // arbiter must carry the same predicate to match it.
+              targetWhere: isNull(curriculumAdoptions.deletedAt),
               set: {
                 curriculumId,
                 adoptedAt: new Date(),
@@ -514,7 +517,12 @@ export async function archiveCurriculumAction(
     .from(curriculumAdoptions)
     .innerJoin(schoolYears, eq(curriculumAdoptions.schoolYearId, schoolYears.id))
     .innerJoin(sql`grade_levels`, eq(curriculumAdoptions.gradeLevelId, sql`grade_levels.id`))
-    .where(eq(curriculumAdoptions.curriculumId, curriculumId));
+    .where(
+      and(
+        eq(curriculumAdoptions.curriculumId, curriculumId),
+        isNull(curriculumAdoptions.deletedAt)
+      )
+    );
 
   const activeSchoolYear = await getActiveSchoolYear();
   // Reference point: the active year's start. Adoptions for years starting after

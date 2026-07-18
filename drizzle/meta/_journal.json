@@ -99,6 +99,13 @@
       "when": 1784276970912,
       "tag": "0013_add_curriculum_root_version_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784339776625,
+      "tag": "0014_add_curriculum_adoptions_soft_delete",
+      "breakpoints": true
     }
   ]
 }

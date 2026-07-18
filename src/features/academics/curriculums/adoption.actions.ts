@@ -10,7 +10,7 @@ import {
   teacherAssignments,
   sections,
 } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction, logAudit } from "@/lib/utils/audit-logger";
@@ -98,11 +98,12 @@ export async function updateAdoptionAction(
     return { message: eligibilityError };
   }
 
-  // Check existing adoption
+  // Check existing active adoption
   const existingAdoption = await db.query.curriculumAdoptions.findFirst({
     where: and(
       eq(curriculumAdoptions.schoolYearId, schoolYearId),
-      eq(curriculumAdoptions.gradeLevelId, gradeLevelId)
+      eq(curriculumAdoptions.gradeLevelId, gradeLevelId),
+      isNull(curriculumAdoptions.deletedAt)
     ),
     columns: { id: true, curriculumId: true },
   });
@@ -191,9 +192,12 @@ export async function rollForwardAdoptionsFromPriorYear(
     copied = await db.transaction(async (tx) => {
       let copiedInTx = 0;
 
-      // Get all adoptions from the source year
+      // Get all active adoptions from the source year
       const sourceAdoptions = await tx.query.curriculumAdoptions.findMany({
-        where: eq(curriculumAdoptions.schoolYearId, fromSchoolYearId),
+        where: and(
+          eq(curriculumAdoptions.schoolYearId, fromSchoolYearId),
+          isNull(curriculumAdoptions.deletedAt)
+        ),
       });
 
       for (const adoption of sourceAdoptions) {
@@ -210,11 +214,12 @@ export async function rollForwardAdoptionsFromPriorYear(
           continue;
         }
 
-        // Check if adoption already exists in target year
+        // Check if an active adoption already exists in target year
         const existingAdoption = await tx.query.curriculumAdoptions.findFirst({
           where: and(
             eq(curriculumAdoptions.schoolYearId, toSchoolYearId),
-            eq(curriculumAdoptions.gradeLevelId, adoption.gradeLevelId)
+            eq(curriculumAdoptions.gradeLevelId, adoption.gradeLevelId),
+            isNull(curriculumAdoptions.deletedAt)
           ),
         });
 
@@ -279,9 +284,12 @@ export async function removeAdoptionAction(
     return { success: false, message: "Invalid adoption reference." };
   }
 
-  // Get adoption
+  // Get adoption (active only — already-removed adoptions are not re-removable)
   const adoption = await db.query.curriculumAdoptions.findFirst({
-    where: eq(curriculumAdoptions.id, idResult.data),
+    where: and(
+      eq(curriculumAdoptions.id, idResult.data),
+      isNull(curriculumAdoptions.deletedAt)
+    ),
   });
 
   if (!adoption) {
@@ -302,15 +310,23 @@ export async function removeAdoptionAction(
   }
 
   try {
-    // TODO(soft-delete): curriculum_adoptions has no deletedAt/deletedBy columns,
-    // so this is a hard delete. Converting to soft delete requires a schema
-    // migration, a partial (deleted_at IS NULL) unique index on (school_year_id,
-    // grade_level_id), and filtering deletedAt in all active-adoption reads.
-    // Deferred as a follow-up; the grade-lock guard above already protects
-    // adoptions that carry grade history.
+    // Soft delete: stamp deletedAt/deletedBy instead of removing the row. The
+    // partial unique index (deleted_at IS NULL) on (school_year_id, grade_level_id)
+    // lets a new adoption be created for the same slot once this one is retired,
+    // while preserving the audit trail. The grade-lock guard above already blocks
+    // removal of adoptions that carry grade history.
     await db
-      .delete(curriculumAdoptions)
-      .where(eq(curriculumAdoptions.id, idResult.data));
+      .update(curriculumAdoptions)
+      .set({
+        deletedAt: new Date(),
+        deletedBy: session.userId,
+      })
+      .where(
+        and(
+          eq(curriculumAdoptions.id, idResult.data),
+          isNull(curriculumAdoptions.deletedAt)
+        )
+      );
 
     await logAudit({
       actor: session.userId,

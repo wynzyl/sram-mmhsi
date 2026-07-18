@@ -77,6 +77,7 @@ export async function listCurriculums(filter?: {
       adoptionCount: sql<number>`(
         SELECT COUNT(*) FROM ${curriculumAdoptions}
         WHERE ${curriculumAdoptions.curriculumId} = ${curriculums.id}
+        AND ${curriculumAdoptions.deletedAt} IS NULL
       )`.as("adoption_count"),
     })
     .from(curriculums)
@@ -168,7 +169,12 @@ export async function getCurriculumById(id: string): Promise<CurriculumDetail | 
     .innerJoin(schoolYears, eq(curriculumAdoptions.schoolYearId, schoolYears.id))
     .innerJoin(gradeLevels, eq(curriculumAdoptions.gradeLevelId, gradeLevels.id))
     .leftJoin(users, eq(curriculumAdoptions.adoptedBy, users.id))
-    .where(eq(curriculumAdoptions.curriculumId, id))
+    .where(
+      and(
+        eq(curriculumAdoptions.curriculumId, id),
+        isNull(curriculumAdoptions.deletedAt)
+      )
+    )
     .orderBy(desc(schoolYears.startDate), asc(gradeLevels.order));
 
   // Query 4: Get user names for audit fields
@@ -266,7 +272,8 @@ export async function getCurrentCurriculumForGradeAndYear(
     .where(
       and(
         eq(curriculumAdoptions.schoolYearId, schoolYearId),
-        eq(curriculumAdoptions.gradeLevelId, gradeLevelId)
+        eq(curriculumAdoptions.gradeLevelId, gradeLevelId),
+        isNull(curriculumAdoptions.deletedAt)
       )
     )
     .limit(1);
@@ -307,7 +314,12 @@ export async function getAdoptionMatrix(
     })
     .from(curriculumAdoptions)
     .innerJoin(curriculums, eq(curriculumAdoptions.curriculumId, curriculums.id))
-    .where(eq(curriculumAdoptions.schoolYearId, schoolYearId));
+    .where(
+      and(
+        eq(curriculumAdoptions.schoolYearId, schoolYearId),
+        isNull(curriculumAdoptions.deletedAt)
+      )
+    );
 
   // Build adoption map
   const adoptionMap = new Map(

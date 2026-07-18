@@ -394,10 +394,14 @@ export const curriculumAdoptions = pgTable(
     curriculumId: uuid("curriculum_id").notNull().references(() => curriculums.id),
     adoptedAt: timestamp("adopted_at").notNull().defaultNow(),
     adoptedBy: uuid("adopted_by").notNull().references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
-    // One curriculum adoption per grade level per school year
-    uniqueIndex("curriculum_adoptions_sy_grade_uidx").on(t.schoolYearId, t.gradeLevelId),
+    // One curriculum adoption per grade level per school year (active records only)
+    uniqueIndex("curriculum_adoptions_sy_grade_uidx")
+      .on(t.schoolYearId, t.gradeLevelId)
+      .where(sql`${t.deletedAt} IS NULL`),
     index("curriculum_adoptions_curriculum_idx").on(t.curriculumId),
     index("curriculum_adoptions_sy_idx").on(t.schoolYearId),
   ]

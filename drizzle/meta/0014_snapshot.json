@@ -1,6 +1,6 @@
 {
-  "id": "be5aa56f-6cb0-47ec-ba64-252c08bf1c58",
-  "prevId": "c617c3e0-3921-4061-ad62-3f31b259e94c",
+  "id": "956acdc0-082b-411b-82ab-8515b18a20ef",
+  "prevId": "d679f987-8c53-4842-afcb-912f6547bdae",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -843,6 +843,18 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_by": {
+          "name": "deleted_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -863,6 +875,7 @@
             }
           ],
           "isUnique": true,
+          "where": "\"curriculum_adoptions\".\"deleted_at\" IS NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -944,6 +957,19 @@
           "tableTo": "users",
           "columnsFrom": [
             "adopted_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "curriculum_adoptions_deleted_by_users_id_fk": {
+          "name": "curriculum_adoptions_deleted_by_users_id_fk",
+          "tableFrom": "curriculum_adoptions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "deleted_by"
           ],
           "columnsTo": [
             "id"
@@ -1092,6 +1118,27 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "curriculums_root_version_uidx": {
+          "name": "curriculums_root_version_uidx",
+          "columns": [
+            {
+              "expression": "root_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "version",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -5656,6 +5703,12 @@
           "notNull": true,
           "default": false
         },
+        "cash_discount_cutoff_date": {
+          "name": "cash_discount_cutoff_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -5806,6 +5859,30 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_by": {
+          "name": "deleted_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -5826,6 +5903,34 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sections_name_grade_sy_uidx": {
+          "name": "sections_name_grade_sy_uidx",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "grade_level_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "school_year_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"sections\".\"deleted_at\" IS NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -5864,6 +5969,32 @@
           "tableTo": "users",
           "columnsFrom": [
             "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "sections_updated_by_users_id_fk": {
+          "name": "sections_updated_by_users_id_fk",
+          "tableFrom": "sections",
+          "tableTo": "users",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "sections_deleted_by_users_id_fk": {
+          "name": "sections_deleted_by_users_id_fk",
+          "tableFrom": "sections",
+          "tableTo": "users",
+          "columnsFrom": [
+            "deleted_by"
           ],
           "columnsTo": [
             "id"

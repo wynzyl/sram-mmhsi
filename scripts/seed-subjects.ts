@@ -122,7 +122,8 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
     .where(
       and(
         eq(curriculums.name, curriculumName),
-        eq(curriculumAdoptions.schoolYearId, activeSchoolYear.id)
+        eq(curriculumAdoptions.schoolYearId, activeSchoolYear.id),
+        isNull(curriculumAdoptions.deletedAt)
       )
     )
     .limit(1);
@@ -190,6 +191,8 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
           curriculumAdoptions.schoolYearId,
           curriculumAdoptions.gradeLevelId,
         ],
+        // Partial unique index (deleted_at IS NULL) — match its predicate.
+        targetWhere: isNull(curriculumAdoptions.deletedAt),
       });
   }
 
