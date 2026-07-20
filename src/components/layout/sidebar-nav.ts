@@ -63,6 +63,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         },
         { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
         { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
+        { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
       ],
     },
     {
@@ -123,6 +124,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         },
         { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
         { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
+        { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
       ],
     },
     {
@@ -302,6 +304,12 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/grades", label: "Overview", icon: "grades" },
         { href: "/staff/grades/approvals", label: "Pending Approvals", icon: "grades" },
+      ],
+    },
+    {
+      label: "Academics",
+      items: [
+        { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
       ],
     },
   ],
