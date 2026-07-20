@@ -7,6 +7,7 @@ export {
   getSectionsBySchoolYear,
   getSectionById,
   getSectionDependencyCounts,
+  getStudentsInSection,
 } from "./sections.queries";
 
 // Actions
@@ -17,4 +18,4 @@ export {
 } from "./sections.actions";
 
 // Components
-export { SectionsTable, SectionFormModal } from "./components";
+export { SectionsTable, SectionFormModal, SectionStudentsTable } from "./components";

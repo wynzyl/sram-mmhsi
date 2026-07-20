@@ -57,3 +57,20 @@ export interface SectionDependencyCounts {
   enrollmentCount: number;
   assignmentCount: number;
 }
+
+// ─── Students in Section (for Grade Entry) ───────────────────────────────────
+
+/**
+ * Student enrolled in a section - used for grade entry screens.
+ * Only includes students with "enrolled" status.
+ */
+export interface StudentInSection {
+  studentId: string;
+  studentRef: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  suffix: string | null;
+  enrollmentId: string;
+  enrollmentStatus: string;
+}

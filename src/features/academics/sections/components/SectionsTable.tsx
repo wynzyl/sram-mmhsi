@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { deleteSectionAction } from "../sections.actions";
 import type { SectionView } from "../sections.schema";
 import { DataTable } from "@/components/shared/DataTable";
@@ -66,7 +67,12 @@ export default function SectionsTable({
         header: "Section Name",
         accessorKey: "name",
         cell: ({ row }) => (
-          <span className="font-medium">{row.original.name}</span>
+          <Link
+            href={`/staff/academics/sections/${row.original.id}`}
+            className="font-medium text-primary hover:underline"
+          >
+            {row.original.name}
+          </Link>
         ),
       },
       {

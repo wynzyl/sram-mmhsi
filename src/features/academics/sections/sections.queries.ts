@@ -10,7 +10,8 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, isNull, sql, asc, desc, inArray } from "drizzle-orm";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
-import type { SectionView, SectionDependencyCounts } from "./sections.schema";
+import type { SectionView, SectionDependencyCounts, StudentInSection } from "./sections.schema";
+import { students } from "@/lib/db/schema";
 
 // ─── Get All Sections ─────────────────────────────────────────────────────────
 
@@ -236,4 +237,39 @@ async function getSectionDependencyCountsBatch(
   }
 
   return result;
+}
+
+// ─── Get Students In Section ─────────────────────────────────────────────────
+
+/**
+ * Get all enrolled students in a section for grade entry.
+ * Only returns students with "enrolled" status (not pending/cancelled).
+ * Ordered by lastName, firstName for consistent display.
+ */
+export async function getStudentsInSection(
+  sectionId: string
+): Promise<StudentInSection[]> {
+  const rows = await db
+    .select({
+      studentId: students.id,
+      studentRef: students.referenceNumber,
+      firstName: students.firstName,
+      middleName: students.middleName,
+      lastName: students.lastName,
+      suffix: students.suffix,
+      enrollmentId: enrollments.id,
+      enrollmentStatus: enrollments.status,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .where(
+      and(
+        eq(enrollments.sectionId, sectionId),
+        eq(enrollments.status, "enrolled"),
+        isNull(students.deletedAt)
+      )
+    )
+    .orderBy(asc(students.lastName), asc(students.firstName));
+
+  return rows;
 }

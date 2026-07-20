@@ -49,6 +49,8 @@ const ROLE_LANDING: Record<Role, string> = {
   finance_officer: "/staff/finance",
   cashier: "/staff/payments",
   teacher: "/staff/grades",
+  coordinator: "/staff/grades",
+  principal: "/staff/grades",
   student: "/portal/dashboard",
   parent_guardian: "/portal/dashboard",
 };

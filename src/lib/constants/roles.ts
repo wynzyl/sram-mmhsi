@@ -5,6 +5,8 @@ export const ROLES = {
   FINANCE_OFFICER: "finance_officer",
   CASHIER: "cashier",
   TEACHER: "teacher",
+  COORDINATOR: "coordinator",
+  PRINCIPAL: "principal",
   STUDENT: "student",
   PARENT_GUARDIAN: "parent_guardian",
 } as const;
@@ -21,6 +23,8 @@ const ROLE_ALIASES: Record<string, Role> = {
   financeOfficer: ROLES.FINANCE_OFFICER,
   CASHIER: ROLES.CASHIER,
   TEACHER: ROLES.TEACHER,
+  COORDINATOR: ROLES.COORDINATOR,
+  PRINCIPAL: ROLES.PRINCIPAL,
   STUDENT: ROLES.STUDENT,
   PARENT_GUARDIAN: ROLES.PARENT_GUARDIAN,
   parentGuardian: ROLES.PARENT_GUARDIAN,
@@ -43,6 +47,8 @@ export const ROLE_LABELS: Record<Role, string> = {
   finance_officer: "Finance Officer",
   cashier: "Cashier",
   teacher: "Teacher",
+  coordinator: "Coordinator",
+  principal: "Principal",
   student: "Student",
   parent_guardian: "Parent / Guardian",
 };
@@ -55,6 +61,8 @@ export const STAFF_ROLES: Role[] = [
   ROLES.FINANCE_OFFICER,
   ROLES.CASHIER,
   ROLES.TEACHER,
+  ROLES.COORDINATOR,
+  ROLES.PRINCIPAL,
 ];
 
 /** Roles that access the external student/parent portal only */
