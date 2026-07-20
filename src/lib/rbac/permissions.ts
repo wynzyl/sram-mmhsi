@@ -60,14 +60,16 @@ export type Permission =
   | "grades:read"
   | "grades:encode"
   | "grades:submit"
-  /** Review grade sheets (return to teacher with remarks) — coordinator/admin */
-  | "grades:review"
-  /** Approve grade sheets — principal/admin */
-  | "grades:approve"
-  /** Release grades to students — principal/admin */
-  | "grades:release"
-  /** Unlock released grades for editing — admin only */
+  /** Review grade sheets at coordinator level — coordinator/admin */
+  | "grades:coordinator_review"
+  /** Review grade sheets at principal level — principal/admin */
+  | "grades:principal_review"
+  /** Publish grades to student portal — principal/admin */
+  | "grades:publish"
+  /** Lock grades (immutable) — principal/admin */
   | "grades:lock"
+  /** Unlock locked grades — admin only */
+  | "grades:unlock"
   // Advisers
   /** View adviser assignments */
   | "advisers:read"
@@ -104,6 +106,9 @@ export type Permission =
   | "documents:process"
   /** Release documents (final step, requires clearance) */
   | "documents:release"
+  // Sections
+  /** Assign/remove students from sections */
+  | "sections:assign"
   // Admin
   | "users:manage"
   | "school_years:manage"
@@ -129,7 +134,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "assessments:cancel", "assessments:cancel_with_balance",
     "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
-    "grades:read", "grades:encode", "grades:submit", "grades:review", "grades:approve", "grades:release", "grades:lock",
+    "grades:read", "grades:encode", "grades:submit", "grades:coordinator_review", "grades:principal_review", "grades:publish", "grades:lock", "grades:unlock",
     "advisers:read", "advisers:manage",
     "booklets:manage",
     "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
@@ -137,6 +142,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "archive:read", "archive:manage",
     "documents:read", "documents:create", "documents:process", "documents:release",
     "reports:view", "reports:finance", "reports:academic",
+    "sections:assign",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage", "system:manage",
   ],
@@ -155,7 +161,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "assessments:cancel", "assessments:cancel_with_balance",
     "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
-    "grades:read", "grades:encode", "grades:submit", "grades:review", "grades:approve", "grades:release", "grades:lock",
+    "grades:read", "grades:encode", "grades:submit", "grades:coordinator_review", "grades:principal_review", "grades:publish", "grades:lock", "grades:unlock",
     "advisers:read", "advisers:manage",
     "booklets:manage",
     "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
@@ -165,6 +171,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "fee_schedules:manage",
     "school_years:manage",
     "sections:manage",
+    "sections:assign",
     "reports:view", "reports:finance", "reports:academic",
     "users:manage",
     "system:manage",
@@ -183,7 +190,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "grades:read",
     "advisers:read",
     "reports:view", "reports:academic",
-    "sections:manage", "school_years:manage",
+    "sections:manage", "sections:assign", "school_years:manage",
   ],
   finance_officer: [
     "students:read",
@@ -210,6 +217,20 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "students:read",
     "curriculums:read",
     "grades:read", "grades:encode", "grades:submit",
+  ],
+  coordinator: [
+    "students:read",
+    "curriculums:read",
+    "grades:read", "grades:coordinator_review",
+    "advisers:read",
+    "reports:view", "reports:academic",
+  ],
+  principal: [
+    "students:read",
+    "curriculums:read",
+    "grades:read", "grades:coordinator_review", "grades:principal_review", "grades:publish", "grades:lock",
+    "advisers:read", "advisers:manage",
+    "reports:view", "reports:academic",
   ],
   student: [
     "assessments:read",

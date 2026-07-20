@@ -62,6 +62,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
           ],
         },
         { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
+        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
       ],
     },
     {
@@ -121,6 +122,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
           ],
         },
         { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
+        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
       ],
     },
     {
@@ -189,6 +191,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
           ],
         },
         { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
+        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
       ],
     },
     {
@@ -280,6 +283,26 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Academics",
       items: [{ href: "/staff/grades", label: "My Classes", icon: "grades" }],
+    },
+  ],
+
+  coordinator: [
+    {
+      label: "Grades",
+      items: [
+        { href: "/staff/grades", label: "My Sections", icon: "grades" },
+        { href: "/staff/grades/reviews", label: "Pending Reviews", icon: "grades" },
+      ],
+    },
+  ],
+
+  principal: [
+    {
+      label: "Grades",
+      items: [
+        { href: "/staff/grades", label: "Overview", icon: "grades" },
+        { href: "/staff/grades/approvals", label: "Pending Approvals", icon: "grades" },
+      ],
     },
   ],
 
