@@ -117,7 +117,9 @@ export function SectionAssignmentTable({
     const selectedIndices = Object.keys(rowSelection).filter(
       (key) => rowSelection[key]
     );
-    return selectedIndices.map((index) => students[parseInt(index, 10)]);
+    return selectedIndices
+      .map((index) => students[parseInt(index, 10)])
+      .filter((s): s is StudentForSectionAssignment => s !== undefined);
   }, [rowSelection, students]);
 
   // Check if all selected students have the same grade level
