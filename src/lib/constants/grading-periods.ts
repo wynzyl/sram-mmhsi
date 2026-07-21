@@ -26,14 +26,13 @@ export const GRADING_PERIOD_LABELS: Record<GradingPeriod, string> = {
 };
 
 /**
- * Grade sheet workflow statuses with full approval chain.
- * draft → submitted → coordinator_approved → principal_approved → published → locked
+ * Grade sheet workflow statuses with simplified approval chain.
+ * draft → submitted → principal_approved → published → locked
  * Can be returned at any stage for corrections.
  */
 export const GRADE_SHEET_STATUSES = [
   "draft",
   "submitted",
-  "coordinator_approved",
   "principal_approved",
   "published",
   "locked",
@@ -45,7 +44,6 @@ export type GradeSheetStatus = (typeof GRADE_SHEET_STATUSES)[number];
 export const GRADE_SHEET_STATUS_LABELS: Record<GradeSheetStatus, string> = {
   draft: "Draft",
   submitted: "Submitted",
-  coordinator_approved: "Coordinator Approved",
   principal_approved: "Principal Approved",
   published: "Published",
   locked: "Locked",
@@ -57,8 +55,6 @@ export const GRADE_SHEET_STATUS_LABELS: Record<GradeSheetStatus, string> = {
  */
 export const GRADE_APPROVAL_ACTIONS = [
   "submit",
-  "coordinator_return",
-  "coordinator_approve",
   "principal_return",
   "principal_approve",
   "publish",
@@ -70,8 +66,6 @@ export type GradeApprovalAction = (typeof GRADE_APPROVAL_ACTIONS)[number];
 
 export const GRADE_APPROVAL_ACTION_LABELS: Record<GradeApprovalAction, string> = {
   submit: "Submitted for Review",
-  coordinator_return: "Returned by Coordinator",
-  coordinator_approve: "Approved by Coordinator",
   principal_return: "Returned by Principal",
   principal_approve: "Approved by Principal",
   publish: "Published to Portal",

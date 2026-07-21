@@ -13,7 +13,7 @@ import { GRADING_PERIOD_LABELS } from "@/lib/constants/grading-periods";
 
 export const metadata = {
   title: "Pending Approvals | SRAMS",
-  description: "Review and approve grade sheets submitted by coordinators",
+  description: "Review and approve grade sheets submitted by section advisers",
 };
 
 export default async function GradeApprovalsPage() {
@@ -88,8 +88,8 @@ export default async function GradeApprovalsPage() {
               <Card className="hover:shadow-md hover:border-indigo-100 transition-all h-full">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <Badge variant="warning" className="text-xs">
-                      Awaiting Approval
+                    <Badge variant="info" className="text-xs">
+                      Submitted
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {GRADING_PERIOD_LABELS[sheet.gradingPeriod]}
@@ -108,11 +108,11 @@ export default async function GradeApprovalsPage() {
                       <span className="text-muted-foreground">Adviser:</span>
                       <span className="font-medium">{sheet.adviserName || "—"}</span>
                     </div>
-                    {sheet.coordinatorApprovedAt && (
+                    {sheet.submittedAt && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Coordinator Approved:</span>
+                        <span className="text-muted-foreground">Submitted:</span>
                         <span className="font-medium">
-                          {formatDate(sheet.coordinatorApprovedAt)}
+                          {formatDate(sheet.submittedAt)}
                         </span>
                       </div>
                     )}

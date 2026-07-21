@@ -14,14 +14,12 @@ import {
   students,
   users,
   sectionAdvisers,
-  coordinatorAssignments,
   enrollments,
   curriculumAdoptions,
   gradingPeriodSystems,
 } from "@/lib/db/schema";
 import type { GradingSystemType } from "@/lib/constants/grading-systems";
 import type { GradeSheetView, GradeSheetEntryView } from "./grades.schema";
-import { GRADE_LEVEL_TO_GROUP, type GradeGroup } from "@/lib/constants/grade-groups";
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -204,83 +202,8 @@ export async function getAdviserGradeSheets(
 }
 
 /**
- * Get grade sheets pending coordinator review.
- * Filters by the coordinator's assigned grade groups.
- */
-export async function getCoordinatorPendingReviews(
-  coordinatorId: string,
-  schoolYearId: string
-): Promise<GradeSheetView[]> {
-  // Get coordinator's assigned grade groups
-  const assignments = await db
-    .select({ gradeGroup: coordinatorAssignments.gradeGroup })
-    .from(coordinatorAssignments)
-    .where(
-      and(
-        eq(coordinatorAssignments.userId, coordinatorId),
-        eq(coordinatorAssignments.schoolYearId, schoolYearId),
-        isNull(coordinatorAssignments.deletedAt)
-      )
-    );
-
-  if (assignments.length === 0) {
-    return [];
-  }
-
-  const gradeGroups = assignments.map((a) => a.gradeGroup);
-
-  // Get grade level names for these groups
-  const gradeLevelNames = Object.entries(GRADE_LEVEL_TO_GROUP)
-    .filter(([, group]) => gradeGroups.includes(group as GradeGroup))
-    .map(([name]) => name);
-
-  if (gradeLevelNames.length === 0) {
-    return [];
-  }
-
-  const rows = await db
-    .select({
-      id: gradeSheets.id,
-      sectionId: gradeSheets.sectionId,
-      sectionName: sections.name,
-      gradeLevelId: sections.gradeLevelId,
-      gradeLevelName: gradeLevels.name,
-      gradeLevelOrder: gradeLevels.order,
-      schoolYearId: gradeSheets.schoolYearId,
-      schoolYearLabel: schoolYears.label,
-      adviserId: gradeSheets.adviserId,
-      adviserName: users.username,
-      gradingPeriod: gradeSheets.gradingPeriod,
-      status: gradeSheets.status,
-      submittedAt: gradeSheets.submittedAt,
-      coordinatorApprovedAt: gradeSheets.coordinatorApprovedAt,
-      principalApprovedAt: gradeSheets.principalApprovedAt,
-      publishedAt: gradeSheets.publishedAt,
-      lockedAt: gradeSheets.lockedAt,
-      returnedAt: gradeSheets.returnedAt,
-      returnRemarks: gradeSheets.returnRemarks,
-      createdAt: gradeSheets.createdAt,
-    })
-    .from(gradeSheets)
-    .innerJoin(sections, eq(gradeSheets.sectionId, sections.id))
-    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
-    .innerJoin(schoolYears, eq(gradeSheets.schoolYearId, schoolYears.id))
-    .leftJoin(users, eq(gradeSheets.adviserId, users.id))
-    .where(
-      and(
-        eq(gradeSheets.schoolYearId, schoolYearId),
-        eq(gradeSheets.status, "submitted"),
-        inArray(gradeLevels.name, gradeLevelNames)
-      )
-    )
-    .orderBy(asc(gradeLevels.order), asc(sections.name), asc(gradeSheets.gradingPeriod));
-
-  return rows as GradeSheetView[];
-}
-
-/**
  * Get grade sheets pending principal review.
- * Returns all sheets with coordinator_approved status.
+ * Returns all sheets with submitted status (direct submission from advisers).
  */
 export async function getPrincipalPendingReviews(
   schoolYearId: string
@@ -316,7 +239,7 @@ export async function getPrincipalPendingReviews(
     .where(
       and(
         eq(gradeSheets.schoolYearId, schoolYearId),
-        eq(gradeSheets.status, "coordinator_approved")
+        eq(gradeSheets.status, "submitted")
       )
     )
     .orderBy(asc(gradeLevels.order), asc(sections.name), asc(gradeSheets.gradingPeriod));

@@ -655,137 +655,6 @@ export async function submitGradeSheetAction(
 }
 
 /**
- * Coordinator returns grade sheet with remarks.
- */
-export async function coordinatorReturnAction(
-  _prevState: ReturnGradeSheetFormState,
-  formData: FormData
-): Promise<ReturnGradeSheetFormState> {
-  const session = await requireSession();
-
-  if (!hasPermission(session.role, "grades:coordinator_review")) {
-    return { message: "You do not have permission to review grades." };
-  }
-
-  const parsed = ReturnGradeSheetSchema.safeParse({
-    gradeSheetId: formData.get("gradeSheetId"),
-    remarks: formData.get("remarks"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
-  }
-
-  const { gradeSheetId, remarks } = parsed.data;
-
-  const gradeSheet = await db.query.gradeSheets.findFirst({
-    where: eq(gradeSheets.id, gradeSheetId),
-  });
-
-  if (!gradeSheet) {
-    return { message: "Grade sheet not found." };
-  }
-
-  if (gradeSheet.status !== "submitted") {
-    return { message: "Cannot return - sheet is not in submitted status." };
-  }
-
-  try {
-    await db.transaction(async (tx) => {
-      await tx
-        .update(gradeSheets)
-        .set({
-          status: "returned",
-          returnedAt: new Date(),
-          returnedBy: session.userId,
-          returnRemarks: remarks,
-          updatedAt: new Date(),
-          updatedBy: session.userId,
-        })
-        .where(eq(gradeSheets.id, gradeSheetId));
-
-      await tx.insert(gradeApprovals).values({
-        gradeSheetId,
-        action: "coordinator_return",
-        remarks,
-        actorId: session.userId,
-        actorRole: session.role,
-      });
-    });
-
-    revalidatePath("/staff/grades");
-    return { success: true, message: "Grade sheet returned to adviser." };
-  } catch (error) {
-    logger.error("[grades] Failed to return grade sheet", { error });
-    return { message: "An unexpected error occurred." };
-  }
-}
-
-/**
- * Coordinator approves grade sheet.
- */
-export async function coordinatorApproveAction(
-  _prevState: ApproveGradeSheetFormState,
-  formData: FormData
-): Promise<ApproveGradeSheetFormState> {
-  const session = await requireSession();
-
-  if (!hasPermission(session.role, "grades:coordinator_review")) {
-    return { message: "You do not have permission to approve grades." };
-  }
-
-  const parsed = ApproveGradeSheetSchema.safeParse({
-    gradeSheetId: formData.get("gradeSheetId"),
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
-  }
-
-  const { gradeSheetId } = parsed.data;
-
-  const gradeSheet = await db.query.gradeSheets.findFirst({
-    where: eq(gradeSheets.id, gradeSheetId),
-  });
-
-  if (!gradeSheet) {
-    return { message: "Grade sheet not found." };
-  }
-
-  if (gradeSheet.status !== "submitted") {
-    return { message: "Cannot approve - sheet is not in submitted status." };
-  }
-
-  try {
-    await db.transaction(async (tx) => {
-      await tx
-        .update(gradeSheets)
-        .set({
-          status: "coordinator_approved",
-          coordinatorApprovedAt: new Date(),
-          coordinatorApprovedBy: session.userId,
-          updatedAt: new Date(),
-          updatedBy: session.userId,
-        })
-        .where(eq(gradeSheets.id, gradeSheetId));
-
-      await tx.insert(gradeApprovals).values({
-        gradeSheetId,
-        action: "coordinator_approve",
-        actorId: session.userId,
-        actorRole: session.role,
-      });
-    });
-
-    revalidatePath("/staff/grades");
-    return { success: true, message: "Grade sheet approved by coordinator." };
-  } catch (error) {
-    logger.error("[grades] Failed to approve grade sheet", { error });
-    return { message: "An unexpected error occurred." };
-  }
-}
-
-/**
  * Principal returns grade sheet with remarks.
  */
 export async function principalReturnAction(
@@ -817,8 +686,8 @@ export async function principalReturnAction(
     return { message: "Grade sheet not found." };
   }
 
-  if (gradeSheet.status !== "coordinator_approved") {
-    return { message: "Cannot return - sheet is not in coordinator_approved status." };
+  if (gradeSheet.status !== "submitted") {
+    return { message: "Cannot return - sheet is not in submitted status." };
   }
 
   try {
@@ -883,8 +752,8 @@ export async function principalApproveAction(
     return { message: "Grade sheet not found." };
   }
 
-  if (gradeSheet.status !== "coordinator_approved") {
-    return { message: "Cannot approve - sheet is not in coordinator_approved status." };
+  if (gradeSheet.status !== "submitted") {
+    return { message: "Cannot approve - sheet is not in submitted status." };
   }
 
   try {

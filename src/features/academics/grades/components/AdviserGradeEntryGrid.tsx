@@ -30,8 +30,7 @@ const EDITABLE_STATUSES = ["draft", "returned"];
 function getStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     draft: "Draft",
-    submitted: "Submitted for Review",
-    coordinator_approved: "Coordinator Approved",
+    submitted: "Submitted for Approval",
     principal_approved: "Principal Approved",
     published: "Published",
     locked: "Locked",
@@ -44,7 +43,6 @@ function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
     draft: "bg-gray-100 text-gray-800",
     submitted: "bg-blue-100 text-blue-800",
-    coordinator_approved: "bg-indigo-100 text-indigo-800",
     principal_approved: "bg-purple-100 text-purple-800",
     published: "bg-green-100 text-green-800",
     locked: "bg-gray-100 text-gray-800",
@@ -283,7 +281,7 @@ export function AdviserGradeEntryGrid({
                 onClick={() => {
                   if (
                     confirm(
-                      "Are you sure you want to submit these grades for coordinator review? You won't be able to edit them until they are returned."
+                      "Are you sure you want to submit these grades for principal approval? You won't be able to edit them until they are returned."
                     )
                   ) {
                     handleSubmit();

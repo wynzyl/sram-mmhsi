@@ -295,7 +295,6 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Grades",
       items: [
         { href: "/staff/grades", label: "My Sections", icon: "grades" },
-        { href: "/staff/grades/reviews", label: "Pending Reviews", icon: "grades" },
       ],
     },
   ],
