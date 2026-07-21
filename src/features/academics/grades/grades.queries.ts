@@ -631,10 +631,11 @@ export async function getSubjectsForGradeLevel(
   gradeLevelId: string,
   schoolYearId: string
 ): Promise<GradeLevelSubject[]> {
-  // Find the active curriculum adoption for this school year
+  // Find the active curriculum adoption for this school year AND grade level
   const adoption = await db.query.curriculumAdoptions.findFirst({
     where: and(
       eq(curriculumAdoptions.schoolYearId, schoolYearId),
+      eq(curriculumAdoptions.gradeLevelId, gradeLevelId),
       isNull(curriculumAdoptions.deletedAt)
     ),
     columns: { curriculumId: true },
