@@ -34,16 +34,16 @@ export default async function GradesDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Grades</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Grades</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           School Year: {activeSY.label}
         </p>
       </div>
 
       {hasNoAssignments ? (
-        <div className="p-12 text-center bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div className="p-12 text-center bg-card rounded-xl border border-border shadow-sm">
           <svg
-            className="mx-auto h-12 w-12 text-gray-400"
+            className="mx-auto h-12 w-12 text-muted-foreground"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -56,10 +56,10 @@ export default async function GradesDashboardPage() {
               d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">
+          <h3 className="mt-2 text-sm font-medium text-foreground">
             No assignments found
           </h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             You have no section adviser or subject assignments for the current
             school year.
           </p>

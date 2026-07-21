@@ -11,16 +11,14 @@ import {
   gradeApprovals,
   sectionAdvisers,
 } from "@/lib/db/schema";
-import { eq, and, sql, isNull } from "drizzle-orm";
+import { eq, and, sql, isNull, isNotNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   SaveGradesSchema,
   SubmitGradesSchema,
-  AssignTeacherSchema,
   type SaveGradesFormState,
   type SubmitGradesFormState,
-  type AssignTeacherFormState,
 } from "@/lib/validators/academics";
 import {
   CreateGradeSheetSchema,
@@ -43,6 +41,15 @@ import {
 import { logger } from "@/lib/observability/logger";
 import { logAudit, logCreateAction } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
+import {
+  getGradeRemarks,
+  QUARTERLY_PERIODS,
+  TRIMESTER_PERIODS,
+} from "@/lib/constants/grading-periods";
+import {
+  getStudentsInSection,
+  getSubjectsForGradeLevel,
+} from "./grades.queries";
 
 // ─── Save Grades (Draft) ────────────────────────────────────────────────────
 
@@ -305,85 +312,155 @@ export async function submitGradesAction(
   }
 }
 
-// ─── Assign Teacher ─────────────────────────────────────────────────────────
+// ─── Grade Sheet Validation Helpers ──────────────────────────────────────────
 
-export async function assignTeacherAction(
-  _prevState: AssignTeacherFormState,
-  formData: FormData
-): Promise<AssignTeacherFormState> {
-  const session = await requireSession();
-  if (!hasPermission(session.role, "assignments:manage")) {
-    return { message: "You do not have permission to manage teacher assignments." };
+/**
+ * Validate that previous grading periods have been submitted.
+ * Enforces sequential period submission to prevent bypassing UI-level locking.
+ *
+ * Period order: Q1 → Q2 → Q3 → Q4 (or T1 → T2 → T3 for trimester)
+ */
+async function validatePreviousPeriodsSubmitted(
+  sectionId: string,
+  schoolYearId: string,
+  currentPeriod: string
+): Promise<{ valid: boolean; message?: string }> {
+  // Determine which period system is in use
+  const periods: readonly string[] = currentPeriod.startsWith("T")
+    ? TRIMESTER_PERIODS
+    : QUARTERLY_PERIODS;
+
+  const currentIndex = periods.indexOf(currentPeriod);
+
+  // First period doesn't need any previous periods completed
+  if (currentIndex <= 0) {
+    return { valid: true };
   }
 
-  const result = parseFormData(AssignTeacherSchema, formData);
-  if (!result.success) {
-    return { errors: result.errors };
+  // Check that all previous periods have submitted grade sheets
+  const previousPeriods = periods.slice(0, currentIndex);
+
+  // Query all grade sheets for this section/year
+  const existingSheets = await db
+    .select({
+      gradingPeriod: gradeSheets.gradingPeriod,
+      status: gradeSheets.status,
+    })
+    .from(gradeSheets)
+    .where(
+      and(
+        eq(gradeSheets.sectionId, sectionId),
+        eq(gradeSheets.schoolYearId, schoolYearId)
+      )
+    );
+
+  // Create a map keyed by string for flexible lookup
+  const sheetMap = new Map<string, string>(
+    existingSheets.map((s) => [s.gradingPeriod, s.status])
+  );
+
+  for (const period of previousPeriods) {
+    const status = sheetMap.get(period);
+    // Allow: submitted, principal_approved, published, locked
+    // Not allowed: draft, returned, or missing
+    if (!status || ["draft", "returned"].includes(status)) {
+      const periodLabel = period.startsWith("T")
+        ? `Trimester ${period.slice(1)}`
+        : `Quarter ${period.slice(1)}`;
+      return {
+        valid: false,
+        message: `Cannot submit: ${periodLabel} grades must be submitted first. Grades must be submitted in order.`,
+      };
+    }
   }
 
-  const data = result.data;
+  return { valid: true };
+}
 
-  // Validate the target section: it must exist, be active, and belong to the
-  // same school year as the assignment (an FK alone can't enforce that).
+/**
+ * Validate that all enrolled students have grades for all subjects.
+ * Called before submitting a grade sheet for review.
+ */
+async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
+  isComplete: boolean;
+  message?: string;
+  missingCount?: number;
+  totalExpected?: number;
+}> {
+  // Get grade sheet with section info
+  const gradeSheet = await db.query.gradeSheets.findFirst({
+    where: eq(gradeSheets.id, gradeSheetId),
+    columns: {
+      id: true,
+      sectionId: true,
+      schoolYearId: true,
+    },
+  });
+
+  if (!gradeSheet) {
+    return { isComplete: false, message: "Grade sheet not found." };
+  }
+
+  // Get section with grade level
   const section = await db.query.sections.findFirst({
-    where: and(eq(sections.id, data.sectionId), isNull(sections.deletedAt)),
-    columns: { id: true, schoolYearId: true },
+    where: eq(sections.id, gradeSheet.sectionId),
+    columns: { id: true, gradeLevelId: true },
   });
 
   if (!section) {
-    return { errors: { _form: ["The selected section no longer exists."] } };
+    return { isComplete: false, message: "Section not found." };
   }
 
-  if (section.schoolYearId !== data.schoolYearId) {
+  // Get enrolled students count
+  const students = await getStudentsInSection(
+    gradeSheet.sectionId,
+    gradeSheet.schoolYearId
+  );
+  const studentCount = students.length;
+
+  // Get subjects count for grade level
+  const subjects = await getSubjectsForGradeLevel(
+    section.gradeLevelId,
+    gradeSheet.schoolYearId
+  );
+  const subjectCount = subjects.length;
+
+  // Calculate expected entries
+  const totalExpected = studentCount * subjectCount;
+
+  if (totalExpected === 0) {
     return {
-      errors: {
-        _form: ["The selected section belongs to a different school year."],
-      },
+      isComplete: false,
+      message: "No students enrolled or no subjects configured for this section.",
     };
   }
 
-  try {
-    // Check duplicate (kept inside the try so DB failures route through the
-    // structured error handler below).
-    const existing = await db.query.teacherAssignments.findFirst({
-      where: and(
-        eq(teacherAssignments.teacherId, data.teacherId),
-        eq(teacherAssignments.subjectId, data.subjectId),
-        eq(teacherAssignments.sectionId, data.sectionId),
-        eq(teacherAssignments.schoolYearId, data.schoolYearId),
-        isNull(teacherAssignments.deletedAt)
-      ),
-    });
+  // Count actual entries with grades (grade is numeric, so only check for NOT NULL)
+  const [countResult] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+    })
+    .from(gradeSheetEntries)
+    .where(
+      and(
+        eq(gradeSheetEntries.gradeSheetId, gradeSheetId),
+        isNotNull(gradeSheetEntries.grade)
+      )
+    );
 
-    if (existing) {
-      return { errors: { _form: ["This assignment already exists."] } };
-    }
+  const totalEntered = countResult?.count ?? 0;
+  const missingCount = totalExpected - totalEntered;
 
-    // Insert + audit are atomic: if the audit write fails, the assignment insert
-    // is rolled back so a retry can't report a spurious "already exists".
-    await db.transaction(async (tx) => {
-      const [newAssignment] = await tx
-        .insert(teacherAssignments)
-        .values({
-          teacherId: data.teacherId,
-          subjectId: data.subjectId,
-          sectionId: data.sectionId,
-          schoolYearId: data.schoolYearId,
-          createdBy: session.userId,
-        })
-        .returning({ id: teacherAssignments.id });
-
-      await logCreateAction(session, "teacher_assignments", newAssignment.id, data, {
-        throwOnFail: true,
-      });
-    });
-
-    revalidatePath("/staff/academics/assignments");
-    return { success: true, message: "Teacher assigned successfully." };
-  } catch (error) {
-    logger.error("[academics] Failed to assign teacher", { error });
-    return { message: "An unexpected error occurred." };
+  if (missingCount > 0) {
+    return {
+      isComplete: false,
+      message: `Cannot submit: ${missingCount} grade${missingCount > 1 ? "s" : ""} missing. All ${totalExpected} entries (${studentCount} students × ${subjectCount} subjects) must be filled.`,
+      missingCount,
+      totalExpected,
+    };
   }
+
+  return { isComplete: true };
 }
 
 // ─── Grade Sheet Workflow Actions (NEW) ──────────────────────────────────────
@@ -540,6 +617,11 @@ export async function saveGradeSheetEntriesAction(
               )
             );
         } else {
+          // Server-side: Auto-calculate remarks based on grade using DepEd scale
+          // This ensures data integrity regardless of client-side logic
+          const numGrade = typeof entry.grade === "number" ? entry.grade : parseFloat(String(entry.grade));
+          const validatedRemarks = !isNaN(numGrade) ? getGradeRemarks(numGrade) : entry.remarks;
+
           // Upsert entry
           await tx
             .insert(gradeSheetEntries)
@@ -548,7 +630,7 @@ export async function saveGradeSheetEntriesAction(
               studentId: entry.studentId,
               subjectId: entry.subjectId,
               grade: String(entry.grade),
-              remarks: entry.remarks,
+              remarks: validatedRemarks,
             })
             .onConflictDoUpdate({
               target: [
@@ -558,7 +640,7 @@ export async function saveGradeSheetEntriesAction(
               ],
               set: {
                 grade: String(entry.grade),
-                remarks: entry.remarks,
+                remarks: validatedRemarks,
                 updatedAt: new Date(),
               },
             });
@@ -619,8 +701,25 @@ export async function submitGradeSheetAction(
     return { message: "You are not authorized to submit this grade sheet." };
   }
 
-  // TODO: Validate all students × subjects have entries before submission
-  // For now, allow submission without validation
+  // Enforce period locking: check that previous periods are submitted
+  const periodValidation = await validatePreviousPeriodsSubmitted(
+    gradeSheet.sectionId,
+    gradeSheet.schoolYearId,
+    gradeSheet.gradingPeriod
+  );
+  if (!periodValidation.valid) {
+    return { message: periodValidation.message };
+  }
+
+  // Validate all students × subjects have entries before submission
+  const validationResult = await validateGradeSheetCompleteness(gradeSheetId);
+  if (!validationResult.isComplete) {
+    return {
+      message: validationResult.message,
+      missingCount: validationResult.missingCount,
+      totalExpected: validationResult.totalExpected,
+    };
+  }
 
   try {
     await db.transaction(async (tx) => {

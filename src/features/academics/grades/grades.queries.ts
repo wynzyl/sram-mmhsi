@@ -28,11 +28,15 @@ import type { GradeSheetView, GradeSheetEntryView } from "./grades.schema";
  */
 export type TeacherAssignmentCard = {
   id: string;
+  sectionId: string;
   subject: {
     name: string | null;
     code: string | null;
   };
   section: {
+    name: string | null;
+  };
+  gradeLevel: {
     name: string | null;
   };
 };
@@ -97,6 +101,30 @@ export async function getGradingSystemType(
 }
 
 /**
+ * Check if a teacher is assigned to a section (has any subject assignment in that section)
+ */
+export async function isTeacherAssignedToSection(
+  teacherId: string,
+  sectionId: string,
+  schoolYearId: string
+): Promise<boolean> {
+  const [assignment] = await db
+    .select({ id: teacherAssignments.id })
+    .from(teacherAssignments)
+    .where(
+      and(
+        eq(teacherAssignments.teacherId, teacherId),
+        eq(teacherAssignments.sectionId, sectionId),
+        eq(teacherAssignments.schoolYearId, schoolYearId),
+        isNull(teacherAssignments.deletedAt)
+      )
+    )
+    .limit(1);
+
+  return !!assignment;
+}
+
+/**
  * Get teacher assignments for the current user in a school year
  */
 export async function getTeacherAssignments(
@@ -106,13 +134,16 @@ export async function getTeacherAssignments(
   const rows = await db
     .select({
       id: teacherAssignments.id,
+      sectionId: teacherAssignments.sectionId,
       subjectName: subjects.name,
       subjectCode: subjects.code,
       sectionName: sections.name,
+      gradeLevelName: gradeLevels.name,
     })
     .from(teacherAssignments)
     .leftJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
     .leftJoin(sections, eq(teacherAssignments.sectionId, sections.id))
+    .leftJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
     .where(
       and(
         eq(teacherAssignments.teacherId, teacherId),
@@ -124,12 +155,16 @@ export async function getTeacherAssignments(
 
   return rows.map((row) => ({
     id: row.id,
+    sectionId: row.sectionId,
     subject: {
       name: row.subjectName,
       code: row.subjectCode,
     },
     section: {
       name: row.sectionName,
+    },
+    gradeLevel: {
+      name: row.gradeLevelName,
     },
   }));
 }
@@ -385,9 +420,14 @@ export async function getGradeSheetApprovalHistory(
 
 // ─── Teacher Assignments Management ──────────────────────────────────────────
 
+import type { PaginationParams, PaginatedResult } from "@/lib/types/pagination";
+import { calculatePagination, calculateOffset } from "@/lib/types/pagination";
+
 /**
  * Get all teacher assignments with full details for the management page.
  * Ordered by school year (newest first), then grade level, then section, then subject.
+ *
+ * @deprecated Use getPaginatedTeacherAssignments for large datasets
  */
 export async function getAllTeacherAssignments(
   schoolYearId?: string
@@ -431,6 +471,75 @@ export async function getAllTeacherAssignments(
     );
 
   return rows as TeacherAssignmentListItem[];
+}
+
+/**
+ * Get paginated teacher assignments with full details.
+ * Recommended for the management page to avoid loading all records into memory.
+ */
+export async function getPaginatedTeacherAssignments(
+  pagination: PaginationParams,
+  schoolYearId?: string
+): Promise<PaginatedResult<TeacherAssignmentListItem>> {
+  const whereConditions = [isNull(teacherAssignments.deletedAt)];
+
+  if (schoolYearId) {
+    whereConditions.push(eq(teacherAssignments.schoolYearId, schoolYearId));
+  }
+
+  // Get total count for pagination metadata
+  const [countResult] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(teacherAssignments)
+    .innerJoin(users, eq(teacherAssignments.teacherId, users.id))
+    .innerJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
+    .innerJoin(sections, eq(teacherAssignments.sectionId, sections.id))
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+    .innerJoin(schoolYears, eq(teacherAssignments.schoolYearId, schoolYears.id))
+    .where(and(...whereConditions));
+
+  const totalRecords = countResult?.count ?? 0;
+  const offset = calculateOffset(pagination.page, pagination.pageSize);
+
+  // Get paginated data
+  const rows = await db
+    .select({
+      id: teacherAssignments.id,
+      teacherId: teacherAssignments.teacherId,
+      teacherName: users.username,
+      teacherEmail: users.email,
+      subjectId: teacherAssignments.subjectId,
+      subjectName: subjects.name,
+      subjectCode: subjects.code,
+      sectionId: teacherAssignments.sectionId,
+      sectionName: sections.name,
+      gradeLevelName: gradeLevels.name,
+      gradeLevelOrder: gradeLevels.order,
+      schoolYearId: teacherAssignments.schoolYearId,
+      schoolYearLabel: schoolYears.label,
+      isActiveYear: schoolYears.isActive,
+      createdAt: teacherAssignments.createdAt,
+    })
+    .from(teacherAssignments)
+    .innerJoin(users, eq(teacherAssignments.teacherId, users.id))
+    .innerJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
+    .innerJoin(sections, eq(teacherAssignments.sectionId, sections.id))
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+    .innerJoin(schoolYears, eq(teacherAssignments.schoolYearId, schoolYears.id))
+    .where(and(...whereConditions))
+    .orderBy(
+      desc(schoolYears.startDate),
+      asc(gradeLevels.order),
+      asc(sections.name),
+      asc(subjects.name)
+    )
+    .limit(pagination.pageSize)
+    .offset(offset);
+
+  return {
+    data: rows as TeacherAssignmentListItem[],
+    pagination: calculatePagination(pagination.page, pagination.pageSize, totalRecords),
+  };
 }
 
 /**
@@ -731,6 +840,7 @@ export async function isAdviserForSection(
 export type GradeSheetData = {
   id: string;
   status: string;
+  returnRemarks: string | null;
   entries: Array<{
     studentId: string;
     subjectId: string;
@@ -756,6 +866,7 @@ export async function getGradeSheetForPeriod(
     columns: {
       id: true,
       status: true,
+      returnRemarks: true,
     },
   });
 
@@ -775,6 +886,7 @@ export async function getGradeSheetForPeriod(
   return {
     id: sheet.id,
     status: sheet.status,
+    returnRemarks: sheet.returnRemarks,
     entries: entries.map((e) => ({
       studentId: e.studentId,
       subjectId: e.subjectId,
@@ -789,7 +901,8 @@ export async function getGradeSheetForPeriod(
 export type PeriodCompletionStatus = {
   period: string;
   hasGradeSheet: boolean;
-  isComplete: boolean; // All students have grades for all subjects
+  status: string | null; // Grade sheet status
+  isComplete: boolean; // Period is approved/published (unlocks next period)
   totalExpected: number;
   totalEntered: number;
 };
@@ -797,6 +910,8 @@ export type PeriodCompletionStatus = {
 /**
  * Get completion status for all periods of a section.
  * Used to determine if later periods can be edited.
+ *
+ * Performance: Uses a single aggregated query instead of N queries per period.
  */
 export async function getPeriodsCompletionStatus(
   sectionId: string,
@@ -808,46 +923,52 @@ export async function getPeriodsCompletionStatus(
   const result = new Map<string, PeriodCompletionStatus>();
   const totalExpected = studentCount * subjectCount;
 
+  // Initialize all periods as having no grade sheet
   for (const period of periods) {
-    const sheet = await db.query.gradeSheets.findFirst({
-      where: and(
-        eq(gradeSheets.sectionId, sectionId),
-        eq(gradeSheets.schoolYearId, schoolYearId),
-        sql`${gradeSheets.gradingPeriod} = ${period}`
-      ),
-      columns: { id: true, status: true },
-    });
-
-    if (!sheet) {
-      result.set(period, {
-        period,
-        hasGradeSheet: false,
-        isComplete: false,
-        totalExpected,
-        totalEntered: 0,
-      });
-      continue;
-    }
-
-    // Count entries with grades
-    const [countResult] = await db
-      .select({
-        count: sql<number>`count(*)::int`,
-      })
-      .from(gradeSheetEntries)
-      .where(
-        and(
-          eq(gradeSheetEntries.gradeSheetId, sheet.id),
-          sql`${gradeSheetEntries.grade} IS NOT NULL`
-        )
-      );
-
-    const totalEntered = countResult?.count ?? 0;
-
     result.set(period, {
       period,
+      hasGradeSheet: false,
+      status: null,
+      isComplete: false,
+      totalExpected,
+      totalEntered: 0,
+    });
+  }
+
+  // Statuses that indicate a period is complete (unlocks next period)
+  const COMPLETE_STATUSES = ["principal_approved", "published", "locked"];
+
+  // Single query to get all grade sheets and their entry counts for this section/year
+  // This replaces N queries (2 per period) with 1 aggregated query
+  const sheetStats = await db
+    .select({
+      gradingPeriod: gradeSheets.gradingPeriod,
+      sheetId: gradeSheets.id,
+      status: gradeSheets.status,
+      entryCount: sql<number>`(
+        SELECT COUNT(*)::int
+        FROM ${gradeSheetEntries}
+        WHERE ${gradeSheetEntries.gradeSheetId} = ${gradeSheets.id}
+        AND ${gradeSheetEntries.grade} IS NOT NULL
+      )`.as("entry_count"),
+    })
+    .from(gradeSheets)
+    .where(
+      and(
+        eq(gradeSheets.sectionId, sectionId),
+        eq(gradeSheets.schoolYearId, schoolYearId)
+      )
+    );
+
+  // Update results with actual data
+  // A period is "complete" only when its grade sheet is approved/published
+  for (const stat of sheetStats) {
+    const totalEntered = stat.entryCount ?? 0;
+    result.set(stat.gradingPeriod, {
+      period: stat.gradingPeriod,
       hasGradeSheet: true,
-      isComplete: totalEntered >= totalExpected && totalExpected > 0,
+      status: stat.status,
+      isComplete: COMPLETE_STATUSES.includes(stat.status),
       totalExpected,
       totalEntered,
     });

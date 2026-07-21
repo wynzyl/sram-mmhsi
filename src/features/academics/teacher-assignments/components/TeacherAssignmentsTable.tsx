@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useTransition, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { removeTeacherAssignmentAction } from "../teacher-assignments.actions";
 import type { TeacherAssignmentListItem } from "@/features/academics/grades/grades.queries";
@@ -8,9 +8,15 @@ import type { TeacherOption } from "@/features/academics/advisers/advisers.schem
 import { DataTable } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatDate } from "@/lib/utils/date";
-import { toast } from "sonner";
 import AssignTeacherForm from "@/features/academics/components/AssignTeacherForm";
 
 interface SchoolYearOption {
@@ -51,26 +57,6 @@ export function TeacherAssignmentsTable({
 }: TeacherAssignmentsTableProps) {
   const router = useRouter();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [removingId, setRemovingId] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  const handleRemove = useCallback(
-    (assignment: TeacherAssignmentListItem) => {
-      startTransition(async () => {
-        const formData = new FormData();
-        formData.append("id", assignment.id);
-        const result = await removeTeacherAssignmentAction({}, formData);
-        if (result.success) {
-          toast.success(result.message);
-          router.refresh();
-        } else {
-          toast.error(result.message || "Failed to remove assignment");
-        }
-        setRemovingId(null);
-      });
-    },
-    [router]
-  );
 
   // Transform data for AssignTeacherForm
   const teacherOptions = teachers.map((t) => ({
@@ -119,15 +105,17 @@ export function TeacherAssignmentsTable({
         ),
       },
       {
+        header: "Grade Level",
+        accessorKey: "gradeLevelName",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.gradeLevelName}</span>
+        ),
+      },
+      {
         header: "Section",
         accessorKey: "sectionName",
         cell: ({ row }) => (
-          <div>
-            <div className="font-medium">{row.original.sectionName}</div>
-            <div className="text-xs text-muted-foreground">
-              {row.original.gradeLevelName}
-            </div>
-          </div>
+          <span className="font-medium">{row.original.sectionName}</span>
         ),
       },
       {
@@ -159,42 +147,22 @@ export function TeacherAssignmentsTable({
         cell: ({ row }) => {
           const assignment = row.original;
 
-          if (removingId === assignment.id) {
-            return (
-              <div className="flex gap-2 items-center">
-                <span className="text-xs text-muted-foreground">Remove?</span>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleRemove(assignment)}
-                  loading={isPending}
-                >
-                  Confirm
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setRemovingId(null)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            );
-          }
-
           return (
-            <Button
+            <InlineConfirmButton
+              action={removeTeacherAssignmentAction}
+              confirmMessage={`Remove ${assignment.teacherName} from ${assignment.subjectName} (${assignment.sectionName})?`}
+              hiddenFields={{ id: assignment.id }}
+              label="Remove"
+              loadingLabel="Removing..."
               variant="danger"
-              size="sm"
-              onClick={() => setRemovingId(assignment.id)}
-            >
-              Remove
-            </Button>
+              onSuccess={() => router.refresh()}
+              dialogTitle="Remove Assignment"
+            />
           );
         },
       },
     ],
-    [removingId, isPending, handleRemove]
+    [router]
   );
 
   return (
@@ -225,38 +193,20 @@ export function TeacherAssignmentsTable({
         <DataTable columns={columns} data={assignments} searchable />
       )}
 
-      {/* Create Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowCreateModal(false)}
+      {/* Create Modal - extracted to Dialog component */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Assign Teacher to Subject</DialogTitle>
+          </DialogHeader>
+          <AssignTeacherForm
+            teachers={teacherOptions}
+            subjects={subjectOptions}
+            sections={sectionOptions}
+            schoolYears={schoolYears}
           />
-          <div className="relative z-10 w-full max-w-2xl mx-4">
-            <div className="bg-white rounded-xl shadow-lg">
-              <div className="flex justify-between items-center p-4 border-b">
-                <h3 className="text-lg font-semibold">Assign Teacher to Subject</h3>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="p-4">
-                <AssignTeacherForm
-                  teachers={teacherOptions}
-                  subjects={subjectOptions}
-                  sections={sectionOptions}
-                  schoolYears={schoolYears}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

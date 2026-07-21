@@ -72,3 +72,50 @@ export const GRADE_APPROVAL_ACTION_LABELS: Record<GradeApprovalAction, string> =
   lock: "Locked",
   unlock: "Unlocked for Editing",
 };
+
+// ─── DepEd Grade Scale and Remarks ────────────────────────────────────────────
+
+/**
+ * DepEd grade remarks based on grade value.
+ * Used for both UI display and server-side validation.
+ */
+export const DEPED_GRADE_REMARKS = {
+  OUTSTANDING: "Outstanding",
+  VERY_SATISFACTORY: "Very Satisfactory",
+  SATISFACTORY: "Satisfactory",
+  FAIRLY_SATISFACTORY: "Fairly Satisfactory",
+  DID_NOT_MEET: "Did Not Meet Expectations",
+} as const;
+
+export type DepEdGradeRemarks = (typeof DEPED_GRADE_REMARKS)[keyof typeof DEPED_GRADE_REMARKS];
+
+/**
+ * Get the appropriate remarks for a grade value according to DepEd scale.
+ * This is the single source of truth for grade-to-remarks mapping.
+ *
+ * @param grade - The numeric grade value (0-100)
+ * @returns The corresponding DepEd remarks string
+ */
+export function getGradeRemarks(grade: number): DepEdGradeRemarks {
+  if (grade < 75) return DEPED_GRADE_REMARKS.DID_NOT_MEET;
+  if (grade < 80) return DEPED_GRADE_REMARKS.FAIRLY_SATISFACTORY;
+  if (grade < 85) return DEPED_GRADE_REMARKS.SATISFACTORY;
+  if (grade < 90) return DEPED_GRADE_REMARKS.VERY_SATISFACTORY;
+  return DEPED_GRADE_REMARKS.OUTSTANDING;
+}
+
+/**
+ * Validate that remarks match the expected value for a grade.
+ * Returns true if remarks are valid (either matching or undefined/null).
+ *
+ * @param grade - The numeric grade value
+ * @param remarks - The provided remarks string
+ * @returns true if valid, false if mismatch
+ */
+export function validateGradeRemarks(grade: number, remarks?: string | null): boolean {
+  // If no remarks provided, that's valid (server will auto-set)
+  if (!remarks) return true;
+
+  const expected = getGradeRemarks(grade);
+  return remarks === expected;
+}

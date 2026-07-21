@@ -57,6 +57,19 @@ export async function listCurriculums(filter?: {
     baseConditions.push(eq(curriculums.rootId, filter.rootId));
   }
 
+  // Add grade level filter to base conditions if specified (moved from post-query filter)
+  // Use EXISTS subquery for efficient filtering without fetching all records
+  if (filter?.gradeLevelId) {
+    baseConditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM ${subjects}
+        WHERE ${subjects.curriculumId} = ${curriculums.id}
+        AND ${subjects.gradeLevelId} = ${filter.gradeLevelId}
+        AND ${subjects.deletedAt} IS NULL
+      )`
+    );
+  }
+
   // Query curriculums with subject and adoption counts
   const rows = await db
     .select({
@@ -84,22 +97,6 @@ export async function listCurriculums(filter?: {
     .leftJoin(users, eq(curriculums.createdBy, users.id))
     .where(baseConditions.length > 0 ? and(...baseConditions) : undefined)
     .orderBy(desc(curriculums.updatedAt));
-
-  // Filter by grade level if specified (post-query filter due to join complexity)
-  if (filter?.gradeLevelId) {
-    const curriculumIdsWithGrade = await db
-      .selectDistinct({ curriculumId: subjects.curriculumId })
-      .from(subjects)
-      .where(
-        and(
-          eq(subjects.gradeLevelId, filter.gradeLevelId),
-          isNull(subjects.deletedAt)
-        )
-      );
-
-    const idsSet = new Set(curriculumIdsWithGrade.map((r) => r.curriculumId));
-    return rows.filter((r) => idsSet.has(r.id));
-  }
 
   return rows;
 }
@@ -177,39 +174,35 @@ export async function getCurriculumById(id: string): Promise<CurriculumDetail | 
     )
     .orderBy(desc(schoolYears.startDate), asc(gradeLevels.order));
 
-  // Query 4: Get user names for audit fields
-  const createdByUser = curriculum.createdAt
-    ? await db
-        .select({ username: users.username })
-        .from(curriculums)
-        .leftJoin(users, eq(curriculums.createdBy, users.id))
-        .where(eq(curriculums.id, id))
-        .limit(1)
-    : [{ username: null }];
-
-  const publishedByUser = curriculum.publishedAt
-    ? await db
-        .select({ username: users.username })
-        .from(curriculums)
-        .leftJoin(users, eq(curriculums.publishedBy, users.id))
-        .where(eq(curriculums.id, id))
-        .limit(1)
-    : [{ username: null }];
-
-  const archivedByUser = curriculum.archivedAt
-    ? await db
-        .select({ username: users.username })
-        .from(curriculums)
-        .leftJoin(users, eq(curriculums.archivedBy, users.id))
-        .where(eq(curriculums.id, id))
-        .limit(1)
-    : [{ username: null }];
+  // Query 4: Get user names for audit fields in a single query using LEFT JOINs
+  // Previously this was 3 separate queries (N+1 pattern) - now combined into one
+  const [auditUsers] = await db
+    .select({
+      createdByName: sql<string | null>`created_user.username`,
+      publishedByName: sql<string | null>`published_user.username`,
+      archivedByName: sql<string | null>`archived_user.username`,
+    })
+    .from(curriculums)
+    .leftJoin(
+      sql`${users} AS created_user`,
+      sql`${curriculums.createdBy} = created_user.id`
+    )
+    .leftJoin(
+      sql`${users} AS published_user`,
+      sql`${curriculums.publishedBy} = published_user.id`
+    )
+    .leftJoin(
+      sql`${users} AS archived_user`,
+      sql`${curriculums.archivedBy} = archived_user.id`
+    )
+    .where(eq(curriculums.id, id))
+    .limit(1);
 
   return {
     ...curriculum,
-    createdByName: createdByUser[0]?.username ?? null,
-    publishedByName: publishedByUser[0]?.username ?? null,
-    archivedByName: archivedByUser[0]?.username ?? null,
+    createdByName: auditUsers?.createdByName ?? null,
+    publishedByName: auditUsers?.publishedByName ?? null,
+    archivedByName: auditUsers?.archivedByName ?? null,
     subjects: subjectRows.map((s) => ({
       id: s.id,
       name: s.name,

@@ -8,6 +8,17 @@ import {
   submitGradeSheetAction,
 } from "../grades.actions";
 import type { SectionStudent, GradeLevelSubject } from "../grades.queries";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { getGradeRemarks } from "@/lib/constants/grading-periods";
 
 interface AdviserGradeEntryGridProps {
   sectionId: string;
@@ -41,23 +52,17 @@ function getStatusLabel(status: string): string {
 
 function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    draft: "bg-gray-100 text-gray-800",
-    submitted: "bg-blue-100 text-blue-800",
-    principal_approved: "bg-purple-100 text-purple-800",
-    published: "bg-green-100 text-green-800",
-    locked: "bg-gray-100 text-gray-800",
-    returned: "bg-amber-100 text-amber-800",
+    draft: "bg-muted text-muted-foreground",
+    submitted: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+    principal_approved: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+    published: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+    locked: "bg-muted text-muted-foreground",
+    returned: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   };
-  return colors[status] || "bg-gray-100 text-gray-800";
+  return colors[status] || "bg-muted text-muted-foreground";
 }
 
-function getRemarks(grade: number): string {
-  if (grade < 75) return "Did Not Meet Expectations";
-  if (grade < 80) return "Fairly Satisfactory";
-  if (grade < 85) return "Satisfactory";
-  if (grade < 90) return "Very Satisfactory";
-  return "Outstanding";
-}
+// Use the shared getGradeRemarks function from constants
 
 export function AdviserGradeEntryGrid({
   sectionId,
@@ -97,6 +102,9 @@ export function AdviserGradeEntryGrid({
   // Action states
   const [saveState, , isSaving] = useActionState(saveGradeSheetEntriesAction, {});
   const [submitState, , isSubmitting] = useActionState(submitGradeSheetAction, {});
+
+  // Submit confirmation dialog state (replaces browser confirm())
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
   // Create grade sheet on first interaction
   const ensureGradeSheet = useCallback(async (): Promise<string | null> => {
@@ -160,7 +168,7 @@ export function AdviserGradeEntryGrid({
         studentId,
         subjectId,
         grade: numGrade,
-        remarks: !isNaN(numGrade) ? getRemarks(numGrade) : undefined,
+        remarks: !isNaN(numGrade) ? getGradeRemarks(numGrade) : undefined,
       };
     });
 
@@ -201,10 +209,19 @@ export function AdviserGradeEntryGrid({
     return grades.get(`${studentId}:${subjectId}`) || "";
   };
 
+  // Calculate completion status for submit validation
+  const totalExpected = students.length * subjects.length;
+  const totalEntered = grades.size;
+  const missingCount = totalExpected - totalEntered;
+  const isComplete = totalExpected > 0 && missingCount === 0;
+
+  // Determine if submit is allowed
+  const canSubmit = canEdit && isComplete && totalExpected > 0;
+
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
       {/* Toolbar */}
-      <div className="border-b border-gray-200 p-4 flex items-center justify-between">
+      <div className="border-b border-border p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {currentStatus && (
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(currentStatus)}`}>
@@ -230,11 +247,21 @@ export function AdviserGradeEntryGrid({
             </span>
           )}
           {isCreatingSheet && (
-            <span className="text-sm text-gray-500">Initializing...</span>
+            <span className="text-sm text-muted-foreground">Initializing...</span>
           )}
           {!canEdit && (
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               (Read-only - grades have been submitted)
+            </span>
+          )}
+          {canEdit && totalExpected > 0 && (
+            <span
+              className={`text-sm ${
+                isComplete ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+              }`}
+            >
+              {totalEntered}/{totalExpected} grades entered
+              {!isComplete && ` (${missingCount} missing)`}
             </span>
           )}
         </div>
@@ -246,7 +273,7 @@ export function AdviserGradeEntryGrid({
                 type="button"
                 onClick={handleSave}
                 disabled={isSaving || isCreatingSheet || !hasUnsavedChanges}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 border border-border rounded-md shadow-sm text-sm font-medium text-foreground bg-card hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>
@@ -278,17 +305,14 @@ export function AdviserGradeEntryGrid({
 
               <button
                 type="button"
-                onClick={() => {
-                  if (
-                    confirm(
-                      "Are you sure you want to submit these grades for principal approval? You won't be able to edit them until they are returned."
-                    )
-                  ) {
-                    handleSubmit();
-                  }
-                }}
-                disabled={isSubmitting || isCreatingSheet || grades.size === 0}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setShowSubmitConfirm(true)}
+                disabled={isSubmitting || isCreatingSheet || !canSubmit}
+                title={
+                  !canSubmit && missingCount > 0
+                    ? `${missingCount} grade${missingCount > 1 ? "s" : ""} missing`
+                    : undefined
+                }
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>
@@ -324,7 +348,7 @@ export function AdviserGradeEntryGrid({
 
       {/* Status Messages */}
       {createError && (
-        <div className="p-4 border-b bg-red-50 text-red-800 border-red-200">
+        <div className="p-4 border-b bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800">
           {createError}
         </div>
       )}
@@ -333,8 +357,8 @@ export function AdviserGradeEntryGrid({
         <div
           className={`p-4 border-b ${
             saveState.success
-              ? "bg-green-50 text-green-800 border-green-200"
-              : "bg-red-50 text-red-800 border-red-200"
+              ? "bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
+              : "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
           }`}
         >
           {saveState.message}
@@ -345,8 +369,8 @@ export function AdviserGradeEntryGrid({
         <div
           className={`p-4 border-b ${
             submitState.success
-              ? "bg-green-50 text-green-800 border-green-200"
-              : "bg-red-50 text-red-800 border-red-200"
+              ? "bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
+              : "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
           }`}
         >
           {submitState.message}
@@ -356,12 +380,12 @@ export function AdviserGradeEntryGrid({
       {/* Grade Entry Grid */}
       <div className="overflow-x-auto">
         <form ref={formRef}>
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
                 <th
                   scope="col"
-                  className="sticky left-0 z-10 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 min-w-[200px]"
+                  className="sticky left-0 z-10 bg-muted px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border min-w-[200px]"
                 >
                   Student Name
                 </th>
@@ -369,7 +393,7 @@ export function AdviserGradeEntryGrid({
                   <th
                     key={subject.id}
                     scope="col"
-                    className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]"
+                    className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider min-w-[100px]"
                     title={subject.name}
                   >
                     {subject.code}
@@ -377,16 +401,16 @@ export function AdviserGradeEntryGrid({
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {students.map((student, studentIndex) => (
                 <tr
                   key={student.id}
-                  className={studentIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                  className={studentIndex % 2 === 0 ? "bg-card" : "bg-muted/50"}
                 >
-                  <td className="sticky left-0 z-10 bg-inherit px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">
+                  <td className="sticky left-0 z-10 bg-inherit px-4 py-3 whitespace-nowrap text-sm font-medium text-foreground border-r border-border">
                     <div className="flex flex-col">
                       <span>{student.fullName}</span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         {student.studentRef}
                       </span>
                     </div>
@@ -402,10 +426,10 @@ export function AdviserGradeEntryGrid({
                           handleGradeChange(student.id, subject.id, e.target.value)
                         }
                         disabled={!canEdit}
-                        className={`w-16 text-center rounded-md border-gray-300 shadow-sm text-sm ${
+                        className={`w-16 text-center rounded-md border-border bg-background text-foreground shadow-sm text-sm ${
                           canEdit
-                            ? "focus:border-primary-500 focus:ring-primary-500"
-                            : "bg-gray-100 text-gray-500 cursor-not-allowed"
+                            ? "focus:border-primary focus:ring-primary"
+                            : "bg-muted text-muted-foreground cursor-not-allowed"
                         }`}
                         placeholder="--"
                       />
@@ -419,28 +443,52 @@ export function AdviserGradeEntryGrid({
       </div>
 
       {/* Legend */}
-      <div className="border-t border-gray-200 p-4 bg-gray-50">
-        <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+      <div className="border-t border-border p-4 bg-muted">
+        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
           Grading Scale
         </h4>
-        <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
           <span>
-            <strong>90-100:</strong> Outstanding
+            <strong className="text-foreground">90-100:</strong> Outstanding
           </span>
           <span>
-            <strong>85-89:</strong> Very Satisfactory
+            <strong className="text-foreground">85-89:</strong> Very Satisfactory
           </span>
           <span>
-            <strong>80-84:</strong> Satisfactory
+            <strong className="text-foreground">80-84:</strong> Satisfactory
           </span>
           <span>
-            <strong>75-79:</strong> Fairly Satisfactory
+            <strong className="text-foreground">75-79:</strong> Fairly Satisfactory
           </span>
           <span>
-            <strong>Below 75:</strong> Did Not Meet Expectations
+            <strong className="text-foreground">Below 75:</strong> Did Not Meet Expectations
           </span>
         </div>
       </div>
+
+      {/* Submit Confirmation Dialog - replaces browser confirm() for accessibility */}
+      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit Grades for Review</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to submit these grades for principal approval?
+              You will not be able to edit them until they are returned for revision.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowSubmitConfirm(false);
+                handleSubmit();
+              }}
+            >
+              Submit for Review
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

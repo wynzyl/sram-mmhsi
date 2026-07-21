@@ -7,9 +7,9 @@ import type { AdviserView, SectionOption, TeacherOption } from "../advisers.sche
 import { DataTable } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatDate } from "@/lib/utils/date";
-import { toast } from "sonner";
 import AdviserAssignmentForm from "./AdviserAssignmentForm";
 
 interface SchoolYearOption {
@@ -33,39 +33,21 @@ export default function AdviserTable({
 }: AdviserTableProps) {
   const router = useRouter();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [removingId, setRemovingId] = useState<string | null>(null);
-  const [removing, setRemoving] = useState(false);
-
-  const handleRemove = async (adviser: AdviserView) => {
-    setRemoving(true);
-    try {
-      const formData = new FormData();
-      formData.append("id", adviser.id);
-      const result = await removeAdviserAction({}, formData);
-      if (result.success) {
-        toast.success(result.message);
-        router.refresh();
-      } else {
-        toast.error(result.message || "Failed to remove adviser");
-      }
-    } finally {
-      setRemoving(false);
-      setRemovingId(null);
-    }
-  };
 
   const columns = useMemo<ColumnDef<AdviserView>[]>(
     () => [
       {
+        header: "Grade Level",
+        accessorKey: "gradeLevelName",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.gradeLevelName}</span>
+        ),
+      },
+      {
         header: "Section",
         accessorKey: "sectionName",
         cell: ({ row }) => (
-          <div>
-            <div className="font-medium">{row.original.sectionName}</div>
-            <div className="text-xs text-muted-foreground">
-              {row.original.gradeLevelName}
-            </div>
-          </div>
+          <span className="font-medium">{row.original.sectionName}</span>
         ),
       },
       {
@@ -109,42 +91,22 @@ export default function AdviserTable({
         cell: ({ row }) => {
           const adviser = row.original;
 
-          if (removingId === adviser.id) {
-            return (
-              <div className="flex gap-2 items-center">
-                <span className="text-xs text-muted-foreground">Remove?</span>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleRemove(adviser)}
-                  loading={removing}
-                >
-                  Confirm
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setRemovingId(null)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            );
-          }
-
           return (
-            <Button
+            <InlineConfirmButton
+              action={removeAdviserAction}
+              confirmMessage={`Remove ${adviser.userName} as adviser from ${adviser.sectionName}?`}
+              hiddenFields={{ id: adviser.id }}
+              label="Remove"
+              loadingLabel="Removing..."
               variant="danger"
-              size="sm"
-              onClick={() => setRemovingId(adviser.id)}
-            >
-              Remove
-            </Button>
+              onSuccess={() => router.refresh()}
+              dialogTitle="Remove Adviser"
+            />
           );
         },
       },
     ],
-    [removingId, removing]
+    [router]
   );
 
   return (

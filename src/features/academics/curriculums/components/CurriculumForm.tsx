@@ -98,9 +98,7 @@ export function CurriculumForm({ mode, curriculum }: CurriculumFormProps) {
         )}
       </div>
 
-      {state.message && (
-        <p className="text-sm text-destructive">{state.message}</p>
-      )}
+      {/* Form-level errors are shown via useFormToast, field errors stay inline */}
 
       <div className="flex items-center gap-3 pt-4">
         <button

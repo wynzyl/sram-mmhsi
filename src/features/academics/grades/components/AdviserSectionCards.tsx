@@ -15,8 +15,8 @@ export function AdviserSectionCards({ sections }: AdviserSectionCardsProps) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">My Advisory Sections</h2>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h2 className="text-lg font-semibold text-foreground">My Advisory Sections</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Enter grades for students in your advisory section
         </p>
       </div>
@@ -28,24 +28,24 @@ export function AdviserSectionCards({ sections }: AdviserSectionCardsProps) {
             href={`/staff/grades/sections/${section.sectionId}`}
             className="block group"
           >
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:shadow-md hover:border-primary-100 transition-all">
+            <div className="bg-card rounded-xl border border-border shadow-sm p-6 hover:shadow-md hover:border-primary/30 transition-all">
               <div className="flex items-center justify-between mb-4">
-                <div className="h-10 w-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-lg">
-                  {section.sectionName.charAt(0).toUpperCase()}
+                <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
+                  {section.gradeLevelName.charAt(0).toUpperCase()}
                 </div>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                  {section.gradeLevelName}
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                  Section {section.sectionName}
                 </span>
               </div>
 
-              <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
-                Section {section.sectionName}
-              </h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
                 {section.gradeLevelName}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Section {section.sectionName}
               </p>
 
-              <div className="mt-4 pt-4 border-t border-gray-50 flex items-center text-sm text-primary-600 font-medium">
+              <div className="mt-4 pt-4 border-t border-border flex items-center text-sm text-primary font-medium">
                 Enter Grades
                 <svg
                   className="ml-1.5 h-4 w-4"

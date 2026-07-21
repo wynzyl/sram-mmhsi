@@ -82,7 +82,12 @@ export const SubmitGradeSheetSchema = z.object({
 });
 
 export type SubmitGradeSheetInput = z.infer<typeof SubmitGradeSheetSchema>;
-export type SubmitGradeSheetFormState = BaseFormState<SubmitGradeSheetInput>;
+export type SubmitGradeSheetFormState = BaseFormState<SubmitGradeSheetInput> & {
+  /** Number of missing grades (for incomplete submissions) */
+  missingCount?: number;
+  /** Total expected entries (students × subjects) */
+  totalExpected?: number;
+};
 
 /**
  * Return grade sheet with remarks.
@@ -145,6 +150,7 @@ export interface GradeSheetView {
   id: string;
   sectionId: string;
   sectionName: string;
+  gradeLevelId: string;
   gradeLevelName: string;
   gradeLevelOrder: number;
   schoolYearId: string;

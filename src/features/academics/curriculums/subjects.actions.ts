@@ -56,6 +56,38 @@ async function getSubjectCurriculumId(subjectId: string): Promise<string | null>
   return subject?.curriculumId ?? null;
 }
 
+/**
+ * Check if a subject code already exists within a curriculum.
+ * Extracts duplicate logic from add/update/restore actions.
+ *
+ * @param curriculumId - The curriculum to check within
+ * @param code - The subject code to check
+ * @param excludeSubjectId - Optional subject ID to exclude (for updates)
+ * @returns true if code conflicts with another active subject
+ */
+async function checkSubjectCodeConflict(
+  curriculumId: string,
+  code: string,
+  excludeSubjectId?: string
+): Promise<boolean> {
+  const conditions = [
+    eq(subjects.curriculumId, curriculumId),
+    sql`UPPER(${subjects.code}) = UPPER(${code})`,
+    isNull(subjects.deletedAt),
+  ];
+
+  if (excludeSubjectId) {
+    conditions.push(sql`${subjects.id} != ${excludeSubjectId}`);
+  }
+
+  const existing = await db.query.subjects.findFirst({
+    where: and(...conditions),
+    columns: { id: true },
+  });
+
+  return !!existing;
+}
+
 // ─── Add Subject to Curriculum ──────────────────────────────────────────────
 
 export async function addSubjectToCurriculumAction(
@@ -82,15 +114,8 @@ export async function addSubjectToCurriculumAction(
   }
 
   // Check for duplicate code within this curriculum
-  const existingCode = await db.query.subjects.findFirst({
-    where: and(
-      eq(subjects.curriculumId, curriculumId),
-      sql`UPPER(${subjects.code}) = UPPER(${code})`,
-      isNull(subjects.deletedAt)
-    ),
-  });
-
-  if (existingCode) {
+  const hasConflict = await checkSubjectCodeConflict(curriculumId, code);
+  if (hasConflict) {
     return { errors: { code: ["Subject code already exists in this curriculum."] } };
   }
 
@@ -188,16 +213,8 @@ export async function updateSubjectInCurriculumAction(
 
   // Check for duplicate code if code is being changed
   if (code && code !== existing.code) {
-    const existingCode = await db.query.subjects.findFirst({
-      where: and(
-        eq(subjects.curriculumId, curriculumId),
-        sql`UPPER(${subjects.code}) = UPPER(${code})`,
-        isNull(subjects.deletedAt),
-        sql`${subjects.id} != ${subjectId}`
-      ),
-    });
-
-    if (existingCode) {
+    const hasConflict = await checkSubjectCodeConflict(curriculumId, code, subjectId);
+    if (hasConflict) {
       return { errors: { code: ["Subject code already exists in this curriculum."] } };
     }
   }
@@ -340,16 +357,12 @@ export async function restoreSubjectInCurriculumAction(
   }
 
   // Check if code now conflicts with another active subject
-  const codeConflict = await db.query.subjects.findFirst({
-    where: and(
-      eq(subjects.curriculumId, subject.curriculumId),
-      sql`UPPER(${subjects.code}) = UPPER(${subject.code})`,
-      isNull(subjects.deletedAt),
-      sql`${subjects.id} != ${subjectId}`
-    ),
-  });
-
-  if (codeConflict) {
+  const hasConflict = await checkSubjectCodeConflict(
+    subject.curriculumId,
+    subject.code,
+    subjectId
+  );
+  if (hasConflict) {
     return {
       message: `Cannot restore: subject code "${subject.code}" is now used by another subject.`,
     };

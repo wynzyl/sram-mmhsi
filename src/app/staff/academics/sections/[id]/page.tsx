@@ -8,6 +8,7 @@ import {
   SectionStudentsTable,
 } from "@/features/academics/sections";
 import { getAdviserForSection } from "@/features/academics/advisers";
+import { isTeacherAssignedToSection } from "@/features/academics/grades/grades.queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,14 +38,20 @@ export default async function SectionDetailPage({
   const session = await requireSession();
   const { id } = await params;
 
-  if (!hasPermission(session.role, "sections:manage")) {
-    redirect("/staff/dashboard");
-  }
-
   const section = await getSectionById(id);
 
   if (!section) {
     notFound();
+  }
+
+  // Check access: either has sections:manage permission OR is a teacher assigned to this section
+  const hasManagePermission = hasPermission(session.role, "sections:manage");
+  const isAssignedTeacher = session.role === "teacher"
+    ? await isTeacherAssignedToSection(session.userId, id, section.schoolYearId)
+    : false;
+
+  if (!hasManagePermission && !isAssignedTeacher) {
+    redirect("/staff/dashboard");
   }
 
   const [students, adviser] = await Promise.all([

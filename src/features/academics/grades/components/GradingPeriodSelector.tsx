@@ -31,12 +31,73 @@ export function GradingPeriodSelector({
     if (periodIndex === 0) return false; // First period is always accessible
     const prevPeriod = periods[periodIndex - 1];
     const prevStatus = completionStatus[prevPeriod];
-    return !prevStatus?.isComplete;
+    return !prevStatus?.isComplete; // Previous period must be approved/published
+  };
+
+  // Get lock reason for tooltip
+  const getLockReason = (periodIndex: number): string => {
+    if (periodIndex === 0) return "";
+    const prevPeriod = periods[periodIndex - 1];
+    const prevStatus = completionStatus[prevPeriod];
+
+    if (!prevStatus?.hasGradeSheet) {
+      return `${GRADING_PERIOD_LABELS[prevPeriod as GradingPeriod]} has not been started`;
+    }
+
+    if (prevStatus.status === "submitted") {
+      return `${GRADING_PERIOD_LABELS[prevPeriod as GradingPeriod]} is awaiting principal approval`;
+    }
+
+    if (prevStatus.status === "draft" || prevStatus.status === "returned") {
+      return `${GRADING_PERIOD_LABELS[prevPeriod as GradingPeriod]} must be submitted and approved first`;
+    }
+
+    return "Previous period must be approved first";
+  };
+
+  // Get status indicator for a period
+  const getStatusIndicator = (status: PeriodCompletionStatus | undefined) => {
+    if (!status?.hasGradeSheet) return null;
+
+    if (status.isComplete) {
+      // Published/Approved - green checkmark
+      return (
+        <span title="Published">
+          <svg className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </span>
+      );
+    }
+
+    if (status.status === "submitted") {
+      // Awaiting approval - clock icon
+      return (
+        <span title="Awaiting Approval">
+          <svg className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </span>
+      );
+    }
+
+    if (status.status === "returned") {
+      // Returned for revision - warning icon
+      return (
+        <span title="Returned for Revision">
+          <svg className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </span>
+      );
+    }
+
+    return null;
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-      <div className="border-b border-gray-200">
+    <div className="bg-card rounded-xl border border-border shadow-sm">
+      <div className="border-b border-border">
         <nav className="-mb-px flex space-x-8 px-6" aria-label="Grading Periods">
           {periods.map((period, index) => {
             const isActive = selectedPeriod === period;
@@ -48,8 +109,8 @@ export function GradingPeriodSelector({
               return (
                 <span
                   key={period}
-                  className="whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-300 cursor-not-allowed flex items-center gap-1"
-                  title="Complete the previous period first"
+                  className="whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-muted-foreground/50 cursor-not-allowed flex items-center gap-1"
+                  title={getLockReason(index)}
                 >
                   <svg
                     className="h-4 w-4"
@@ -77,29 +138,13 @@ export function GradingPeriodSelector({
                   whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-1
                   ${
                     isActive
-                      ? "border-primary-500 text-primary-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                   }
                 `}
               >
                 {GRADING_PERIOD_LABELS[period as GradingPeriod]}
-                {isComplete && (
-                  <span title="Complete">
-                    <svg
-                      className="h-4 w-4 text-green-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </span>
-                )}
+                {getStatusIndicator(status)}
               </Link>
             );
           })}
