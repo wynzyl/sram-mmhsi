@@ -110,9 +110,7 @@ export function ArchiveCurriculumDialog({
               )}
             </div>
 
-            {state.message && (
-              <p className="text-sm text-destructive">{state.message}</p>
-            )}
+            {/* Form-level errors are shown via useFormToast, field errors stay inline */}
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
               <button

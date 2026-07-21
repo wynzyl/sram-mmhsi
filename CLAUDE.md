@@ -44,19 +44,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Critical Business Feature:** Official Receipt (OR) booklet management is a first-class accounting control feature — every payment must consume a serialized OR number from an active booklet.
 
-### Current Delivery Snapshot (2026-07-03)
+### Current Delivery Snapshot (2026-07-21)
 
 **Core Features:**
 
 - Core operations (auth, students, registrations queue, enrollments, assessments, payments/OR, invoices, grades) are implemented and production-ready.
 - **Student Archival & EOY Processing** complete: lifecycle statuses (active, graduated, transferred, withdrawn, cancelled, inactive), batch archive operations, archive directory at `/staff/archive/`
 - **Document Requests** complete: full workflow (request → processing → ready → released) with eligibility gates for archived/active students
+- **Academics Module Optimization** complete: performance improvements, grade sheet workflow, theme support
 - Registration creation is integrated in student onboarding; dedicated intake/review actions are still pending.
 - Portal has `/portal/dashboard`; detail pages (`/portal/assessments`, `/portal/payments`, `/portal/grades`) pending.
 - Authentication hardening complete: login rate limiting and forced password-change gate are live.
 - E2E Playwright test suite committed with CI workflow.
 
-**Recent Updates (2026-07-03):**
+**Recent Updates (2026-07-21):**
+
+- ✅ **Academics Module Optimization** — Query performance (N+1 fixes, EXISTS filters, pagination), grade completion validation, sequential period locking, AlertDialog accessibility
+- ✅ **Form Pattern Consistency** — Removed redundant inline error displays in favor of `useFormToast` pattern
+- ✅ **Documentation** — Updated grade encoding workflow to document adviser-based sheets as primary
+
+**Prior Updates (2026-07-03):**
 
 - ✅ **Student Archival** — Status lifecycle (active, graduated, transferred, withdrawn, cancelled, inactive), batch operations, archive directory
 - ✅ **Document Requests** — Full workflow with eligibility/release gates, routes at `/staff/archive/documents/`
@@ -257,20 +264,39 @@ Authentication is JWT-based using `jose` library (NOT NextAuth). Session managem
 
 ### Grade Encoding Workflow
 
-**Grade Lifecycle:**
+**Primary Workflow: Adviser-Based Grade Sheets**
 
-1. Admin assigns teacher to subject + section via `teacherAssignments`
-2. Teacher encodes grades per student per grading period (Q1–Q4)
-3. Grade status: `draft` → `submitted` → `locked`
-4. Once `locked`, grades are immutable (admin-only unlock)
+The adviser-based grade sheet workflow is the primary system for grade management:
 
-**Grading Periods:** Q1, Q2, Q3, Q4 (hardcoded in system)
+1. Section adviser accesses their assigned section at `/staff/grades/adviser/sections/[sectionId]`
+2. Adviser enters grades for all subjects per student per grading period (Q1–Q4 or T1–T3)
+3. Client-side validation prevents submission of incomplete sheets (X/Y grades entered)
+4. Sheet status: `draft` → `submitted` (for review) → `approved` (by principal) or `returned` (for revision)
+5. Sequential period locking: Q2 cannot be submitted until Q1 is approved
 
-**Related Files:**
+**Grade Sheet Statuses:**
+
+- `draft` — Editable by adviser
+- `submitted` — Awaiting principal review (read-only)
+- `approved` — Locked, published to student records
+- `returned` — Returned for revision (editable again)
+
+**Grading Periods:** Q1, Q2, Q3, Q4 (quarterly) or T1, T2, T3 (trimester)
+
+**Related Files (Adviser Workflow):**
+
+- Schema: `gradeSheets`, `gradeSheetEntries`
+- Actions: `src/features/academics/grades/grades.actions.ts`
+- Queries: `src/features/academics/grades/grades.queries.ts`
+- Components: `src/features/academics/grades/components/AdviserGradeEntryGrid.tsx`, `AdviserSectionCards.tsx`
+
+**Legacy: Teacher Assignment Workflow**
+
+The teacher-based `teacherAssignments` + `gradeRecords` system is available but secondary:
 
 - Schema: `gradeRecords`, `teacherAssignments`
-- Actions: `actions/teacher.ts` (encode/submit), `actions/academics.ts` (assign/lock)
-- Components: `components/academics/GradeEncodingTable.tsx`
+- Actions: `actions/teacher.ts`
+- Components: `src/features/academics/grades/components/GradeEncodingTable.tsx` (deprecated in favor of adviser workflow)
 
 ### Reusable Components
 

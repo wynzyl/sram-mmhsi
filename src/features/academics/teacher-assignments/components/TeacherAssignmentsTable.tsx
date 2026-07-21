@@ -74,7 +74,7 @@ export function TeacherAssignmentsTable({
 
   const sectionOptions = sections.map((s) => ({
     id: s.id,
-    name: `${s.name} - ${s.gradeLevelName}`,
+    name: `${s.gradeLevelName} - ${s.name}`,
     gradeLevelId: s.gradeLevelId,
   }));
 

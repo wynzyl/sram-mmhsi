@@ -172,10 +172,7 @@ export default function AdviserAssignmentForm({
             )}
           </div>
 
-          {/* Form-level error */}
-          {state.message && !state.success && (
-            <p className="text-sm text-destructive">{state.message}</p>
-          )}
+          {/* Form-level errors are shown via useFormToast, field errors stay inline */}
 
           <div className="flex gap-2 justify-end pt-2">
             <Button type="button" variant="ghost" onClick={onClose}>

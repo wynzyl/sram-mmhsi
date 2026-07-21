@@ -18,6 +18,9 @@ type StudentData = {
  * Memoized student grade row component.
  * Prevents unnecessary re-renders when parent state changes (e.g., tab switching, save state updates).
  * Only re-renders when the student's specific grade data or disabled state changes.
+ *
+ * @deprecated This is the legacy teacher-based grade encoding component.
+ * Prefer the adviser-based workflow via AdviserGradeEntryGrid.tsx
  */
 const StudentGradeRow = memo(
   ({
@@ -32,8 +35,8 @@ const StudentGradeRow = memo(
     const gradeData = student.grades[activeTab];
 
     return (
-      <tr>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">
+      <tr className="border-b border-border">
+        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground border-r border-border">
           {student.name}
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
@@ -45,7 +48,7 @@ const StudentGradeRow = memo(
             name={`grade_${student.id}_${activeTab}`}
             defaultValue={gradeData?.grade || ""}
             disabled={isDisabled}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500"
+            className="block w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-muted disabled:text-muted-foreground"
           />
         </td>
       </tr>
@@ -117,9 +120,9 @@ export default function GradeEncodingTable({
   const isLockedOrSubmitted = currentStatus === "submitted" || currentStatus === "locked";
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
       {/* ── Tabs ── */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-border">
         <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
           {(["Q1", "Q2", "Q3", "Q4"] as const).map((period) => (
             <button
@@ -127,9 +130,9 @@ export default function GradeEncodingTable({
               onClick={() => setActiveTab(period)}
               className={`
                 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
-                ${activeTab === period 
-                  ? "border-indigo-500 text-indigo-600" 
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}
+                ${activeTab === period
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}
               `}
             >
               {period}
@@ -140,21 +143,21 @@ export default function GradeEncodingTable({
 
       <div className="p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">
-            {activeTab} Grades 
-            <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-              ${currentStatus === 'draft' ? 'bg-gray-100 text-gray-800' : 
-                currentStatus === 'submitted' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
+          <h3 className="text-lg font-medium text-foreground">
+            {activeTab} Grades
+            <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+              ${currentStatus === 'draft' ? 'bg-muted text-muted-foreground' :
+                currentStatus === 'submitted' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-destructive/10 text-destructive'}`}>
               {currentStatus.toUpperCase()}
             </span>
           </h3>
-          
+
           <div className="flex space-x-3">
             <button
               type="submit"
               form="save-draft-form"
               disabled={isSaving || isLockedOrSubmitted}
-              className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className="inline-flex justify-center py-2 px-4 border border-border shadow-sm text-sm font-medium rounded-md text-foreground bg-card hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
             >
               {isSaving ? "Saving..." : "Save Draft"}
             </button>
@@ -169,7 +172,7 @@ export default function GradeEncodingTable({
                     e.preventDefault();
                   }
                 }}
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
               >
                 {isSubmitting ? "Submitting..." : "Submit Grades"}
               </button>
@@ -178,31 +181,31 @@ export default function GradeEncodingTable({
         </div>
 
         {saveState.message && (
-          <div className={`p-4 mb-4 rounded-md text-sm ${saveState.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          <div className={`p-4 mb-4 rounded-md text-sm ${saveState.success ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-destructive/10 text-destructive'}`}>
             {saveState.message}
           </div>
         )}
-        
+
         {submitState.message && (
-          <div className={`p-4 mb-4 rounded-md text-sm ${submitState.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          <div className={`p-4 mb-4 rounded-md text-sm ${submitState.success ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-destructive/10 text-destructive'}`}>
             {submitState.message}
           </div>
         )}
 
         <form id="save-draft-form" onSubmit={handleSaveDraft}>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-border border border-border">
+              <thead className="bg-muted/50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border">
                     Student Name
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-32">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border w-32">
                     Grade
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-border">
                 {students.map((student) => (
                   <StudentGradeRow
                     key={student.id}

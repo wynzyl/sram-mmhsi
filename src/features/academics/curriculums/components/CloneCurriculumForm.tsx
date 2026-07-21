@@ -97,10 +97,7 @@ export function CloneCurriculumForm({
         </div>
       )}
 
-      {/* Form Error Message */}
-      {state.message && (
-        <p className="text-sm text-destructive">{state.message}</p>
-      )}
+      {/* Form-level errors are shown via useFormToast, field errors stay inline */}
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-4">
