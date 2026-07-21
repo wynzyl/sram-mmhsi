@@ -15,7 +15,8 @@ export {
   createSectionAction,
   updateSectionAction,
   deleteSectionAction,
+  copySectionsFromSchoolYearAction,
 } from "./sections.actions";
 
 // Components
-export { SectionsTable, SectionFormModal, SectionStudentsTable } from "./components";
+export { SectionsTable, SectionFormModal, SectionStudentsTable, CopySectionsModal } from "./components";

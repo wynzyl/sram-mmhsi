@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useMemo } from "react";
 import { assignTeacherAction } from "../grades/grades.actions";
 
 export default function AssignTeacherForm({
@@ -10,11 +10,24 @@ export default function AssignTeacherForm({
   schoolYears,
 }: {
   teachers: { id: string; username: string; email: string }[];
-  subjects: { id: string; name: string; code: string }[];
-  sections: { id: string; name: string }[];
+  subjects: { id: string; name: string; code: string; gradeLevelId?: string }[];
+  sections: { id: string; name: string; gradeLevelId?: string }[];
   schoolYears: { id: string; label: string; isActive: boolean }[];
 }) {
   const [state, formAction, isPending] = useActionState(assignTeacherAction, {});
+  const [selectedSectionId, setSelectedSectionId] = useState("");
+
+  // Get the selected section's grade level
+  const selectedSection = sections.find((s) => s.id === selectedSectionId);
+  const selectedGradeLevelId = selectedSection?.gradeLevelId;
+
+  // Filter subjects by the selected section's grade level
+  const filteredSubjects = useMemo(() => {
+    if (!selectedGradeLevelId) {
+      return []; // No section selected, show no subjects
+    }
+    return subjects.filter((s) => s.gradeLevelId === selectedGradeLevelId);
+  }, [subjects, selectedGradeLevelId]);
 
   return (
     <form action={formAction} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
@@ -49,25 +62,12 @@ export default function AssignTeacherForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-          <select
-            name="subjectId"
-            required
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          >
-            <option value="">Select Subject</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
-            ))}
-          </select>
-          {state.errors?.subjectId && <p className="mt-1 text-sm text-red-600">{state.errors.subjectId.join(", ")}</p>}
-        </div>
-
-        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
           <select
             name="sectionId"
             required
+            value={selectedSectionId}
+            onChange={(e) => setSelectedSectionId(e.target.value)}
             className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           >
             <option value="">Select Section</option>
@@ -76,6 +76,24 @@ export default function AssignTeacherForm({
             ))}
           </select>
           {state.errors?.sectionId && <p className="mt-1 text-sm text-red-600">{state.errors.sectionId.join(", ")}</p>}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+          <select
+            name="subjectId"
+            required
+            disabled={!selectedSectionId}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            <option value="">
+              {selectedSectionId ? "Select Subject" : "Select a section first"}
+            </option>
+            {filteredSubjects.map((s) => (
+              <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+            ))}
+          </select>
+          {state.errors?.subjectId && <p className="mt-1 text-sm text-red-600">{state.errors.subjectId.join(", ")}</p>}
         </div>
 
         <div>

@@ -12,6 +12,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { formatDate } from "@/lib/utils/date";
 import { toast } from "sonner";
 import SectionFormModal from "./SectionFormModal";
+import CopySectionsModal from "./CopySectionsModal";
 
 interface GradeLevelOption {
   id: string;
@@ -22,6 +23,7 @@ interface SchoolYearOption {
   id: string;
   label: string;
   isActive: boolean;
+  sectionCount?: number;
 }
 
 interface SectionsTableProps {
@@ -38,8 +40,18 @@ export default function SectionsTable({
   const router = useRouter();
   const [editingSection, setEditingSection] = useState<SectionView | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Find active school year
+  const activeSchoolYear = schoolYears.find((sy) => sy.isActive);
+
+  // Compute section counts per school year for the copy modal
+  const schoolYearsWithCounts = schoolYears.map((sy) => ({
+    ...sy,
+    sectionCount: sy.sectionCount ?? sections.filter((s) => s.schoolYearId === sy.id).length,
+  }));
 
   const handleDelete = async (section: SectionView) => {
     setDeleting(true);
@@ -190,9 +202,16 @@ export default function SectionsTable({
             Manage classroom sections for each grade level and school year
           </p>
         </div>
-        <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-          Add Section
-        </Button>
+        <div className="flex gap-2">
+          {activeSchoolYear && (
+            <Button variant="secondary" onClick={() => setShowCopyModal(true)}>
+              Copy from Previous Year
+            </Button>
+          )}
+          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+            Add Section
+          </Button>
+        </div>
       </div>
 
       {sections.length === 0 ? (
@@ -224,6 +243,15 @@ export default function SectionsTable({
           gradeLevels={gradeLevels}
           schoolYears={schoolYears}
           onClose={() => setEditingSection(null)}
+        />
+      )}
+
+      {/* Copy Sections Modal */}
+      {showCopyModal && activeSchoolYear && (
+        <CopySectionsModal
+          schoolYears={schoolYearsWithCounts}
+          activeSchoolYearId={activeSchoolYear.id}
+          onClose={() => setShowCopyModal(false)}
         />
       )}
     </div>

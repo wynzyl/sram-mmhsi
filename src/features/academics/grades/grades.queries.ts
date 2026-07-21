@@ -436,25 +436,60 @@ export async function getAllTeacherAssignments(
 /**
  * Get all active subjects for the teacher assignment form dropdown.
  * Filters by curriculum adoptions for the specified school year.
+ * Only returns subjects from curriculums that are adopted for this school year,
+ * matching the grade level specified in the adoption.
  */
 export async function getSubjectsForAssignment(
   schoolYearId: string
-): Promise<{ id: string; name: string; code: string; gradeLevelName: string }[]> {
-  // Get subjects from published curriculums that are adopted for this school year
+): Promise<{ id: string; name: string; code: string; gradeLevelId: string; gradeLevelName: string }[]> {
+  // Get curriculum adoptions for the school year
+  const adoptions = await db
+    .select({
+      curriculumId: curriculumAdoptions.curriculumId,
+      gradeLevelId: curriculumAdoptions.gradeLevelId,
+    })
+    .from(curriculumAdoptions)
+    .where(
+      and(
+        eq(curriculumAdoptions.schoolYearId, schoolYearId),
+        isNull(curriculumAdoptions.deletedAt)
+      )
+    );
+
+  if (adoptions.length === 0) {
+    return [];
+  }
+
+  // Build conditions for subjects: curriculum + grade level must match adoption
+  // This ensures we only get subjects that are actually adopted for this school year
+  const adoptionConditions = adoptions.map(
+    (a) =>
+      and(
+        eq(subjects.curriculumId, a.curriculumId),
+        eq(subjects.gradeLevelId, a.gradeLevelId)
+      )
+  );
+
   const rows = await db
     .select({
       id: subjects.id,
       name: subjects.name,
       code: subjects.code,
+      gradeLevelId: subjects.gradeLevelId,
       gradeLevelName: gradeLevels.name,
       gradeLevelOrder: gradeLevels.order,
     })
     .from(subjects)
     .innerJoin(gradeLevels, eq(subjects.gradeLevelId, gradeLevels.id))
-    .where(isNull(subjects.deletedAt))
+    .where(
+      and(
+        isNull(subjects.deletedAt),
+        sql`(${sql.join(adoptionConditions, sql` OR `)})`
+      )
+    )
     .orderBy(asc(gradeLevels.order), asc(subjects.name));
 
-  return rows;
+  return rows as { id: string; name: string; code: string; gradeLevelId: string; gradeLevelName: string }[];
 }
 
 // ─── Adviser Grade Entry Queries (NEW) ─────────────────────────────────────────
@@ -514,11 +549,12 @@ export async function getAdviserSections(
  */
 export async function getSectionsForAssignment(
   schoolYearId: string
-): Promise<{ id: string; name: string; gradeLevelName: string }[]> {
+): Promise<{ id: string; name: string; gradeLevelId: string; gradeLevelName: string }[]> {
   const rows = await db
     .select({
       id: sections.id,
       name: sections.name,
+      gradeLevelId: sections.gradeLevelId,
       gradeLevelName: gradeLevels.name,
       gradeLevelOrder: gradeLevels.order,
     })

@@ -23,12 +23,14 @@ interface SubjectOption {
   id: string;
   name: string;
   code: string;
+  gradeLevelId: string;
   gradeLevelName: string;
 }
 
 interface SectionOption {
   id: string;
   name: string;
+  gradeLevelId: string;
   gradeLevelName: string;
 }
 
@@ -79,13 +81,15 @@ export function TeacherAssignmentsTable({
 
   const subjectOptions = subjects.map((s) => ({
     id: s.id,
-    name: `${s.name} (${s.gradeLevelName})`,
+    name: s.name,
     code: s.code,
+    gradeLevelId: s.gradeLevelId,
   }));
 
   const sectionOptions = sections.map((s) => ({
     id: s.id,
     name: `${s.name} - ${s.gradeLevelName}`,
+    gradeLevelId: s.gradeLevelId,
   }));
 
   const columns = useMemo<ColumnDef<TeacherAssignmentListItem>[]>(

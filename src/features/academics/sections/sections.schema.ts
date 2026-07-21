@@ -58,6 +58,20 @@ export interface SectionDependencyCounts {
   assignmentCount: number;
 }
 
+// ─── Copy Sections Schema ────────────────────────────────────────────────────
+
+export const copySectionsSchema = z.object({
+  sourceSchoolYearId: uuidSchema,
+  targetSchoolYearId: uuidSchema,
+});
+
+export type CopySectionsInput = z.infer<typeof copySectionsSchema>;
+
+export type CopySectionsFormState = BaseFormState<CopySectionsInput> & {
+  copied?: number;
+  skipped?: number;
+};
+
 // ─── Students in Section (for Grade Entry) ───────────────────────────────────
 
 /**
