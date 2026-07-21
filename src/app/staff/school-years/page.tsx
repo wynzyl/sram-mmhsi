@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { schoolYears } from "@/lib/db/schema";
-import { desc, isNull } from "drizzle-orm";
+import { schoolYears, gradingPeriodSystems } from "@/lib/db/schema";
+import { desc, isNull, eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import { formatDate } from "@/lib/utils/date";
+import { GRADING_SYSTEM_LABELS, type GradingSystemType } from "@/lib/constants/grading-systems";
 
 export const metadata: Metadata = {
   title: "School Years",
@@ -17,7 +18,8 @@ export default async function StaffSchoolYearsPage() {
   const session = await requireSession();
   if (!hasPermission(session.role, "school_years:manage")) redirect("/staff/dashboard");
 
-  const rows = await db
+  // Fetch school years
+  const schoolYearRows = await db
     .select({
       id: schoolYears.id,
       label: schoolYears.label,
@@ -29,6 +31,29 @@ export default async function StaffSchoolYearsPage() {
     .from(schoolYears)
     .where(isNull(schoolYears.deletedAt))
     .orderBy(desc(schoolYears.startDate));
+
+  // Fetch grading system types separately (handles case where table doesn't exist yet)
+  let gradingSystemMap = new Map<string, GradingSystemType>();
+  try {
+    const gradingSystems = await db
+      .select({
+        schoolYearId: gradingPeriodSystems.schoolYearId,
+        systemType: gradingPeriodSystems.systemType,
+      })
+      .from(gradingPeriodSystems);
+
+    gradingSystemMap = new Map(
+      gradingSystems.map((gs) => [gs.schoolYearId, gs.systemType as GradingSystemType])
+    );
+  } catch {
+    // Table may not exist yet - migrations not applied
+  }
+
+  // Combine the data
+  const rows = schoolYearRows.map((sy) => ({
+    ...sy,
+    gradingSystemType: gradingSystemMap.get(sy.id) ?? null,
+  }));
 
   return (
     <div className="page-container">
@@ -51,6 +76,7 @@ export default async function StaffSchoolYearsPage() {
               <th>Label</th>
               <th>Start Date</th>
               <th>End Date</th>
+              <th>Grading System</th>
               <th>Status</th>
               <th>Created</th>
               <th>Actions</th>
@@ -59,7 +85,7 @@ export default async function StaffSchoolYearsPage() {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="table-empty">
+                <td colSpan={7} className="table-empty">
                   No school years configured yet.
                 </td>
               </tr>
@@ -83,6 +109,11 @@ export default async function StaffSchoolYearsPage() {
                       month: "short",
                       day: "numeric",
                     })}
+                  </td>
+                  <td>
+                    <span className="text-sm">
+                      {GRADING_SYSTEM_LABELS[sy.gradingSystemType ?? "quarterly"]}
+                    </span>
                   </td>
                   <td>
                     <span className={`badge ${sy.isActive ? "badge-success" : "badge-warning"}`}>

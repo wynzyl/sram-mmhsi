@@ -15,7 +15,11 @@ import {
   users,
   sectionAdvisers,
   coordinatorAssignments,
+  enrollments,
+  curriculumAdoptions,
+  gradingPeriodSystems,
 } from "@/lib/db/schema";
+import type { GradingSystemType } from "@/lib/constants/grading-systems";
 import type { GradeSheetView, GradeSheetEntryView } from "./grades.schema";
 import { GRADE_LEVEL_TO_GROUP, type GradeGroup } from "@/lib/constants/grade-groups";
 
@@ -35,6 +39,27 @@ export type TeacherAssignmentCard = {
   };
 };
 
+/**
+ * Teacher assignment row for the assignments management page
+ */
+export type TeacherAssignmentListItem = {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  teacherEmail: string;
+  subjectId: string;
+  subjectName: string;
+  subjectCode: string;
+  sectionId: string;
+  sectionName: string;
+  gradeLevelName: string;
+  gradeLevelOrder: number;
+  schoolYearId: string;
+  schoolYearLabel: string;
+  isActiveYear: boolean;
+  createdAt: Date;
+};
+
 // ─── Query Functions ──────────────────────────────────────────────────────────
 
 /**
@@ -50,6 +75,27 @@ export async function getActiveSchoolYear(): Promise<{
   });
 
   return activeSY ?? null;
+}
+
+/**
+ * Get the grading system type for a school year.
+ * Returns "quarterly" (Q1-Q4) or "trimester" (T1-T3).
+ * Defaults to "quarterly" if not configured or table doesn't exist.
+ */
+export async function getGradingSystemType(
+  schoolYearId: string
+): Promise<GradingSystemType> {
+  try {
+    const config = await db.query.gradingPeriodSystems.findFirst({
+      where: eq(gradingPeriodSystems.schoolYearId, schoolYearId),
+      columns: { systemType: true },
+    });
+
+    return (config?.systemType as GradingSystemType) ?? "quarterly";
+  } catch {
+    // Table may not exist yet - migrations not applied
+    return "quarterly";
+  }
 }
 
 /**
@@ -412,4 +458,440 @@ export async function getGradeSheetApprovalHistory(
     .orderBy(desc(gradeApprovals.createdAt));
 
   return rows;
+}
+
+// ─── Teacher Assignments Management ──────────────────────────────────────────
+
+/**
+ * Get all teacher assignments with full details for the management page.
+ * Ordered by school year (newest first), then grade level, then section, then subject.
+ */
+export async function getAllTeacherAssignments(
+  schoolYearId?: string
+): Promise<TeacherAssignmentListItem[]> {
+  const whereConditions = [isNull(teacherAssignments.deletedAt)];
+
+  if (schoolYearId) {
+    whereConditions.push(eq(teacherAssignments.schoolYearId, schoolYearId));
+  }
+
+  const rows = await db
+    .select({
+      id: teacherAssignments.id,
+      teacherId: teacherAssignments.teacherId,
+      teacherName: users.username,
+      teacherEmail: users.email,
+      subjectId: teacherAssignments.subjectId,
+      subjectName: subjects.name,
+      subjectCode: subjects.code,
+      sectionId: teacherAssignments.sectionId,
+      sectionName: sections.name,
+      gradeLevelName: gradeLevels.name,
+      gradeLevelOrder: gradeLevels.order,
+      schoolYearId: teacherAssignments.schoolYearId,
+      schoolYearLabel: schoolYears.label,
+      isActiveYear: schoolYears.isActive,
+      createdAt: teacherAssignments.createdAt,
+    })
+    .from(teacherAssignments)
+    .innerJoin(users, eq(teacherAssignments.teacherId, users.id))
+    .innerJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
+    .innerJoin(sections, eq(teacherAssignments.sectionId, sections.id))
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+    .innerJoin(schoolYears, eq(teacherAssignments.schoolYearId, schoolYears.id))
+    .where(and(...whereConditions))
+    .orderBy(
+      desc(schoolYears.startDate),
+      asc(gradeLevels.order),
+      asc(sections.name),
+      asc(subjects.name)
+    );
+
+  return rows as TeacherAssignmentListItem[];
+}
+
+/**
+ * Get all active subjects for the teacher assignment form dropdown.
+ * Filters by curriculum adoptions for the specified school year.
+ */
+export async function getSubjectsForAssignment(
+  schoolYearId: string
+): Promise<{ id: string; name: string; code: string; gradeLevelName: string }[]> {
+  // Get subjects from published curriculums that are adopted for this school year
+  const rows = await db
+    .select({
+      id: subjects.id,
+      name: subjects.name,
+      code: subjects.code,
+      gradeLevelName: gradeLevels.name,
+      gradeLevelOrder: gradeLevels.order,
+    })
+    .from(subjects)
+    .innerJoin(gradeLevels, eq(subjects.gradeLevelId, gradeLevels.id))
+    .where(isNull(subjects.deletedAt))
+    .orderBy(asc(gradeLevels.order), asc(subjects.name));
+
+  return rows;
+}
+
+// ─── Adviser Grade Entry Queries (NEW) ─────────────────────────────────────────
+
+/**
+ * Adviser section card for the grades dashboard
+ */
+export type AdviserSectionCard = {
+  id: string;
+  sectionId: string;
+  sectionName: string;
+  gradeLevelId: string;
+  gradeLevelName: string;
+  gradeLevelOrder: number;
+  schoolYearId: string;
+  schoolYearLabel: string;
+};
+
+/**
+ * Get sections where the user is an adviser for a school year.
+ * Used for the adviser's grade entry dashboard.
+ */
+export async function getAdviserSections(
+  userId: string,
+  schoolYearId: string
+): Promise<AdviserSectionCard[]> {
+  const rows = await db
+    .select({
+      id: sectionAdvisers.id,
+      sectionId: sectionAdvisers.sectionId,
+      sectionName: sections.name,
+      gradeLevelId: sections.gradeLevelId,
+      gradeLevelName: gradeLevels.name,
+      gradeLevelOrder: gradeLevels.order,
+      schoolYearId: sectionAdvisers.schoolYearId,
+      schoolYearLabel: schoolYears.label,
+    })
+    .from(sectionAdvisers)
+    .innerJoin(sections, eq(sectionAdvisers.sectionId, sections.id))
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+    .innerJoin(schoolYears, eq(sectionAdvisers.schoolYearId, schoolYears.id))
+    .where(
+      and(
+        eq(sectionAdvisers.userId, userId),
+        eq(sectionAdvisers.schoolYearId, schoolYearId),
+        isNull(sectionAdvisers.deletedAt),
+        isNull(sections.deletedAt)
+      )
+    )
+    .orderBy(asc(gradeLevels.order), asc(sections.name));
+
+  return rows;
+}
+
+/**
+ * Get all sections for the teacher assignment form dropdown.
+ */
+export async function getSectionsForAssignment(
+  schoolYearId: string
+): Promise<{ id: string; name: string; gradeLevelName: string }[]> {
+  const rows = await db
+    .select({
+      id: sections.id,
+      name: sections.name,
+      gradeLevelName: gradeLevels.name,
+      gradeLevelOrder: gradeLevels.order,
+    })
+    .from(sections)
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+    .where(
+      and(
+        eq(sections.schoolYearId, schoolYearId),
+        isNull(sections.deletedAt)
+      )
+    )
+    .orderBy(asc(gradeLevels.order), asc(sections.name));
+
+  return rows;
+}
+
+/**
+ * Student in section for grade entry grid
+ */
+export type SectionStudent = {
+  id: string;
+  studentRef: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+};
+
+/**
+ * Get enrolled students in a section for a school year.
+ * Used for the adviser's grade entry grid.
+ */
+export async function getStudentsInSection(
+  sectionId: string,
+  schoolYearId: string
+): Promise<SectionStudent[]> {
+  const rows = await db
+    .select({
+      id: students.id,
+      studentRef: students.referenceNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      fullName: sql<string>`${students.lastName} || ', ' || ${students.firstName}`,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .where(
+      and(
+        eq(enrollments.sectionId, sectionId),
+        eq(enrollments.schoolYearId, schoolYearId),
+        eq(enrollments.status, "enrolled"),
+        isNull(students.deletedAt)
+      )
+    )
+    .orderBy(asc(students.lastName), asc(students.firstName));
+
+  return rows;
+}
+
+/**
+ * Subject for grade entry grid
+ */
+export type GradeLevelSubject = {
+  id: string;
+  name: string;
+  code: string;
+  sequenceOrder: number;
+};
+
+/**
+ * Get subjects for a grade level from the active curriculum for a school year.
+ * Used for the adviser's grade entry grid columns.
+ */
+export async function getSubjectsForGradeLevel(
+  gradeLevelId: string,
+  schoolYearId: string
+): Promise<GradeLevelSubject[]> {
+  // Find the active curriculum adoption for this school year
+  const adoption = await db.query.curriculumAdoptions.findFirst({
+    where: and(
+      eq(curriculumAdoptions.schoolYearId, schoolYearId),
+      isNull(curriculumAdoptions.deletedAt)
+    ),
+    columns: { curriculumId: true },
+  });
+
+  if (!adoption) {
+    return [];
+  }
+
+  const rows = await db
+    .select({
+      id: subjects.id,
+      name: subjects.name,
+      code: subjects.code,
+      sequenceOrder: subjects.sequenceOrder,
+    })
+    .from(subjects)
+    .where(
+      and(
+        eq(subjects.curriculumId, adoption.curriculumId),
+        eq(subjects.gradeLevelId, gradeLevelId),
+        isNull(subjects.deletedAt)
+      )
+    )
+    .orderBy(asc(subjects.sequenceOrder), asc(subjects.name));
+
+  return rows;
+}
+
+/**
+ * Get section details including grade level info.
+ * Used for the adviser's grade entry page header.
+ */
+export async function getSectionDetails(
+  sectionId: string
+): Promise<{
+  id: string;
+  name: string;
+  gradeLevelId: string;
+  gradeLevelName: string;
+  schoolYearId: string;
+  schoolYearLabel: string;
+} | null> {
+  const [row] = await db
+    .select({
+      id: sections.id,
+      name: sections.name,
+      gradeLevelId: sections.gradeLevelId,
+      gradeLevelName: gradeLevels.name,
+      schoolYearId: sections.schoolYearId,
+      schoolYearLabel: schoolYears.label,
+    })
+    .from(sections)
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+    .innerJoin(schoolYears, eq(sections.schoolYearId, schoolYears.id))
+    .where(
+      and(
+        eq(sections.id, sectionId),
+        isNull(sections.deletedAt)
+      )
+    )
+    .limit(1);
+
+  return row ?? null;
+}
+
+/**
+ * Verify user is an adviser for a section.
+ */
+export async function isAdviserForSection(
+  userId: string,
+  sectionId: string,
+  schoolYearId: string
+): Promise<boolean> {
+  const adviser = await db.query.sectionAdvisers.findFirst({
+    where: and(
+      eq(sectionAdvisers.userId, userId),
+      eq(sectionAdvisers.sectionId, sectionId),
+      eq(sectionAdvisers.schoolYearId, schoolYearId),
+      isNull(sectionAdvisers.deletedAt)
+    ),
+    columns: { id: true },
+  });
+
+  return !!adviser;
+}
+
+// ─── Grade Sheet Data for Grade Entry ──────────────────────────────────────────
+
+/**
+ * Grade sheet data for grade entry page
+ */
+export type GradeSheetData = {
+  id: string;
+  status: string;
+  entries: Array<{
+    studentId: string;
+    subjectId: string;
+    grade: string | null;
+  }>;
+};
+
+/**
+ * Get grade sheet for a section/period with entries.
+ * Returns null if no grade sheet exists.
+ */
+export async function getGradeSheetForPeriod(
+  sectionId: string,
+  schoolYearId: string,
+  gradingPeriod: string
+): Promise<GradeSheetData | null> {
+  const sheet = await db.query.gradeSheets.findFirst({
+    where: and(
+      eq(gradeSheets.sectionId, sectionId),
+      eq(gradeSheets.schoolYearId, schoolYearId),
+      sql`${gradeSheets.gradingPeriod} = ${gradingPeriod}`
+    ),
+    columns: {
+      id: true,
+      status: true,
+    },
+  });
+
+  if (!sheet) {
+    return null;
+  }
+
+  const entries = await db
+    .select({
+      studentId: gradeSheetEntries.studentId,
+      subjectId: gradeSheetEntries.subjectId,
+      grade: gradeSheetEntries.grade,
+    })
+    .from(gradeSheetEntries)
+    .where(eq(gradeSheetEntries.gradeSheetId, sheet.id));
+
+  return {
+    id: sheet.id,
+    status: sheet.status,
+    entries: entries.map((e) => ({
+      studentId: e.studentId,
+      subjectId: e.subjectId,
+      grade: e.grade ? String(e.grade) : null,
+    })),
+  };
+}
+
+/**
+ * Period completion status
+ */
+export type PeriodCompletionStatus = {
+  period: string;
+  hasGradeSheet: boolean;
+  isComplete: boolean; // All students have grades for all subjects
+  totalExpected: number;
+  totalEntered: number;
+};
+
+/**
+ * Get completion status for all periods of a section.
+ * Used to determine if later periods can be edited.
+ */
+export async function getPeriodsCompletionStatus(
+  sectionId: string,
+  schoolYearId: string,
+  periods: readonly string[],
+  studentCount: number,
+  subjectCount: number
+): Promise<Map<string, PeriodCompletionStatus>> {
+  const result = new Map<string, PeriodCompletionStatus>();
+  const totalExpected = studentCount * subjectCount;
+
+  for (const period of periods) {
+    const sheet = await db.query.gradeSheets.findFirst({
+      where: and(
+        eq(gradeSheets.sectionId, sectionId),
+        eq(gradeSheets.schoolYearId, schoolYearId),
+        sql`${gradeSheets.gradingPeriod} = ${period}`
+      ),
+      columns: { id: true, status: true },
+    });
+
+    if (!sheet) {
+      result.set(period, {
+        period,
+        hasGradeSheet: false,
+        isComplete: false,
+        totalExpected,
+        totalEntered: 0,
+      });
+      continue;
+    }
+
+    // Count entries with grades
+    const [countResult] = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(gradeSheetEntries)
+      .where(
+        and(
+          eq(gradeSheetEntries.gradeSheetId, sheet.id),
+          sql`${gradeSheetEntries.grade} IS NOT NULL`
+        )
+      );
+
+    const totalEntered = countResult?.count ?? 0;
+
+    result.set(period, {
+      period,
+      hasGradeSheet: true,
+      isComplete: totalEntered >= totalExpected && totalExpected > 0,
+      totalExpected,
+      totalEntered,
+    });
+  }
+
+  return result;
 }

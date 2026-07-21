@@ -4,6 +4,11 @@ import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateSchoolYearAction } from "../school-years.actions";
 import type { UpdateSchoolYearFormState } from "../school-years.schema";
+import {
+  GRADING_SYSTEM_TYPES,
+  GRADING_SYSTEM_LABELS,
+  type GradingSystemType,
+} from "@/lib/constants/grading-systems";
 
 interface SchoolYear {
   id: string;
@@ -16,6 +21,7 @@ interface SchoolYear {
 
 interface EditSchoolYearFormProps {
   schoolYear: SchoolYear;
+  gradingSystemType: GradingSystemType;
   redirectPath: string;
 }
 
@@ -28,7 +34,11 @@ function formatDateForInput(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export default function EditSchoolYearForm({ schoolYear, redirectPath }: EditSchoolYearFormProps) {
+export default function EditSchoolYearForm({
+  schoolYear,
+  gradingSystemType,
+  redirectPath,
+}: EditSchoolYearFormProps) {
   const router = useRouter();
   const [state, action, pending] = useActionState(updateSchoolYearAction, initialState);
 
@@ -105,6 +115,30 @@ export default function EditSchoolYearForm({ schoolYear, redirectPath }: EditSch
             <p className="form-error">{state.errors.endDate[0]}</p>
           )}
         </div>
+      </div>
+
+      <div className="form-group mt-4">
+        <label className="form-label" htmlFor="gradingSystemType">
+          Grading System
+        </label>
+        <select
+          id="gradingSystemType"
+          name="gradingSystemType"
+          defaultValue={gradingSystemType}
+          className={`form-control ${state.errors?.gradingSystemType ? "form-control-error" : ""}`}
+        >
+          {GRADING_SYSTEM_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {GRADING_SYSTEM_LABELS[type]}
+            </option>
+          ))}
+        </select>
+        {state.errors?.gradingSystemType && (
+          <p className="form-error">{state.errors.gradingSystemType[0]}</p>
+        )}
+        <p className="form-hint">
+          Determines which grading periods are used for grade entry. Quarterly uses Q1-Q4, Trimester uses T1-T3.
+        </p>
       </div>
 
       <div className="form-group mt-4">
