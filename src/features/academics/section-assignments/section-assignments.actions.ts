@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { enrollments } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
@@ -61,23 +60,29 @@ export async function assignStudentsToSectionAction(
 
   const { enrollmentIds: validIds, sectionId } = result.data;
 
-  // Validate all enrollments have the same grade level
-  const enrollmentGradeLevelId = await getEnrollmentGradeLevels(validIds);
-  if (!enrollmentGradeLevelId) {
+  // Validate all enrollments share one grade level AND one school year
+  const enrollmentScope = await getEnrollmentGradeLevels(validIds);
+  if (!enrollmentScope) {
     return {
-      message: "All selected students must be in the same grade level.",
+      message: "All selected students must be in the same grade level and school year.",
     };
   }
 
-  // Validate section belongs to the same grade level
-  const sectionGradeLevelId = await getSectionGradeLevelId(sectionId);
-  if (!sectionGradeLevelId) {
+  // Validate section belongs to the same grade level and school year
+  const sectionScope = await getSectionGradeLevelId(sectionId);
+  if (!sectionScope) {
     return { message: "Selected section not found." };
   }
 
-  if (enrollmentGradeLevelId !== sectionGradeLevelId) {
+  if (enrollmentScope.gradeLevelId !== sectionScope.gradeLevelId) {
     return {
       message: "Section must be in the same grade level as the selected students.",
+    };
+  }
+
+  if (enrollmentScope.schoolYearId !== sectionScope.schoolYearId) {
+    return {
+      message: "Section must be in the same school year as the selected students.",
     };
   }
 
@@ -113,7 +118,6 @@ export async function assignStudentsToSectionAction(
       return updated.length;
     });
 
-    revalidatePath("/staff/academics/section-assignments");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
     return {
@@ -202,7 +206,6 @@ export async function removeFromSectionAction(
       return { message: "Enrollment not found." };
     }
 
-    revalidatePath("/staff/academics/section-assignments");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
     return {

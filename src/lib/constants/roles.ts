@@ -53,6 +53,23 @@ export const ROLE_LABELS: Record<Role, string> = {
   parent_guardian: "Parent / Guardian",
 };
 
+/**
+ * Landing route for each role after login and for role-based redirects.
+ * Single source of truth shared by the login action and the proxy route guard.
+ */
+export const ROLE_LANDING: Record<Role, string> = {
+  super_admin: "/admin/dashboard",
+  admin: "/admin/dashboard",
+  registrar: "/staff/dashboard",
+  finance_officer: "/staff/finance",
+  cashier: "/staff/payments",
+  teacher: "/staff/grades",
+  coordinator: "/staff/grades",
+  principal: "/staff/grades",
+  student: "/portal/dashboard",
+  parent_guardian: "/portal/dashboard",
+};
+
 /** Roles that access the internal staff operations panel */
 export const STAFF_ROLES: Role[] = [
   ROLES.SUPER_ADMIN,

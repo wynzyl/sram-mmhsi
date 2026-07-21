@@ -7,6 +7,7 @@ import { sectionAdvisers, sections, users } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { logCreateAction, logDeleteAction } from "@/lib/utils/audit-logger";
 import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { isUniqueViolationError } from "@/lib/utils/pg-error";
 import {
   assignAdviserSchema,
   removeAdviserSchema,
@@ -112,18 +113,32 @@ export async function assignAdviserAction(
   }
 
   // 6. Create adviser assignment
-  const [adviser] = await db
-    .insert(sectionAdvisers)
-    .values({
-      sectionId,
-      userId,
-      schoolYearId,
-      createdBy: session.userId,
-    })
-    .returning();
+  let adviserId: string;
+  try {
+    const [adviser] = await db
+      .insert(sectionAdvisers)
+      .values({
+        sectionId,
+        userId,
+        schoolYearId,
+        createdBy: session.userId,
+      })
+      .returning();
+    adviserId = adviser.id;
+  } catch (error) {
+    // A concurrent insert can slip past the existing-adviser check above and hit the
+    // unique index (section_advisers_section_sy_uidx). Surface the same guidance.
+    if (isUniqueViolationError(error)) {
+      return {
+        message:
+          "This section already has an adviser assigned. Remove the existing adviser first.",
+      };
+    }
+    throw error;
+  }
 
   // 7. Audit log
-  await logCreateAction(session, "section_advisers", adviser.id, {
+  await logCreateAction(session, "section_advisers", adviserId, {
     sectionId,
     userId,
     schoolYearId,
@@ -135,7 +150,7 @@ export async function assignAdviserAction(
   return {
     success: true,
     message: "Adviser assigned successfully.",
-    adviserId: adviser.id,
+    adviserId,
   };
 }
 

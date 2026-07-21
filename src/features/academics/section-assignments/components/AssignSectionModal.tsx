@@ -101,9 +101,9 @@ export function AssignSectionModal({
               </SelectTrigger>
               <SelectContent>
                 {sections.length === 0 ? (
-                  <SelectItem value="" disabled>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
                     No sections available for {gradeLevelName}
-                  </SelectItem>
+                  </div>
                 ) : (
                   sections.map((section) => (
                     <SelectItem key={section.id} value={section.id}>

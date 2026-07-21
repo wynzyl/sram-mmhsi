@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useActionState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   principalApproveAction,
   principalReturnAction,
 } from "../grades.actions";
+import type {
+  ApproveGradeSheetFormState,
+  ReturnGradeSheetFormState,
+} from "../grades.schema";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -26,46 +30,56 @@ export function GradeSheetReviewActions({
   gradeSheetId,
 }: GradeSheetReviewActionsProps) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
 
   // Dialog states
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [returnRemarks, setReturnRemarks] = useState("");
 
-  // Action states
-  const [approveState, , isApproving] = useActionState(principalApproveAction, {});
-  const [returnState, , isReturning] = useActionState(principalReturnAction, {});
+  // Action states — tracked manually so messages and pending flags reflect each
+  // submission (the useActionState dispatchers were previously bypassed).
+  const [approveState, setApproveState] = useState<ApproveGradeSheetFormState>({});
+  const [returnState, setReturnState] = useState<ReturnGradeSheetFormState>({});
+  const [isApproving, setIsApproving] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     const formData = new FormData();
     formData.append("gradeSheetId", gradeSheetId);
 
-    startTransition(async () => {
+    setIsApproving(true);
+    try {
       const result = await principalApproveAction({}, formData);
+      setApproveState(result);
       if (result.success) {
         setShowApproveDialog(false);
         router.push("/staff/grades/approvals");
         router.refresh();
       }
-    });
+    } finally {
+      setIsApproving(false);
+    }
   };
 
-  const handleReturn = () => {
+  const handleReturn = async () => {
     if (!returnRemarks.trim()) return;
 
     const formData = new FormData();
     formData.append("gradeSheetId", gradeSheetId);
     formData.append("remarks", returnRemarks);
 
-    startTransition(async () => {
+    setIsReturning(true);
+    try {
       const result = await principalReturnAction({}, formData);
+      setReturnState(result);
       if (result.success) {
         setShowReturnDialog(false);
         router.push("/staff/grades/approvals");
         router.refresh();
       }
-    });
+    } finally {
+      setIsReturning(false);
+    }
   };
 
   return (

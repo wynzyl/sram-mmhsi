@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { schoolYears, gradingPeriodSystems } from "@/lib/db/schema";
-import { desc, isNull, eq } from "drizzle-orm";
+import { desc, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import { formatDate } from "@/lib/utils/date";
 import { GRADING_SYSTEM_LABELS, type GradingSystemType } from "@/lib/constants/grading-systems";
+import { isUndefinedTableError } from "@/lib/utils/pg-error";
+import { logger } from "@/lib/observability/logger";
 
 export const metadata: Metadata = {
   title: "School Years",
@@ -18,36 +20,45 @@ export default async function StaffSchoolYearsPage() {
   const session = await requireSession();
   if (!hasPermission(session.role, "school_years:manage")) redirect("/staff/dashboard");
 
-  // Fetch school years
-  const schoolYearRows = await db
-    .select({
-      id: schoolYears.id,
-      label: schoolYears.label,
-      startDate: schoolYears.startDate,
-      endDate: schoolYears.endDate,
-      isActive: schoolYears.isActive,
-      createdAt: schoolYears.createdAt,
-    })
-    .from(schoolYears)
-    .where(isNull(schoolYears.deletedAt))
-    .orderBy(desc(schoolYears.startDate));
-
-  // Fetch grading system types separately (handles case where table doesn't exist yet)
-  let gradingSystemMap = new Map<string, GradingSystemType>();
-  try {
-    const gradingSystems = await db
+  // Fetch school years and grading-system types concurrently. The grading-system
+  // query is defensive: if the table doesn't exist yet (migrations not applied) it
+  // falls back to an empty map without failing the page. Unexpected DB failures are
+  // logged so they don't hide behind the empty-map fallback.
+  const [schoolYearRows, gradingSystemMap] = await Promise.all([
+    db
       .select({
-        schoolYearId: gradingPeriodSystems.schoolYearId,
-        systemType: gradingPeriodSystems.systemType,
+        id: schoolYears.id,
+        label: schoolYears.label,
+        startDate: schoolYears.startDate,
+        endDate: schoolYears.endDate,
+        isActive: schoolYears.isActive,
+        createdAt: schoolYears.createdAt,
       })
-      .from(gradingPeriodSystems);
+      .from(schoolYears)
+      .where(isNull(schoolYears.deletedAt))
+      .orderBy(desc(schoolYears.startDate)),
+    (async (): Promise<Map<string, GradingSystemType>> => {
+      try {
+        const gradingSystems = await db
+          .select({
+            schoolYearId: gradingPeriodSystems.schoolYearId,
+            systemType: gradingPeriodSystems.systemType,
+          })
+          .from(gradingPeriodSystems);
 
-    gradingSystemMap = new Map(
-      gradingSystems.map((gs) => [gs.schoolYearId, gs.systemType as GradingSystemType])
-    );
-  } catch {
-    // Table may not exist yet - migrations not applied
-  }
+        return new Map(
+          gradingSystems.map((gs) => [gs.schoolYearId, gs.systemType as GradingSystemType])
+        );
+      } catch (error) {
+        if (!isUndefinedTableError(error)) {
+          logger.error("[school-years] Failed to load grading system types", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+        return new Map<string, GradingSystemType>();
+      }
+    })(),
+  ]);
 
   // Combine the data
   const rows = schoolYearRows.map((sy) => ({

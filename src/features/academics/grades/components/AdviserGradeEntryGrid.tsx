@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useCallback, useTransition, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   createOrGetGradeSheetAction,
@@ -8,6 +8,10 @@ import {
   submitGradeSheetAction,
 } from "../grades.actions";
 import type { SectionStudent, GradeLevelSubject } from "../grades.queries";
+import type {
+  SaveGradeSheetEntriesFormState,
+  SubmitGradeSheetFormState,
+} from "../grades.schema";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,7 +79,6 @@ export function AdviserGradeEntryGrid({
   gradeSheetStatus = null,
 }: AdviserGradeEntryGridProps) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
   // Grade sheet state
@@ -99,9 +102,13 @@ export function AdviserGradeEntryGrid({
   });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Action states
-  const [saveState, , isSaving] = useActionState(saveGradeSheetEntriesAction, {});
-  const [submitState, , isSubmitting] = useActionState(submitGradeSheetAction, {});
+  // Action states — these flows run imperatively (create sheet → save → submit),
+  // so results and pending flags are tracked manually rather than via useActionState
+  // dispatchers (which don't return the result the sequential flow depends on).
+  const [saveState, setSaveState] = useState<SaveGradeSheetEntriesFormState>({});
+  const [submitState, setSubmitState] = useState<SubmitGradeSheetFormState>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Submit confirmation dialog state (replaces browser confirm())
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
@@ -156,10 +163,11 @@ export function AdviserGradeEntryGrid({
     []
   );
 
-  // Save grades
-  const handleSave = useCallback(async () => {
+  // Save grades. Awaits the server action so callers can sequence off its result.
+  // Returns true only when the save actually succeeded.
+  const handleSave = useCallback(async (): Promise<boolean> => {
     const sheetId = await ensureGradeSheet();
-    if (!sheetId) return;
+    if (!sheetId) return false;
 
     const entries = Array.from(grades.entries()).map(([key, grade]) => {
       const [studentId, subjectId] = key.split(":");
@@ -176,18 +184,24 @@ export function AdviserGradeEntryGrid({
     formData.append("gradeSheetId", sheetId);
     formData.append("entries", JSON.stringify(entries));
 
-    startTransition(async () => {
+    setIsSaving(true);
+    try {
       const result = await saveGradeSheetEntriesAction({}, formData);
+      setSaveState(result);
       if (result.success) {
         setHasUnsavedChanges(false);
+        return true;
       }
-    });
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
   }, [ensureGradeSheet, grades]);
 
-  // Submit for review
+  // Submit for review — save first, and only submit if that save actually succeeded.
   const handleSubmit = useCallback(async () => {
-    // First save
-    await handleSave();
+    const saved = await handleSave();
+    if (!saved) return;
 
     const sheetId = await ensureGradeSheet();
     if (!sheetId) return;
@@ -195,13 +209,17 @@ export function AdviserGradeEntryGrid({
     const formData = new FormData();
     formData.append("gradeSheetId", sheetId);
 
-    startTransition(async () => {
+    setIsSubmitting(true);
+    try {
       const result = await submitGradeSheetAction({}, formData);
+      setSubmitState(result);
       if (result.success) {
         setCurrentStatus("submitted");
         router.refresh();
       }
-    });
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [handleSave, ensureGradeSheet, router]);
 
   // Get grade value for a student-subject pair

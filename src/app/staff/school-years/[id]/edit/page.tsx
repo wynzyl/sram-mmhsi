@@ -8,6 +8,8 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import EditSchoolYearForm from "@/features/school-years/components/EditSchoolYearForm";
 import type { GradingSystemType } from "@/lib/constants/grading-systems";
+import { isUndefinedTableError } from "@/lib/utils/pg-error";
+import { logger } from "@/lib/observability/logger";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -52,8 +54,16 @@ export default async function EditStaffSchoolYearPage({ params }: PageProps) {
     if (gradingSystem?.systemType) {
       gradingSystemType = gradingSystem.systemType as GradingSystemType;
     }
-  } catch {
-    // Table may not exist yet - migrations not applied
+  } catch (error) {
+    // Only the "table not created yet" case is expected (migrations not applied) —
+    // keep the quarterly default silently. Connection, timeout, and permission
+    // failures must stay visible instead of hiding behind the fallback.
+    if (!isUndefinedTableError(error)) {
+      logger.error("[school-years] Failed to load grading system type", {
+        schoolYearId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   return (

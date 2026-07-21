@@ -315,6 +315,32 @@ export async function submitGradesAction(
 // ─── Grade Sheet Validation Helpers ──────────────────────────────────────────
 
 /**
+ * Check whether a user is the assigned section adviser for a given
+ * section + school year.
+ *
+ * Grade-sheet edit/submit authorization must be based on the live
+ * `sectionAdvisers` relationship — NOT `gradeSheets.adviserId`, which only stores
+ * whoever *created* the sheet. An admin may create a sheet on the adviser's behalf,
+ * and the assigned teacher must still be able to edit and submit it.
+ */
+async function isAssignedSectionAdviser(
+  userId: string,
+  sectionId: string,
+  schoolYearId: string
+): Promise<boolean> {
+  const adviser = await db.query.sectionAdvisers.findFirst({
+    where: and(
+      eq(sectionAdvisers.sectionId, sectionId),
+      eq(sectionAdvisers.schoolYearId, schoolYearId),
+      eq(sectionAdvisers.userId, userId),
+      isNull(sectionAdvisers.deletedAt)
+    ),
+    columns: { id: true },
+  });
+  return Boolean(adviser);
+}
+
+/**
  * Validate that previous grading periods have been submitted.
  * Enforces sequential period submission to prevent bypassing UI-level locking.
  *
@@ -359,17 +385,20 @@ async function validatePreviousPeriodsSubmitted(
     existingSheets.map((s) => [s.gradingPeriod, s.status])
   );
 
+  // A period only unlocks the next once it is fully approved. Merely "submitted"
+  // (awaiting principal review), "returned", "draft", or missing is not enough —
+  // this matches the UI's sequential-locking rule and the documented business rule
+  // ("Q2 cannot be submitted until Q1 is approved").
+  const APPROVED_STATUSES = ["principal_approved", "published", "locked"];
   for (const period of previousPeriods) {
     const status = sheetMap.get(period);
-    // Allow: submitted, principal_approved, published, locked
-    // Not allowed: draft, returned, or missing
-    if (!status || ["draft", "returned"].includes(status)) {
+    if (!status || !APPROVED_STATUSES.includes(status)) {
       const periodLabel = period.startsWith("T")
         ? `Trimester ${period.slice(1)}`
         : `Quarter ${period.slice(1)}`;
       return {
         valid: false,
-        message: `Cannot submit: ${periodLabel} grades must be submitted first. Grades must be submitted in order.`,
+        message: `Cannot submit: ${periodLabel} grades must be approved first. Grades must be completed in order.`,
       };
     }
   }
@@ -597,8 +626,17 @@ export async function saveGradeSheetEntriesAction(
     return { message: "Cannot edit grades - sheet is not in draft or returned status." };
   }
 
-  // Verify user is the adviser (unless admin)
-  if (session.role === "teacher" && gradeSheet.adviserId !== session.userId) {
+  // Verify user is the section's assigned adviser (unless admin). Authorize against
+  // the sectionAdvisers relationship rather than gradeSheet.adviserId (the creator),
+  // so sheets created by an admin remain editable by the assigned teacher.
+  if (
+    session.role === "teacher" &&
+    !(await isAssignedSectionAdviser(
+      session.userId,
+      gradeSheet.sectionId,
+      gradeSheet.schoolYearId
+    ))
+  ) {
     return { message: "You are not authorized to edit this grade sheet." };
   }
 
@@ -696,8 +734,17 @@ export async function submitGradeSheetAction(
     return { message: "Cannot submit - sheet is not in draft or returned status." };
   }
 
-  // Verify user is the adviser (unless admin)
-  if (session.role === "teacher" && gradeSheet.adviserId !== session.userId) {
+  // Verify user is the section's assigned adviser (unless admin). Authorize against
+  // the sectionAdvisers relationship rather than gradeSheet.adviserId (the creator),
+  // so sheets created by an admin remain submittable by the assigned teacher.
+  if (
+    session.role === "teacher" &&
+    !(await isAssignedSectionAdviser(
+      session.userId,
+      gradeSheet.sectionId,
+      gradeSheet.schoolYearId
+    ))
+  ) {
     return { message: "You are not authorized to submit this grade sheet." };
   }
 

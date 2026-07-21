@@ -9,11 +9,9 @@ import {
   gradeLevels,
   enrollments,
   students,
-  gradeRecords
 } from "@/lib/db/schema";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { GradeEncodingTable } from "@/features/academics";
 
 export default async function GradeEncodingPage({
   params,
@@ -78,37 +76,12 @@ export default async function GradeEncodingPage({
     )
     .orderBy(students.lastName, students.firstName);
 
-  // Fetch existing grades for this assignment
-  const existingGrades = await db.query.gradeRecords.findMany({
-    where: eq(gradeRecords.teacherAssignmentId, assignmentId),
-  });
-
-  // Transform data for the table
-  const studentsData = sectionEnrollments.map(enr => {
-    const sGrades = existingGrades.filter(g => g.studentId === enr.studentId);
-    return {
-      id: enr.studentId,
-      name: `${enr.lastName}, ${enr.firstName}`,
-      grades: {
-        Q1: sGrades.find(g => g.gradingPeriod === "Q1") ? { 
-          grade: sGrades.find(g => g.gradingPeriod === "Q1")!.grade!, 
-          status: sGrades.find(g => g.gradingPeriod === "Q1")!.status 
-        } : undefined,
-        Q2: sGrades.find(g => g.gradingPeriod === "Q2") ? { 
-          grade: sGrades.find(g => g.gradingPeriod === "Q2")!.grade!, 
-          status: sGrades.find(g => g.gradingPeriod === "Q2")!.status 
-        } : undefined,
-        Q3: sGrades.find(g => g.gradingPeriod === "Q3") ? { 
-          grade: sGrades.find(g => g.gradingPeriod === "Q3")!.grade!, 
-          status: sGrades.find(g => g.gradingPeriod === "Q3")!.status 
-        } : undefined,
-        Q4: sGrades.find(g => g.gradingPeriod === "Q4") ? { 
-          grade: sGrades.find(g => g.gradingPeriod === "Q4")!.grade!, 
-          status: sGrades.find(g => g.gradingPeriod === "Q4")!.status 
-        } : undefined,
-      }
-    };
-  });
+  // This view is read-only (grade entry is handled by the section adviser), so we
+  // only need the student roster — id + display name.
+  const studentsData = sectionEnrollments.map((enr) => ({
+    id: enr.studentId,
+    name: `${enr.lastName}, ${enr.firstName}`,
+  }));
 
   return (
     <div className="space-y-6">

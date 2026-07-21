@@ -439,7 +439,8 @@ export async function copySectionsFromSchoolYearAction(
       return insertedSections.length;
     });
 
-    revalidatePath("/staff/academics/sections");
+    // Client (CopySectionsModal) calls router.refresh() on success; the cache tag
+    // covers server-cached section reads. A route-wide revalidatePath here is redundant.
     invalidateTag(CACHE_TAGS.SECTIONS);
 
     return {

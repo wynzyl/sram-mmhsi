@@ -85,33 +85,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **PROJECT_ROADMAP.md** — Development roadmap and phases
 - **PROJECT_STATUS.md** — Current implementation status and active gaps
 
-## Commands
-
-```bash
-# Development
-npm run dev
-
-# Database
-npm run db:generate      # Generate migration from schema changes
-npm run db:migrate       # Apply migrations
-npm run db:push          # Push schema changes directly (use with caution)
-npm run db:studio        # Launch Drizzle Studio
-
-# Seeding
-npm run db:seed          # Seed with sample data
-npm run db:seed-config   # Seed system configuration only
-npm run db:seed-teacher  # Seed teacher grade-encoding demo data
-
-# Testing
-npm run test             # Run unit tests (Vitest)
-npm run test:watch       # Watch mode
-npm run test:e2e         # End-to-end tests (Playwright)
-
-# Build
-npm run build
-npm run lint
-```
-
 ## Environment Variables
 
 Required in `.env.local`:

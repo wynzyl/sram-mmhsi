@@ -7,6 +7,11 @@ import { coordinatorAssignments, users } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { logCreateAction, logDeleteAction } from "@/lib/utils/audit-logger";
 import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { logger } from "@/lib/observability/logger";
+import {
+  isUniqueViolationError,
+  isForeignKeyViolationError,
+} from "@/lib/utils/pg-error";
 import {
   assignCoordinatorSchema,
   removeCoordinatorSchema,
@@ -92,17 +97,38 @@ export async function assignCoordinatorAction(
   }
 
   // Create coordinator assignment
-  const [coordinator] = await db
-    .insert(coordinatorAssignments)
-    .values({
-      userId,
-      gradeGroup,
-      schoolYearId,
-      createdBy: session.userId,
-    })
-    .returning();
+  let coordinatorId: string;
+  try {
+    const [coordinator] = await db
+      .insert(coordinatorAssignments)
+      .values({
+        userId,
+        gradeGroup,
+        schoolYearId,
+        createdBy: session.userId,
+      })
+      .returning();
+    coordinatorId = coordinator.id;
+  } catch (error) {
+    // A concurrent insert can slip past the existing-assignment check above and hit
+    // the unique index (coordinator_assignments_group_sy_uidx).
+    if (isUniqueViolationError(error)) {
+      return {
+        message:
+          "This grade group already has a coordinator assigned. Remove the existing coordinator first.",
+      };
+    }
+    // Bad schoolYearId / userId (or any FK) — report instead of crashing.
+    if (isForeignKeyViolationError(error)) {
+      return {
+        message: "Invalid selection. Please check the school year and user, then try again.",
+      };
+    }
+    logger.error("[coordinators] Failed to assign coordinator", { error });
+    return { message: "An unexpected error occurred. Please try again." };
+  }
 
-  await logCreateAction(session, "coordinator_assignments", coordinator.id, {
+  await logCreateAction(session, "coordinator_assignments", coordinatorId, {
     userId,
     gradeGroup,
     schoolYearId,
@@ -113,7 +139,7 @@ export async function assignCoordinatorAction(
   return {
     success: true,
     message: "Coordinator assigned successfully.",
-    coordinatorId: coordinator.id,
+    coordinatorId,
   };
 }
 

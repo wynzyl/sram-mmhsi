@@ -153,39 +153,47 @@ export async function getAvailableSections(
 // ─── Get Enrollment Grade Level ───────────────────────────────────────────────
 
 /**
- * Get the grade level ID for a set of enrollments.
- * Used to validate that all selected enrollments are in the same grade level.
- * Returns null if enrollments have different grade levels.
+ * Get the grade level + school year for a set of enrollments.
+ * Used to validate that all selected enrollments are in the same grade level AND
+ * the same school year before assigning them to a section.
+ * Returns null if the enrollments span more than one grade level or school year.
  */
 export async function getEnrollmentGradeLevels(
   enrollmentIds: string[]
-): Promise<string | null> {
+): Promise<{ gradeLevelId: string; schoolYearId: string } | null> {
   if (enrollmentIds.length === 0) return null;
 
   const rows = await db
-    .selectDistinct({ gradeLevelId: enrollments.gradeLevelId })
+    .selectDistinct({
+      gradeLevelId: enrollments.gradeLevelId,
+      schoolYearId: enrollments.schoolYearId,
+    })
     .from(enrollments)
     .where(inArray(enrollments.id, enrollmentIds));
 
-  // If more than one distinct grade level, return null (invalid selection)
+  // If more than one distinct (grade level, school year) pair, the selection is invalid.
   if (rows.length !== 1) {
     return null;
   }
 
-  return rows[0].gradeLevelId;
+  return rows[0];
 }
 
 // ─── Get Section Grade Level ──────────────────────────────────────────────────
 
 /**
- * Get the grade level ID for a section.
- * Used to validate that section belongs to the same grade level as enrollments.
+ * Get the grade level + school year for a section.
+ * Used to validate that a section belongs to the same grade level and school year
+ * as the enrollments being assigned to it.
  */
 export async function getSectionGradeLevelId(
   sectionId: string
-): Promise<string | null> {
+): Promise<{ gradeLevelId: string; schoolYearId: string } | null> {
   const [row] = await db
-    .select({ gradeLevelId: sections.gradeLevelId })
+    .select({
+      gradeLevelId: sections.gradeLevelId,
+      schoolYearId: sections.schoolYearId,
+    })
     .from(sections)
     .where(
       and(
@@ -195,5 +203,5 @@ export async function getSectionGradeLevelId(
     )
     .limit(1);
 
-  return row?.gradeLevelId ?? null;
+  return row ?? null;
 }

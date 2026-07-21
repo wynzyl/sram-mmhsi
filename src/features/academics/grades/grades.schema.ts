@@ -1,18 +1,18 @@
 import { z } from "zod";
 import { GRADING_PERIODS, type GradingPeriod, type GradeSheetStatus } from "@/lib/constants/grading-periods";
-import type { BaseFormState } from "@/lib/validators/common-schemas";
+import { uuidSchema, type BaseFormState } from "@/lib/validators/common-schemas";
 
 // ─── Teacher: Grade Encoding ────────────────────────────────────────────────
 
 export const GradeEntrySchema = z.object({
-  studentId: z.string().uuid(),
+  studentId: uuidSchema,
   gradingPeriod: z.enum(["Q1", "Q2", "Q3", "Q4"]),
   grade: z.union([z.coerce.number().min(0).max(100), z.literal("")]).optional().nullable(),
 });
 
 export const SaveGradesSchema = z.object({
-  assignmentId: z.string().uuid("Assignment ID is required."),
-  schoolYearId: z.string().uuid("School Year ID is required."),
+  assignmentId: uuidSchema,
+  schoolYearId: uuidSchema,
   grades: z.array(GradeEntrySchema),
 });
 
@@ -21,7 +21,7 @@ export type SaveGradesInput = z.infer<typeof SaveGradesSchema>;
 export type SaveGradesFormState = BaseFormState<SaveGradesInput>;
 
 export const SubmitGradesSchema = z.object({
-  assignmentId: z.string().uuid("Assignment ID is required."),
+  assignmentId: uuidSchema,
   gradingPeriod: z.enum(["Q1", "Q2", "Q3", "Q4"]),
 });
 
@@ -30,7 +30,7 @@ export type SubmitGradesFormState = BaseFormState<z.infer<typeof SubmitGradesSch
 // ─── Admin: Grade Locking ───────────────────────────────────────────────────
 
 export const LockGradesSchema = z.object({
-  assignmentId: z.string().uuid("Assignment ID is required."),
+  assignmentId: uuidSchema,
   gradingPeriod: z.enum(["Q1", "Q2", "Q3", "Q4"]),
 });
 
@@ -42,8 +42,8 @@ export type LockGradesFormState = BaseFormState<z.infer<typeof LockGradesSchema>
  * Create or get a grade sheet for a section/period.
  */
 export const CreateGradeSheetSchema = z.object({
-  sectionId: z.string().uuid("Section ID is required."),
-  schoolYearId: z.string().uuid("School Year ID is required."),
+  sectionId: uuidSchema,
+  schoolYearId: uuidSchema,
   gradingPeriod: z.enum(GRADING_PERIODS, { message: "Invalid grading period." }),
 });
 
@@ -56,11 +56,11 @@ export type CreateGradeSheetFormState = BaseFormState<CreateGradeSheetInput> & {
  * Save grade entries to a grade sheet.
  */
 export const SaveGradeSheetEntriesSchema = z.object({
-  gradeSheetId: z.string().uuid("Grade Sheet ID is required."),
+  gradeSheetId: uuidSchema,
   entries: z.array(
     z.object({
-      studentId: z.string().uuid("Student ID is required."),
-      subjectId: z.string().uuid("Subject ID is required."),
+      studentId: uuidSchema,
+      subjectId: uuidSchema,
       grade: z.union([
         z.coerce.number().min(60, "Minimum grade is 60").max(100, "Maximum grade is 100"),
         z.literal(""),
@@ -78,7 +78,7 @@ export type SaveGradeSheetEntriesFormState = BaseFormState<SaveGradeSheetEntries
  * Submit grade sheet for coordinator review.
  */
 export const SubmitGradeSheetSchema = z.object({
-  gradeSheetId: z.string().uuid("Grade Sheet ID is required."),
+  gradeSheetId: uuidSchema,
 });
 
 export type SubmitGradeSheetInput = z.infer<typeof SubmitGradeSheetSchema>;
@@ -93,7 +93,7 @@ export type SubmitGradeSheetFormState = BaseFormState<SubmitGradeSheetInput> & {
  * Return grade sheet with remarks.
  */
 export const ReturnGradeSheetSchema = z.object({
-  gradeSheetId: z.string().uuid("Grade Sheet ID is required."),
+  gradeSheetId: uuidSchema,
   remarks: z.string().min(1, "Remarks are required when returning a grade sheet.").max(1000),
 });
 
@@ -104,7 +104,7 @@ export type ReturnGradeSheetFormState = BaseFormState<ReturnGradeSheetInput>;
  * Approve grade sheet (coordinator or principal level).
  */
 export const ApproveGradeSheetSchema = z.object({
-  gradeSheetId: z.string().uuid("Grade Sheet ID is required."),
+  gradeSheetId: uuidSchema,
 });
 
 export type ApproveGradeSheetInput = z.infer<typeof ApproveGradeSheetSchema>;
@@ -114,7 +114,7 @@ export type ApproveGradeSheetFormState = BaseFormState<ApproveGradeSheetInput>;
  * Publish grade sheet to student portal.
  */
 export const PublishGradeSheetSchema = z.object({
-  gradeSheetId: z.string().uuid("Grade Sheet ID is required."),
+  gradeSheetId: uuidSchema,
 });
 
 export type PublishGradeSheetInput = z.infer<typeof PublishGradeSheetSchema>;
@@ -124,7 +124,7 @@ export type PublishGradeSheetFormState = BaseFormState<PublishGradeSheetInput>;
  * Lock grade sheet (immutable).
  */
 export const LockGradeSheetSchema = z.object({
-  gradeSheetId: z.string().uuid("Grade Sheet ID is required."),
+  gradeSheetId: uuidSchema,
 });
 
 export type LockGradeSheetInput = z.infer<typeof LockGradeSheetSchema>;
@@ -134,7 +134,7 @@ export type LockGradeSheetFormState = BaseFormState<LockGradeSheetInput>;
  * Unlock grade sheet (admin only, requires reason).
  */
 export const UnlockGradeSheetSchema = z.object({
-  gradeSheetId: z.string().uuid("Grade Sheet ID is required."),
+  gradeSheetId: uuidSchema,
   reason: z.string().min(1, "Reason is required when unlocking grades.").max(1000),
 });
 

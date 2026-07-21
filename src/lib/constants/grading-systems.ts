@@ -1,3 +1,5 @@
+import { QUARTERLY_PERIODS, TRIMESTER_PERIODS } from "./grading-periods";
+
 /**
  * Grading system types - configurable per school year.
  * Determines which grading periods are valid for that year.
@@ -17,9 +19,9 @@ export const GRADING_SYSTEM_LABELS: Record<GradingSystemType, string> = {
 export function getValidPeriods(systemType: GradingSystemType): readonly string[] {
   switch (systemType) {
     case "quarterly":
-      return ["Q1", "Q2", "Q3", "Q4"];
+      return QUARTERLY_PERIODS;
     case "trimester":
-      return ["T1", "T2", "T3"];
+      return TRIMESTER_PERIODS;
     default:
       return [];
   }

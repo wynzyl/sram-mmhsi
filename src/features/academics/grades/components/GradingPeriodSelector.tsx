@@ -103,7 +103,6 @@ export function GradingPeriodSelector({
             const isActive = selectedPeriod === period;
             const isLocked = getIsLocked(index);
             const status = completionStatus[period];
-            const isComplete = status?.isComplete;
 
             if (isLocked) {
               return (

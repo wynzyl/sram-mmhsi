@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { copySectionsFromSchoolYearAction } from "../sections.actions";
 import type { CopySectionsFormState } from "../sections.schema";
@@ -149,7 +149,7 @@ export default function CopySectionsModal({
             <div className="p-3 bg-success/10 border border-success/20 rounded-md">
               <p className="text-sm text-success-foreground">
                 Copied {state.copied} section{state.copied !== 1 ? "s" : ""}.
-                {state.skipped && state.skipped > 0 && (
+                {(state.skipped ?? 0) > 0 && (
                   <> {state.skipped} skipped (already exist).</>
                 )}
               </p>

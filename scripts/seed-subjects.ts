@@ -246,7 +246,11 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
               curriculumAdoptions.gradeLevelId,
             ],
             // Partial unique index (deleted_at IS NULL) — match its predicate.
-            targetWhere: isNull(curriculumAdoptions.deletedAt),
+            // NOTE: onConflictDoNothing's predicate key is `where` (not
+            // `targetWhere`, which is onConflictDoUpdate's key); the wrong key is
+            // silently ignored and emits `ON CONFLICT (...) DO NOTHING` with no
+            // predicate, failing against the partial index (Postgres 42P10).
+            where: isNull(curriculumAdoptions.deletedAt),
           });
       }
 
