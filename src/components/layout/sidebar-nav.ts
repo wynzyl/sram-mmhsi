@@ -194,8 +194,6 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
             { href: "/staff/academics/curriculums/adoptions", label: "Adoptions", icon: "curriculums" },
           ],
         },
-        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
-        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
       ],
     },
     {
@@ -297,6 +295,15 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/grades", label: "My Sections", icon: "grades" },
       ],
     },
+    {
+      label: "Academics",
+      items: [
+        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
+        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
+        { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
+        { href: "/staff/academics/teacher-assignments", label: "Teacher Assignments", icon: "assignments" },
+      ],
+    },
   ],
 
   principal: [
@@ -310,7 +317,10 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Academics",
       items: [
+        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
+        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
         { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
+        { href: "/staff/academics/teacher-assignments", label: "Teacher Assignments", icon: "assignments" },
       ],
     },
   ],

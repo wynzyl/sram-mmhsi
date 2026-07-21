@@ -191,7 +191,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "grades:read",
     "advisers:read",
     "reports:view", "reports:academic",
-    "sections:manage", "sections:assign", "school_years:manage",
+    "school_years:manage",
   ],
   finance_officer: [
     "students:read",
@@ -223,7 +223,9 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "students:read",
     "curriculums:read",
     "grades:read", "grades:coordinator_review",
-    "advisers:read",
+    "advisers:read", "advisers:manage",
+    "sections:manage", "sections:assign",
+    "assignments:manage",
     "reports:view", "reports:academic",
   ],
   principal: [
@@ -231,6 +233,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "curriculums:read",
     "grades:read", "grades:coordinator_review", "grades:principal_review", "grades:publish", "grades:lock",
     "advisers:read", "advisers:manage",
+    "sections:manage", "sections:assign",
+    "assignments:manage",
     "reports:view", "reports:academic",
   ],
   student: [
