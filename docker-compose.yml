@@ -14,6 +14,11 @@
 
 name: srams-dev
 
+#networks:
+  #proxy-network:
+    #external: true
+    #driver: bridge
+
 services:
   db:
     image: postgres:15-alpine
@@ -102,6 +107,8 @@ services:
           path: ./package.json
         - action: rebuild
           path: ./package-lock.json
+      #networks:
+        #- proxy-network
 
   # Optional helpers — run with: docker compose run --rm seed
   seed:
