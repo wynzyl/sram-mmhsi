@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { editorialFieldClass } from "@/lib/utils/editorial-styles";
 import { formatPhoneInput, stripPhoneFormat } from "@/lib/utils/phone";
+import { generateUuid } from "@/lib/utils/uuid";
 import { useFormToast } from "@/hooks/useFormToast";
 
 /**
@@ -78,7 +79,7 @@ type FormValues = {
 };
 
 const emptyGuardian = (isPrimary = false): GuardianValues => ({
-  _clientId: crypto.randomUUID(),
+  _clientId: generateUuid(),
   firstName: "",
   middleName: "",
   lastName: "",
