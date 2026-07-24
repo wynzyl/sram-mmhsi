@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { curriculums, subjects } from "@/lib/db/schema";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { curriculums, subjects, subjectStrands } from "@/lib/db/schema";
+import { eq, and, isNull, sql, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction, logDeleteAction, logAudit } from "@/lib/utils/audit-logger";
@@ -16,11 +16,13 @@ import {
   DeleteSubjectFromCurriculumSchema,
   RestoreSubjectInCurriculumSchema,
   ReorderSubjectsSchema,
+  StrandAssociationSchema,
   type AddSubjectToCurriculumFormState,
   type UpdateSubjectInCurriculumFormState,
   type DeleteSubjectFromCurriculumFormState,
   type RestoreSubjectInCurriculumFormState,
   type ReorderSubjectsFormState,
+  type StrandAssociation,
 } from "./curriculums.schema";
 
 // ─── Helper: Verify Draft Status ────────────────────────────────────────────
@@ -88,6 +90,65 @@ async function checkSubjectCodeConflict(
   return !!existing;
 }
 
+/**
+ * Parse strand associations from JSON string and validate.
+ */
+function parseStrandAssociations(
+  strandAssociationsJson: string | undefined
+): StrandAssociation[] | null {
+  if (!strandAssociationsJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(strandAssociationsJson);
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+
+    // Validate each association
+    const validated: StrandAssociation[] = [];
+    for (const item of parsed) {
+      const result = StrandAssociationSchema.safeParse(item);
+      if (result.success) {
+        validated.push(result.data);
+      }
+    }
+
+    return validated.length > 0 ? validated : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save strand associations for a subject.
+ * Replaces all existing associations with the new ones.
+ */
+async function saveSubjectStrandAssociations(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  subjectId: string,
+  associations: StrandAssociation[],
+  userId: string
+): Promise<void> {
+  // Delete existing associations
+  await tx
+    .delete(subjectStrands)
+    .where(eq(subjectStrands.subjectId, subjectId));
+
+  // Insert new associations
+  if (associations.length > 0) {
+    await tx.insert(subjectStrands).values(
+      associations.map((a) => ({
+        subjectId,
+        strandId: a.strandId,
+        isStrandCore: a.isStrandCore ?? false,
+        createdBy: userId,
+      }))
+    );
+  }
+}
+
 // ─── Add Subject to Curriculum ──────────────────────────────────────────────
 
 export async function addSubjectToCurriculumAction(
@@ -104,8 +165,17 @@ export async function addSubjectToCurriculumAction(
     return { errors: result.errors };
   }
 
-  const { curriculumId, name, code, description, gradeLevelId, units, sequenceOrder, isCore } =
-    result.data;
+  const {
+    curriculumId,
+    name,
+    code,
+    description,
+    gradeLevelId,
+    units,
+    sequenceOrder,
+    isCore,
+    strandAssociations: strandAssociationsJson,
+  } = result.data;
 
   // Verify curriculum is a draft
   const draftCheck = await verifyCurriculumIsDraft(curriculumId);
@@ -118,6 +188,9 @@ export async function addSubjectToCurriculumAction(
   if (hasConflict) {
     return { errors: { code: ["Subject code already exists in this curriculum."] } };
   }
+
+  // Parse strand associations if provided
+  const strandAssociations = parseStrandAssociations(strandAssociationsJson);
 
   try {
     // Get next sequence order if not provided
@@ -136,34 +209,55 @@ export async function addSubjectToCurriculumAction(
       finalSequenceOrder = (maxOrder?.max ?? 0) + 1;
     }
 
-    const [newSubject] = await db
-      .insert(subjects)
-      .values({
-        name,
-        code,
-        description: description ?? null,
-        curriculumId,
-        gradeLevelId,
-        units: units ?? "0",
-        sequenceOrder: finalSequenceOrder,
-        isCore: isCore ?? true,
-        createdBy: session.userId,
-        updatedBy: session.userId,
-      })
-      .returning({ id: subjects.id });
+    const newSubjectId = await db.transaction(async (tx) => {
+      const [newSubject] = await tx
+        .insert(subjects)
+        .values({
+          name,
+          code,
+          description: description ?? null,
+          curriculumId,
+          gradeLevelId,
+          units: units ?? "0",
+          sequenceOrder: finalSequenceOrder,
+          isCore: isCore ?? true,
+          createdBy: session.userId,
+          updatedBy: session.userId,
+        })
+        .returning({ id: subjects.id });
+
+      // Save strand associations for elective subjects
+      if (!isCore && strandAssociations && strandAssociations.length > 0) {
+        await saveSubjectStrandAssociations(
+          tx,
+          newSubject.id,
+          strandAssociations,
+          session.userId
+        );
+      }
+
+      return newSubject.id;
+    });
 
     await logCreateAction(
       session,
       "subjects",
-      newSubject.id,
-      { name, code, curriculumId, gradeLevelId },
+      newSubjectId,
+      {
+        name,
+        code,
+        curriculumId,
+        gradeLevelId,
+        strandCount: strandAssociations?.length ?? 0,
+      },
       { throwOnFail: true }
     );
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
+    invalidateTag(CACHE_TAGS.STRANDS);
     revalidatePath(`/staff/academics/curriculums/${curriculumId}`);
 
-    return { success: true, subjectId: newSubject.id };
+    return { success: true, subjectId: newSubjectId };
   } catch (error) {
     logger.error("[subjects] Failed to add subject", { error });
     return { message: "An unexpected error occurred." };
@@ -186,8 +280,17 @@ export async function updateSubjectInCurriculumAction(
     return { errors: result.errors };
   }
 
-  const { subjectId, name, code, description, gradeLevelId, units, sequenceOrder, isCore } =
-    result.data;
+  const {
+    subjectId,
+    name,
+    code,
+    description,
+    gradeLevelId,
+    units,
+    sequenceOrder,
+    isCore,
+    strandAssociations: strandAssociationsJson,
+  } = result.data;
 
   // Get subject's curriculum
   const curriculumId = await getSubjectCurriculumId(subjectId);
@@ -204,7 +307,7 @@ export async function updateSubjectInCurriculumAction(
   // Get existing subject for comparison
   const existing = await db.query.subjects.findFirst({
     where: eq(subjects.id, subjectId),
-    columns: { id: true, name: true, code: true, curriculumId: true },
+    columns: { id: true, name: true, code: true, curriculumId: true, isCore: true },
   });
 
   if (!existing) {
@@ -219,35 +322,69 @@ export async function updateSubjectInCurriculumAction(
     }
   }
 
+  // Parse strand associations if provided
+  const strandAssociations = parseStrandAssociations(strandAssociationsJson);
+
   try {
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
-      updatedBy: session.userId,
-    };
+    await db.transaction(async (tx) => {
+      const updateData: Record<string, unknown> = {
+        updatedAt: new Date(),
+        updatedBy: session.userId,
+      };
 
-    if (name !== undefined) updateData.name = name;
-    if (code !== undefined) updateData.code = code;
-    if (description !== undefined) updateData.description = description;
-    if (gradeLevelId !== undefined) updateData.gradeLevelId = gradeLevelId;
-    if (units !== undefined) updateData.units = units;
-    if (sequenceOrder !== undefined) updateData.sequenceOrder = sequenceOrder;
-    if (isCore !== undefined) updateData.isCore = isCore;
+      if (name !== undefined) updateData.name = name;
+      if (code !== undefined) updateData.code = code;
+      if (description !== undefined) updateData.description = description;
+      if (gradeLevelId !== undefined) updateData.gradeLevelId = gradeLevelId;
+      if (units !== undefined) updateData.units = units;
+      if (sequenceOrder !== undefined) updateData.sequenceOrder = sequenceOrder;
+      if (isCore !== undefined) updateData.isCore = isCore;
 
-    await db
-      .update(subjects)
-      .set(updateData)
-      .where(eq(subjects.id, subjectId));
+      await tx
+        .update(subjects)
+        .set(updateData)
+        .where(eq(subjects.id, subjectId));
+
+      // Update strand associations
+      // If subject is now core, remove all strand associations
+      // If subject is elective, update associations
+      const finalIsCore = isCore ?? existing.isCore;
+
+      if (finalIsCore) {
+        // Core subjects don't have strand associations - remove any existing
+        await tx.delete(subjectStrands).where(eq(subjectStrands.subjectId, subjectId));
+      } else if (strandAssociations !== null) {
+        // Elective subject with explicit strand associations
+        await saveSubjectStrandAssociations(
+          tx,
+          subjectId,
+          strandAssociations,
+          session.userId
+        );
+      }
+      // If strandAssociations is null and subject is still elective, keep existing associations
+    });
 
     await logUpdateAction(
       session,
       "subjects",
       subjectId,
       { name: existing.name, code: existing.code },
-      { name, code, description, gradeLevelId, units, sequenceOrder, isCore },
+      {
+        name,
+        code,
+        description,
+        gradeLevelId,
+        units,
+        sequenceOrder,
+        isCore,
+        strandCount: strandAssociations?.length,
+      },
       { throwOnFail: true }
     );
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
+    invalidateTag(CACHE_TAGS.STRANDS);
     revalidatePath(`/staff/academics/curriculums/${curriculumId}`);
 
     return { success: true, message: "Subject updated successfully." };

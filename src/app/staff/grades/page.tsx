@@ -1,11 +1,11 @@
 import { requireSession } from "@/lib/auth/session";
 import {
   getActiveSchoolYear,
-  getTeacherAssignments,
   getAdviserSections,
 } from "@/features/academics/grades/grades.queries";
+import { getSubjectOfferingsForTeacher } from "@/features/academics/subject-offerings";
 import { AdviserSectionCards } from "@/features/academics/grades/components/AdviserSectionCards";
-import { TeacherSubjectCards } from "@/features/academics/grades/components/TeacherSubjectCards";
+import { TeacherClassesCards } from "@/features/academics/subject-offerings";
 
 export default async function GradesDashboardPage() {
   const session = await requireSession();
@@ -21,15 +21,15 @@ export default async function GradesDashboardPage() {
     );
   }
 
-  // Fetch both adviser sections and teacher assignments in parallel
-  const [adviserSections, teacherAssignments] = await Promise.all([
+  // Fetch both adviser sections and teacher subject offerings in parallel
+  const [adviserSections, teacherClasses] = await Promise.all([
     getAdviserSections(session.userId, activeSY.id),
-    getTeacherAssignments(session.userId, activeSY.id),
+    getSubjectOfferingsForTeacher(session.userId, activeSY.id),
   ]);
 
   const hasAdviserSections = adviserSections.length > 0;
-  const hasTeacherAssignments = teacherAssignments.length > 0;
-  const hasNoAssignments = !hasAdviserSections && !hasTeacherAssignments;
+  const hasTeacherClasses = teacherClasses.length > 0;
+  const hasNoAssignments = !hasAdviserSections && !hasTeacherClasses;
 
   return (
     <div className="space-y-8">
@@ -71,9 +71,9 @@ export default async function GradesDashboardPage() {
             <AdviserSectionCards sections={adviserSections} />
           )}
 
-          {/* Teacher Subject Assignments - View only */}
-          {hasTeacherAssignments && (
-            <TeacherSubjectCards assignments={teacherAssignments} />
+          {/* Teacher Subject Assignments - Read-only view via Subject Offerings */}
+          {hasTeacherClasses && (
+            <TeacherClassesCards classes={teacherClasses} />
           )}
         </div>
       )}

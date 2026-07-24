@@ -21,6 +21,7 @@ import { DOCUMENT_REQUEST_TYPES, DOCUMENT_REQUEST_STATUSES } from "@/lib/constan
 import { GRADING_PERIODS, GRADE_SHEET_STATUSES, GRADE_APPROVAL_ACTIONS } from "@/lib/constants/grading-periods";
 import { GRADING_SYSTEM_TYPES } from "@/lib/constants/grading-systems";
 import { GRADE_GROUPS } from "@/lib/constants/grade-groups";
+import { SHS_STRAND_CODES } from "@/lib/constants/strands";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -93,6 +94,9 @@ export const gradingSystemTypeEnum = pgEnum("grading_system_type", GRADING_SYSTE
 
 /** Grade level groups for coordinator assignment */
 export const gradeGroupEnum = pgEnum("grade_group", GRADE_GROUPS);
+
+/** SHS academic strand codes (STEM, ABM, HUMSS, GAS, TVL-*) */
+export const strandCodeEnum = pgEnum("strand_code", SHS_STRAND_CODES);
 
 /** Curriculum lifecycle: draft → published → archived */
 export const curriculumStatusEnum = pgEnum("curriculum_status", [
@@ -427,6 +431,68 @@ export const curriculumAdoptions = pgTable(
   ]
 );
 
+// ─── SHS Strands ──────────────────────────────────────────────────────────────
+
+/**
+ * SHS Academic Strands - tracks available strands for Senior High School.
+ * STEM, ABM, HUMSS, GAS, TVL-ICT, TVL-HE, TVL-IA, TVL-AFA
+ */
+export const strands = pgTable(
+  "strands",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: strandCodeEnum("code").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    displayOrder: integer("display_order").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // Unique strand code (active records only)
+    uniqueIndex("strands_code_uidx")
+      .on(t.code)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("strands_active_idx")
+      .on(t.isActive)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+    index("strands_display_order_idx").on(t.displayOrder),
+  ]
+);
+
+/**
+ * Subject-Strand associations - links subjects to applicable strands.
+ * Core subjects have no strand links (available to all).
+ * Elective subjects link to strands they're available to.
+ */
+export const subjectStrands = pgTable(
+  "subject_strands",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    subjectId: uuid("subject_id").notNull().references(() => subjects.id, { onDelete: "cascade" }),
+    strandId: uuid("strand_id").notNull().references(() => strands.id, { onDelete: "cascade" }),
+    /** Whether this subject is required (core) for this strand, vs optional elective */
+    isStrandCore: boolean("is_strand_core").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // Unique subject-strand pair (active records only)
+    uniqueIndex("subject_strands_subject_strand_uidx")
+      .on(t.subjectId, t.strandId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("subject_strands_subject_idx").on(t.subjectId),
+    index("subject_strands_strand_idx").on(t.strandId),
+  ]
+);
+
 // ─── Students & Parents ───────────────────────────────────────────────────────
 
 export const students = pgTable(
@@ -579,6 +645,8 @@ export const enrollments = pgTable(
     gradeLevelId: uuid("grade_level_id").notNull().references(() => gradeLevels.id),
     sectionId: uuid("section_id").references(() => sections.id),
     registrationId: uuid("registration_id").references(() => registrations.id),
+    /** SHS strand for senior high school students (Grade 11-12). Nullable for non-SHS. */
+    strandId: uuid("strand_id").references(() => strands.id),
     /** NEW_STUDENT | TRANSFEREE | OLD_STUDENT workflow classification. */
     studentType: enrollmentStudentTypeEnum("student_type").notNull().default("new_student"),
     /** Required for new_student / transferee enrollments; null for old_student or legacy rows. */
@@ -1106,6 +1174,101 @@ export const gradeRecords = pgTable(
   ]
 );
 
+// ─── Subject Offerings ────────────────────────────────────────────────────────
+
+/**
+ * Subject offerings - operational layer between curriculum and grading.
+ * Tracks subjects offered per section per school year with optional teacher assignment.
+ * Enables:
+ * - SHS strand-specific subject availability
+ * - Teacher assignment per section+subject
+ * - Student-subject enrollment traceability
+ */
+export const subjectOfferings = pgTable(
+  "subject_offerings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sectionId: uuid("section_id").notNull().references(() => sections.id),
+    subjectId: uuid("subject_id").notNull().references(() => subjects.id),
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    /** Optional teacher assignment - can be assigned later */
+    teacherId: uuid("teacher_id").references(() => users.id),
+    /** Optional strand for SHS strand-specific subjects */
+    strandId: uuid("strand_id").references(() => strands.id),
+    isActive: boolean("is_active").notNull().default(true),
+    /** Display order for subject list */
+    sequenceOrder: integer("sequence_order").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // Unique subject offering per section + school year (active records only)
+    uniqueIndex("subject_offerings_section_subject_sy_uidx")
+      .on(t.sectionId, t.subjectId, t.schoolYearId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("subject_offerings_section_idx").on(t.sectionId),
+    index("subject_offerings_subject_idx").on(t.subjectId),
+    index("subject_offerings_teacher_idx").on(t.teacherId),
+    index("subject_offerings_strand_idx").on(t.strandId),
+    index("subject_offerings_sy_idx").on(t.schoolYearId),
+    // Active offerings for section
+    index("subject_offerings_section_active_idx")
+      .on(t.sectionId)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+  ]
+);
+
+/**
+ * Student subject enrollments - explicit link between students and subject offerings.
+ * Created when student is assigned to a section.
+ * Enables grade sheet traceability to specific student-subject enrollment.
+ */
+export const studentSubjectEnrollments = pgTable(
+  "student_subject_enrollments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    enrollmentId: uuid("enrollment_id").notNull().references(() => enrollments.id),
+    subjectOfferingId: uuid("subject_offering_id").notNull().references(() => subjectOfferings.id),
+    /** Denormalized for query performance */
+    studentId: uuid("student_id").notNull().references(() => students.id),
+    /** Denormalized for query performance */
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    isActive: boolean("is_active").notNull().default(true),
+    /** Withdrawal tracking */
+    withdrawnAt: timestamp("withdrawn_at"),
+    withdrawnBy: uuid("withdrawn_by").references(() => users.id),
+    withdrawalReason: text("withdrawal_reason"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // Unique enrollment + offering (active records only)
+    uniqueIndex("sse_enrollment_offering_uidx")
+      .on(t.enrollmentId, t.subjectOfferingId)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+    index("sse_enrollment_idx").on(t.enrollmentId),
+    index("sse_offering_idx").on(t.subjectOfferingId),
+    index("sse_student_idx").on(t.studentId),
+    index("sse_school_year_idx").on(t.schoolYearId),
+    // Student's active subject enrollments
+    index("sse_student_active_idx")
+      .on(t.studentId)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+    // School year active enrollments for reporting
+    index("sse_sy_active_idx")
+      .on(t.schoolYearId)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+  ]
+);
+
 // ─── Section Advisers ─────────────────────────────────────────────────────────
 
 /**
@@ -1207,6 +1370,14 @@ export const gradeSheetEntries = pgTable(
     gradeSheetId: uuid("grade_sheet_id").notNull().references(() => gradeSheets.id),
     studentId: uuid("student_id").notNull().references(() => students.id),
     subjectId: uuid("subject_id").notNull().references(() => subjects.id),
+    /**
+     * Link to student subject enrollment for traceability.
+     * Nullable during migration - will be populated for new entries.
+     * @deprecated studentId + subjectId kept for backward compatibility during migration
+     */
+    studentSubjectEnrollmentId: uuid("student_subject_enrollment_id").references(
+      () => studentSubjectEnrollments.id
+    ),
 
     // Direct quarterly grade entry (no computation)
     // DepEd transmutation range: 60-100
@@ -1223,6 +1394,7 @@ export const gradeSheetEntries = pgTable(
       .on(t.gradeSheetId, t.studentId, t.subjectId),
     index("grade_sheet_entries_student_idx").on(t.studentId),
     index("grade_sheet_entries_subject_idx").on(t.subjectId),
+    index("grade_sheet_entries_sse_idx").on(t.studentSubjectEnrollmentId),
   ]
 );
 
@@ -1766,7 +1938,7 @@ export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
   }),
 }));
 
-export const subjectsRelations = relations(subjects, ({ one }) => ({
+export const subjectsRelations = relations(subjects, ({ one, many }) => ({
   curriculum: one(curriculums, {
     fields: [subjects.curriculumId],
     references: [curriculums.id],
@@ -1780,6 +1952,10 @@ export const subjectsRelations = relations(subjects, ({ one }) => ({
     references: [users.id],
     relationName: "subject_creator",
   }),
+  /** Strand associations for SHS elective subjects */
+  subjectStrands: many(subjectStrands),
+  /** Subject offerings across sections */
+  subjectOfferings: many(subjectOfferings),
 }));
 
 export const curriculumAdoptionsRelations = relations(curriculumAdoptions, ({ one }) => ({
@@ -1941,10 +2117,16 @@ export const enrollmentsRelations = relations(enrollments, ({ one, many }) => ({
     fields: [enrollments.registrationId],
     references: [registrations.id],
   }),
+  /** SHS strand for senior high school students */
+  strand: one(strands, {
+    fields: [enrollments.strandId],
+    references: [strands.id],
+  }),
   assessments: many(assessments),
   discountRequests: many(discountRequests),
   cancellationRequests: many(enrollmentCancellationRequests),
   clearances: many(studentClearances),
+  studentSubjectEnrollments: many(studentSubjectEnrollments),
 }));
 
 export const studentsRelations = relations(students, ({ one, many }) => ({
@@ -1966,6 +2148,7 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   studentDiscounts: many(studentDiscounts),
   clearances: many(studentClearances),
   documentRequests: many(documentRequests),
+  studentSubjectEnrollments: many(studentSubjectEnrollments),
 }));
 
 // Enrollment Cancellation Request Relations
@@ -2128,6 +2311,10 @@ export const gradeSheetEntriesRelations = relations(gradeSheetEntries, ({ one })
     fields: [gradeSheetEntries.subjectId],
     references: [subjects.id],
   }),
+  studentSubjectEnrollment: one(studentSubjectEnrollments, {
+    fields: [gradeSheetEntries.studentSubjectEnrollmentId],
+    references: [studentSubjectEnrollments.id],
+  }),
 }));
 
 // Grade Approval Relations
@@ -2140,4 +2327,97 @@ export const gradeApprovalsRelations = relations(gradeApprovals, ({ one }) => ({
     fields: [gradeApprovals.actorId],
     references: [users.id],
   }),
+}));
+
+// ─── Subject Offering Relations ───────────────────────────────────────────────
+
+// Strand Relations
+export const strandsRelations = relations(strands, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [strands.createdBy],
+    references: [users.id],
+    relationName: "strand_creator",
+  }),
+  subjectStrands: many(subjectStrands),
+  subjectOfferings: many(subjectOfferings),
+  enrollments: many(enrollments),
+}));
+
+// Subject-Strand Relations
+export const subjectStrandsRelations = relations(subjectStrands, ({ one }) => ({
+  subject: one(subjects, {
+    fields: [subjectStrands.subjectId],
+    references: [subjects.id],
+  }),
+  strand: one(strands, {
+    fields: [subjectStrands.strandId],
+    references: [strands.id],
+  }),
+  createdByUser: one(users, {
+    fields: [subjectStrands.createdBy],
+    references: [users.id],
+    relationName: "subjectStrand_creator",
+  }),
+}));
+
+// Subject Offering Relations
+export const subjectOfferingsRelations = relations(subjectOfferings, ({ one, many }) => ({
+  section: one(sections, {
+    fields: [subjectOfferings.sectionId],
+    references: [sections.id],
+  }),
+  subject: one(subjects, {
+    fields: [subjectOfferings.subjectId],
+    references: [subjects.id],
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [subjectOfferings.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  teacher: one(users, {
+    fields: [subjectOfferings.teacherId],
+    references: [users.id],
+    relationName: "offering_teacher",
+  }),
+  strand: one(strands, {
+    fields: [subjectOfferings.strandId],
+    references: [strands.id],
+  }),
+  createdByUser: one(users, {
+    fields: [subjectOfferings.createdBy],
+    references: [users.id],
+    relationName: "offering_creator",
+  }),
+  studentSubjectEnrollments: many(studentSubjectEnrollments),
+}));
+
+// Student Subject Enrollment Relations
+export const studentSubjectEnrollmentsRelations = relations(studentSubjectEnrollments, ({ one, many }) => ({
+  enrollment: one(enrollments, {
+    fields: [studentSubjectEnrollments.enrollmentId],
+    references: [enrollments.id],
+  }),
+  subjectOffering: one(subjectOfferings, {
+    fields: [studentSubjectEnrollments.subjectOfferingId],
+    references: [subjectOfferings.id],
+  }),
+  student: one(students, {
+    fields: [studentSubjectEnrollments.studentId],
+    references: [students.id],
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [studentSubjectEnrollments.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  withdrawnByUser: one(users, {
+    fields: [studentSubjectEnrollments.withdrawnBy],
+    references: [users.id],
+    relationName: "sse_withdrawer",
+  }),
+  createdByUser: one(users, {
+    fields: [studentSubjectEnrollments.createdBy],
+    references: [users.id],
+    relationName: "sse_creator",
+  }),
+  gradeSheetEntries: many(gradeSheetEntries),
 }));

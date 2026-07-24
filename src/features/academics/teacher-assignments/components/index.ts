@@ -1,1 +1,0 @@
-export { TeacherAssignmentsTable } from "./TeacherAssignmentsTable";

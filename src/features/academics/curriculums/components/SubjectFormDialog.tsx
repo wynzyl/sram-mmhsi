@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useFormToast } from "@/hooks/useFormToast";
 import {
@@ -10,11 +10,20 @@ import {
 import type {
   AddSubjectToCurriculumFormState,
   UpdateSubjectInCurriculumFormState,
+  StrandAssociation,
 } from "../curriculums.schema";
 import type { SubjectListRow } from "../curriculums.types";
+import type { SubjectStrandAssociation } from "../curriculums.queries";
+import { SHS_STRAND_LABELS, type ShsStrandCode } from "@/lib/constants/strands";
 
 interface GradeLevelOption {
   id: string;
+  name: string;
+}
+
+interface StrandOption {
+  id: string;
+  code: string;
   name: string;
 }
 
@@ -25,6 +34,10 @@ interface SubjectFormDialogProps {
   subject?: SubjectListRow;
   defaultGradeLevelId?: string;
   onClose: () => void;
+  /** Available strands for SHS elective selection */
+  availableStrands?: StrandOption[];
+  /** Existing strand associations for the subject (edit mode) */
+  existingStrandAssociations?: SubjectStrandAssociation[];
 }
 
 export function SubjectFormDialog({
@@ -34,9 +47,29 @@ export function SubjectFormDialog({
   subject,
   defaultGradeLevelId,
   onClose,
+  availableStrands = [],
+  existingStrandAssociations = [],
 }: SubjectFormDialogProps) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
+
+  // Track isCore state for conditional strand display
+  const [isCore, setIsCore] = useState(subject?.isCore ?? true);
+  const [selectedGradeLevelId, setSelectedGradeLevelId] = useState(
+    subject?.gradeLevelId ?? defaultGradeLevelId ?? ""
+  );
+
+  // Track strand associations: Map<strandId, { selected: boolean, isStrandCore: boolean }>
+  const [strandSelections, setStrandSelections] = useState<
+    Map<string, { selected: boolean; isStrandCore: boolean }>
+  >(() => {
+    const map = new Map();
+    // Initialize with existing associations
+    for (const assoc of existingStrandAssociations) {
+      map.set(assoc.strandId, { selected: true, isStrandCore: assoc.isStrandCore });
+    }
+    return map;
+  });
 
   const [addState, addAction, addPending] = useActionState<
     AddSubjectToCurriculumFormState,
@@ -67,6 +100,53 @@ export function SubjectFormDialog({
   const handleClose = () => {
     dialogRef.current?.close();
     onClose();
+  };
+
+  // Check if selected grade level is SHS (Grade 11 or 12)
+  const selectedGradeLevel = gradeLevels.find((gl) => gl.id === selectedGradeLevelId);
+  const isSHSGradeLevel = useMemo(() => {
+    if (!selectedGradeLevel) return false;
+    const name = selectedGradeLevel.name.toLowerCase();
+    return name.includes("grade 11") || name.includes("grade 12") || name.includes("g11") || name.includes("g12");
+  }, [selectedGradeLevel]);
+
+  // Show strand selection only for SHS electives
+  const showStrandSelection = !isCore && isSHSGradeLevel && availableStrands.length > 0;
+
+  // Build strand associations JSON for form submission
+  const strandAssociationsJson = useMemo(() => {
+    if (!showStrandSelection) return "";
+    const associations: StrandAssociation[] = [];
+    strandSelections.forEach((value, strandId) => {
+      if (value.selected) {
+        associations.push({ strandId, isStrandCore: value.isStrandCore });
+      }
+    });
+    return JSON.stringify(associations);
+  }, [strandSelections, showStrandSelection]);
+
+  const handleStrandToggle = (strandId: string) => {
+    setStrandSelections((prev) => {
+      const next = new Map(prev);
+      const current = next.get(strandId);
+      if (current?.selected) {
+        next.delete(strandId);
+      } else {
+        next.set(strandId, { selected: true, isStrandCore: false });
+      }
+      return next;
+    });
+  };
+
+  const handleStrandCoreToggle = (strandId: string) => {
+    setStrandSelections((prev) => {
+      const next = new Map(prev);
+      const current = next.get(strandId);
+      if (current) {
+        next.set(strandId, { ...current, isStrandCore: !current.isStrandCore });
+      }
+      return next;
+    });
   };
 
   const inputClass =
@@ -148,7 +228,8 @@ export function SubjectFormDialog({
             <select
               id="gradeLevelId"
               name="gradeLevelId"
-              defaultValue={subject?.gradeLevelId ?? defaultGradeLevelId ?? ""}
+              value={selectedGradeLevelId}
+              onChange={(e) => setSelectedGradeLevelId(e.target.value)}
               required
               className={inputClass}
             >
@@ -204,7 +285,8 @@ export function SubjectFormDialog({
               <select
                 id="isCore"
                 name="isCore"
-                defaultValue={subject?.isCore ? "true" : "false"}
+                value={isCore ? "true" : "false"}
+                onChange={(e) => setIsCore(e.target.value === "true")}
                 className={inputClass}
               >
                 <option value="true">Core Subject</option>
@@ -212,6 +294,55 @@ export function SubjectFormDialog({
               </select>
             </div>
           </div>
+
+          {/* Strand Selection for SHS Electives */}
+          {showStrandSelection && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Available to Strands
+                <span className="text-muted-foreground ml-1 font-normal">(select applicable strands)</span>
+              </label>
+              <div className="space-y-2 border border-border rounded-md p-3 max-h-48 overflow-y-auto">
+                {availableStrands.map((strand) => {
+                  const selection = strandSelections.get(strand.id);
+                  const isSelected = selection?.selected ?? false;
+                  const isStrandCore = selection?.isStrandCore ?? false;
+
+                  return (
+                    <div key={strand.id} className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 flex-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleStrandToggle(strand.id)}
+                          className="h-4 w-4 rounded border-border"
+                        />
+                        <span className="text-sm">
+                          {strand.code} - {SHS_STRAND_LABELS[strand.code as ShsStrandCode] ?? strand.name}
+                        </span>
+                      </label>
+                      {isSelected && (
+                        <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isStrandCore}
+                            onChange={() => handleStrandCoreToggle(strand.id)}
+                            className="h-3 w-3 rounded border-border"
+                          />
+                          Required
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Check "Required" if students in that strand must take this subject.
+              </p>
+              {/* Hidden input to submit strand associations */}
+              <input type="hidden" name="strandAssociations" value={strandAssociationsJson} />
+            </div>
+          )}
 
           {/* Form-level errors are shown via useFormToast, field errors stay inline */}
 

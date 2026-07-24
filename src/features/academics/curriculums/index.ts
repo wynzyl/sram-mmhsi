@@ -41,9 +41,17 @@ export {
   getActiveSchoolYear,
   getPublishedCurriculumNames,
   getGradeLevelsForDropdown,
+  // Strand-related queries
+  getSubjectStrandAssociations,
+  getSubjectsWithStrandsForCurriculum,
+  getSubjectStrands,
 } from "./curriculums.queries";
 
-export type { GradeLevelDropdownOption } from "./curriculums.queries";
+export type {
+  GradeLevelDropdownOption,
+  SubjectStrandAssociation,
+  SubjectWithStrands,
+} from "./curriculums.queries";
 
 // Actions - Curriculum lifecycle (safe for client components as server actions)
 export {

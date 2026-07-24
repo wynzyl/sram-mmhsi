@@ -19,6 +19,7 @@ import {
   getEnrollmentGradeLevels,
   getSectionGradeLevelId,
 } from "./section-assignments.queries";
+import { generateStudentSubjectEnrollmentsAction } from "../student-subject-enrollments";
 
 // ─── Assign Students to Section ───────────────────────────────────────────────
 
@@ -119,6 +120,14 @@ export async function assignStudentsToSectionAction(
     });
 
     invalidateTag(CACHE_TAGS.SECTIONS);
+
+    // Generate student subject enrollments for each assigned student
+    // This creates SSE records for applicable subject offerings (core + strand-matched electives)
+    for (const enrollmentId of validIds) {
+      await generateStudentSubjectEnrollmentsAction(enrollmentId);
+    }
+
+    invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
 
     return {
       success: true,

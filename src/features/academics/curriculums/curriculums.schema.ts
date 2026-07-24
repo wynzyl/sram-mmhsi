@@ -95,6 +95,18 @@ export type ArchiveCurriculumFormState = BaseFormState<ArchiveCurriculumInput>;
 
 // ─── Subject Management (within Curriculum) ────────────────────────────────
 
+/**
+ * Strand association for a subject.
+ * Links an elective subject to a strand with an optional "required for strand" flag.
+ */
+export const StrandAssociationSchema = z.object({
+  strandId: z.string().uuid("Strand ID is required."),
+  /** If true, this subject is required for students in this strand */
+  isStrandCore: z.boolean().optional().default(false),
+});
+
+export type StrandAssociation = z.infer<typeof StrandAssociationSchema>;
+
 export const AddSubjectToCurriculumSchema = z.object({
   curriculumId: z.string().uuid("Curriculum ID is required."),
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -112,6 +124,12 @@ export const AddSubjectToCurriculumSchema = z.object({
     .optional(),
   sequenceOrder: z.coerce.number().int().min(0).optional(),
   isCore: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
+  /**
+   * Strand associations for SHS elective subjects.
+   * Only applicable when isCore is false and grade level is SHS (Grade 11-12).
+   * JSON string of StrandAssociation[] when submitted via FormData.
+   */
+  strandAssociations: z.string().optional(),
 });
 
 export type AddSubjectToCurriculumInput = z.infer<typeof AddSubjectToCurriculumSchema>;
@@ -137,6 +155,12 @@ export const UpdateSubjectInCurriculumSchema = z.object({
     .optional(),
   sequenceOrder: z.coerce.number().int().min(0).optional(),
   isCore: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
+  /**
+   * Strand associations for SHS elective subjects.
+   * Only applicable when isCore is false and grade level is SHS (Grade 11-12).
+   * JSON string of StrandAssociation[] when submitted via FormData.
+   */
+  strandAssociations: z.string().optional(),
 });
 
 export type UpdateSubjectInCurriculumInput = z.infer<typeof UpdateSubjectInCurriculumSchema>;

@@ -17,29 +17,13 @@ import {
   enrollments,
   curriculumAdoptions,
   gradingPeriodSystems,
+  subjectOfferings,
+  studentSubjectEnrollments,
 } from "@/lib/db/schema";
 import type { GradingSystemType } from "@/lib/constants/grading-systems";
 import type { GradeSheetView, GradeSheetEntryView } from "./grades.schema";
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
-
-/**
- * Teacher assignment row for the grades dashboard
- */
-export type TeacherAssignmentCard = {
-  id: string;
-  sectionId: string;
-  subject: {
-    name: string | null;
-    code: string | null;
-  };
-  section: {
-    name: string | null;
-  };
-  gradeLevel: {
-    name: string | null;
-  };
-};
 
 /**
  * Teacher assignment row for the assignments management page
@@ -101,14 +85,16 @@ export async function getGradingSystemType(
 }
 
 /**
- * Check if a teacher is assigned to a section (has any subject assignment in that section)
+ * Check if a teacher is assigned to a section.
+ * Checks both legacy teacherAssignments table and new subjectOfferings table.
  */
 export async function isTeacherAssignedToSection(
   teacherId: string,
   sectionId: string,
   schoolYearId: string
 ): Promise<boolean> {
-  const [assignment] = await db
+  // Check legacy teacherAssignments table
+  const [legacyAssignment] = await db
     .select({ id: teacherAssignments.id })
     .from(teacherAssignments)
     .where(
@@ -121,55 +107,29 @@ export async function isTeacherAssignedToSection(
     )
     .limit(1);
 
-  return !!assignment;
-}
+  if (legacyAssignment) {
+    return true;
+  }
 
-/**
- * Get teacher assignments for the current user in a school year
- */
-export async function getTeacherAssignments(
-  teacherId: string,
-  schoolYearId: string
-): Promise<TeacherAssignmentCard[]> {
-  const rows = await db
-    .select({
-      id: teacherAssignments.id,
-      sectionId: teacherAssignments.sectionId,
-      subjectName: subjects.name,
-      subjectCode: subjects.code,
-      sectionName: sections.name,
-      gradeLevelName: gradeLevels.name,
-    })
-    .from(teacherAssignments)
-    .leftJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
-    .leftJoin(sections, eq(teacherAssignments.sectionId, sections.id))
-    .leftJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+  // Check new subjectOfferings table
+  const [subjectOfferingAssignment] = await db
+    .select({ id: subjectOfferings.id })
+    .from(subjectOfferings)
     .where(
       and(
-        eq(teacherAssignments.teacherId, teacherId),
-        eq(teacherAssignments.schoolYearId, schoolYearId),
-        isNull(teacherAssignments.deletedAt),
-        isNull(subjects.deletedAt)
+        eq(subjectOfferings.teacherId, teacherId),
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjectOfferings.schoolYearId, schoolYearId),
+        eq(subjectOfferings.isActive, true),
+        isNull(subjectOfferings.deletedAt)
       )
-    );
+    )
+    .limit(1);
 
-  return rows.map((row) => ({
-    id: row.id,
-    sectionId: row.sectionId,
-    subject: {
-      name: row.subjectName,
-      code: row.subjectCode,
-    },
-    section: {
-      name: row.sectionName,
-    },
-    gradeLevel: {
-      name: row.gradeLevelName,
-    },
-  }));
+  return !!subjectOfferingAssignment;
 }
 
-// ─── Grade Sheet Queries (NEW) ───────────────────────────────────────────────
+// ─── Grade Sheet Queries ─────────────────────────────────────────────────────
 
 /**
  * Get grade sheets for an adviser's sections.
@@ -324,6 +284,7 @@ export async function getGradeSheetById(
 
 /**
  * Get grade sheet entries for a grade sheet.
+ * Includes studentSubjectEnrollmentId when available for SSE traceability.
  */
 export async function getGradeSheetEntries(
   gradeSheetId: string
@@ -340,6 +301,7 @@ export async function getGradeSheetEntries(
       subjectCode: subjects.code,
       grade: gradeSheetEntries.grade,
       remarks: gradeSheetEntries.remarks,
+      studentSubjectEnrollmentId: gradeSheetEntries.studentSubjectEnrollmentId,
     })
     .from(gradeSheetEntries)
     .innerJoin(students, eq(gradeSheetEntries.studentId, students.id))
@@ -353,6 +315,7 @@ export async function getGradeSheetEntries(
 /**
  * Get published grades for a student in a school year.
  * Used for student portal.
+ * Includes studentSubjectEnrollmentId for SSE traceability when available.
  */
 export async function getPublishedGradesForStudent(
   studentId: string,
@@ -371,6 +334,7 @@ export async function getPublishedGradesForStudent(
       grade: gradeSheetEntries.grade,
       remarks: gradeSheetEntries.remarks,
       gradingPeriod: gradeSheets.gradingPeriod,
+      studentSubjectEnrollmentId: gradeSheetEntries.studentSubjectEnrollmentId,
     })
     .from(gradeSheetEntries)
     .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
@@ -975,4 +939,171 @@ export async function getPeriodsCompletionStatus(
   }
 
   return result;
+}
+
+// ─── SSE-Based Subject Queries ─────────────────────────────────────────────────
+
+/**
+ * Subject from subject offerings for grade entry grid.
+ * Used when section has subject offerings configured.
+ */
+export type SubjectOfferingForGrades = {
+  id: string;
+  subjectId: string;
+  subjectName: string;
+  subjectCode: string;
+  subjectUnits: string;
+  isCore: boolean;
+  sequenceOrder: number;
+  teacherId: string | null;
+  teacherName: string | null;
+};
+
+/**
+ * Get subjects for a section from subject offerings.
+ * This is the SSE-aware alternative to getSubjectsForGradeLevel.
+ * Returns null if no subject offerings exist for the section (fallback to curriculum-based).
+ */
+export async function getSubjectsFromOfferingsForSection(
+  sectionId: string,
+  schoolYearId: string
+): Promise<SubjectOfferingForGrades[] | null> {
+  // Check if section has subject offerings
+  const offeringsExist = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(subjectOfferings)
+    .where(
+      and(
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjectOfferings.schoolYearId, schoolYearId),
+        eq(subjectOfferings.isActive, true)
+      )
+    );
+
+  if (!offeringsExist[0]?.count || offeringsExist[0].count === 0) {
+    // No offerings exist - caller should fallback to curriculum-based subjects
+    return null;
+  }
+
+  const rows = await db
+    .select({
+      id: subjectOfferings.id,
+      subjectId: subjectOfferings.subjectId,
+      subjectName: subjects.name,
+      subjectCode: subjects.code,
+      subjectUnits: subjects.units,
+      isCore: subjects.isCore,
+      sequenceOrder: subjectOfferings.sequenceOrder,
+      teacherId: subjectOfferings.teacherId,
+      teacherName: users.username,
+    })
+    .from(subjectOfferings)
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .leftJoin(users, eq(subjectOfferings.teacherId, users.id))
+    .where(
+      and(
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjectOfferings.schoolYearId, schoolYearId),
+        eq(subjectOfferings.isActive, true),
+        isNull(subjects.deletedAt)
+      )
+    )
+    .orderBy(asc(subjectOfferings.sequenceOrder), asc(subjects.name));
+
+  return rows as SubjectOfferingForGrades[];
+}
+
+/**
+ * Student with SSE info for grade entry grid.
+ */
+export type StudentWithSSE = {
+  id: string;
+  studentRef: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  enrollmentId: string;
+  strandId: string | null;
+  strandCode: string | null;
+  /** Map of subjectId -> studentSubjectEnrollmentId */
+  subjectEnrollments: Map<string, string>;
+};
+
+/**
+ * Get enrolled students with their SSE records for a section.
+ * This provides the mapping between students, subjects, and their SSE IDs
+ * for proper grade entry traceability.
+ */
+export async function getStudentsWithSSEForSection(
+  sectionId: string,
+  schoolYearId: string
+): Promise<StudentWithSSE[]> {
+  // Get students with enrollments
+  const studentRows = await db
+    .select({
+      id: students.id,
+      studentRef: students.referenceNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      fullName: sql<string>`${students.lastName} || ', ' || ${students.firstName}`,
+      enrollmentId: enrollments.id,
+      strandId: enrollments.strandId,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .where(
+      and(
+        eq(enrollments.sectionId, sectionId),
+        eq(enrollments.schoolYearId, schoolYearId),
+        eq(enrollments.status, "enrolled"),
+        isNull(students.deletedAt)
+      )
+    )
+    .orderBy(asc(students.lastName), asc(students.firstName));
+
+  if (studentRows.length === 0) {
+    return [];
+  }
+
+  // Get all SSE records for these enrollments
+  const enrollmentIds = studentRows.map((s) => s.enrollmentId);
+  const sseRows = await db
+    .select({
+      enrollmentId: studentSubjectEnrollments.enrollmentId,
+      subjectId: subjectOfferings.subjectId,
+      sseId: studentSubjectEnrollments.id,
+    })
+    .from(studentSubjectEnrollments)
+    .innerJoin(
+      subjectOfferings,
+      eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
+    )
+    .where(
+      and(
+        inArray(studentSubjectEnrollments.enrollmentId, enrollmentIds),
+        eq(studentSubjectEnrollments.isActive, true)
+      )
+    );
+
+  // Build SSE lookup by enrollmentId
+  const sseLookup = new Map<string, Map<string, string>>();
+  for (const sse of sseRows) {
+    if (!sseLookup.has(sse.enrollmentId)) {
+      sseLookup.set(sse.enrollmentId, new Map());
+    }
+    sseLookup.get(sse.enrollmentId)!.set(sse.subjectId, sse.sseId);
+  }
+
+  // Combine student info with SSE lookup
+  return studentRows.map((student) => ({
+    id: student.id,
+    studentRef: student.studentRef,
+    firstName: student.firstName,
+    lastName: student.lastName,
+    fullName: student.fullName,
+    enrollmentId: student.enrollmentId,
+    strandId: student.strandId,
+    strandCode: null, // Can be joined if needed
+    subjectEnrollments: sseLookup.get(student.enrollmentId) ?? new Map(),
+  }));
 }

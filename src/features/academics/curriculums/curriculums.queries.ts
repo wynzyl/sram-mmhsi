@@ -5,6 +5,8 @@ import {
   curriculums,
   curriculumAdoptions,
   subjects,
+  subjectStrands,
+  strands,
   gradeLevels,
   schoolYears,
   users,
@@ -12,7 +14,7 @@ import {
   teacherAssignments,
   sections,
 } from "@/lib/db/schema";
-import { eq, and, isNull, asc, desc, sql } from "drizzle-orm";
+import { eq, and, isNull, asc, desc, sql, inArray } from "drizzle-orm";
 
 // Re-export types from the client-safe types file
 export type {
@@ -513,4 +515,127 @@ export async function getLockedGradeLevelsForSchoolYear(
     );
 
   return new Set(lockedRows.map((r) => r.gradeLevelId));
+}
+
+// ─── Subject Strand Queries ─────────────────────────────────────────────────
+
+/**
+ * Strand association for a subject.
+ */
+export type SubjectStrandAssociation = {
+  strandId: string;
+  strandCode: string;
+  strandName: string;
+  isStrandCore: boolean;
+};
+
+/**
+ * Subject with strand associations.
+ */
+export type SubjectWithStrands = SubjectListRow & {
+  strandAssociations: SubjectStrandAssociation[];
+};
+
+/**
+ * Get strand associations for a list of subjects.
+ * Returns a map of subjectId -> StrandAssociation[]
+ */
+export async function getSubjectStrandAssociations(
+  subjectIds: string[]
+): Promise<Map<string, SubjectStrandAssociation[]>> {
+  if (subjectIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await db
+    .select({
+      subjectId: subjectStrands.subjectId,
+      strandId: subjectStrands.strandId,
+      strandCode: strands.code,
+      strandName: strands.name,
+      isStrandCore: subjectStrands.isStrandCore,
+    })
+    .from(subjectStrands)
+    .innerJoin(strands, eq(subjectStrands.strandId, strands.id))
+    .where(inArray(subjectStrands.subjectId, subjectIds))
+    .orderBy(asc(strands.displayOrder));
+
+  const map = new Map<string, SubjectStrandAssociation[]>();
+
+  for (const row of rows) {
+    const existing = map.get(row.subjectId) ?? [];
+    existing.push({
+      strandId: row.strandId,
+      strandCode: row.strandCode,
+      strandName: row.strandName,
+      isStrandCore: row.isStrandCore,
+    });
+    map.set(row.subjectId, existing);
+  }
+
+  return map;
+}
+
+/**
+ * Get subjects with strand associations for a curriculum.
+ * Enhanced version of getSubjectsByGradeLevelForCurriculum that includes strand data.
+ */
+export async function getSubjectsWithStrandsForCurriculum(
+  curriculumId: string
+): Promise<SubjectWithStrands[]> {
+  // Get all subjects for curriculum
+  const subjectRows = await db
+    .select({
+      id: subjects.id,
+      name: subjects.name,
+      code: subjects.code,
+      description: subjects.description,
+      gradeLevelId: subjects.gradeLevelId,
+      gradeLevelName: gradeLevels.name,
+      units: subjects.units,
+      sequenceOrder: subjects.sequenceOrder,
+      isCore: subjects.isCore,
+      deletedAt: subjects.deletedAt,
+      createdAt: subjects.createdAt,
+    })
+    .from(subjects)
+    .leftJoin(gradeLevels, eq(subjects.gradeLevelId, gradeLevels.id))
+    .where(
+      and(eq(subjects.curriculumId, curriculumId), isNull(subjects.deletedAt))
+    )
+    .orderBy(asc(gradeLevels.order), asc(subjects.sequenceOrder), asc(subjects.name));
+
+  if (subjectRows.length === 0) {
+    return [];
+  }
+
+  // Get strand associations for all subjects
+  const subjectIds = subjectRows.map((s) => s.id);
+  const strandMap = await getSubjectStrandAssociations(subjectIds);
+
+  // Combine subject data with strand associations
+  return subjectRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    description: row.description,
+    gradeLevelId: row.gradeLevelId,
+    gradeLevelName: row.gradeLevelName,
+    units: row.units,
+    sequenceOrder: row.sequenceOrder,
+    isCore: row.isCore,
+    isDeleted: row.deletedAt !== null,
+    createdAt: row.createdAt,
+    strandAssociations: strandMap.get(row.id) ?? [],
+  }));
+}
+
+/**
+ * Get strand associations for a single subject.
+ */
+export async function getSubjectStrands(
+  subjectId: string
+): Promise<SubjectStrandAssociation[]> {
+  const map = await getSubjectStrandAssociations([subjectId]);
+  return map.get(subjectId) ?? [];
 }

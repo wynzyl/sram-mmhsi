@@ -109,6 +109,23 @@ export type Permission =
   // Sections
   /** Assign/remove students from sections */
   | "sections:assign"
+  // Strands (SHS)
+  /** View strands */
+  | "strands:read"
+  /** Manage strands (create/edit/delete) */
+  | "strands:manage"
+  // Subject Offerings
+  /** View subject offerings */
+  | "subject_offerings:read"
+  /** Generate subject offerings for sections */
+  | "subject_offerings:generate"
+  /** Assign teachers to subject offerings */
+  | "subject_offerings:assign_teacher"
+  // Student Subject Enrollments
+  /** View student subject enrollments */
+  | "student_subject_enrollments:read"
+  /** Manage student subject enrollments (withdraw/enroll) */
+  | "student_subject_enrollments:manage"
   // Admin
   | "users:manage"
   | "school_years:manage"
@@ -143,6 +160,9 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "documents:read", "documents:create", "documents:process", "documents:release",
     "reports:view", "reports:finance", "reports:academic",
     "sections:assign",
+    "strands:read", "strands:manage",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:assign_teacher",
+    "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage", "system:manage",
   ],
@@ -172,6 +192,9 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "school_years:manage",
     "sections:manage",
     "sections:assign",
+    "strands:read", "strands:manage",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:assign_teacher",
+    "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "reports:view", "reports:finance", "reports:academic",
     "users:manage",
     "assignments:manage",
@@ -190,6 +213,9 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "documents:read", "documents:create", "documents:process",
     "grades:read",
     "advisers:read",
+    "strands:read",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:assign_teacher",
+    "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "reports:view", "reports:academic",
     "school_years:manage",
   ],
@@ -218,6 +244,9 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "students:read",
     "curriculums:read",
     "grades:read", "grades:encode", "grades:submit",
+    "strands:read",
+    "subject_offerings:read",
+    "student_subject_enrollments:read",
   ],
   coordinator: [
     "students:read",
@@ -225,6 +254,9 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "grades:read", "grades:coordinator_review",
     "advisers:read", "advisers:manage",
     "sections:manage", "sections:assign",
+    "strands:read",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:assign_teacher",
+    "student_subject_enrollments:read",
     "assignments:manage",
     "reports:view", "reports:academic",
   ],
@@ -234,6 +266,9 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "grades:read", "grades:coordinator_review", "grades:principal_review", "grades:publish", "grades:lock",
     "advisers:read", "advisers:manage",
     "sections:manage", "sections:assign",
+    "strands:read",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:assign_teacher",
+    "student_subject_enrollments:read",
     "assignments:manage",
     "reports:view", "reports:academic",
   ],

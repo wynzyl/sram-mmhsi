@@ -183,6 +183,8 @@ export interface GradeSheetEntryView {
   subjectCode: string;
   grade: string | null;
   remarks: string | null;
+  /** Optional SSE reference for traceability (populated when SSE exists) */
+  studentSubjectEnrollmentId?: string | null;
 }
 
 /**

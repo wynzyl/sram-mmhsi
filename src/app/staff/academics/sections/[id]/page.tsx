@@ -9,10 +9,17 @@ import {
 } from "@/features/academics/sections";
 import { getAdviserForSection } from "@/features/academics/advisers";
 import { isTeacherAssignedToSection } from "@/features/academics/grades/grades.queries";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  getSubjectOfferingsForSection,
+  getTeachersForAssignment,
+  hasExistingOfferings,
+  SubjectOfferingsTable,
+  GenerateOfferingsButton,
+} from "@/features/academics/subject-offerings";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, BookOpen, Calendar, UserCheck } from "lucide-react";
+import { ArrowLeft, Users, BookOpen, Calendar, UserCheck, GraduationCap } from "lucide-react";
 
 interface SectionDetailPageProps {
   params: Promise<{ id: string }>;
@@ -54,10 +61,19 @@ export default async function SectionDetailPage({
     redirect("/staff/dashboard");
   }
 
-  const [students, adviser] = await Promise.all([
+  // Fetch all data in parallel
+  const [students, adviser, offerings, teachers, hasOfferings] = await Promise.all([
     getStudentsInSection(id),
     getAdviserForSection(id, section.schoolYearId),
+    getSubjectOfferingsForSection(id, section.schoolYearId),
+    getTeachersForAssignment(),
+    hasExistingOfferings(id, section.schoolYearId),
   ]);
+
+  // Permission checks for subject offerings
+  const canGenerateOfferings = hasPermission(session.role, "subject_offerings:generate");
+  const canAssignTeacher = hasPermission(session.role, "subject_offerings:assign_teacher");
+  const canDeleteOffering = hasPermission(session.role, "subject_offerings:generate"); // Using same permission for delete
 
   return (
     <div className="p-6 space-y-6">
@@ -110,9 +126,9 @@ export default async function SectionDetailPage({
               <BookOpen className="h-6 w-6 text-blue-500" />
             </div>
             <div>
-              <div className="text-2xl font-bold">{section.assignmentCount}</div>
+              <div className="text-2xl font-bold">{offerings.length}</div>
               <div className="text-sm text-muted-foreground">
-                Teacher Assignments
+                Subject Offerings
               </div>
             </div>
           </CardContent>
@@ -146,6 +162,36 @@ export default async function SectionDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Subject Offerings Table */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5" />
+              Subject Offerings
+            </CardTitle>
+            <CardDescription className="mt-1">
+              Subjects offered in this section for the current school year
+            </CardDescription>
+          </div>
+          {canGenerateOfferings && (
+            <GenerateOfferingsButton
+              sectionId={id}
+              schoolYearId={section.schoolYearId}
+              hasExisting={hasOfferings}
+            />
+          )}
+        </CardHeader>
+        <CardContent className="p-0">
+          <SubjectOfferingsTable
+            offerings={offerings}
+            teachers={teachers}
+            canAssignTeacher={canAssignTeacher}
+            canDelete={canDeleteOffering}
+          />
+        </CardContent>
+      </Card>
 
       {/* Students Table */}
       <Card>
