@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -47,6 +47,7 @@ export function ChangeStrandDialog({
   onOpenChange,
 }: ChangeStrandDialogProps) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
 
   const [state, action, isPending] = useActionState<
     ChangeStudentStrandFormState,
@@ -57,7 +58,10 @@ export function ChangeStrandDialog({
     successMessage: "Strand changed successfully",
     onSuccess: () => {
       onOpenChange(false);
-      router.refresh();
+      // Use startTransition to make refresh non-blocking
+      startTransition(() => {
+        router.refresh();
+      });
     },
   });
 

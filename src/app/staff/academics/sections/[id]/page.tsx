@@ -16,6 +16,9 @@ import {
   SubjectOfferingsTable,
   GenerateOfferingsButton,
 } from "@/features/academics/subject-offerings";
+import { getActiveStrands } from "@/features/academics/strands";
+import { canChangeStrand } from "@/features/academics/student-subject-enrollments";
+import { requiresStrandSelection } from "@/lib/constants/strands";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,19 +64,24 @@ export default async function SectionDetailPage({
     redirect("/staff/dashboard");
   }
 
+  // Check if section is SHS (requires strand assignment)
+  const isShs = requiresStrandSelection(section.gradeLevelName);
+
   // Fetch all data in parallel
-  const [students, adviser, offerings, teachers, hasOfferings] = await Promise.all([
+  const [students, adviser, offerings, teachers, hasOfferings, availableStrands] = await Promise.all([
     getStudentsInSection(id),
     getAdviserForSection(id, section.schoolYearId),
     getSubjectOfferingsForSection(id, section.schoolYearId),
     getTeachersForAssignment(),
     hasExistingOfferings(id, section.schoolYearId),
+    isShs ? getActiveStrands() : Promise.resolve([]),
   ]);
 
   // Permission checks for subject offerings
   const canGenerateOfferings = hasPermission(session.role, "subject_offerings:generate");
   const canAssignTeacher = hasPermission(session.role, "subject_offerings:assign_teacher");
   const canDeleteOffering = hasPermission(session.role, "subject_offerings:generate"); // Using same permission for delete
+  const canManageStrands = hasPermission(session.role, "sections:manage");
 
   return (
     <div className="p-6 space-y-6">
@@ -199,10 +207,23 @@ export default async function SectionDetailPage({
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Enrolled Students
+            {isShs && (
+              <Badge variant="info" className="ml-2">SHS</Badge>
+            )}
           </CardTitle>
+          {isShs && (
+            <CardDescription>
+              Senior High School section - strand assignment is required for subject enrollment
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent className="p-0">
-          <SectionStudentsTable students={students} />
+          <SectionStudentsTable
+            students={students}
+            isShs={isShs}
+            availableStrands={availableStrands}
+            onCheckCanChangeStrand={canManageStrands ? canChangeStrand : undefined}
+          />
         </CardContent>
       </Card>
     </div>

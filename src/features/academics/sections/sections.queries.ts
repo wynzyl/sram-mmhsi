@@ -7,11 +7,12 @@ import {
   schoolYears,
   enrollments,
   teacherAssignments,
+  students,
+  strands,
 } from "@/lib/db/schema";
 import { eq, and, isNull, sql, asc, desc, inArray } from "drizzle-orm";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import type { SectionView, SectionDependencyCounts, StudentInSection } from "./sections.schema";
-import { students } from "@/lib/db/schema";
 
 // ─── Get All Sections ─────────────────────────────────────────────────────────
 
@@ -244,6 +245,7 @@ async function getSectionDependencyCountsBatch(
 /**
  * Get all enrolled students in a section for grade entry.
  * Only returns students with "enrolled" status (not pending/cancelled).
+ * Includes strand information for SHS students (Grade 11-12).
  * Ordered by lastName, firstName for consistent display.
  */
 export async function getStudentsInSection(
@@ -259,9 +261,13 @@ export async function getStudentsInSection(
       suffix: students.suffix,
       enrollmentId: enrollments.id,
       enrollmentStatus: enrollments.status,
+      strandId: enrollments.strandId,
+      strandCode: strands.code,
+      strandName: strands.name,
     })
     .from(enrollments)
     .innerJoin(students, eq(enrollments.studentId, students.id))
+    .leftJoin(strands, eq(enrollments.strandId, strands.id))
     .where(
       and(
         eq(enrollments.sectionId, sectionId),

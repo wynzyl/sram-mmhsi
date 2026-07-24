@@ -177,6 +177,14 @@ const ICONS: Record<NavIconName, React.ReactNode> = {
       <path d="M9 15l2 2 4-4" />
     </svg>
   ),
+  strands: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M6 3v18" />
+      <path d="M18 3v18" />
+      <path d="M6 8c4.5 0 6 3 12 3" />
+      <path d="M6 16c4.5 0 6-3 12-3" />
+    </svg>
+  ),
 };
 
 // ─── Portal label helper ───────────────────────────────────────────────────────

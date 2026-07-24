@@ -87,4 +87,10 @@ export interface StudentInSection {
   suffix: string | null;
   enrollmentId: string;
   enrollmentStatus: string;
+  /** SHS strand ID (null for non-SHS students) */
+  strandId: string | null;
+  /** SHS strand code (e.g., STEM, ABM, HUMSS) */
+  strandCode: string | null;
+  /** SHS strand name */
+  strandName: string | null;
 }
