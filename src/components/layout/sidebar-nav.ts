@@ -25,7 +25,8 @@ export type NavIconName =
   | "clearances"
   | "archive"
   | "documents"
-  | "strands";
+  | "strands"
+  | "electives";
 
 /** One level of nested links (e.g. Register Student). Deeper nesting is not rendered. */
 export type NavItem = {
@@ -66,6 +67,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
         { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
         { href: "/staff/academics/strands", label: "SHS Strands", icon: "strands" },
+        { href: "/staff/academics/electives", label: "SHS Electives", icon: "electives" },
       ],
     },
     {
@@ -128,6 +130,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
         { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
         { href: "/staff/academics/strands", label: "SHS Strands", icon: "strands" },
+        { href: "/staff/academics/electives", label: "SHS Electives", icon: "electives" },
       ],
     },
     {

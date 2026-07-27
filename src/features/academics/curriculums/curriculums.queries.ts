@@ -25,6 +25,8 @@ export type {
   CurriculumVersionRow,
   AdoptionMatrixCell,
   CurriculumDropdownOption,
+  SubjectStrandAssociation,
+  GradeLevelDropdownOption,
 } from "./curriculums.types";
 
 import type {
@@ -34,6 +36,8 @@ import type {
   CurriculumVersionRow,
   AdoptionMatrixCell,
   CurriculumDropdownOption,
+  SubjectStrandAssociation,
+  GradeLevelDropdownOption,
 } from "./curriculums.types";
 import type { CurriculumStatus } from "./curriculums.schema";
 
@@ -466,14 +470,6 @@ export async function getPublishedCurriculumNames(): Promise<string[]> {
 }
 
 /**
- * Grade level option for dropdowns
- */
-export type GradeLevelDropdownOption = {
-  id: string;
-  name: string;
-};
-
-/**
  * Get all grade levels for dropdown selection.
  */
 export async function getGradeLevelsForDropdown(): Promise<
@@ -518,16 +514,6 @@ export async function getLockedGradeLevelsForSchoolYear(
 }
 
 // ─── Subject Strand Queries ─────────────────────────────────────────────────
-
-/**
- * Strand association for a subject.
- */
-export type SubjectStrandAssociation = {
-  strandId: string;
-  strandCode: string;
-  strandName: string;
-  isStrandCore: boolean;
-};
 
 /**
  * Subject with strand associations.

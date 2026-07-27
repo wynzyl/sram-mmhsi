@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { curriculums, subjects, subjectStrands } from "@/lib/db/schema";
-import { eq, and, isNull, sql, inArray } from "drizzle-orm";
+import { curriculums, subjects, subjectStrands, strands } from "@/lib/db/schema";
+import { eq, and, isNull, sql, inArray, asc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction, logDeleteAction, logAudit } from "@/lib/utils/audit-logger";
@@ -24,6 +24,7 @@ import {
   type ReorderSubjectsFormState,
   type StrandAssociation,
 } from "./curriculums.schema";
+import type { SubjectStrandAssociation } from "./curriculums.types";
 
 // ─── Helper: Verify Draft Status ────────────────────────────────────────────
 
@@ -627,4 +628,32 @@ export async function reorderSubjectsAction(
     logger.error("[subjects] Failed to reorder subjects", { error });
     return { message: "An unexpected error occurred." };
   }
+}
+
+// ─── Get Subject Strands (Client-Callable) ──────────────────────────────────
+
+/**
+ * Server action to fetch strand associations for a subject.
+ * This wraps the query function so it can be called from client components.
+ */
+export async function getSubjectStrandsAction(
+  subjectId: string
+): Promise<SubjectStrandAssociation[]> {
+  if (!subjectId) {
+    return [];
+  }
+
+  const rows = await db
+    .select({
+      strandId: subjectStrands.strandId,
+      strandCode: strands.code,
+      strandName: strands.name,
+      isStrandCore: subjectStrands.isStrandCore,
+    })
+    .from(subjectStrands)
+    .innerJoin(strands, eq(subjectStrands.strandId, strands.id))
+    .where(eq(subjectStrands.subjectId, subjectId))
+    .orderBy(strands.displayOrder);
+
+  return rows;
 }

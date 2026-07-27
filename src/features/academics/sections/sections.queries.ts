@@ -9,8 +9,11 @@ import {
   teacherAssignments,
   students,
   strands,
+  studentSubjectEnrollments,
+  subjectOfferings,
+  subjects,
 } from "@/lib/db/schema";
-import { eq, and, isNull, sql, asc, desc, inArray } from "drizzle-orm";
+import { eq, and, isNull, sql, asc, desc, inArray, ne } from "drizzle-orm";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import type { SectionView, SectionDependencyCounts, StudentInSection } from "./sections.schema";
 
@@ -246,6 +249,7 @@ async function getSectionDependencyCountsBatch(
  * Get all enrolled students in a section for grade entry.
  * Only returns students with "enrolled" status (not pending/cancelled).
  * Includes strand information for SHS students (Grade 11-12).
+ * Includes elective enrollment counts for SHS students.
  * Ordered by lastName, firstName for consistent display.
  */
 export async function getStudentsInSection(
@@ -264,6 +268,7 @@ export async function getStudentsInSection(
       strandId: enrollments.strandId,
       strandCode: strands.code,
       strandName: strands.name,
+      schoolYearId: enrollments.schoolYearId,
     })
     .from(enrollments)
     .innerJoin(students, eq(enrollments.studentId, students.id))
@@ -277,5 +282,68 @@ export async function getStudentsInSection(
     )
     .orderBy(asc(students.lastName), asc(students.firstName));
 
-  return rows;
+  if (rows.length === 0) {
+    return [];
+  }
+
+  // Get enrollment IDs for elective count queries
+  const enrollmentIds = rows.map((r) => r.enrollmentId);
+
+  // Count enrolled electives per enrollment (isCore = false, isActive = true)
+  const electiveCountsResult = await db
+    .select({
+      enrollmentId: studentSubjectEnrollments.enrollmentId,
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(studentSubjectEnrollments)
+    .innerJoin(
+      subjectOfferings,
+      eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
+    )
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .where(
+      and(
+        inArray(studentSubjectEnrollments.enrollmentId, enrollmentIds),
+        eq(subjects.isCore, false),
+        eq(studentSubjectEnrollments.isActive, true),
+        isNull(studentSubjectEnrollments.deletedAt)
+      )
+    )
+    .groupBy(studentSubjectEnrollments.enrollmentId);
+
+  const electiveCountMap = new Map(
+    electiveCountsResult.map((r) => [r.enrollmentId, r.count])
+  );
+
+  // Count total available electives for the section (isCore = false)
+  const [totalElectives] = await db
+    .select({ count: sql<number>`COUNT(*)::int` })
+    .from(subjectOfferings)
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .where(
+      and(
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjects.isCore, false),
+        eq(subjectOfferings.isActive, true),
+        isNull(subjectOfferings.deletedAt)
+      )
+    );
+
+  const electiveTotal = totalElectives?.count ?? 0;
+
+  return rows.map((row) => ({
+    studentId: row.studentId,
+    studentRef: row.studentRef,
+    firstName: row.firstName,
+    middleName: row.middleName,
+    lastName: row.lastName,
+    suffix: row.suffix,
+    enrollmentId: row.enrollmentId,
+    enrollmentStatus: row.enrollmentStatus,
+    strandId: row.strandId,
+    strandCode: row.strandCode,
+    strandName: row.strandName,
+    electiveCount: electiveCountMap.get(row.enrollmentId) ?? 0,
+    electiveTotal,
+  }));
 }

@@ -13,11 +13,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, GitBranch } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
+import { MoreHorizontal, GitBranch, AlertTriangle, Users } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import type { StrandOption } from "@/features/academics/strands";
 import type { CanChangeStrandResult } from "@/features/academics/student-subject-enrollments";
 import { ChangeStrandDialog } from "@/features/academics/student-subject-enrollments";
+import { BulkStrandAssignDialog } from "@/features/academics/student-subject-enrollments/components/BulkStrandAssignDialog";
+import { cn } from "@/lib/utils/cn";
 
 interface SectionStudentsTableProps {
   students: StudentInSection[];
@@ -45,6 +49,24 @@ export default function SectionStudentsTable({
   const [selectedStudent, setSelectedStudent] = useState<StudentInSection | null>(null);
   const [strandInfo, setStrandInfo] = useState<CanChangeStrandResult | null>(null);
   const [isLoadingStrandInfo, setIsLoadingStrandInfo] = useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [showBulkAssignDialog, setShowBulkAssignDialog] = useState(false);
+
+  // Count students missing strand assignment
+  const studentsWithoutStrand = students.filter((s) => !s.strandId);
+  const missingStrandCount = studentsWithoutStrand.length;
+
+  // Get selected enrollment IDs for bulk action
+  const selectedEnrollmentIds = Object.keys(rowSelection)
+    .filter((key) => rowSelection[key])
+    .map((idx) => students[parseInt(idx)]?.enrollmentId)
+    .filter(Boolean);
+
+  // Filter selected students to only those without strands (for bulk assign)
+  const selectedWithoutStrand = Object.keys(rowSelection)
+    .filter((key) => rowSelection[key])
+    .map((idx) => students[parseInt(idx)])
+    .filter((s) => s && !s.strandId);
 
   const handleOpenChangeStrand = async (student: StudentInSection) => {
     if (!onCheckCanChangeStrand) return;
@@ -81,8 +103,46 @@ export default function SectionStudentsTable({
     }
   };
 
+  const handleCloseBulkDialog = (open: boolean) => {
+    if (!open) {
+      setShowBulkAssignDialog(false);
+      setRowSelection({});
+      startTransition(() => {
+        router.refresh();
+      });
+    }
+  };
+
   const columns = useMemo<ColumnDef<StudentInSection>[]>(() => {
-    const baseColumns: ColumnDef<StudentInSection>[] = [
+    const baseColumns: ColumnDef<StudentInSection>[] = [];
+
+    // Add checkbox column for SHS bulk selection
+    if (isShs && onCheckCanChangeStrand) {
+      baseColumns.push({
+        id: "select",
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      });
+    }
+
+    baseColumns.push(
       {
         header: "Ref. No.",
         accessorKey: "studentRef",
@@ -124,21 +184,71 @@ export default function SectionStudentsTable({
             {row.original.suffix || "—"}
           </span>
         ),
-      },
-    ];
+      }
+    );
 
-    // Add strand column for SHS sections
+    // Add strand column for SHS sections with inline assign button
     if (isShs) {
       baseColumns.push({
         header: "Strand",
         accessorKey: "strandCode",
-        cell: ({ row }) => (
-          row.original.strandCode ? (
-            <Badge variant="secondary">{row.original.strandCode}</Badge>
+        cell: ({ row }) => {
+          const hasStrand = !!row.original.strandCode;
+          if (hasStrand) {
+            return (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{row.original.strandCode}</Badge>
+                {onCheckCanChangeStrand && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => handleOpenChangeStrand(row.original)}
+                  >
+                    Change
+                  </Button>
+                )}
+              </div>
+            );
+          }
+          // No strand - show prominent assign button
+          return onCheckCanChangeStrand ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-7 text-xs border-amber-500 text-amber-600 hover:bg-amber-50 dark:border-amber-400 dark:text-amber-400 dark:hover:bg-amber-950"
+              onClick={() => handleOpenChangeStrand(row.original)}
+            >
+              <GitBranch className="mr-1 h-3 w-3" />
+              Assign Strand
+            </Button>
           ) : (
             <span className="text-muted-foreground italic text-sm">Not set</span>
-          )
-        ),
+          );
+        },
+      });
+
+      // Add electives column for SHS sections
+      baseColumns.push({
+        header: "Electives",
+        accessorKey: "electiveCount",
+        cell: ({ row }) => {
+          const { electiveCount, electiveTotal } = row.original;
+          if (electiveTotal === 0) {
+            return <span className="text-muted-foreground text-sm">—</span>;
+          }
+          const isComplete = electiveCount >= electiveTotal;
+          return (
+            <Badge
+              variant={isComplete ? "success" : "secondary"}
+              className={cn(
+                !isComplete && electiveCount > 0 && "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+              )}
+            >
+              {electiveCount}/{electiveTotal}
+            </Badge>
+          );
+        },
       });
     }
 
@@ -151,7 +261,7 @@ export default function SectionStudentsTable({
       ),
     });
 
-    // Actions column for SHS with strand management
+    // Actions column for SHS with strand management (dropdown for additional actions)
     if (isShs && onCheckCanChangeStrand) {
       baseColumns.push({
         id: "actions",
@@ -181,7 +291,40 @@ export default function SectionStudentsTable({
   }, [isShs, onCheckCanChangeStrand]);
 
   return (
-    <div>
+    <div className="space-y-4">
+      {/* Warning banner for SHS sections with students missing strand */}
+      {isShs && missingStrandCount > 0 && (
+        <Alert variant="warning" className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-amber-800 dark:text-amber-200">
+              <strong>{missingStrandCount}</strong> student{missingStrandCount !== 1 ? "s" : ""} need{missingStrandCount === 1 ? "s" : ""} strand assignment.
+              Students without a strand will not be enrolled in strand-specific elective subjects.
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Bulk action bar */}
+      {isShs && selectedWithoutStrand.length > 0 && (
+        <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span>
+              <strong>{selectedWithoutStrand.length}</strong> student{selectedWithoutStrand.length !== 1 ? "s" : ""} selected without strand
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setShowBulkAssignDialog(true)}
+            className="bg-amber-600 hover:bg-amber-700"
+          >
+            <GitBranch className="mr-2 h-4 w-4" />
+            Assign Strand to Selected
+          </Button>
+        </div>
+      )}
+
       {students.length === 0 ? (
         <div className="p-8 text-center">
           <div className="text-muted-foreground mb-2">
@@ -197,6 +340,16 @@ export default function SectionStudentsTable({
           data={students}
           searchable
           searchPlaceholder="Search students..."
+          rowSelection={isShs ? rowSelection : undefined}
+          onRowSelectionChange={isShs ? setRowSelection : undefined}
+          getRowClassName={
+            isShs
+              ? (row) =>
+                  !row.original.strandCode
+                    ? "bg-amber-50/50 dark:bg-amber-950/30"
+                    : ""
+              : undefined
+          }
         />
       )}
 
@@ -209,6 +362,17 @@ export default function SectionStudentsTable({
           availableStrands={availableStrands}
           open={!!selectedStudent}
           onOpenChange={handleCloseDialog}
+        />
+      )}
+
+      {/* Bulk Strand Assignment Dialog */}
+      {showBulkAssignDialog && (
+        <BulkStrandAssignDialog
+          enrollmentIds={selectedWithoutStrand.map((s) => s.enrollmentId)}
+          studentCount={selectedWithoutStrand.length}
+          availableStrands={availableStrands}
+          open={showBulkAssignDialog}
+          onOpenChange={handleCloseBulkDialog}
         />
       )}
     </div>

@@ -10,6 +10,8 @@ import {
   flexRender,
   type ColumnDef,
   type SortingState,
+  type RowSelectionState,
+  type Row,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils/cn";
@@ -27,6 +29,12 @@ interface DataTableProps<TData> {
   enableVirtualization?: boolean; // Enable for large datasets (1000+ rows)
   virtualRowHeight?: number; // Estimated row height in pixels (default: 50)
   className?: string;
+  /** Row selection state (controlled) */
+  rowSelection?: RowSelectionState;
+  /** Callback for row selection changes */
+  onRowSelectionChange?: (selection: RowSelectionState) => void;
+  /** Function to get additional class names for a row */
+  getRowClassName?: (row: Row<TData>) => string;
 }
 
 /**
@@ -46,6 +54,9 @@ export function DataTable<TData>({
   enableVirtualization = false,
   virtualRowHeight = 50,
   className,
+  rowSelection,
+  onRowSelectionChange,
+  getRowClassName,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -54,9 +65,25 @@ export function DataTable<TData>({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter },
+    state: {
+      sorting,
+      globalFilter,
+      ...(rowSelection !== undefined ? { rowSelection } : {}),
+    },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    ...(onRowSelectionChange
+      ? {
+          onRowSelectionChange: (updaterOrValue) => {
+            const newSelection =
+              typeof updaterOrValue === "function"
+                ? updaterOrValue(rowSelection ?? {})
+                : updaterOrValue;
+            onRowSelectionChange(newSelection);
+          },
+          enableRowSelection: true,
+        }
+      : {}),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -199,7 +226,10 @@ export function DataTable<TData>({
                 rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-b border-border last:border-0 hover:bg-muted transition-colors"
+                    className={cn(
+                      "border-b border-border last:border-0 hover:bg-muted transition-colors",
+                      getRowClassName?.(row)
+                    )}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td

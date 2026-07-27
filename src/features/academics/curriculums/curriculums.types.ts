@@ -91,3 +91,21 @@ export type CurriculumDropdownOption = {
   status: CurriculumStatus;
   version: number;
 };
+
+/**
+ * Strand association for a subject (elective subjects only)
+ */
+export type SubjectStrandAssociation = {
+  strandId: string;
+  strandCode: string;
+  strandName: string;
+  isStrandCore: boolean;
+};
+
+/**
+ * Grade level option for dropdowns
+ */
+export type GradeLevelDropdownOption = {
+  id: string;
+  name: string;
+};

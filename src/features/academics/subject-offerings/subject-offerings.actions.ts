@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { subjectOfferings, studentSubjectEnrollments } from "@/lib/db/schema";
-import { eq, and, isNull, count } from "drizzle-orm";
+import { subjectOfferings, studentSubjectEnrollments, subjects } from "@/lib/db/schema";
+import { eq, and, isNull, count, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
@@ -11,9 +11,11 @@ import {
   generateSubjectOfferingsSchema,
   assignTeacherSchema,
   deleteSubjectOfferingSchema,
+  deleteAllSubjectOfferingsSchema,
   type GenerateSubjectOfferingsFormState,
   type AssignTeacherFormState,
   type DeleteSubjectOfferingFormState,
+  type DeleteAllSubjectOfferingsFormState,
 } from "./subject-offerings.schema";
 import {
   getSubjectsForOfferingGeneration,
@@ -46,18 +48,22 @@ export async function generateSubjectOfferingsAction(
   const { sectionId, schoolYearId } = parsed.data;
 
   // Get subjects from adopted curriculum
-  const subjects = await getSubjectsForOfferingGeneration(sectionId, schoolYearId);
+  const curriculumSubjects = await getSubjectsForOfferingGeneration(sectionId, schoolYearId);
 
-  if (subjects.length === 0) {
+  if (curriculumSubjects.length === 0) {
     return {
       message: "No curriculum adopted for this grade level and school year.",
     };
   }
 
-  // Get existing offerings to check for duplicates
+  // Get existing offerings to check for duplicates (check both subjectId and subject code)
   const existingOfferings = await db
-    .select({ subjectId: subjectOfferings.subjectId })
+    .select({
+      subjectId: subjectOfferings.subjectId,
+      subjectCode: subjects.code,
+    })
     .from(subjectOfferings)
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
     .where(
       and(
         eq(subjectOfferings.sectionId, sectionId),
@@ -67,26 +73,36 @@ export async function generateSubjectOfferingsAction(
     );
 
   const existingSubjectIds = new Set(existingOfferings.map((o) => o.subjectId));
+  const existingSubjectCodes = new Set(existingOfferings.map((o) => o.subjectCode));
 
-  // Filter out subjects that already have offerings
-  const newSubjects = subjects.filter((s) => !existingSubjectIds.has(s.id));
+  // Filter out subjects that already have offerings (by ID or by code to prevent duplicates)
+  const newSubjects = curriculumSubjects.filter(
+    (s) => !existingSubjectIds.has(s.id) && !existingSubjectCodes.has(s.code)
+  );
+
+  const skippedCount = curriculumSubjects.length - newSubjects.length;
 
   if (newSubjects.length === 0) {
     return {
       success: true,
       createdCount: 0,
-      skippedCount: subjects.length,
+      skippedCount,
       message: "All subjects already have offerings for this section.",
     };
   }
 
   // Create offerings for new subjects
+  // For electives, set strandId if subject has strand associations (use first strand)
   const offerings = newSubjects.map((subject, index) => ({
     sectionId,
     subjectId: subject.id,
     schoolYearId,
     isActive: true,
     sequenceOrder: subject.sequenceOrder || index,
+    // Set strandId for electives with strand associations
+    strandId: !subject.isCore && subject.strandIds && subject.strandIds.length > 0
+      ? subject.strandIds[0]
+      : null,
     createdBy: session.userId,
     updatedBy: session.userId,
   }));
@@ -103,7 +119,7 @@ export async function generateSubjectOfferingsAction(
       sectionId,
       schoolYearId,
       createdCount: newSubjects.length,
-      skippedCount: existingSubjectIds.size,
+      skippedCount,
     },
   });
 
@@ -112,7 +128,7 @@ export async function generateSubjectOfferingsAction(
   return {
     success: true,
     createdCount: newSubjects.length,
-    skippedCount: existingSubjectIds.size,
+    skippedCount,
   };
 }
 
@@ -243,4 +259,108 @@ export async function deleteSubjectOfferingAction(
   invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
 
   return { success: true };
+}
+
+/**
+ * Delete all subject offerings for a section.
+ * Cannot delete if any offering has enrolled students.
+ */
+export async function deleteAllSubjectOfferingsAction(
+  _prevState: DeleteAllSubjectOfferingsFormState,
+  formData: FormData
+): Promise<DeleteAllSubjectOfferingsFormState> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "subject_offerings:generate")) {
+    return { message: "You do not have permission to delete subject offerings." };
+  }
+
+  const parsed = deleteAllSubjectOfferingsSchema.safeParse({
+    sectionId: formData.get("sectionId"),
+    schoolYearId: formData.get("schoolYearId"),
+  });
+
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { sectionId, schoolYearId } = parsed.data;
+
+  // Get all active offerings for this section
+  const offerings = await db
+    .select({
+      id: subjectOfferings.id,
+      subjectCode: subjects.code,
+    })
+    .from(subjectOfferings)
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .where(
+      and(
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjectOfferings.schoolYearId, schoolYearId),
+        isNull(subjectOfferings.deletedAt)
+      )
+    );
+
+  if (offerings.length === 0) {
+    return {
+      message: "No subject offerings found for this section.",
+    };
+  }
+
+  // Check if any offering has enrolled students
+  const offeringIds = offerings.map((o) => o.id);
+  const [enrollmentCount] = await db
+    .select({ count: count() })
+    .from(studentSubjectEnrollments)
+    .where(
+      and(
+        inArray(studentSubjectEnrollments.subjectOfferingId, offeringIds),
+        eq(studentSubjectEnrollments.isActive, true),
+        isNull(studentSubjectEnrollments.deletedAt)
+      )
+    );
+
+  if (enrollmentCount.count > 0) {
+    return {
+      message: `Cannot delete offerings: ${enrollmentCount.count} student enrollment(s) exist. Remove student enrollments first.`,
+    };
+  }
+
+  // Soft delete all offerings
+  await db
+    .update(subjectOfferings)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: session.userId,
+    })
+    .where(
+      and(
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjectOfferings.schoolYearId, schoolYearId),
+        isNull(subjectOfferings.deletedAt)
+      )
+    );
+
+  await logAudit({
+    actor: session.userId,
+    actorRole: session.role,
+    action: "subject_offerings:delete_all",
+    targetEntity: "subject_offerings",
+    targetId: sectionId,
+    newState: {
+      sectionId,
+      schoolYearId,
+      deletedCount: offerings.length,
+      subjectCodes: offerings.map((o) => o.subjectCode),
+    },
+  });
+
+  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+
+  return {
+    success: true,
+    deletedCount: offerings.length,
+    message: `Successfully deleted ${offerings.length} subject offering(s).`,
+  };
 }

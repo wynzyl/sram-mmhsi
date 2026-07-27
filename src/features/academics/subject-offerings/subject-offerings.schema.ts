@@ -36,6 +36,19 @@ export type DeleteSubjectOfferingInput = z.infer<typeof deleteSubjectOfferingSch
 
 export type DeleteSubjectOfferingFormState = BaseFormState<DeleteSubjectOfferingInput>;
 
+// ─── Delete All Subject Offerings Schema ──────────────────────────────────────
+
+export const deleteAllSubjectOfferingsSchema = z.object({
+  sectionId: uuidSchema,
+  schoolYearId: uuidSchema,
+});
+
+export type DeleteAllSubjectOfferingsInput = z.infer<typeof deleteAllSubjectOfferingsSchema>;
+
+export type DeleteAllSubjectOfferingsFormState = BaseFormState<DeleteAllSubjectOfferingsInput> & {
+  deletedCount?: number;
+};
+
 // ─── View Types ───────────────────────────────────────────────────────────────
 
 /**

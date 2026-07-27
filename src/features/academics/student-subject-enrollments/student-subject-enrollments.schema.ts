@@ -40,6 +40,34 @@ export type WithdrawFromSubjectInput = z.infer<typeof withdrawFromSubjectSchema>
 
 export type WithdrawFromSubjectFormState = BaseFormState<WithdrawFromSubjectInput>;
 
+// ─── Bulk Strand Assignment Schema (SHS Only) ────────────────────────────────
+
+export const bulkAssignStrandSchema = z.object({
+  enrollmentIds: z.array(uuidSchema).min(1, "At least one enrollment is required"),
+  strandId: uuidSchema,
+});
+
+export type BulkAssignStrandInput = z.infer<typeof bulkAssignStrandSchema>;
+
+export type BulkAssignStrandFormState = BaseFormState<BulkAssignStrandInput> & {
+  updatedCount?: number;
+  skippedCount?: number;
+};
+
+// ─── Manual Subject Enrollment Schema ─────────────────────────────────────────
+
+export const manualEnrollSubjectSchema = z.object({
+  enrollmentId: uuidSchema,
+  subjectOfferingId: uuidSchema,
+});
+
+export type ManualEnrollSubjectInput = z.infer<typeof manualEnrollSubjectSchema>;
+
+export type ManualEnrollSubjectFormState = BaseFormState<ManualEnrollSubjectInput> & {
+  /** Warning message for cross-strand enrollment (allowed but flagged) */
+  warning?: string;
+};
+
 // ─── View Types ───────────────────────────────────────────────────────────────
 
 /**

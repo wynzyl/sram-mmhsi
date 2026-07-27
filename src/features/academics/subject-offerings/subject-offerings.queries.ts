@@ -9,11 +9,12 @@ import {
   gradeLevels,
   users,
   strands,
+  subjectStrands,
   studentSubjectEnrollments,
   curriculumAdoptions,
   curriculums,
 } from "@/lib/db/schema";
-import { eq, and, isNull, sql, asc, count } from "drizzle-orm";
+import { eq, and, isNull, sql, asc, count, inArray } from "drizzle-orm";
 import type {
   SubjectOfferingView,
   SubjectForOffering,
@@ -161,6 +162,39 @@ export async function getSubjectsForOfferingGeneration(
     )
     .orderBy(asc(subjects.sequenceOrder), asc(subjects.name));
 
+  if (subjectRows.length === 0) {
+    return [];
+  }
+
+  // Get strand associations for elective subjects
+  const electiveSubjectIds = subjectRows
+    .filter((s) => !s.isCore)
+    .map((s) => s.id);
+
+  const strandAssociations =
+    electiveSubjectIds.length > 0
+      ? await db
+          .select({
+            subjectId: subjectStrands.subjectId,
+            strandId: subjectStrands.strandId,
+          })
+          .from(subjectStrands)
+          .where(
+            and(
+              inArray(subjectStrands.subjectId, electiveSubjectIds),
+              isNull(subjectStrands.deletedAt)
+            )
+          )
+      : [];
+
+  // Build strand map per subject
+  const strandMap = new Map<string, string[]>();
+  for (const assoc of strandAssociations) {
+    const existing = strandMap.get(assoc.subjectId) || [];
+    existing.push(assoc.strandId);
+    strandMap.set(assoc.subjectId, existing);
+  }
+
   return subjectRows.map((row) => ({
     id: row.id,
     code: row.code,
@@ -170,6 +204,7 @@ export async function getSubjectsForOfferingGeneration(
     gradeLevelId: row.gradeLevelId!,
     gradeLevelName: section.gradeLevelName,
     sequenceOrder: row.sequenceOrder,
+    strandIds: row.isCore ? undefined : strandMap.get(row.id),
   }));
 }
 

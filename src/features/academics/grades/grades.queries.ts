@@ -1107,3 +1107,184 @@ export async function getStudentsWithSSEForSection(
     subjectEnrollments: sseLookup.get(student.enrollmentId) ?? new Map(),
   }));
 }
+
+// ─── SHS Strand-Based Grade Entry Queries ──────────────────────────────────────
+
+import { strands } from "@/lib/db/schema";
+import type { ShsStrandCode } from "@/lib/constants/strands";
+
+/**
+ * Subject offering with strand info for SHS grade entry.
+ */
+export type SHSSubjectOffering = {
+  id: string;
+  subjectId: string;
+  subjectName: string;
+  subjectCode: string;
+  subjectUnits: string;
+  isCore: boolean;
+  sequenceOrder: number;
+  strandId: string | null;
+  strandCode: string | null;
+  teacherId: string | null;
+  teacherName: string | null;
+};
+
+/**
+ * SHS grade entry subjects organized by category.
+ */
+export type SHSGradeEntrySubjects = {
+  /** Core subjects that all students take (isCore = true) */
+  universalCore: SHSSubjectOffering[];
+  /** Strand-specific subjects grouped by strand code */
+  strandSubjects: Map<ShsStrandCode, SHSSubjectOffering[]>;
+  /** All available strands in this section */
+  availableStrands: ShsStrandCode[];
+};
+
+/**
+ * Get subjects for SHS grade entry, organized by universal core vs strand-specific.
+ *
+ * This query fetches all subject offerings for a section and categorizes them:
+ * - universalCore: subjects with isCore = true (all students take these)
+ * - strandSubjects: subjects with isCore = false, grouped by strandCode
+ *
+ * Returns null if no subject offerings exist for the section.
+ */
+export async function getSubjectsForSHSGradeEntry(
+  sectionId: string,
+  schoolYearId: string
+): Promise<SHSGradeEntrySubjects | null> {
+  // Get all active subject offerings with strand info
+  const rows = await db
+    .select({
+      id: subjectOfferings.id,
+      subjectId: subjectOfferings.subjectId,
+      subjectName: subjects.name,
+      subjectCode: subjects.code,
+      subjectUnits: subjects.units,
+      isCore: subjects.isCore,
+      sequenceOrder: subjectOfferings.sequenceOrder,
+      strandId: subjectOfferings.strandId,
+      strandCode: strands.code,
+      teacherId: subjectOfferings.teacherId,
+      teacherName: users.username,
+    })
+    .from(subjectOfferings)
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .leftJoin(strands, eq(subjectOfferings.strandId, strands.id))
+    .leftJoin(users, eq(subjectOfferings.teacherId, users.id))
+    .where(
+      and(
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjectOfferings.schoolYearId, schoolYearId),
+        eq(subjectOfferings.isActive, true),
+        isNull(subjects.deletedAt)
+      )
+    )
+    .orderBy(asc(subjectOfferings.sequenceOrder), asc(subjects.name));
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  // Categorize subjects (deduplicate by subject code to handle duplicate offerings)
+  const universalCore: SHSSubjectOffering[] = [];
+  const strandSubjects = new Map<ShsStrandCode, SHSSubjectOffering[]>();
+  const availableStrands = new Set<ShsStrandCode>();
+
+  // Track seen subject codes to prevent duplicates
+  const seenCoreCodes = new Set<string>();
+  const seenStrandCodes = new Map<ShsStrandCode, Set<string>>();
+
+  for (const row of rows) {
+    if (row.isCore) {
+      // Universal core subject - deduplicate by subject code
+      if (!seenCoreCodes.has(row.subjectCode)) {
+        seenCoreCodes.add(row.subjectCode);
+        universalCore.push(row as SHSSubjectOffering);
+      }
+    } else if (row.strandCode) {
+      // Strand-specific subject - deduplicate by strand + subject code
+      const strandCode = row.strandCode as ShsStrandCode;
+      availableStrands.add(strandCode);
+
+      // Initialize seen set for this strand if needed
+      if (!seenStrandCodes.has(strandCode)) {
+        seenStrandCodes.set(strandCode, new Set<string>());
+      }
+      const seenForStrand = seenStrandCodes.get(strandCode)!;
+
+      if (!seenForStrand.has(row.subjectCode)) {
+        seenForStrand.add(row.subjectCode);
+        const existing = strandSubjects.get(strandCode) || [];
+        existing.push(row as SHSSubjectOffering);
+        strandSubjects.set(strandCode, existing);
+      }
+    }
+  }
+
+  // Sort strands by defined order
+  const { SHS_STRAND_ORDER } = await import("@/lib/constants/strands");
+  const sortedStrands = Array.from(availableStrands).sort(
+    (a, b) => SHS_STRAND_ORDER[a] - SHS_STRAND_ORDER[b]
+  );
+
+  return {
+    universalCore,
+    strandSubjects,
+    availableStrands: sortedStrands,
+  };
+}
+
+/**
+ * Student in section with strand info for SHS grade entry.
+ */
+export type SHSSectionStudent = {
+  id: string;
+  studentRef: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  enrollmentId: string;
+  strandId: string | null;
+  strandCode: ShsStrandCode | null;
+};
+
+/**
+ * Get enrolled students in a section with their strand assignments.
+ * Used for SHS grade entry to filter students by strand.
+ */
+export async function getStudentsWithStrandsInSection(
+  sectionId: string,
+  schoolYearId: string
+): Promise<SHSSectionStudent[]> {
+  const rows = await db
+    .select({
+      id: students.id,
+      studentRef: students.referenceNumber,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      fullName: sql<string>`${students.lastName} || ', ' || ${students.firstName}`,
+      enrollmentId: enrollments.id,
+      strandId: enrollments.strandId,
+      strandCode: strands.code,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .leftJoin(strands, eq(enrollments.strandId, strands.id))
+    .where(
+      and(
+        eq(enrollments.sectionId, sectionId),
+        eq(enrollments.schoolYearId, schoolYearId),
+        eq(enrollments.status, "enrolled"),
+        isNull(students.deletedAt)
+      )
+    )
+    .orderBy(asc(students.lastName), asc(students.firstName));
+
+  return rows.map((row) => ({
+    ...row,
+    strandCode: row.strandCode as ShsStrandCode | null,
+  }));
+}

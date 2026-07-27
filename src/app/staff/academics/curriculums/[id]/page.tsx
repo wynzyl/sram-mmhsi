@@ -8,6 +8,7 @@ import {
   getGradeLevelsForDropdown,
   getActiveSchoolYear,
 } from "@/features/academics/curriculums";
+import { getActiveStrands } from "@/features/academics/strands";
 import { validatePublishPreflight } from "@/features/academics/curriculums/curriculum-preflight";
 import { CurriculumStatusBadge } from "@/features/academics/curriculums/components/CurriculumStatusBadge";
 import { CurriculumVersionChain } from "@/features/academics/curriculums/components/CurriculumVersionChain";
@@ -26,10 +27,11 @@ export default async function CurriculumDetailPage({ params }: PageProps) {
     redirect("/staff/dashboard");
   }
 
-  const [curriculum, gradeLevels, activeSchoolYear] = await Promise.all([
+  const [curriculum, gradeLevels, activeSchoolYear, availableStrands] = await Promise.all([
     getCurriculumById(id),
     getGradeLevelsForDropdown(),
     getActiveSchoolYear(),
+    getActiveStrands(),
   ]);
 
   if (!curriculum) {
@@ -190,6 +192,7 @@ export default async function CurriculumDetailPage({ params }: PageProps) {
             canArchive={canArchive}
             preflight={preflight ?? undefined}
             activeSchoolYear={activeSchoolYear}
+            availableStrands={availableStrands}
           />
         </div>
       </div>

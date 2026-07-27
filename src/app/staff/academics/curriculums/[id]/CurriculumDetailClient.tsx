@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SubjectsByGradeLevel } from "@/features/academics/curriculums/components/SubjectsByGradeLevel";
 import { SubjectFormDialog } from "@/features/academics/curriculums/components/SubjectFormDialog";
 import { PublishCurriculumDialog } from "@/features/academics/curriculums/components/PublishCurriculumDialog";
 import { ArchiveCurriculumDialog } from "@/features/academics/curriculums/components/ArchiveCurriculumDialog";
-import type { CurriculumDetail, SubjectListRow } from "@/features/academics/curriculums/curriculums.types";
+import type { CurriculumDetail, SubjectListRow, SubjectStrandAssociation } from "@/features/academics/curriculums/curriculums.types";
 import type { PreflightResult } from "@/features/academics/curriculums/curriculum-preflight";
+import { getSubjectStrandsAction } from "@/features/academics/curriculums/subjects.actions";
 
 interface GradeLevelGroup {
   gradeLevelId: string;
@@ -24,6 +25,12 @@ interface SchoolYear {
   label: string;
 }
 
+interface StrandOption {
+  id: string;
+  code: string;
+  name: string;
+}
+
 interface CurriculumDetailClientProps {
   curriculum: CurriculumDetail;
   groups: GradeLevelGroup[];
@@ -33,6 +40,8 @@ interface CurriculumDetailClientProps {
   canArchive?: boolean;
   preflight?: PreflightResult;
   activeSchoolYear?: SchoolYear | null;
+  /** Available strands for SHS elective subjects */
+  availableStrands?: StrandOption[];
 }
 
 export function CurriculumDetailClient({
@@ -44,6 +53,7 @@ export function CurriculumDetailClient({
   canArchive,
   preflight,
   activeSchoolYear,
+  availableStrands = [],
 }: CurriculumDetailClientProps) {
   const [dialogState, setDialogState] = useState<{
     mode: "add" | "edit";
@@ -52,6 +62,29 @@ export function CurriculumDetailClient({
   } | null>(null);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+
+  // Track strand associations for the subject being edited
+  const [editStrandAssociations, setEditStrandAssociations] = useState<SubjectStrandAssociation[]>([]);
+  const [loadingStrands, setLoadingStrands] = useState(false);
+
+  // Fetch strand associations when editing a subject
+  useEffect(() => {
+    if (dialogState?.mode === "edit" && dialogState.subject && !dialogState.subject.isCore) {
+      setLoadingStrands(true);
+      getSubjectStrandsAction(dialogState.subject.id)
+        .then((associations) => {
+          setEditStrandAssociations(associations);
+        })
+        .catch(() => {
+          setEditStrandAssociations([]);
+        })
+        .finally(() => {
+          setLoadingStrands(false);
+        });
+    } else {
+      setEditStrandAssociations([]);
+    }
+  }, [dialogState?.mode, dialogState?.subject?.id, dialogState?.subject?.isCore]);
 
   const handleAddSubject = (gradeLevelId: string) => {
     setDialogState({ mode: "add", gradeLevelId: gradeLevelId || undefined });
@@ -63,6 +96,7 @@ export function CurriculumDetailClient({
 
   const handleCloseDialog = () => {
     setDialogState(null);
+    setEditStrandAssociations([]);
   };
 
   return (
@@ -76,7 +110,7 @@ export function CurriculumDetailClient({
         onEditSubject={canManageSubjects ? handleEditSubject : undefined}
       />
 
-      {dialogState && (
+      {dialogState && !loadingStrands && (
         <SubjectFormDialog
           mode={dialogState.mode}
           curriculumId={curriculum.id}
@@ -84,7 +118,19 @@ export function CurriculumDetailClient({
           subject={dialogState.subject}
           defaultGradeLevelId={dialogState.gradeLevelId}
           onClose={handleCloseDialog}
+          availableStrands={availableStrands}
+          existingStrandAssociations={editStrandAssociations}
         />
+      )}
+
+      {/* Loading state while fetching strand associations */}
+      {dialogState && loadingStrands && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card border border-border rounded-lg p-6 text-center">
+            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Loading subject data...</p>
+          </div>
+        </div>
       )}
 
       {showPublishDialog && preflight && (

@@ -12,8 +12,7 @@ import type {
   UpdateSubjectInCurriculumFormState,
   StrandAssociation,
 } from "../curriculums.schema";
-import type { SubjectListRow } from "../curriculums.types";
-import type { SubjectStrandAssociation } from "../curriculums.queries";
+import type { SubjectListRow, SubjectStrandAssociation } from "../curriculums.types";
 import { SHS_STRAND_LABELS, type ShsStrandCode } from "@/lib/constants/strands";
 
 interface GradeLevelOption {

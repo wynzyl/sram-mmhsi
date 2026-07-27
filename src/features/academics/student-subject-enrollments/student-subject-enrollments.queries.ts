@@ -14,7 +14,8 @@ import {
   strands,
   gradeSheetEntries,
 } from "@/lib/db/schema";
-import { eq, and, isNull, sql, asc, count } from "drizzle-orm";
+import type { SubjectOfferingOption } from "./components/ManualSubjectEnrollDialog";
+import { eq, and, isNull, sql, asc, count, notInArray, inArray } from "drizzle-orm";
 import type { ShsStrandCode } from "@/lib/constants/strands";
 import type {
   StudentSubjectEnrollmentView,
@@ -242,5 +243,83 @@ export async function getSubjectEnrollmentsForSection(
     withdrawnAt: row.withdrawnAt,
     withdrawalReason: row.withdrawalReason,
     createdAt: row.createdAt,
+  }));
+}
+
+/**
+ * Get available subject offerings for manual enrollment.
+ * Returns offerings in the student's section that they are not yet enrolled in.
+ */
+export async function getAvailableOfferingsForEnrollment(
+  enrollmentId: string
+): Promise<SubjectOfferingOption[]> {
+  // Get enrollment's section and existing subject enrollments
+  const [enrollment] = await db
+    .select({
+      sectionId: enrollments.sectionId,
+      schoolYearId: enrollments.schoolYearId,
+    })
+    .from(enrollments)
+    .where(eq(enrollments.id, enrollmentId))
+    .limit(1);
+
+  if (!enrollment || !enrollment.sectionId) {
+    return [];
+  }
+
+  // Get subject offering IDs the student is already enrolled in
+  const existingEnrollments = await db
+    .select({ subjectOfferingId: studentSubjectEnrollments.subjectOfferingId })
+    .from(studentSubjectEnrollments)
+    .where(
+      and(
+        eq(studentSubjectEnrollments.enrollmentId, enrollmentId),
+        eq(studentSubjectEnrollments.isActive, true),
+        isNull(studentSubjectEnrollments.deletedAt)
+      )
+    );
+
+  const enrolledOfferingIds = existingEnrollments.map((e) => e.subjectOfferingId);
+
+  // Get available offerings (active, not already enrolled)
+  const conditions = [
+    eq(subjectOfferings.sectionId, enrollment.sectionId),
+    eq(subjectOfferings.schoolYearId, enrollment.schoolYearId),
+    eq(subjectOfferings.isActive, true),
+    isNull(subjectOfferings.deletedAt),
+  ];
+
+  // Only add notInArray condition if there are enrolled offerings
+  if (enrolledOfferingIds.length > 0) {
+    conditions.push(notInArray(subjectOfferings.id, enrolledOfferingIds));
+  }
+
+  const offerings = await db
+    .select({
+      id: subjectOfferings.id,
+      subjectCode: subjects.code,
+      subjectName: subjects.name,
+      subjectUnits: subjects.units,
+      isCore: subjects.isCore,
+      strandId: subjectOfferings.strandId,
+      strandCode: strands.code,
+      teacherName: users.username,
+    })
+    .from(subjectOfferings)
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .leftJoin(strands, eq(subjectOfferings.strandId, strands.id))
+    .leftJoin(users, eq(subjectOfferings.teacherId, users.id))
+    .where(and(...conditions))
+    .orderBy(asc(subjects.isCore), asc(subjects.sequenceOrder), asc(subjects.name));
+
+  return offerings.map((o) => ({
+    id: o.id,
+    subjectCode: o.subjectCode,
+    subjectName: o.subjectName,
+    subjectUnits: o.subjectUnits,
+    isCore: o.isCore,
+    strandId: o.strandId,
+    strandCode: o.strandCode,
+    teacherName: o.teacherName,
   }));
 }

@@ -14,8 +14,12 @@ import {
   getTeachersForAssignment,
   hasExistingOfferings,
   SubjectOfferingsTable,
+  SubjectOfferingsByStrand,
   GenerateOfferingsButton,
+  DeleteAllOfferingsButton,
+  type EnrolledStrandInfo,
 } from "@/features/academics/subject-offerings";
+import type { ShsStrandCode } from "@/lib/constants/strands";
 import { getActiveStrands } from "@/features/academics/strands";
 import { canChangeStrand } from "@/features/academics/student-subject-enrollments";
 import { requiresStrandSelection } from "@/lib/constants/strands";
@@ -82,6 +86,21 @@ export default async function SectionDetailPage({
   const canAssignTeacher = hasPermission(session.role, "subject_offerings:assign_teacher");
   const canDeleteOffering = hasPermission(session.role, "subject_offerings:generate"); // Using same permission for delete
   const canManageStrands = hasPermission(session.role, "sections:manage");
+
+  // Calculate enrolled strands for SHS sections (used for missing subject warnings)
+  const enrolledStrands: EnrolledStrandInfo[] = [];
+  if (isShs) {
+    const strandCounts = new Map<ShsStrandCode, number>();
+    for (const student of students) {
+      if (student.strandCode) {
+        const code = student.strandCode as ShsStrandCode;
+        strandCounts.set(code, (strandCounts.get(code) || 0) + 1);
+      }
+    }
+    for (const [strandCode, studentCount] of strandCounts) {
+      enrolledStrands.push({ strandCode, studentCount });
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -178,26 +197,50 @@ export default async function SectionDetailPage({
             <CardTitle className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5" />
               Subject Offerings
+              {isShs && (
+                <Badge variant="info" className="ml-2">Strand-Based</Badge>
+              )}
             </CardTitle>
             <CardDescription className="mt-1">
-              Subjects offered in this section for the current school year
+              {isShs
+                ? "Subjects grouped by strand - core subjects are taken by all students"
+                : "Subjects offered in this section for the current school year"}
             </CardDescription>
           </div>
           {canGenerateOfferings && (
-            <GenerateOfferingsButton
-              sectionId={id}
-              schoolYearId={section.schoolYearId}
-              hasExisting={hasOfferings}
-            />
+            <div className="flex items-center gap-2">
+              {hasOfferings && (
+                <DeleteAllOfferingsButton
+                  sectionId={id}
+                  schoolYearId={section.schoolYearId}
+                  offeringsCount={offerings.length}
+                />
+              )}
+              <GenerateOfferingsButton
+                sectionId={id}
+                schoolYearId={section.schoolYearId}
+                hasExisting={hasOfferings}
+              />
+            </div>
           )}
         </CardHeader>
         <CardContent className="p-0">
-          <SubjectOfferingsTable
-            offerings={offerings}
-            teachers={teachers}
-            canAssignTeacher={canAssignTeacher}
-            canDelete={canDeleteOffering}
-          />
+          {isShs ? (
+            <SubjectOfferingsByStrand
+              offerings={offerings}
+              teachers={teachers}
+              canAssignTeacher={canAssignTeacher}
+              canDelete={canDeleteOffering}
+              enrolledStrands={enrolledStrands}
+            />
+          ) : (
+            <SubjectOfferingsTable
+              offerings={offerings}
+              teachers={teachers}
+              canAssignTeacher={canAssignTeacher}
+              canDelete={canDeleteOffering}
+            />
+          )}
         </CardContent>
       </Card>
 

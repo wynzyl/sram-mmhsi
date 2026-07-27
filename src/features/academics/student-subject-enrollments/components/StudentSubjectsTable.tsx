@@ -17,34 +17,71 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, UserMinus } from "lucide-react";
+import { MoreHorizontal, UserMinus, Plus } from "lucide-react";
 import { formatDate } from "@/lib/utils/date";
 import type { StudentSubjectEnrollmentView } from "../student-subject-enrollments.schema";
 import { WithdrawSubjectDialog } from "./WithdrawSubjectDialog";
+import { ManualSubjectEnrollDialog, type SubjectOfferingOption } from "./ManualSubjectEnrollDialog";
 
 interface StudentSubjectsTableProps {
   enrollments: StudentSubjectEnrollmentView[];
   canManage: boolean;
+  /** For manual enrollment: enrollment ID */
+  enrollmentId?: string;
+  /** For manual enrollment: student name */
+  studentName?: string;
+  /** For manual enrollment: student's strand code (for SHS) */
+  studentStrandCode?: string | null;
+  /** For manual enrollment: available subject offerings not yet enrolled */
+  availableOfferings?: SubjectOfferingOption[];
+  /** Whether to show the add elective button (SHS sections only) */
+  showAddElective?: boolean;
 }
 
 export function StudentSubjectsTable({
   enrollments,
   canManage,
+  enrollmentId,
+  studentName,
+  studentStrandCode,
+  availableOfferings = [],
+  showAddElective = false,
 }: StudentSubjectsTableProps) {
   const [withdrawEnrollment, setWithdrawEnrollment] =
     useState<StudentSubjectEnrollmentView | null>(null);
+  const [showManualEnrollDialog, setShowManualEnrollDialog] = useState(false);
 
   const activeEnrollments = enrollments.filter((e) => e.isActive);
   const withdrawnEnrollments = enrollments.filter((e) => !e.isActive);
+
+  // Count electives for display
+  const electiveCount = activeEnrollments.filter((e) => !e.isCore).length;
 
   return (
     <>
       <div className="space-y-6">
         {/* Active Subjects */}
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            Active Subjects ({activeEnrollments.length})
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Active Subjects ({activeEnrollments.length})
+              {electiveCount > 0 && (
+                <span className="ml-1 text-xs">
+                  ({electiveCount} elective{electiveCount !== 1 ? "s" : ""})
+                </span>
+              )}
+            </h3>
+            {showAddElective && canManage && enrollmentId && studentName && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setShowManualEnrollDialog(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Subject
+              </Button>
+            )}
+          </div>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -172,6 +209,18 @@ export function StudentSubjectsTable({
           enrollment={withdrawEnrollment}
           open={!!withdrawEnrollment}
           onOpenChange={(open) => !open && setWithdrawEnrollment(null)}
+        />
+      )}
+
+      {/* Manual Enrollment Dialog */}
+      {showManualEnrollDialog && enrollmentId && studentName && (
+        <ManualSubjectEnrollDialog
+          enrollmentId={enrollmentId}
+          studentName={studentName}
+          studentStrandCode={studentStrandCode ?? null}
+          availableOfferings={availableOfferings}
+          open={showManualEnrollDialog}
+          onOpenChange={setShowManualEnrollDialog}
         />
       )}
     </>

@@ -18,9 +18,13 @@ import {
   generateStudentSubjectEnrollmentsSchema,
   changeStudentStrandSchema,
   withdrawFromSubjectSchema,
+  bulkAssignStrandSchema,
+  manualEnrollSubjectSchema,
   type GenerateStudentSubjectEnrollmentsFormState,
   type ChangeStudentStrandFormState,
   type WithdrawFromSubjectFormState,
+  type BulkAssignStrandFormState,
+  type ManualEnrollSubjectFormState,
 } from "./student-subject-enrollments.schema";
 import { canChangeStrand } from "./student-subject-enrollments.queries";
 
@@ -346,4 +350,297 @@ export async function withdrawFromSubjectAction(
   invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
 
   return { success: true };
+}
+
+/**
+ * Bulk assign strand to multiple students (SHS only).
+ * Only allowed for students with no grades entered.
+ */
+export async function bulkAssignStrandAction(
+  _prevState: BulkAssignStrandFormState,
+  formData: FormData
+): Promise<BulkAssignStrandFormState> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "student_subject_enrollments:manage")) {
+    return { message: "You do not have permission to manage student enrollments." };
+  }
+
+  // Parse enrollmentIds from JSON string (passed from form)
+  const enrollmentIdsRaw = formData.get("enrollmentIds");
+  let enrollmentIds: string[];
+  try {
+    enrollmentIds = JSON.parse(enrollmentIdsRaw as string);
+  } catch {
+    return { message: "Invalid enrollment IDs format." };
+  }
+
+  const parsed = bulkAssignStrandSchema.safeParse({
+    enrollmentIds,
+    strandId: formData.get("strandId"),
+  });
+
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { strandId } = parsed.data;
+
+  // Get new strand info
+  const [newStrand] = await db
+    .select({ code: strands.code, name: strands.name })
+    .from(strands)
+    .where(eq(strands.id, strandId))
+    .limit(1);
+
+  if (!newStrand) {
+    return { message: "Strand not found." };
+  }
+
+  // Process each enrollment
+  let updatedCount = 0;
+  let skippedCount = 0;
+  const skippedReasons: string[] = [];
+
+  for (const enrollmentId of enrollmentIds) {
+    // Check if strand change is allowed
+    const changeCheck = await canChangeStrand(enrollmentId);
+    if (!changeCheck.canChange) {
+      skippedCount++;
+      skippedReasons.push(changeCheck.reason || "Cannot change strand");
+      continue;
+    }
+
+    // Get enrollment details
+    const [enrollment] = await db
+      .select({
+        id: enrollments.id,
+        studentId: enrollments.studentId,
+        schoolYearId: enrollments.schoolYearId,
+        sectionId: enrollments.sectionId,
+        strandId: enrollments.strandId,
+      })
+      .from(enrollments)
+      .where(eq(enrollments.id, enrollmentId))
+      .limit(1);
+
+    if (!enrollment) {
+      skippedCount++;
+      continue;
+    }
+
+    // Skip if already has this strand
+    if (enrollment.strandId === strandId) {
+      skippedCount++;
+      continue;
+    }
+
+    await db.transaction(async (tx) => {
+      // 1. Update enrollment strand
+      await tx
+        .update(enrollments)
+        .set({
+          strandId,
+          updatedAt: new Date(),
+          updatedBy: session.userId,
+        })
+        .where(eq(enrollments.id, enrollmentId));
+
+      // 2. Get current elective subject enrollments
+      const currentSseRows = await tx
+        .select({
+          id: studentSubjectEnrollments.id,
+        })
+        .from(studentSubjectEnrollments)
+        .innerJoin(
+          subjectOfferings,
+          eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
+        )
+        .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+        .where(
+          and(
+            eq(studentSubjectEnrollments.enrollmentId, enrollmentId),
+            eq(subjects.isCore, false), // Only electives
+            eq(studentSubjectEnrollments.isActive, true),
+            isNull(studentSubjectEnrollments.deletedAt)
+          )
+        );
+
+      // 3. Soft delete current elective enrollments
+      if (currentSseRows.length > 0) {
+        const sseIds = currentSseRows.map((r) => r.id);
+        await tx
+          .update(studentSubjectEnrollments)
+          .set({
+            deletedAt: new Date(),
+            deletedBy: session.userId,
+          })
+          .where(inArray(studentSubjectEnrollments.id, sseIds));
+      }
+    });
+
+    // Regenerate subject enrollments for new strand
+    await generateStudentSubjectEnrollmentsAction(enrollmentId);
+    updatedCount++;
+  }
+
+  await logAudit({
+    actor: session.userId,
+    actorRole: session.role,
+    action: "student_subject_enrollments:bulk_assign_strand",
+    targetEntity: "enrollments",
+    targetId: enrollmentIds.join(","),
+    newState: {
+      strandId,
+      strandCode: newStrand.code,
+      updatedCount,
+      skippedCount,
+    },
+  });
+
+  invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+
+  if (skippedCount > 0 && updatedCount === 0) {
+    return {
+      message: `All ${skippedCount} student(s) were skipped. ${skippedReasons[0] || ""}`,
+    };
+  }
+
+  return {
+    success: true,
+    updatedCount,
+    skippedCount,
+  };
+}
+
+/**
+ * Manually enroll a student in a specific subject offering.
+ * Used for manual elective assignment outside of strand-based auto-enrollment.
+ */
+export async function manuallyEnrollStudentInSubjectAction(
+  _prevState: ManualEnrollSubjectFormState,
+  formData: FormData
+): Promise<ManualEnrollSubjectFormState> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "student_subject_enrollments:manage")) {
+    return { message: "You do not have permission to manage student enrollments." };
+  }
+
+  const parsed = manualEnrollSubjectSchema.safeParse({
+    enrollmentId: formData.get("enrollmentId"),
+    subjectOfferingId: formData.get("subjectOfferingId"),
+  });
+
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { enrollmentId, subjectOfferingId } = parsed.data;
+
+  // Get enrollment details
+  const [enrollment] = await db
+    .select({
+      id: enrollments.id,
+      studentId: enrollments.studentId,
+      schoolYearId: enrollments.schoolYearId,
+      strandId: enrollments.strandId,
+    })
+    .from(enrollments)
+    .where(eq(enrollments.id, enrollmentId))
+    .limit(1);
+
+  if (!enrollment) {
+    return { message: "Enrollment not found." };
+  }
+
+  // Get subject offering details
+  const [offering] = await db
+    .select({
+      id: subjectOfferings.id,
+      subjectId: subjectOfferings.subjectId,
+      strandId: subjectOfferings.strandId,
+      subjectCode: subjects.code,
+      subjectName: subjects.name,
+    })
+    .from(subjectOfferings)
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .where(
+      and(
+        eq(subjectOfferings.id, subjectOfferingId),
+        eq(subjectOfferings.isActive, true),
+        isNull(subjectOfferings.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!offering) {
+    return { message: "Subject offering not found or inactive." };
+  }
+
+  // Check if already enrolled
+  const [existing] = await db
+    .select({ id: studentSubjectEnrollments.id })
+    .from(studentSubjectEnrollments)
+    .where(
+      and(
+        eq(studentSubjectEnrollments.enrollmentId, enrollmentId),
+        eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferingId),
+        eq(studentSubjectEnrollments.isActive, true),
+        isNull(studentSubjectEnrollments.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (existing) {
+    return { message: "Student is already enrolled in this subject." };
+  }
+
+  // Create enrollment
+  await db.insert(studentSubjectEnrollments).values({
+    enrollmentId,
+    subjectOfferingId,
+    studentId: enrollment.studentId,
+    schoolYearId: enrollment.schoolYearId,
+    isActive: true,
+    createdBy: session.userId,
+    updatedBy: session.userId,
+  });
+
+  // Check for cross-strand warning
+  let warning: string | undefined;
+  if (offering.strandId && enrollment.strandId && offering.strandId !== enrollment.strandId) {
+    // Get strand codes for the warning message
+    const [studentStrand] = await db
+      .select({ code: strands.code })
+      .from(strands)
+      .where(eq(strands.id, enrollment.strandId))
+      .limit(1);
+
+    const [offeringStrand] = await db
+      .select({ code: strands.code })
+      .from(strands)
+      .where(eq(strands.id, offering.strandId))
+      .limit(1);
+
+    warning = `Note: This subject (${offering.subjectCode}) is for ${offeringStrand?.code || "another"} strand, but the student is in ${studentStrand?.code || "a different"} strand.`;
+  }
+
+  await logAudit({
+    actor: session.userId,
+    actorRole: session.role,
+    action: "student_subject_enrollments:manual_enroll",
+    targetEntity: "student_subject_enrollments",
+    targetId: enrollmentId,
+    newState: {
+      subjectOfferingId,
+      subjectCode: offering.subjectCode,
+      subjectName: offering.subjectName,
+      isCrossStrand: !!warning,
+    },
+  });
+
+  invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+
+  return { success: true, warning };
 }
