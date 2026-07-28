@@ -80,9 +80,10 @@ function getStatusColor(status: string): string {
  * SHSGradeEntryTabs - Grade entry component for SHS sections with strand-based tabs.
  *
  * Tabs:
- * - "Universal Core" - Shows ALL students with universal core subjects only
+ * - "All Strands" - Shows ALL students with all subjects (core + all electives).
+ *   Each student can enter grades for their applicable subjects (core + their strand's electives).
  * - Strand tabs (STEM, ABM, etc.) - Shows only students enrolled in that strand
- *   with strand-specific subjects
+ *   with core + that strand's electives.
  */
 export function SHSGradeEntryTabs({
   sectionId,
@@ -134,10 +135,10 @@ export function SHSGradeEntryTabs({
   const tabs = useMemo(() => {
     const tabList: Array<{ key: TabCategory; label: string; count: number }> = [];
 
-    // Core subjects tab - all students
+    // All Strands tab - all students with all subjects
     tabList.push({
       key: "core",
-      label: "Universal Core",
+      label: "All Strands",
       count: students.length,
     });
 
@@ -156,24 +157,34 @@ export function SHSGradeEntryTabs({
     return tabList;
   }, [students, subjects.availableStrands]);
 
+  // Get all subjects combined (core + all strand electives)
+  const allSubjectsCombined = useMemo(() => {
+    const allElectives: SHSSubjectOffering[] = [];
+    for (const strandSubjs of subjects.strandSubjects.values()) {
+      allElectives.push(...strandSubjs);
+    }
+    return [...subjects.universalCore, ...allElectives];
+  }, [subjects]);
+
   // Get filtered students and subjects for active tab
   const { filteredStudents, filteredSubjects } = useMemo(() => {
     if (activeTab === "core") {
-      // Core tab: all students, core subjects only
+      // All Strands tab: all students, ALL subjects (core + all electives)
       return {
         filteredStudents: students,
-        filteredSubjects: subjects.universalCore,
+        filteredSubjects: allSubjectsCombined,
       };
     } else {
-      // Strand tab: only students in that strand, strand subjects only
+      // Strand tab: only students in that strand, core + that strand's electives
       const strandStudents = students.filter((s) => s.strandCode === activeTab);
       const strandSubjects = subjects.strandSubjects.get(activeTab) || [];
+      const allSubjectsForStrand = [...subjects.universalCore, ...strandSubjects];
       return {
         filteredStudents: strandStudents,
-        filteredSubjects: strandSubjects,
+        filteredSubjects: allSubjectsForStrand,
       };
     }
-  }, [activeTab, students, subjects]);
+  }, [activeTab, students, subjects, allSubjectsCombined]);
 
   // Create grade sheet on first interaction
   const ensureGradeSheet = useCallback(async (): Promise<string | null> => {
@@ -308,19 +319,44 @@ export function SHSGradeEntryTabs({
 
   // Current tab completion
   const tabCompletion = useMemo(() => {
-    const expected = filteredStudents.length * filteredSubjects.length;
+    let expected = 0;
     let entered = 0;
 
-    for (const student of filteredStudents) {
-      for (const subject of filteredSubjects) {
-        if (grades.has(`${student.id}:${subject.subjectId}`)) {
-          entered++;
+    if (activeTab === "core") {
+      // "All Strands" tab: each student has core + their strand's electives
+      for (const student of filteredStudents) {
+        // Core subjects for all students
+        expected += subjects.universalCore.length;
+        for (const subject of subjects.universalCore) {
+          if (grades.has(`${student.id}:${subject.subjectId}`)) {
+            entered++;
+          }
+        }
+        // Strand electives only for students with a strand
+        if (student.strandCode) {
+          const strandSubjs = subjects.strandSubjects.get(student.strandCode) || [];
+          expected += strandSubjs.length;
+          for (const subject of strandSubjs) {
+            if (grades.has(`${student.id}:${subject.subjectId}`)) {
+              entered++;
+            }
+          }
+        }
+      }
+    } else {
+      // Strand tab: all filtered students have the same subjects (core + strand electives)
+      expected = filteredStudents.length * filteredSubjects.length;
+      for (const student of filteredStudents) {
+        for (const subject of filteredSubjects) {
+          if (grades.has(`${student.id}:${subject.subjectId}`)) {
+            entered++;
+          }
         }
       }
     }
 
     return { expected, entered, missing: expected - entered };
-  }, [filteredStudents, filteredSubjects, grades]);
+  }, [activeTab, filteredStudents, filteredSubjects, subjects, grades]);
 
   const canSubmit = canEdit && totalCompletion.isComplete && totalCompletion.totalExpected > 0;
 
@@ -443,9 +479,9 @@ export function SHSGradeEntryTabs({
         {/* Tab description */}
         <div className="mt-2 text-sm text-muted-foreground">
           {activeTab === "core" ? (
-            <>Entering grades for <strong>Universal Core</strong> subjects — all students take these</>
+            <>Entering grades for <strong>All Strands</strong> — all students with all subjects (core + electives)</>
           ) : (
-            <>Entering grades for <strong>{activeTab}</strong> strand subjects — only {activeTab} students shown</>
+            <>Entering grades for <strong>{activeTab}</strong> students — core + {activeTab} electives</>
           )}
           {tabCompletion.expected > 0 && (
             <span className="ml-2">
@@ -493,7 +529,9 @@ export function SHSGradeEntryTabs({
           <svg className="mx-auto h-12 w-12 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-foreground">No students in this strand</h3>
+          <h3 className="mt-2 text-sm font-medium text-foreground">
+            {activeTab === "core" ? "No students found" : "No students in this strand"}
+          </h3>
           <p className="mt-1 text-sm text-muted-foreground">
             {activeTab === "core"
               ? "No enrolled students found in this section."
@@ -508,8 +546,8 @@ export function SHSGradeEntryTabs({
           <h3 className="mt-2 text-sm font-medium text-foreground">No subjects configured</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             {activeTab === "core"
-              ? "No universal core subjects are configured for this section."
-              : `No ${activeTab} strand subjects are configured.`}
+              ? "No subjects are configured for this section."
+              : `No subjects are configured for the ${activeTab} strand.`}
           </p>
         </div>
       ) : (
