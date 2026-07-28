@@ -1,0 +1,63 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { AddManualOfferingDialog } from "./AddManualOfferingDialog";
+import type { CurriculumForSubjectPicker } from "../subject-offerings.schema";
+
+interface StrandOption {
+  id: string;
+  code: string;
+}
+
+interface AddManualOfferingButtonProps {
+  sectionId: string;
+  sectionName: string;
+  gradeLevelId: string;
+  gradeLevelName: string;
+  schoolYearId: string;
+  curriculums: CurriculumForSubjectPicker[];
+  availableStrands?: StrandOption[];
+}
+
+export function AddManualOfferingButton({
+  sectionId,
+  sectionName,
+  gradeLevelId,
+  gradeLevelName,
+  schoolYearId,
+  curriculums,
+  availableStrands = [],
+}: AddManualOfferingButtonProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Don't render if no curriculums available
+  if (curriculums.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <Button
+        variant="secondary"
+        onClick={() => setIsDialogOpen(true)}
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        Add Elective
+      </Button>
+
+      <AddManualOfferingDialog
+        sectionId={sectionId}
+        sectionName={sectionName}
+        gradeLevelId={gradeLevelId}
+        gradeLevelName={gradeLevelName}
+        schoolYearId={schoolYearId}
+        curriculums={curriculums}
+        availableStrands={availableStrands}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+      />
+    </>
+  );
+}

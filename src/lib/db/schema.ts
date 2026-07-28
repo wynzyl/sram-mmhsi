@@ -1195,6 +1195,8 @@ export const subjectOfferings = pgTable(
     teacherId: uuid("teacher_id").references(() => users.id),
     /** Optional strand for SHS strand-specific subjects */
     strandId: uuid("strand_id").references(() => strands.id),
+    /** Source curriculum for manually added offerings (null = from adopted curriculum) */
+    sourceCurriculumId: uuid("source_curriculum_id").references(() => curriculums.id),
     isActive: boolean("is_active").notNull().default(true),
     /** Display order for subject list */
     sequenceOrder: integer("sequence_order").notNull().default(0),

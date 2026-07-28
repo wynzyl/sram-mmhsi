@@ -9,6 +9,8 @@ export {
   hasExistingOfferings,
   getSubjectOfferingById,
   getSubjectOfferingsForTeacher,
+  getCurriculumsWithSubjectsForGradeLevel,
+  getAvailableSubjectsForManualOffering,
   type TeacherClassCard,
 } from "./subject-offerings.queries";
 
@@ -18,6 +20,7 @@ export {
   assignTeacherAction,
   deleteSubjectOfferingAction,
   deleteAllSubjectOfferingsAction,
+  addManualSubjectOfferingAction,
 } from "./subject-offerings.actions";
 
 // Components
@@ -29,5 +32,7 @@ export {
   GenerateOfferingsButton,
   DeleteAllOfferingsButton,
   TeacherClassesCards,
+  AddManualOfferingButton,
+  AddManualOfferingDialog,
   type EnrolledStrandInfo,
 } from "./components";

@@ -49,6 +49,21 @@ export type DeleteAllSubjectOfferingsFormState = BaseFormState<DeleteAllSubjectO
   deletedCount?: number;
 };
 
+// ─── Add Manual Subject Offering Schema ───────────────────────────────────────
+
+export const addManualSubjectOfferingSchema = z.object({
+  sectionId: uuidSchema,
+  schoolYearId: uuidSchema,
+  subjectId: uuidSchema,
+  sourceCurriculumId: uuidSchema,
+  strandId: uuidSchema.nullable().optional(),
+  sequenceOrder: z.coerce.number().int().nonnegative().optional(),
+});
+
+export type AddManualSubjectOfferingInput = z.infer<typeof addManualSubjectOfferingSchema>;
+
+export type AddManualSubjectOfferingFormState = BaseFormState<AddManualSubjectOfferingInput>;
+
 // ─── View Types ───────────────────────────────────────────────────────────────
 
 /**
@@ -101,4 +116,32 @@ export interface TeacherOption {
   id: string;
   name: string;
   email: string;
+}
+
+// ─── Manual Subject Offering Types ────────────────────────────────────────────
+
+/**
+ * Curriculum option for manual subject offering picker.
+ */
+export interface CurriculumForSubjectPicker {
+  id: string;
+  name: string;
+  version: number;
+  subjectCount: number;
+}
+
+/**
+ * Subject available for manual offering (from any published curriculum).
+ */
+export interface SubjectForManualOffering {
+  id: string;
+  code: string;
+  name: string;
+  units: string;
+  isCore: boolean;
+  curriculumId: string;
+  curriculumName: string;
+  sequenceOrder: number;
+  /** Strand associations for SHS electives */
+  strandAssociations: Array<{ strandId: string; strandCode: string }>;
 }

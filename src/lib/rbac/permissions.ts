@@ -119,6 +119,8 @@ export type Permission =
   | "subject_offerings:read"
   /** Generate subject offerings for sections */
   | "subject_offerings:generate"
+  /** Create manual subject offerings from any published curriculum */
+  | "subject_offerings:create"
   /** Assign teachers to subject offerings */
   | "subject_offerings:assign_teacher"
   // Student Subject Enrollments
@@ -161,7 +163,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "reports:view", "reports:finance", "reports:academic",
     "sections:assign",
     "strands:read", "strands:manage",
-    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:assign_teacher",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:create", "subject_offerings:assign_teacher",
     "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage", "system:manage",
@@ -193,7 +195,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "sections:manage",
     "sections:assign",
     "strands:read", "strands:manage",
-    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:assign_teacher",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:create", "subject_offerings:assign_teacher",
     "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "reports:view", "reports:finance", "reports:academic",
     "users:manage",
@@ -214,7 +216,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "grades:read",
     "advisers:read",
     "strands:read",
-    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:assign_teacher",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:create", "subject_offerings:assign_teacher",
     "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "reports:view", "reports:academic",
     "school_years:manage",

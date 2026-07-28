@@ -13,10 +13,12 @@ import {
   getSubjectOfferingsForSection,
   getTeachersForAssignment,
   hasExistingOfferings,
+  getCurriculumsWithSubjectsForGradeLevel,
   SubjectOfferingsTable,
   SubjectOfferingsByStrand,
   GenerateOfferingsButton,
   DeleteAllOfferingsButton,
+  AddManualOfferingButton,
   type EnrolledStrandInfo,
 } from "@/features/academics/subject-offerings";
 import type { ShsStrandCode } from "@/lib/constants/strands";
@@ -71,21 +73,23 @@ export default async function SectionDetailPage({
   // Check if section is SHS (requires strand assignment)
   const isShs = requiresStrandSelection(section.gradeLevelName);
 
+  // Permission checks for subject offerings (check before fetching to avoid unnecessary queries)
+  const canGenerateOfferings = hasPermission(session.role, "subject_offerings:generate");
+  const canCreateOffering = hasPermission(session.role, "subject_offerings:create");
+  const canAssignTeacher = hasPermission(session.role, "subject_offerings:assign_teacher");
+  const canDeleteOffering = hasPermission(session.role, "subject_offerings:generate"); // Using same permission for delete
+  const canManageStrands = hasPermission(session.role, "sections:manage");
+
   // Fetch all data in parallel
-  const [students, adviser, offerings, teachers, hasOfferings, availableStrands] = await Promise.all([
+  const [students, adviser, offerings, teachers, hasOfferings, availableStrands, curriculumsForPicker] = await Promise.all([
     getStudentsInSection(id),
     getAdviserForSection(id, section.schoolYearId),
     getSubjectOfferingsForSection(id, section.schoolYearId),
     getTeachersForAssignment(),
     hasExistingOfferings(id, section.schoolYearId),
     isShs ? getActiveStrands() : Promise.resolve([]),
+    canCreateOffering ? getCurriculumsWithSubjectsForGradeLevel(section.gradeLevelId) : Promise.resolve([]),
   ]);
-
-  // Permission checks for subject offerings
-  const canGenerateOfferings = hasPermission(session.role, "subject_offerings:generate");
-  const canAssignTeacher = hasPermission(session.role, "subject_offerings:assign_teacher");
-  const canDeleteOffering = hasPermission(session.role, "subject_offerings:generate"); // Using same permission for delete
-  const canManageStrands = hasPermission(session.role, "sections:manage");
 
   // Calculate enrolled strands for SHS sections (used for missing subject warnings)
   const enrolledStrands: EnrolledStrandInfo[] = [];
@@ -207,20 +211,33 @@ export default async function SectionDetailPage({
                 : "Subjects offered in this section for the current school year"}
             </CardDescription>
           </div>
-          {canGenerateOfferings && (
+          {(canGenerateOfferings || canCreateOffering) && (
             <div className="flex items-center gap-2">
-              {hasOfferings && (
+              {canGenerateOfferings && hasOfferings && (
                 <DeleteAllOfferingsButton
                   sectionId={id}
                   schoolYearId={section.schoolYearId}
                   offeringsCount={offerings.length}
                 />
               )}
-              <GenerateOfferingsButton
-                sectionId={id}
-                schoolYearId={section.schoolYearId}
-                hasExisting={hasOfferings}
-              />
+              {canCreateOffering && curriculumsForPicker.length > 0 && (
+                <AddManualOfferingButton
+                  sectionId={id}
+                  sectionName={section.name}
+                  gradeLevelId={section.gradeLevelId}
+                  gradeLevelName={section.gradeLevelName}
+                  schoolYearId={section.schoolYearId}
+                  curriculums={curriculumsForPicker}
+                  availableStrands={availableStrands}
+                />
+              )}
+              {canGenerateOfferings && (
+                <GenerateOfferingsButton
+                  sectionId={id}
+                  schoolYearId={section.schoolYearId}
+                  hasExisting={hasOfferings}
+                />
+              )}
             </div>
           )}
         </CardHeader>

@@ -12,15 +12,18 @@ import {
   assignTeacherSchema,
   deleteSubjectOfferingSchema,
   deleteAllSubjectOfferingsSchema,
+  addManualSubjectOfferingSchema,
   type GenerateSubjectOfferingsFormState,
   type AssignTeacherFormState,
   type DeleteSubjectOfferingFormState,
   type DeleteAllSubjectOfferingsFormState,
+  type AddManualSubjectOfferingFormState,
 } from "./subject-offerings.schema";
 import {
   getSubjectsForOfferingGeneration,
   getSubjectOfferingById,
 } from "./subject-offerings.queries";
+import { curriculums, sections, gradeLevels } from "@/lib/db/schema";
 
 /**
  * Generate subject offerings for a section from the adopted curriculum.
@@ -363,4 +366,200 @@ export async function deleteAllSubjectOfferingsAction(
     deletedCount: offerings.length,
     message: `Successfully deleted ${offerings.length} subject offering(s).`,
   };
+}
+
+/**
+ * Add a manual subject offering from any published curriculum.
+ * Enables SHS elective flexibility without changing curriculum adoption.
+ */
+export async function addManualSubjectOfferingAction(
+  _prevState: AddManualSubjectOfferingFormState,
+  formData: FormData
+): Promise<AddManualSubjectOfferingFormState> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "subject_offerings:create")) {
+    return { message: "You do not have permission to add subject offerings." };
+  }
+
+  const strandIdRaw = formData.get("strandId");
+  const parsed = addManualSubjectOfferingSchema.safeParse({
+    sectionId: formData.get("sectionId"),
+    schoolYearId: formData.get("schoolYearId"),
+    subjectId: formData.get("subjectId"),
+    sourceCurriculumId: formData.get("sourceCurriculumId"),
+    strandId: strandIdRaw === "" || strandIdRaw === "null" ? null : strandIdRaw,
+    sequenceOrder: formData.get("sequenceOrder") || 999,
+  });
+
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { sectionId, schoolYearId, subjectId, sourceCurriculumId, strandId, sequenceOrder } = parsed.data;
+
+  // 1. Validate curriculum is published
+  const [curriculum] = await db
+    .select({
+      id: curriculums.id,
+      name: curriculums.name,
+      status: curriculums.status,
+    })
+    .from(curriculums)
+    .where(eq(curriculums.id, sourceCurriculumId))
+    .limit(1);
+
+  if (!curriculum) {
+    return { message: "Curriculum not found." };
+  }
+
+  if (curriculum.status !== "published") {
+    return { message: "Cannot add subjects from unpublished curriculum." };
+  }
+
+  // 2. Validate subject exists in curriculum
+  const [subject] = await db
+    .select({
+      id: subjects.id,
+      code: subjects.code,
+      name: subjects.name,
+      gradeLevelId: subjects.gradeLevelId,
+      isCore: subjects.isCore,
+    })
+    .from(subjects)
+    .where(
+      and(
+        eq(subjects.id, subjectId),
+        eq(subjects.curriculumId, sourceCurriculumId),
+        isNull(subjects.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!subject) {
+    return { message: "Subject not found in curriculum." };
+  }
+
+  // 3. Validate subject grade level matches section
+  const [section] = await db
+    .select({
+      id: sections.id,
+      name: sections.name,
+      gradeLevelId: sections.gradeLevelId,
+      gradeLevelName: gradeLevels.name,
+    })
+    .from(sections)
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+    .where(eq(sections.id, sectionId))
+    .limit(1);
+
+  if (!section) {
+    return { message: "Section not found." };
+  }
+
+  if (subject.gradeLevelId !== section.gradeLevelId) {
+    return { message: "Subject grade level does not match section grade level." };
+  }
+
+  // 4. Check for existing offering - if it exists without strand, update it
+  const [existingOffering] = await db
+    .select({
+      id: subjectOfferings.id,
+      subjectId: subjectOfferings.subjectId,
+      subjectCode: subjects.code,
+      strandId: subjectOfferings.strandId,
+    })
+    .from(subjectOfferings)
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .where(
+      and(
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjectOfferings.schoolYearId, schoolYearId),
+        eq(subjects.code, subject.code),
+        isNull(subjectOfferings.deletedAt)
+      )
+    )
+    .limit(1);
+
+  // If offering exists
+  if (existingOffering) {
+    // If it already has a strand, we can't update
+    if (existingOffering.strandId) {
+      return { message: `Subject "${subject.code}" already has a strand assignment in this section.` };
+    }
+
+    // If no strand yet and user selected a strand, UPDATE the existing offering
+    if (strandId) {
+      await db
+        .update(subjectOfferings)
+        .set({
+          strandId,
+          updatedAt: new Date(),
+          updatedBy: session.userId,
+        })
+        .where(eq(subjectOfferings.id, existingOffering.id));
+
+      await logAudit({
+        actor: session.userId,
+        actorRole: session.role,
+        action: "subject_offerings:link_strand",
+        targetEntity: "subject_offerings",
+        targetId: existingOffering.id,
+        previousState: { strandId: null },
+        newState: {
+          sectionName: section.name,
+          subjectCode: subject.code,
+          subjectName: subject.name,
+          strandId,
+        },
+      });
+
+      invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+
+      return { success: true };
+    } else {
+      return { message: `Subject "${subject.code}" is already offered without a strand.` };
+    }
+  }
+
+  // 5. Insert new offering with sourceCurriculumId
+  const [newOffering] = await db
+    .insert(subjectOfferings)
+    .values({
+      sectionId,
+      subjectId,
+      schoolYearId,
+      strandId: strandId || null,
+      sourceCurriculumId,
+      isActive: true,
+      sequenceOrder: sequenceOrder || 999,
+      createdBy: session.userId,
+      updatedBy: session.userId,
+    })
+    .returning();
+
+  // 6. Audit log with source curriculum info
+  await logAudit({
+    actor: session.userId,
+    actorRole: session.role,
+    action: "subject_offerings:create",
+    targetEntity: "subject_offerings",
+    targetId: newOffering.id,
+    newState: {
+      sectionId,
+      sectionName: section.name,
+      subjectId,
+      subjectCode: subject.code,
+      subjectName: subject.name,
+      sourceCurriculumId,
+      sourceCurriculumName: curriculum.name,
+      strandId,
+      schoolYearId,
+    },
+  });
+
+  // 7. Invalidate cache
+  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+
+  return { success: true };
 }

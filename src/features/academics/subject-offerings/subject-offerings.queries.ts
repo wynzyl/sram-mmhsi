@@ -19,6 +19,8 @@ import type {
   SubjectOfferingView,
   SubjectForOffering,
   TeacherOption,
+  CurriculumForSubjectPicker,
+  SubjectForManualOffering,
 } from "./subject-offerings.schema";
 import type { ShsStrandCode } from "@/lib/constants/strands";
 
@@ -391,4 +393,209 @@ export async function getSubjectOfferingById(
     sequenceOrder: row.sequenceOrder,
     createdAt: row.createdAt,
   };
+}
+
+// ─── Manual Subject Offering Queries ──────────────────────────────────────────
+
+/**
+ * Get published curriculums that have elective subjects for a grade level.
+ * Used for the curriculum picker in manual subject offering dialog.
+ */
+export async function getCurriculumsWithSubjectsForGradeLevel(
+  gradeLevelId: string
+): Promise<CurriculumForSubjectPicker[]> {
+  // First get all published curriculums
+  const publishedCurriculums = await db
+    .select({
+      id: curriculums.id,
+      name: curriculums.name,
+      version: curriculums.version,
+    })
+    .from(curriculums)
+    .where(eq(curriculums.status, "published"))
+    .orderBy(asc(curriculums.name), asc(curriculums.version));
+
+  if (publishedCurriculums.length === 0) {
+    return [];
+  }
+
+  // Get ELECTIVE subject counts per curriculum for this grade level
+  const subjectCounts = await db
+    .select({
+      curriculumId: subjects.curriculumId,
+      count: count(),
+    })
+    .from(subjects)
+    .where(
+      and(
+        eq(subjects.gradeLevelId, gradeLevelId),
+        eq(subjects.isCore, false), // Only electives
+        isNull(subjects.deletedAt),
+        inArray(
+          subjects.curriculumId,
+          publishedCurriculums.map((c) => c.id)
+        )
+      )
+    )
+    .groupBy(subjects.curriculumId);
+
+  // Build map of curriculum -> elective count
+  const countMap = new Map<string, number>();
+  for (const row of subjectCounts) {
+    if (row.curriculumId) {
+      countMap.set(row.curriculumId, Number(row.count));
+    }
+  }
+
+  // Return curriculums with their elective counts (filter out those with 0)
+  return publishedCurriculums
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      version: c.version,
+      subjectCount: countMap.get(c.id) || 0,
+    }))
+    .filter((c) => c.subjectCount > 0);
+}
+
+/**
+ * Get available subjects from a curriculum for manual offering.
+ * Shows:
+ * - Subjects not yet offered in the section
+ * - Elective subjects (isCore=false) that don't have strand-specific offerings yet
+ */
+export async function getAvailableSubjectsForManualOffering(
+  curriculumId: string,
+  gradeLevelId: string,
+  sectionId: string,
+  schoolYearId: string
+): Promise<SubjectForManualOffering[]> {
+  // Get existing offerings with their strand assignments
+  const existingOfferings = await db
+    .select({
+      subjectId: subjectOfferings.subjectId,
+      subjectCode: subjects.code,
+      isCore: subjects.isCore,
+      strandId: subjectOfferings.strandId,
+    })
+    .from(subjectOfferings)
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .where(
+      and(
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjectOfferings.schoolYearId, schoolYearId),
+        isNull(subjectOfferings.deletedAt)
+      )
+    );
+
+  // Track which subjects are fully offered (core) or have strand assignments
+  const coreSubjectIds = new Set<string>();
+  const coreSubjectCodes = new Set<string>();
+  const electivesWithStrand = new Set<string>(); // Electives that already have strand assignment
+
+  for (const o of existingOfferings) {
+    if (o.isCore) {
+      // Core subjects can only be offered once
+      coreSubjectIds.add(o.subjectId);
+      coreSubjectCodes.add(o.subjectCode);
+    } else if (o.strandId) {
+      // Elective WITH strand - can't add another strand assignment
+      electivesWithStrand.add(o.subjectId);
+    }
+    // Electives WITHOUT strand are still available for strand linking
+  }
+
+  // Get curriculum info
+  const [curriculum] = await db
+    .select({
+      id: curriculums.id,
+      name: curriculums.name,
+      status: curriculums.status,
+    })
+    .from(curriculums)
+    .where(eq(curriculums.id, curriculumId))
+    .limit(1);
+
+  if (!curriculum || curriculum.status !== "published") {
+    return [];
+  }
+
+  // Get ONLY elective subjects from the curriculum for the grade level
+  // (Core subjects are handled by "Generate Offerings" button)
+  const subjectRows = await db
+    .select({
+      id: subjects.id,
+      code: subjects.code,
+      name: subjects.name,
+      units: subjects.units,
+      isCore: subjects.isCore,
+      sequenceOrder: subjects.sequenceOrder,
+    })
+    .from(subjects)
+    .where(
+      and(
+        eq(subjects.curriculumId, curriculumId),
+        eq(subjects.gradeLevelId, gradeLevelId),
+        eq(subjects.isCore, false), // Only electives
+        isNull(subjects.deletedAt)
+      )
+    )
+    .orderBy(asc(subjects.sequenceOrder), asc(subjects.name));
+
+  // Filter electives:
+  // - Exclude if it's a core subject already offered
+  // - Exclude if it already has a strand assignment (can't add another)
+  // - Include electives that don't exist OR exist but without strand (can link to strand)
+  const availableSubjects = subjectRows.filter(
+    (s) => !coreSubjectIds.has(s.id) &&
+           !coreSubjectCodes.has(s.code) &&
+           !electivesWithStrand.has(s.id)
+  );
+
+  if (availableSubjects.length === 0) {
+    return [];
+  }
+
+  // Get strand associations for elective subjects
+  const electiveSubjectIds = availableSubjects
+    .filter((s) => !s.isCore)
+    .map((s) => s.id);
+
+  const strandAssociations =
+    electiveSubjectIds.length > 0
+      ? await db
+          .select({
+            subjectId: subjectStrands.subjectId,
+            strandId: subjectStrands.strandId,
+            strandCode: strands.code,
+          })
+          .from(subjectStrands)
+          .innerJoin(strands, eq(subjectStrands.strandId, strands.id))
+          .where(
+            and(
+              inArray(subjectStrands.subjectId, electiveSubjectIds),
+              isNull(subjectStrands.deletedAt)
+            )
+          )
+      : [];
+
+  // Build strand map per subject
+  const strandMap = new Map<string, Array<{ strandId: string; strandCode: string }>>();
+  for (const assoc of strandAssociations) {
+    const existing = strandMap.get(assoc.subjectId) || [];
+    existing.push({ strandId: assoc.strandId, strandCode: assoc.strandCode });
+    strandMap.set(assoc.subjectId, existing);
+  }
+
+  return availableSubjects.map((row) => ({
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    units: row.units,
+    isCore: row.isCore,
+    curriculumId: curriculum.id,
+    curriculumName: curriculum.name,
+    sequenceOrder: row.sequenceOrder,
+    strandAssociations: strandMap.get(row.id) || [],
+  }));
 }
