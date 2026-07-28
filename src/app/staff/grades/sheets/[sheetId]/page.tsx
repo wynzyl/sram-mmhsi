@@ -7,11 +7,13 @@ import {
   getGradeSheetEntries,
   getStudentsInSection,
   getSubjectsForGradeLevel,
+  getSubjectsFromOfferingsForSection,
 } from "@/features/academics/grades/grades.queries";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/date";
 import { GRADING_PERIOD_LABELS, type GradingPeriod } from "@/lib/constants/grading-periods";
 import { GradeSheetReviewActions } from "@/features/academics/grades/components/GradeSheetReviewActions";
+import { getGradeGroup } from "@/lib/constants/grade-groups";
 
 export const metadata = {
   title: "Review Grade Sheet | SRAMS",
@@ -61,12 +63,47 @@ export default async function GradeSheetReviewPage({ params }: PageProps) {
     notFound();
   }
 
-  // Get entries and related data in parallel
-  const [entries, students, subjects] = await Promise.all([
+  // Detect if this is an SHS section (Grade 11 or Grade 12)
+  const isSHS = getGradeGroup(gradeSheet.gradeLevelName) === "shs";
+
+  // Get entries and students in parallel
+  const [entries, students] = await Promise.all([
     getGradeSheetEntries(sheetId),
     getStudentsInSection(gradeSheet.sectionId, gradeSheet.schoolYearId),
-    getSubjectsForGradeLevel(gradeSheet.gradeLevelId, gradeSheet.schoolYearId),
   ]);
+
+  // Get subjects: for SHS, try subject offerings first (uses subjectId for grade lookup)
+  // For non-SHS, use curriculum-based subjects
+  let subjects: Array<{ id: string; code: string; name: string }>;
+
+  if (isSHS) {
+    // SHS sections use subject offerings for grade entry
+    const offeringSubjects = await getSubjectsFromOfferingsForSection(
+      gradeSheet.sectionId,
+      gradeSheet.schoolYearId
+    );
+
+    if (offeringSubjects && offeringSubjects.length > 0) {
+      // Map offering subjects: use subjectId for grade lookup (matches what was saved)
+      subjects = offeringSubjects.map((s) => ({
+        id: s.subjectId, // Use subjectId for grade lookup, not offering id
+        code: s.subjectCode,
+        name: s.subjectName,
+      }));
+    } else {
+      // Fallback to curriculum-based subjects if no offerings exist
+      subjects = await getSubjectsForGradeLevel(
+        gradeSheet.gradeLevelId,
+        gradeSheet.schoolYearId
+      );
+    }
+  } else {
+    // Non-SHS: use curriculum-based subjects
+    subjects = await getSubjectsForGradeLevel(
+      gradeSheet.gradeLevelId,
+      gradeSheet.schoolYearId
+    );
+  }
 
   // Build a map of grades: studentId -> subjectId -> grade
   const gradeMap = new Map<string, Map<string, string | null>>();
