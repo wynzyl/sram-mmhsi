@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useFormToast } from "@/hooks/useFormToast";
+import { showSuccess, showError } from "@/lib/toast/index";
 import {
   SHS_STRAND_CODES,
   SHS_STRAND_LABELS,
@@ -43,7 +43,7 @@ export function StrandFormDialog({
 }: StrandFormDialogProps) {
   const router = useRouter();
   const isEditing = !!strand;
-  const isClosingRef = useRef(false);
+  const hasHandledRef = useRef(false);
 
   const [createState, createAction, createPending] = useActionState<
     CreateStrandFormState,
@@ -59,30 +59,25 @@ export function StrandFormDialog({
   const action = isEditing ? updateAction : createAction;
   const isPending = isEditing ? updatePending : createPending;
 
-  // Reset closing flag when dialog opens
+  // Handle success/error state changes
   useEffect(() => {
-    if (open) {
-      isClosingRef.current = false;
-    }
-  }, [open]);
+    // Skip if already handled or no state yet
+    if (hasHandledRef.current) return;
+    if (!state.success && !state.message) return;
 
-  useFormToast(state, {
-    successMessage: isEditing
-      ? "Strand updated successfully"
-      : "Strand created successfully",
-    onSuccess: () => {
-      // Prevent double-close
-      if (isClosingRef.current) return;
-      isClosingRef.current = true;
-
-      // Close dialog first, then refresh after animation completes
+    if (state.success) {
+      hasHandledRef.current = true;
+      showSuccess(isEditing ? "Strand updated successfully" : "Strand created successfully");
       onOpenChange(false);
-      // Delay refresh to allow dialog exit animation to complete
+      // Force cleanup of body pointer-events after Radix processes close
       setTimeout(() => {
+        document.body.style.pointerEvents = "";
         router.refresh();
-      }, 150);
-    },
-  });
+      }, 100);
+    } else if (state.message) {
+      showError(state.message);
+    }
+  }, [state.success, state.message, isEditing, onOpenChange, router]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -11,13 +11,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { useFormToast } from "@/hooks/useFormToast";
+import { showSuccess, showError } from "@/lib/toast/index";
 import { SHS_STRAND_SHORT_LABELS } from "@/lib/constants/strands";
 import type { StrandView, DeleteStrandFormState } from "../strands.schema";
 import { deleteStrandAction } from "../strands.actions";
 
 interface DeleteStrandDialogProps {
-  strand: StrandView | null;
+  strand: StrandView;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -28,43 +28,39 @@ export function DeleteStrandDialog({
   onOpenChange,
 }: DeleteStrandDialogProps) {
   const router = useRouter();
-  const isClosingRef = useRef(false);
+  const hasHandledRef = useRef(false);
 
   const [state, action, isPending] = useActionState<
     DeleteStrandFormState,
     FormData
   >(deleteStrandAction, {});
 
-  // Reset closing flag when dialog opens
+  // Handle success/error state changes
   useEffect(() => {
-    if (open) {
-      isClosingRef.current = false;
-    }
-  }, [open]);
+    // Skip if already handled or no state yet
+    if (hasHandledRef.current) return;
+    if (!state.success && !state.message) return;
 
-  useFormToast(state, {
-    successMessage: "Strand deleted successfully",
-    onSuccess: () => {
-      // Prevent double-close
-      if (isClosingRef.current) return;
-      isClosingRef.current = true;
-
-      // Close dialog first, then refresh after animation completes
+    if (state.success) {
+      hasHandledRef.current = true;
+      showSuccess("Strand deleted successfully");
       onOpenChange(false);
+      // Force cleanup of body pointer-events after Radix processes close
       setTimeout(() => {
+        document.body.style.pointerEvents = "";
         router.refresh();
-      }, 150);
-    },
-  });
+      }, 100);
+    } else if (state.message) {
+      showError(state.message);
+    }
+  }, [state.success, state.message, onOpenChange, router]);
 
-  const hasAssociations = strand
-    ? (strand.subjectCount ?? 0) > 0 || (strand.enrollmentCount ?? 0) > 0
-    : false;
+  const hasAssociations =
+    (strand.subjectCount ?? 0) > 0 || (strand.enrollmentCount ?? 0) > 0;
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      {strand && (
-        <AlertDialogContent>
+      <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Strand</AlertDialogTitle>
             <AlertDialogDescription asChild>
@@ -113,7 +109,6 @@ export function DeleteStrandDialog({
             </form>
           </AlertDialogFooter>
         </AlertDialogContent>
-      )}
     </AlertDialog>
   );
 }
