@@ -193,23 +193,29 @@ export function SHSGradeEntryTabs({
     setIsCreatingSheet(true);
     setCreateError(null);
 
-    const formData = new FormData();
-    formData.append("sectionId", sectionId);
-    formData.append("schoolYearId", schoolYearId);
-    formData.append("gradingPeriod", gradingPeriod);
+    try {
+      const formData = new FormData();
+      formData.append("sectionId", sectionId);
+      formData.append("schoolYearId", schoolYearId);
+      formData.append("gradingPeriod", gradingPeriod);
 
-    const result = await createOrGetGradeSheetAction({}, formData);
-    setIsCreatingSheet(false);
+      const result = await createOrGetGradeSheetAction({}, formData);
 
-    if (result.success && result.gradeSheetId) {
-      setGradeSheetId(result.gradeSheetId);
-      if (!currentStatus) {
-        setCurrentStatus("draft");
+      if (result.success && result.gradeSheetId) {
+        setGradeSheetId(result.gradeSheetId);
+        if (!currentStatus) {
+          setCurrentStatus("draft");
+        }
+        return result.gradeSheetId;
+      } else {
+        setCreateError(result.message || "Failed to create grade sheet");
+        return null;
       }
-      return result.gradeSheetId;
-    } else {
-      setCreateError(result.message || "Failed to create grade sheet");
+    } catch (error) {
+      setCreateError("An unexpected error occurred while creating grade sheet");
       return null;
+    } finally {
+      setIsCreatingSheet(false);
     }
   }, [gradeSheetId, sectionId, schoolYearId, gradingPeriod, currentStatus]);
 
@@ -255,13 +261,19 @@ export function SHSGradeEntryTabs({
     formData.append("entries", JSON.stringify(entries));
 
     setIsSaving(true);
+    setSaveState({}); // Clear previous state
     try {
       const result = await saveGradeSheetEntriesAction({}, formData);
       setSaveState(result);
       if (result.success) {
         setHasUnsavedChanges(false);
+        // Auto-clear success message after 3 seconds
+        setTimeout(() => setSaveState({}), 3000);
         return true;
       }
+      return false;
+    } catch {
+      setSaveState({ message: "An unexpected error occurred while saving grades." });
       return false;
     } finally {
       setIsSaving(false);
@@ -280,6 +292,7 @@ export function SHSGradeEntryTabs({
     formData.append("gradeSheetId", sheetId);
 
     setIsSubmitting(true);
+    setSubmitState({}); // Clear previous state
     try {
       const result = await submitGradeSheetAction({}, formData);
       setSubmitState(result);
@@ -287,6 +300,8 @@ export function SHSGradeEntryTabs({
         setCurrentStatus("submitted");
         router.refresh();
       }
+    } catch {
+      setSubmitState({ message: "An unexpected error occurred while submitting." });
     } finally {
       setIsSubmitting(false);
     }
@@ -298,19 +313,32 @@ export function SHSGradeEntryTabs({
   };
 
   // Calculate overall completion status (across ALL subjects, not just current tab)
+  // Must count only APPLICABLE entries (core for all, strand-specific for matching students)
   const totalCompletion = useMemo(() => {
-    // Core subjects for all students
-    const coreExpected = students.length * subjects.universalCore.length;
+    let totalExpected = 0;
+    let totalEntered = 0;
 
-    // Strand subjects for students in each strand
-    let strandExpected = 0;
-    for (const [strandCode, strandSubjs] of subjects.strandSubjects) {
-      const strandStudentCount = students.filter((s) => s.strandCode === strandCode).length;
-      strandExpected += strandStudentCount * strandSubjs.length;
+    for (const student of students) {
+      // Core subjects - all students take these
+      for (const subject of subjects.universalCore) {
+        totalExpected++;
+        if (grades.has(`${student.id}:${subject.subjectId}`)) {
+          totalEntered++;
+        }
+      }
+
+      // Strand electives - only for students in that strand
+      if (student.strandCode) {
+        const strandSubjs = subjects.strandSubjects.get(student.strandCode) || [];
+        for (const subject of strandSubjs) {
+          totalExpected++;
+          if (grades.has(`${student.id}:${subject.subjectId}`)) {
+            totalEntered++;
+          }
+        }
+      }
     }
 
-    const totalExpected = coreExpected + strandExpected;
-    const totalEntered = grades.size;
     const missingCount = totalExpected - totalEntered;
     const isComplete = totalExpected > 0 && missingCount === 0;
 
