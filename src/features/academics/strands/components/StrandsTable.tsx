@@ -31,6 +31,19 @@ interface StrandsTableProps {
 export function StrandsTable({ strands, canManage }: StrandsTableProps) {
   const [editStrand, setEditStrand] = useState<StrandView | null>(null);
   const [deleteStrand, setDeleteStrand] = useState<StrandView | null>(null);
+  // Keys increment when dialogs open to reset useActionState
+  const [editDialogKey, setEditDialogKey] = useState(0);
+  const [deleteDialogKey, setDeleteDialogKey] = useState(0);
+
+  const handleEditClick = (strand: StrandView) => {
+    setEditDialogKey((k) => k + 1);
+    setEditStrand(strand);
+  };
+
+  const handleDeleteClick = (strand: StrandView) => {
+    setDeleteDialogKey((k) => k + 1);
+    setDeleteStrand(strand);
+  };
 
   return (
     <>
@@ -114,13 +127,13 @@ export function StrandsTable({ strands, canManage }: StrandsTableProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => setEditStrand(strand)}
+                            onClick={() => handleEditClick(strand)}
                           >
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => setDeleteStrand(strand)}
+                            onClick={() => handleDeleteClick(strand)}
                             className="text-destructive focus:text-destructive"
                             disabled={
                               (strand.subjectCount ?? 0) > 0 ||
@@ -141,23 +154,21 @@ export function StrandsTable({ strands, canManage }: StrandsTableProps) {
         </Table>
       </div>
 
-      {/* Edit Dialog */}
-      {editStrand && (
-        <StrandFormDialog
-          strand={editStrand}
-          open={!!editStrand}
-          onOpenChange={(open) => !open && setEditStrand(null)}
-        />
-      )}
+      {/* Edit Dialog - key resets state when reopening */}
+      <StrandFormDialog
+        key={`edit-${editDialogKey}`}
+        strand={editStrand}
+        open={!!editStrand}
+        onOpenChange={(open) => !open && setEditStrand(null)}
+      />
 
-      {/* Delete Dialog */}
-      {deleteStrand && (
-        <DeleteStrandDialog
-          strand={deleteStrand}
-          open={!!deleteStrand}
-          onOpenChange={(open) => !open && setDeleteStrand(null)}
-        />
-      )}
+      {/* Delete Dialog - key resets state when reopening */}
+      <DeleteStrandDialog
+        key={`delete-${deleteDialogKey}`}
+        strand={deleteStrand}
+        open={!!deleteStrand}
+        onOpenChange={(open) => !open && setDeleteStrand(null)}
+      />
     </>
   );
 }

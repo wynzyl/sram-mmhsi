@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -43,6 +43,7 @@ export function StrandFormDialog({
 }: StrandFormDialogProps) {
   const router = useRouter();
   const isEditing = !!strand;
+  const isClosingRef = useRef(false);
 
   const [createState, createAction, createPending] = useActionState<
     CreateStrandFormState,
@@ -58,13 +59,28 @@ export function StrandFormDialog({
   const action = isEditing ? updateAction : createAction;
   const isPending = isEditing ? updatePending : createPending;
 
+  // Reset closing flag when dialog opens
+  useEffect(() => {
+    if (open) {
+      isClosingRef.current = false;
+    }
+  }, [open]);
+
   useFormToast(state, {
     successMessage: isEditing
       ? "Strand updated successfully"
       : "Strand created successfully",
     onSuccess: () => {
+      // Prevent double-close
+      if (isClosingRef.current) return;
+      isClosingRef.current = true;
+
+      // Close dialog first, then refresh after animation completes
       onOpenChange(false);
-      router.refresh();
+      // Delay refresh to allow dialog exit animation to complete
+      setTimeout(() => {
+        router.refresh();
+      }, 150);
     },
   });
 
