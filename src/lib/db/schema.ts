@@ -22,6 +22,7 @@ import { GRADING_PERIODS, GRADE_SHEET_STATUSES, GRADE_APPROVAL_ACTIONS } from "@
 import { GRADING_SYSTEM_TYPES } from "@/lib/constants/grading-systems";
 import { GRADE_GROUPS } from "@/lib/constants/grade-groups";
 import { SHS_STRAND_CODES } from "@/lib/constants/strands";
+import { TERM_OFFERINGS } from "@/lib/constants/term-offerings";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -97,6 +98,9 @@ export const gradeGroupEnum = pgEnum("grade_group", GRADE_GROUPS);
 
 /** SHS academic strand codes (STEM, ABM, HUMSS, GAS, TVL-*) */
 export const strandCodeEnum = pgEnum("strand_code", SHS_STRAND_CODES);
+
+/** Term offering for SHS subjects (when the subject is offered within the school year) */
+export const termOfferingEnum = pgEnum("term_offering", TERM_OFFERINGS);
 
 /** Curriculum lifecycle: draft → published → archived */
 export const curriculumStatusEnum = pgEnum("curriculum_status", [
@@ -1197,6 +1201,8 @@ export const subjectOfferings = pgTable(
     strandId: uuid("strand_id").references(() => strands.id),
     /** Source curriculum for manually added offerings (null = from adopted curriculum) */
     sourceCurriculumId: uuid("source_curriculum_id").references(() => curriculums.id),
+    /** Term when this subject is offered (SHS only) - defaults to full year */
+    termOffered: termOfferingEnum("term_offered").notNull().default("full_year"),
     isActive: boolean("is_active").notNull().default(true),
     /** Display order for subject list */
     sequenceOrder: integer("sequence_order").notNull().default(0),

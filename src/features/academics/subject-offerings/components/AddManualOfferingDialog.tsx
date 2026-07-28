@@ -27,6 +27,8 @@ import type {
 } from "../subject-offerings.schema";
 import { addManualSubjectOfferingAction } from "../subject-offerings.actions";
 import { getAvailableSubjectsForManualOffering } from "../subject-offerings.queries";
+import type { GradingSystemType } from "@/lib/constants/grading-systems";
+import { getTermOptionsForSystem, type TermOffering } from "@/lib/constants/term-offerings";
 
 interface StrandOption {
   id: string;
@@ -41,6 +43,8 @@ interface AddManualOfferingDialogProps {
   schoolYearId: string;
   curriculums: CurriculumForSubjectPicker[];
   availableStrands: StrandOption[];
+  /** Grading system type for term selection (SHS only) */
+  gradingSystemType?: GradingSystemType;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -53,6 +57,7 @@ export function AddManualOfferingDialog({
   schoolYearId,
   curriculums,
   availableStrands,
+  gradingSystemType = "quarterly",
   open,
   onOpenChange,
 }: AddManualOfferingDialogProps) {
@@ -63,6 +68,7 @@ export function AddManualOfferingDialog({
   const [selectedCurriculumId, setSelectedCurriculumId] = useState<string>("");
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [selectedStrandId, setSelectedStrandId] = useState<string>("");
+  const [selectedTermOffered, setSelectedTermOffered] = useState<TermOffering>("full_year");
   const [availableSubjects, setAvailableSubjects] = useState<SubjectForManualOffering[]>([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
@@ -72,18 +78,23 @@ export function AddManualOfferingDialog({
     FormData
   >(addManualSubjectOfferingAction, {});
 
-  // Check if section is SHS (needs strand selection)
+  // Check if section is SHS (needs strand and term selection)
   const isShs = gradeLevelName === "Grade 11" || gradeLevelName === "Grade 12";
+
+  // Get term options based on grading system type
+  const termOptions = getTermOptionsForSystem(gradingSystemType);
 
   // Get selected subject details
   const selectedSubject = availableSubjects.find((s) => s.id === selectedSubjectId);
   const showStrandSelector = isShs && selectedSubject && !selectedSubject.isCore;
+  const showTermSelector = isShs && selectedSubject;
 
   // Reset all form state
   const resetForm = useCallback(() => {
     setSelectedCurriculumId("");
     setSelectedSubjectId("");
     setSelectedStrandId("");
+    setSelectedTermOffered("full_year");
     setAvailableSubjects([]);
     setIsLoadingSubjects(false);
   }, []);
@@ -124,10 +135,11 @@ export function AddManualOfferingDialog({
     }
   }, [gradeLevelId, sectionId, schoolYearId]);
 
-  // Handle subject change - reset strand
+  // Handle subject change - reset strand and term
   const handleSubjectChange = useCallback((subjectId: string) => {
     setSelectedSubjectId(subjectId);
     setSelectedStrandId("");
+    setSelectedTermOffered("full_year");
   }, []);
 
   // Handle dialog close - reset form
@@ -155,6 +167,7 @@ export function AddManualOfferingDialog({
           <input type="hidden" name="sourceCurriculumId" value={selectedCurriculumId} />
           <input type="hidden" name="subjectId" value={selectedSubjectId} />
           <input type="hidden" name="strandId" value={selectedStrandId || ""} />
+          <input type="hidden" name="termOffered" value={selectedTermOffered} />
 
           {/* Curriculum Picker */}
           <div className="space-y-2">
@@ -265,6 +278,32 @@ export function AddManualOfferingDialog({
               </Select>
               <p className="text-xs text-muted-foreground">
                 Leave blank to offer this subject to all strands.
+              </p>
+            </div>
+          )}
+
+          {/* Term Selector (SHS only) */}
+          {showTermSelector && (
+            <div className="space-y-2">
+              <Label htmlFor="termOffered">Term Offered</Label>
+              <Select
+                value={selectedTermOffered}
+                onValueChange={(value) => setSelectedTermOffered(value as TermOffering)}
+              >
+                <SelectTrigger id="termOffered">
+                  <SelectValue placeholder="Select when this subject is offered" />
+                </SelectTrigger>
+                <SelectContent>
+                  {termOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Choose when this subject should appear in the grade sheet.
+                &quot;Full Year&quot; means it appears in all grading periods.
               </p>
             </div>
           )}

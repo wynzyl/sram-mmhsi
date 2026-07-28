@@ -383,6 +383,7 @@ export async function addManualSubjectOfferingAction(
   }
 
   const strandIdRaw = formData.get("strandId");
+  const termOfferedRaw = formData.get("termOffered");
   const parsed = addManualSubjectOfferingSchema.safeParse({
     sectionId: formData.get("sectionId"),
     schoolYearId: formData.get("schoolYearId"),
@@ -390,13 +391,14 @@ export async function addManualSubjectOfferingAction(
     sourceCurriculumId: formData.get("sourceCurriculumId"),
     strandId: strandIdRaw === "" || strandIdRaw === "null" ? null : strandIdRaw,
     sequenceOrder: formData.get("sequenceOrder") || 999,
+    termOffered: termOfferedRaw === "" || !termOfferedRaw ? "full_year" : termOfferedRaw,
   });
 
   if (!parsed.success) {
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
-  const { sectionId, schoolYearId, subjectId, sourceCurriculumId, strandId, sequenceOrder } = parsed.data;
+  const { sectionId, schoolYearId, subjectId, sourceCurriculumId, strandId, sequenceOrder, termOffered } = parsed.data;
 
   // 1. Validate curriculum is published
   const [curriculum] = await db
@@ -522,7 +524,7 @@ export async function addManualSubjectOfferingAction(
     }
   }
 
-  // 5. Insert new offering with sourceCurriculumId
+  // 5. Insert new offering with sourceCurriculumId and termOffered
   const [newOffering] = await db
     .insert(subjectOfferings)
     .values({
@@ -531,6 +533,7 @@ export async function addManualSubjectOfferingAction(
       schoolYearId,
       strandId: strandId || null,
       sourceCurriculumId,
+      termOffered: termOffered || "full_year",
       isActive: true,
       sequenceOrder: sequenceOrder || 999,
       createdBy: session.userId,
@@ -554,6 +557,7 @@ export async function addManualSubjectOfferingAction(
       sourceCurriculumId,
       sourceCurriculumName: curriculum.name,
       strandId,
+      termOffered,
       schoolYearId,
     },
   });

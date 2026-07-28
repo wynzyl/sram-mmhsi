@@ -23,6 +23,7 @@ import type {
   SubjectForManualOffering,
 } from "./subject-offerings.schema";
 import type { ShsStrandCode } from "@/lib/constants/strands";
+import type { TermOffering } from "@/lib/constants/term-offerings";
 
 /**
  * Get all subject offerings for a section.
@@ -49,6 +50,7 @@ export async function getSubjectOfferingsForSection(
       teacherName: users.username,
       strandId: subjectOfferings.strandId,
       strandCode: strands.code,
+      termOffered: subjectOfferings.termOffered,
       isActive: subjectOfferings.isActive,
       sequenceOrder: subjectOfferings.sequenceOrder,
       createdAt: subjectOfferings.createdAt,
@@ -92,6 +94,7 @@ export async function getSubjectOfferingsForSection(
     teacherName: row.teacherName,
     strandId: row.strandId,
     strandCode: row.strandCode as ShsStrandCode | null,
+    termOffered: row.termOffered as TermOffering,
     isActive: row.isActive,
     sequenceOrder: row.sequenceOrder,
     createdAt: row.createdAt,
@@ -356,6 +359,7 @@ export async function getSubjectOfferingById(
       teacherName: users.username,
       strandId: subjectOfferings.strandId,
       strandCode: strands.code,
+      termOffered: subjectOfferings.termOffered,
       isActive: subjectOfferings.isActive,
       sequenceOrder: subjectOfferings.sequenceOrder,
       createdAt: subjectOfferings.createdAt,
@@ -389,6 +393,7 @@ export async function getSubjectOfferingById(
     teacherName: row.teacherName,
     strandId: row.strandId,
     strandCode: row.strandCode as ShsStrandCode | null,
+    termOffered: row.termOffered as TermOffering,
     isActive: row.isActive,
     sequenceOrder: row.sequenceOrder,
     createdAt: row.createdAt,

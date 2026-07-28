@@ -21,12 +21,15 @@ import { MoreHorizontal, UserPlus, Trash2, Users } from "lucide-react";
 import type { SubjectOfferingView, TeacherOption } from "../subject-offerings.schema";
 import { AssignTeacherDialog } from "./AssignTeacherDialog";
 import { DeleteOfferingDialog } from "./DeleteOfferingDialog";
+import { TERM_OFFERING_LABELS } from "@/lib/constants/term-offerings";
 
 interface SubjectOfferingsTableProps {
   offerings: SubjectOfferingView[];
   teachers: TeacherOption[];
   canAssignTeacher: boolean;
   canDelete: boolean;
+  /** Whether to show the Term column (SHS sections only) */
+  showTermColumn?: boolean;
 }
 
 export function SubjectOfferingsTable({
@@ -34,9 +37,13 @@ export function SubjectOfferingsTable({
   teachers,
   canAssignTeacher,
   canDelete,
+  showTermColumn = false,
 }: SubjectOfferingsTableProps) {
   const [assignOffering, setAssignOffering] = useState<SubjectOfferingView | null>(null);
   const [deleteOffering, setDeleteOffering] = useState<SubjectOfferingView | null>(null);
+
+  // Calculate column count for empty state
+  const columnCount = 7 + (showTermColumn ? 1 : 0) + (canAssignTeacher || canDelete ? 1 : 0);
 
   return (
     <>
@@ -48,6 +55,7 @@ export function SubjectOfferingsTable({
               <TableHead>Subject</TableHead>
               <TableHead className="w-[80px] text-center">Units</TableHead>
               <TableHead className="w-[100px]">Type</TableHead>
+              {showTermColumn && <TableHead className="w-[120px]">Term</TableHead>}
               <TableHead>Teacher</TableHead>
               <TableHead className="w-[80px] text-center">Students</TableHead>
               <TableHead className="w-[80px] text-center">Status</TableHead>
@@ -58,7 +66,7 @@ export function SubjectOfferingsTable({
             {offerings.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={canAssignTeacher || canDelete ? 8 : 7}
+                  colSpan={columnCount}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No subject offerings found. Generate offerings from the adopted curriculum.
@@ -86,6 +94,13 @@ export function SubjectOfferingsTable({
                       {offering.isCore ? "Core" : "Elective"}
                     </Badge>
                   </TableCell>
+                  {showTermColumn && (
+                    <TableCell>
+                      <span className="text-sm">
+                        {TERM_OFFERING_LABELS[offering.termOffered] || "Full Year"}
+                      </span>
+                    </TableCell>
+                  )}
                   <TableCell>
                     {offering.teacherName ? (
                       <span className="text-sm">{offering.teacherName}</span>

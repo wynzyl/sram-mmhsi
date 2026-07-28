@@ -8,7 +8,7 @@ import {
   SectionStudentsTable,
 } from "@/features/academics/sections";
 import { getAdviserForSection } from "@/features/academics/advisers";
-import { isTeacherAssignedToSection } from "@/features/academics/grades/grades.queries";
+import { isTeacherAssignedToSection, getGradingSystemType } from "@/features/academics/grades/grades.queries";
 import {
   getSubjectOfferingsForSection,
   getTeachersForAssignment,
@@ -81,7 +81,7 @@ export default async function SectionDetailPage({
   const canManageStrands = hasPermission(session.role, "sections:manage");
 
   // Fetch all data in parallel
-  const [students, adviser, offerings, teachers, hasOfferings, availableStrands, curriculumsForPicker] = await Promise.all([
+  const [students, adviser, offerings, teachers, hasOfferings, availableStrands, curriculumsForPicker, gradingSystemType] = await Promise.all([
     getStudentsInSection(id),
     getAdviserForSection(id, section.schoolYearId),
     getSubjectOfferingsForSection(id, section.schoolYearId),
@@ -89,6 +89,7 @@ export default async function SectionDetailPage({
     hasExistingOfferings(id, section.schoolYearId),
     isShs ? getActiveStrands() : Promise.resolve([]),
     canCreateOffering ? getCurriculumsWithSubjectsForGradeLevel(section.gradeLevelId) : Promise.resolve([]),
+    isShs ? getGradingSystemType(section.schoolYearId) : Promise.resolve("quarterly" as const),
   ]);
 
   // Calculate enrolled strands for SHS sections (used for missing subject warnings)
@@ -229,6 +230,7 @@ export default async function SectionDetailPage({
                   schoolYearId={section.schoolYearId}
                   curriculums={curriculumsForPicker}
                   availableStrands={availableStrands}
+                  gradingSystemType={gradingSystemType}
                 />
               )}
               {canGenerateOfferings && (

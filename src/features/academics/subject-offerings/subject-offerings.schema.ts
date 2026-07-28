@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { uuidSchema, type BaseFormState } from "@/lib/validators/common-schemas";
+import { TERM_OFFERINGS, type TermOffering } from "@/lib/constants/term-offerings";
 
 // ─── Generate Subject Offerings Schema ────────────────────────────────────────
 
@@ -51,6 +52,9 @@ export type DeleteAllSubjectOfferingsFormState = BaseFormState<DeleteAllSubjectO
 
 // ─── Add Manual Subject Offering Schema ───────────────────────────────────────
 
+/** Zod schema for term offering validation */
+export const termOfferingSchema = z.enum(TERM_OFFERINGS);
+
 export const addManualSubjectOfferingSchema = z.object({
   sectionId: uuidSchema,
   schoolYearId: uuidSchema,
@@ -58,6 +62,8 @@ export const addManualSubjectOfferingSchema = z.object({
   sourceCurriculumId: uuidSchema,
   strandId: uuidSchema.nullable().optional(),
   sequenceOrder: z.coerce.number().int().nonnegative().optional(),
+  /** Term when this subject is offered (SHS only) - defaults to full year */
+  termOffered: termOfferingSchema.optional().default("full_year"),
 });
 
 export type AddManualSubjectOfferingInput = z.infer<typeof addManualSubjectOfferingSchema>;
@@ -86,6 +92,8 @@ export interface SubjectOfferingView {
   teacherName: string | null;
   strandId: string | null;
   strandCode: string | null;
+  /** Term when this subject is offered (SHS only) */
+  termOffered: TermOffering;
   isActive: boolean;
   sequenceOrder: number;
   createdAt: Date;

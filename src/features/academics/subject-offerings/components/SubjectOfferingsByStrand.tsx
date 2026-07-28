@@ -194,6 +194,7 @@ export function SubjectOfferingsByStrand({
         teachers={teachers}
         canAssignTeacher={canAssignTeacher}
         canDelete={canDelete}
+        showTermColumn={true}
       />
     </div>
   );

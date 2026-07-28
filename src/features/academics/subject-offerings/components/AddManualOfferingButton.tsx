@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { AddManualOfferingDialog } from "./AddManualOfferingDialog";
 import type { CurriculumForSubjectPicker } from "../subject-offerings.schema";
+import type { GradingSystemType } from "@/lib/constants/grading-systems";
 
 interface StrandOption {
   id: string;
@@ -19,6 +20,8 @@ interface AddManualOfferingButtonProps {
   schoolYearId: string;
   curriculums: CurriculumForSubjectPicker[];
   availableStrands?: StrandOption[];
+  /** Grading system type for term selection (SHS only) */
+  gradingSystemType?: GradingSystemType;
 }
 
 export function AddManualOfferingButton({
@@ -29,6 +32,7 @@ export function AddManualOfferingButton({
   schoolYearId,
   curriculums,
   availableStrands = [],
+  gradingSystemType = "quarterly",
 }: AddManualOfferingButtonProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -55,6 +59,7 @@ export function AddManualOfferingButton({
         schoolYearId={schoolYearId}
         curriculums={curriculums}
         availableStrands={availableStrands}
+        gradingSystemType={gradingSystemType}
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
       />

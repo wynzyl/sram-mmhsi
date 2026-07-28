@@ -1112,6 +1112,7 @@ export async function getStudentsWithSSEForSection(
 
 import { strands } from "@/lib/db/schema";
 import type { ShsStrandCode } from "@/lib/constants/strands";
+import { type TermOffering, isSubjectInPeriod } from "@/lib/constants/term-offerings";
 
 /**
  * Subject offering with strand info for SHS grade entry.
@@ -1126,6 +1127,7 @@ export type SHSSubjectOffering = {
   sequenceOrder: number;
   strandId: string | null;
   strandCode: string | null;
+  termOffered: TermOffering;
   teacherId: string | null;
   teacherName: string | null;
 };
@@ -1149,12 +1151,25 @@ export type SHSGradeEntrySubjects = {
  * - universalCore: subjects with isCore = true (all students take these)
  * - strandSubjects: subjects with isCore = false, grouped by strandCode
  *
+ * When gradingPeriod is provided, filters subjects based on their termOffered setting:
+ * - full_year subjects appear in all periods
+ * - first_semester subjects appear in Q1, Q2 (quarterly) or are excluded (trimester)
+ * - second_semester subjects appear in Q3, Q4 (quarterly) or are excluded (trimester)
+ * - first/second/third_trimester subjects appear only in their respective period
+ *
  * Returns null if no subject offerings exist for the section.
  */
 export async function getSubjectsForSHSGradeEntry(
   sectionId: string,
-  schoolYearId: string
+  schoolYearId: string,
+  gradingPeriod?: string
 ): Promise<SHSGradeEntrySubjects | null> {
+  // Get grading system type if filtering by period
+  let systemType: GradingSystemType = "quarterly";
+  if (gradingPeriod) {
+    systemType = await getGradingSystemType(schoolYearId);
+  }
+
   // Get all active subject offerings with strand info
   const rows = await db
     .select({
@@ -1167,6 +1182,7 @@ export async function getSubjectsForSHSGradeEntry(
       sequenceOrder: subjectOfferings.sequenceOrder,
       strandId: subjectOfferings.strandId,
       strandCode: strands.code,
+      termOffered: subjectOfferings.termOffered,
       teacherId: subjectOfferings.teacherId,
       teacherName: users.username,
     })
@@ -1198,11 +1214,34 @@ export async function getSubjectsForSHSGradeEntry(
   const seenStrandCodes = new Map<ShsStrandCode, Set<string>>();
 
   for (const row of rows) {
+    // Filter by grading period if provided
+    if (gradingPeriod) {
+      const termOffered = (row.termOffered as TermOffering) || "full_year";
+      if (!isSubjectInPeriod(termOffered, gradingPeriod, systemType)) {
+        continue; // Skip subjects not offered in this period
+      }
+    }
+
+    const offering: SHSSubjectOffering = {
+      id: row.id,
+      subjectId: row.subjectId,
+      subjectName: row.subjectName,
+      subjectCode: row.subjectCode,
+      subjectUnits: row.subjectUnits,
+      isCore: row.isCore,
+      sequenceOrder: row.sequenceOrder,
+      strandId: row.strandId,
+      strandCode: row.strandCode,
+      termOffered: (row.termOffered as TermOffering) || "full_year",
+      teacherId: row.teacherId,
+      teacherName: row.teacherName,
+    };
+
     if (row.isCore) {
       // Universal core subject - deduplicate by subject code
       if (!seenCoreCodes.has(row.subjectCode)) {
         seenCoreCodes.add(row.subjectCode);
-        universalCore.push(row as SHSSubjectOffering);
+        universalCore.push(offering);
       }
     } else if (row.strandCode) {
       // Strand-specific subject - deduplicate by strand + subject code
@@ -1218,7 +1257,7 @@ export async function getSubjectsForSHSGradeEntry(
       if (!seenForStrand.has(row.subjectCode)) {
         seenForStrand.add(row.subjectCode);
         const existing = strandSubjects.get(strandCode) || [];
-        existing.push(row as SHSSubjectOffering);
+        existing.push(offering);
         strandSubjects.set(strandCode, existing);
       }
     }
