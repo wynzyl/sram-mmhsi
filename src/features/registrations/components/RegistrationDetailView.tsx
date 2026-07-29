@@ -3,10 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Badge } from "@/components/ui/badge";
 import { DataCard } from "@/components/ui/editorial/DataCard";
-import { DocumentProgressRing } from "@/features/registrations/components/DocumentProgressRing";
 import { GuardianCard } from "@/features/registrations/components/GuardianCard";
 import { StatusIndicator } from "@/components/ui/editorial/StatusIndicator";
 import { StudentAvatar } from "@/features/students/components/StudentAvatar";
@@ -20,15 +17,6 @@ import type {
   StudentRecordFlags,
 } from "@/features/students/components/StudentRecordProfile";
 import type { StudentRequirementsSnapshot } from "@/features/registrations/registrations.queries";
-import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
-import {
-  enrollmentIntakeDocumentsToPreserved,
-  intakeFieldStatusDisplay,
-  isIntakeDocumentsComplete,
-  registrationStudentTypeLabel,
-} from "@/lib/utils/intake-documents";
-import EditIntakeDocumentsDialog from "@/features/enrollments/components/EditIntakeDocumentsDialog";
-import EnrollmentCancelAction from "@/features/registrations/components/EnrollmentCancelAction";
 import { cn } from "@/lib/utils/cn";
 import { formatPhoneNumber } from "@/lib/utils/phone";
 import { formatDate } from "@/lib/utils/date";
@@ -43,18 +31,17 @@ import {
   Pencil,
   Phone,
   Printer,
-  Tag,
   Zap,
 } from "lucide-react";
 import type { DiscountRequestView, DiscountTypeView } from "@/features/discounts/discounts.schema";
-import DiscountRequestForm from "@/features/discounts/components/DiscountRequestForm";
-
-function enrollmentTypeLabel(studentType: string): string {
-  if (studentType === "new_student") return "New";
-  if (studentType === "transferee") return "Transferee";
-  if (studentType === "old_student") return "Old";
-  return studentType.replace(/_/g, " ");
-}
+// Tab components extracted for maintainability (audit 2026-07)
+import {
+  RegistrationHistoryTab,
+  RegistrationDocumentsTab,
+  RegistrationBillingTab,
+  RegistrationInvoicesTab,
+  RegistrationDiscountsTab,
+} from "./tabs";
 
 function primaryAssessmentId(
   enrollmentRows: EnrollmentRecordRow[],
@@ -84,84 +71,6 @@ function computeAge(dob: Date): number {
     (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
   if (!hasBirthdayPassed) age -= 1;
   return age;
-}
-
-function invoiceStatusVariant(
-  status: string
-): "secondary" | "success" | "warning" | "danger" | "info" {
-  switch (status) {
-    case "settled":
-      return "success";
-    case "sent":
-      return "info";
-    case "viewed":
-      return "secondary";
-    case "overdue":
-      return "danger";
-    default:
-      return "warning";
-  }
-}
-
-const INTAKE_ROWS: { key: keyof EnrollmentIntakeDocuments; label: string }[] = [
-  { key: "form138", label: "FORM 138" },
-  { key: "birthCertificatePsa", label: "Birth Certificate (PSA)" },
-  { key: "goodMoralCharacter", label: "Good Moral Character" },
-  { key: "qualifiedVoucher", label: "Qualified Voucher Certificate (if any)" },
-  { key: "escCertificate", label: "ESC Certificate (if any)" },
-];
-
-function countIntakeComplete(docs: EnrollmentIntakeDocuments | null): { done: number; total: number } {
-  if (!docs) return { done: 0, total: 5 };
-  const fields = [
-    docs.form138,
-    docs.birthCertificatePsa,
-    docs.goodMoralCharacter,
-    docs.qualifiedVoucher,
-    docs.escCertificate,
-  ];
-  const done = fields.filter((f) => f === "received" || f === "not_applicable").length;
-  return { done, total: 5 };
-}
-
-function EnrollmentBillingCell({
-  row,
-  flags,
-}: {
-  row: EnrollmentRecordRow;
-  flags: StudentRecordFlags;
-}) {
-  if (row.status === "cancelled") {
-    return <span className="text-muted-foreground">—</span>;
-  }
-
-  if (flags.canReadAssessments && row.assessmentId) {
-    return (
-      <Link
-        href={`/staff/assessments/${row.assessmentId}`}
-        className="font-mono text-sm text-primary underline-offset-2 hover:underline"
-      >
-        Open ledger
-      </Link>
-    );
-  }
-
-  if (row.status === "pending" && flags.canCreateAssessment) {
-    return (
-      <Link
-        href={`/staff/assessments/new/${row.id}`}
-        className="font-mono text-sm text-primary underline-offset-2 hover:underline"
-      >
-        Build assessment
-      </Link>
-    );
-  }
-
-  if (row.status === "assessed" && !row.assessmentId && flags.canReadAssessments) {
-    return <span className="text-sm text-muted-foreground">Missing ledger</span>;
-  }
-
-  return <span className="text-muted-foreground">—</span>;
 }
 
 export type RegistrationDetailViewProps = {
@@ -612,468 +521,35 @@ export function RegistrationDetailView({
       )}
 
       {tab === "documents" && (
-        <div className="space-y-6">
-          {requirementsSnapshots.length === 0 ? (
-            <DataCard className="p-8 text-center">
-              <p className="text-muted-foreground">No enrollment intake checklists on file for this student.</p>
-            </DataCard>
-          ) : (
-            requirementsSnapshots.map((snap) => {
-              const progress = countIntakeComplete(snap.intakeDocuments);
-              const complete =
-                snap.intakeDocuments != null && isIntakeDocumentsComplete(snap.intakeDocuments);
-              const canEditIntake =
-                flags.canUpdateEnrollment &&
-                snap.enrollmentStatus !== "cancelled" &&
-                (snap.studentType === "new_student" || snap.studentType === "transferee") &&
-                snap.intakeDocuments != null;
-              return (
-                <DataCard key={snap.enrollmentId} className="p-6">
-                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="min-w-0 space-y-2">
-                      <h3 className="font-display text-lg font-bold text-foreground">
-                        {snap.schoolYear} · {snap.gradeLevel}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Type {registrationStudentTypeLabel(snap.studentType)} · Recorded{" "}
-                        {formatDate(snap.recordedAt, {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
-                      <div className="flex items-center gap-3">
-                        <StatusBadge status={snap.enrollmentStatus} type="enrollment" />
-                        {canEditIntake && (
-                          <EditIntakeDocumentsDialog
-                            enrollmentId={snap.enrollmentId}
-                            schoolYear={snap.schoolYear}
-                            gradeLevel={snap.gradeLevel}
-                            preserved={enrollmentIntakeDocumentsToPreserved(snap.intakeDocuments!)}
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <DocumentProgressRing completed={progress.done} total={progress.total} size="lg" />
-                  </div>
-                  {!snap.intakeDocuments ? (
-                    <p className="mt-4 text-sm text-muted-foreground">No checklist data for this enrollment.</p>
-                  ) : (
-                    <ul className="mt-6 space-y-2">
-                      {INTAKE_ROWS.map(({ key, label }) => {
-                        const raw = snap.intakeDocuments![key];
-                        const { label: statusLabel, variant } = intakeFieldStatusDisplay(raw);
-                        return (
-                          <li
-                            key={key}
-                            className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted px-4 py-3"
-                          >
-                            <span className="font-display text-base font-semibold leading-snug tracking-tight text-foreground md:text-lg">
-                              {label}
-                            </span>
-                            <Badge variant={variant} className="shrink-0 text-xs capitalize">
-                              {statusLabel}
-                            </Badge>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  {complete ? (
-                    <p className="mt-4 text-sm font-medium text-emerald-500">Checklist complete</p>
-                  ) : null}
-                </DataCard>
-              );
-            })
-          )}
-        </div>
+        <RegistrationDocumentsTab
+          requirementsSnapshots={requirementsSnapshots}
+          flags={flags}
+        />
       )}
 
       {tab === "history" && (
-        <DataCard className="overflow-hidden">
-          {enrollmentRows.length === 0 ? (
-            <p className="p-6 text-muted-foreground">No enrollment records.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted font-mono text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="px-4 py-3">School year</th>
-                    <th className="px-4 py-3">Grade</th>
-                    <th className="px-4 py-3">Section</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Billing</th>
-                    <th className="px-4 py-3">Enrolled</th>
-                    <th className="px-4 py-3">Created</th>
-                    {flags.canCancelEnrollment && <th className="px-4 py-3">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {enrollmentRows.map((row) => (
-                    <tr key={row.id} className="border-b border-border">
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/staff/enrollments/${row.id}`}
-                          className="text-primary hover:underline underline-offset-2"
-                        >
-                          {row.schoolYear}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3">{row.gradeLevel}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{row.sectionName ?? "—"}</td>
-                      <td className="px-4 py-3">{enrollmentTypeLabel(row.studentType)}</td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={row.status} type="enrollment" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <EnrollmentBillingCell row={row} flags={flags} />
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {row.enrolledAt
-                          ? formatDate(row.enrolledAt, {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {formatDate(row.createdAt, {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </td>
-                      {flags.canCancelEnrollment && (
-                        <td className="px-4 py-3">
-                          <EnrollmentCancelAction
-                            enrollmentId={row.id}
-                            enrollmentStatus={row.status}
-                            schoolYearIsActive={row.schoolYearIsActive}
-                            hasPendingCancellation={row.hasPendingCancellation}
-                          />
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </DataCard>
+        <RegistrationHistoryTab
+          enrollments={enrollmentRows}
+          flags={flags}
+        />
       )}
 
       {tab === "billing" && flags.canReadAssessments && (
-        <DataCard className="overflow-hidden">
-          {assessmentSummaries.length === 0 ? (
-            <p className="p-6 text-muted-foreground">No assessment ledgers for this student.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted font-mono text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="px-4 py-3">School year</th>
-                    <th className="px-4 py-3">Assessed</th>
-                    <th className="px-4 py-3">Paid</th>
-                    <th className="px-4 py-3">Balance</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {assessmentSummaries.map((a) => (
-                    <tr key={a.id} className="border-b border-border">
-                      <td className="px-4 py-3">{a.schoolYear}</td>
-                      <td className="px-4 py-3">
-                        <CurrencyDisplay amount={Number(a.totalAmount)} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <CurrencyDisplay amount={Number(a.totalPaid)} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <CurrencyDisplay amount={Number(a.balance)} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge type="billing" status={a.billingStatus} />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/staff/assessments/${a.id}`}
-                          className="font-mono text-sm text-primary underline-offset-2 hover:underline"
-                        >
-                          Ledger
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </DataCard>
+        <RegistrationBillingTab assessmentSummaries={assessmentSummaries} />
       )}
 
       {tab === "invoices" && flags.canReadInvoices && (
-        <DataCard className="overflow-hidden">
-          {invoices.length === 0 ? (
-            <p className="p-6 text-muted-foreground">No invoices for this student.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted font-mono text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="px-4 py-3">Invoice #</th>
-                    <th className="px-4 py-3">Amount</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Due</th>
-                    <th className="px-4 py-3">Created</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.map((inv) => (
-                    <tr key={inv.id} className="border-b border-border">
-                      <td className="px-4 py-3 font-mono text-xs">{inv.invoiceNumber}</td>
-                      <td className="px-4 py-3">
-                        <CurrencyDisplay amount={Number(inv.amountDue)} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={invoiceStatusVariant(inv.status)} className="text-xs capitalize">
-                          {inv.status.replace(/_/g, " ")}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {inv.dueDate
-                          ? formatDate(inv.dueDate, {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {formatDate(inv.createdAt, {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/staff/finance/invoices/${inv.id}`}
-                          className="font-mono text-sm text-primary underline-offset-2 hover:underline"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </DataCard>
+        <RegistrationInvoicesTab invoices={invoices} />
       )}
 
       {tab === "discounts" && flags.canReadDiscounts && (
-        <div className="space-y-6">
-          {/* Status summary banner — surfaces counts by status so the reviewer
-              can see at a glance whether the student has any reversed,
-              pending, or rejected discount activity without scanning the
-              table. */}
-          {discountRequests.length > 0 && (() => {
-            const counts = discountRequests.reduce(
-              (acc, r) => {
-                acc[r.status] = (acc[r.status] ?? 0) + 1;
-                return acc;
-              },
-              {} as Record<string, number>
-            );
-            const reversedCount = counts.reversed ?? 0;
-            return (
-              <DataCard
-                className={
-                  reversedCount > 0
-                    ? "p-4 border-destructive/40 bg-destructive/5"
-                    : "p-4"
-                }
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium">
-                    Discount status:
-                  </span>
-                  {counts.pending ? (
-                    <Badge variant="warning" className="text-xs">
-                      {counts.pending} Pending
-                    </Badge>
-                  ) : null}
-                  {counts.approved ? (
-                    <Badge variant="success" className="text-xs">
-                      {counts.approved} Approved
-                    </Badge>
-                  ) : null}
-                  {counts.rejected ? (
-                    <Badge variant="danger" className="text-xs">
-                      {counts.rejected} Rejected
-                    </Badge>
-                  ) : null}
-                  {counts.cancelled ? (
-                    <Badge variant="secondary" className="text-xs">
-                      {counts.cancelled} Cancelled
-                    </Badge>
-                  ) : null}
-                  {reversedCount ? (
-                    <Badge variant="danger" className="text-xs">
-                      {reversedCount} Reversed
-                    </Badge>
-                  ) : null}
-                </div>
-                {reversedCount > 0 && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    This student has reversed discount(s). New discount
-                    requests are locked on any assessment where payment
-                    activity has been recorded.
-                  </p>
-                )}
-              </DataCard>
-            );
-          })()}
-
-          {/* Request New Discount Form */}
-          {flags.canRequestDiscounts && activeEnrollmentId && discountTypes.length > 0 && (
-            <DataCard className="p-6">
-              <h2 className="flex items-center gap-2 font-display text-xl font-bold text-foreground mb-4">
-                <Tag className="h-5 w-5 text-primary" aria-hidden />
-                Request Discount
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Submit a discount request for approval by finance.
-              </p>
-              <DiscountRequestForm
-                studentId={student.id}
-                enrollmentId={activeEnrollmentId}
-                discountTypes={discountTypes}
-              />
-            </DataCard>
-          )}
-
-          {/* No eligible enrollment warning */}
-          {flags.canRequestDiscounts && !activeEnrollmentId && (
-            <DataCard className="p-6 border-amber-500/30 bg-amber-500/5">
-              <p className="text-sm text-amber-600">
-                Discount requests are only allowed for pending enrollments before an assessment is created.
-                Once enrolled or assessed, discounts cannot be requested.
-              </p>
-            </DataCard>
-          )}
-
-          {/* Discount Requests List */}
-          <DataCard className="overflow-hidden">
-            <div className="p-6 border-b border-border">
-              <h2 className="font-display text-xl font-bold text-foreground">
-                Discount Requests
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                History of discount requests for this student
-              </p>
-            </div>
-            {discountRequests.length === 0 ? (
-              <p className="p-6 text-muted-foreground">No discount requests for this student.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[800px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted font-mono text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="px-4 py-3">School Year</th>
-                      <th className="px-4 py-3">Grade</th>
-                      <th className="px-4 py-3">Discount</th>
-                      <th className="px-4 py-3">Value</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Requested</th>
-                      <th className="px-4 py-3">Decision</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {discountRequests.map((req) => (
-                      <tr key={req.id} className="border-b border-border">
-                        <td className="px-4 py-3">{req.schoolYearLabel}</td>
-                        <td className="px-4 py-3">{req.gradeLevelName}</td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium">{req.discountTypeName}</div>
-                          <div className="text-xs text-muted-foreground">{req.discountTypeCode}</div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant="secondary" className="text-xs">
-                            {req.calculationType === "percentage"
-                              ? `${Number(req.overrideValue ?? req.defaultValue)}%`
-                              : <CurrencyDisplay amount={Number(req.overrideValue ?? req.defaultValue)} className="inline" />}
-                          </Badge>
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            {req.baseType === "tuition_only" ? "Tuition" : "Full"}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          {req.status === "pending" && (
-                            <Badge variant="warning" className="text-xs">Pending</Badge>
-                          )}
-                          {req.status === "approved" && (
-                            <Badge variant="success" className="text-xs">Approved</Badge>
-                          )}
-                          {req.status === "rejected" && (
-                            <Badge variant="danger" className="text-xs">Rejected</Badge>
-                          )}
-                          {req.status === "cancelled" && (
-                            <Badge variant="secondary" className="text-xs">Cancelled</Badge>
-                          )}
-                          {req.status === "reversed" && (
-                            <Badge variant="danger" className="text-xs">Reversed</Badge>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          <div>
-                            {formatDate(req.requestedAt, {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </div>
-                          <div className="text-xs">by {req.requestedByName}</div>
-                          {req.requestReason && (
-                            <div className="text-xs italic mt-1 max-w-[150px] truncate" title={req.requestReason}>
-                              {req.requestReason}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {req.decidedAt ? (
-                            <>
-                              <div>
-                                {formatDate(req.decidedAt, {
-                                  year: "numeric",
-                                  month: "short",
-                                  day: "numeric",
-                                })}
-                              </div>
-                              {req.decidedByName && <div className="text-xs">by {req.decidedByName}</div>}
-                              {req.decisionRemarks && (
-                                <div className="text-xs italic mt-1 max-w-[150px] truncate" title={req.decisionRemarks}>
-                                  {req.decisionRemarks}
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-xs">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </DataCard>
-        </div>
+        <RegistrationDiscountsTab
+          studentId={student.id}
+          discountRequests={discountRequests}
+          discountTypes={discountTypes}
+          activeEnrollmentId={activeEnrollmentId}
+          flags={flags}
+        />
       )}
 
     </div>
