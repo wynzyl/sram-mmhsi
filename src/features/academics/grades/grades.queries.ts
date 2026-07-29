@@ -22,6 +22,8 @@ import {
 } from "@/lib/db/schema";
 import type { GradingSystemType } from "@/lib/constants/grading-systems";
 import type { GradeSheetView, GradeSheetEntryView } from "./grades.schema";
+import type { PaginationParams, PaginatedResult } from "@/lib/types/pagination";
+import { calculatePagination, calculateOffset } from "@/lib/types/pagination";
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -134,11 +136,16 @@ export async function isTeacherAssignedToSection(
 /**
  * Get grade sheets for an adviser's sections.
  * Used for the adviser's grade entry dashboard.
+ *
+ * @param pagination - Optional pagination params. If omitted, returns all rows.
+ *
+ * PERFORMANCE: Add pagination for memory safety at scale (audit 2026-07)
  */
 export async function getAdviserGradeSheets(
   adviserId: string,
-  schoolYearId: string
-): Promise<GradeSheetView[]> {
+  schoolYearId: string,
+  pagination?: PaginationParams
+): Promise<GradeSheetView[] | PaginatedResult<GradeSheetView>> {
   // First get sections where user is adviser
   const adviserSections = await db
     .select({ sectionId: sectionAdvisers.sectionId })
@@ -152,12 +159,24 @@ export async function getAdviserGradeSheets(
     );
 
   if (adviserSections.length === 0) {
+    // Return empty result in appropriate format
+    if (pagination) {
+      return {
+        data: [],
+        pagination: calculatePagination(pagination.page, pagination.pageSize, 0),
+      };
+    }
     return [];
   }
 
   const sectionIds = adviserSections.map((s) => s.sectionId);
+  const whereClause = and(
+    inArray(gradeSheets.sectionId, sectionIds),
+    eq(gradeSheets.schoolYearId, schoolYearId)
+  );
 
-  const rows = await db
+  // Build base query
+  const baseQuery = db
     .select({
       id: gradeSheets.id,
       sectionId: gradeSheets.sectionId,
@@ -184,25 +203,52 @@ export async function getAdviserGradeSheets(
     .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
     .innerJoin(schoolYears, eq(gradeSheets.schoolYearId, schoolYears.id))
     .leftJoin(users, eq(gradeSheets.adviserId, users.id))
-    .where(
-      and(
-        inArray(gradeSheets.sectionId, sectionIds),
-        eq(gradeSheets.schoolYearId, schoolYearId)
-      )
-    )
+    .where(whereClause)
     .orderBy(asc(gradeLevels.order), asc(sections.name), asc(gradeSheets.gradingPeriod));
 
-  return rows as GradeSheetView[];
+  // Without pagination, return all rows (backward compatible)
+  if (!pagination) {
+    const rows = await baseQuery;
+    return rows as GradeSheetView[];
+  }
+
+  // With pagination, get count and paginated data
+  const offset = calculateOffset(pagination.page, pagination.pageSize);
+
+  const [countResult, rows] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(gradeSheets)
+      .where(whereClause),
+    baseQuery.limit(pagination.pageSize).offset(offset),
+  ]);
+
+  const totalRecords = countResult[0]?.count ?? 0;
+
+  return {
+    data: rows as GradeSheetView[],
+    pagination: calculatePagination(pagination.page, pagination.pageSize, totalRecords),
+  };
 }
 
 /**
  * Get grade sheets pending principal review.
  * Returns all sheets with submitted status (direct submission from advisers).
+ *
+ * @param pagination - Optional pagination params. If omitted, returns all rows.
+ *
+ * PERFORMANCE: Add pagination for memory safety at scale (audit 2026-07)
  */
 export async function getPrincipalPendingReviews(
-  schoolYearId: string
-): Promise<GradeSheetView[]> {
-  const rows = await db
+  schoolYearId: string,
+  pagination?: PaginationParams
+): Promise<GradeSheetView[] | PaginatedResult<GradeSheetView>> {
+  const whereClause = and(
+    eq(gradeSheets.schoolYearId, schoolYearId),
+    eq(gradeSheets.status, "submitted")
+  );
+
+  const baseQuery = db
     .select({
       id: gradeSheets.id,
       sectionId: gradeSheets.sectionId,
@@ -229,15 +275,32 @@ export async function getPrincipalPendingReviews(
     .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
     .innerJoin(schoolYears, eq(gradeSheets.schoolYearId, schoolYears.id))
     .leftJoin(users, eq(gradeSheets.adviserId, users.id))
-    .where(
-      and(
-        eq(gradeSheets.schoolYearId, schoolYearId),
-        eq(gradeSheets.status, "submitted")
-      )
-    )
+    .where(whereClause)
     .orderBy(asc(gradeLevels.order), asc(sections.name), asc(gradeSheets.gradingPeriod));
 
-  return rows as GradeSheetView[];
+  // Without pagination, return all rows (backward compatible)
+  if (!pagination) {
+    const rows = await baseQuery;
+    return rows as GradeSheetView[];
+  }
+
+  // With pagination, get count and paginated data
+  const offset = calculateOffset(pagination.page, pagination.pageSize);
+
+  const [countResult, rows] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(gradeSheets)
+      .where(whereClause),
+    baseQuery.limit(pagination.pageSize).offset(offset),
+  ]);
+
+  const totalRecords = countResult[0]?.count ?? 0;
+
+  return {
+    data: rows as GradeSheetView[],
+    pagination: calculatePagination(pagination.page, pagination.pageSize, totalRecords),
+  };
 }
 
 /**
@@ -381,18 +444,25 @@ export async function getGradeSheetApprovalHistory(
 
 // ─── Teacher Assignments Management ──────────────────────────────────────────
 
-import type { PaginationParams, PaginatedResult } from "@/lib/types/pagination";
-import { calculatePagination, calculateOffset } from "@/lib/types/pagination";
-
 /**
  * Get all teacher assignments with full details for the management page.
  * Ordered by school year (newest first), then grade level, then section, then subject.
  *
- * @deprecated Use getPaginatedTeacherAssignments for large datasets
+ * @deprecated Use getPaginatedTeacherAssignments for large datasets.
+ * This function loads all records into memory which may cause performance issues.
+ * (audit 2026-07)
  */
 export async function getAllTeacherAssignments(
   schoolYearId?: string
 ): Promise<TeacherAssignmentListItem[]> {
+  // Runtime deprecation warning (audit 2026-07)
+  if (process.env.NODE_ENV === "development") {
+    console.warn(
+      "[DEPRECATED] getAllTeacherAssignments() loads all records into memory. " +
+        "Use getPaginatedTeacherAssignments() instead for better performance."
+    );
+  }
+
   const whereConditions = [isNull(teacherAssignments.deletedAt)];
 
   if (schoolYearId) {
