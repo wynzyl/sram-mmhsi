@@ -74,7 +74,8 @@ export default async function GradeSheetReviewPage({ params }: PageProps) {
 
   // Get subjects: for SHS, try subject offerings first (uses subjectId for grade lookup)
   // For non-SHS, use curriculum-based subjects
-  let subjects: Array<{ id: string; code: string; name: string }>;
+  // allSubjectIds tracks all IDs per code for grade lookup (handles duplicate subject records)
+  let subjects: Array<{ id: string; code: string; name: string; allIds: string[] }>;
 
   if (isSHS) {
     // SHS sections use subject offerings for grade entry
@@ -84,25 +85,42 @@ export default async function GradeSheetReviewPage({ params }: PageProps) {
     );
 
     if (offeringSubjects && offeringSubjects.length > 0) {
-      // Map offering subjects: use subjectId for grade lookup (matches what was saved)
-      subjects = offeringSubjects.map((s) => ({
-        id: s.subjectId, // Use subjectId for grade lookup, not offering id
-        code: s.subjectCode,
-        name: s.subjectName,
-      }));
+      // Deduplicate by subject CODE - same subject may have multiple term offerings
+      // or duplicate subject records (same code, different ID) across strands/curriculums
+      // Collect ALL subjectIds per code for grade lookup
+      const subjectsByCode = new Map<string, { id: string; code: string; name: string; allIds: string[] }>();
+      for (const s of offeringSubjects) {
+        const existing = subjectsByCode.get(s.subjectCode);
+        if (existing) {
+          // Add this subjectId to the list if not already present
+          if (!existing.allIds.includes(s.subjectId)) {
+            existing.allIds.push(s.subjectId);
+          }
+        } else {
+          subjectsByCode.set(s.subjectCode, {
+            id: s.subjectId,
+            code: s.subjectCode,
+            name: s.subjectName,
+            allIds: [s.subjectId],
+          });
+        }
+      }
+      subjects = Array.from(subjectsByCode.values());
     } else {
       // Fallback to curriculum-based subjects if no offerings exist
-      subjects = await getSubjectsForGradeLevel(
+      const curriculumSubjects = await getSubjectsForGradeLevel(
         gradeSheet.gradeLevelId,
         gradeSheet.schoolYearId
       );
+      subjects = curriculumSubjects.map(s => ({ ...s, allIds: [s.id] }));
     }
   } else {
     // Non-SHS: use curriculum-based subjects
-    subjects = await getSubjectsForGradeLevel(
+    const curriculumSubjects = await getSubjectsForGradeLevel(
       gradeSheet.gradeLevelId,
       gradeSheet.schoolYearId
     );
+    subjects = curriculumSubjects.map(s => ({ ...s, allIds: [s.id] }));
   }
 
   // Build a map of grades: studentId -> subjectId -> grade
@@ -187,7 +205,7 @@ export default async function GradeSheetReviewPage({ params }: PageProps) {
                 </th>
                 {subjects.map((subject) => (
                   <th
-                    key={subject.id}
+                    key={subject.code}
                     scope="col"
                     className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider min-w-[80px]"
                     title={subject.name}
@@ -212,10 +230,18 @@ export default async function GradeSheetReviewPage({ params }: PageProps) {
                     </div>
                   </td>
                   {subjects.map((subject) => {
-                    const grade = gradeMap.get(student.id)?.get(subject.id);
+                    // Check all subjectIds for this code (handles duplicate subject records)
+                    const studentGrades = gradeMap.get(student.id);
+                    let grade: string | null | undefined;
+                    if (studentGrades) {
+                      for (const subjectId of subject.allIds) {
+                        grade = studentGrades.get(subjectId);
+                        if (grade !== undefined) break;
+                      }
+                    }
                     return (
                       <td
-                        key={subject.id}
+                        key={subject.code}
                         className="px-3 py-3 text-center text-sm text-foreground"
                       >
                         {grade ?? "—"}

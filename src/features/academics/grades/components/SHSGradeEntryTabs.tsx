@@ -312,6 +312,25 @@ export function SHSGradeEntryTabs({
     return grades.get(`${studentId}:${subjectId}`) || "";
   };
 
+  /**
+   * Check if a subject is applicable to a student based on strand.
+   * - Core subjects (isCore = true) → applicable to all students
+   * - Strand electives → only applicable if student's strand matches subject's strand
+   */
+  const isSubjectApplicableToStudent = (
+    student: SHSSectionStudent,
+    subject: SHSSubjectOffering
+  ): boolean => {
+    // Core subjects are applicable to all students
+    if (subject.isCore) return true;
+    // Strand-specific subjects - only applicable if student's strand matches
+    if (subject.strandCode) {
+      return student.strandCode === subject.strandCode;
+    }
+    // Edge case: non-core without strand (shouldn't happen but handle gracefully)
+    return true;
+  };
+
   // Calculate overall completion status (across ALL subjects, not just current tab)
   // Must count only APPLICABLE entries (core for all, strand-specific for matching students)
   const totalCompletion = useMemo(() => {
@@ -619,26 +638,37 @@ export function SHSGradeEntryTabs({
                         </span>
                       </div>
                     </td>
-                    {filteredSubjects.map((subject) => (
-                      <td key={subject.id} className="px-2 py-2 text-center">
-                        <input
-                          type="number"
-                          min="60"
-                          max="100"
-                          value={getGrade(student.id, subject.subjectId)}
-                          onChange={(e) =>
-                            handleGradeChange(student.id, subject.subjectId, e.target.value)
-                          }
-                          disabled={!canEdit}
-                          className={`w-16 text-center rounded-md border-border bg-background text-foreground shadow-sm text-sm ${
-                            canEdit
-                              ? "focus:border-primary focus:ring-primary"
-                              : "bg-muted text-muted-foreground cursor-not-allowed"
-                          }`}
-                          placeholder="--"
-                        />
-                      </td>
-                    ))}
+                    {filteredSubjects.map((subject) => {
+                      const isApplicable = isSubjectApplicableToStudent(student, subject);
+                      return (
+                        <td key={subject.id} className="px-2 py-2 text-center">
+                          <input
+                            type="number"
+                            min="60"
+                            max="100"
+                            value={getGrade(student.id, subject.subjectId)}
+                            onChange={(e) =>
+                              handleGradeChange(student.id, subject.subjectId, e.target.value)
+                            }
+                            disabled={!canEdit || !isApplicable}
+                            className={cn(
+                              "w-16 text-center rounded-md border-border shadow-sm text-sm",
+                              !isApplicable
+                                ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
+                                : canEdit
+                                  ? "bg-background text-foreground focus:border-primary focus:ring-primary"
+                                  : "bg-muted text-muted-foreground cursor-not-allowed"
+                            )}
+                            placeholder={isApplicable ? "--" : ""}
+                            title={
+                              !isApplicable
+                                ? `Not applicable - student is ${student.strandCode || "no strand"}`
+                                : undefined
+                            }
+                          />
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
