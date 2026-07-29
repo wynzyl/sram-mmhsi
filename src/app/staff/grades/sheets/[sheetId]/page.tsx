@@ -79,9 +79,11 @@ export default async function GradeSheetReviewPage({ params }: PageProps) {
 
   if (isSHS) {
     // SHS sections use subject offerings for grade entry
+    // Pass gradingPeriod to filter subjects by term (e.g., Q3 only shows second_semester + full_year subjects)
     const offeringSubjects = await getSubjectsFromOfferingsForSection(
       gradeSheet.sectionId,
-      gradeSheet.schoolYearId
+      gradeSheet.schoolYearId,
+      gradeSheet.gradingPeriod
     );
 
     if (offeringSubjects && offeringSubjects.length > 0) {

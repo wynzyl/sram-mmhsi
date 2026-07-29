@@ -963,10 +963,18 @@ export type SubjectOfferingForGrades = {
  * Get subjects for a section from subject offerings.
  * This is the SSE-aware alternative to getSubjectsForGradeLevel.
  * Returns null if no subject offerings exist for the section (fallback to curriculum-based).
+ *
+ * When gradingPeriod is provided (for SHS sections), filters subjects based on their
+ * termOffered setting using isSubjectInPeriod():
+ * - full_year subjects appear in all periods
+ * - first_semester subjects appear in Q1, Q2 (quarterly)
+ * - second_semester subjects appear in Q3, Q4 (quarterly)
+ * - first/second/third_trimester subjects appear only in their respective period
  */
 export async function getSubjectsFromOfferingsForSection(
   sectionId: string,
-  schoolYearId: string
+  schoolYearId: string,
+  gradingPeriod?: string
 ): Promise<SubjectOfferingForGrades[] | null> {
   // Check if section has subject offerings
   const offeringsExist = await db
@@ -985,6 +993,12 @@ export async function getSubjectsFromOfferingsForSection(
     return null;
   }
 
+  // Get grading system type for term filtering (if gradingPeriod provided)
+  let systemType: GradingSystemType = "quarterly";
+  if (gradingPeriod) {
+    systemType = await getGradingSystemType(schoolYearId);
+  }
+
   const rows = await db
     .select({
       id: subjectOfferings.id,
@@ -996,6 +1010,7 @@ export async function getSubjectsFromOfferingsForSection(
       sequenceOrder: subjectOfferings.sequenceOrder,
       teacherId: subjectOfferings.teacherId,
       teacherName: users.username,
+      termOffered: subjectOfferings.termOffered,
     })
     .from(subjectOfferings)
     .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
@@ -1009,6 +1024,15 @@ export async function getSubjectsFromOfferingsForSection(
       )
     )
     .orderBy(asc(subjectOfferings.sequenceOrder), asc(subjects.name));
+
+  // Filter by grading period if provided
+  if (gradingPeriod) {
+    const filtered = rows.filter((row) => {
+      const term = (row.termOffered as TermOffering) || "full_year";
+      return isSubjectInPeriod(term, gradingPeriod, systemType);
+    });
+    return filtered as SubjectOfferingForGrades[];
+  }
 
   return rows as SubjectOfferingForGrades[];
 }
@@ -1153,8 +1177,8 @@ export type SHSGradeEntrySubjects = {
  *
  * When gradingPeriod is provided, filters subjects based on their termOffered setting:
  * - full_year subjects appear in all periods
- * - first_semester subjects appear in Q1, Q2 (quarterly) or are excluded (trimester)
- * - second_semester subjects appear in Q3, Q4 (quarterly) or are excluded (trimester)
+ * - first_semester subjects appear in Q1, Q2 (quarterly)
+ * - second_semester subjects appear in Q3, Q4 (quarterly)
  * - first/second/third_trimester subjects appear only in their respective period
  *
  * Returns null if no subject offerings exist for the section.
