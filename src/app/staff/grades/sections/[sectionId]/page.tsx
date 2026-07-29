@@ -67,10 +67,10 @@ export default async function AdviserGradeEntryPage({
 
   // Fetch data based on section type (SHS vs non-SHS)
   if (isShs) {
-    // SHS: Use strand-based queries
+    // SHS: Use strand-based queries with term filtering by selected period
     const [shsStudents, shsSubjects, gradeSheetData] = await Promise.all([
       getStudentsWithStrandsInSection(sectionId, section.schoolYearId),
-      getSubjectsForSHSGradeEntry(sectionId, section.schoolYearId),
+      getSubjectsForSHSGradeEntry(sectionId, section.schoolYearId, selectedPeriod),
       getGradeSheetForPeriod(sectionId, section.schoolYearId, selectedPeriod),
     ]);
 
