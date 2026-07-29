@@ -875,6 +875,10 @@ export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
       index("assessments_transferred_at_idx").on(t.transferredAt), // PERFORMANCE: Filter active assessments (WHERE transferredAt IS NULL)
       // PERFORMANCE: Finance reports by school year + billing status
       index("assessments_sy_billing_idx").on(t.schoolYearId, t.billingStatus),
+      // PERFORMANCE: Outstanding balance lookup for finance dashboard (audit 2026-07)
+      index("assessments_sy_outstanding_idx")
+        .on(t.schoolYearId, t.billingStatus, t.balance)
+        .where(sql`${t.cancelledAt} IS NULL AND ${t.transferredAt} IS NULL`),
       // DB-level: All transfer fields must be NULL or all NOT NULL
       check(
         "assessments_transfer_fields_atomic",
@@ -953,6 +957,10 @@ export const receiptBooklets = pgTable(
     index("receipt_booklets_status_active_idx")
       .on(t.status)
       .where(sql`${t.status} = 'active'`), // PERFORMANCE: Payment processing active booklet lookups
+    // PERFORMANCE: Active booklet lookup by usage mode (audit 2026-07)
+    index("booklets_active_usage_idx")
+      .on(t.status, t.usageMode)
+      .where(sql`${t.status} = 'active'`),
   ]
 );
 
@@ -1071,6 +1079,10 @@ export const payments = pgTable(
     // PERFORMANCE: Daily reconciliation queries (posted payments by date)
     index("payments_posted_date_idx")
       .on(t.paymentDate)
+      .where(sql`${t.status} = 'posted'`),
+    // PERFORMANCE: Payment reconciliation by date + method (audit 2026-07)
+    index("payments_date_method_posted_idx")
+      .on(t.paymentDate, t.paymentMethod)
       .where(sql`${t.status} = 'posted'`),
   ]
 );
@@ -1361,6 +1373,10 @@ export const gradeSheets = pgTable(
     index("grade_sheets_status_idx").on(t.status),
     index("grade_sheets_sy_status_idx").on(t.schoolYearId, t.status),
     index("grade_sheets_adviser_idx").on(t.adviserId),
+    // PERFORMANCE: Principal review queue (audit 2026-07)
+    index("grade_sheets_pending_review_idx")
+      .on(t.schoolYearId, t.status, t.submittedAt)
+      .where(sql`${t.status} = 'submitted'`),
   ]
 );
 
@@ -1596,6 +1612,10 @@ export const discountRequests = pgTable(
     index("discount_requests_pending_idx")
       .on(t.status)
       .where(sql`${t.status} = 'pending'`),
+    // PERFORMANCE: Pending discount request queue with FIFO ordering (audit 2026-07)
+    index("discount_requests_pending_created_idx")
+      .on(t.status, t.createdAt)
+      .where(sql`${t.status} = 'pending'`),
     // PERFORMANCE: Discount type lookups
     index("discount_requests_type_idx").on(t.discountTypeId),
   ]
@@ -1706,6 +1726,10 @@ export const enrollmentCancellationRequests = pgTable(
       .on(t.status, t.deletedAt)
       .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
     index("ecr_requested_by_idx").on(t.requestedBy),
+    // PERFORMANCE: Pending cancellation queue with FIFO ordering (audit 2026-07)
+    index("ecr_pending_created_idx")
+      .on(t.status, t.requestedAt)
+      .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
   ]
 );
 
@@ -1749,6 +1773,10 @@ export const studentClearances = pgTable(
     index("clearances_status_idx").on(t.status),
     index("clearances_pending_idx")
       .on(t.status)
+      .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
+    // PERFORMANCE: Student pending clearance lookup for document release (audit 2026-07)
+    index("clearances_student_pending_idx")
+      .on(t.studentId, t.status)
       .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
     // Prevent duplicate clearances for same enrollment + type (active only)
     uniqueIndex("clearances_enrollment_type_uidx")
@@ -1815,6 +1843,10 @@ export const documentRequests = pgTable(
     index("doc_requests_status_idx").on(t.status),
     index("doc_requests_school_year_idx").on(t.schoolYearId),
     index("doc_requests_requested_at_idx").on(t.requestedAt),
+    // PERFORMANCE: Student document history (audit 2026-07)
+    index("doc_requests_student_history_idx")
+      .on(t.studentId, t.status, t.requestedAt)
+      .where(sql`${t.deletedAt} IS NULL`),
     index("doc_requests_pending_idx")
       .on(t.status)
       .where(sql`${t.status} IN ('requested', 'processing', 'ready') AND ${t.deletedAt} IS NULL`),
