@@ -1314,7 +1314,8 @@ export const sectionAdvisers = pgTable(
 /**
  * Grade sheets - batch grade submission per section per grading period.
  * Adviser enters ALL subject grades for their section students.
- * Tracks workflow status: draft → submitted → coordinator_approved → principal_approved → published → locked.
+ * Tracks workflow status: draft → submitted → principal_approved → published → locked.
+ * Can be returned at any stage for corrections.
  */
 export const gradeSheets = pgTable(
   "grade_sheets",
@@ -1329,10 +1330,6 @@ export const gradeSheets = pgTable(
     // Workflow timestamps - submission
     submittedAt: timestamp("submitted_at"),
     submittedBy: uuid("submitted_by").references(() => users.id),
-
-    // Workflow timestamps - coordinator review
-    coordinatorApprovedAt: timestamp("coordinator_approved_at"),
-    coordinatorApprovedBy: uuid("coordinator_approved_by").references(() => users.id),
 
     // Workflow timestamps - principal review
     principalApprovedAt: timestamp("principal_approved_at"),
@@ -1403,6 +1400,10 @@ export const gradeSheetEntries = pgTable(
     index("grade_sheet_entries_student_idx").on(t.studentId),
     index("grade_sheet_entries_subject_idx").on(t.subjectId),
     index("grade_sheet_entries_sse_idx").on(t.studentSubjectEnrollmentId),
+    // Partial index for grade completeness queries (entries with grades filled)
+    index("grade_sheet_entries_filled_idx")
+      .on(t.gradeSheetId)
+      .where(sql`${t.grade} IS NOT NULL`),
   ]
 );
 
@@ -2282,11 +2283,6 @@ export const gradeSheetsRelations = relations(gradeSheets, ({ one, many }) => ({
     fields: [gradeSheets.returnedBy],
     references: [users.id],
     relationName: "gradeSheet_returner",
-  }),
-  coordinatorApprovedByUser: one(users, {
-    fields: [gradeSheets.coordinatorApprovedBy],
-    references: [users.id],
-    relationName: "gradeSheet_coordinatorApprover",
   }),
   principalApprovedByUser: one(users, {
     fields: [gradeSheets.principalApprovedBy],

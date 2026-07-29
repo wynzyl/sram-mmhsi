@@ -60,8 +60,6 @@ export type Permission =
   | "grades:read"
   | "grades:encode"
   | "grades:submit"
-  /** Review grade sheets at coordinator level — coordinator/admin */
-  | "grades:coordinator_review"
   /** Review grade sheets at principal level — principal/admin */
   | "grades:principal_review"
   /** Publish grades to student portal — principal/admin */
@@ -153,7 +151,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "assessments:cancel", "assessments:cancel_with_balance",
     "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
-    "grades:read", "grades:encode", "grades:submit", "grades:coordinator_review", "grades:principal_review", "grades:publish", "grades:lock", "grades:unlock",
+    "grades:read", "grades:encode", "grades:submit", "grades:principal_review", "grades:publish", "grades:lock", "grades:unlock",
     "advisers:read", "advisers:manage",
     "booklets:manage",
     "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
@@ -183,7 +181,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "assessments:cancel", "assessments:cancel_with_balance",
     "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
-    "grades:read", "grades:encode", "grades:submit", "grades:coordinator_review", "grades:principal_review", "grades:publish", "grades:lock", "grades:unlock",
+    "grades:read", "grades:encode", "grades:submit", "grades:principal_review", "grades:publish", "grades:lock", "grades:unlock",
     "advisers:read", "advisers:manage",
     "booklets:manage",
     "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
@@ -253,7 +251,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   coordinator: [
     "students:read",
     "curriculums:read",
-    "grades:read", "grades:coordinator_review",
+    "grades:read",
     "advisers:read", "advisers:manage",
     "sections:manage", "sections:assign",
     "strands:read",
@@ -265,7 +263,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   principal: [
     "students:read",
     "curriculums:read",
-    "grades:read", "grades:coordinator_review", "grades:principal_review", "grades:publish", "grades:lock",
+    "grades:read", "grades:principal_review", "grades:publish", "grades:lock",
     "advisers:read", "advisers:manage",
     "sections:manage", "sections:assign",
     "strands:read",

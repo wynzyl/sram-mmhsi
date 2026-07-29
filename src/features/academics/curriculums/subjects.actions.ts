@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { curriculums, subjects, subjectStrands, strands } from "@/lib/db/schema";
-import { eq, and, isNull, sql, inArray, asc } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction, logDeleteAction, logAudit } from "@/lib/utils/audit-logger";
@@ -639,6 +639,12 @@ export async function reorderSubjectsAction(
 export async function getSubjectStrandsAction(
   subjectId: string
 ): Promise<SubjectStrandAssociation[]> {
+  // Authorization check - only staff with curriculum read access
+  const session = await requireSession();
+  if (!hasPermission(session.role, "curriculums:read")) {
+    return [];
+  }
+
   if (!subjectId) {
     return [];
   }

@@ -8,8 +8,12 @@ import {
   gradeSheetEntries,
   gradeApprovals,
   sectionAdvisers,
+  gradeLevels,
+  enrollments,
+  studentSubjectEnrollments,
+  subjectOfferings,
 } from "@/lib/db/schema";
-import { eq, and, sql, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, sql, isNull, isNotNull, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -37,6 +41,7 @@ import {
   QUARTERLY_PERIODS,
   TRIMESTER_PERIODS,
 } from "@/lib/constants/grading-periods";
+import { getGradeGroup } from "@/lib/constants/grade-groups";
 import {
   getStudentsInSection,
   getSubjectsForGradeLevel,
@@ -137,8 +142,61 @@ async function validatePreviousPeriodsSubmitted(
 }
 
 /**
+ * Get valid subject IDs for a section.
+ * Checks both subject offerings (if present) and curriculum adoption subjects.
+ * Used to validate grade entries before saving.
+ */
+async function getValidSubjectIdsForSection(
+  sectionId: string,
+  schoolYearId: string
+): Promise<Set<string>> {
+  const validIds = new Set<string>();
+
+  // First, check subjectOfferings (preferred for sections with offerings configured)
+  const offeringRows = await db
+    .select({ subjectId: subjectOfferings.subjectId })
+    .from(subjectOfferings)
+    .where(
+      and(
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjectOfferings.schoolYearId, schoolYearId),
+        eq(subjectOfferings.isActive, true),
+        isNull(subjectOfferings.deletedAt)
+      )
+    );
+
+  for (const row of offeringRows) {
+    validIds.add(row.subjectId);
+  }
+
+  // If no offerings found, fall back to curriculum adoption subjects
+  if (validIds.size === 0) {
+    const section = await db.query.sections.findFirst({
+      where: eq(sections.id, sectionId),
+      columns: { gradeLevelId: true },
+    });
+
+    if (section) {
+      const subjects = await getSubjectsForGradeLevel(section.gradeLevelId, schoolYearId);
+      for (const subject of subjects) {
+        validIds.add(subject.id);
+      }
+    }
+  }
+
+  return validIds;
+}
+
+/**
  * Validate that all enrolled students have grades for all subjects.
  * Called before submitting a grade sheet for review.
+ *
+ * For SHS (Senior High School):
+ * - Uses studentSubjectEnrollments to determine expected entries per student
+ * - Each student only takes subjects applicable to their strand
+ *
+ * For non-SHS:
+ * - Uses flat calculation: students × subjects from curriculum adoption
  */
 async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
   isComplete: boolean;
@@ -160,38 +218,130 @@ async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
     return { isComplete: false, message: "Grade sheet not found." };
   }
 
-  // Get section with grade level
-  const section = await db.query.sections.findFirst({
-    where: eq(sections.id, gradeSheet.sectionId),
-    columns: { id: true, gradeLevelId: true },
-  });
+  // Get section with grade level name for group detection
+  const sectionWithGrade = await db
+    .select({
+      sectionId: sections.id,
+      gradeLevelId: sections.gradeLevelId,
+      gradeLevelName: gradeLevels.name,
+    })
+    .from(sections)
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+    .where(eq(sections.id, gradeSheet.sectionId))
+    .limit(1);
 
-  if (!section) {
+  if (sectionWithGrade.length === 0) {
     return { isComplete: false, message: "Section not found." };
   }
 
-  // Get enrolled students count
-  const students = await getStudentsInSection(
+  const section = sectionWithGrade[0];
+  const gradeGroup = getGradeGroup(section.gradeLevelName);
+  const isSHS = gradeGroup === "shs";
+
+  // Get enrolled students
+  const studentsList = await getStudentsInSection(
     gradeSheet.sectionId,
     gradeSheet.schoolYearId
   );
-  const studentCount = students.length;
+  const studentCount = studentsList.length;
 
-  // Get subjects count for grade level
-  const subjects = await getSubjectsForGradeLevel(
-    section.gradeLevelId,
-    gradeSheet.schoolYearId
-  );
-  const subjectCount = subjects.length;
-
-  // Calculate expected entries
-  const totalExpected = studentCount * subjectCount;
-
-  if (totalExpected === 0) {
+  if (studentCount === 0) {
     return {
       isComplete: false,
-      message: "No students enrolled or no subjects configured for this section.",
+      message: "No students enrolled in this section.",
     };
+  }
+
+  let totalExpected: number;
+  let subjectCount: number;
+
+  if (isSHS) {
+    // SHS: Use studentSubjectEnrollments for per-student subject count
+    // This handles strand-specific subjects correctly
+    const studentIds = studentsList.map((s) => s.id);
+
+    // Get enrollment IDs for students in this section
+    const enrollmentRows = await db
+      .select({
+        studentId: enrollments.studentId,
+        enrollmentId: enrollments.id,
+      })
+      .from(enrollments)
+      .where(
+        and(
+          inArray(enrollments.studentId, studentIds),
+          eq(enrollments.sectionId, gradeSheet.sectionId),
+          eq(enrollments.schoolYearId, gradeSheet.schoolYearId),
+          eq(enrollments.status, "enrolled")
+        )
+      );
+
+    if (enrollmentRows.length === 0) {
+      return {
+        isComplete: false,
+        message: "No active enrollments found for students in this section.",
+      };
+    }
+
+    const enrollmentIds = enrollmentRows.map((e) => e.enrollmentId);
+
+    // Count total active studentSubjectEnrollments for this section's students
+    // These represent the exact subjects each student should have grades for
+    const [sseCount] = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(studentSubjectEnrollments)
+      .innerJoin(
+        subjectOfferings,
+        eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
+      )
+      .where(
+        and(
+          inArray(studentSubjectEnrollments.enrollmentId, enrollmentIds),
+          eq(studentSubjectEnrollments.isActive, true),
+          eq(subjectOfferings.sectionId, gradeSheet.sectionId),
+          eq(subjectOfferings.schoolYearId, gradeSheet.schoolYearId),
+          eq(subjectOfferings.isActive, true)
+        )
+      );
+
+    totalExpected = sseCount?.count ?? 0;
+    // For display purposes, calculate average subjects per student
+    subjectCount = studentCount > 0 ? Math.round(totalExpected / studentCount) : 0;
+
+    if (totalExpected === 0) {
+      // Fallback: If no SSE records exist, fall back to curriculum-based calculation
+      // This handles cases where SSE hasn't been populated yet
+      const subjects = await getSubjectsForGradeLevel(
+        section.gradeLevelId,
+        gradeSheet.schoolYearId
+      );
+      subjectCount = subjects.length;
+      totalExpected = studentCount * subjectCount;
+
+      if (totalExpected === 0) {
+        return {
+          isComplete: false,
+          message: "No subjects configured for this grade level or no student subject enrollments found.",
+        };
+      }
+    }
+  } else {
+    // Non-SHS: Use flat calculation - all students take all subjects
+    const subjects = await getSubjectsForGradeLevel(
+      section.gradeLevelId,
+      gradeSheet.schoolYearId
+    );
+    subjectCount = subjects.length;
+    totalExpected = studentCount * subjectCount;
+
+    if (totalExpected === 0) {
+      return {
+        isComplete: false,
+        message: "No subjects configured for this grade level.",
+      };
+    }
   }
 
   // Count actual entries with grades (grade is numeric, so only check for NOT NULL)
@@ -211,9 +361,13 @@ async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
   const missingCount = totalExpected - totalEntered;
 
   if (missingCount > 0) {
+    const subjectInfo = isSHS
+      ? `${totalExpected} expected entries based on student subject enrollments`
+      : `${studentCount} students × ${subjectCount} subjects`;
+
     return {
       isComplete: false,
-      message: `Cannot submit: ${missingCount} grade${missingCount > 1 ? "s" : ""} missing. All ${totalExpected} entries (${studentCount} students × ${subjectCount} subjects) must be filled.`,
+      message: `Cannot submit: ${missingCount} grade${missingCount > 1 ? "s" : ""} missing. All ${totalExpected} entries (${subjectInfo}) must be filled.`,
       missingCount,
       totalExpected,
     };
@@ -368,6 +522,27 @@ export async function saveGradeSheetEntriesAction(
     ))
   ) {
     return { message: "You are not authorized to edit this grade sheet." };
+  }
+
+  // Validate that all subjects belong to this section's curriculum or offerings
+  const entrySubjectIds = [...new Set(entries.map((e) => e.subjectId))];
+  if (entrySubjectIds.length > 0) {
+    const validSubjectIds = await getValidSubjectIdsForSection(
+      gradeSheet.sectionId,
+      gradeSheet.schoolYearId
+    );
+
+    const invalidSubjects = entrySubjectIds.filter((id) => !validSubjectIds.has(id));
+    if (invalidSubjects.length > 0) {
+      logger.warn("[grades] Attempted to save grades for invalid subjects", {
+        gradeSheetId,
+        invalidSubjects,
+        userId: session.userId,
+      });
+      return {
+        message: "Some subjects are not valid for this section. Grade entry rejected.",
+      };
+    }
   }
 
   try {
@@ -837,8 +1012,6 @@ export async function unlockGradesAction(
           publishedBy: null,
           principalApprovedAt: null,
           principalApprovedBy: null,
-          coordinatorApprovedAt: null,
-          coordinatorApprovedBy: null,
           submittedAt: null,
           submittedBy: null,
           updatedAt: new Date(),

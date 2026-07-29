@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
-  gradeRecords,
-  teacherAssignments,
+  gradeSheetEntries,
+  gradeSheets,
   subjects,
   sections,
   schoolYears,
@@ -15,6 +15,10 @@ import { getPortalStudentIds, getPortalStudentLabels } from "@/lib/queries/porta
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import type { GradeSheetStatus } from "@/lib/constants/grading-periods";
+
+/** Only show grades from published or locked grade sheets */
+const VISIBLE_STATUSES: GradeSheetStatus[] = ["published", "locked"];
 
 export const metadata = { title: "My Grades" };
 
@@ -29,36 +33,35 @@ export default async function PortalGradesPage() {
   const labels = await getPortalStudentLabels(studentIds);
   const labelMap = Object.fromEntries(labels.map((s) => [s.id, s]));
 
+  // Query from adviser-based gradeSheetEntries (new workflow)
+  // Only show grades from published or locked grade sheets
   const rows =
     studentIds.length === 0
       ? []
       : await db
           .select({
-            studentId: gradeRecords.studentId,
-            id: gradeRecords.id,
+            studentId: gradeSheetEntries.studentId,
+            id: gradeSheetEntries.id,
             schoolYear: schoolYears.label,
             subject: subjects.name,
             section: sections.name,
-            period: gradeRecords.gradingPeriod,
-            grade: gradeRecords.grade,
-            status: gradeRecords.status,
+            period: gradeSheets.gradingPeriod,
+            grade: gradeSheetEntries.grade,
+            status: gradeSheets.status,
           })
-          .from(gradeRecords)
-          .innerJoin(
-            teacherAssignments,
-            eq(gradeRecords.teacherAssignmentId, teacherAssignments.id)
-          )
-          .innerJoin(subjects, eq(teacherAssignments.subjectId, subjects.id))
-          .innerJoin(sections, eq(teacherAssignments.sectionId, sections.id))
-          .innerJoin(schoolYears, eq(gradeRecords.schoolYearId, schoolYears.id))
+          .from(gradeSheetEntries)
+          .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
+          .innerJoin(subjects, eq(gradeSheetEntries.subjectId, subjects.id))
+          .innerJoin(sections, eq(gradeSheets.sectionId, sections.id))
+          .innerJoin(schoolYears, eq(gradeSheets.schoolYearId, schoolYears.id))
           .where(
             and(
-              inArray(gradeRecords.studentId, studentIds),
-              isNull(teacherAssignments.deletedAt),
-              isNull(subjects.deletedAt)
+              inArray(gradeSheetEntries.studentId, studentIds),
+              // Only show grades from published or locked grade sheets
+              inArray(gradeSheets.status, VISIBLE_STATUSES)
             )
           )
-          .orderBy(desc(schoolYears.startDate), subjects.name, gradeRecords.gradingPeriod);
+          .orderBy(desc(schoolYears.startDate), subjects.name, gradeSheets.gradingPeriod);
 
   const emptyCopy =
     studentIds.length === 0 ? (

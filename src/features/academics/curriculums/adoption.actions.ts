@@ -9,6 +9,7 @@ import {
   gradeRecords,
   teacherAssignments,
   sections,
+  subjectOfferings,
 } from "@/lib/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
@@ -48,6 +49,30 @@ async function hasGradeRecordsForGradeLevel(
       and(
         eq(gradeRecords.schoolYearId, schoolYearId),
         eq(sections.gradeLevelId, gradeLevelId)
+      )
+    );
+
+  return (row?.count ?? 0) > 0;
+}
+
+/**
+ * Returns true if any subject offerings exist for sections in the given grade level.
+ * This indicates that subjects have been configured and curriculum change would cause mismatch.
+ */
+async function hasSubjectOfferingsForGradeLevel(
+  schoolYearId: string,
+  gradeLevelId: string
+): Promise<boolean> {
+  const [row] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(subjectOfferings)
+    .innerJoin(sections, eq(subjectOfferings.sectionId, sections.id))
+    .where(
+      and(
+        eq(subjectOfferings.schoolYearId, schoolYearId),
+        eq(sections.gradeLevelId, gradeLevelId),
+        eq(subjectOfferings.isActive, true),
+        isNull(subjectOfferings.deletedAt)
       )
     );
 
@@ -96,6 +121,21 @@ export async function updateAdoptionAction(
 
   if (eligibilityError) {
     return { message: eligibilityError };
+  }
+
+  // Check if subject offerings exist for sections in this grade level
+  // Changing curriculum after offerings are generated would cause data mismatch
+  const hasOfferings = await hasSubjectOfferingsForGradeLevel(
+    schoolYearId,
+    gradeLevelId
+  );
+
+  if (hasOfferings) {
+    return {
+      message:
+        "Cannot change curriculum adoption: subject offerings have already been generated for sections in this grade level. " +
+        "Delete the subject offerings first or keep the current curriculum.",
+    };
   }
 
   // Check existing active adoption

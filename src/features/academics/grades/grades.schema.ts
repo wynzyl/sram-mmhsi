@@ -160,7 +160,6 @@ export interface GradeSheetView {
   gradingPeriod: GradingPeriod;
   status: GradeSheetStatus;
   submittedAt: Date | null;
-  coordinatorApprovedAt: Date | null;
   principalApprovedAt: Date | null;
   publishedAt: Date | null;
   lockedAt: Date | null;
