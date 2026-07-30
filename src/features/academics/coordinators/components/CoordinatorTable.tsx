@@ -74,7 +74,7 @@ export default function CoordinatorTable({
         cell: ({ row }) => (
           <div>
             <div className="font-medium">{row.original.userName}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-helper">
               {row.original.userEmail}
             </div>
           </div>
@@ -84,7 +84,7 @@ export default function CoordinatorTable({
         header: "School Year",
         accessorKey: "schoolYearLabel",
         cell: ({ row }) => (
-          <div className="flex items-center gap-2">
+          <div className="flex-row-2">
             <span className="text-sm">{row.original.schoolYearLabel}</span>
             {row.original.isActiveYear && (
               <Badge variant="success" className="text-xs">
@@ -98,7 +98,7 @@ export default function CoordinatorTable({
         header: "Assigned",
         accessorKey: "createdAt",
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-secondary">
             {formatDate(row.original.createdAt)}
           </span>
         ),
@@ -112,7 +112,7 @@ export default function CoordinatorTable({
           if (removingId === coordinator.id) {
             return (
               <div className="flex gap-2 items-center">
-                <span className="text-xs text-muted-foreground">Remove?</span>
+                <span className="text-helper">Remove?</span>
                 <Button
                   variant="danger"
                   size="sm"
@@ -153,7 +153,7 @@ export default function CoordinatorTable({
       <div className="flex justify-between items-center mb-4 px-4">
         <div>
           <h2 className="text-lg font-semibold">Coordinators</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-secondary">
             Assign coordinators to review grade sheet submissions for each grade group
           </p>
         </div>
@@ -167,7 +167,7 @@ export default function CoordinatorTable({
           <div className="text-muted-foreground mb-2">
             No coordinator assignments found
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-secondary">
             Assign coordinators to review grade submissions for their grade groups.
           </p>
         </div>

@@ -46,7 +46,7 @@ export function CurriculumsListTable({ data, onClone }: CurriculumsListTableProp
       columnHelper.accessor("version", {
         header: "Version",
         cell: (info) => (
-          <span className="font-mono text-sm text-muted-foreground">
+          <span className="font-mono text-secondary">
             v{info.getValue()}
           </span>
         ),
@@ -68,18 +68,18 @@ export function CurriculumsListTable({ data, onClone }: CurriculumsListTableProp
         cell: (info) => {
           const date = info.getValue();
           return date ? (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-secondary">
               {formatDate(date)}
             </span>
           ) : (
-            <span className="text-sm text-muted-foreground/50">—</span>
+            <span className="text-secondary opacity-50">—</span>
           );
         },
       }),
       columnHelper.accessor("createdAt", {
         header: "Created",
         cell: (info) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-secondary">
             {formatDate(info.getValue())}
           </span>
         ),
@@ -91,7 +91,7 @@ export function CurriculumsListTable({ data, onClone }: CurriculumsListTableProp
           const row = info.row.original;
           const canClone = row.status === "published" || row.status === "archived";
           return (
-            <div className="flex items-center gap-2 justify-end">
+            <div className="flex-row-2 justify-end">
               <Link
                 href={`/staff/academics/curriculums/${row.id}`}
                 className="text-xs text-muted-foreground hover:text-primary"
@@ -178,13 +178,13 @@ export function CurriculumsListTable({ data, onClone }: CurriculumsListTableProp
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="flex items-center gap-1 uppercase tracking-wider select-none hover:text-foreground"
+                          className="flex-row-1 uppercase tracking-wider select-none hover:text-foreground"
                         >
                           {content}
                           {indicator}
                         </button>
                       ) : (
-                        <div className="flex items-center gap-1">
+                        <div className="flex-row-1">
                           {content}
                           {indicator}
                         </div>

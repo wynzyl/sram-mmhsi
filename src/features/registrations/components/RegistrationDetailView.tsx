@@ -199,13 +199,13 @@ export function RegistrationDetailView({
                     <StatusIndicator status="pending" label="Placement pending" size="sm" pulse />
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground sm:text-base">
+                <p className="text-secondary sm:text-base">
                   <span className="font-mono text-foreground">{student.referenceNumber}</span>
                   <span className="mx-2 text-gray-300 dark:text-gray-700">·</span>
                   {placementSubtitle}
                 </p>
                 {student.lrn || age != null ? (
-                  <p className="text-xs text-muted-foreground sm:text-sm">
+                  <p className="text-helper sm:text-sm">
                     {student.lrn ? (
                       <>
                         LRN <span className="font-mono text-foreground">{student.lrn}</span>
@@ -303,7 +303,7 @@ export function RegistrationDetailView({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-secondary">
                     No assessment ledger yet. Create an assessment from an enrollment when ready.
                   </p>
                 )}
@@ -422,7 +422,7 @@ export function RegistrationDetailView({
                       </span>
                       <span className="min-w-0">
                         <span className="block text-sm font-semibold text-foreground">Enrollment</span>
-                        <span className="block text-xs text-muted-foreground">Start or continue enrollment</span>
+                        <span className="block text-helper">Start or continue enrollment</span>
                       </span>
                     </Link>
                   </li>
@@ -444,7 +444,7 @@ export function RegistrationDetailView({
                         <span className="block text-sm font-semibold text-foreground">
                           {flags.canPostPayments ? "Billing & payments" : "Assessment ledger"}
                         </span>
-                        <span className="block text-xs text-muted-foreground">
+                        <span className="block text-helper">
                           {flags.canPostPayments
                             ? "Ledger, allocations, and OR posting"
                             : "Fees, lines, and history"}
@@ -464,7 +464,7 @@ export function RegistrationDetailView({
                       </span>
                       <span className="min-w-0">
                         <span className="block text-sm font-semibold text-foreground">Email guardian</span>
-                        <span className="block text-xs text-muted-foreground">Opens your mail app</span>
+                        <span className="block text-helper">Opens your mail app</span>
                       </span>
                     </a>
                   </li>
@@ -481,7 +481,7 @@ export function RegistrationDetailView({
                       </span>
                       <span className="min-w-0 text-left">
                         <span className="block text-sm font-semibold text-foreground">Invoices</span>
-                        <span className="block text-xs text-muted-foreground">Open the invoices tab</span>
+                        <span className="block text-helper">Open the invoices tab</span>
                       </span>
                     </button>
                   </li>
@@ -497,7 +497,7 @@ export function RegistrationDetailView({
                     </span>
                     <span className="min-w-0 text-left">
                       <span className="block text-sm font-semibold text-foreground">Intake documents</span>
-                      <span className="block text-xs text-muted-foreground">Checklist & requirements</span>
+                      <span className="block text-helper">Checklist & requirements</span>
                     </span>
                   </button>
                 </li>

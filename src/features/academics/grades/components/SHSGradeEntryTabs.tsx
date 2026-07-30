@@ -411,14 +411,14 @@ export function SHSGradeEntryTabs({
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
       {/* Toolbar */}
       <div className="border-b border-border p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex-row-2">
           {currentStatus && (
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(currentStatus)}`}>
+            <span className={`inline-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(currentStatus)}`}>
               {getStatusLabel(currentStatus)}
             </span>
           )}
           {hasUnsavedChanges && canEdit && (
-            <span className="text-sm text-amber-600 flex items-center gap-1">
+            <span className="text-sm text-amber-600 flex-row-1">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
@@ -426,10 +426,10 @@ export function SHSGradeEntryTabs({
             </span>
           )}
           {isCreatingSheet && (
-            <span className="text-sm text-muted-foreground">Initializing...</span>
+            <span className="text-secondary">Initializing...</span>
           )}
           {!canEdit && (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-secondary">
               (Read-only - grades have been submitted)
             </span>
           )}
@@ -445,7 +445,7 @@ export function SHSGradeEntryTabs({
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex-row-3">
           {canEdit && (
             <>
               <button
@@ -497,7 +497,7 @@ export function SHSGradeEntryTabs({
 
       {/* Strand Tabs */}
       <div className="border-b border-border bg-muted/30 px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap flex-row-2">
           {tabs.map((tab) => (
             <Button
               key={tab.key}
@@ -524,7 +524,7 @@ export function SHSGradeEntryTabs({
           ))}
         </div>
         {/* Tab description */}
-        <div className="mt-2 text-sm text-muted-foreground">
+        <div className="mt-2 text-secondary">
           {activeTab === "core" ? (
             <>Entering grades for <strong>All Strands</strong> — all students with all subjects (core + electives)</>
           ) : (
@@ -633,7 +633,7 @@ export function SHSGradeEntryTabs({
                     <td className="sticky left-0 z-10 bg-inherit px-4 py-3 whitespace-nowrap text-sm font-medium text-foreground border-r border-border">
                       <div className="flex flex-col">
                         <span>{student.fullName}</span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-helper">
                           {student.studentRef}
                         </span>
                       </div>

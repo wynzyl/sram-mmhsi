@@ -113,7 +113,7 @@ export function PendingEnrollmentsTable({
         accessorKey: "createdAt",
         header: "Created",
         cell: ({ row }) => (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-helper">
             {formatDate(row.original.createdAt)}
           </span>
         ),
@@ -157,7 +157,7 @@ export function PendingEnrollmentsTable({
         itemLabel="enrollments"
       />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-secondary">
           No enrollments match the current filters.
         </div>
       )}
@@ -306,7 +306,7 @@ export function AssessedEnrollmentsTable({
         itemLabel="enrollments"
       />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-secondary">
           No enrollments match the current filters.
         </div>
       )}
@@ -395,7 +395,7 @@ export function EnrolledStudentsTable({
         accessorKey: "enrolledAt",
         header: "Enrolled On",
         cell: ({ row }) => (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-helper">
             {formatDate(row.original.enrolledAt)}
           </span>
         ),
@@ -426,7 +426,7 @@ export function EnrolledStudentsTable({
         itemLabel="students"
       />
       {filteredStudents.length === 0 && (searchQuery || gradeLevelFilter) && (
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-secondary">
           No students match the current filters.
         </div>
       )}
@@ -506,7 +506,7 @@ export function CancelledEnrollmentsTable({
         accessorKey: "cancelledAt",
         header: "Cancelled On",
         cell: ({ row }) => (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-helper">
             {formatDate(row.original.cancelledAt)}
           </span>
         ),
@@ -546,7 +546,7 @@ export function CancelledEnrollmentsTable({
         itemLabel="enrollments"
       />
       {filteredEnrollments.length === 0 && (searchQuery || gradeLevelFilter) && (
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-secondary">
           No enrollments match the current filters.
         </div>
       )}

@@ -29,7 +29,7 @@ export function LoadingState({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 text-muted-foreground",
+        "flex-row-2 text-muted-foreground",
         centered && "justify-center py-8",
         className
       )}

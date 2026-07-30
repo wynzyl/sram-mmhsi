@@ -240,14 +240,14 @@ export function AdviserGradeEntryGrid({
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
       {/* Toolbar */}
       <div className="border-b border-border p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex-row-2">
           {currentStatus && (
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(currentStatus)}`}>
+            <span className={`inline-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(currentStatus)}`}>
               {getStatusLabel(currentStatus)}
             </span>
           )}
           {hasUnsavedChanges && canEdit && (
-            <span className="text-sm text-amber-600 flex items-center gap-1">
+            <span className="text-sm text-amber-600 flex-row-1">
               <svg
                 className="h-4 w-4"
                 fill="none"
@@ -265,10 +265,10 @@ export function AdviserGradeEntryGrid({
             </span>
           )}
           {isCreatingSheet && (
-            <span className="text-sm text-muted-foreground">Initializing...</span>
+            <span className="text-secondary">Initializing...</span>
           )}
           {!canEdit && (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-secondary">
               (Read-only - grades have been submitted)
             </span>
           )}
@@ -284,7 +284,7 @@ export function AdviserGradeEntryGrid({
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex-row-3">
           {canEdit && (
             <>
               <button
@@ -428,7 +428,7 @@ export function AdviserGradeEntryGrid({
                   <td className="sticky left-0 z-10 bg-inherit px-4 py-3 whitespace-nowrap text-sm font-medium text-foreground border-r border-border">
                     <div className="flex flex-col">
                       <span>{student.fullName}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-helper">
                         {student.studentRef}
                       </span>
                     </div>

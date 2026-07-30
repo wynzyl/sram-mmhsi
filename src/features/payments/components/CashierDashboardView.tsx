@@ -33,7 +33,7 @@ export function CashierDashboardView() {
       <div className="mt-6 w-full">
         <div className="flex items-center justify-end">
           {query.isFetching && !query.isLoading && (
-            <span className="text-xs text-muted-foreground" aria-live="polite">
+            <span className="text-helper" aria-live="polite">
               Refreshing…
             </span>
           )}
@@ -125,7 +125,7 @@ export function CashierDashboardView() {
             </CardHeader>
             <CardContent>
               {recentCollections.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No posted payments yet.</p>
+                <p className="text-secondary">No posted payments yet.</p>
               ) : (
                 <ul className="max-h-48 space-y-2 overflow-y-auto pr-1">
                   {recentCollections.map((p) => {

@@ -98,7 +98,7 @@ export default function SectionsTable({
         header: "School Year",
         accessorKey: "schoolYearLabel",
         cell: ({ row }) => (
-          <div className="flex items-center gap-2">
+          <div className="flex-row-2">
             <span className="text-sm">{row.original.schoolYearLabel}</span>
             {row.original.isActiveYear && (
               <Badge variant="success" className="text-xs">Active</Badge>
@@ -128,7 +128,7 @@ export default function SectionsTable({
         header: "Created",
         accessorKey: "createdAt",
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-secondary">
             {formatDate(row.original.createdAt)}
           </span>
         ),
@@ -142,7 +142,7 @@ export default function SectionsTable({
           if (deletingId === section.id) {
             return (
               <div className="flex gap-2 items-center">
-                <span className="text-xs text-muted-foreground">Delete?</span>
+                <span className="text-helper">Delete?</span>
                 <Button
                   variant="danger"
                   size="sm"
@@ -198,7 +198,7 @@ export default function SectionsTable({
       <div className="flex justify-between items-center mb-4 px-4">
         <div>
           <h2 className="text-lg font-semibold">Sections</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-secondary">
             Manage classroom sections for each grade level and school year
           </p>
         </div>
@@ -219,7 +219,7 @@ export default function SectionsTable({
           <div className="text-muted-foreground mb-2">
             No sections configured
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-secondary">
             Create sections to organize students within each grade level.
           </p>
         </div>

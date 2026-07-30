@@ -90,7 +90,7 @@ export function InlineConfirmButtons({
   inputConfig,
 }: InlineConfirmButtonsProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex-row-2">
       {inputConfig && (
         <Input
           type="text"
@@ -104,7 +104,7 @@ export function InlineConfirmButtons({
       )}
 
       {prompt && (
-        <span className="text-xs text-muted-foreground">{prompt}</span>
+        <span className="text-helper">{prompt}</span>
       )}
 
       <Button

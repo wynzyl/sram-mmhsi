@@ -35,14 +35,14 @@ export function PaginationControls({ pagination, basePath: _basePath }: Paginati
   return (
     <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
       {/* Record count */}
-      <div className="text-sm text-muted-foreground">
+      <div className="text-secondary">
         Showing <span className="font-medium text-foreground">{startRecord}</span> to{" "}
         <span className="font-medium text-foreground">{endRecord}</span> of{" "}
         <span className="font-medium text-foreground">{totalRecords}</span> records
       </div>
 
       {/* Navigation buttons */}
-      <div className="flex items-center gap-2">
+      <div className="flex-row-2">
         <Link href={createPageUrl(page - 1)} aria-disabled={!hasPreviousPage}>
           <Button variant="secondary" size="sm" disabled={!hasPreviousPage} className="gap-1">
             <ChevronLeft className="h-4 w-4" />
@@ -50,10 +50,10 @@ export function PaginationControls({ pagination, basePath: _basePath }: Paginati
           </Button>
         </Link>
 
-        <div className="flex items-center gap-1 px-2 text-sm">
-          <span className="text-muted-foreground">Page</span>
+        <div className="flex-row-1 px-2 text-sm">
+          <span className="text-secondary">Page</span>
           <span className="font-medium text-foreground">{page}</span>
-          <span className="text-muted-foreground">of</span>
+          <span className="text-secondary">of</span>
           <span className="font-medium text-foreground">{totalPages}</span>
         </div>
 

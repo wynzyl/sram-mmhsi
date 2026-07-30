@@ -25,7 +25,7 @@ export function BackLink({
   return (
     <Link
       href={href}
-      className={`inline-flex items-center gap-2 font-mono text-sm text-muted-foreground transition-colors hover:text-foreground print:hidden ${className}`.trim()}
+      className={`inline-center gap-2 font-mono text-secondary transition-colors hover:text-foreground print:hidden ${className}`.trim()}
     >
       ← {label}
     </Link>

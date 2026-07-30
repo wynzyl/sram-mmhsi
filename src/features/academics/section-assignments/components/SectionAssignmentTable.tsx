@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ClientTablePagination } from "@/components/ui/ClientTablePagination";
 import type {
   StudentForSectionAssignment,
   SectionWithCount,
@@ -391,7 +392,7 @@ export function SectionAssignmentTable({
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {header.isPlaceholder ? null : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex-row-2">
                           {flexRender(
                             header.column.columnDef.header,
                             header.getContext()
@@ -424,7 +425,7 @@ export function SectionAssignmentTable({
                   <tr
                     key={row.id}
                     className={cn(
-                      "border-b border-border last:border-0 hover:bg-muted transition-colors",
+                      "border-b border-border last:border-0 hover-muted",
                       row.getIsSelected() && "bg-primary/5"
                     )}
                   >
@@ -448,36 +449,14 @@ export function SectionAssignmentTable({
       </div>
 
       {/* Pagination */}
-      {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {table.getState().pagination.pageIndex * 25 + 1} -{" "}
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) * 25,
-              students.length
-            )}{" "}
-            of {students.length} students
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      <ClientTablePagination
+        currentPage={table.getState().pagination.pageIndex + 1}
+        totalPages={table.getPageCount()}
+        totalRecords={table.getFilteredRowModel().rows.length}
+        pageSize={25}
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+        itemLabel="students"
+      />
 
       {/* Assign Modal */}
       <AssignSectionModal

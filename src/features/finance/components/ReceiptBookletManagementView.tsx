@@ -69,7 +69,7 @@ export function ReceiptBookletManagementView({
 
         <div className="grid gap-4 md:grid-cols-3">
           <div className="bg-card border border-border rounded-md p-4">
-            <div className="flex items-center gap-4">
+            <div className="flex-row-4">
               <div className="rounded-xl bg-primary/15 p-3 text-primary">
                 <Layers3 className="h-6 w-6" />
               </div>
@@ -78,7 +78,7 @@ export function ReceiptBookletManagementView({
                 <p className="text-3xl font-bold text-foreground">
                   {activeCount.toString().padStart(2, "0")}
                 </p>
-                <p className="text-xs text-muted-foreground">Across all desks</p>
+                <p className="text-helper">Across all desks</p>
               </div>
             </div>
           </div>
@@ -107,7 +107,7 @@ export function ReceiptBookletManagementView({
             <p className="mt-1 text-3xl font-semibold text-red-500 dark:text-red-400">
               {lowStockCount.toString().padStart(2, "0")}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-helper">
               Rerender required for near-exhausted booklets
             </p>
           </div>

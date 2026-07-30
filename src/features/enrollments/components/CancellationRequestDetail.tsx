@@ -315,7 +315,7 @@ export default function CancellationRequestDetailView({
                   <p className="text-xs text-destructive">{rejectState.message}</p>
                 )}
 
-                <div className="flex items-center gap-2">
+                <div className="flex-row-2">
                   <Button
                     type="submit"
                     variant="danger"
@@ -353,7 +353,7 @@ export default function CancellationRequestDetailView({
                     <p className="mb-4 text-xs text-destructive">{approveState.message}</p>
                   )}
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex-row-3">
                     <Button
                       type="submit"
                       variant="success"

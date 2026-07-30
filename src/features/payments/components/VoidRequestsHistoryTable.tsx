@@ -44,7 +44,7 @@ export default function VoidRequestsHistoryTable({
         cell: ({ row }) => (
           <div>
             <div className="font-medium">{row.original.studentName}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-helper">
               {row.original.studentRef}
             </div>
           </div>
@@ -89,7 +89,7 @@ export default function VoidRequestsHistoryTable({
         cell: ({ row }) => (
           <div className="text-sm">
             <div>{row.original.requestedByUsername}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-helper">
               {formatDate(row.original.requestedAt, { year: "numeric", month: "numeric", day: "numeric" })}
             </div>
           </div>
@@ -107,7 +107,7 @@ export default function VoidRequestsHistoryTable({
               <div className="text-sm">
                 <div className="text-muted-foreground italic">Self-cancelled</div>
                 {request.cancelledAt && (
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-helper">
                     {formatDate(request.cancelledAt, { year: "numeric", month: "numeric", day: "numeric" })}
                   </div>
                 )}
@@ -123,7 +123,7 @@ export default function VoidRequestsHistoryTable({
             <div className="text-sm">
               <div>{request.decidedByUsername}</div>
               {request.decidedAt && (
-                <div className="text-xs text-muted-foreground">
+                <div className="text-helper">
                   {formatDate(request.decidedAt, { year: "numeric", month: "numeric", day: "numeric" })}
                 </div>
               )}
@@ -154,7 +154,7 @@ export default function VoidRequestsHistoryTable({
     return (
       <div className="p-8 text-center">
         <div className="text-muted-foreground mb-2">No void request history</div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-secondary">
           Processed void requests will appear here.
         </p>
       </div>

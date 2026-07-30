@@ -506,6 +506,90 @@
   margin-left: 0.5rem;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   TYPOGRAPHY UTILITIES
+   Reduce repeated Tailwind patterns for common text styles
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Helper text / captions (text-xs text-muted-foreground) */
+.text-helper {
+  @apply text-xs text-muted-foreground;
+}
+
+/* Secondary content (text-sm text-muted-foreground) */
+.text-secondary {
+  @apply text-sm text-muted-foreground;
+}
+
+/* Form labels (text-sm font-medium text-foreground) */
+.text-label {
+  @apply text-sm font-medium text-foreground;
+}
+
+/* Eyebrow labels / section headings (text-xs font-semibold uppercase tracking-wide) */
+.text-eyebrow {
+  @apply text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT UTILITIES
+   Flex layout shortcuts for common patterns
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Horizontal flex with gap variants (flex items-center gap-N) */
+.flex-row-1 {
+  @apply flex items-center gap-1;
+}
+
+.flex-row-2 {
+  @apply flex items-center gap-2;
+}
+
+.flex-row-3 {
+  @apply flex items-center gap-3;
+}
+
+.flex-row-4 {
+  @apply flex items-center gap-4;
+}
+
+/* Vertical flex with gap variants (flex flex-col gap-N) */
+.flex-col-2 {
+  @apply flex flex-col gap-2;
+}
+
+.flex-col-3 {
+  @apply flex flex-col gap-3;
+}
+
+.flex-col-4 {
+  @apply flex flex-col gap-4;
+}
+
+.flex-col-6 {
+  @apply flex flex-col gap-6;
+}
+
+/* Inline flex center (inline-flex items-center) */
+.inline-center {
+  @apply inline-flex items-center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INTERACTIVE STATE UTILITIES
+   Common hover and transition patterns
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Hover with muted background (hover:bg-muted transition-colors) */
+.hover-muted {
+  @apply hover:bg-muted transition-colors;
+}
+
+/* Hover with primary tint (hover:bg-primary/10 transition-colors) */
+.hover-primary {
+  @apply hover:bg-primary/10 transition-colors;
+}
+
 /* Form utilities used by booklet form */
 .form-card {
   background-color: var(--card);

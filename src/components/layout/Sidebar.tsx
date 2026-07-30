@@ -267,7 +267,7 @@ export function Sidebar({ role, username }: SidebarProps) {
   return (
     <aside className="w-[220px] shrink-0 bg-gradient-to-b from-card to-sidebar border-r border-border flex flex-col overflow-y-auto shadow-md">
       {/* Brand */}
-      <div className="flex items-center gap-3 px-4 pt-5 pb-4 border-b border-border bg-card/[0.86]">
+      <div className="flex-row-3 px-4 pt-5 pb-4 border-b border-border bg-card/[0.86]">
         <Image
           src="/MLAND LOGO.png"
           alt="Merryland logo"
@@ -285,7 +285,7 @@ export function Sidebar({ role, username }: SidebarProps) {
       <button
         type="button"
         onClick={openCommandPalette}
-        className="flex items-center gap-2 mx-2.5 mt-3 px-3 py-2 bg-card border border-border rounded-md text-muted-foreground text-[0.8rem] cursor-pointer transition-all hover:bg-muted hover:border-border hover:text-foreground"
+        className="flex-row-2 mx-2.5 mt-3 px-3 py-2 bg-card border border-border rounded-md text-muted-foreground text-[0.8rem] cursor-pointer transition-all hover:bg-muted hover:border-border hover:text-foreground"
         aria-label="Open search"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -373,7 +373,7 @@ export function Sidebar({ role, username }: SidebarProps) {
 
       {/* User footer */}
       <div className="border-t border-border py-3 px-4 flex items-center justify-between gap-2">
-        <div className="flex-1 flex items-center gap-2 min-w-0">
+        <div className="flex-1 flex-row-2 min-w-0">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/80 text-white flex items-center justify-center text-xs font-bold shrink-0" aria-hidden="true">
             {username.charAt(0).toUpperCase()}
           </div>

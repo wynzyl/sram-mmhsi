@@ -150,7 +150,7 @@ const VoidActionsCell = memo(function VoidActionsCell({
 
     // Show who requested it (for other users)
     return (
-      <span className="text-xs text-muted-foreground">
+      <span className="text-helper">
         Requested by {pendingRequest.requestedByUsername}
       </span>
     );

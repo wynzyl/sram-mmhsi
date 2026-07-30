@@ -75,14 +75,14 @@ export function TablePagination({
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-card border border-border rounded-lg">
       {/* Record count */}
-      <p className="text-sm text-muted-foreground">
+      <p className="text-secondary">
         Showing <span className="font-semibold text-foreground">{startRecord}</span> to{" "}
         <span className="font-semibold text-foreground">{endRecord}</span> of{" "}
         <span className="font-semibold text-foreground">{totalRecords}</span> {itemLabel}
       </p>
 
       {/* Navigation */}
-      <nav className="flex items-center gap-1" aria-label="Pagination">
+      <nav className="flex-row-1" aria-label="Pagination">
         {/* First page */}
         <PaginationButton
           href={createPageUrl(1)}
@@ -107,7 +107,7 @@ export function TablePagination({
             return (
               <span
                 key={`ellipsis-${index}`}
-                className="px-2 text-sm text-muted-foreground select-none"
+                className="px-2 text-secondary select-none"
               >
                 …
               </span>

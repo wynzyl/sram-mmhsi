@@ -244,7 +244,7 @@ export function RegistrationDiscountsTab({
               ) : null}
             </div>
             {reversedCount > 0 && (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-helper">
                 This student has reversed discount(s). New discount
                 requests are locked on any assessment where payment
                 activity has been recorded.
@@ -261,7 +261,7 @@ export function RegistrationDiscountsTab({
             <Tag className="h-5 w-5 text-primary" aria-hidden />
             Request Discount
           </h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-secondary mb-4">
             Submit a discount request for approval by finance.
           </p>
           <DiscountRequestForm
@@ -288,7 +288,7 @@ export function RegistrationDiscountsTab({
           <h2 className="font-display text-xl font-bold text-foreground">
             Discount Requests
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-secondary">
             History of discount requests for this student
           </p>
         </div>
@@ -315,7 +315,7 @@ export function RegistrationDiscountsTab({
                     <td className="px-4 py-3">{req.gradeLevelName}</td>
                     <td className="px-4 py-3">
                       <div className="font-medium">{req.discountTypeName}</div>
-                      <div className="text-xs text-muted-foreground">{req.discountTypeCode}</div>
+                      <div className="text-helper">{req.discountTypeCode}</div>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="secondary" className="text-xs">
@@ -323,7 +323,7 @@ export function RegistrationDiscountsTab({
                           ? `${Number(req.overrideValue ?? req.defaultValue)}%`
                           : <CurrencyDisplay amount={Number(req.overrideValue ?? req.defaultValue)} className="inline" />}
                       </Badge>
-                      <div className="text-xs text-muted-foreground mt-0.5">
+                      <div className="text-helper mt-0.5">
                         {req.baseType === "tuition_only" ? "Tuition" : "Full"}
                       </div>
                     </td>

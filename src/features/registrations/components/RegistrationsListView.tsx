@@ -106,7 +106,7 @@ export default function RegistrationsListView({
           accent
         />
       ) : (
-        <p className="font-mono text-sm text-muted-foreground">
+        <p className="font-mono text-secondary">
           {queueTotal.toLocaleString()} in queue
           {debouncedSearch
             ? ` · showing ${filteredRegistrations.length} on this page after search`
@@ -149,7 +149,7 @@ export default function RegistrationsListView({
                       </h3>
 
                       {/* Metadata row */}
-                      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                      <div className="mb-4 flex flex-wrap items-center gap-3 text-secondary">
                         <code className="rounded bg-gray-200 px-2 py-0.5 font-mono text-foreground dark:bg-gray-800">
                           {reg.referenceNumber}
                         </code>
@@ -165,7 +165,7 @@ export default function RegistrationsListView({
 
                       {/* Document status with inline progress */}
                       <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">Requirements:</span>
+                        <span className="text-secondary">Requirements:</span>
                         {docProgress.completed === docProgress.total ? (
                           <StatusIndicator status="complete" size="sm" />
                         ) : docProgress.completed > 0 ? (
@@ -180,7 +180,7 @@ export default function RegistrationsListView({
                       </div>
 
                       {/* Registration date */}
-                      <p className="mt-3 text-xs text-muted-foreground">
+                      <p className="mt-3 text-helper">
                         Registered{" "}
                         {formatDate(reg.createdAt, {
                           year: "numeric",
@@ -226,7 +226,7 @@ export default function RegistrationsListView({
 
       {/* Results count */}
       {debouncedSearch && (
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-secondary">
           Showing {filteredRegistrations.length} of {registrations.length} registrations
         </p>
       )}

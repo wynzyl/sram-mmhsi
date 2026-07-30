@@ -161,7 +161,7 @@ export function SubjectsByGradeLevel({
                   />
                 </svg>
                 <span className="font-medium">{group.gradeLevelName}</span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-secondary">
                   ({activeSubjects.length} subject
                   {activeSubjects.length !== 1 ? "s" : ""})
                 </span>
@@ -234,7 +234,7 @@ function SubjectRow({ subject, isDraft, onEdit }: SubjectRowProps) {
   return (
     <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="inline-flex items-center px-2 py-0.5 bg-primary/10 text-primary text-xs font-mono rounded">
+        <span className="inline-center px-2 py-0.5 bg-primary/10 text-primary text-xs font-mono rounded">
           {subject.code}
         </span>
         <div className="min-w-0">

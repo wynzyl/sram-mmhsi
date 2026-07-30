@@ -55,7 +55,7 @@ export function StatCard({
             {value}
           </p>
           {subtext && (
-            <p className="mt-1 truncate text-xs text-muted-foreground">
+            <p className="mt-1 truncate text-helper">
               {subtext}
             </p>
           )}

@@ -113,9 +113,9 @@ export function DataTable<TData>({
   });
 
   return (
-    <div className={cn("flex flex-col gap-4", className)}>
+    <div className={cn("flex-col-4", className)}>
       {searchable && (
-        <div className="flex items-center gap-2">
+        <div className="flex-row-2">
           <Input
             type="search"
             value={filterInput}
@@ -154,7 +154,7 @@ export function DataTable<TData>({
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {header.isPlaceholder ? null : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex-row-2">
                           {flexRender(
                             header.column.columnDef.header,
                             header.getContext()
@@ -177,7 +177,7 @@ export function DataTable<TData>({
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="px-4 py-12 text-center text-sm text-muted-foreground"
+                    className="px-4 py-12 text-center text-secondary"
                   >
                     No results found.
                   </td>
@@ -198,7 +198,7 @@ export function DataTable<TData>({
                         key={row.id}
                         data-index={virtualRow.index}
                         ref={(node) => rowVirtualizer.measureElement(node)}
-                        className="border-b border-border last:border-0 hover:bg-muted transition-colors"
+                        className="border-b border-border last:border-0 hover-muted"
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td
@@ -314,14 +314,14 @@ function ClientPagination({
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-card border border-border rounded-lg">
       {/* Record count */}
-      <p className="text-sm text-muted-foreground">
+      <p className="text-secondary">
         Showing <span className="font-semibold text-foreground">{startRecord}</span> to{" "}
         <span className="font-semibold text-foreground">{endRecord}</span> of{" "}
         <span className="font-semibold text-foreground">{totalRecords}</span> {itemLabel}
       </p>
 
       {/* Navigation */}
-      <nav className="flex items-center gap-1" aria-label="Pagination">
+      <nav className="flex-row-1" aria-label="Pagination">
         {/* First page */}
         <PaginationButton
           onClick={() => onPageChange(1)}
@@ -348,7 +348,7 @@ function ClientPagination({
             return (
               <span
                 key={`ellipsis-${index}`}
-                className="px-2 text-sm text-muted-foreground select-none"
+                className="px-2 text-secondary select-none"
               >
                 …
               </span>

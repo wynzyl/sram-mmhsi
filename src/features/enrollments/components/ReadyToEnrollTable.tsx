@@ -203,7 +203,7 @@ export default function ReadyToEnrollTable({
 
       {/* Results Summary */}
       {filteredStudents.length === 0 && (searchQuery || gradeLevelFilter) && (
-        <div className="mt-4 text-center text-sm text-muted-foreground">
+        <div className="mt-4 text-center text-secondary">
           No students match the current filters. Try adjusting your search or grade level filter.
         </div>
       )}

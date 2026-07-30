@@ -189,7 +189,7 @@ export default function EnrollmentsListView({
           Showing {showingFrom.toLocaleString()}-{showingTo.toLocaleString()} of{" "}
           {totalFilteredCount.toLocaleString()}
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex-row-2">
           {page > 1 ? (
             <Link
               href={createPageHref(page - 1)}

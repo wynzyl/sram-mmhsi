@@ -407,7 +407,7 @@ export function CashierPaymentProcessingView({
                       </div>
 
                       {/* Manual Entry Toggle */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex-row-2">
                         <input
                           type="checkbox"
                           id="isManualEntryToggle"
