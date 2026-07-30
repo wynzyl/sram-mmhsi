@@ -22,53 +22,23 @@ import {
 } from "@/lib/types/pagination";
 import type { CancellationReason } from "@/lib/constants/cancellation-reasons";
 
-// ─── Type Definitions ─────────────────────────────────────────────────────────
+// ─── Type Definitions (re-exported from enrollment-cancellation.types.ts) ─────
 
-export type CancellationRequestListItem = {
-  id: string;
-  enrollmentId: string;
-  studentId: string;
-  studentRef: string;
-  studentName: string;
-  gradeLevelName: string;
-  schoolYearLabel: string;
-  reasonType: CancellationReason;
-  remarks: string | null;
-  status: "pending" | "approved" | "rejected" | "cancelled";
-  requestedAt: Date;
-  requestedByName: string;
-  reviewedAt: Date | null;
-  reviewedByName: string | null;
-};
+export type {
+  CancellationRequestListItem,
+  CancellationRequestDetail,
+  RefundCalculation,
+  PendingCancellationInfo,
+  EnrollmentForCancellation,
+  CancellationRequestForValidation,
+  CancellationHistoryItem,
+} from "./enrollment-cancellation.types";
 
-export type CancellationRequestDetail = CancellationRequestListItem & {
-  enrollmentStatus: "pending" | "assessed" | "enrolled" | "cancelled";
-  reviewRemarks: string | null;
-  // Assessment info (if exists)
-  assessment: {
-    id: string;
-    totalAmount: string;
-    totalPaid: string;
-    balance: string;
-    billingStatus: string;
-  } | null;
-  // Refund calculation preview (computed)
-  refundPreview: RefundCalculation | null;
-};
-
-export type RefundCalculation = {
-  isEligibleForRefund: boolean;
-  cutoffDate: Date;
-  refundableAmount: number;
-  nonRefundableAmount: number;
-  totalPaid: number;
-  itemBreakdown: Array<{
-    description: string;
-    paidAmount: number;
-    isRefundable: boolean;
-    willRefund: boolean;
-  }>;
-};
+import type {
+  CancellationRequestListItem,
+  CancellationRequestDetail,
+  RefundCalculation,
+} from "./enrollment-cancellation.types";
 
 // ─── System Settings Queries ──────────────────────────────────────────────────
 

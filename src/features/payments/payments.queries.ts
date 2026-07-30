@@ -27,48 +27,32 @@ import {
 import { formatDate } from "@/lib/utils/date";
 
 // ─────────────────────────────────────────────────────────────────
-// Types
+// Types (re-exported from payments.types.ts)
 // ─────────────────────────────────────────────────────────────────
 
-export type CashierQueueRow = {
-  assessmentId: string;
-  studentName: string;
-  referenceNumber: string;
-  gradeLevel: string;
-  schoolYear: string;
-  billingStatus: string;
-  balance: number;
-  totalPaid: number;
-};
+export type {
+  CashierQueueRow,
+  CashierStats,
+  RecentCollection,
+  CashierQueueData,
+  CashierQueueParams,
+  PortalPaymentRow,
+  PortalPaymentsData,
+  ManualEntrySuggestions,
+  CashDiscountEligibility,
+} from "./payments.types";
 
-export type CashierStats = {
-  totalCollectedToday: number;
-  pendingPaymentsCount: number;
-  studentsAssessed: number;
-  totalCollectibles: number;
-};
-
-export type RecentCollection = {
-  paymentId: string;
-  orNumber: string | null;
-  amount: number;
-  paymentDate: Date;
-  studentFirstName: string;
-  studentLastName: string;
-  assessmentId: string | null;
-};
-
-export type CashierQueueData = {
-  queue: CashierQueueRow[];
-  stats: CashierStats;
-  recentCollections: RecentCollection[];
-  queueTotalCount: number;
-};
-
-export type CashierQueueParams = {
-  page?: number;
-  pageSize?: number;
-};
+import type {
+  CashierQueueRow,
+  CashierStats,
+  RecentCollection,
+  CashierQueueData,
+  CashierQueueParams,
+  PortalPaymentRow,
+  PortalPaymentsData,
+  ManualEntrySuggestions,
+  CashDiscountEligibility,
+} from "./payments.types";
 
 // ─────────────────────────────────────────────────────────────────
 // Query helpers
@@ -253,25 +237,6 @@ export async function fetchCashierQueueData(
 // Portal payments (student / parent read-only history)
 // ─────────────────────────────────────────────────────────────────
 
-export type PortalPaymentRow = {
-  id: string;
-  studentId: string;
-  studentName: string;
-  studentReference: string | null;
-  orNumber: string | null;
-  amount: number;
-  paymentMethod: string;
-  paymentDate: string; // ISO (serialized for client)
-  status: string;
-  paymentReference: string | null;
-};
-
-export type PortalPaymentsData = {
-  rows: PortalPaymentRow[];
-  showStudentColumn: boolean;
-  hasLinkedStudents: boolean;
-};
-
 /**
  * Read-only payment history for a portal user (student or parent/guardian).
  * Not cached — financial data must always be current.
@@ -355,11 +320,6 @@ export async function getCashierDefaultBookletId(userId: string): Promise<string
   });
   return user?.defaultBookletId ?? null;
 }
-
-export type ManualEntrySuggestions = {
-  lastManualPaymentDate: string | null;
-  suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[];
-};
 
 /**
  * Get suggestions for manual payment entry.
@@ -605,30 +565,6 @@ export async function isPaymentMostRecentVoidable(
 
 /** The code for the full payment cash discount in the discountTypes table */
 export const FULL_PAYMENT_DISCOUNT_CODE = "FULL_PAYMENT_DISCOUNT";
-
-export interface CashDiscountEligibility {
-  eligible: boolean;
-  reason?: string;
-  discountDetails?: {
-    discountTypeId: string;
-    discountTypeName: string;
-    calculationType: "fixed_amount" | "percentage";
-    baseType: "tuition_only" | "full_assessment";
-    discountValue: number;
-    /** Tuition or full assessment total (base for percentage calculation) */
-    baseAmount: number;
-    /** Calculated discount amount (discountValue% of baseAmount or fixed) */
-    cashDiscountAmount: number;
-    /** Assessment balance before discount */
-    currentBalance: number;
-    /** New balance after discount is applied */
-    newBalance: number;
-    /** Amount the cashier should collect */
-    paymentRequired: number;
-    /** Cutoff date for the school year */
-    cutoffDate: Date;
-  };
-}
 
 /**
  * Check if a payment qualifies for the full payment cash discount.

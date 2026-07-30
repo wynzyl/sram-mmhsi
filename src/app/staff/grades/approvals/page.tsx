@@ -39,7 +39,10 @@ export default async function GradeApprovalsPage() {
     );
   }
 
-  const pendingReviews = await getPrincipalPendingReviews(activeSY.id);
+  // Without pagination params, returns GradeSheetView[] (the array form)
+  const result = await getPrincipalPendingReviews(activeSY.id);
+  // Type guard: without pagination params, we always get an array
+  const pendingReviews = Array.isArray(result) ? result : result.data;
 
   return (
     <div className="p-6 space-y-6">
