@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   useReactTable,
   getCoreRowModel,
@@ -59,7 +60,8 @@ export function DataTable<TData>({
   getRowClassName,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [filterInput, setFilterInput] = useState("");
+  const debouncedFilter = useDebounce(filterInput, 300);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const table = useReactTable({
@@ -67,11 +69,10 @@ export function DataTable<TData>({
     columns,
     state: {
       sorting,
-      globalFilter,
+      globalFilter: debouncedFilter,
       ...(rowSelection !== undefined ? { rowSelection } : {}),
     },
     onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
     ...(onRowSelectionChange
       ? {
           onRowSelectionChange: (updaterOrValue) => {
@@ -111,8 +112,8 @@ export function DataTable<TData>({
         <div className="flex items-center gap-2">
           <Input
             type="search"
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            value={filterInput}
+            onChange={(e) => setFilterInput(e.target.value)}
             placeholder={searchPlaceholder}
             className="max-w-sm"
           />

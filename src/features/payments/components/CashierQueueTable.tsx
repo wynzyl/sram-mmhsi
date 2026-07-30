@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import {
@@ -28,10 +29,11 @@ interface CashierQueueTableProps {
 export function CashierQueueTable({ rows }: CashierQueueTableProps) {
   const [filterMode, setFilterMode] = useState<"all" | "newly_assessed" | "with_balance">("newly_assessed");
   const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 300);
   const [currentPage, setCurrentPage] = useState(1);
 
   const filteredRows = useMemo(() => {
-    const normalizedSearch = searchInput.trim().toLowerCase();
+    const normalizedSearch = debouncedSearch.trim().toLowerCase();
 
     let filtered: CashierQueueRow[];
 
@@ -61,7 +63,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
 
     // Sort alphabetically by student name (A-Z) for "all" and "with_balance"
     return filtered.sort((a, b) => a.studentName.localeCompare(b.studentName));
-  }, [filterMode, rows, searchInput]);
+  }, [filterMode, rows, debouncedSearch]);
 
   // Calculate pagination - clamp page to valid range
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
@@ -78,11 +80,15 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
     setCurrentPage(1);
   };
 
-  // Search change handler - reset page to 1
-  const handleSearchChange = (value: string) => {
-    setSearchInput(value);
+  // Reset page when debounced search changes (skip initial mount)
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setCurrentPage(1);
-  };
+  }, [debouncedSearch]);
 
   const columns: ColumnDef<CashierQueueRow>[] = [
     createStudentColumn<CashierQueueRow>({ refKey: "referenceNumber" }),
@@ -125,7 +131,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
         <Input
           type="search"
           value={searchInput}
-          onChange={(event) => handleSearchChange(event.target.value)}
+          onChange={(event) => setSearchInput(event.target.value)}
           placeholder="Search student name / reference number..."
           className="max-w-sm"
         />

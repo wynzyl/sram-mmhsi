@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useStudents } from "@/features/students/hooks/use-students";
@@ -36,6 +37,17 @@ export function StudentDirectoryView({
   const gradeLevelId = searchParams.get("gradeLevelId") || undefined;
   const currentPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
 
+  // ─── Debounced search state ─────────────────────────────────────────
+  const [searchInput, setSearchInput] = useState(q);
+  const debouncedSearch = useDebounce(searchInput, 300);
+
+  // Sync local state when URL changes externally (back/forward navigation)
+  const [syncedQ, setSyncedQ] = useState(q);
+  if (q !== syncedQ) {
+    setSyncedQ(q);
+    setSearchInput(q);
+  }
+
   // ─── Sort from URL ──────────────────────────────────────────────────
   const rawSortBy = searchParams.get("sortBy");
   const sortBy: StudentSortBy | undefined = isStudentSortBy(rawSortBy) ? rawSortBy : undefined;
@@ -69,6 +81,21 @@ export function StudentDirectoryView({
   const qTrim = q.trim();
   const qParam = qTrim || undefined;
   const hasFilters = qTrim !== "" || gradeLevelId != null;
+
+  // Push to URL when debounced search changes (skip if already synced)
+  useEffect(() => {
+    const trimmed = debouncedSearch.trim();
+    if (trimmed === q) return;
+    router.push(
+      studentDirectoryListHref(basePath, {
+        q: trimmed || undefined,
+        gradeLevelId,
+        sortBy,
+        sortDir: sortBy ? sortDir : undefined,
+        // Reset to page 1 on new search
+      })
+    );
+  }, [debouncedSearch, q, basePath, gradeLevelId, sortBy, sortDir, router]);
 
   // If the requested page is out of range, snap back to the last page.
   useEffect(() => {
@@ -105,15 +132,11 @@ export function StudentDirectoryView({
     });
   }
 
-  // ─── Filter form submit → push to URL (page resets to 1, sort kept) ──
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const nextQ = (form.get("q") as string | null)?.trim() || undefined;
-    const nextGrade = (form.get("gradeLevelId") as string | null) || undefined;
+  // ─── Handle grade level change → push to URL (page resets to 1) ──────
+  function handleGradeLevelChange(nextGrade: string | undefined) {
     router.push(
       studentDirectoryListHref(basePath, {
-        q: nextQ,
+        q: qParam,
         gradeLevelId: nextGrade,
         sortBy,
         sortDir: sortBy ? sortDir : undefined,
@@ -139,9 +162,7 @@ export function StudentDirectoryView({
         </div>
 
         <div className="rounded-lg border border-border bg-card p-2 shadow-sm">
-          <form
-            key={searchParams.toString()}
-            onSubmit={handleSubmit}
+          <div
             role="search"
             className="flex flex-col gap-2 sm:flex-row sm:items-center focus-within:[&_input]:outline-none"
           >
@@ -158,20 +179,19 @@ export function StudentDirectoryView({
               <input
                 id="student-search"
                 type="search"
-                name="q"
                 className="min-h-10 flex-1 bg-transparent py-2 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none"
                 placeholder="Search student records…"
-                defaultValue={q}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 autoComplete="off"
               />
             </div>
 
             <div className="w-full sm:w-40 sm:flex-none">
               <select
-                name="gradeLevelId"
-                defaultValue={gradeLevelId ?? ""}
+                value={gradeLevelId ?? ""}
                 aria-label="Filter by grade level"
-                onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                onChange={(e) => handleGradeLevelChange(e.target.value || undefined)}
                 className="form-control min-h-10 w-full bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
               >
                 <option value="">All grades</option>
@@ -186,6 +206,7 @@ export function StudentDirectoryView({
             {hasFilters && (
               <Link
                 href={basePath}
+                onClick={() => setSearchInput("")}
                 className="inline-flex min-h-10 items-center px-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 Clear
@@ -201,7 +222,7 @@ export function StudentDirectoryView({
                 + Register Student
               </Link>
             )}
-          </form>
+          </div>
         </div>
       </div>
 

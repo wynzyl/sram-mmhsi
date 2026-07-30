@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   useReactTable,
   getCoreRowModel,
@@ -57,7 +58,8 @@ export function SectionAssignmentTable({
   const [schoolYearId, setSchoolYearId] = useState(initialSchoolYearId);
   const [gradeLevelId, setGradeLevelId] = useState(initialGradeLevelId ?? "all");
   const [sectionStatus, setSectionStatus] = useState(initialSectionStatus);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [filterInput, setFilterInput] = useState("");
+  const debouncedFilter = useDebounce(filterInput, 300);
 
   // Table state
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -243,12 +245,11 @@ export function SectionAssignmentTable({
     columns,
     state: {
       sorting,
-      globalFilter,
+      globalFilter: debouncedFilter,
       rowSelection,
     },
     enableRowSelection: true,
     onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -329,8 +330,8 @@ export function SectionAssignmentTable({
         <div className="flex-1 min-w-[200px]">
           <Input
             type="search"
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            value={filterInput}
+            onChange={(e) => setFilterInput(e.target.value)}
             placeholder="Search students..."
             className="max-w-sm"
           />

@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type GradeLevel = {
   id: string;
@@ -36,6 +38,30 @@ export default function EnrollmentQueueHeader({
   const currentGradeLevel = searchParams.get("gradeLevel") ?? "";
   const currentTab = searchParams.get("tab") ?? "ready-to-enroll";
 
+  // Debounced search state
+  const [searchInput, setSearchInput] = useState(currentSearch);
+  const debouncedSearch = useDebounce(searchInput, 300);
+
+  // Sync local state when URL changes externally (back/forward navigation)
+  const [syncedSearch, setSyncedSearch] = useState(currentSearch);
+  if (currentSearch !== syncedSearch) {
+    setSyncedSearch(currentSearch);
+    setSearchInput(currentSearch);
+  }
+
+  // Auto-update URL when debounced search changes
+  useEffect(() => {
+    const trimmed = debouncedSearch.trim();
+    if (trimmed === currentSearch) return;
+
+    const params = new URLSearchParams();
+    if (currentTab) params.set("tab", currentTab);
+    if (trimmed) params.set("search", trimmed);
+    if (currentGradeLevel) params.set("gradeLevel", currentGradeLevel);
+
+    router.push(`${basePath}?${params.toString()}`);
+  }, [debouncedSearch, currentSearch, currentTab, currentGradeLevel, basePath, router]);
+
   // Determine if any filters are active
   const hasFilters = currentSearch !== "" || currentGradeLevel !== "";
 
@@ -51,17 +77,12 @@ export default function EnrollmentQueueHeader({
   }
 
   /**
-   * Handle form submit - pushes filters to URL
+   * Handle grade level change - pushes to URL immediately
    */
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const nextSearch = (form.get("search") as string | null)?.trim() || undefined;
-    const nextGrade = (form.get("gradeLevel") as string | null) || undefined;
-
+  function handleGradeLevelChange(nextGrade: string | undefined) {
     const params = new URLSearchParams();
     if (currentTab) params.set("tab", currentTab);
-    if (nextSearch) params.set("search", nextSearch);
+    if (currentSearch) params.set("search", currentSearch);
     if (nextGrade) params.set("gradeLevel", nextGrade);
 
     router.push(`${basePath}?${params.toString()}`);
@@ -93,9 +114,7 @@ export default function EnrollmentQueueHeader({
 
       {/* Right: Filters + Action Button */}
       <div className="rounded-lg border border-border bg-card p-2 shadow-sm">
-        <form
-          key={searchParams.toString()}
-          onSubmit={handleSubmit}
+        <div
           role="search"
           className="flex flex-col gap-2 sm:flex-row sm:items-center focus-within:[&_input]:outline-none"
         >
@@ -113,10 +132,10 @@ export default function EnrollmentQueueHeader({
             <input
               id="enrollment-search"
               type="search"
-              name="search"
               className="min-h-10 flex-1 bg-transparent py-2 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none"
               placeholder="Search by name or ID..."
-              defaultValue={currentSearch}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               autoComplete="off"
             />
           </div>
@@ -124,10 +143,9 @@ export default function EnrollmentQueueHeader({
           {/* Grade Level Dropdown */}
           <div className="w-full sm:w-40 sm:flex-none">
             <select
-              name="gradeLevel"
-              defaultValue={currentGradeLevel}
+              value={currentGradeLevel}
               aria-label="Filter by grade level"
-              onChange={(e) => e.currentTarget.form?.requestSubmit()}
+              onChange={(e) => handleGradeLevelChange(e.target.value || undefined)}
               className="form-control min-h-10 w-full bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
             >
               <option value="">All grades</option>
@@ -143,6 +161,7 @@ export default function EnrollmentQueueHeader({
           {hasFilters && (
             <Link
               href={getClearHref()}
+              onClick={() => setSearchInput("")}
               className="inline-flex min-h-10 items-center px-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Clear
@@ -159,7 +178,7 @@ export default function EnrollmentQueueHeader({
               + Manual Entry
             </Link>
           )}
-        </form>
+        </div>
       </div>
     </div>
   );

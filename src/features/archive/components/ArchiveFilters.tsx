@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -39,6 +40,7 @@ export function ArchiveFilters({
   // and we adjust local state during render — React's recommended pattern for
   // "adjusting state when a prop changes" without useEffect.
   const [search, setSearch] = useState(currentSearch ?? "");
+  const debouncedSearch = useDebounce(search, 300);
   const [syncedSearch, setSyncedSearch] = useState(currentSearch ?? "");
   if ((currentSearch ?? "") !== syncedSearch) {
     setSyncedSearch(currentSearch ?? "");
@@ -67,10 +69,12 @@ export function ArchiveFilters({
     [router, searchParams]
   );
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateFilters({ search: search.trim() || undefined });
-  };
+  // Auto-update URL when debounced search changes
+  useEffect(() => {
+    const trimmed = debouncedSearch.trim();
+    if (trimmed === (currentSearch ?? "")) return;
+    updateFilters({ search: trimmed || undefined });
+  }, [debouncedSearch, currentSearch, updateFilters]);
 
   const handleClearFilters = () => {
     setSearch("");
@@ -84,27 +88,21 @@ export function ArchiveFilters({
   return (
     <div className="flex flex-wrap items-end gap-4">
       {/* Search */}
-      <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[200px]">
+      <div className="flex-1 min-w-[200px]">
         <label
           htmlFor="archive-search"
           className="mb-1.5 block text-sm font-medium"
         >
           Search
         </label>
-        <div className="flex gap-2">
-          <Input
-            id="archive-search"
-            type="search"
-            placeholder="Name or student ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1"
-          />
-          <Button type="submit" variant="secondary" disabled={isPending}>
-            Search
-          </Button>
-        </div>
-      </form>
+        <Input
+          id="archive-search"
+          type="search"
+          placeholder="Name or student ID..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
       {/* Status Filter */}
       <div className="min-w-[160px]">
