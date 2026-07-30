@@ -2,21 +2,11 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  ClipboardCheck,
-  GraduationCap,
-  UserSearch,
-} from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { createEnrollmentAction } from "../enrollments.actions";
 import type { EnrollmentFormState } from "../enrollments.schema";
-import { IntakeRequirementsFieldset } from "@/features/enrollments";
 import { DataCard, DataCardBody } from "@/components/ui/editorial/DataCard";
 import { useFormToast } from "@/hooks/useFormToast";
-import { editorialFieldClass } from "@/lib/utils/editorial-styles";
 import { enrollmentIntakeDocumentsToPreserved } from "@/lib/utils/intake-documents";
 import type { RegistrationEnrollmentContext } from "@/lib/types/registration-enrollment-context";
 import { cn } from "@/lib/utils/cn";
@@ -28,10 +18,12 @@ import {
   PlacementPreviewCard,
   type PlacementType,
 } from "@/features/enrollments";
-import {
-  StudentPicker,
-  type StudentPickerOption,
-} from "@/features/enrollments";
+import type { StudentPickerOption } from "@/features/enrollments";
+import { TYPE_LABEL, type WizardStep } from "../wizard.types";
+import WizardFooter from "./WizardFooter";
+import WizardStepStudent from "./WizardStepStudent";
+import WizardStepPlacement from "./WizardStepPlacement";
+import WizardStepIntakeAndReview from "./WizardStepIntakeAndReview";
 
 interface Student {
   id: string;
@@ -69,8 +61,6 @@ interface EnrollmentWizardFormProps {
   /** Post-success client navigation target. */
   afterSuccessRedirect?: string;
 }
-
-type WizardStep = 1 | 2 | 3;
 
 const STEPS: StepDescriptor[] = [
   {
@@ -126,12 +116,6 @@ function defaultPreviousSchool(
   return studentList.find((x) => x.id === sid)?.previousSchool ?? "";
 }
 
-const TYPE_LABEL: Record<PlacementType, string> = {
-  new_student: "New",
-  transferee: "Transferee",
-  old_student: "Returning",
-};
-
 export default function EnrollmentWizardForm({
   students,
   currentSchoolYear,
@@ -182,7 +166,7 @@ export default function EnrollmentWizardForm({
       errs.studentType ||
       errs.previousSchool
     ) {
-      setCurrentStep(2);  
+      setCurrentStep(2);
     } else if (
       errs.intakeForm138 ||
       errs.intakeBirthCertificatePsa ||
@@ -190,7 +174,7 @@ export default function EnrollmentWizardForm({
       errs.intakeQualifiedVoucher ||
       errs.intakeEscCertificate
     ) {
-      setCurrentStep(3);  
+      setCurrentStep(3);
     }
   }, [state.errors]);
 
@@ -355,7 +339,7 @@ export default function EnrollmentWizardForm({
             <DataCardBody className="px-6 py-6 sm:px-8 sm:py-8">
               {/* All steps stay mounted so uncontrolled radios in IntakeRequirementsFieldset preserve their state across navigation. */}
               <div className={cn(currentStep !== 1 && "hidden")}>
-                <StepStudent
+                <WizardStepStudent
                   students={pickerOptions}
                   studentId={studentId}
                   onStudentChange={handleStudentChange}
@@ -364,7 +348,7 @@ export default function EnrollmentWizardForm({
               </div>
 
               <div className={cn(currentStep !== 2 && "hidden")}>
-                <StepPlacement
+                <WizardStepPlacement
                   currentSchoolYear={currentSchoolYear}
                   gradeLevels={gradeLevels}
                   gradeLevelId={gradeLevelId}
@@ -381,7 +365,7 @@ export default function EnrollmentWizardForm({
               </div>
 
               <div className={cn(currentStep !== 3 && "hidden")}>
-                <StepIntakeAndReview
+                <WizardStepIntakeAndReview
                   showIntake={showIntake}
                   intakePreserved={intakePreserved}
                   errors={state.errors}
@@ -431,509 +415,6 @@ export default function EnrollmentWizardForm({
           />
         </div>
       </aside>
-    </div>
-  );
-}
-
-// ──────────────────────── Step components ────────────────────────
-
-function StepHeader({
-  eyebrow,
-  title,
-  description,
-  icon,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <header className="mb-6 flex items-start gap-4 border-l-4 border-primary pl-5">
-      <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-        {icon}
-      </span>
-      <div>
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
-          {eyebrow}
-        </p>
-        <h2 className="mt-1 font-display text-2xl font-bold leading-tight text-foreground">
-          {title}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-      </div>
-    </header>
-  );
-}
-
-function StepStudent({
-  students,
-  studentId,
-  onStudentChange,
-  errors,
-}: {
-  students: StudentPickerOption[];
-  studentId: string;
-  onStudentChange: (id: string) => void;
-  errors?: EnrollmentFormState["errors"];
-}) {
-  return (
-    <div>
-      <StepHeader
-        eyebrow="Step 01 / Student"
-        title="Pick the learner"
-        description="Search by family name or student reference. Suggestions auto-resolve type from prior records."
-        icon={<UserSearch className="h-5 w-5" />}
-      />
-
-      <div className="space-y-2">
-        <label
-          htmlFor="studentId"
-          className="mb-1.5 block text-sm font-medium text-foreground"
-        >
-          Student <span className="text-red-600">*</span>
-        </label>
-        <StudentPicker
-          students={students}
-          value={studentId}
-          onChange={onStudentChange}
-          invalid={Boolean(errors?.studentId)}
-          errorMessage={errors?.studentId?.[0]}
-        />
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Only active students appear. To enroll a new arrival, register them first under{" "}
-          <strong className="text-foreground">Registrations</strong>.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function StepPlacement({
-  currentSchoolYear,
-  gradeLevels,
-  gradeLevelId,
-  onGradeLevelChange,
-  studentType,
-  onStudentTypeChange,
-  lockedToOldStudent,
-  promotionHint,
-  hasRegistrationContext,
-  previousSchool,
-  onPreviousSchoolChange,
-  errors,
-}: {
-  currentSchoolYear: SchoolYear | null;
-  gradeLevels: GradeLevel[];
-  gradeLevelId: string;
-  onGradeLevelChange: (v: string) => void;
-  studentType: PlacementType;
-  onStudentTypeChange: (v: PlacementType) => void;
-  lockedToOldStudent: boolean;
-  promotionHint?: PromotionHint;
-  hasRegistrationContext: boolean;
-  previousSchool: string;
-  onPreviousSchoolChange: (v: string) => void;
-  errors?: EnrollmentFormState["errors"];
-}) {
-  const promotionMessage = promotionHint
-    ? promotionHint.hasNextGradeLevel
-      ? `Prior enrollment: ${promotionHint.lastGradeName}. Default is the next level — change only when appropriate.`
-      : `${promotionHint.lastGradeName} matches the highest grade in the catalog. Confirm with admin.`
-    : hasRegistrationContext
-    ? "Default grade matches the approved registration; change if enrollment differs."
-    : null;
-
-  return (
-    <div className="space-y-6">
-      <StepHeader
-        eyebrow="Step 02 / Placement"
-        title="Confirm academic placement"
-        description="Active school year is fixed. Set grade and enrollment type before continuing."
-        icon={<GraduationCap className="h-5 w-5" />}
-      />
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-          <span className="mb-1.5 block text-sm font-medium text-foreground">
-            School Year <span className="text-red-600">*</span>
-          </span>
-          <div
-            className={editorialFieldClass({
-              invalid: Boolean(errors?.schoolYearId),
-              className: "bg-gray-100",
-            })}
-            aria-live="polite"
-          >
-            {currentSchoolYear ? (
-              <>
-                <strong className="text-foreground">{currentSchoolYear.label}</strong>
-                <span className="ml-2 text-xs text-muted-foreground">(active year only)</span>
-              </>
-            ) : (
-              <span className="text-muted-foreground">—</span>
-            )}
-          </div>
-          {errors?.schoolYearId && (
-            <p className="mt-1 text-sm text-red-600">{errors.schoolYearId[0]}</p>
-          )}
-        </div>
-
-        <div>
-          <label
-            htmlFor="gradeLevelIdSelect"
-            className="mb-1.5 block text-sm font-medium text-foreground"
-          >
-            Grade Level <span className="text-red-600">*</span>
-          </label>
-          <select
-            id="gradeLevelIdSelect"
-            value={gradeLevelId}
-            onChange={(e) => onGradeLevelChange(e.target.value)}
-            required
-            className={editorialFieldClass({ invalid: Boolean(errors?.gradeLevelId) })}
-          >
-            <option value="">Select grade level</option>
-            {gradeLevels.map((gl) => (
-              <option key={gl.id} value={gl.id}>
-                {gl.name}
-              </option>
-            ))}
-          </select>
-          {errors?.gradeLevelId && (
-            <p className="mt-1 text-sm text-red-600">{errors.gradeLevelId[0]}</p>
-          )}
-          {promotionMessage && (
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{promotionMessage}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <span className="mb-1.5 block text-sm font-medium text-foreground">
-          Enrollment Type <span className="text-red-600">*</span>
-        </span>
-
-        {lockedToOldStudent ? (
-          <div
-            className={editorialFieldClass({
-              invalid: Boolean(errors?.studentType),
-              className: "bg-gray-100",
-            })}
-          >
-            <strong className="text-foreground">Returning</strong>
-            <span className="ml-2 text-xs text-muted-foreground">(prior enrollment on file — fixed)</span>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <TypeRadioCard
-              label="New"
-              caption="First time at this school."
-              checked={studentType === "new_student"}
-              onChange={() => onStudentTypeChange("new_student")}
-              suggested={!hasRegistrationContext && studentType === "new_student"}
-            />
-            <TypeRadioCard
-              label="Transferee"
-              caption="Coming from another school."
-              checked={studentType === "transferee"}
-              onChange={() => onStudentTypeChange("transferee")}
-              suggested={hasRegistrationContext && studentType === "transferee"}
-            />
-          </div>
-        )}
-        {errors?.studentType && (
-          <p className="mt-1 text-sm text-red-600">{errors.studentType[0]}</p>
-        )}
-      </div>
-
-      {!lockedToOldStudent && studentType === "transferee" && (
-        <div>
-          <label
-            htmlFor="previousSchoolInput"
-            className="mb-1.5 block text-sm font-medium text-foreground"
-          >
-            Previous school <span className="text-red-600">*</span>
-          </label>
-          <input
-            id="previousSchoolInput"
-            value={previousSchool}
-            onChange={(e) => onPreviousSchoolChange(e.target.value)}
-            placeholder="Name of school last attended"
-            autoComplete="organization"
-            required
-            className={editorialFieldClass({ invalid: Boolean(errors?.previousSchool) })}
-          />
-          {errors?.previousSchool && (
-            <p className="mt-1 text-sm text-red-600">{errors.previousSchool[0]}</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TypeRadioCard({
-  label,
-  caption,
-  checked,
-  onChange,
-  suggested,
-}: {
-  label: string;
-  caption: string;
-  checked: boolean;
-  onChange: () => void;
-  suggested: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      aria-pressed={checked}
-      className={cn(
-        "group flex flex-col items-start gap-1 rounded-lg border p-4 text-left transition-all",
-        "focus:outline-none focus:ring-2 focus:ring-primary/15",
-        checked
-          ? "border-primary bg-primary/[0.04] shadow-sm"
-          : "border-border bg-card hover:border-gray-300 hover:bg-muted dark:hover:border-gray-700"
-      )}
-    >
-      <div className="flex w-full items-center justify-between">
-        <span
-          className={cn(
-            "font-display text-base font-bold",
-            checked ? "text-primary" : "text-foreground"
-          )}
-        >
-          {label}
-        </span>
-        {suggested && (
-          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-amber-500">
-            Suggested
-          </span>
-        )}
-      </div>
-      <span className="text-xs leading-relaxed text-muted-foreground">{caption}</span>
-    </button>
-  );
-}
-
-function StepIntakeAndReview({
-  showIntake,
-  intakePreserved,
-  errors,
-  selectedStudentName,
-  referenceNumber,
-  schoolYearLabel,
-  gradeLevelName,
-  studentType,
-  previousSchool,
-}: {
-  showIntake: boolean;
-  intakePreserved: ReturnType<typeof enrollmentIntakeDocumentsToPreserved> | undefined;
-  errors?: EnrollmentFormState["errors"];
-  selectedStudentName: string | null;
-  referenceNumber: string | null;
-  schoolYearLabel: string | null;
-  gradeLevelName: string | null;
-  studentType: PlacementType;
-  previousSchool: string | null;
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader
-        eyebrow="Step 03 / Confirm"
-        title="Intake & final review"
-        description="Set the document checklist (when applicable), confirm the placement, and create the enrollment."
-        icon={<ClipboardCheck className="h-5 w-5" />}
-      />
-
-      {showIntake ? (
-        <IntakeRequirementsFieldset
-          key={`intake-${selectedStudentName ?? "none"}-${studentType}`}
-          errors={errors}
-          preserved={intakePreserved}
-          legend="Requirements (new / transferee)"
-          description={
-            <>
-              Set each item to <strong>Received</strong>, <strong>Not applicable</strong>, or{" "}
-              <strong>To follow</strong> when documents are still pending. Voucher and ESC certificates
-              are optional per learner.
-            </>
-          }
-        />
-      ) : (
-        <div className="rounded-lg border border-gray-200 bg-gray-100/50 p-5">
-          <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Returning learners</strong> reuse intake records from
-            their original registration — no new checklist required.
-          </p>
-        </div>
-      )}
-
-      <ReviewSummary
-        selectedStudentName={selectedStudentName}
-        referenceNumber={referenceNumber}
-        schoolYearLabel={schoolYearLabel}
-        gradeLevelName={gradeLevelName}
-        studentType={studentType}
-        previousSchool={previousSchool}
-      />
-
-      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-4 text-sm">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-        <p className="text-foreground">
-          The enrollment will be created as <strong>Pending</strong>. The next step in the workflow is
-          building the assessment — fees and the official receipt are recorded separately by the
-          finance officer and cashier.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function ReviewSummary({
-  selectedStudentName,
-  referenceNumber,
-  schoolYearLabel,
-  gradeLevelName,
-  studentType,
-  previousSchool,
-}: {
-  selectedStudentName: string | null;
-  referenceNumber: string | null;
-  schoolYearLabel: string | null;
-  gradeLevelName: string | null;
-  studentType: PlacementType;
-  previousSchool: string | null;
-}) {
-  const rows: Array<{ label: string; value: string }> = [
-    { label: "Student", value: selectedStudentName ?? "—" },
-    { label: "Student ID", value: referenceNumber ?? "—" },
-    { label: "School Year", value: schoolYearLabel ?? "—" },
-    { label: "Grade Level", value: gradeLevelName ?? "—" },
-    { label: "Type", value: TYPE_LABEL[studentType] },
-  ];
-  if (studentType === "transferee" && previousSchool) {
-    rows.push({ label: "Previous School", value: previousSchool });
-  }
-
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white">
-      <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
-        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-        <h3 className="font-display text-base font-bold text-foreground">
-          Confirm placement before saving
-        </h3>
-      </div>
-      <dl className="divide-y divide-gray-100">
-        {rows.map((row) => (
-          <div
-            key={row.label}
-            className="grid grid-cols-3 gap-4 px-5 py-3 text-sm"
-          >
-            <dt className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              {row.label}
-            </dt>
-            <dd
-              className={cn(
-                "col-span-2 text-foreground",
-                row.label === "Student ID" && "font-mono",
-                row.label === "Student" && "font-display text-base font-semibold uppercase"
-              )}
-            >
-              {row.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  );
-}
-
-function WizardFooter({
-  currentStep,
-  onBack,
-  onContinue,
-  onCancel,
-  canContinue,
-  pending,
-  disableSubmit,
-}: {
-  currentStep: WizardStep;
-  onBack: () => void;
-  onContinue: () => void;
-  onCancel: () => void;
-  canContinue: boolean;
-  pending: boolean;
-  disableSubmit: boolean;
-}) {
-  const isFinalStep = currentStep === 3;
-
-  return (
-    <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
-      {currentStep > 1 ? (
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground disabled:opacity-50"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={pending}
-          className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground disabled:opacity-50"
-        >
-          Cancel
-        </button>
-      )}
-
-      {isFinalStep ? (
-        <button
-          type="submit"
-          disabled={disableSubmit}
-          className={cn(
-            "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
-            "bg-primary hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
-            "disabled:cursor-not-allowed disabled:opacity-60"
-          )}
-        >
-          {pending ? (
-            <>
-              <span
-                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                aria-hidden="true"
-              />
-              Creating enrollment…
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="h-4 w-4" />
-              Confirm & create enrollment
-            </>
-          )}
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={onContinue}
-          disabled={!canContinue || pending}
-          className={cn(
-            "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
-            "bg-primary hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
-            "disabled:cursor-not-allowed disabled:opacity-60"
-          )}
-        >
-          Continue
-          <ArrowRight className="h-4 w-4" />
-        </button>
-      )}
     </div>
   );
 }

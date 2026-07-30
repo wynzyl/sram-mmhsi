@@ -38,6 +38,9 @@ export type {
 // Schemas
 export * from "./enrollments.schema";
 
+// Wizard Types
+export { TYPE_LABEL, type WizardStep } from "./wizard.types";
+
 // Components
 export { default as CancelEnrollmentForm } from "./components/CancelEnrollmentForm";
 export type { EnrollmentStatus, CancelEnrollmentFormProps } from "./components/CancelEnrollmentForm";
