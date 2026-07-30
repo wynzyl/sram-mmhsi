@@ -12,7 +12,7 @@ import type {
 import type { PendingVoidRequest } from "../void-requests.queries";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { PaginationControls } from "@/components/shared/PaginationControls";
+import { TablePagination } from "@/components/ui/TablePagination";
 import {
   createORNumberColumn,
   createRemarksColumn,
@@ -208,8 +208,15 @@ export default function VoidRequestsPendingTable({
         pageSize={20}
         enablePagination={!pagination || pagination.totalPages <= 1}
       />
-      {pagination && pagination.totalPages > 1 && (
-        <PaginationControls pagination={pagination} basePath="/staff/approvals" />
+      {pagination && (
+        <TablePagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          totalRecords={pagination.totalRecords}
+          pageSize={pagination.pageSize}
+          baseUrl="/staff/approvals?tab=void"
+          itemLabel="requests"
+        />
       )}
     </div>
   );

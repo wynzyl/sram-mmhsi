@@ -11,6 +11,7 @@ import {
 } from "@/features/discounts";
 import DiscountRequestsTable from "@/features/discounts/components/DiscountRequestsTable";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { TablePagination } from "@/components/ui/TablePagination";
 
 type TabType = "pending" | "approved" | "rejected";
 
@@ -179,12 +180,15 @@ export default async function DiscountRequestsView({
             </Card>
           )}
 
-          {pendingResult.pagination.totalPages > 1 && (
-            <div className="text-sm text-muted-foreground text-center">
-              Page {pendingResult.pagination.page} of{" "}
-              {pendingResult.pagination.totalPages} ({pendingResult.pagination.totalRecords}{" "}
-              total records)
-            </div>
+          {pendingResult.pagination && (
+            <TablePagination
+              currentPage={pendingResult.pagination.page}
+              totalPages={pendingResult.pagination.totalPages}
+              totalRecords={pendingResult.pagination.totalRecords}
+              pageSize={pendingResult.pagination.pageSize}
+              baseUrl="/staff/approvals?section=discount&tab=pending"
+              itemLabel="requests"
+            />
           )}
         </>
       )}
@@ -200,12 +204,15 @@ export default async function DiscountRequestsView({
               enableBulkActions={false}
             />
           </CardContent>
-          {approvedResult.pagination.totalPages > 1 && (
-            <div className="text-sm text-muted-foreground text-center py-4">
-              Page {approvedResult.pagination.page} of{" "}
-              {approvedResult.pagination.totalPages} ({approvedResult.pagination.totalRecords}{" "}
-              total records)
-            </div>
+          {approvedResult.pagination && (
+            <TablePagination
+              currentPage={approvedResult.pagination.page}
+              totalPages={approvedResult.pagination.totalPages}
+              totalRecords={approvedResult.pagination.totalRecords}
+              pageSize={approvedResult.pagination.pageSize}
+              baseUrl="/staff/approvals?section=discount&tab=approved"
+              itemLabel="requests"
+            />
           )}
         </Card>
       )}
@@ -221,12 +228,15 @@ export default async function DiscountRequestsView({
               enableBulkActions={false}
             />
           </CardContent>
-          {rejectedResult.pagination.totalPages > 1 && (
-            <div className="text-sm text-muted-foreground text-center py-4">
-              Page {rejectedResult.pagination.page} of{" "}
-              {rejectedResult.pagination.totalPages} ({rejectedResult.pagination.totalRecords}{" "}
-              total records)
-            </div>
+          {rejectedResult.pagination && (
+            <TablePagination
+              currentPage={rejectedResult.pagination.page}
+              totalPages={rejectedResult.pagination.totalPages}
+              totalRecords={rejectedResult.pagination.totalRecords}
+              pageSize={rejectedResult.pagination.pageSize}
+              baseUrl="/staff/approvals?section=discount&tab=rejected"
+              itemLabel="requests"
+            />
           )}
         </Card>
       )}
