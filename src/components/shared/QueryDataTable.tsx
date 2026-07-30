@@ -10,6 +10,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./DataTable";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils/cn";
+import { STANDARD_STALE_TIME } from "@/lib/query/staleness";
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -153,7 +154,7 @@ export function QueryDataTable<TData>({
   enableVirtualization = false,
   virtualRowHeight = 50,
   refetchInterval,
-  staleTime = 60 * 1000,
+  staleTime = STANDARD_STALE_TIME,
   emptyMessage = "No data available.",
   queryOptions,
   className,

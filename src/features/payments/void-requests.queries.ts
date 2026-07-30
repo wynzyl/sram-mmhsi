@@ -6,6 +6,12 @@ import {
   users,
 } from "@/lib/db/schema";
 import { eq, desc, and, inArray, sql } from "drizzle-orm";
+import {
+  type PaginationParams,
+  type PaginatedResult,
+  calculatePagination,
+  calculateOffset,
+} from "@/lib/types/pagination";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -53,9 +59,15 @@ export type VoidRequestSummary = {
 // ─── Queries ───────────────────────────────────────────────────────────────────
 
 /**
- * Lists all pending void requests for the admin inbox.
+ * Lists all pending void requests for the admin inbox with pagination.
  */
-export async function listPendingVoidRequests(): Promise<PendingVoidRequest[]> {
+export async function listPendingVoidRequests(
+  params: Partial<PaginationParams> = {}
+): Promise<PaginatedResult<PendingVoidRequest>> {
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
+  const offset = calculateOffset(page, pageSize);
+
   const requestedByUser = db
     .select({
       id: users.id,
@@ -64,31 +76,42 @@ export async function listPendingVoidRequests(): Promise<PendingVoidRequest[]> {
     .from(users)
     .as("requested_by_user");
 
-  const results = await db
-    .select({
-      id: voidRequests.id,
-      paymentId: voidRequests.paymentId,
-      orNumber: payments.orNumber,
-      amount: payments.amount,
-      paymentMethod: payments.paymentMethod,
-      paymentDate: payments.paymentDate,
-      studentId: students.id,
-      studentFirstName: students.firstName,
-      studentLastName: students.lastName,
-      studentRef: students.referenceNumber,
-      requestReason: voidRequests.requestReason,
-      requestedBy: voidRequests.requestedBy,
-      requestedByUsername: requestedByUser.username,
-      requestedAt: voidRequests.requestedAt,
-    })
-    .from(voidRequests)
-    .innerJoin(payments, eq(voidRequests.paymentId, payments.id))
-    .innerJoin(students, eq(payments.studentId, students.id))
-    .innerJoin(requestedByUser, eq(voidRequests.requestedBy, requestedByUser.id))
-    .where(eq(voidRequests.status, "pending"))
-    .orderBy(desc(voidRequests.requestedAt));
+  // Run count and data queries in parallel
+  const [countResult, results] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(voidRequests)
+      .where(eq(voidRequests.status, "pending")),
+    db
+      .select({
+        id: voidRequests.id,
+        paymentId: voidRequests.paymentId,
+        orNumber: payments.orNumber,
+        amount: payments.amount,
+        paymentMethod: payments.paymentMethod,
+        paymentDate: payments.paymentDate,
+        studentId: students.id,
+        studentFirstName: students.firstName,
+        studentLastName: students.lastName,
+        studentRef: students.referenceNumber,
+        requestReason: voidRequests.requestReason,
+        requestedBy: voidRequests.requestedBy,
+        requestedByUsername: requestedByUser.username,
+        requestedAt: voidRequests.requestedAt,
+      })
+      .from(voidRequests)
+      .innerJoin(payments, eq(voidRequests.paymentId, payments.id))
+      .innerJoin(students, eq(payments.studentId, students.id))
+      .innerJoin(requestedByUser, eq(voidRequests.requestedBy, requestedByUser.id))
+      .where(eq(voidRequests.status, "pending"))
+      .orderBy(desc(voidRequests.requestedAt))
+      .limit(pageSize)
+      .offset(offset),
+  ]);
 
-  return results.map((r) => ({
+  const totalRecords = Number(countResult[0]?.count ?? 0);
+
+  const data = results.map((r) => ({
     id: r.id,
     paymentId: r.paymentId,
     orNumber: r.orNumber,
@@ -103,6 +126,11 @@ export async function listPendingVoidRequests(): Promise<PendingVoidRequest[]> {
     requestedByUsername: r.requestedByUsername,
     requestedAt: r.requestedAt.toISOString(),
   }));
+
+  return {
+    data,
+    pagination: calculatePagination(page, pageSize, totalRecords),
+  };
 }
 
 /**
@@ -273,56 +301,78 @@ export async function getVoidRequestById(requestId: string) {
 }
 
 /**
- * Lists pending void requests for a specific user (their own requests).
+ * Lists pending void requests for a specific user (their own requests) with pagination.
  */
-export async function listMyPendingVoidRequests(userId: string): Promise<PendingVoidRequest[]> {
-  const rows = await db.execute(sql`
-    SELECT
-      vr.id,
-      vr.payment_id,
-      p.or_number,
-      p.amount,
-      p.payment_method,
-      p.payment_date,
-      s.id as student_id,
-      s.first_name,
-      s.last_name,
-      s.reference_number as student_ref,
-      vr.request_reason,
-      vr.requested_by,
-      u.username as requested_by_username,
-      vr.requested_at
-    FROM void_requests vr
-    INNER JOIN payments p ON vr.payment_id = p.id
-    INNER JOIN students s ON p.student_id = s.id
-    INNER JOIN users u ON vr.requested_by = u.id
-    WHERE vr.status = 'pending' AND vr.requested_by = ${userId}
-    ORDER BY vr.requested_at DESC
-  `);
+export async function listMyPendingVoidRequests(
+  userId: string,
+  params: Partial<PaginationParams> = {}
+): Promise<PaginatedResult<PendingVoidRequest>> {
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
+  const offset = calculateOffset(page, pageSize);
 
-  if (!rows || rows.length === 0) {
-    return [];
-  }
+  // Run count and data queries in parallel
+  const [countResult, rows] = await Promise.all([
+    db.execute(sql`
+      SELECT count(*) as count
+      FROM void_requests vr
+      WHERE vr.status = 'pending' AND vr.requested_by = ${userId}
+    `),
+    db.execute(sql`
+      SELECT
+        vr.id,
+        vr.payment_id,
+        p.or_number,
+        p.amount,
+        p.payment_method,
+        p.payment_date,
+        s.id as student_id,
+        s.first_name,
+        s.last_name,
+        s.reference_number as student_ref,
+        vr.request_reason,
+        vr.requested_by,
+        u.username as requested_by_username,
+        vr.requested_at
+      FROM void_requests vr
+      INNER JOIN payments p ON vr.payment_id = p.id
+      INNER JOIN students s ON p.student_id = s.id
+      INNER JOIN users u ON vr.requested_by = u.id
+      WHERE vr.status = 'pending' AND vr.requested_by = ${userId}
+      ORDER BY vr.requested_at DESC
+      LIMIT ${pageSize}
+      OFFSET ${offset}
+    `),
+  ]);
 
-  return Array.from(rows).map((r: Record<string, unknown>) => ({
-    id: String(r.id),
-    paymentId: String(r.payment_id),
-    orNumber: r.or_number != null ? String(r.or_number) : null,
-    amount: String(r.amount),
-    paymentMethod: String(r.payment_method),
-    paymentDate: r.payment_date instanceof Date
-      ? r.payment_date.toISOString()
-      : String(r.payment_date),
-    studentId: String(r.student_id),
-    studentName: `${r.last_name}, ${r.first_name}`,
-    studentRef: String(r.student_ref),
-    requestReason: String(r.request_reason),
-    requestedBy: String(r.requested_by),
-    requestedByUsername: String(r.requested_by_username),
-    requestedAt: r.requested_at instanceof Date
-      ? r.requested_at.toISOString()
-      : String(r.requested_at),
-  }));
+  const totalRecords = Number((countResult[0] as Record<string, unknown>)?.count ?? 0);
+
+  const data = !rows || rows.length === 0
+    ? []
+    : Array.from(rows).map((r: Record<string, unknown>) => ({
+        id: String(r.id),
+        paymentId: String(r.payment_id),
+        orNumber: r.or_number != null ? String(r.or_number) : null,
+        amount: String(r.amount),
+        paymentMethod: String(r.payment_method),
+        paymentDate: r.payment_date instanceof Date
+          ? r.payment_date.toISOString()
+          : String(r.payment_date),
+        studentId: String(r.student_id),
+        studentName: `${r.last_name}, ${r.first_name}`,
+        studentRef: String(r.student_ref),
+        requestReason: String(r.request_reason),
+        requestedBy: String(r.requested_by),
+        requestedByUsername: String(r.requested_by_username),
+        requestedAt: r.requested_at instanceof Date
+          ? r.requested_at.toISOString()
+          : String(r.requested_at),
+      }));
+
+  return {
+    data,
+    pagination: calculatePagination(page, pageSize, totalRecords),
+  };
 }
 
 /**

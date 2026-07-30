@@ -1060,10 +1060,19 @@ export async function getSubjectsFromOfferingsForSection(
     return null;
   }
 
-  // Get grading system type for term filtering (if gradingPeriod provided)
-  let systemType: GradingSystemType = "quarterly";
+  // Build WHERE conditions
+  const baseConditions = [
+    eq(subjectOfferings.sectionId, sectionId),
+    eq(subjectOfferings.schoolYearId, schoolYearId),
+    eq(subjectOfferings.isActive, true),
+    isNull(subjects.deletedAt),
+  ];
+
+  // Add SQL-level term filtering if gradingPeriod provided
   if (gradingPeriod) {
-    systemType = await getGradingSystemType(schoolYearId);
+    const systemType = await getGradingSystemType(schoolYearId);
+    const validTerms = getValidTermsForPeriod(gradingPeriod, systemType);
+    baseConditions.push(inArray(subjectOfferings.termOffered, validTerms));
   }
 
   const rows = await db
@@ -1077,29 +1086,12 @@ export async function getSubjectsFromOfferingsForSection(
       sequenceOrder: subjectOfferings.sequenceOrder,
       teacherId: subjectOfferings.teacherId,
       teacherName: users.username,
-      termOffered: subjectOfferings.termOffered,
     })
     .from(subjectOfferings)
     .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
     .leftJoin(users, eq(subjectOfferings.teacherId, users.id))
-    .where(
-      and(
-        eq(subjectOfferings.sectionId, sectionId),
-        eq(subjectOfferings.schoolYearId, schoolYearId),
-        eq(subjectOfferings.isActive, true),
-        isNull(subjects.deletedAt)
-      )
-    )
+    .where(and(...baseConditions))
     .orderBy(asc(subjectOfferings.sequenceOrder), asc(subjects.name));
-
-  // Filter by grading period if provided
-  if (gradingPeriod) {
-    const filtered = rows.filter((row) => {
-      const term = (row.termOffered as TermOffering) || "full_year";
-      return isSubjectInPeriod(term, gradingPeriod, systemType);
-    });
-    return filtered as SubjectOfferingForGrades[];
-  }
 
   return rows as SubjectOfferingForGrades[];
 }
@@ -1203,7 +1195,7 @@ export async function getStudentsWithSSEForSection(
 
 import { strands } from "@/lib/db/schema";
 import type { ShsStrandCode } from "@/lib/constants/strands";
-import { type TermOffering, isSubjectInPeriod } from "@/lib/constants/term-offerings";
+import { type TermOffering, getValidTermsForPeriod } from "@/lib/constants/term-offerings";
 
 /**
  * Subject offering with strand info for SHS grade entry.
@@ -1255,10 +1247,19 @@ export async function getSubjectsForSHSGradeEntry(
   schoolYearId: string,
   gradingPeriod?: string
 ): Promise<SHSGradeEntrySubjects | null> {
-  // Get grading system type if filtering by period
-  let systemType: GradingSystemType = "quarterly";
+  // Build WHERE conditions
+  const baseConditions = [
+    eq(subjectOfferings.sectionId, sectionId),
+    eq(subjectOfferings.schoolYearId, schoolYearId),
+    eq(subjectOfferings.isActive, true),
+    isNull(subjects.deletedAt),
+  ];
+
+  // Add SQL-level term filtering if gradingPeriod provided
   if (gradingPeriod) {
-    systemType = await getGradingSystemType(schoolYearId);
+    const systemType = await getGradingSystemType(schoolYearId);
+    const validTerms = getValidTermsForPeriod(gradingPeriod, systemType);
+    baseConditions.push(inArray(subjectOfferings.termOffered, validTerms));
   }
 
   // Get all active subject offerings with strand info
@@ -1281,14 +1282,7 @@ export async function getSubjectsForSHSGradeEntry(
     .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
     .leftJoin(strands, eq(subjectOfferings.strandId, strands.id))
     .leftJoin(users, eq(subjectOfferings.teacherId, users.id))
-    .where(
-      and(
-        eq(subjectOfferings.sectionId, sectionId),
-        eq(subjectOfferings.schoolYearId, schoolYearId),
-        eq(subjectOfferings.isActive, true),
-        isNull(subjects.deletedAt)
-      )
-    )
+    .where(and(...baseConditions))
     .orderBy(asc(subjectOfferings.sequenceOrder), asc(subjects.name));
 
   if (rows.length === 0) {
@@ -1305,13 +1299,7 @@ export async function getSubjectsForSHSGradeEntry(
   const seenStrandCodes = new Map<ShsStrandCode, Set<string>>();
 
   for (const row of rows) {
-    // Filter by grading period if provided
-    if (gradingPeriod) {
-      const termOffered = (row.termOffered as TermOffering) || "full_year";
-      if (!isSubjectInPeriod(termOffered, gradingPeriod, systemType)) {
-        continue; // Skip subjects not offered in this period
-      }
-    }
+    // Term filtering is now done at SQL level via WHERE clause
 
     const offering: SHSSubjectOffering = {
       id: row.id,

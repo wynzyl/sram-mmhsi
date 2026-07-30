@@ -6,10 +6,12 @@ import {
   listVoidRequestHistory,
   listMyPendingVoidRequests,
   listMyVoidRequestHistory,
+  type PendingVoidRequest,
 } from "@/features/payments/void-requests.queries";
 import VoidRequestsPendingTable from "@/features/payments/components/VoidRequestsPendingTable";
 import VoidRequestsHistoryTable from "@/features/payments/components/VoidRequestsHistoryTable";
 import MyVoidRequestsTable from "@/features/payments/components/MyVoidRequestsTable";
+import type { PaginatedResult } from "@/lib/types/pagination";
 
 /**
  * Void Requests queue — extracted verbatim from the former `/staff/void-requests`
@@ -19,7 +21,7 @@ import MyVoidRequestsTable from "@/features/payments/components/MyVoidRequestsTa
 export default async function VoidRequestsView({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; page?: string }>;
 }) {
   const session = await requireSession();
   const params = await searchParams;
@@ -27,18 +29,22 @@ export default async function VoidRequestsView({
   const canApprove = hasPermission(session.role, "payments:void_approve");
 
   const tab = params.tab === "history" ? "history" : "pending";
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
 
   // Admin view: sees all requests and can approve/reject
   // Cashier view: sees only their own requests
   const isAdminView = canApprove;
 
-  let pendingRequests: Awaited<ReturnType<typeof listPendingVoidRequests>> = [];
+  let pendingResult: PaginatedResult<PendingVoidRequest> = {
+    data: [],
+    pagination: { page: 1, pageSize: 50, totalRecords: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false },
+  };
   let historyRequests: Awaited<ReturnType<typeof listVoidRequestHistory>> = [];
 
   if (tab === "pending") {
-    pendingRequests = isAdminView
-      ? await listPendingVoidRequests()
-      : await listMyPendingVoidRequests(session.userId);
+    pendingResult = isAdminView
+      ? await listPendingVoidRequests({ page, pageSize: 50 })
+      : await listMyPendingVoidRequests(session.userId, { page, pageSize: 50 });
   } else {
     historyRequests = isAdminView
       ? await listVoidRequestHistory({ limit: 100 })
@@ -70,9 +76,9 @@ export default async function VoidRequestsView({
             }`}
           >
             {isAdminView ? "Pending" : "Awaiting Approval"}
-            {pendingRequests.length > 0 && tab === "pending" && (
+            {pendingResult.pagination.totalRecords > 0 && tab === "pending" && (
               <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
-                {pendingRequests.length}
+                {pendingResult.pagination.totalRecords}
               </span>
             )}
           </Link>
@@ -94,11 +100,15 @@ export default async function VoidRequestsView({
         {tab === "pending" ? (
           isAdminView ? (
             <VoidRequestsPendingTable
-              requests={pendingRequests}
+              requests={pendingResult.data}
               currentUserId={session.userId}
+              pagination={pendingResult.pagination}
             />
           ) : (
-            <MyVoidRequestsTable requests={pendingRequests} />
+            <MyVoidRequestsTable
+              requests={pendingResult.data}
+              pagination={pendingResult.pagination}
+            />
           )
         ) : (
           <VoidRequestsHistoryTable requests={historyRequests} />

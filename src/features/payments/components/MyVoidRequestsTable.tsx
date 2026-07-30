@@ -6,6 +6,7 @@ import type { CancelVoidRequestFormState } from "../void-requests.schema";
 import type { PendingVoidRequest } from "../void-requests.queries";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 import {
   createORNumberColumn,
   createRemarksColumn,
@@ -16,13 +17,17 @@ import { useFormToast } from "@/hooks/useFormToast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { PaginatedResult } from "@/lib/types/pagination";
 
 interface MyVoidRequestsTableProps {
   requests: PendingVoidRequest[];
+  /** Server-side pagination info */
+  pagination?: PaginatedResult<unknown>["pagination"];
 }
 
 export default function MyVoidRequestsTable({
   requests,
+  pagination,
 }: MyVoidRequestsTableProps) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
@@ -120,11 +125,17 @@ export default function MyVoidRequestsTable({
   }
 
   return (
-    <DataTable
-      columns={columns}
-      data={requests}
-      searchable={false}
-      pageSize={20}
-    />
+    <div>
+      <DataTable
+        columns={columns}
+        data={requests}
+        searchable={false}
+        pageSize={20}
+        enablePagination={!pagination || pagination.totalPages <= 1}
+      />
+      {pagination && pagination.totalPages > 1 && (
+        <PaginationControls pagination={pagination} basePath="/staff/approvals" />
+      )}
+    </div>
   );
 }

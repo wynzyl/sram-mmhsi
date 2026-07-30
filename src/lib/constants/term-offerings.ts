@@ -102,6 +102,54 @@ export function isSubjectInPeriod(
   return periodsForTerm.includes(period);
 }
 
+// ─── Valid Terms Per Period (for SQL filtering) ────────────────────────────────
+
+/**
+ * Get valid term offerings that include a given grading period.
+ * This is the inverse of getPeriodsForTerm - used for SQL WHERE clause filtering.
+ *
+ * For Quarterly System:
+ * - Q1, Q2 → full_year, first_semester
+ * - Q3, Q4 → full_year, second_semester
+ *
+ * For Trimester System:
+ * - T1 → full_year, first_trimester
+ * - T2 → full_year, second_trimester
+ * - T3 → full_year, third_trimester
+ *
+ * @param period - The grading period (e.g., "Q1", "T2")
+ * @param systemType - The school year's grading system type
+ * @returns Array of term offerings that are valid for that period
+ */
+export function getValidTermsForPeriod(
+  period: string,
+  systemType: GradingSystemType
+): TermOffering[] {
+  if (systemType === "quarterly") {
+    switch (period) {
+      case "Q1":
+      case "Q2":
+        return ["full_year", "first_semester"];
+      case "Q3":
+      case "Q4":
+        return ["full_year", "second_semester"];
+      default:
+        return ["full_year"];
+    }
+  } else {
+    switch (period) {
+      case "T1":
+        return ["full_year", "first_trimester"];
+      case "T2":
+        return ["full_year", "second_trimester"];
+      case "T3":
+        return ["full_year", "third_trimester"];
+      default:
+        return ["full_year"];
+    }
+  }
+}
+
 // ─── Valid Terms Per System Type ───────────────────────────────────────────────
 
 /**

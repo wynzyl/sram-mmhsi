@@ -12,6 +12,7 @@ import type {
 import type { PendingVoidRequest } from "../void-requests.queries";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 import {
   createORNumberColumn,
   createRemarksColumn,
@@ -22,16 +23,20 @@ import { useFormToast } from "@/hooks/useFormToast";
 import { Button } from "@/components/ui/button";
 import { InlineConfirmButtons } from "@/components/shared/InlineConfirmButtons";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { PaginatedResult } from "@/lib/types/pagination";
 
 interface VoidRequestsPendingTableProps {
   requests: PendingVoidRequest[];
   /** Current user ID - used to block self-approval UI */
   currentUserId: string;
+  /** Server-side pagination info */
+  pagination?: PaginatedResult<unknown>["pagination"];
 }
 
 export default function VoidRequestsPendingTable({
   requests,
   currentUserId,
+  pagination,
 }: VoidRequestsPendingTableProps) {
   // State for which request's reject form is open
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -195,11 +200,17 @@ export default function VoidRequestsPendingTable({
   }
 
   return (
-    <DataTable
-      columns={columns}
-      data={requests}
-      searchable={false}
-      pageSize={20}
-    />
+    <div>
+      <DataTable
+        columns={columns}
+        data={requests}
+        searchable={false}
+        pageSize={20}
+        enablePagination={!pagination || pagination.totalPages <= 1}
+      />
+      {pagination && pagination.totalPages > 1 && (
+        <PaginationControls pagination={pagination} basePath="/staff/approvals" />
+      )}
+    </div>
   );
 }
