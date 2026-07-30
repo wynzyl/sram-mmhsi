@@ -6,13 +6,14 @@ import {
   students,
   enrollments,
   registrations,
-  schoolYears,
   gradeLevels,
   sections,
   assessments,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
 import { eq, and, isNull, desc, sql, or, ilike } from "drizzle-orm";
+import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
+import { buildStudentSearchCondition } from "@/lib/utils/query-conditions";
 import {
   type PaginationParams,
   type PaginatedResult,
@@ -61,21 +62,10 @@ import type {
   EnrollmentQueueFilters,
 } from "./enrollments-queue.types";
 
-// ─── Helper Functions ─────────────────────────────────────────────────────────
+// ─── Re-exports ───────────────────────────────────────────────────────────────
 
-/**
- * Get the active school year ID
- * Exported for use in components that need to call getReadyToEnrollDetail()
- */
-export async function getActiveSchoolYearId(): Promise<string | null> {
-  const [row] = await db
-    .select({ id: schoolYears.id })
-    .from(schoolYears)
-    .where(and(eq(schoolYears.isActive, true), isNull(schoolYears.deletedAt)))
-    .limit(1);
-
-  return row?.id ?? null;
-}
+// Re-export from canonical location for backwards compatibility
+export { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 
 // ─── Main Query Functions ─────────────────────────────────────────────────────
 
@@ -340,17 +330,7 @@ export async function getReadyToEnrollStudents(
 
 // ─── Queue Filters (server-side search — audit finding F5) ────────────────────
 
-/** ILIKE condition over student name + reference number, or undefined when blank. */
-function studentSearchCondition(search?: string) {
-  const q = search?.trim();
-  if (!q) return undefined;
-  const pattern = `%${q}%`;
-  return or(
-    ilike(students.firstName, pattern),
-    ilike(students.lastName, pattern),
-    ilike(students.referenceNumber, pattern)
-  );
-}
+// studentSearchCondition moved to @/lib/utils/query-conditions as buildStudentSearchCondition
 
 /** Shared WHERE for the four status tabs (pending/assessed/enrolled/cancelled). */
 function enrollmentTabConditions(
@@ -365,7 +345,7 @@ function enrollmentTabConditions(
     eq(students.isActive, true),
     eq(students.status, "active"),
   ];
-  const search = studentSearchCondition(filters?.search);
+  const search = buildStudentSearchCondition(filters?.search);
   if (search) conditions.push(search);
   if (filters?.gradeLevelId) {
     conditions.push(eq(enrollments.gradeLevelId, filters.gradeLevelId));

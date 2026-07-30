@@ -16,6 +16,9 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, isNull, asc, desc, sql, inArray } from "drizzle-orm";
 
+// Re-export from canonical location for backwards compatibility
+export { getActiveSchoolYear } from "@/lib/queries/schoolYears";
+
 // Re-export types from the client-safe types file
 export type {
   CurriculumListRow,
@@ -434,27 +437,6 @@ export async function isCurriculumNameTaken(
     .where(and(...conditions));
 
   return (result?.count ?? 0) > 0;
-}
-
-/**
- * Get the active school year.
- */
-export async function getActiveSchoolYear(): Promise<{
-  id: string;
-  label: string;
-  startDate: Date;
-} | null> {
-  const [row] = await db
-    .select({
-      id: schoolYears.id,
-      label: schoolYears.label,
-      startDate: schoolYears.startDate,
-    })
-    .from(schoolYears)
-    .where(eq(schoolYears.isActive, true))
-    .limit(1);
-
-  return row ?? null;
 }
 
 /**

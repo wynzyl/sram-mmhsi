@@ -1,22 +1,24 @@
 import 'server-only';
 import { db } from "@/lib/db";
 import { enrollments, gradeLevels, schoolYears, sections, students } from "@/lib/db/schema";
-import { and, asc, desc, eq, ilike, isNull, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, ne, sql, type SQL } from "drizzle-orm";
 import {
   STUDENT_DIRECTORY_PAGE_SIZE,
   type StudentSortBy,
   type StudentSortDir,
 } from "@/lib/utils/student-directory-href";
+import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
+import { buildStudentSearchCondition } from "@/lib/utils/query-conditions";
 
 export { STUDENT_DIRECTORY_PAGE_SIZE };
 
+/**
+ * @deprecated Use getActiveSchoolYearId from @/lib/queries/schoolYears instead.
+ * Returns undefined instead of null for backwards compatibility.
+ */
 export async function fetchActiveSchoolYearId(): Promise<string | undefined> {
-  const row = await db
-    .select({ id: schoolYears.id })
-    .from(schoolYears)
-    .where(and(eq(schoolYears.isActive, true), isNull(schoolYears.deletedAt)))
-    .limit(1);
-  return row[0]?.id;
+  const id = await getActiveSchoolYearId();
+  return id ?? undefined;
 }
 
 
@@ -56,14 +58,7 @@ export async function fetchStudentDirectoryPage(params: {
   const offset = (currentPage - 1) * STUDENT_DIRECTORY_PAGE_SIZE;
   const qTrim = params.q.trim();
 
-  const searchWhere =
-    qTrim !== ""
-      ? or(
-          ilike(students.firstName, `%${qTrim}%`),
-          ilike(students.lastName, `%${qTrim}%`),
-          ilike(students.referenceNumber, `%${qTrim}%`)
-        )
-      : undefined;
+  const searchWhere = buildStudentSearchCondition(qTrim);
 
   const enrollmentOnStudent = and(
     eq(enrollments.studentId, students.id),

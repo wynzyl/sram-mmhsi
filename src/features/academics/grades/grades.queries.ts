@@ -48,22 +48,12 @@ export type TeacherAssignmentListItem = {
   createdAt: Date;
 };
 
+// ─── Re-exports ───────────────────────────────────────────────────────────────
+
+// Re-export from canonical location for backwards compatibility
+export { getActiveSchoolYear } from "@/lib/queries/schoolYears";
+
 // ─── Query Functions ──────────────────────────────────────────────────────────
-
-/**
- * Get active school year
- */
-export async function getActiveSchoolYear(): Promise<{
-  id: string;
-  label: string;
-} | null> {
-  const activeSY = await db.query.schoolYears.findFirst({
-    where: eq(schoolYears.isActive, true),
-    columns: { id: true, label: true },
-  });
-
-  return activeSY ?? null;
-}
 
 /**
  * Get the grading system type for a school year.

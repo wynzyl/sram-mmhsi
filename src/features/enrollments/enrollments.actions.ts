@@ -19,7 +19,7 @@ import { logAudit, logUpdateAction } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
 import { extractConstraintName } from "@/lib/errors";
 import { formatCurrency } from "@/lib/utils/currency";
-import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
+import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import {
   CreateEnrollmentSchema,
   UpdateEnrollmentStatusSchema,

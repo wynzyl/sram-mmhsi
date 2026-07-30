@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
+import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import {
   getPendingDiscountRequests,
   getDiscountRequestCounts,

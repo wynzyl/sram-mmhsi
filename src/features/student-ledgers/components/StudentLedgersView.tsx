@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { X } from "lucide-react";
 import AssessmentsTable from "@/features/finance/components/AssessmentsTable";
 import { useDebounce } from "@/hooks/useDebounce";
+import { SearchInput } from "@/components/shared/SearchInput";
 import { TablePagination } from "@/components/ui/TablePagination";
 import type { AssessmentListItem } from "@/features/assessments/assessments.queries";
 import type { PaginatedResult } from "@/lib/types/pagination";
@@ -117,26 +117,13 @@ export function StudentLedgersView({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search student name..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-9 sm:w-64"
-            />
-            {searchInput && (
-              <button
-                type="button"
-                onClick={() => setSearchInput("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            value={searchInput}
+            onChange={setSearchInput}
+            placeholder="Search student name..."
+            showClear
+            className="w-full sm:w-64"
+          />
 
           {/* School Year Filter */}
           <select

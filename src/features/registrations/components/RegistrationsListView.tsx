@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
 import { DataCard } from "@/components/ui/editorial/DataCard";
 import { StatusIndicator } from "@/components/ui/editorial/StatusIndicator";
 import { DocumentProgressRing } from "./DocumentProgressRing";
 import { StudentRowActionsMenu } from "@/features/students/components/StudentRowActionsMenu";
+import { SearchInput } from "@/components/shared/SearchInput";
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import { registrationStudentTypeLabel } from "@/lib/utils/intake-documents";
 import { cn } from "@/lib/utils/cn";
@@ -114,18 +115,12 @@ export default function RegistrationsListView({
       )}
 
       {/* Search bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Search by name, reference, or grade level..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="w-full rounded-lg border border-border bg-card py-3 pl-10 pr-4
-                     text-foreground shadow-sm focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300/40
-                     transition-all duration-150 dark:focus:border-gray-700 dark:focus:ring-gray-700/40"
-        />
-      </div>
+      <SearchInput
+        value={searchInput}
+        onChange={setSearchInput}
+        placeholder="Search by name, reference, or grade level..."
+        showClear
+      />
 
       {/* Registration cards grid */}
       {filteredRegistrations.length === 0 ? (
