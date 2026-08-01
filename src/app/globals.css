@@ -26,6 +26,10 @@
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: #f59e0b;
+
+  /* Layout dimensions */
+  --header-height: 64px;
+  --sidebar-width: 220px;
   --chart-1: #f59e0b;
   --chart-2: #d97706;
   --chart-3: #b45309;

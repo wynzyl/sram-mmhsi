@@ -1,14 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { logoutAction } from "@/features/auth";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { ColorThemePicker } from "@/components/ui/ColorThemePicker";
-import { ROLE_LABELS, normalizeRole, ROLES } from "@/lib/constants/roles";
+import { normalizeRole } from "@/lib/constants/roles";
 import { NAV_CONFIG } from "./sidebar-nav";
-import { useCommandPalette } from "@/components/command-palette";
 import { cn } from "@/lib/utils/cn";
 import type { Role } from "@/lib/constants/roles";
 import type { NavIconName, NavItem } from "./sidebar-nav";
@@ -195,13 +190,7 @@ const ICONS: Record<NavIconName, React.ReactNode> = {
   ),
 };
 
-// ─── Portal label helper ───────────────────────────────────────────────────────
-
-function portalLabel(role: Role): string {
-  if (role === "super_admin" || role === "admin") return "Admin Portal";
-  if (role === "student" || role === "parent_guardian") return "Student Portal";
-  return "Staff Portal";
-}
+// ─── URL Helpers ───────────────────────────────────────────────────────────
 
 function hrefPath(href: string): string {
   const i = href.indexOf("?");
@@ -252,51 +241,16 @@ function isParentRegisterActive(pathname: string, sp: URLSearchParams, item: Nav
 
 interface SidebarProps {
   role: Role;
-  username: string;
 }
 
-export function Sidebar({ role, username }: SidebarProps) {
+export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { open: openCommandPalette } = useCommandPalette();
   const normalizedRole = normalizeRole(role);
-  const resolvedRole = normalizedRole ?? ROLES.ADMIN;
   const sections = normalizedRole ? NAV_CONFIG[normalizedRole] ?? [] : [];
-  const usernameTitle =
-    username.length > 28 ? `${username.slice(0, 28)}…` : username;
 
   return (
     <aside className="w-[220px] shrink-0 bg-gradient-to-b from-card to-sidebar border-r border-border flex flex-col overflow-y-auto shadow-md">
-      {/* Brand */}
-      <div className="flex-row-3 px-4 pt-5 pb-4 border-b border-border bg-card/[0.86]">
-        <Image
-          src="/MLAND LOGO.png"
-          alt="Merryland logo"
-          width={28}
-          height={28}
-          priority
-        />
-        <div>
-          <p className="font-extrabold text-base text-primary tracking-wide leading-tight">MERRYLAND</p>
-          <p className="text-[0.65rem] text-muted-foreground/70 font-medium leading-tight">{portalLabel(resolvedRole)}</p>
-        </div>
-      </div>
-
-      {/* Search button */}
-      <button
-        type="button"
-        onClick={openCommandPalette}
-        className="flex-row-2 mx-2.5 mt-3 px-3 py-2 bg-card border border-border rounded-md text-muted-foreground text-[0.8rem] cursor-pointer transition-all hover:bg-muted hover:border-border hover:text-foreground"
-        aria-label="Open search"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <circle cx="11" cy="11" r="8" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
-        <span className="flex-1 text-left">Search...</span>
-        <kbd className="font-mono text-[0.65rem] px-1.5 py-0.5 bg-muted border border-border rounded text-muted-foreground">Ctrl+K</kbd>
-      </button>
-
       {/* Navigation */}
       <nav className="flex-1 py-3 flex flex-col gap-0.5" aria-label="Main navigation">
         {sections.map((section) => (
@@ -366,42 +320,6 @@ export function Sidebar({ role, username }: SidebarProps) {
           </div>
         ))}
       </nav>
-
-      {/* Theme Controls */}
-      <div className="border-t border-border py-3 px-4 flex flex-col gap-2.5">
-        <div className="flex items-center justify-between">
-          <span className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">Theme</span>
-          <ThemeToggle />
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">Color</span>
-          <ColorThemePicker />
-        </div>
-      </div>
-
-      {/* User footer */}
-      <div className="border-t border-border py-3 px-4 flex items-center justify-between gap-2">
-        <div className="flex-1 flex-row-2 min-w-0">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/80 text-white flex items-center justify-center text-xs font-bold shrink-0" aria-hidden="true">
-            {username.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <p className="text-[0.8rem] font-semibold text-foreground whitespace-nowrap overflow-hidden text-ellipsis" title={usernameTitle}>
-              {username}
-            </p>
-            <p className="text-[0.7rem] text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">{ROLE_LABELS[resolvedRole]}</p>
-          </div>
-        </div>
-        <form action={logoutAction}>
-          <button type="submit" className="bg-transparent border-none p-1.5 cursor-pointer text-muted-foreground rounded-md transition-colors shrink-0 flex items-center justify-center hover:bg-muted/70 hover:text-destructive" title="Sign out">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </button>
-        </form>
-      </div>
     </aside>
   );
 }
