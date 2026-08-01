@@ -17,6 +17,7 @@ import type {
   StudentRecordFlags,
 } from "@/features/students/components/StudentRecordProfile";
 import type { StudentRequirementsSnapshot } from "@/features/registrations/registrations.queries";
+import { TabNav, type TabItem } from "@/components/shared/TabNav";
 import { cn } from "@/lib/utils/cn";
 import { formatPhoneNumber } from "@/lib/utils/phone";
 import { formatDate } from "@/lib/utils/date";
@@ -134,7 +135,7 @@ export function RegistrationDetailView({
     ? `${placement.gradeLevel}${placement.sectionName ? ` · ${placement.sectionName}` : ""} · ${placement.schoolYear}`
     : "No active school-year enrollment";
 
-  const tabs: { id: typeof tab; label: string }[] = [
+  const tabs: TabItem<typeof tab>[] = [
     { id: "overview", label: "Overview" },
     { id: "documents", label: "Documents" },
     { id: "history", label: "Enrollment History" },
@@ -238,26 +239,11 @@ export function RegistrationDetailView({
             </div>
           </div>
 
-          <nav
-            className="mt-4 flex flex-wrap gap-1 border-t border-border pt-3 print:hidden"
-            aria-label="Student record sections"
-          >
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "relative px-4 py-2.5 text-sm font-medium transition-colors",
-                  tab === t.id
-                    ? "text-primary after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </nav>
+          <TabNav
+            tabs={tabs}
+            activeTab={tab}
+            onTabChange={setTab}
+          />
         </div>
       </header>
 
