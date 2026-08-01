@@ -6,9 +6,9 @@ import {
   getPaymentCollectionSummary,
   getSchoolYearsForPaymentReport,
 } from "@/features/reports/payment-collection-report.queries";
-import { PaymentCollectionFilters } from "@/features/reports/components/PaymentCollectionFilters";
+import { ReportFilters } from "@/components/shared/ReportFilters";
+import { ReportExportActions } from "@/components/shared/ReportExportActions";
 import { PaymentCollectionReportPreview } from "@/features/reports/components/PaymentCollectionReportPreview";
-import { PaymentCollectionReportActions } from "@/features/reports/components/PaymentCollectionReportActions";
 import { TablePagination } from "@/components/ui/TablePagination";
 
 const PAGE_SIZE = 30;
@@ -105,24 +105,35 @@ export default async function PaymentCollectionReportPage({
             Generate and print payment collection reports
           </p>
         </div>
-        <PaymentCollectionReportActions
-          startDate={params.startDate || ""}
-          endDate={params.endDate || ""}
-          schoolYearId={params.schoolYearId}
-          paymentMethod={params.paymentMethod}
-          paymentStatus={params.paymentStatus}
+        <ReportExportActions
+          exportPath="/staff/reports/payment-collection/export"
+          filters={{
+            startDate: params.startDate,
+            endDate: params.endDate,
+            schoolYearId: params.schoolYearId,
+            paymentMethod: params.paymentMethod,
+            paymentStatus: params.paymentStatus,
+          }}
         />
       </div>
 
       {/* Filters */}
       <div className="no-print">
-        <PaymentCollectionFilters
-          schoolYears={schoolYears}
-          defaultStartDate={params.startDate}
-          defaultEndDate={params.endDate}
-          defaultSchoolYearId={params.schoolYearId}
-          defaultPaymentMethod={params.paymentMethod}
-          defaultPaymentStatus={params.paymentStatus}
+        <ReportFilters
+          basePath="/staff/reports/payment-collection"
+          config={{
+            dateRange: true,
+            schoolYears: schoolYears,
+            paymentMethod: true,
+            paymentStatus: true,
+          }}
+          defaults={{
+            startDate: params.startDate,
+            endDate: params.endDate,
+            schoolYearId: params.schoolYearId,
+            paymentMethod: params.paymentMethod,
+            paymentStatus: params.paymentStatus,
+          }}
         />
       </div>
 

@@ -6,9 +6,9 @@ import {
   getAccountsReceivableReport,
   getAccountsReceivableSummary,
 } from "@/features/reports/accounts-receivable-report.queries";
-import { AccountsReceivableFilters } from "@/features/reports/components/AccountsReceivableFilters";
 import { AccountsReceivableTable } from "@/features/reports/components/AccountsReceivableTable";
-import { AccountsReceivableReportActions } from "@/features/reports/components/AccountsReceivableReportActions";
+import { ReportFilters } from "@/components/shared/ReportFilters";
+import { ReportExportActions } from "@/components/shared/ReportExportActions";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { TablePagination } from "@/components/ui/TablePagination";
 
@@ -65,14 +65,20 @@ export default async function AccountsReceivableReportPage({
             Outstanding student balances for {schoolYearLabel}
           </p>
         </div>
-        <AccountsReceivableReportActions schoolYearId={schoolYearId} />
+        <ReportExportActions
+          exportPath="/staff/reports/accounts-receivable/export"
+          filters={{ schoolYearId }}
+        />
       </div>
 
       {/* Filters */}
       <div className="no-print">
-        <AccountsReceivableFilters
-          schoolYears={schoolYears.map((sy) => ({ id: sy.id, label: sy.label }))}
-          defaultSchoolYearId={schoolYearId}
+        <ReportFilters
+          basePath="/staff/reports/accounts-receivable"
+          config={{
+            schoolYears: schoolYears.map((sy) => ({ id: sy.id, label: sy.label })),
+          }}
+          defaults={{ schoolYearId }}
         />
       </div>
 

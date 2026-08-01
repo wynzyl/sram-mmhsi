@@ -6,9 +6,9 @@ import {
   getBfxSummary,
   getSchoolYearsForBfxReport,
 } from "@/features/reports";
-import { BfxReportFilters } from "@/features/reports/components/BfxReportFilters";
 import { BfxReportTable } from "@/features/reports/components/BfxReportTable";
-import { BfxReportActions } from "@/features/reports/components/BfxReportActions";
+import { ReportFilters } from "@/components/shared/ReportFilters";
+import { ReportExportActions } from "@/components/shared/ReportExportActions";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
 
@@ -76,19 +76,29 @@ export default async function BalanceForwardsReportPage({
             BFX receipts showing balance transfers from prior school years
           </p>
         </div>
-        <BfxReportActions
-          startDate={params.startDate}
-          endDate={params.endDate}
-          schoolYearId={params.schoolYearId}
+        <ReportExportActions
+          exportPath="/staff/reports/balance-forwards/export"
+          filters={{
+            startDate: params.startDate,
+            endDate: params.endDate,
+            schoolYearId: params.schoolYearId,
+          }}
         />
       </div>
 
       {/* Filters */}
-      <BfxReportFilters
-        schoolYears={schoolYears}
-        defaultStartDate={params.startDate}
-        defaultEndDate={params.endDate}
-        defaultSchoolYearId={params.schoolYearId}
+      <ReportFilters
+        basePath="/staff/reports/balance-forwards"
+        config={{
+          dateRange: true,
+          schoolYears: schoolYears,
+          schoolYearLabel: "Source School Year",
+        }}
+        defaults={{
+          startDate: params.startDate,
+          endDate: params.endDate,
+          schoolYearId: params.schoolYearId,
+        }}
       />
 
       {/* Summary Cards */}

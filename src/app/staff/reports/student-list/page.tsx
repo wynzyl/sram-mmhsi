@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 import { getActiveSchoolYear, getSchoolYears } from "@/lib/queries/schoolYears";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { getStudentListReport } from "@/features/reports/student-list-report.queries";
-import { StudentListFilters } from "@/features/reports/components/StudentListFilters";
 import { StudentListTable } from "@/features/reports/components/StudentListTable";
-import { StudentListReportActions } from "@/features/reports/components/StudentListReportActions";
+import { ReportFilters } from "@/components/shared/ReportFilters";
+import { ReportExportActions } from "@/components/shared/ReportExportActions";
 
 interface PageProps {
   searchParams: Promise<{
@@ -88,19 +88,22 @@ export default async function StudentListReportPage({ searchParams }: PageProps)
             Enrolled students for {schoolYearLabel} · {gradeLabel}
           </p>
         </div>
-        <StudentListReportActions
-          schoolYearId={schoolYearId}
-          gradeLevelId={gradeLevelId}
+        <ReportExportActions
+          exportPath="/staff/reports/student-list/export"
+          filters={{ schoolYearId, gradeLevelId }}
         />
       </div>
 
       {/* Filters */}
       <div className="no-print">
-        <StudentListFilters
-          schoolYears={schoolYears.map((sy) => ({ id: sy.id, label: sy.label }))}
-          gradeLevels={gradeLevels.map((g) => ({ id: g.id, label: g.name }))}
-          schoolYearId={schoolYearId}
-          gradeLevelId={gradeLevelId}
+        <ReportFilters
+          basePath="/staff/reports/student-list"
+          config={{
+            schoolYears: schoolYears.map((sy) => ({ id: sy.id, label: sy.label })),
+            schoolYearRequired: true,
+            gradeLevels: gradeLevels.map((g) => ({ id: g.id, label: g.name })),
+          }}
+          defaults={{ schoolYearId, gradeLevelId }}
         />
       </div>
 
