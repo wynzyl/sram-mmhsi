@@ -107,7 +107,7 @@ async function FeeSchedulesByYear() {
                 <div className="flex items-center gap-3">
                   <h2 className="text-base font-semibold text-foreground">{schoolYear.label}</h2>
                   {schoolYear.isActive && (
-                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-green-500/15 text-green-500">Active Year</span>
+                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-success/15 text-success">Active Year</span>
                   )}
                 </div>
                 <span className="text-xs text-muted-foreground">

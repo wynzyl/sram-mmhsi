@@ -132,7 +132,7 @@ export default async function DiscountRequestsView({
           </Link>
           <Link href="/staff/approvals?section=discount&tab=approved" className={tabClass(tab === "approved")}>
             Approved
-            <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-green-100 text-green-800">
+            <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-success/15 text-success">
               {counts.approved}
             </span>
           </Link>

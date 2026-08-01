@@ -92,7 +92,7 @@ export function GradeSheetReviewActions({
         <div
           className={`mb-4 p-3 rounded-lg text-sm ${
             approveState.success || returnState.success
-              ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300"
+              ? "bg-success/10 text-success"
               : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300"
           }`}
         >

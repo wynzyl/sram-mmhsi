@@ -69,7 +69,7 @@ function getStatusColor(status: string): string {
     draft: "bg-muted text-muted-foreground",
     submitted: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
     principal_approved: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-    published: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+    published: "bg-success/15 text-success",
     locked: "bg-muted text-muted-foreground",
     returned: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   };
@@ -436,7 +436,7 @@ export function SHSGradeEntryTabs({
           {canEdit && totalCompletion.totalExpected > 0 && (
             <span
               className={`text-sm ${
-                totalCompletion.isComplete ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+                totalCompletion.isComplete ? "text-success" : "text-muted-foreground"
               }`}
             >
               {totalCompletion.totalEntered}/{totalCompletion.totalExpected} grades entered
@@ -550,7 +550,7 @@ export function SHSGradeEntryTabs({
         <div
           className={`p-4 border-b ${
             saveState.success
-              ? "bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
+              ? "bg-success/10 text-success border-success/30"
               : "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
           }`}
         >
@@ -562,7 +562,7 @@ export function SHSGradeEntryTabs({
         <div
           className={`p-4 border-b ${
             submitState.success
-              ? "bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
+              ? "bg-success/10 text-success border-success/30"
               : "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
           }`}
         >

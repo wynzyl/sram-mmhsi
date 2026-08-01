@@ -160,14 +160,14 @@ function SummaryCard({
   const colorClasses = {
     amber: "bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800",
     blue: "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800",
-    green: "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800",
+    green: "bg-success/10 border-success/30",
     gray: "bg-muted border-border",
   };
 
   const textClasses = {
     amber: "text-amber-700 dark:text-amber-300",
     blue: "text-blue-700 dark:text-blue-300",
-    green: "text-green-700 dark:text-green-300",
+    green: "text-success",
     gray: "text-foreground",
   };
 

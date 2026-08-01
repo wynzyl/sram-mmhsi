@@ -424,7 +424,7 @@ export default function AssessmentDraftForm({
                             <div className="flex shrink-0 gap-1">
                               <a
                                 href="/staff/approvals?section=discount"
-                                className="rounded bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700"
+                                className="rounded bg-success px-2.5 py-1 text-xs font-semibold text-success-foreground hover:bg-success/90"
                               >
                                 Review
                               </a>

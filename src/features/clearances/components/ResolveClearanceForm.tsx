@@ -45,9 +45,9 @@ export default function ResolveClearanceForm({
 
   if (state.success) {
     return (
-      <Card className="border-green-200 bg-green-50/30">
+      <Card className="border-success/30 bg-success/10">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-2 text-green-700">
+          <div className="flex items-center gap-2 text-success">
             <CheckCircle className="h-5 w-5" />
             <p className="font-medium">Clearance resolved successfully.</p>
           </div>
@@ -86,7 +86,7 @@ export default function ResolveClearanceForm({
           {resolutionType && (
             <div className={cn(
               "rounded-md p-3 text-sm",
-              resolutionType === "paid" ? "bg-green-50 text-green-700" :
+              resolutionType === "paid" ? "bg-success/10 text-success" :
               resolutionType === "waived" ? "bg-blue-50 text-blue-700" :
               "bg-amber-50 text-amber-700"
             )}>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { logoutAction } from "@/features/auth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ColorThemePicker } from "@/components/ui/ColorThemePicker";
 import { ROLE_LABELS, normalizeRole, ROLES } from "@/lib/constants/roles";
 import { NAV_CONFIG } from "./sidebar-nav";
 import { useCommandPalette } from "@/components/command-palette";
@@ -366,9 +367,16 @@ export function Sidebar({ role, username }: SidebarProps) {
         ))}
       </nav>
 
-      {/* Theme Toggle */}
-      <div className="border-t border-border py-3 px-4 flex justify-center">
-        <ThemeToggle />
+      {/* Theme Controls */}
+      <div className="border-t border-border py-3 px-4 flex flex-col gap-2.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">Theme</span>
+          <ThemeToggle />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">Color</span>
+          <ColorThemePicker />
+        </div>
       </div>
 
       {/* User footer */}

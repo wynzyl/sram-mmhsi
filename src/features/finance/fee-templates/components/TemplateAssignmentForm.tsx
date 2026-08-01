@@ -203,10 +203,10 @@ export function TemplateAssignmentForm({
                   <span className="text-sm text-foreground">
                     {item.feeItemType.name}
                     {item.feeItemType.isDiscount && (
-                      <span className="inline-flex ml-2 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-green-500 bg-green-500/10 rounded">DISC</span>
+                      <span className="inline-flex ml-2 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-success bg-success/10 rounded">DISC</span>
                     )}
                   </span>
-                  <span className={`text-sm font-medium tabular-nums ${item.feeItemType.isDiscount ? "text-green-500" : "text-foreground"}`}>
+                  <span className={`text-sm font-medium tabular-nums ${item.feeItemType.isDiscount ? "text-success" : "text-foreground"}`}>
                     {item.feeItemType.isDiscount && "−"}
                     {new Intl.NumberFormat("en-PH", {
                       style: "currency",

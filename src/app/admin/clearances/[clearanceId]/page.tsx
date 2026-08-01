@@ -131,7 +131,7 @@ export default async function ClearanceDetailPage({ params }: PageProps) {
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex items-start gap-2">
-                <CheckCircle className="mt-0.5 h-4 w-4 text-green-600" />
+                <CheckCircle className="mt-0.5 h-4 w-4 text-success" />
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Resolution Type

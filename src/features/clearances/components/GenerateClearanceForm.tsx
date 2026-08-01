@@ -41,9 +41,9 @@ export default function GenerateClearanceForm({
 
   if (state.success) {
     return (
-      <Card className="border-green-200 bg-green-50/30">
+      <Card className="border-success/30 bg-success/10">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-2 text-green-700">
+          <div className="flex items-center gap-2 text-success">
             <CheckCircle className="h-5 w-5" />
             <p className="font-medium">Clearance record created.</p>
           </div>

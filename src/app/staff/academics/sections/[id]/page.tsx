@@ -184,8 +184,8 @@ export default async function SectionDetailPage({
 
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-full bg-green-500/10 p-3">
-              <Calendar className="h-6 w-6 text-green-500" />
+            <div className="rounded-full bg-success/10 p-3">
+              <Calendar className="h-6 w-6 text-success" />
             </div>
             <div>
               <div className="text-2xl font-bold">{section.schoolYearLabel}</div>

@@ -149,7 +149,7 @@ export function CreateFeeItemTypeModal() {
                     onChange={setIsRefundable}
                     label="Refundable on cancellation"
                     description="Payments for this fee can be refunded when enrollment is cancelled within the cutoff period"
-                    checkedColor="green"
+                    checkedColor="success"
                   />
 
             <div className="flex justify-end gap-2 mt-2 pt-4 border-t border-border">

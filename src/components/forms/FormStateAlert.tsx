@@ -33,13 +33,13 @@ export function FormStateAlert<T>({ state }: { state: BaseFormState<T> }) {
   if (state.success && state.message) {
     return (
       <div
-        className="rounded-md bg-green-50 border border-green-200 p-4 mb-4"
+        className="rounded-md bg-success/10 border border-success/30 p-4 mb-4"
         role="status"
         aria-live="polite"
       >
         <div className="flex items-start gap-3">
           <svg
-            className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0"
+            className="h-5 w-5 text-success mt-0.5 flex-shrink-0"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
@@ -51,7 +51,7 @@ export function FormStateAlert<T>({ state }: { state: BaseFormState<T> }) {
               clipRule="evenodd"
             />
           </svg>
-          <p className="text-sm font-medium text-green-800">{state.message}</p>
+          <p className="text-sm font-medium text-success">{state.message}</p>
         </div>
       </div>
     );

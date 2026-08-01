@@ -104,7 +104,7 @@ export default function ReadyToEnrollTable({
           }
 
           return student.hasCompleteDocuments ? (
-            <div className="flex items-center gap-1.5 text-green-700">
+            <div className="flex items-center gap-1.5 text-success">
               <CheckCircle2 className="h-4 w-4" />
               <span className="text-xs font-medium">Complete</span>
             </div>
@@ -138,7 +138,7 @@ export default function ReadyToEnrollTable({
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-green-700">
+            <div className="flex items-center gap-1.5 text-success">
               <CheckCircle2 className="h-4 w-4" />
               <span className="text-xs font-medium">Clear</span>
             </div>

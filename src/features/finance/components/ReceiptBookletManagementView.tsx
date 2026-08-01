@@ -86,9 +86,9 @@ export function ReceiptBookletManagementView({
           <div className="bg-card border border-border rounded-md p-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Consumption Rate</p>
-              <Gauge className="h-4 w-4 text-green-500 dark:text-green-400" />
+              <Gauge className="h-4 w-4 text-success" />
             </div>
-            <p className="mt-1 text-3xl font-semibold text-green-500 dark:text-green-400">
+            <p className="mt-1 text-3xl font-semibold text-success">
               {averageUsage}%
             </p>
             <div className="mt-3 h-2 rounded-full bg-muted dark:bg-[#1f2328]">

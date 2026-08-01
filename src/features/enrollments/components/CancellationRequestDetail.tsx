@@ -157,7 +157,7 @@ export default function CancellationRequestDetailView({
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Total Paid
                 </p>
-                <p className="mt-1 text-lg font-semibold text-green-600">
+                <p className="mt-1 text-lg font-semibold text-success">
                   <CurrencyDisplay amount={Number(request.assessment.totalPaid)} />
                 </p>
               </div>
@@ -187,15 +187,15 @@ export default function CancellationRequestDetailView({
         <Card className={cn(
           "border-2",
           request.refundPreview.isEligibleForRefund
-            ? "border-green-200 bg-green-50/30 dark:border-green-500/40 dark:bg-green-500/10"
+            ? "border-success/30 bg-success/10"
             : "border-amber-200 bg-amber-50/30 dark:border-amber-500/40 dark:bg-amber-500/10"
         )}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               {request.refundPreview.isEligibleForRefund ? (
                 <>
-                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  <span className="text-green-700 dark:text-green-300">Eligible for Partial Refund</span>
+                  <CheckCircle className="h-5 w-5 text-success" />
+                  <span className="text-success">Eligible for Partial Refund</span>
                 </>
               ) : (
                 <>
@@ -235,7 +235,7 @@ export default function CancellationRequestDetailView({
                 </p>
                 <p className={cn(
                   "mt-1 text-lg font-semibold",
-                  request.refundPreview.isEligibleForRefund ? "text-green-600" : "text-amber-600"
+                  request.refundPreview.isEligibleForRefund ? "text-success" : "text-amber-600"
                 )}>
                   <CurrencyDisplay amount={request.refundPreview.isEligibleForRefund ? request.refundPreview.refundableAmount : request.refundPreview.nonRefundableAmount} />
                 </p>
@@ -261,7 +261,7 @@ export default function CancellationRequestDetailView({
                       <div className="flex items-center gap-2">
                         <span className={cn(
                           "inline-block h-2 w-2 rounded-full",
-                          item.isRefundable ? "bg-green-500" : "bg-gray-400"
+                          item.isRefundable ? "bg-success" : "bg-gray-400"
                         )} />
                         <span>{item.description}</span>
                       </div>
@@ -270,7 +270,7 @@ export default function CancellationRequestDetailView({
                         {request.refundPreview!.isEligibleForRefund && (
                           <span className={cn(
                             "text-xs",
-                            item.willRefund ? "text-green-600" : "text-muted-foreground"
+                            item.willRefund ? "text-success" : "text-muted-foreground"
                           )}>
                             {item.willRefund ? "Refund" : "Keep"}
                           </span>

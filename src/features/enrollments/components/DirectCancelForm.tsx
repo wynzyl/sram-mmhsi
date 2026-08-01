@@ -48,10 +48,10 @@ export default function DirectCancelForm({
 
   if (state.success) {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50/50 p-4">
-        <p className="text-sm font-medium text-green-700">Enrollment cancelled</p>
+      <div className="rounded-lg border border-success/30 bg-success/10 p-4">
+        <p className="text-sm font-medium text-success">Enrollment cancelled</p>
         {state.refundDetails && (
-          <div className="mt-2 text-xs text-green-600">
+          <div className="mt-2 text-xs text-success">
             {state.refundDetails.isEligibleForRefund ? (
               <p>
                 Refunded: <CurrencyDisplay amount={state.refundDetails.refundableAmount} />
