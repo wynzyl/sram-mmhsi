@@ -198,7 +198,7 @@ export async function InternalAssessmentLedgerPage(props: {
     )?.id ?? null;
 
   return (
-    <div className="page-container">
+    <div className="page-container--full">
       <AssessmentLedgerRegister
         {...(studentRecordsBasePath != null ? { studentRecordsBasePath } : {})}
         assessment={{

@@ -130,7 +130,7 @@ export async function RegistrationQueuePage(props: {
   const studentBasePath = `${pathPrefix}/students` as StudentBasePath;
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container--full space-y-6">
       {/* Header: title + subtitle (left), toolbar (right) */}
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-1">

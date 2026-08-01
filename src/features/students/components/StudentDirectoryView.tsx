@@ -148,7 +148,7 @@ export function StudentDirectoryView({
   const emptyMessage = data?.emptyMessage ?? "No students found.";
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container--full space-y-6">
       {/* Header: title + subtitle (left), filters + register toolbar (right, same row) */}
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-1">

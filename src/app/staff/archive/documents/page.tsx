@@ -63,7 +63,7 @@ export default async function DocumentRequestsPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-7xl p-6">
+    <div className="page-container--full">
       {/* Header */}
       <div className="mb-6">
         <nav className="mb-2 text-sm text-muted-foreground">

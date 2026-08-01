@@ -82,7 +82,7 @@ export function AssessmentsDirectoryView({ basePath }: { basePath: AssessmentsBa
   const isInitialLoading = query.isLoading;
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container--full space-y-6">
       <SectionHeader size="md" accent title="Assessments" subtitle={SUBTITLES[view]} />
 
       <nav className="tab-nav mb-6 flex flex-wrap gap-1" aria-label="Assessment views">

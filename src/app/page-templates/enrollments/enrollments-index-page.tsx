@@ -129,7 +129,7 @@ export async function EnrollmentsIndexPage(props: {
   const schoolYearLabel = activeSyRows[0]?.label ?? null;
 
   return (
-    <div className="page-container">
+    <div className="page-container--full">
       <EnrollmentsListView
         enrollments={cardRows}
         sections={allSections}

@@ -230,7 +230,7 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
   };
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container--full space-y-6">
       {/* Unified Header: Title + Subtitle (left), Filters + Action (right) */}
       <EnrollmentQueueHeader
         basePath={enrollmentsBasePath}

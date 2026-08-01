@@ -45,7 +45,7 @@ export async function InternalInvoicesListPage(props: {
   }));
 
   return (
-    <div className="page-container">
+    <div className="page-container--full">
       <div className="page-header">
         <h1 className="page-title">Invoices</h1>
         <p className="page-description">Manage and send invoices for student assessments.</p>

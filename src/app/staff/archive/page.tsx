@@ -69,7 +69,7 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
   const canManage = hasPermission(session.role, "archive:manage");
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
+    <div className="page-container--full space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
