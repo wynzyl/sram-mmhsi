@@ -15,94 +15,72 @@ export default async function CurriculumsPage() {
   const curriculums = await listCurriculums();
   const canCreate = hasPermission(session.role, "curriculums:create");
 
+  const publishedCount = curriculums.filter((c) => c.status === "published").length;
+  const draftCount = curriculums.filter((c) => c.status === "draft").length;
+  const archivedCount = curriculums.filter((c) => c.status === "archived").length;
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Curriculums</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage curriculum versions and subject definitions
-          </p>
+    <div className="page-container--full space-y-6">
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Curriculums
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Manage curriculum versions and subject definitions
+        </p>
+      </div>
+
+      {/* Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="curriculum-heading"
+      >
+        {/* Card Header with gradient effect */}
+        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Left: Title + Stats Badges */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2
+              id="curriculum-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+            >
+              Curriculum List
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+              {curriculums.length} Total
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
+              {publishedCount} Published
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+              {draftCount} Draft{draftCount !== 1 ? "s" : ""}
+            </span>
+            {archivedCount > 0 && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
+                {archivedCount} Archived
+              </span>
+            )}
+          </div>
+
+          {/* Right: Controls (single row, no wrapping) */}
+          <div className="filter-controls-inline">
+            {canCreate && (
+              <Link
+                href="/staff/academics/curriculums/new"
+                className="btn-gradient-primary inline-flex items-center justify-center min-h-10 px-4 rounded-md whitespace-nowrap"
+              >
+                + New Curriculum
+              </Link>
+            )}
+          </div>
         </div>
-        {canCreate && (
-          <Link
-            href="/staff/academics/curriculums/new"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Curriculum
-          </Link>
-        )}
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard
-          label="Total Curriculums"
-          value={curriculums.length}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Published"
-          value={curriculums.filter((c) => c.status === "published").length}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Drafts"
-          value={curriculums.filter((c) => c.status === "draft").length}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Archived"
-          value={curriculums.filter((c) => c.status === "archived").length}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-            </svg>
-          }
-        />
-      </div>
-
-      {/* Table */}
-      <div className="bg-card border border-border rounded-lg p-4">
-        <CurriculumsListTable data={curriculums} />
-      </div>
+        {/* Table Content */}
+        <div className="p-4">
+          <CurriculumsListTable data={curriculums} />
+        </div>
+      </section>
     </div>
   );
 }
 
-function StatCard({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-4">
-      <div className="p-2 bg-primary/10 text-primary rounded-lg">{icon}</div>
-      <div>
-        <p className="text-2xl font-bold tabular-nums">{value}</p>
-        <p className="text-sm text-muted-foreground">{label}</p>
-      </div>
-    </div>
-  );
-}

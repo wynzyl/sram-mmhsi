@@ -5,8 +5,6 @@ import {
   getAllStrands,
   StrandsTable,
 } from "@/features/academics/strands";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraduationCap, BookOpen, CheckCircle2 } from "lucide-react";
 import { AddStrandButton } from "./AddStrandButton";
 
 export const metadata = {
@@ -29,81 +27,55 @@ export default async function StrandsPage() {
   const tvlStrands = strands.filter((s) => s.code.startsWith("TVL-"));
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">SHS Strands</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage Senior High School academic strands and specializations
-          </p>
+    <div className="page-container--full space-y-6">
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          SHS Strands
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Manage Senior High School academic strands and specializations
+        </p>
+      </div>
+
+      {/* Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="strands-heading"
+      >
+        {/* Card Header with gradient effect */}
+        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Left: Title + Stats Badges */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2
+              id="strands-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+            >
+              Strand List
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+              {strands.length} Total
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
+              {activeStrands.length} Active
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+              {academicStrands.length} Academic
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30">
+              {tvlStrands.length} TVL
+            </span>
+          </div>
+
+          {/* Right: Controls (single row, no wrapping) */}
+          <div className="filter-controls-inline">
+            {canManage && <AddStrandButton />}
+          </div>
         </div>
-        {canManage && <AddStrandButton />}
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-full bg-primary/10 p-3">
-              <GraduationCap className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{strands.length}</div>
-              <div className="text-sm text-muted-foreground">Total Strands</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-full bg-success/10 p-3">
-              <CheckCircle2 className="h-6 w-6 text-success" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{activeStrands.length}</div>
-              <div className="text-sm text-muted-foreground">Active</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-full bg-blue-500/10 p-3">
-              <BookOpen className="h-6 w-6 text-blue-500" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{academicStrands.length}</div>
-              <div className="text-sm text-muted-foreground">Academic Track</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-full bg-orange-500/10 p-3">
-              <GraduationCap className="h-6 w-6 text-orange-500" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{tvlStrands.length}</div>
-              <div className="text-sm text-muted-foreground">TVL Track</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Strands Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5" />
-            All Strands
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <StrandsTable strands={strands} canManage={canManage} />
-        </CardContent>
-      </Card>
+        {/* Table Content */}
+        <StrandsTable strands={strands} canManage={canManage} />
+      </section>
     </div>
   );
 }

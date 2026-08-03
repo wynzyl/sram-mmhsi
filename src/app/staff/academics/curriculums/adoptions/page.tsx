@@ -69,11 +69,13 @@ export default async function CurriculumAdoptionsPage({
   }));
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Curriculum Adoptions</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+    <div className="page-container--full space-y-6">
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Curriculum Adoptions
+        </h1>
+        <p className="text-sm text-muted-foreground">
           Assign published curriculums to grade levels for each school year
         </p>
       </div>

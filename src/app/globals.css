@@ -1636,3 +1636,100 @@
   font-weight: 500;
   color: var(--muted-foreground);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   INLINE FILTER CONTROLS
+   Single-row filter layout for card headers (no wrapping)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Inline filter controls container - prevents wrapping */
+.filter-controls-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+/* Filter search input with icon */
+.filter-search {
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+
+.filter-search-icon {
+  display: flex;
+  align-items: center;
+  padding-left: 0.75rem;
+  padding-right: 0.5rem;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+.filter-search-input {
+  min-height: 2.5rem;
+  flex: 1;
+  background-color: transparent;
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  outline: none;
+  border: none;
+}
+
+.filter-search-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* Filter select dropdown */
+.filter-select {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent);
+}
+
+.filter-select > option {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+/* Filter separator (vertical line) */
+.filter-separator {
+  height: 1.5rem;
+  width: 1px;
+  background-color: var(--border);
+  margin: 0 0.25rem;
+}
+
+/* Clear filter button */
+.filter-clear {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.filter-clear:hover {
+  color: var(--foreground);
+}
+
+.filter-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

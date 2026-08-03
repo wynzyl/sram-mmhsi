@@ -8,7 +8,6 @@ import {
   getSectionsForAdviserAssignment,
   AdviserTable,
 } from "@/features/academics/advisers";
-import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata = {
   title: "Section Advisers | SRAMS",
@@ -34,26 +33,30 @@ export default async function AdvisersPage() {
   ]);
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+    <div className="page-container--full space-y-6">
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
           Section Advisers
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Assign homeroom advisers to sections for grade entry management
         </p>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <AdviserTable
-            advisers={advisers}
-            sections={sections}
-            teachers={teachers}
-            schoolYears={schoolYears}
-          />
-        </CardContent>
-      </Card>
+      {/* Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="advisers-heading"
+      >
+        {/* Table with embedded header */}
+        <AdviserTable
+          advisers={advisers}
+          sections={sections}
+          teachers={teachers}
+          schoolYears={schoolYears}
+        />
+      </section>
     </div>
   );
 }

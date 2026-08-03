@@ -7,8 +7,6 @@ import {
   getElectivesByStrand,
   ElectivesByStrandView,
 } from "@/features/academics/electives";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen } from "lucide-react";
 
 export const metadata = {
   title: "Elective Subjects | SRAMS",
@@ -42,61 +40,57 @@ export default async function ElectivesPage() {
     getElectivesByStrand({ schoolYearId: activeSchoolYear.id }),
   ]);
 
+  const sectionsOffering = allElectives.reduce((sum, e) => sum + e.sectionOfferingCount, 0);
+  const studentsEnrolled = allElectives.reduce((sum, e) => sum + e.studentEnrollmentCount, 0);
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="rounded-lg bg-primary/10 p-2">
-          <BookOpen className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Elective Subjects
-          </h1>
-          <p className="text-muted-foreground">
-            SHS elective subjects organized by strand for {activeSchoolYear.label}
-          </p>
-        </div>
+    <div className="page-container--full space-y-6">
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Elective Subjects
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          SHS elective subjects organized by strand for {activeSchoolYear.label}
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Electives</CardDescription>
-            <CardTitle className="text-3xl">{allElectives.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Active Strands</CardDescription>
-            <CardTitle className="text-3xl">{electivesByStrand.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Sections Offering</CardDescription>
-            <CardTitle className="text-3xl">
-              {allElectives.reduce((sum, e) => sum + e.sectionOfferingCount, 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Students Enrolled</CardDescription>
-            <CardTitle className="text-3xl">
-              {allElectives.reduce((sum, e) => sum + e.studentEnrollmentCount, 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="electives-heading"
+      >
+        {/* Card Header with gradient effect */}
+        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Left: Title + Stats Badges */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2
+              id="electives-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+            >
+              Electives by Strand
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+              {allElectives.length} Subject{allElectives.length !== 1 ? "s" : ""}
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+              {electivesByStrand.length} Strand{electivesByStrand.length !== 1 ? "s" : ""}
+            </span>
+            {sectionsOffering > 0 && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                {sectionsOffering} Section{sectionsOffering !== 1 ? "s" : ""} Offering
+              </span>
+            )}
+            {studentsEnrolled > 0 && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
+                {studentsEnrolled} Enrolled
+              </span>
+            )}
+          </div>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Elective Subjects by Strand</CardTitle>
-          <CardDescription>
-            View elective subjects available for each SHS strand. Subjects marked with * are required (strand core) for that strand.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        {/* Content */}
+        <div className="p-4">
           {allElectives.length === 0 ? (
             <div className="py-8 text-center">
               <p className="text-muted-foreground">
@@ -112,8 +106,8 @@ export default async function ElectivesPage() {
               allElectives={allElectives}
             />
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   );
 }

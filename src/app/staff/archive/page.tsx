@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TablePagination } from "@/components/ui/TablePagination";
 import {
@@ -17,10 +16,7 @@ import {
   BatchArchiveDialog,
   BatchNoShowDialog,
 } from "@/features/archive/components";
-import {
-  STUDENT_STATUS_LABELS,
-  type StudentStatus,
-} from "@/lib/constants/student-status";
+import type { StudentStatus } from "@/lib/constants/student-status";
 
 export const metadata: Metadata = {
   title: "Archive Directory",
@@ -70,91 +66,94 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
 
   return (
     <div className="page-container--full space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Archive Directory</h1>
-          <p className="text-muted-foreground">
-            View and manage archived students (graduated, transferred, etc.)
-          </p>
-        </div>
-        {canManage && (
-          <div className="flex gap-2">
-            <BatchArchiveDialog
-              schoolYearOptions={allSchoolYears}
-              gradeLevelOptions={allGradeLevels}
-              trigger={<Button variant="secondary">Batch Archive Graduates</Button>}
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Archive Directory
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          View and manage archived students (graduated, transferred, etc.)
+        </p>
+      </div>
+
+      {/* Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="archive-heading"
+      >
+        {/* Card Header with gradient effect */}
+        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          {/* Left: Title + Stats Badges */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2
+              id="archive-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+            >
+              Archived Students
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+              {summary.total} Total
+            </span>
+            {summary.byStatus.graduated > 0 && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
+                {summary.byStatus.graduated} Graduated
+              </span>
+            )}
+            {summary.byStatus.transferred > 0 && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                {summary.byStatus.transferred} Transferred
+              </span>
+            )}
+          </div>
+
+          {/* Right: Filters + Actions (single row, no wrapping) */}
+          <div className="filter-controls-inline">
+            <ArchiveFilters
+              schoolYearOptions={archiveData.schoolYearOptions}
+              currentStatus={params.status}
+              currentSchoolYearId={params.schoolYearId}
+              currentSearch={params.search}
+              inline
             />
-            <BatchNoShowDialog
-              schoolYearOptions={allSchoolYears}
-              trigger={
-                <Button variant="secondary" className="text-destructive">
-                  Batch Cancel No-Shows
-                </Button>
-              }
+
+            {canManage && (
+              <>
+                <div className="filter-separator hidden sm:block" />
+                <BatchArchiveDialog
+                  schoolYearOptions={allSchoolYears}
+                  gradeLevelOptions={allGradeLevels}
+                  trigger={<Button variant="secondary" size="sm">Batch Archive</Button>}
+                />
+                <BatchNoShowDialog
+                  schoolYearOptions={allSchoolYears}
+                  trigger={
+                    <Button variant="secondary" size="sm" className="text-destructive">
+                      Cancel No-Shows
+                    </Button>
+                  }
+                />
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Table Content */}
+        <ArchiveDirectoryTable rows={archiveData.rows} />
+
+        {/* Pagination */}
+        {archiveData.totalCount > 0 && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              currentPage={archiveData.currentPage}
+              totalPages={archiveData.totalPages}
+              totalRecords={archiveData.totalCount}
+              pageSize={25}
+              baseUrl={buildBaseUrl(params)}
+              itemLabel="students"
             />
           </div>
         )}
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Archived
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.total}</div>
-          </CardContent>
-        </Card>
-        {(
-          ["graduated", "transferred", "withdrawn", "cancelled", "inactive"] as const
-        ).map((status) => (
-          <Card key={status}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {STUDENT_STATUS_LABELS[status]}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {summary.byStatus[status] ?? 0}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <ArchiveFilters
-            schoolYearOptions={archiveData.schoolYearOptions}
-            currentStatus={params.status}
-            currentSchoolYearId={params.schoolYearId}
-            currentSearch={params.search}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          <ArchiveDirectoryTable rows={archiveData.rows} />
-        </CardContent>
-      </Card>
-
-      {/* Pagination */}
-      <TablePagination
-        currentPage={archiveData.currentPage}
-        totalPages={archiveData.totalPages}
-        totalRecords={archiveData.totalCount}
-        pageSize={25}
-        baseUrl={buildBaseUrl(params)}
-        itemLabel="students"
-      />
+      </section>
     </div>
   );
 }

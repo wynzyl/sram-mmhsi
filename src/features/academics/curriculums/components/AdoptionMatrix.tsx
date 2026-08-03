@@ -29,96 +29,80 @@ export function AdoptionMatrix({
   const lockedCount = lockedGradeLevels.size;
 
   return (
-    <div className="space-y-6">
-      {/* School Year Selector */}
-      <AdoptionSchoolYearSelector
-        schoolYears={schoolYears}
-        selectedYearId={selectedSchoolYear.id}
-      />
+    <section
+      className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+      aria-labelledby="adoption-heading"
+    >
+      {/* Card Header with gradient effect */}
+      <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Left: Title + Stats Badges */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2
+            id="adoption-heading"
+            className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+          >
+            Adoption Matrix
+          </h2>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+            {matrixCells.length} Grade Level{matrixCells.length !== 1 ? "s" : ""}
+          </span>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
+            {adoptedCount} Adopted
+          </span>
+          {lockedCount > 0 && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+              {lockedCount} Locked
+            </span>
+          )}
+        </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard
-          label="Grade Levels"
-          value={matrixCells.length}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Adopted"
-          value={adoptedCount}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Locked (Grades Exist)"
-          value={lockedCount}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          }
-        />
+        {/* Right: School Year Selector (single row, no wrapping) */}
+        <div className="filter-controls-inline">
+          <AdoptionSchoolYearSelector
+            schoolYears={schoolYears}
+            selectedYearId={selectedSchoolYear.id}
+          />
+        </div>
       </div>
 
       {/* Adoption Matrix Table */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        {curriculumOptions.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-muted-foreground">
-              No published curriculums available. Publish a curriculum first to enable adoptions.
-            </p>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Grade Level
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Adopted Curriculum
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {matrixCells.map((cell) => (
-                <AdoptionMatrixRow
-                  key={`${cell.gradeLevelId}-${cell.curriculumId ?? "none"}`}
-                  cell={cell}
-                  schoolYearId={selectedSchoolYear.id}
-                  curriculumOptions={curriculumOptions}
-                  isLocked={lockedGradeLevels.has(cell.gradeLevelId)}
-                />
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
-  return (
-    <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-4">
-      <div className="p-2 bg-primary/10 text-primary rounded-lg">{icon}</div>
-      <div>
-        <p className="text-2xl font-bold tabular-nums">{value}</p>
-        <p className="text-sm text-muted-foreground">{label}</p>
-      </div>
-    </div>
+      {curriculumOptions.length === 0 ? (
+        <div className="p-8 text-center">
+          <p className="text-muted-foreground">
+            No published curriculums available. Publish a curriculum first to enable adoptions.
+          </p>
+        </div>
+      ) : (
+        <table className="w-full">
+          <thead className="bg-muted/50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
+                Grade Level
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
+                Adopted Curriculum
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
+                Status
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {matrixCells.map((cell) => (
+              <AdoptionMatrixRow
+                key={`${cell.gradeLevelId}-${cell.curriculumId ?? "none"}`}
+                cell={cell}
+                schoolYearId={selectedSchoolYear.id}
+                curriculumOptions={curriculumOptions}
+                isLocked={lockedGradeLevels.has(cell.gradeLevelId)}
+              />
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }
