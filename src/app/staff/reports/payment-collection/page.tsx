@@ -4,12 +4,9 @@ import { canAccessPaymentReports } from "@/lib/rbac/permissions";
 import {
   getPaymentCollectionReport,
   getPaymentCollectionSummary,
-  getSchoolYearsForPaymentReport,
 } from "@/features/reports/payment-collection-report.queries";
-import { ReportFilters } from "@/components/shared/ReportFilters";
-import { ReportExportActions } from "@/components/shared/ReportExportActions";
-import { PaymentCollectionReportPreview } from "@/features/reports/components/PaymentCollectionReportPreview";
-import { TablePagination } from "@/components/ui/TablePagination";
+import { PaymentCollectionReportView } from "@/features/reports/components/PaymentCollectionReportView";
+import { formatDate } from "@/lib/utils/date";
 
 const PAGE_SIZE = 30;
 
@@ -20,8 +17,28 @@ interface PageProps {
     schoolYearId?: string;
     paymentMethod?: string;
     paymentStatus?: string;
+    usageMode?: string;
     page?: string;
   }>;
+}
+
+/** Format amount as number without currency symbol */
+function formatAmount(amount: number): string {
+  return new Intl.NumberFormat("en-PH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+/** Format period label for subtitle */
+function formatPeriodLabel(startDate: Date, endDate: Date): string {
+  const start = formatDate(startDate, { month: "short", day: "numeric" });
+  const end = formatDate(endDate, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `${start} – ${end}`;
 }
 
 export default async function PaymentCollectionReportPage({
@@ -55,16 +72,18 @@ export default async function PaymentCollectionReportPage({
   const schoolYearId = params.schoolYearId || undefined;
   const paymentMethod = params.paymentMethod || undefined;
   const paymentStatus = params.paymentStatus || undefined;
+  const usageMode = params.usageMode || undefined;
   const page = parseInt(params.page || "1", 10) || 1;
 
   // Fetch data in parallel
-  const [reportResult, summary, schoolYears] = await Promise.all([
+  const [reportResult, summary] = await Promise.all([
     getPaymentCollectionReport({
       startDate,
       endDate,
       schoolYearId,
       paymentMethod,
       paymentStatus,
+      usageMode,
       page,
       pageSize: PAGE_SIZE,
     }),
@@ -74,88 +93,47 @@ export default async function PaymentCollectionReportPage({
       schoolYearId,
       paymentMethod,
       paymentStatus,
+      usageMode,
     }),
-    getSchoolYearsForPaymentReport(),
   ]);
 
   const { rows: payments, totalCount } = reportResult;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // Build base URL for pagination (preserving current filters)
-  const buildPaginationBaseUrl = () => {
-    const urlParams = new URLSearchParams();
-    if (params.startDate) urlParams.set("startDate", params.startDate);
-    if (params.endDate) urlParams.set("endDate", params.endDate);
-    if (params.schoolYearId) urlParams.set("schoolYearId", params.schoolYearId);
-    if (params.paymentMethod) urlParams.set("paymentMethod", params.paymentMethod);
-    if (params.paymentStatus) urlParams.set("paymentStatus", params.paymentStatus);
-    const queryString = urlParams.toString();
-    return queryString ? `?${queryString}` : "";
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-start justify-between no-print">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">
-            Payment Collection Report
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Generate and print payment collection reports
-          </p>
-        </div>
-        <ReportExportActions
-          exportPath="/staff/reports/payment-collection/export"
-          filters={{
-            startDate: params.startDate,
-            endDate: params.endDate,
-            schoolYearId: params.schoolYearId,
-            paymentMethod: params.paymentMethod,
-            paymentStatus: params.paymentStatus,
-          }}
-        />
+    <div className="page-container--full space-y-6">
+      {/* Clean Page Header */}
+      <div className="space-y-1 no-print">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Payment Collection Report
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {formatPeriodLabel(startDate, endDate)} • ₱
+          {formatAmount(summary.totalAmount)} Total Collected
+        </p>
       </div>
 
-      {/* Filters */}
-      <div className="no-print">
-        <ReportFilters
-          basePath="/staff/reports/payment-collection"
-          config={{
-            dateRange: true,
-            schoolYears: schoolYears,
-            paymentMethod: true,
-            paymentStatus: true,
-          }}
-          defaults={{
-            startDate: params.startDate,
-            endDate: params.endDate,
-            schoolYearId: params.schoolYearId,
-            paymentMethod: params.paymentMethod,
-            paymentStatus: params.paymentStatus,
-          }}
-        />
-      </div>
+      {/* Single Report Card with all controls embedded */}
+      <PaymentCollectionReportView
+        rows={payments}
+        summary={summary}
+        totalCount={totalCount}
+        totalPages={totalPages}
+        currentPage={page}
+        pageSize={PAGE_SIZE}
+        currentFilters={{
+          startDate: params.startDate,
+          endDate: params.endDate,
+          schoolYearId: params.schoolYearId,
+          paymentMethod: params.paymentMethod,
+          paymentStatus: params.paymentStatus,
+          usageMode: params.usageMode,
+        }}
+        exportPath="/staff/reports/payment-collection/export"
+      />
 
-      {/* Report Preview */}
-      <PaymentCollectionReportPreview rows={payments} summary={summary} />
-
-      {/* Pagination */}
-      <div className="no-print">
-        <TablePagination
-          currentPage={page}
-          totalPages={totalPages}
-          totalRecords={totalCount}
-          pageSize={PAGE_SIZE}
-          baseUrl={`/staff/reports/payment-collection${buildPaginationBaseUrl()}`}
-          itemLabel="payments"
-        />
-      </div>
-
-      {/* Export note */}
-      <p className="text-xs text-muted-foreground text-center no-print">
-        Use Export PDF for an official printable copy, or Export Excel for a
-        spreadsheet you can sort and total.
+      <p className="text-center text-[0.7rem] text-muted-foreground pb-2 no-print">
+        Use Export PDF for printable copy, Export Excel for spreadsheet.
       </p>
     </div>
   );

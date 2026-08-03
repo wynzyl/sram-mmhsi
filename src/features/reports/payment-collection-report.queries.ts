@@ -7,6 +7,7 @@ import {
   gradeLevels,
   schoolYears,
   users,
+  receiptBooklets,
 } from "@/lib/db/schema";
 import { eq, and, gte, lte, sql, asc, desc, isNull } from "drizzle-orm";
 import { calculateOffset } from "@/lib/types/pagination";
@@ -44,7 +45,7 @@ import type {
 export async function getPaymentCollectionReport(
   params: PaymentCollectionParams
 ): Promise<PaymentCollectionResult> {
-  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus } =
+  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus, usageMode } =
     params;
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
@@ -57,6 +58,7 @@ export async function getPaymentCollectionReport(
     schoolYearId,
     paymentMethod,
     paymentStatus,
+    usageMode,
   });
 
   // Alias for cashier user
@@ -81,6 +83,7 @@ export async function getPaymentCollectionReport(
         kind: payments.kind,
         remarks: payments.remarks,
         processedBy: cashier.username,
+        usageMode: receiptBooklets.usageMode,
       })
       .from(payments)
       .innerJoin(students, eq(payments.studentId, students.id))
@@ -89,6 +92,7 @@ export async function getPaymentCollectionReport(
       .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
       .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
       .leftJoin(cashier, eq(payments.createdBy, cashier.id))
+      .leftJoin(receiptBooklets, eq(payments.bookletId, receiptBooklets.id))
       .where(and(...conditions))
       .orderBy(asc(payments.paymentDate), asc(payments.orNumber))
       .limit(pageSize)
@@ -101,6 +105,7 @@ export async function getPaymentCollectionReport(
       .innerJoin(students, eq(payments.studentId, students.id))
       .innerJoin(assessments, eq(payments.assessmentId, assessments.id))
       .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
+      .leftJoin(receiptBooklets, eq(payments.bookletId, receiptBooklets.id))
       .where(and(...conditions))
       .then((r) => r[0]),
   ]);
@@ -121,6 +126,7 @@ export async function getPaymentCollectionReport(
     kind: row.kind,
     remarks: row.remarks,
     processedBy: row.processedBy ?? "System",
+    usageMode: row.usageMode,
   }));
 
   return {
@@ -139,8 +145,9 @@ export async function getPaymentCollectionSummary(params: {
   schoolYearId?: string;
   paymentMethod?: string;
   paymentStatus?: string;
+  usageMode?: string;
 }): Promise<PaymentCollectionSummary> {
-  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus } =
+  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus, usageMode } =
     params;
 
   // Build WHERE conditions (same as report query)
@@ -150,6 +157,7 @@ export async function getPaymentCollectionSummary(params: {
     schoolYearId,
     paymentMethod,
     paymentStatus,
+    usageMode,
   });
 
   // Main aggregate query
@@ -167,6 +175,7 @@ export async function getPaymentCollectionSummary(params: {
     .innerJoin(students, eq(payments.studentId, students.id))
     .innerJoin(assessments, eq(payments.assessmentId, assessments.id))
     .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
+    .leftJoin(receiptBooklets, eq(payments.bookletId, receiptBooklets.id))
     .where(and(...conditions));
 
   const summary = summaryResult[0] ?? {
@@ -204,10 +213,11 @@ export async function getAllPaymentCollectionData(params: {
   schoolYearId?: string;
   paymentMethod?: string;
   paymentStatus?: string;
+  usageMode?: string;
 }): Promise<PaymentCollectionRow[]> {
   const MAX_PDF_ROWS = 5000;
 
-  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus } =
+  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus, usageMode } =
     params;
 
   const conditions = buildWhereConditions({
@@ -216,6 +226,7 @@ export async function getAllPaymentCollectionData(params: {
     schoolYearId,
     paymentMethod,
     paymentStatus,
+    usageMode,
   });
 
   const cashier = users;
@@ -238,6 +249,7 @@ export async function getAllPaymentCollectionData(params: {
       kind: payments.kind,
       remarks: payments.remarks,
       processedBy: cashier.username,
+      usageMode: receiptBooklets.usageMode,
     })
     .from(payments)
     .innerJoin(students, eq(payments.studentId, students.id))
@@ -246,6 +258,7 @@ export async function getAllPaymentCollectionData(params: {
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
     .leftJoin(cashier, eq(payments.createdBy, cashier.id))
+    .leftJoin(receiptBooklets, eq(payments.bookletId, receiptBooklets.id))
     .where(and(...conditions))
     .orderBy(asc(payments.paymentDate), asc(payments.orNumber))
     .limit(MAX_PDF_ROWS);
@@ -266,6 +279,7 @@ export async function getAllPaymentCollectionData(params: {
     kind: row.kind,
     remarks: row.remarks,
     processedBy: row.processedBy ?? "System",
+    usageMode: row.usageMode,
   }));
 }
 
@@ -294,8 +308,9 @@ function buildWhereConditions(params: {
   schoolYearId?: string;
   paymentMethod?: string;
   paymentStatus?: string;
+  usageMode?: string;
 }) {
-  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus } =
+  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus, usageMode } =
     params;
 
   // Base conditions: only actual payments (exclude BFX and reversals), within date range
@@ -329,6 +344,15 @@ function buildWhereConditions(params: {
     type PaymentStatus = (typeof validStatuses)[number];
     if (validStatuses.includes(paymentStatus as PaymentStatus)) {
       conditions.push(eq(payments.status, paymentStatus as PaymentStatus));
+    }
+  }
+
+  // Optional: filter by booklet usage mode (auto_only or manual_only)
+  if (usageMode) {
+    const validModes = ["auto_only", "manual_only"] as const;
+    type UsageMode = (typeof validModes)[number];
+    if (validModes.includes(usageMode as UsageMode)) {
+      conditions.push(eq(receiptBooklets.usageMode, usageMode as UsageMode));
     }
   }
 

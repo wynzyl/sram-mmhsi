@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
   const schoolYearId = searchParams.get("schoolYearId") || undefined;
   const paymentMethod = searchParams.get("paymentMethod") || undefined;
   const paymentStatus = searchParams.get("paymentStatus") || undefined;
+  const usageMode = searchParams.get("usageMode") || undefined;
 
   const filter = {
     startDate: range.startDate,
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
     schoolYearId,
     paymentMethod,
     paymentStatus,
+    usageMode,
   };
 
   try {

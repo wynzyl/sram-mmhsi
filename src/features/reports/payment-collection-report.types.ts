@@ -16,6 +16,7 @@ export type PaymentCollectionRow = {
   kind: string;
   remarks: string | null;
   processedBy: string; // cashier username
+  usageMode: "auto_only" | "manual_only" | null; // booklet usage mode
 };
 
 export type PaymentMethodBreakdown = {
@@ -40,6 +41,7 @@ export type PaymentCollectionParams = {
   schoolYearId?: string;
   paymentMethod?: string;
   paymentStatus?: string;
+  usageMode?: string;
   page?: number;
   pageSize?: number;
 };
@@ -63,4 +65,9 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   posted: "Posted",
   pending_confirmation: "Pending",
   reversed: "Reversed",
+};
+
+export const USAGE_MODE_LABELS: Record<string, string> = {
+  auto_only: "Auto",
+  manual_only: "Manual",
 };

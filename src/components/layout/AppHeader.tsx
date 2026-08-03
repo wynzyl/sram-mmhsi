@@ -182,7 +182,7 @@ export function AppHeader({ username, role, schoolYear }: AppHeaderProps) {
     <header
       className={cn(
         "h-16 shrink-0 sticky top-0 z-40",
-        "bg-card border-b border-border",
+        "bg-sidebar border-b border-border",
         "flex items-center justify-between gap-4 px-4"
       )}
     >
