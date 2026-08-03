@@ -336,7 +336,7 @@ export function SubjectFormDialog({
                 })}
               </div>
               <p className="text-xs text-muted-foreground">
-                Check "Required" if students in that strand must take this subject.
+                Check &quot;Required&quot; if students in that strand must take this subject.
               </p>
               {/* Hidden input to submit strand associations */}
               <input type="hidden" name="strandAssociations" value={strandAssociationsJson} />

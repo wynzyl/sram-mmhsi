@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SubjectsByGradeLevel } from "@/features/academics/curriculums/components/SubjectsByGradeLevel";
 import { SubjectFormDialog } from "@/features/academics/curriculums/components/SubjectFormDialog";
 import { PublishCurriculumDialog } from "@/features/academics/curriculums/components/PublishCurriculumDialog";
@@ -67,31 +67,31 @@ export function CurriculumDetailClient({
   const [editStrandAssociations, setEditStrandAssociations] = useState<SubjectStrandAssociation[]>([]);
   const [loadingStrands, setLoadingStrands] = useState(false);
 
-  // Fetch strand associations when editing a subject
-  useEffect(() => {
-    if (dialogState?.mode === "edit" && dialogState.subject && !dialogState.subject.isCore) {
-      setLoadingStrands(true);
-      getSubjectStrandsAction(dialogState.subject.id)
-        .then((associations) => {
-          setEditStrandAssociations(associations);
-        })
-        .catch(() => {
-          setEditStrandAssociations([]);
-        })
-        .finally(() => {
-          setLoadingStrands(false);
-        });
-    } else {
-      setEditStrandAssociations([]);
-    }
-  }, [dialogState?.mode, dialogState?.subject?.id, dialogState?.subject?.isCore]);
-
   const handleAddSubject = (gradeLevelId: string) => {
+    setEditStrandAssociations([]);
     setDialogState({ mode: "add", gradeLevelId: gradeLevelId || undefined });
   };
 
+  // Strand associations are fetched here (event handler) rather than in an effect:
+  // opening the edit dialog is a user event, so the fetch belongs with the event.
   const handleEditSubject = (subject: SubjectListRow) => {
+    setEditStrandAssociations([]);
     setDialogState({ mode: "edit", subject });
+
+    // Core subjects have no strand associations to load.
+    if (subject.isCore) return;
+
+    setLoadingStrands(true);
+    getSubjectStrandsAction(subject.id)
+      .then((associations) => {
+        setEditStrandAssociations(associations);
+      })
+      .catch(() => {
+        setEditStrandAssociations([]);
+      })
+      .finally(() => {
+        setLoadingStrands(false);
+      });
   };
 
   const handleCloseDialog = () => {
