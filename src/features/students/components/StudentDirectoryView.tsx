@@ -149,24 +149,48 @@ export function StudentDirectoryView({
 
   return (
     <div className="page-container--full space-y-6">
-      {/* Header: title + subtitle (left), filters + register toolbar (right, same row) */}
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="space-y-1">
-          <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">{title}</h1>
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            <span className="text-gray-600 dark:text-gray-400">{subtitleFilter}</span>
-            {" · "}
-            {totalCount.toLocaleString()} enrollment{totalCount !== 1 ? "s" : ""}{" "}
-            {hasFilters ? "matching the current filters." : "on file."}
-          </p>
-        </div>
+      {/* Clean Page Header - Title + Subtitle Only */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          {title}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Current Academic Session • {totalCount.toLocaleString()} Total Enrolled Student{totalCount !== 1 ? "s" : ""}
+        </p>
+      </div>
 
-        <div className="rounded-lg border border-border bg-card p-2 shadow-sm">
+      {/* Roster Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="roster-heading"
+      >
+        {/* Card Header - ALL controls here */}
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Left: Title + Count Badge + Refresh indicator */}
+          <div className="flex items-center gap-3">
+            <h2
+              id="roster-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+            >
+              Active Student Roster
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+              {totalCount} Student{totalCount !== 1 ? "s" : ""}
+            </span>
+            {query.isFetching && !isInitialLoading && (
+              <span className="text-xs text-muted-foreground" aria-live="polite">
+                Refreshing…
+              </span>
+            )}
+          </div>
+
+          {/* Right: All Controls - Inline Row */}
           <div
             role="search"
-            className="flex flex-col gap-2 sm:flex-row sm:items-center focus-within:[&_input]:outline-none"
+            className="flex items-center gap-2"
           >
-            <div className="flex w-full items-stretch rounded-md border border-border bg-muted/50 sm:w-60">
+            {/* Search Input - Desktop */}
+            <div className="hidden md:flex items-stretch rounded-md border border-border bg-muted/50 w-40">
               <span className="flex items-center pl-3 pr-2 text-muted-foreground pointer-events-none">
                 <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
                   <path
@@ -180,77 +204,47 @@ export function StudentDirectoryView({
                 id="student-search"
                 type="search"
                 className="min-h-10 flex-1 bg-transparent py-2 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none"
-                placeholder="Search student records…"
+                placeholder="Quick search..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 autoComplete="off"
               />
             </div>
 
-            <div className="w-full sm:w-40 sm:flex-none">
-              <select
-                value={gradeLevelId ?? ""}
-                aria-label="Filter by grade level"
-                onChange={(e) => handleGradeLevelChange(e.target.value || undefined)}
-                className="form-control min-h-10 w-full bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
-              >
-                <option value="">All grades</option>
-                {gradeLevelOptions.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Grade Filter */}
+            <select
+              value={gradeLevelId ?? ""}
+              aria-label="Filter by grade level"
+              onChange={(e) => handleGradeLevelChange(e.target.value || undefined)}
+              className="form-control min-h-10 w-28 bg-muted text-foreground [&>option]:bg-card [&>option]:text-foreground"
+            >
+              <option value="">All grades</option>
+              {gradeLevelOptions.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
 
+            {/* Clear Filters Link */}
             {hasFilters && (
               <Link
                 href={basePath}
                 onClick={() => setSearchInput("")}
-                className="inline-flex min-h-10 items-center px-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
               >
                 Clear
               </Link>
             )}
 
-            {canCreate && (
-              <Link
-                href={registerHref}
-                className="btn-primary min-h-10 px-4 shrink-0"
-                id="register-student-btn"
-              >
-                + Register Student
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Roster: single bordered card (header bar · table · footer pagination) */}
-      <section
-        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
-        aria-labelledby="roster-heading"
-      >
-        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2
-            id="roster-heading"
-            className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
-          >
-            Active student roster
-          </h2>
-          <div className="flex items-center gap-2">
-            {query.isFetching && !isInitialLoading && (
-              <span className="text-xs text-muted-foreground" aria-live="polite">
-                Refreshing…
-              </span>
-            )}
+            {/* Export CSV Button */}
             <button
               type="button"
               disabled
               title="Export CSV is not available yet."
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground cursor-not-allowed opacity-70"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-muted px-3 min-h-10 text-xs font-semibold text-muted-foreground cursor-not-allowed opacity-70 whitespace-nowrap"
             >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden>
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
                 <path
                   fillRule="evenodd"
                   d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
@@ -259,6 +253,40 @@ export function StudentDirectoryView({
               </svg>
               Export CSV
             </button>
+
+            {/* Register Student Button */}
+            {canCreate && (
+              <Link
+                href={registerHref}
+                className="btn-primary min-h-10 px-4 whitespace-nowrap"
+                id="register-student-btn"
+              >
+                + Register Student
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Search Row - Shows below header on small screens */}
+        <div className="flex md:hidden border-b border-border px-4 py-2">
+          <div className="flex items-stretch rounded-md border border-border bg-muted/50 w-full">
+            <span className="flex items-center pl-3 pr-2 text-muted-foreground pointer-events-none">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+                <path
+                  fillRule="evenodd"
+                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
+            <input
+              type="search"
+              className="min-h-10 flex-1 bg-transparent py-2 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none"
+              placeholder="Search students..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              autoComplete="off"
+            />
           </div>
         </div>
 

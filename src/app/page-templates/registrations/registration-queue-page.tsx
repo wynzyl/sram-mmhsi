@@ -131,45 +131,47 @@ export async function RegistrationQueuePage(props: {
 
   return (
     <div className="page-container--full space-y-6">
-      {/* Header: title + subtitle (left), toolbar (right) */}
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="space-y-1">
-          <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
-            Registrar queue
-          </h1>
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            <span className="text-gray-600 dark:text-gray-400">
-              {selectedYearLabel ?? "All school years"}
-            </span>
-            {" · "}
-            {totalCount.toLocaleString()} registration{totalCount !== 1 ? "s" : ""}{" "}
-            {hasFilters ? "matching the filter" : "pending enrollment"}.
-          </p>
-        </div>
-
-        <RegistrationQueueToolbar
-          schoolYearOptions={schoolYearOptions}
-          schoolYearId={schoolYearId}
-          hasFilters={hasFilters}
-          clearHref={`${pathPrefix}/registrations`}
-          newStudentHref={`${studentBasePath}/new`}
-          newTransfereeHref={`${studentBasePath}/new?intent=transferee`}
-          canCreate={hasPermission(session.role, "students:create")}
-        />
+      {/* Clean Page Header - Title + Subtitle Only */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Registration Queue
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {selectedYearLabel ?? "All School Years"} • {totalCount.toLocaleString()} Registration{totalCount !== 1 ? "s" : ""}{" "}
+          {hasFilters ? "matching filter" : "pending enrollment"}
+        </p>
       </div>
 
-      {/* Table: single bordered card section */}
+      {/* Card with Embedded Controls */}
       <section
         className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
         aria-labelledby="queue-heading"
       >
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2
-            id="queue-heading"
-            className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
-          >
-            Approved registrations
-          </h2>
+        {/* Card Header - Inline Controls */}
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Left: Section Label + Count Badge */}
+          <div className="flex items-center gap-3">
+            <h2
+              id="queue-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+            >
+              Approved Registrations
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+              {totalCount} Record{totalCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          {/* Right: All Controls - Inline Row */}
+          <RegistrationQueueToolbar
+            schoolYearOptions={schoolYearOptions}
+            schoolYearId={schoolYearId}
+            hasFilters={hasFilters}
+            clearHref={`${pathPrefix}/registrations`}
+            newStudentHref={`${studentBasePath}/new`}
+            newTransfereeHref={`${studentBasePath}/new?intent=transferee`}
+            canCreate={hasPermission(session.role, "students:create")}
+          />
         </div>
 
         <RegistrationsTable
@@ -195,6 +197,10 @@ export async function RegistrationQueuePage(props: {
           </div>
         )}
       </section>
+
+      <p className="text-center text-[0.7rem] text-muted-foreground pb-2">
+        Confidential institutional data. Authorized access only.
+      </p>
     </div>
   );
 }
