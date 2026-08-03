@@ -6,9 +6,7 @@ import {
   getBfxSummary,
   getSchoolYearsForBfxReport,
 } from "@/features/reports";
-import { BfxReportTable } from "@/features/reports/components/BfxReportTable";
-import { ReportFilters } from "@/components/shared/ReportFilters";
-import { ReportExportActions } from "@/components/shared/ReportExportActions";
+import { BfxReportView } from "@/features/reports/components/BfxReportView";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
 
@@ -64,115 +62,65 @@ export default async function BalanceForwardsReportPage({
   const { rows: transfers, totalCount } = transfersResult;
   const totalPages = Math.ceil(totalCount / 50);
 
+  // Format period for display
+  const periodLabel = `${formatDate(startDate, { month: "short", day: "numeric" })} - ${formatDate(endDate, { month: "short", day: "numeric", year: "numeric" })}`;
+
   return (
-    <div className="space-y-6">
+    <div className="page-container--full space-y-6">
       {/* Page Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">
-            Balance Forward Transfers
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            BFX receipts showing balance transfers from prior school years
-          </p>
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Balance Forward Transfers
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          BFX receipts showing balance transfers from prior school years
+        </p>
+      </div>
+
+      {/* Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="bfx-heading"
+      >
+        {/* Card Header with gradient effect */}
+        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Left: Title + Stats Badges */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2
+              id="bfx-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+            >
+              Transfer Report
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+              {summary.totalTransfers} Transfer{summary.totalTransfers !== 1 ? "s" : ""}
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
+              <CurrencyDisplay amount={summary.totalAmount} />
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+              {periodLabel}
+            </span>
+          </div>
         </div>
-        <ReportExportActions
-          exportPath="/staff/reports/balance-forwards/export"
-          filters={{
+
+        {/* Filters + Table + Pagination - Combined View */}
+        <BfxReportView
+          data={transfers}
+          schoolYears={schoolYears}
+          defaults={{
             startDate: params.startDate,
             endDate: params.endDate,
             schoolYearId: params.schoolYearId,
           }}
+          pagination={{
+            currentPage: page,
+            totalPages,
+            totalCount,
+            pageSize: 50,
+          }}
         />
-      </div>
-
-      {/* Filters */}
-      <ReportFilters
-        basePath="/staff/reports/balance-forwards"
-        config={{
-          dateRange: true,
-          schoolYears: schoolYears,
-          schoolYearLabel: "Source School Year",
-        }}
-        defaults={{
-          startDate: params.startDate,
-          endDate: params.endDate,
-          schoolYearId: params.schoolYearId,
-        }}
-      />
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-card border border-border rounded-lg">
-          <p className="text-sm text-muted-foreground">
-            Total Transfers
-          </p>
-          <p className="text-2xl font-semibold text-foreground mt-1">
-            {summary.totalTransfers}
-          </p>
-        </div>
-        <div className="p-4 bg-card border border-border rounded-lg">
-          <p className="text-sm text-muted-foreground">Total Amount</p>
-          <p className="text-2xl font-semibold text-foreground mt-1">
-            <CurrencyDisplay amount={summary.totalAmount} />
-          </p>
-        </div>
-        <div className="p-4 bg-card border border-border rounded-lg">
-          <p className="text-sm text-muted-foreground">Period</p>
-          <p className="text-sm font-medium text-foreground mt-1">
-            {formatDate(startDate, {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}{" "}
-            -{" "}
-            {formatDate(endDate, {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </p>
-        </div>
-      </div>
-
-      {/* Data Table */}
-      {transfers.length === 0 ? (
-        <div className="p-8 text-center bg-card border border-border rounded-lg">
-          <p className="text-muted-foreground">
-            No balance forward transfers found for the selected period.
-          </p>
-        </div>
-      ) : (
-        <>
-          <BfxReportTable data={transfers} />
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 bg-card border border-border rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * 50 + 1} - {Math.min(page * 50, totalCount)} of {totalCount} transfers
-              </p>
-              <div className="flex gap-2">
-                {page > 1 && (
-                  <a
-                    href={`?startDate=${params.startDate || ""}&endDate=${params.endDate || ""}&schoolYearId=${params.schoolYearId || ""}&page=${page - 1}`}
-                    className="px-3 py-1 text-sm border border-border rounded hover:bg-muted"
-                  >
-                    Previous
-                  </a>
-                )}
-                {page < totalPages && (
-                  <a
-                    href={`?startDate=${params.startDate || ""}&endDate=${params.endDate || ""}&schoolYearId=${params.schoolYearId || ""}&page=${page + 1}`}
-                    className="px-3 py-1 text-sm border border-border rounded hover:bg-muted"
-                  >
-                    Next
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      </section>
     </div>
   );
 }

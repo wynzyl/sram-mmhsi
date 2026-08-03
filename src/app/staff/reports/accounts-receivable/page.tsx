@@ -6,11 +6,8 @@ import {
   getAccountsReceivableReport,
   getAccountsReceivableSummary,
 } from "@/features/reports/accounts-receivable-report.queries";
-import { AccountsReceivableTable } from "@/features/reports/components/AccountsReceivableTable";
-import { ReportFilters } from "@/components/shared/ReportFilters";
-import { ReportExportActions } from "@/components/shared/ReportExportActions";
+import { AccountsReceivableView } from "@/features/reports/components/AccountsReceivableView";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { TablePagination } from "@/components/ui/TablePagination";
 
 const PAGE_SIZE = 50;
 
@@ -54,81 +51,58 @@ export default async function AccountsReceivableReportPage({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-container--full space-y-6">
       {/* Page Header */}
-      <div className="flex items-start justify-between gap-3 no-print">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">
-            Accounts Receivable Report
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Outstanding student balances for {schoolYearLabel}
-          </p>
-        </div>
-        <ReportExportActions
-          exportPath="/staff/reports/accounts-receivable/export"
-          filters={{ schoolYearId }}
-        />
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Accounts Receivable
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Outstanding student balances for {schoolYearLabel}
+        </p>
       </div>
 
-      {/* Filters */}
-      <div className="no-print">
-        <ReportFilters
-          basePath="/staff/reports/accounts-receivable"
-          config={{
-            schoolYears: schoolYears.map((sy) => ({ id: sy.id, label: sy.label })),
-          }}
-          defaults={{ schoolYearId }}
-        />
-      </div>
-
-      {/* Summary */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-            Total Accounts
-          </p>
-          <p className="text-2xl font-bold text-foreground mt-1">
-            {summary.totalAccounts.toLocaleString()}
-          </p>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-            Total Outstanding
-          </p>
-          <CurrencyDisplay
-            amount={summary.totalOutstanding}
-            className="text-2xl font-bold text-primary mt-1 block"
-          />
-        </div>
-      </div>
-
-      {/* Preview */}
-      {rows.length === 0 ? (
-        <div className="p-8 text-center bg-card border border-border rounded-lg">
-          <p className="text-muted-foreground">
-            No outstanding balances found for the selected filters.
-          </p>
-        </div>
-      ) : (
-        <>
-          <AccountsReceivableTable data={rows} />
-          <div className="no-print">
-            <TablePagination
-              currentPage={page}
-              totalPages={totalPages}
-              totalRecords={totalCount}
-              pageSize={PAGE_SIZE}
-              baseUrl={`/staff/reports/accounts-receivable${buildPaginationBaseUrl()}`}
-              itemLabel="accounts"
-            />
+      {/* Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="ar-heading"
+      >
+        {/* Card Header with gradient effect */}
+        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Left: Title + Stats Badges */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2
+              id="ar-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+            >
+              Outstanding Balances
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+              {summary.totalAccounts.toLocaleString()} Account{summary.totalAccounts !== 1 ? "s" : ""}
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30">
+              <CurrencyDisplay amount={summary.totalOutstanding} />
+            </span>
           </div>
-        </>
-      )}
+        </div>
+
+        {/* Filters + Table + Pagination - Combined View */}
+        <AccountsReceivableView
+          data={rows}
+          schoolYears={schoolYears.map((sy) => ({ id: sy.id, label: sy.label }))}
+          defaultSchoolYearId={schoolYearId}
+          pagination={{
+            currentPage: page,
+            totalPages,
+            totalCount,
+            pageSize: PAGE_SIZE,
+            baseUrl: `/staff/reports/accounts-receivable${buildPaginationBaseUrl()}`,
+          }}
+        />
+      </section>
 
       <p className="text-xs text-muted-foreground text-center no-print">
-        Export PDF for an official printable copy, or Export Excel for a
-        spreadsheet you can sort and total.
+        Export PDF for an official printable copy, or Export Excel for a spreadsheet you can sort and total.
       </p>
     </div>
   );

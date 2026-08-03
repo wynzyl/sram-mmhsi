@@ -23,6 +23,8 @@ interface ArchiveFiltersProps {
   currentStatus?: string;
   currentSchoolYearId?: string;
   currentSearch?: string;
+  /** Render in inline mode for card headers (no labels, compact) */
+  inline?: boolean;
 }
 
 export function ArchiveFilters({
@@ -30,6 +32,7 @@ export function ArchiveFilters({
   currentStatus,
   currentSchoolYearId,
   currentSearch,
+  inline = false,
 }: ArchiveFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -85,6 +88,81 @@ export function ArchiveFilters({
 
   const hasFilters = currentStatus || currentSchoolYearId || currentSearch;
 
+  // Inline mode: compact layout for card headers (single row, no wrapping)
+  if (inline) {
+    return (
+      <div className="filter-controls-inline">
+        {/* Search */}
+        <div className="filter-search w-48">
+          <span className="filter-search-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+              <path
+                fillRule="evenodd"
+                d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </span>
+          <input
+            type="search"
+            className="filter-search-input"
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoComplete="off"
+          />
+        </div>
+
+        {/* Status Filter */}
+        <select
+          value={currentStatus ?? "all"}
+          onChange={(e) =>
+            updateFilters({ status: e.target.value === "all" ? undefined : e.target.value })
+          }
+          aria-label="Filter by status"
+          className="filter-select w-28"
+        >
+          <option value="all">All Archived</option>
+          {ARCHIVED_STUDENT_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {STUDENT_STATUS_LABELS[status]}
+            </option>
+          ))}
+        </select>
+
+        {/* School Year Filter */}
+        <select
+          value={currentSchoolYearId ?? "all"}
+          onChange={(e) =>
+            updateFilters({ schoolYearId: e.target.value === "all" ? undefined : e.target.value })
+          }
+          aria-label="Filter by school year"
+          className="filter-select w-28"
+        >
+          <option value="all">All Years</option>
+          {schoolYearOptions.map((sy) => (
+            <option key={sy.id} value={sy.id}>
+              {sy.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Clear Filters */}
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            disabled={isPending}
+            className="filter-clear"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Default mode: with labels
   return (
     <div className="flex flex-wrap items-end gap-4">
       {/* Search */}

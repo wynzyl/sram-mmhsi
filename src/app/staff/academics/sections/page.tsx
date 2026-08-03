@@ -5,7 +5,6 @@ import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { getSchoolYears, getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import { getSectionsBySchoolYear } from "@/features/academics/sections";
 import { SectionsTable } from "@/features/academics/sections";
-import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata = {
   title: "Section Management | SRAMS",
@@ -44,23 +43,28 @@ export default async function SectionsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Section Management</h1>
-        <p className="text-muted-foreground">
+    <div className="page-container--full space-y-6">
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Section Management
+        </h1>
+        <p className="text-sm text-muted-foreground">
           Manage classroom sections for {activeSchoolYear.label}
         </p>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <SectionsTable
-            sections={sections}
-            gradeLevels={gradeLevels}
-            schoolYears={schoolYears}
-          />
-        </CardContent>
-      </Card>
+      {/* Card with Table */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="sections-heading"
+      >
+        <SectionsTable
+          sections={sections}
+          gradeLevels={gradeLevels}
+          schoolYears={schoolYears}
+        />
+      </section>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatDate } from "@/lib/utils/date";
 import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
 import SectionFormModal from "./SectionFormModal";
 import CopySectionsModal from "./CopySectionsModal";
 
@@ -43,9 +44,22 @@ export default function SectionsTable({
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
 
   // Find active school year
   const activeSchoolYear = schoolYears.find((sy) => sy.isActive);
+
+  // Filter sections based on search
+  const filteredSections = useMemo(() => {
+    if (!debouncedSearch.trim()) return sections;
+    const term = debouncedSearch.toLowerCase();
+    return sections.filter(
+      (section) =>
+        section.name.toLowerCase().includes(term) ||
+        section.gradeLevelName.toLowerCase().includes(term)
+    );
+  }, [sections, debouncedSearch]);
 
   // Compute section counts per school year for the copy modal
   const schoolYearsWithCounts = schoolYears.map((sy) => ({
@@ -194,23 +208,53 @@ export default function SectionsTable({
 
   return (
     <div>
-      {/* Header with Create button */}
-      <div className="flex justify-between items-center mb-4 px-4">
-        <div>
-          <h2 className="text-lg font-semibold">Sections</h2>
-          <p className="text-secondary">
-            Manage classroom sections for each grade level and school year
-          </p>
+      {/* Card Header with gradient effect */}
+      <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Left: Title + Badge */}
+        <div className="flex items-center gap-3">
+          <h2 className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary">
+            Section List
+          </h2>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+            {sections.length} Section{sections.length !== 1 ? "s" : ""}
+          </span>
         </div>
-        <div className="flex gap-2">
+
+        {/* Right: Search + Actions (single row, no wrapping) */}
+        <div className="filter-controls-inline">
+          {/* Search */}
+          <div className="filter-search w-48">
+            <span className="filter-search-icon">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+                <path
+                  fillRule="evenodd"
+                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="filter-search-input"
+              autoComplete="off"
+            />
+          </div>
+
           {activeSchoolYear && (
-            <Button variant="secondary" onClick={() => setShowCopyModal(true)}>
+            <Button variant="secondary" size="sm" onClick={() => setShowCopyModal(true)}>
               Copy from Previous Year
             </Button>
           )}
-          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-            Add Section
-          </Button>
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="btn-gradient-primary inline-flex items-center justify-center min-h-10 px-4 rounded-md whitespace-nowrap"
+          >
+            + Add Section
+          </button>
         </div>
       </div>
 
@@ -224,7 +268,7 @@ export default function SectionsTable({
           </p>
         </div>
       ) : (
-        <DataTable columns={columns} data={sections} searchable />
+        <DataTable columns={columns} data={filteredSections} />
       )}
 
       {/* Create Modal */}

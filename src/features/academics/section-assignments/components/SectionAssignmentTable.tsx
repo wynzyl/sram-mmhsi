@@ -16,15 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ClientTablePagination } from "@/components/ui/ClientTablePagination";
 import type {
@@ -264,84 +256,94 @@ export function SectionAssignmentTable({
   const { rows } = table.getRowModel();
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* School Year */}
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-muted-foreground">
-            School Year:
-          </label>
-          <Select value={schoolYearId} onValueChange={handleSchoolYearChange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {schoolYears.map((sy) => (
-                <SelectItem key={sy.id} value={sy.id}>
-                  {sy.label} {sy.isActive && "(Active)"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="flex flex-col">
+      {/* Card Header with Filters */}
+      <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Left: Title + Badge */}
+        <div className="flex items-center gap-3">
+          <h2 className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary">
+            Student Assignments
+          </h2>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+            {students.length} Student{students.length !== 1 ? "s" : ""}
+          </span>
         </div>
 
-        {/* Grade Level */}
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-muted-foreground">
-            Grade Level:
-          </label>
-          <Select value={gradeLevelId} onValueChange={handleGradeLevelChange}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Levels</SelectItem>
-              {gradeLevels.map((gl) => (
-                <SelectItem key={gl.id} value={gl.id}>
-                  {gl.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Right: Search + Filters */}
+        <div className="filter-controls-inline">
+          {/* Search */}
+          <div className="filter-search w-48">
+            <span className="filter-search-icon">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+                <path
+                  fillRule="evenodd"
+                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
+            <input
+              type="search"
+              value={filterInput}
+              onChange={(e) => setFilterInput(e.target.value)}
+              placeholder="Search..."
+              className="filter-search-input"
+              autoComplete="off"
+            />
+          </div>
 
-        {/* Section Status */}
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-muted-foreground">
-            Section:
-          </label>
-          <Select value={sectionStatus} onValueChange={handleSectionStatusChange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="unassigned">Unassigned Only</SelectItem>
-              {sectionsForGradeLevel.map((section) => (
-                <SelectItem key={section.id} value={section.id}>
-                  {section.name} ({section.studentCount})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+          {/* School Year */}
+          <select
+            value={schoolYearId}
+            onChange={(e) => handleSchoolYearChange(e.target.value)}
+            className="filter-select w-36"
+            aria-label="School year"
+          >
+            {schoolYears.map((sy) => (
+              <option key={sy.id} value={sy.id}>
+                {sy.label} {sy.isActive && "(Active)"}
+              </option>
+            ))}
+          </select>
 
-        {/* Search */}
-        <div className="flex-1 min-w-[200px]">
-          <Input
-            type="search"
-            value={filterInput}
-            onChange={(e) => setFilterInput(e.target.value)}
-            placeholder="Search students..."
-            className="max-w-sm"
-          />
+          {/* Grade Level */}
+          <select
+            value={gradeLevelId}
+            onChange={(e) => handleGradeLevelChange(e.target.value)}
+            className="filter-select w-28"
+            aria-label="Grade level"
+          >
+            <option value="all">All Levels</option>
+            {gradeLevels.map((gl) => (
+              <option key={gl.id} value={gl.id}>
+                {gl.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Section Status */}
+          <select
+            value={sectionStatus}
+            onChange={(e) => handleSectionStatusChange(e.target.value)}
+            className="filter-select w-36"
+            aria-label="Section"
+          >
+            <option value="all">All Sections</option>
+            <option value="unassigned">Unassigned</option>
+            {sectionsForGradeLevel.map((section) => (
+              <option key={section.id} value={section.id}>
+                {section.name} ({section.studentCount})
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Selection actions */}
-      {selectedStudents.length > 0 && (
-        <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+      {/* Table Content Area */}
+      <div className="p-4 flex flex-col gap-4">
+        {/* Selection actions */}
+        {selectedStudents.length > 0 && (
+          <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
           <span className="text-sm font-medium">
             {selectedStudents.length} student{selectedStudents.length > 1 ? "s" : ""}{" "}
             selected
@@ -448,15 +450,16 @@ export function SectionAssignmentTable({
         </div>
       </div>
 
-      {/* Pagination */}
-      <ClientTablePagination
-        currentPage={table.getState().pagination.pageIndex + 1}
-        totalPages={table.getPageCount()}
-        totalRecords={table.getFilteredRowModel().rows.length}
-        pageSize={25}
-        onPageChange={(page) => table.setPageIndex(page - 1)}
-        itemLabel="students"
-      />
+        {/* Pagination */}
+        <ClientTablePagination
+          currentPage={table.getState().pagination.pageIndex + 1}
+          totalPages={table.getPageCount()}
+          totalRecords={table.getFilteredRowModel().rows.length}
+          pageSize={25}
+          onPageChange={(page) => table.setPageIndex(page - 1)}
+          itemLabel="students"
+        />
+      </div>
 
       {/* Assign Modal */}
       <AssignSectionModal
