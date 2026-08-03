@@ -128,7 +128,7 @@ export function AppFooter({ schoolYear }: AppFooterProps) {
               />
               <div>
                 <p className="font-bold text-foreground text-sm tracking-wide">
-                  MERRYLAND MONTESSORI AND HIGH SCHOOL inc.
+                  MERRYLAND MONTESSORI AND HIGH SCHOOL, Inc.
                 </p>
                 <p className="text-[0.65rem] text-muted-foreground">
                   School Registration & Accounts Monitoring

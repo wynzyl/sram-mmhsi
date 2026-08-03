@@ -67,25 +67,6 @@ export default async function AccountsReceivableReportPage({
         className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
         aria-labelledby="ar-heading"
       >
-        {/* Card Header with gradient effect */}
-        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Left: Title + Stats Badges */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2
-              id="ar-heading"
-              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
-            >
-              Outstanding Balances
-            </h2>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
-              {summary.totalAccounts.toLocaleString()} Account{summary.totalAccounts !== 1 ? "s" : ""}
-            </span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30">
-              <CurrencyDisplay amount={summary.totalOutstanding} />
-            </span>
-          </div>
-        </div>
-
         {/* Filters + Table + Pagination - Combined View */}
         <AccountsReceivableView
           data={rows}
@@ -98,6 +79,22 @@ export default async function AccountsReceivableReportPage({
             pageSize: PAGE_SIZE,
             baseUrl: `/staff/reports/accounts-receivable${buildPaginationBaseUrl()}`,
           }}
+          headerContent={
+            <>
+              <h2
+                id="ar-heading"
+                className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+              >
+                Outstanding Balances
+              </h2>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+                {summary.totalAccounts.toLocaleString()} Account{summary.totalAccounts !== 1 ? "s" : ""}
+              </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30">
+                <CurrencyDisplay amount={summary.totalOutstanding} />
+              </span>
+            </>
+          }
         />
       </section>
 

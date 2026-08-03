@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
@@ -29,6 +29,8 @@ interface AccountsReceivableViewProps {
   schoolYears: SchoolYearOption[];
   defaultSchoolYearId?: string;
   pagination?: PaginationProps;
+  /** Header content (title + badges) to render on the left side of card header */
+  headerContent?: ReactNode;
 }
 
 /** Right-aligned header for numeric columns */
@@ -43,6 +45,7 @@ export function AccountsReceivableView({
   schoolYears,
   defaultSchoolYearId = "",
   pagination,
+  headerContent,
 }: AccountsReceivableViewProps) {
   const router = useRouter();
   const [schoolYearId, setSchoolYearId] = useState(defaultSchoolYearId);
@@ -150,94 +153,104 @@ export function AccountsReceivableView({
 
   return (
     <div className="flex flex-col">
-      {/* Inline Filter Controls Bar */}
-      <div className="flex items-center justify-end gap-2 px-4 py-3 border-b border-border bg-muted/30">
-        {/* Search */}
-        <div className="filter-search w-48">
-          <span className="filter-search-icon">
+      {/* Card Header with Filters */}
+      <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+        {/* Left: Title + Stats Badges */}
+        {headerContent && (
+          <div className="flex items-center gap-3 flex-wrap">
+            {headerContent}
+          </div>
+        )}
+
+        {/* Right: Filters + Export Buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Search */}
+          <div className="filter-search w-48">
+            <span className="filter-search-icon">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+                <path
+                  fillRule="evenodd"
+                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="filter-search-input"
+              autoComplete="off"
+            />
+          </div>
+
+          {/* School Year Filter */}
+          <select
+            value={schoolYearId}
+            onChange={(e) => setSchoolYearId(e.target.value)}
+            className="filter-select w-32"
+            aria-label="School year"
+          >
+            <option value="">All Years</option>
+            {schoolYears.map((sy) => (
+              <option key={sy.id} value={sy.id}>
+                {sy.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Apply Button */}
+          <button
+            type="button"
+            onClick={handleApply}
+            className="inline-flex items-center justify-center min-h-10 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+          >
+            Apply
+          </button>
+
+          {/* Clear */}
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={handleReset}
+              className="filter-clear"
+            >
+              Clear
+            </button>
+          )}
+
+          {/* Separator */}
+          <div className="filter-separator" />
+
+          {/* Export Buttons */}
+          <Link
+            href={`${exportBaseUrl}?format=pdf&${exportParams.toString()}`}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-3 min-h-10 text-xs font-semibold text-foreground hover:bg-muted/80 whitespace-nowrap"
+          >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
               <path
                 fillRule="evenodd"
-                d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
                 clipRule="evenodd"
               />
             </svg>
-          </span>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="filter-search-input"
-            autoComplete="off"
-          />
-        </div>
-
-        {/* School Year Filter */}
-        <select
-          value={schoolYearId}
-          onChange={(e) => setSchoolYearId(e.target.value)}
-          className="filter-select w-32"
-          aria-label="School year"
-        >
-          <option value="">All Years</option>
-          {schoolYears.map((sy) => (
-            <option key={sy.id} value={sy.id}>
-              {sy.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Apply Button */}
-        <button
-          type="button"
-          onClick={handleApply}
-          className="inline-flex items-center justify-center min-h-10 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
-        >
-          Apply
-        </button>
-
-        {/* Clear */}
-        {hasFilters && (
-          <button
-            type="button"
-            onClick={handleReset}
-            className="filter-clear"
+            PDF
+          </Link>
+          <Link
+            href={`${exportBaseUrl}?format=xlsx&${exportParams.toString()}`}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-3 min-h-10 text-xs font-semibold text-foreground hover:bg-muted/80 whitespace-nowrap"
           >
-            Clear
-          </button>
-        )}
-
-        {/* Separator */}
-        <div className="filter-separator" />
-
-        {/* Export Buttons */}
-        <Link
-          href={`${exportBaseUrl}?format=pdf&${exportParams.toString()}`}
-          className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-3 min-h-10 text-xs font-semibold text-foreground hover:bg-muted/80 whitespace-nowrap"
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
-            <path
-              fillRule="evenodd"
-              d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          PDF
-        </Link>
-        <Link
-          href={`${exportBaseUrl}?format=xlsx&${exportParams.toString()}`}
-          className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-3 min-h-10 text-xs font-semibold text-foreground hover:bg-muted/80 whitespace-nowrap"
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
-            <path
-              fillRule="evenodd"
-              d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Excel
-        </Link>
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+              <path
+                fillRule="evenodd"
+                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Excel
+          </Link>
+        </div>
       </div>
 
       {/* Data Table or Empty State */}

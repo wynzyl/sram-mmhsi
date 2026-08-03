@@ -82,28 +82,6 @@ export default async function BalanceForwardsReportPage({
         className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
         aria-labelledby="bfx-heading"
       >
-        {/* Card Header with gradient effect */}
-        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Left: Title + Stats Badges */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2
-              id="bfx-heading"
-              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
-            >
-              Transfer Report
-            </h2>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
-              {summary.totalTransfers} Transfer{summary.totalTransfers !== 1 ? "s" : ""}
-            </span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
-              <CurrencyDisplay amount={summary.totalAmount} />
-            </span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
-              {periodLabel}
-            </span>
-          </div>
-        </div>
-
         {/* Filters + Table + Pagination - Combined View */}
         <BfxReportView
           data={transfers}
@@ -119,6 +97,25 @@ export default async function BalanceForwardsReportPage({
             totalCount,
             pageSize: 50,
           }}
+          headerContent={
+            <>
+              <h2
+                id="bfx-heading"
+                className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+              >
+                Transfer Report
+              </h2>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+                {summary.totalTransfers} Transfer{summary.totalTransfers !== 1 ? "s" : ""}
+              </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
+                <CurrencyDisplay amount={summary.totalAmount} />
+              </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                {periodLabel}
+              </span>
+            </>
+          }
         />
       </section>
     </div>
