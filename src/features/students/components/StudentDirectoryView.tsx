@@ -164,8 +164,8 @@ export function StudentDirectoryView({
         className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
         aria-labelledby="roster-heading"
       >
-        {/* Card Header - ALL controls here */}
-        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Card Header with gradient effect - ALL controls here */}
+        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           {/* Left: Title + Count Badge + Refresh indicator */}
           <div className="flex items-center gap-3">
             <h2
@@ -254,11 +254,11 @@ export function StudentDirectoryView({
               Export CSV
             </button>
 
-            {/* Register Student Button */}
+            {/* Register Student Button - with gradient */}
             {canCreate && (
               <Link
                 href={registerHref}
-                className="btn-primary min-h-10 px-4 whitespace-nowrap"
+                className="btn-gradient-primary inline-flex items-center justify-center min-h-10 px-4 rounded-md whitespace-nowrap"
                 id="register-student-btn"
               >
                 + Register Student

@@ -98,6 +98,79 @@
 
 /* Component-specific polish */
 @layer components {
+  /* ═══════════════════════════════════════════════════════════════
+     GRADIENT EFFECTS
+     Theme-aware gradient utilities for visual polish
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Gradient primary button */
+  .btn-gradient-primary {
+    background: var(--gradient-primary);
+    color: white;
+    font-weight: 600;
+    border: none;
+    box-shadow: var(--glow-primary);
+    transition: all 0.2s ease;
+  }
+
+  .btn-gradient-primary:hover {
+    background: var(--gradient-primary-hover);
+    box-shadow: var(--glow-primary-strong);
+    transform: translateY(-1px);
+  }
+
+  .btn-gradient-primary:active {
+    transform: translateY(0);
+  }
+
+  /* Card header with gradient */
+  .card-header-gradient {
+    background: var(--card-header-gradient);
+    position: relative;
+  }
+
+  .card-header-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in srgb, var(--primary) 8%, transparent) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Avatar with gradient - vibrant purple */
+  .avatar-gradient {
+    background: var(--avatar-gradient);
+    color: white;
+    box-shadow:
+      0 4px 14px -4px rgba(139, 92, 246, 0.5),
+      0 0 0 1px rgba(139, 92, 246, 0.1);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Status badge with glow - vibrant green */
+  .badge-glow-success {
+    box-shadow:
+      var(--glow-success),
+      0 0 0 1px rgba(74, 222, 128, 0.2);
+  }
+
+  /* Reference number - cyan/teal link style for student IDs */
+  .reference-pill {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-family: var(--font-mono);
+    letter-spacing: 0.02em;
+    color: var(--link-accent, #22d3ee);
+    transition: color 0.15s ease;
+  }
+
+  .reference-pill:hover {
+    color: #67e8f9;
+    text-decoration: underline;
+  }
+
   /* Card hover effect for interactive cards */
   .card-interactive {
     transition: transform var(--duration-fast) var(--ease-out),

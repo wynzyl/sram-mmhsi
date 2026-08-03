@@ -64,6 +64,29 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
+  /* ═══════════════════════════════════════════════════════════════
+     GRADIENT & GLOW EFFECTS (Light Theme)
+     Theme-aware gradient variables for visual polish
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Primary button gradient & glow */
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 70%, #ff6b6b) 100%);
+  --gradient-primary-hover: linear-gradient(135deg, color-mix(in srgb, var(--primary) 85%, #000) 0%, var(--primary) 100%);
+  --glow-primary: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
+  --glow-primary-strong: 0 0 30px color-mix(in srgb, var(--primary) 50%, transparent);
+
+  /* Card header gradient (subtle) */
+  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, color-mix(in srgb, var(--card) 95%, var(--primary)) 100%);
+
+  /* Avatar gradient */
+  --avatar-gradient: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 60%, #9333ea) 100%);
+
+  /* Success badge glow */
+  --glow-success: 0 0 12px color-mix(in srgb, var(--success) 30%, transparent);
+
+  /* Link accent - for reference codes (darker in light mode) */
+  --link-accent: #0891b2;
+
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      LEGACY COMPATIBILITY ALIASES (Light Theme)
      Maps old variable names to new theme tokens
@@ -129,6 +152,29 @@
      LEGACY COMPATIBILITY ALIASES (Dark Theme)
      Maps old variable names to new theme tokens
      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+  /* ═══════════════════════════════════════════════════════════════
+     GRADIENT & GLOW EFFECTS (Dark Theme)
+     Enhanced gradients for dark mode (more vibrant)
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Primary button gradient & glow - vibrant purple in dark mode */
+  --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a855f7 100%);
+  --glow-primary: 0 0 20px rgba(139, 92, 246, 0.5);
+  --glow-primary-strong: 0 0 35px rgba(139, 92, 246, 0.7);
+
+  /* Card header gradient - subtle purple tint */
+  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, color-mix(in srgb, var(--card) 85%, #7c3aed) 100%);
+
+  /* Avatar gradient - rich saturated purple tones */
+  --avatar-gradient: linear-gradient(145deg, #7c3aed 0%, #8b5cf6 40%, #a855f7 100%);
+
+  /* Success badge glow - vibrant green */
+  --glow-success: 0 0 12px rgba(74, 222, 128, 0.5);
+
+  /* Link accent - cyan/teal for student IDs */
+  --link-accent: #22d3ee;
 
   /* Surface variants */
   --color-surface: var(--card);
@@ -229,54 +275,81 @@
   --auth-gradient-1: rgba(110, 86, 207, 0.18);
   --auth-gradient-2: rgba(110, 86, 207, 0.10);
   --auth-gradient-3: rgba(110, 86, 207, 0.06);
+
+  /* Cosmic theme gradients */
+  --gradient-primary: linear-gradient(135deg, #6e56cf 0%, #a48fff 100%);
+  --avatar-gradient: linear-gradient(135deg, #6e56cf 0%, #9f7aea 50%, #c4b5fd 100%);
 }
 
-/* Cosmic Dark */
+/* Cosmic Dark - Colors extracted from reference design */
 .dark.theme-cosmic {
-  --background: #0f0f1a;
-  --foreground: #e5e5f0;
-  --primary: #a48fff;
-  --primary-foreground: #0f0f1a;
-  --card: #1a1a2e;
-  --card-foreground: #c4c2ff;
-  --popover: #1a1a2e;
-  --popover-foreground: #c4c2ff;
-  --ring: #a48fff;
-  --sidebar: #0a0a14;
-  --sidebar-foreground: #c4c2ff;
-  --sidebar-primary: #a48fff;
-  --sidebar-primary-foreground: #0f0f1a;
-  --sidebar-accent: #2d2b55;
-  --sidebar-accent-foreground: #c4c2ff;
-  --sidebar-border: #2d2b55;
-  --accent: #2d2b55;
-  --accent-foreground: #c4c2ff;
-  --secondary: #2d2b55;
-  --secondary-foreground: #c4c2ff;
-  --muted: #1a1a2e;
-  --muted-foreground: #8b8aa0;
-  --border: #2d2b55;
-  --input: #2d2b55;
-  --success: #34d399;
-  --success-foreground: #064e3b;
-  --chart-1: #a48fff;
-  --chart-2: #c4b5fd;
-  --chart-3: #8b7dd8;
-  --chart-4: #6e56cf;
-  --chart-5: #5746a8;
+  /* Core backgrounds - deep purple-black tones */
+  --background: #0c0a14;
+  --foreground: #e8e6f0;
+  --card: #16121f;
+  --card-foreground: #e8e6f0;
+  --popover: #16121f;
+  --popover-foreground: #e8e6f0;
+
+  /* Primary - vibrant indigo/blue */
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --ring: #6366f1;
+
+  /* Sidebar - deepest purple */
+  --sidebar: #08060d;
+  --sidebar-foreground: #c4c2e0;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e1a2e;
+  --sidebar-accent-foreground: #e8e6f0;
+  --sidebar-border: #2a2438;
+
+  /* Secondary/Accent - muted purple */
+  --accent: #1e1a2e;
+  --accent-foreground: #c4c2e0;
+  --secondary: #1e1a2e;
+  --secondary-foreground: #c4c2e0;
+  --muted: #1e1a2e;
+  --muted-foreground: #9590a8;
+  --border: #2a2438;
+  --input: #2a2438;
+
+  /* Success - vibrant green */
+  --success: #22c55e;
+  --success-foreground: #052e16;
+
+  /* Charts */
+  --chart-1: #6366f1;
+  --chart-2: #818cf8;
+  --chart-3: #a78bfa;
+  --chart-4: #c084fc;
+  --chart-5: #7c3aed;
 
   /* Auth theme adjustments */
-  --auth-bg: #0f0f1a;
-  --auth-card: #1a1a2e;
-  --auth-card-border: #2d2b55;
-  --auth-accent: #a48fff;
-  --auth-gradient-1: rgba(164, 143, 255, 0.22);
-  --auth-gradient-2: rgba(164, 143, 255, 0.12);
+  --auth-bg: #0c0a14;
+  --auth-card: #16121f;
+  --auth-card-border: #2a2438;
+  --auth-accent: #6366f1;
+  --auth-gradient-1: rgba(99, 102, 241, 0.22);
+  --auth-gradient-2: rgba(99, 102, 241, 0.12);
   --auth-gradient-3: transparent;
 
   /* Override dark-mode specific aliases */
-  --color-success: #34d399;
-  --color-primary-700: #c4b5fd;
+  --color-success: #22c55e;
+  --color-primary-700: #818cf8;
+
+  /* Cosmic dark gradients - vibrant purple avatars, indigo buttons */
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  --glow-primary: 0 0 20px rgba(99, 102, 241, 0.5);
+  --glow-primary-strong: 0 0 35px rgba(99, 102, 241, 0.7);
+  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, #1a1528 100%);
+  --avatar-gradient: linear-gradient(145deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%);
+  --glow-success: 0 0 12px rgba(34, 197, 94, 0.5);
+
+  /* Student ID link color - cyan/teal */
+  --link-accent: #22d3ee;
 }
 
 /* ───────────────────────────────────────────────────────────────
@@ -312,6 +385,10 @@
   --auth-gradient-1: rgba(99, 102, 241, 0.18);
   --auth-gradient-2: rgba(99, 102, 241, 0.10);
   --auth-gradient-3: rgba(99, 102, 241, 0.06);
+
+  /* Slate theme gradients */
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  --avatar-gradient: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%);
 }
 
 /* Slate Dark */
@@ -360,6 +437,10 @@
   /* Override dark-mode specific aliases */
   --color-success: #34d399;
   --color-primary-700: #a5b4fc;
+
+  /* Slate dark gradients */
+  --gradient-primary: linear-gradient(135deg, #818cf8 0%, #a5b4fc 100%);
+  --avatar-gradient: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #a5b4fc 100%);
 }
 
 /* ───────────────────────────────────────────────────────────────
@@ -395,6 +476,10 @@
   --auth-gradient-1: rgba(96, 96, 96, 0.18);
   --auth-gradient-2: rgba(96, 96, 96, 0.10);
   --auth-gradient-3: rgba(96, 96, 96, 0.06);
+
+  /* Graphite theme gradients */
+  --gradient-primary: linear-gradient(135deg, #606060 0%, #909090 100%);
+  --avatar-gradient: linear-gradient(135deg, #505050 0%, #808080 100%);
 }
 
 /* Graphite Dark */
@@ -443,6 +528,10 @@
   /* Override dark-mode specific aliases */
   --color-success: #34d399;
   --color-primary-700: #b8b8b8;
+
+  /* Graphite dark gradients */
+  --gradient-primary: linear-gradient(135deg, #808080 0%, #a0a0a0 100%);
+  --avatar-gradient: linear-gradient(135deg, #606060 0%, #808080 50%, #a0a0a0 100%);
 }
 
 /* Tailwind CSS 4 Theme Bridge - Maps CSS variables to Tailwind tokens */

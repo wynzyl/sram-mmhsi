@@ -122,8 +122,9 @@ export function StudentDirectoryTable({
                 >
                   <td className="align-middle py-3 pl-4 pr-4">
                     <div className="flex items-center gap-3 min-w-0">
+                      {/* Avatar circle with gradient */}
                       <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary"
+                        className="avatar-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-bold"
                         aria-hidden
                       >
                         {getInitials(s.firstName, s.lastName)}
@@ -135,7 +136,8 @@ export function StudentDirectoryTable({
                     </div>
                   </td>
                   <td className="align-middle py-3">
-                    <code className="reference-code text-[0.8rem]">{s.referenceNumber}</code>
+                    {/* Student ID with purple pill style */}
+                    <span className="reference-pill">{s.referenceNumber}</span>
                   </td>
                   <td className="align-middle py-3 text-foreground">
                     {s.gradeLevelName ?? <span className="text-muted-foreground">—</span>}
@@ -147,10 +149,11 @@ export function StudentDirectoryTable({
                     {s.telNumber ?? <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="align-middle py-3">
+                    {/* Status badge with glow effect for active */}
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
                         s.isActive
-                          ? "bg-success/15 text-success"
+                          ? "bg-success/15 text-success badge-glow-success"
                           : "bg-gray-200 dark:bg-gray-800 text-muted-foreground"
                       }`}
                     >
