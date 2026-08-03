@@ -598,10 +598,10 @@ export async function getStudentDocumentRequests(
  * Get school year options for filter dropdown
  */
 export async function getSchoolYearOptions(): Promise<
-  Array<{ id: string; label: string }>
+  Array<{ id: string; label: string; isActive: boolean }>
 > {
   const options = await db
-    .select({ id: schoolYears.id, label: schoolYears.label })
+    .select({ id: schoolYears.id, label: schoolYears.label, isActive: schoolYears.isActive })
     .from(schoolYears)
     .where(isNull(schoolYears.deletedAt))
     .orderBy(desc(schoolYears.startDate));

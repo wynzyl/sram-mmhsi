@@ -53,7 +53,7 @@ export type ArchivedStudentRow = {
   lastEnrollmentSchoolYear: string | null;
 };
 
-export type ArchiveSchoolYearOption = { id: string; label: string };
+export type ArchiveSchoolYearOption = { id: string; label: string; isActive: boolean };
 
 // ─── Queries ────────────────────────────────────────────────────────────────
 
@@ -140,7 +140,7 @@ export async function fetchArchivedStudentsPage(
   const [schoolYearOptions, listRows, countResult] = await Promise.all([
     // School year options for filter dropdown
     db
-      .select({ id: schoolYears.id, label: schoolYears.label })
+      .select({ id: schoolYears.id, label: schoolYears.label, isActive: schoolYears.isActive })
       .from(schoolYears)
       .where(isNull(schoolYears.deletedAt))
       .orderBy(desc(schoolYears.startDate)),
@@ -500,10 +500,10 @@ export async function getNonReturningStudents(
  * Ordered by most recent start date first.
  */
 export async function getArchiveSchoolYearOptions(): Promise<
-  Array<{ id: string; label: string }>
+  Array<{ id: string; label: string; isActive: boolean }>
 > {
   return db
-    .select({ id: schoolYears.id, label: schoolYears.label })
+    .select({ id: schoolYears.id, label: schoolYears.label, isActive: schoolYears.isActive })
     .from(schoolYears)
     .where(isNull(schoolYears.deletedAt))
     .orderBy(desc(schoolYears.startDate));

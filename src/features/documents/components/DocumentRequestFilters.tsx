@@ -3,6 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   DOCUMENT_REQUEST_TYPES,
   DOCUMENT_REQUEST_STATUSES,
   DOCUMENT_REQUEST_TYPE_LABELS,
@@ -11,17 +18,20 @@ import {
   type DocumentRequestType,
 } from "@/lib/constants/document-requests";
 
-type SchoolYearOption = { id: string; label: string };
+type SchoolYearOption = { id: string; label: string; isActive: boolean };
 
 interface DocumentRequestFiltersProps {
   schoolYearOptions: SchoolYearOption[];
   /** Render in inline mode for card headers (no labels, compact) */
   inline?: boolean;
+  /** Default school year ID to use when no filter is selected */
+  defaultSchoolYearId?: string;
 }
 
 export function DocumentRequestFilters({
   schoolYearOptions,
   inline = false,
+  defaultSchoolYearId,
 }: DocumentRequestFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,7 +39,8 @@ export function DocumentRequestFilters({
 
   const currentStatus = searchParams.get("status") ?? "";
   const currentType = searchParams.get("type") ?? "";
-  const currentSchoolYear = searchParams.get("sy") ?? "";
+  // Use defaultSchoolYearId when URL has no filter
+  const currentSchoolYear = searchParams.get("sy") ?? defaultSchoolYearId ?? "";
   const currentSearch = searchParams.get("q") ?? "";
 
   function updateParams(key: string, value: string) {
@@ -129,20 +140,24 @@ export function DocumentRequestFilters({
         </select>
 
         {/* School Year Filter */}
-        <select
-          value={currentSchoolYear}
-          onChange={(e) => updateParams("sy", e.target.value)}
+        <Select
+          value={currentSchoolYear || "all"}
+          onValueChange={(value) => updateParams("sy", value === "all" ? "" : value)}
           disabled={isPending}
-          aria-label="Filter by school year"
-          className="filter-select w-24"
         >
-          <option value="">All Years</option>
-          {schoolYearOptions.map((sy) => (
-            <option key={sy.id} value={sy.id}>
-              {sy.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-44 h-10" aria-label="Filter by school year">
+            <SelectValue placeholder="All Years" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Years</SelectItem>
+            {schoolYearOptions.map((sy) => (
+              <SelectItem key={sy.id} value={sy.id}>
+                {sy.label}
+                {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Clear Filters */}
         {hasActiveFilters && (
@@ -227,23 +242,28 @@ export function DocumentRequestFilters({
         </div>
 
         {/* School Year Filter */}
-        <div className="min-w-[150px]">
+        <div className="min-w-[180px]">
           <label className="block text-sm font-medium text-muted-foreground mb-1">
             School Year
           </label>
-          <select
-            value={currentSchoolYear}
-            onChange={(e) => updateParams("sy", e.target.value)}
+          <Select
+            value={currentSchoolYear || "all"}
+            onValueChange={(value) => updateParams("sy", value === "all" ? "" : value)}
             disabled={isPending}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="">All School Years</option>
-            {schoolYearOptions.map((sy) => (
-              <option key={sy.id} value={sy.id}>
-                {sy.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="All School Years" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All School Years</SelectItem>
+              {schoolYearOptions.map((sy) => (
+                <SelectItem key={sy.id} value={sy.id}>
+                  {sy.label}
+                  {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

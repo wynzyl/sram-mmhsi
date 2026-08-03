@@ -89,7 +89,7 @@ export default async function StudentListReportPage({ searchParams }: PageProps)
       >
         <StudentListView
           data={rows}
-          schoolYears={schoolYears.map((sy) => ({ id: sy.id, label: sy.label }))}
+          schoolYears={schoolYears}
           gradeLevels={gradeLevels.map((g) => ({ id: g.id, label: g.name }))}
           defaults={{
             schoolYearId,

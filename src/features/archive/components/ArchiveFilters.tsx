@@ -131,21 +131,25 @@ export function ArchiveFilters({
         </select>
 
         {/* School Year Filter */}
-        <select
+        <Select
           value={currentSchoolYearId ?? "all"}
-          onChange={(e) =>
-            updateFilters({ schoolYearId: e.target.value === "all" ? undefined : e.target.value })
+          onValueChange={(value) =>
+            updateFilters({ schoolYearId: value === "all" ? undefined : value })
           }
-          aria-label="Filter by school year"
-          className="filter-select w-28"
         >
-          <option value="all">All Years</option>
-          {schoolYearOptions.map((sy) => (
-            <option key={sy.id} value={sy.id}>
-              {sy.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-44 h-10" aria-label="Filter by school year">
+            <SelectValue placeholder="All Years" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Years</SelectItem>
+            {schoolYearOptions.map((sy) => (
+              <SelectItem key={sy.id} value={sy.id}>
+                {sy.label}
+                {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Clear Filters */}
         {hasFilters && (
@@ -211,7 +215,7 @@ export function ArchiveFilters({
       </div>
 
       {/* School Year Filter */}
-      <div className="min-w-[160px]">
+      <div className="min-w-[180px]">
         <label
           htmlFor="archive-school-year"
           className="mb-1.5 block text-sm font-medium"
@@ -232,6 +236,7 @@ export function ArchiveFilters({
             {schoolYearOptions.map((sy) => (
               <SelectItem key={sy.id} value={sy.id}>
                 {sy.label}
+                {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
               </SelectItem>
             ))}
           </SelectContent>

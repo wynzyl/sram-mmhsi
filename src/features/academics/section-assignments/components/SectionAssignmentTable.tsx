@@ -19,6 +19,13 @@ import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ClientTablePagination } from "@/components/ui/ClientTablePagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type {
   StudentForSectionAssignment,
   SectionWithCount,
@@ -293,18 +300,22 @@ export function SectionAssignmentTable({
           </div>
 
           {/* School Year */}
-          <select
+          <Select
             value={schoolYearId}
-            onChange={(e) => handleSchoolYearChange(e.target.value)}
-            className="filter-select w-36"
-            aria-label="School year"
+            onValueChange={handleSchoolYearChange}
           >
-            {schoolYears.map((sy) => (
-              <option key={sy.id} value={sy.id}>
-                {sy.label} {sy.isActive && "(Active)"}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-44 h-10" aria-label="School year">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {schoolYears.map((sy) => (
+                <SelectItem key={sy.id} value={sy.id}>
+                  {sy.label}
+                  {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Grade Level */}
           <select

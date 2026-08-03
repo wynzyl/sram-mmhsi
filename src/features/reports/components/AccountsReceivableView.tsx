@@ -6,6 +6,13 @@ import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { TablePagination } from "@/components/ui/TablePagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDate } from "@/lib/utils/date";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -14,6 +21,7 @@ import type { AccountsReceivableRow } from "../accounts-receivable-report.querie
 interface SchoolYearOption {
   id: string;
   label: string;
+  isActive: boolean;
 }
 
 interface PaginationProps {
@@ -186,19 +194,23 @@ export function AccountsReceivableView({
           </div>
 
           {/* School Year Filter */}
-          <select
-            value={schoolYearId}
-            onChange={(e) => setSchoolYearId(e.target.value)}
-            className="filter-select w-32"
-            aria-label="School year"
+          <Select
+            value={schoolYearId || "all"}
+            onValueChange={(value) => setSchoolYearId(value === "all" ? "" : value)}
           >
-            <option value="">All Years</option>
-            {schoolYears.map((sy) => (
-              <option key={sy.id} value={sy.id}>
-                {sy.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-44 h-10" aria-label="School year">
+              <SelectValue placeholder="All Years" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Years</SelectItem>
+              {schoolYears.map((sy) => (
+                <SelectItem key={sy.id} value={sy.id}>
+                  {sy.label}
+                  {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Apply Button */}
           <button

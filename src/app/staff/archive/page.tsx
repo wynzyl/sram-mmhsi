@@ -10,6 +10,7 @@ import {
   getArchiveSchoolYearOptions,
   getArchiveGradeLevelOptions,
 } from "@/features/archive/archive.queries";
+import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import {
   ArchiveDirectoryTable,
   ArchiveFilters,
@@ -43,6 +44,11 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
 
+  // Fetch active school year ID for default selection
+  const activeSchoolYearId = await getActiveSchoolYearId();
+  // Default to active school year if no filter specified
+  const schoolYearId = params.schoolYearId ?? activeSchoolYearId ?? undefined;
+
   // Fetch data
   const [archiveData, summary, allSchoolYears, allGradeLevels] =
     await Promise.all([
@@ -52,7 +58,7 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
           params.status && params.status !== "active"
             ? (params.status as Exclude<StudentStatus, "active">)
             : undefined,
-        schoolYearId: params.schoolYearId,
+        schoolYearId,
         search: params.search,
         page,
         pageSize: 25,
@@ -111,7 +117,7 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
             <ArchiveFilters
               schoolYearOptions={archiveData.schoolYearOptions}
               currentStatus={params.status}
-              currentSchoolYearId={params.schoolYearId}
+              currentSchoolYearId={schoolYearId}
               currentSearch={params.search}
               inline
             />
@@ -148,7 +154,7 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
               totalPages={archiveData.totalPages}
               totalRecords={archiveData.totalCount}
               pageSize={25}
-              baseUrl={buildBaseUrl(params)}
+              baseUrl={buildBaseUrl({ status: params.status, schoolYearId, search: params.search })}
               itemLabel="students"
             />
           </div>

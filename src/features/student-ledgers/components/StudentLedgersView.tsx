@@ -7,6 +7,13 @@ import AssessmentsTable from "@/features/finance/components/AssessmentsTable";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SearchInput } from "@/components/shared/SearchInput";
 import { TablePagination } from "@/components/ui/TablePagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { AssessmentListItem } from "@/features/assessments/assessments.queries";
 import type { PaginatedResult } from "@/lib/types/pagination";
 
@@ -87,8 +94,8 @@ export function StudentLedgersView({
   }, [debouncedSearch, searchParams, router, buildUrl]);
 
   // Handle school year change (immediate)
-  const handleSchoolYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    router.push(buildUrl({ schoolYearId: e.target.value }));
+  const handleSchoolYearChange = (value: string) => {
+    router.push(buildUrl({ schoolYearId: value }));
   };
 
   // Clear all filters
@@ -126,18 +133,22 @@ export function StudentLedgersView({
           />
 
           {/* School Year Filter */}
-          <select
+          <Select
             value={initialSchoolYearId || activeSchoolYearId || ""}
-            onChange={handleSchoolYearChange}
-            className="h-9 rounded-md border border-border bg-card px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            onValueChange={handleSchoolYearChange}
           >
-            {schoolYears.map((sy) => (
-              <option key={sy.id} value={sy.id}>
-                {sy.label}
-                {sy.isActive ? " (Current)" : ""}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-44 h-9" aria-label="School year">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {schoolYears.map((sy) => (
+                <SelectItem key={sy.id} value={sy.id}>
+                  {sy.label}
+                  {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Clear Filters */}
           {hasActiveFilters && (

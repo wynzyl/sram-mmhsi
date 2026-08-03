@@ -6,6 +6,13 @@ import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -15,6 +22,7 @@ import type { BfxTransferRow } from "../balance-forward-report.queries";
 interface SchoolYearOption {
   id: string;
   label: string;
+  isActive: boolean;
 }
 
 interface PaginationProps {
@@ -228,19 +236,23 @@ export function BfxReportView({
           />
 
           {/* School Year Filter */}
-          <select
-            value={schoolYearId}
-            onChange={(e) => setSchoolYearId(e.target.value)}
-            className="filter-select w-28"
-            aria-label="Source school year"
+          <Select
+            value={schoolYearId || "all"}
+            onValueChange={(value) => setSchoolYearId(value === "all" ? "" : value)}
           >
-            <option value="">All Years</option>
-            {schoolYears.map((sy) => (
-              <option key={sy.id} value={sy.id}>
-                {sy.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-44 h-10" aria-label="Source school year">
+              <SelectValue placeholder="All Years" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Years</SelectItem>
+              {schoolYears.map((sy) => (
+                <SelectItem key={sy.id} value={sy.id}>
+                  {sy.label}
+                  {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Apply Button */}
           <button

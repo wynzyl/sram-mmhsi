@@ -1,7 +1,7 @@
 import { requireSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { canAccessFinanceReports } from "@/lib/rbac/permissions";
-import { getSchoolYears } from "@/lib/queries/schoolYears";
+import { getSchoolYears, getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import {
   getAccountsReceivableReport,
   getAccountsReceivableSummary,
@@ -28,7 +28,10 @@ export default async function AccountsReceivableReportPage({
   }
 
   const params = await searchParams;
-  const schoolYearId = params.schoolYearId || undefined;
+  // Fetch active school year ID for default selection
+  const activeSchoolYearId = await getActiveSchoolYearId();
+  // Default to active school year if no filter specified
+  const schoolYearId = params.schoolYearId ?? activeSchoolYearId ?? undefined;
   const page = parseInt(params.page || "1", 10) || 1;
 
   const [reportResult, summary, schoolYears] = await Promise.all([
@@ -70,7 +73,7 @@ export default async function AccountsReceivableReportPage({
         {/* Filters + Table + Pagination - Combined View */}
         <AccountsReceivableView
           data={rows}
-          schoolYears={schoolYears.map((sy) => ({ id: sy.id, label: sy.label }))}
+          schoolYears={schoolYears}
           defaultSchoolYearId={schoolYearId}
           pagination={{
             currentPage: page,

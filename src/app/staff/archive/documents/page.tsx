@@ -7,6 +7,7 @@ import {
   getDocumentRequestsSummary,
   getSchoolYearOptions,
 } from "@/features/documents/document-requests.queries";
+import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import { DocumentRequestsTable } from "@/features/documents/components/DocumentRequestsTable";
 import { DocumentRequestFilters } from "@/features/documents/components/DocumentRequestFilters";
 import { TablePagination } from "@/components/ui/TablePagination";
@@ -43,9 +44,13 @@ export default async function DocumentRequestsPage({
   const page = parseInt(params.page || "1", 10);
   const status = params.status as DocumentRequestStatus | undefined;
   const documentType = params.type as DocumentRequestType | undefined;
-  const schoolYearId = params.sy;
   const search = params.q;
   const studentId = params.studentId;
+
+  // Fetch active school year ID for default selection
+  const activeSchoolYearId = await getActiveSchoolYearId();
+  // Default to active school year if no filter specified
+  const schoolYearId = params.sy ?? activeSchoolYearId ?? undefined;
 
   // Fetch data
   const [requestsData, summary, schoolYearOptions] = await Promise.all([
@@ -116,7 +121,11 @@ export default async function DocumentRequestsPage({
           </div>
 
           {/* Right: Inline Filters */}
-          <DocumentRequestFilters schoolYearOptions={schoolYearOptions} inline />
+          <DocumentRequestFilters
+            schoolYearOptions={schoolYearOptions}
+            defaultSchoolYearId={schoolYearId}
+            inline
+          />
         </div>
 
         {/* Table Content */}
@@ -133,7 +142,7 @@ export default async function DocumentRequestsPage({
               totalPages={requestsData.totalPages}
               totalRecords={requestsData.totalCount}
               pageSize={25}
-              baseUrl={buildBaseUrl(params)}
+              baseUrl={buildBaseUrl({ ...params, sy: schoolYearId })}
               itemLabel="requests"
             />
           </div>

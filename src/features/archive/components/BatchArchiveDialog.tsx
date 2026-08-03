@@ -35,7 +35,7 @@ import { batchArchiveGraduatesAction } from "../archive.actions";
 import type { BatchArchiveGraduatesFormState } from "../archive.schema";
 
 interface BatchArchiveDialogProps {
-  schoolYearOptions: Array<{ id: string; label: string }>;
+  schoolYearOptions: Array<{ id: string; label: string; isActive: boolean }>;
   gradeLevelOptions?: Array<{ id: string; name: string }>;
   trigger?: React.ReactNode;
   onSuccess?: () => void;
@@ -137,6 +137,7 @@ export function BatchArchiveDialog({
                   {schoolYearOptions.map((sy) => (
                     <SelectItem key={sy.id} value={sy.id}>
                       {sy.label}
+                      {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
                     </SelectItem>
                   ))}
                 </SelectContent>

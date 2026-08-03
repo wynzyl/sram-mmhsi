@@ -32,7 +32,7 @@ import type { ArchiveStudentFormState } from "../archive.schema";
 interface ArchiveStudentDialogProps {
   studentId: string;
   studentName: string;
-  schoolYearOptions?: Array<{ id: string; label: string }>;
+  schoolYearOptions?: Array<{ id: string; label: string; isActive: boolean }>;
   trigger?: React.ReactNode;
   onSuccess?: () => void;
 }
@@ -91,7 +91,7 @@ export function ArchiveStudentDialog({
 interface ArchiveStudentFormProps {
   studentId: string;
   studentName: string;
-  schoolYearOptions: Array<{ id: string; label: string }>;
+  schoolYearOptions: Array<{ id: string; label: string; isActive: boolean }>;
   onArchived: () => void;
   onCancel: () => void;
 }
@@ -165,6 +165,7 @@ function ArchiveStudentForm({
                   {schoolYearOptions.map((sy) => (
                     <SelectItem key={sy.id} value={sy.id}>
                       {sy.label}
+                      {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -49,6 +49,8 @@ export default async function BalanceForwardsReportPage({
     parsedEndDate && !isNaN(parsedEndDate.getTime()) ? parsedEndDate : today;
   endDate.setHours(23, 59, 59, 999);
 
+  // Note: BFX report filters by SOURCE school year (where balance came from).
+  // Don't default to active year - transfers come FROM prior years, not current.
   const schoolYearId = params.schoolYearId || undefined;
   const page = parseInt(params.page || "1", 10) || 1;
 
@@ -89,7 +91,7 @@ export default async function BalanceForwardsReportPage({
           defaults={{
             startDate: params.startDate,
             endDate: params.endDate,
-            schoolYearId: params.schoolYearId,
+            schoolYearId,
           }}
           pagination={{
             currentPage: page,

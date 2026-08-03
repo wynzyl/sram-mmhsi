@@ -6,6 +6,13 @@ import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { TablePagination } from "@/components/ui/TablePagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { StudentListRow } from "../student-list-report.queries";
@@ -13,6 +20,7 @@ import type { StudentListRow } from "../student-list-report.queries";
 interface SchoolYearOption {
   id: string;
   label: string;
+  isActive: boolean;
 }
 
 interface GradeLevelOption {
@@ -195,18 +203,19 @@ export function StudentListView({
           </div>
 
           {/* School Year */}
-          <select
-            value={schoolYearId}
-            onChange={(e) => setSchoolYearId(e.target.value)}
-            className="filter-select w-28"
-            aria-label="School year"
-          >
-            {schoolYears.map((sy) => (
-              <option key={sy.id} value={sy.id}>
-                {sy.label}
-              </option>
-            ))}
-          </select>
+          <Select value={schoolYearId} onValueChange={setSchoolYearId}>
+            <SelectTrigger className="w-44 h-10" aria-label="School year">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {schoolYears.map((sy) => (
+                <SelectItem key={sy.id} value={sy.id}>
+                  {sy.label}
+                  {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Grade Level */}
           <select
