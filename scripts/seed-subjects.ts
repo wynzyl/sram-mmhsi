@@ -22,25 +22,28 @@ import { expand } from "dotenv-expand";
 
 /** Lower Elementary (Grade 1-3) subjects */
 const LOWER_ELEM_SUBJECTS = [
-  { code: "FIL", name: "Filipino" },
-  { code: "ENG", name: "English" },
-  { code: "MTH", name: "Mathematics" },
-  { code: "MTB", name: "Mother Tongue-Based" },
-  { code: "AP", name: "Araling Panlipunan" },
+  { code: "RED", name: "Reading/Spelling" },
+  { code: "SCI", name: "Science" },
+  { code: "LAN", name: "Language" },
+  { code: "GMRC", name: "GMRC" },
+  { code: "MAK", name: "Makabansa" },
+  { code: "FIL", name: "Filipino/Pagbaybay" },
+  { code: "MTH", name: "Math and Geometry" },
   { code: "MAPEH", name: "MAPEH" },
-  { code: "ESP", name: "Edukasyon sa Pagpapakatao" },
 ] as const;
 
 /** Upper Elementary (Grade 4-6) subjects */
 const UPPER_ELEM_SUBJECTS = [
-  { code: "FIL", name: "Filipino" },
-  { code: "ENG", name: "English" },
-  { code: "MTH", name: "Mathematics" },
+  { code: "RED", name: "Reading/Spelling" },
   { code: "SCI", name: "Science" },
+  { code: "LAN", name: "Language" },
+  { code: "GMRC", name: "GMRC" },
   { code: "AP", name: "Araling Panlipunan" },
+  { code: "FIL", name: "Filipino/Pagbaybay" },
+  { code: "MTH", name: "Math and Geometry" },
   { code: "MAPEH", name: "MAPEH" },
+  { code: "COMP", name: "Computer" },
   { code: "EPP", name: "EPP" },
-  { code: "ESP", name: "Edukasyon sa Pagpapakatao" },
 ] as const;
 
 /** Junior High School (Grade 7-10) subjects */
@@ -51,8 +54,9 @@ const JHS_SUBJECTS = [
   { code: "SCI", name: "Science" },
   { code: "AP", name: "Araling Panlipunan" },
   { code: "MAPEH", name: "MAPEH" },
+  { code: "GMRC", name: "GMRC" },
   { code: "TLE", name: "Technology and Livelihood Education" },
-  { code: "ESP", name: "Edukasyon sa Pagpapakatao" },
+  { code: "COMP", name: "Computer" },
 ] as const;
 
 /** Grade level mapping with subject definitions */
@@ -167,10 +171,8 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
           .insert(curriculums)
           .values({
             name: curriculumName,
-            status: "published",
+            status: "draft",
             version: 1,
-            publishedAt: new Date(),
-            publishedBy: systemUser.id,
             createdBy: systemUser.id,
             updatedBy: systemUser.id,
           })
@@ -313,7 +315,7 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
 
   console.log(
     created
-      ? `✅ Created curriculum: ${curriculumName}`
+      ? `✅ Created draft curriculum: ${curriculumName} (editable for finalization)`
       : `✅ Using existing curriculum: ${curriculumName}`
   );
   console.log(`\n✅ Subjects seeding complete!`);

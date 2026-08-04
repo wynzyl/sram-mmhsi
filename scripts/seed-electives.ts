@@ -34,18 +34,12 @@ interface SubjectDef {
 /** SHS Core Subjects (All Strands) - these are core curriculum, not electives */
 const SHS_CORE_SUBJECTS: SubjectDef[] = [
   // Grade 11
-  { code: "ORAL-COMM", name: "Oral Communication", units: "1.0", grade: 11 },
-  { code: "RWS", name: "Reading and Writing Skills", units: "1.0", grade: 11 },
-  { code: "KOMUNIK", name: "Komunikasyon at Pananaliksik", units: "1.0", grade: 11 },
-  { code: "21ST-LIT", name: "21st Century Literature", units: "1.0", grade: 11 },
-  { code: "GEN-MATH", name: "General Mathematics", units: "1.0", grade: 11 },
-  { code: "STATS-PROB", name: "Statistics and Probability", units: "1.0", grade: 11 },
-  { code: "EARTH-SCI", name: "Earth and Life Science", units: "1.0", grade: 11 },
-  { code: "PE-HEALTH1", name: "PE and Health 1", units: "1.0", grade: 11 },
-  { code: "PE-HEALTH2", name: "PE and Health 2", units: "1.0", grade: 11 },
-  { code: "PERS-DEV", name: "Personal Development", units: "1.0", grade: 11 },
-  { code: "UCSP", name: "Understanding Culture, Society, Politics", units: "1.0", grade: 11 },
-  { code: "EMPOWERTECH", name: "Empowerment Technologies", units: "1.0", grade: 11 },
+  { code: "LCS11", name: "Life and Career Skills", units: "1.0", grade: 11 },
+  { code: "GM11", name: "General Mathematics", units: "1.0", grade: 11 },
+  { code: "PKLP11", name: "Pag-aaral ng Kasaysayan at Lipunang Pilipino", units: "1.0", grade: 11 },
+  { code: "GS11", name: "General Science", units: "1.0", grade: 11 },
+  { code: "EC11", name: "Effective Communication", units: "1.0", grade: 11 },
+  { code: "MK11", name: "Mabisang Komunikasyon", units: "1.0", grade: 11 },
   // Grade 12
   { code: "KONTEMPH", name: "Kontemporaryong Filipino", units: "1.0", grade: 12 },
   { code: "PHYS-SCI", name: "Physical Science", units: "1.0", grade: 12 },
@@ -119,38 +113,38 @@ const STRAND_SUBJECTS: Record<ShsStrandCode, SubjectDef[]> = {
     { code: "ICT-8", name: "Animation 2", units: "1.0", grade: 12 },
   ],
   // TVL-HE Strand
-  "TVL-HE": [
-    { code: "HE-1", name: "Bread and Pastry Production 1", units: "1.0", grade: 11 },
-    { code: "HE-2", name: "Bread and Pastry Production 2", units: "1.0", grade: 11 },
-    { code: "HE-3", name: "Food and Beverage Services 1", units: "1.0", grade: 11 },
-    { code: "HE-4", name: "Food and Beverage Services 2", units: "1.0", grade: 11 },
-    { code: "HE-5", name: "Housekeeping 1", units: "1.0", grade: 12 },
-    { code: "HE-6", name: "Housekeeping 2", units: "1.0", grade: 12 },
-    { code: "HE-7", name: "Front Office Services 1", units: "1.0", grade: 12 },
-    { code: "HE-8", name: "Front Office Services 2", units: "1.0", grade: 12 },
-  ],
-  // TVL-IA Strand
-  "TVL-IA": [
-    { code: "IA-1", name: "Shielded Metal Arc Welding 1", units: "1.0", grade: 11 },
-    { code: "IA-2", name: "Shielded Metal Arc Welding 2", units: "1.0", grade: 11 },
-    { code: "IA-3", name: "Electrical Installation 1", units: "1.0", grade: 11 },
-    { code: "IA-4", name: "Electrical Installation 2", units: "1.0", grade: 11 },
-    { code: "IA-5", name: "Automotive Servicing 1", units: "1.0", grade: 12 },
-    { code: "IA-6", name: "Automotive Servicing 2", units: "1.0", grade: 12 },
-    { code: "IA-7", name: "Carpentry 1", units: "1.0", grade: 12 },
-    { code: "IA-8", name: "Carpentry 2", units: "1.0", grade: 12 },
-  ],
-  // TVL-AFA Strand
-  "TVL-AFA": [
-    { code: "AFA-1", name: "Agricultural Crops Production 1", units: "1.0", grade: 11 },
-    { code: "AFA-2", name: "Agricultural Crops Production 2", units: "1.0", grade: 11 },
-    { code: "AFA-3", name: "Animal Production 1", units: "1.0", grade: 11 },
-    { code: "AFA-4", name: "Animal Production 2", units: "1.0", grade: 11 },
-    { code: "AFA-5", name: "Fish Culture 1", units: "1.0", grade: 12 },
-    { code: "AFA-6", name: "Fish Culture 2", units: "1.0", grade: 12 },
-    { code: "AFA-7", name: "Horticulture 1", units: "1.0", grade: 12 },
-    { code: "AFA-8", name: "Horticulture 2", units: "1.0", grade: 12 },
-  ],
+  // "TVL-HE": [
+  //   { code: "HE-1", name: "Bread and Pastry Production 1", units: "1.0", grade: 11 },
+  //   { code: "HE-2", name: "Bread and Pastry Production 2", units: "1.0", grade: 11 },
+  //   { code: "HE-3", name: "Food and Beverage Services 1", units: "1.0", grade: 11 },
+  //   { code: "HE-4", name: "Food and Beverage Services 2", units: "1.0", grade: 11 },
+  //   { code: "HE-5", name: "Housekeeping 1", units: "1.0", grade: 12 },
+  //   { code: "HE-6", name: "Housekeeping 2", units: "1.0", grade: 12 },
+  //   { code: "HE-7", name: "Front Office Services 1", units: "1.0", grade: 12 },
+  //   { code: "HE-8", name: "Front Office Services 2", units: "1.0", grade: 12 },
+  // ],
+  // // TVL-IA Strand
+  // "TVL-IA": [
+  //   { code: "IA-1", name: "Shielded Metal Arc Welding 1", units: "1.0", grade: 11 },
+  //   { code: "IA-2", name: "Shielded Metal Arc Welding 2", units: "1.0", grade: 11 },
+  //   { code: "IA-3", name: "Electrical Installation 1", units: "1.0", grade: 11 },
+  //   { code: "IA-4", name: "Electrical Installation 2", units: "1.0", grade: 11 },
+  //   { code: "IA-5", name: "Automotive Servicing 1", units: "1.0", grade: 12 },
+  //   { code: "IA-6", name: "Automotive Servicing 2", units: "1.0", grade: 12 },
+  //   { code: "IA-7", name: "Carpentry 1", units: "1.0", grade: 12 },
+  //   { code: "IA-8", name: "Carpentry 2", units: "1.0", grade: 12 },
+  // ],
+  // // TVL-AFA Strand
+  // "TVL-AFA": [
+  //   { code: "AFA-1", name: "Agricultural Crops Production 1", units: "1.0", grade: 11 },
+  //   { code: "AFA-2", name: "Agricultural Crops Production 2", units: "1.0", grade: 11 },
+  //   { code: "AFA-3", name: "Animal Production 1", units: "1.0", grade: 11 },
+  //   { code: "AFA-4", name: "Animal Production 2", units: "1.0", grade: 11 },
+  //   { code: "AFA-5", name: "Fish Culture 1", units: "1.0", grade: 12 },
+  //   { code: "AFA-6", name: "Fish Culture 2", units: "1.0", grade: 12 },
+  //   { code: "AFA-7", name: "Horticulture 1", units: "1.0", grade: 12 },
+  //   { code: "AFA-8", name: "Horticulture 2", units: "1.0", grade: 12 },
+  // ],
 };
 
 // ─── Exportable Seed Function ─────────────────────────────────────────────────
@@ -238,10 +232,8 @@ export async function seedElectives(db: PostgresJsDatabase): Promise<void> {
         .insert(curriculums)
         .values({
           name: curriculumName,
-          status: "published",
+          status: "draft",
           version: 1,
-          publishedAt: new Date(),
-          publishedBy: systemUser.id,
           createdBy: systemUser.id,
           updatedBy: systemUser.id,
         })
@@ -412,7 +404,7 @@ export async function seedElectives(db: PostgresJsDatabase): Promise<void> {
   // ─── Summary Report ─────────────────────────────────────────────────────────
   console.log(
     result.createdCurriculum
-      ? `✅ Created curriculum: ${curriculumName}`
+      ? `✅ Created draft curriculum: ${curriculumName} (editable for finalization)`
       : `✅ Using existing curriculum: ${curriculumName}`
   );
   console.log(`\n✅ SHS Electives seeding complete!`);

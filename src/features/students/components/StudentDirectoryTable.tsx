@@ -122,9 +122,9 @@ export function StudentDirectoryTable({
                 >
                   <td className="align-middle py-3 pl-4 pr-4">
                     <div className="flex items-center gap-3 min-w-0">
-                      {/* Avatar circle with gradient */}
+                      {/* Avatar circle matching Registration Queue style */}
                       <div
-                        className="avatar-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-bold"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary"
                         aria-hidden
                       >
                         {getInitials(s.firstName, s.lastName)}

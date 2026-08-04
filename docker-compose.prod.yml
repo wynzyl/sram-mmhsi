@@ -5,6 +5,7 @@
 #   docker compose -f docker-compose.prod.yml up -d --build
 #   docker compose -f docker-compose.prod.yml run --rm migrate npm run db:seed
 #   docker compose -f docker-compose.prod.yml up migrate --force-recreate 
+#   docker compose -f docker-compose.prod.yml run --rm migrate npm run db:seed-subjects  
 
 
 name: sram-mmhsi
