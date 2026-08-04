@@ -422,7 +422,7 @@ export function CashierPaymentProcessingView({
                       {/* OR Booklet - only show when NOT manual entry */}
                       {!isManualEntry && (
                         <div>
-                          <label className="mb-1.5 block text-sm font-medium">
+                          <label htmlFor="bookletId" className="mb-1.5 block text-sm font-medium">
                             OR booklet <span className="text-destructive">*</span>
                           </label>
                           {activeBooklets.length === 0 ? (
@@ -482,8 +482,11 @@ export function CashierPaymentProcessingView({
                       {/* Online sub-select */}
                       {paymentMethodCategory === "ONLINE" && (
                         <div>
-                          <label className="mb-1.5 block text-sm font-medium">Online method</label>
+                          <label htmlFor="onlineMethod" className="mb-1.5 block text-sm font-medium">
+                            Online method
+                          </label>
                           <select
+                            id="onlineMethod"
                             className="form-control h-9 w-full"
                             value={onlineMethod}
                             onChange={(e) => setOnlineMethod(e.target.value as typeof onlineMethod)}
@@ -502,7 +505,10 @@ export function CashierPaymentProcessingView({
                     <CardContent className="p-4">
                       {/* Amount to Pay */}
                       <div className="mb-3">
-                        <label className="mb-1.5 block text-sm font-medium">
+                        <label
+                          htmlFor="amountToPayInput"
+                          className="mb-1.5 block text-sm font-medium"
+                        >
                           Amount to pay {applyCashDiscount && "(after discount)"} <span className="text-destructive">*</span>
                         </label>
                         <div className="relative">
@@ -510,6 +516,7 @@ export function CashierPaymentProcessingView({
                             ₱
                           </span>
                           <Input
+                            id="amountToPayInput"
                             type="text"
                             inputMode="decimal"
                             value={formatWithCommas(amountToPay)}
@@ -530,7 +537,10 @@ export function CashierPaymentProcessingView({
                       {/* Amount Tendered - only for cash */}
                       {paymentMethod === "cash" && (
                         <div className="mt-3 pt-3 border-t border-border">
-                          <label className="mb-1.5 block text-sm font-medium">
+                          <label
+                            htmlFor="amountTenderedInput"
+                            className="mb-1.5 block text-sm font-medium"
+                          >
                             Amount tendered <span className="text-destructive">*</span>
                           </label>
                           <div className="relative">
@@ -538,6 +548,7 @@ export function CashierPaymentProcessingView({
                               ₱
                             </span>
                             <Input
+                              id="amountTenderedInput"
                               type="text"
                               inputMode="decimal"
                               value={formatWithCommas(amountTendered)}
