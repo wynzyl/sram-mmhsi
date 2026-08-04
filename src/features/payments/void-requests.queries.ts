@@ -4,58 +4,45 @@ import {
   payments,
   students,
   users,
+  assessments,
 } from "@/lib/db/schema";
-import { eq, desc, and, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, inArray, ne, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import {
+  type PaginationParams,
+  type PaginatedResult,
+  calculatePagination,
+  calculateOffset,
+} from "@/lib/types/pagination";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
+// ─── Types (re-exported from void-requests.types.ts) ───────────────────────────
 
-export type PendingVoidRequest = {
-  id: string;
-  paymentId: string;
-  orNumber: string | null;
-  amount: string;
-  paymentMethod: string;
-  paymentDate: string;
-  studentId: string;
-  studentName: string;
-  studentRef: string;
-  requestReason: string;
-  requestedBy: string;
-  requestedByUsername: string;
-  requestedAt: string;
-};
+export type {
+  PendingVoidRequest,
+  VoidRequestHistoryRow,
+  VoidRequestSummary,
+  VoidRequestDetail,
+} from "./void-requests.types";
 
-export type VoidRequestHistoryRow = {
-  id: string;
-  paymentId: string;
-  orNumber: string | null;
-  amount: string;
-  studentName: string;
-  studentRef: string;
-  status: string;
-  requestReason: string;
-  requestedByUsername: string;
-  requestedAt: string;
-  decidedByUsername: string | null;
-  decidedAt: string | null;
-  decisionRemarks: string | null;
-  cancelledAt: string | null;
-};
-
-export type VoidRequestSummary = {
-  requestId: string;
-  requestedBy: string;
-  requestedByUsername: string;
-  requestedAt: string;
-  status: string;
-};
+import type {
+  PendingVoidRequest,
+  VoidRequestHistoryRow,
+  VoidRequestSummary,
+  VoidRequestDetail,
+} from "./void-requests.types";
 
 // ─── Queries ───────────────────────────────────────────────────────────────────
 
 /**
- * Lists all pending void requests for the admin inbox.
+ * Lists all pending void requests for the admin inbox with pagination.
  */
-export async function listPendingVoidRequests(): Promise<PendingVoidRequest[]> {
+export async function listPendingVoidRequests(
+  params: Partial<PaginationParams> = {}
+): Promise<PaginatedResult<PendingVoidRequest>> {
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
+  const offset = calculateOffset(page, pageSize);
+
   const requestedByUser = db
     .select({
       id: users.id,
@@ -64,31 +51,42 @@ export async function listPendingVoidRequests(): Promise<PendingVoidRequest[]> {
     .from(users)
     .as("requested_by_user");
 
-  const results = await db
-    .select({
-      id: voidRequests.id,
-      paymentId: voidRequests.paymentId,
-      orNumber: payments.orNumber,
-      amount: payments.amount,
-      paymentMethod: payments.paymentMethod,
-      paymentDate: payments.paymentDate,
-      studentId: students.id,
-      studentFirstName: students.firstName,
-      studentLastName: students.lastName,
-      studentRef: students.referenceNumber,
-      requestReason: voidRequests.requestReason,
-      requestedBy: voidRequests.requestedBy,
-      requestedByUsername: requestedByUser.username,
-      requestedAt: voidRequests.requestedAt,
-    })
-    .from(voidRequests)
-    .innerJoin(payments, eq(voidRequests.paymentId, payments.id))
-    .innerJoin(students, eq(payments.studentId, students.id))
-    .innerJoin(requestedByUser, eq(voidRequests.requestedBy, requestedByUser.id))
-    .where(eq(voidRequests.status, "pending"))
-    .orderBy(desc(voidRequests.requestedAt));
+  // Run count and data queries in parallel
+  const [countResult, results] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(voidRequests)
+      .where(eq(voidRequests.status, "pending")),
+    db
+      .select({
+        id: voidRequests.id,
+        paymentId: voidRequests.paymentId,
+        orNumber: payments.orNumber,
+        amount: payments.amount,
+        paymentMethod: payments.paymentMethod,
+        paymentDate: payments.paymentDate,
+        studentId: students.id,
+        studentFirstName: students.firstName,
+        studentLastName: students.lastName,
+        studentRef: students.referenceNumber,
+        requestReason: voidRequests.requestReason,
+        requestedBy: voidRequests.requestedBy,
+        requestedByUsername: requestedByUser.username,
+        requestedAt: voidRequests.requestedAt,
+      })
+      .from(voidRequests)
+      .innerJoin(payments, eq(voidRequests.paymentId, payments.id))
+      .innerJoin(students, eq(payments.studentId, students.id))
+      .innerJoin(requestedByUser, eq(voidRequests.requestedBy, requestedByUser.id))
+      .where(eq(voidRequests.status, "pending"))
+      .orderBy(desc(voidRequests.requestedAt))
+      .limit(pageSize)
+      .offset(offset),
+  ]);
 
-  return results.map((r) => ({
+  const totalRecords = Number(countResult[0]?.count ?? 0);
+
+  const data = results.map((r) => ({
     id: r.id,
     paymentId: r.paymentId,
     orNumber: r.orNumber,
@@ -103,10 +101,16 @@ export async function listPendingVoidRequests(): Promise<PendingVoidRequest[]> {
     requestedByUsername: r.requestedByUsername,
     requestedAt: r.requestedAt.toISOString(),
   }));
+
+  return {
+    data,
+    pagination: calculatePagination(page, pageSize, totalRecords),
+  };
 }
 
 /**
  * Lists void request history (approved, rejected, cancelled).
+ * Converted from raw SQL to typed Drizzle query for better type safety.
  */
 export async function listVoidRequestHistory(opts: {
   limit?: number;
@@ -114,60 +118,53 @@ export async function listVoidRequestHistory(opts: {
 }): Promise<VoidRequestHistoryRow[]> {
   const { limit = 50, offset = 0 } = opts;
 
-  // Use aliases for the two user joins (requester and decider)
-  const rows = await db.execute(sql`
-    SELECT
-      vr.id,
-      vr.payment_id,
-      p.or_number,
-      p.amount,
-      s.first_name,
-      s.last_name,
-      s.reference_number as student_ref,
-      vr.status,
-      vr.request_reason,
-      vr.requested_at,
-      vr.decided_at,
-      vr.decision_remarks,
-      vr.cancelled_at,
-      req_user.username as requested_by_username,
-      dec_user.username as decided_by_username
-    FROM void_requests vr
-    INNER JOIN payments p ON vr.payment_id = p.id
-    INNER JOIN students s ON p.student_id = s.id
-    LEFT JOIN users req_user ON vr.requested_by = req_user.id
-    LEFT JOIN users dec_user ON vr.decided_by = dec_user.id
-    WHERE vr.status != 'pending'
-    ORDER BY COALESCE(vr.decided_at, vr.cancelled_at) DESC
-    LIMIT ${limit}
-    OFFSET ${offset}
-  `);
+  // Create aliases for the two user joins (requester and decider)
+  const requestedByUser = alias(users, "requested_by_user");
+  const decidedByUser = alias(users, "decided_by_user");
 
-  if (!rows || rows.length === 0) {
-    return [];
-  }
+  const rows = await db
+    .select({
+      id: voidRequests.id,
+      paymentId: voidRequests.paymentId,
+      orNumber: payments.orNumber,
+      amount: payments.amount,
+      studentFirstName: students.firstName,
+      studentLastName: students.lastName,
+      studentRef: students.referenceNumber,
+      status: voidRequests.status,
+      requestReason: voidRequests.requestReason,
+      requestedAt: voidRequests.requestedAt,
+      decidedAt: voidRequests.decidedAt,
+      decisionRemarks: voidRequests.decisionRemarks,
+      cancelledAt: voidRequests.cancelledAt,
+      requestedByUsername: requestedByUser.username,
+      decidedByUsername: decidedByUser.username,
+    })
+    .from(voidRequests)
+    .innerJoin(payments, eq(voidRequests.paymentId, payments.id))
+    .innerJoin(students, eq(payments.studentId, students.id))
+    .leftJoin(requestedByUser, eq(voidRequests.requestedBy, requestedByUser.id))
+    .leftJoin(decidedByUser, eq(voidRequests.decidedBy, decidedByUser.id))
+    .where(ne(voidRequests.status, "pending"))
+    .orderBy(desc(sql`COALESCE(${voidRequests.decidedAt}, ${voidRequests.cancelledAt})`))
+    .limit(limit)
+    .offset(offset);
 
-  return Array.from(rows).map((r: Record<string, unknown>) => ({
-    id: String(r.id),
-    paymentId: String(r.payment_id),
-    orNumber: r.or_number != null ? String(r.or_number) : null,
-    amount: String(r.amount),
-    studentName: `${r.last_name}, ${r.first_name}`,
-    studentRef: String(r.student_ref),
-    status: String(r.status),
-    requestReason: String(r.request_reason),
-    requestedByUsername: String(r.requested_by_username ?? "Unknown"),
-    requestedAt: r.requested_at instanceof Date
-      ? r.requested_at.toISOString()
-      : String(r.requested_at),
-    decidedByUsername: r.decided_by_username != null ? String(r.decided_by_username) : null,
-    decidedAt: r.decided_at != null
-      ? (r.decided_at instanceof Date ? r.decided_at.toISOString() : String(r.decided_at))
-      : null,
-    decisionRemarks: r.decision_remarks != null ? String(r.decision_remarks) : null,
-    cancelledAt: r.cancelled_at != null
-      ? (r.cancelled_at instanceof Date ? r.cancelled_at.toISOString() : String(r.cancelled_at))
-      : null,
+  return rows.map((r) => ({
+    id: r.id,
+    paymentId: r.paymentId,
+    orNumber: r.orNumber,
+    amount: r.amount,
+    studentName: `${r.studentLastName}, ${r.studentFirstName}`,
+    studentRef: r.studentRef,
+    status: r.status,
+    requestReason: r.requestReason,
+    requestedByUsername: r.requestedByUsername ?? "Unknown",
+    requestedAt: r.requestedAt.toISOString(),
+    decidedByUsername: r.decidedByUsername,
+    decidedAt: r.decidedAt?.toISOString() ?? null,
+    decisionRemarks: r.decisionRemarks,
+    cancelledAt: r.cancelledAt?.toISOString() ?? null,
   }));
 }
 
@@ -227,106 +224,161 @@ export async function countPendingVoidRequests(): Promise<number> {
 
 /**
  * Gets a single void request by ID with full details.
+ * Converted from raw SQL to typed Drizzle query for better type safety.
  */
-export async function getVoidRequestById(requestId: string) {
-  // Explicit column selection - excludes unused audit columns (reversalPaymentId)
-  const rows = await db.execute(sql`
-    SELECT
-      vr.id,
-      vr.payment_id,
-      vr.request_reason,
-      vr.status,
-      vr.requested_by,
-      vr.requested_at,
-      vr.decided_by,
-      vr.decided_at,
-      vr.decision_remarks,
-      vr.cancelled_at,
-      p.or_number,
-      p.amount,
-      p.payment_method,
-      p.payment_date,
-      p.status as payment_status,
-      s.id as student_id,
-      s.first_name as student_first_name,
-      s.last_name as student_last_name,
-      s.reference_number as student_ref,
-      a.id as assessment_id,
-      a.balance as assessment_balance,
-      req_user.username as requested_by_username,
-      dec_user.username as decided_by_username
-    FROM void_requests vr
-    INNER JOIN payments p ON vr.payment_id = p.id
-    INNER JOIN students s ON p.student_id = s.id
-    LEFT JOIN assessments a ON p.assessment_id = a.id
-    LEFT JOIN users req_user ON vr.requested_by = req_user.id
-    LEFT JOIN users dec_user ON vr.decided_by = dec_user.id
-    WHERE vr.id = ${requestId}
-    LIMIT 1
-  `);
+export async function getVoidRequestById(requestId: string): Promise<VoidRequestDetail | null> {
+  // Create aliases for the two user joins (requester and decider)
+  const requestedByUser = alias(users, "requested_by_user");
+  const decidedByUser = alias(users, "decided_by_user");
 
-  if (!rows || rows.length === 0) {
+  const [row] = await db
+    .select({
+      // Void request fields
+      id: voidRequests.id,
+      paymentId: voidRequests.paymentId,
+      requestReason: voidRequests.requestReason,
+      status: voidRequests.status,
+      requestedBy: voidRequests.requestedBy,
+      requestedAt: voidRequests.requestedAt,
+      decidedBy: voidRequests.decidedBy,
+      decidedAt: voidRequests.decidedAt,
+      decisionRemarks: voidRequests.decisionRemarks,
+      cancelledAt: voidRequests.cancelledAt,
+      // Payment fields
+      orNumber: payments.orNumber,
+      amount: payments.amount,
+      paymentMethod: payments.paymentMethod,
+      paymentDate: payments.paymentDate,
+      paymentStatus: payments.status,
+      // Student fields
+      studentId: students.id,
+      studentFirstName: students.firstName,
+      studentLastName: students.lastName,
+      studentRef: students.referenceNumber,
+      // Assessment fields
+      assessmentId: assessments.id,
+      assessmentBalance: assessments.balance,
+      // User fields
+      requestedByUsername: requestedByUser.username,
+      decidedByUsername: decidedByUser.username,
+    })
+    .from(voidRequests)
+    .innerJoin(payments, eq(voidRequests.paymentId, payments.id))
+    .innerJoin(students, eq(payments.studentId, students.id))
+    .leftJoin(assessments, eq(payments.assessmentId, assessments.id))
+    .leftJoin(requestedByUser, eq(voidRequests.requestedBy, requestedByUser.id))
+    .leftJoin(decidedByUser, eq(voidRequests.decidedBy, decidedByUser.id))
+    .where(eq(voidRequests.id, requestId))
+    .limit(1);
+
+  if (!row) {
     return null;
   }
 
-  return rows[0];
+  return {
+    id: row.id,
+    paymentId: row.paymentId,
+    requestReason: row.requestReason,
+    status: row.status,
+    requestedBy: row.requestedBy,
+    requestedAt: row.requestedAt,
+    decidedBy: row.decidedBy,
+    decidedAt: row.decidedAt,
+    decisionRemarks: row.decisionRemarks,
+    cancelledAt: row.cancelledAt,
+    orNumber: row.orNumber,
+    amount: row.amount,
+    paymentMethod: row.paymentMethod,
+    paymentDate: row.paymentDate,
+    paymentStatus: row.paymentStatus,
+    studentId: row.studentId,
+    studentFirstName: row.studentFirstName,
+    studentLastName: row.studentLastName,
+    studentRef: row.studentRef,
+    assessmentId: row.assessmentId,
+    assessmentBalance: row.assessmentBalance,
+    requestedByUsername: row.requestedByUsername,
+    decidedByUsername: row.decidedByUsername,
+  };
 }
 
 /**
- * Lists pending void requests for a specific user (their own requests).
+ * Lists pending void requests for a specific user (their own requests) with pagination.
+ * Converted from raw SQL to typed Drizzle query for better type safety.
  */
-export async function listMyPendingVoidRequests(userId: string): Promise<PendingVoidRequest[]> {
-  const rows = await db.execute(sql`
-    SELECT
-      vr.id,
-      vr.payment_id,
-      p.or_number,
-      p.amount,
-      p.payment_method,
-      p.payment_date,
-      s.id as student_id,
-      s.first_name,
-      s.last_name,
-      s.reference_number as student_ref,
-      vr.request_reason,
-      vr.requested_by,
-      u.username as requested_by_username,
-      vr.requested_at
-    FROM void_requests vr
-    INNER JOIN payments p ON vr.payment_id = p.id
-    INNER JOIN students s ON p.student_id = s.id
-    INNER JOIN users u ON vr.requested_by = u.id
-    WHERE vr.status = 'pending' AND vr.requested_by = ${userId}
-    ORDER BY vr.requested_at DESC
-  `);
+export async function listMyPendingVoidRequests(
+  userId: string,
+  params: Partial<PaginationParams> = {}
+): Promise<PaginatedResult<PendingVoidRequest>> {
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
+  const offset = calculateOffset(page, pageSize);
 
-  if (!rows || rows.length === 0) {
-    return [];
-  }
+  const whereCondition = and(
+    eq(voidRequests.status, "pending"),
+    eq(voidRequests.requestedBy, userId)
+  );
 
-  return Array.from(rows).map((r: Record<string, unknown>) => ({
-    id: String(r.id),
-    paymentId: String(r.payment_id),
-    orNumber: r.or_number != null ? String(r.or_number) : null,
-    amount: String(r.amount),
-    paymentMethod: String(r.payment_method),
-    paymentDate: r.payment_date instanceof Date
-      ? r.payment_date.toISOString()
-      : String(r.payment_date),
-    studentId: String(r.student_id),
-    studentName: `${r.last_name}, ${r.first_name}`,
-    studentRef: String(r.student_ref),
-    requestReason: String(r.request_reason),
-    requestedBy: String(r.requested_by),
-    requestedByUsername: String(r.requested_by_username),
-    requestedAt: r.requested_at instanceof Date
-      ? r.requested_at.toISOString()
-      : String(r.requested_at),
+  // Run count and data queries in parallel
+  const [countResult, rows] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(voidRequests)
+      .where(whereCondition),
+    db
+      .select({
+        id: voidRequests.id,
+        paymentId: voidRequests.paymentId,
+        orNumber: payments.orNumber,
+        amount: payments.amount,
+        paymentMethod: payments.paymentMethod,
+        paymentDate: payments.paymentDate,
+        studentId: students.id,
+        studentFirstName: students.firstName,
+        studentLastName: students.lastName,
+        studentRef: students.referenceNumber,
+        requestReason: voidRequests.requestReason,
+        requestedBy: voidRequests.requestedBy,
+        requestedByUsername: users.username,
+        requestedAt: voidRequests.requestedAt,
+      })
+      .from(voidRequests)
+      .innerJoin(payments, eq(voidRequests.paymentId, payments.id))
+      .innerJoin(students, eq(payments.studentId, students.id))
+      .innerJoin(users, eq(voidRequests.requestedBy, users.id))
+      .where(whereCondition)
+      .orderBy(desc(voidRequests.requestedAt))
+      .limit(pageSize)
+      .offset(offset),
+  ]);
+
+  const totalRecords = Number(countResult[0]?.count ?? 0);
+
+  const data = rows.map((r) => ({
+    id: r.id,
+    paymentId: r.paymentId,
+    orNumber: r.orNumber,
+    amount: r.amount,
+    paymentMethod: r.paymentMethod,
+    paymentDate: r.paymentDate.toISOString(),
+    studentId: r.studentId,
+    studentName: `${r.studentLastName}, ${r.studentFirstName}`,
+    studentRef: r.studentRef,
+    requestReason: r.requestReason,
+    requestedBy: r.requestedBy,
+    requestedByUsername: r.requestedByUsername,
+    requestedAt: r.requestedAt.toISOString(),
   }));
+
+  return {
+    data,
+    pagination: calculatePagination(page, pageSize, totalRecords),
+  };
 }
 
 /**
  * Lists void request history for a specific user (their own requests).
+ * Converted from raw SQL to typed Drizzle query for better type safety.
  */
 export async function listMyVoidRequestHistory(
   userId: string,
@@ -334,58 +386,57 @@ export async function listMyVoidRequestHistory(
 ): Promise<VoidRequestHistoryRow[]> {
   const { limit = 50, offset = 0 } = opts;
 
-  const rows = await db.execute(sql`
-    SELECT
-      vr.id,
-      vr.payment_id,
-      p.or_number,
-      p.amount,
-      s.first_name,
-      s.last_name,
-      s.reference_number as student_ref,
-      vr.status,
-      vr.request_reason,
-      vr.requested_at,
-      vr.decided_at,
-      vr.decision_remarks,
-      vr.cancelled_at,
-      req_user.username as requested_by_username,
-      dec_user.username as decided_by_username
-    FROM void_requests vr
-    INNER JOIN payments p ON vr.payment_id = p.id
-    INNER JOIN students s ON p.student_id = s.id
-    LEFT JOIN users req_user ON vr.requested_by = req_user.id
-    LEFT JOIN users dec_user ON vr.decided_by = dec_user.id
-    WHERE vr.status != 'pending' AND vr.requested_by = ${userId}
-    ORDER BY COALESCE(vr.decided_at, vr.cancelled_at) DESC
-    LIMIT ${limit}
-    OFFSET ${offset}
-  `);
+  // Create aliases for the two user joins (requester and decider)
+  const requestedByUser = alias(users, "requested_by_user");
+  const decidedByUser = alias(users, "decided_by_user");
 
-  if (!rows || rows.length === 0) {
-    return [];
-  }
+  const rows = await db
+    .select({
+      id: voidRequests.id,
+      paymentId: voidRequests.paymentId,
+      orNumber: payments.orNumber,
+      amount: payments.amount,
+      studentFirstName: students.firstName,
+      studentLastName: students.lastName,
+      studentRef: students.referenceNumber,
+      status: voidRequests.status,
+      requestReason: voidRequests.requestReason,
+      requestedAt: voidRequests.requestedAt,
+      decidedAt: voidRequests.decidedAt,
+      decisionRemarks: voidRequests.decisionRemarks,
+      cancelledAt: voidRequests.cancelledAt,
+      requestedByUsername: requestedByUser.username,
+      decidedByUsername: decidedByUser.username,
+    })
+    .from(voidRequests)
+    .innerJoin(payments, eq(voidRequests.paymentId, payments.id))
+    .innerJoin(students, eq(payments.studentId, students.id))
+    .leftJoin(requestedByUser, eq(voidRequests.requestedBy, requestedByUser.id))
+    .leftJoin(decidedByUser, eq(voidRequests.decidedBy, decidedByUser.id))
+    .where(
+      and(
+        ne(voidRequests.status, "pending"),
+        eq(voidRequests.requestedBy, userId)
+      )
+    )
+    .orderBy(desc(sql`COALESCE(${voidRequests.decidedAt}, ${voidRequests.cancelledAt})`))
+    .limit(limit)
+    .offset(offset);
 
-  return Array.from(rows).map((r: Record<string, unknown>) => ({
-    id: String(r.id),
-    paymentId: String(r.payment_id),
-    orNumber: r.or_number != null ? String(r.or_number) : null,
-    amount: String(r.amount),
-    studentName: `${r.last_name}, ${r.first_name}`,
-    studentRef: String(r.student_ref),
-    status: String(r.status),
-    requestReason: String(r.request_reason),
-    requestedByUsername: String(r.requested_by_username ?? "Unknown"),
-    requestedAt: r.requested_at instanceof Date
-      ? r.requested_at.toISOString()
-      : String(r.requested_at),
-    decidedByUsername: r.decided_by_username != null ? String(r.decided_by_username) : null,
-    decidedAt: r.decided_at != null
-      ? (r.decided_at instanceof Date ? r.decided_at.toISOString() : String(r.decided_at))
-      : null,
-    decisionRemarks: r.decision_remarks != null ? String(r.decision_remarks) : null,
-    cancelledAt: r.cancelled_at != null
-      ? (r.cancelled_at instanceof Date ? r.cancelled_at.toISOString() : String(r.cancelled_at))
-      : null,
+  return rows.map((r) => ({
+    id: r.id,
+    paymentId: r.paymentId,
+    orNumber: r.orNumber,
+    amount: r.amount,
+    studentName: `${r.studentLastName}, ${r.studentFirstName}`,
+    studentRef: r.studentRef,
+    status: r.status,
+    requestReason: r.requestReason,
+    requestedByUsername: r.requestedByUsername ?? "Unknown",
+    requestedAt: r.requestedAt.toISOString(),
+    decidedByUsername: r.decidedByUsername,
+    decidedAt: r.decidedAt?.toISOString() ?? null,
+    decisionRemarks: r.decisionRemarks,
+    cancelledAt: r.cancelledAt?.toISOString() ?? null,
   }));
 }

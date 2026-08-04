@@ -232,12 +232,13 @@ export async function getBfxSummary(params: {
  * Get all school years for the filter dropdown.
  */
 export async function getSchoolYearsForBfxReport(): Promise<
-  Array<{ id: string; label: string }>
+  Array<{ id: string; label: string; isActive: boolean }>
 > {
   const results = await db
     .select({
       id: schoolYears.id,
       label: schoolYears.label,
+      isActive: schoolYears.isActive,
     })
     .from(schoolYears)
     .orderBy(desc(schoolYears.startDate));

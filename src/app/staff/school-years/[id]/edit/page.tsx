@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { schoolYears } from "@/lib/db/schema";
+import { schoolYears, gradingPeriodSystems } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import EditSchoolYearForm from "@/features/school-years/components/EditSchoolYearForm";
+import type { GradingSystemType } from "@/lib/constants/grading-systems";
+import { isUndefinedTableError } from "@/lib/utils/pg-error";
+import { logger } from "@/lib/observability/logger";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -41,6 +44,28 @@ export default async function EditStaffSchoolYearPage({ params }: PageProps) {
 
   if (!schoolYear) notFound();
 
+  // Fetch grading system type separately (handles case where table doesn't exist yet)
+  let gradingSystemType: GradingSystemType = "quarterly";
+  try {
+    const gradingSystem = await db.query.gradingPeriodSystems.findFirst({
+      where: eq(gradingPeriodSystems.schoolYearId, id),
+      columns: { systemType: true },
+    });
+    if (gradingSystem?.systemType) {
+      gradingSystemType = gradingSystem.systemType as GradingSystemType;
+    }
+  } catch (error) {
+    // Only the "table not created yet" case is expected (migrations not applied) —
+    // keep the quarterly default silently. Connection, timeout, and permission
+    // failures must stay visible instead of hiding behind the fallback.
+    if (!isUndefinedTableError(error)) {
+      logger.error("[school-years] Failed to load grading system type", {
+        schoolYearId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -53,7 +78,11 @@ export default async function EditStaffSchoolYearPage({ params }: PageProps) {
         </Link>
       </div>
 
-      <EditSchoolYearForm schoolYear={schoolYear} redirectPath="/staff/school-years" />
+      <EditSchoolYearForm
+        schoolYear={schoolYear}
+        gradingSystemType={gradingSystemType}
+        redirectPath="/staff/school-years"
+      />
     </div>
   );
 }

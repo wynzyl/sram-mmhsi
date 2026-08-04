@@ -30,7 +30,7 @@ export default function WithdrawRequestButton({
 
   if (state.success) {
     return (
-      <span className="text-xs text-green-600">Request withdrawn</span>
+      <span className="text-xs text-success">Request withdrawn</span>
     );
   }
 

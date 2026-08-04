@@ -167,7 +167,7 @@ export async function seedSubjects(db: PostgresJsDatabase): Promise<void> {
           .insert(curriculums)
           .values({
             name: curriculumName,
-            status: "draft",
+            status: "published",
             version: 1,
             publishedAt: new Date(),
             publishedBy: systemUser.id,

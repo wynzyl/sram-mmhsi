@@ -31,27 +31,13 @@ import {
 import { logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
 import { logger } from "@/lib/observability/logger";
-import type { Role } from "@/lib/constants/roles";
-import { normalizeRole } from "@/lib/constants/roles";
+import { normalizeRole, ROLE_LANDING } from "@/lib/constants/roles";
 import {
   checkLoginRateLimits,
   recordLoginFailures,
   resetLoginRateLimits,
 } from "@/lib/security/rateLimit";
 import { extractClientIPForRateLimit, UNVERIFIED_IP_BUCKET } from "@/lib/security/ipExtraction";
-
-// ─── Role → Landing Page Map ──────────────────────────────────────────────────
-
-const ROLE_LANDING: Record<Role, string> = {
-  super_admin: "/admin/dashboard",
-  admin: "/admin/dashboard",
-  registrar: "/staff/dashboard",
-  finance_officer: "/staff/finance",
-  cashier: "/staff/payments",
-  teacher: "/staff/grades",
-  student: "/portal/dashboard",
-  parent_guardian: "/portal/dashboard",
-};
 
 // ─── Login Action ─────────────────────────────────────────────────────────────
 

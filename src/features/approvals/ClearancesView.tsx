@@ -68,11 +68,11 @@ export default async function ClearancesView() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <div className="rounded-full bg-green-100 p-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+            <div className="rounded-full bg-success/15 p-2">
+              <CheckCircle className="h-5 w-5 text-success" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success">
                 {clearedCount}
               </p>
               <p className="text-xs text-muted-foreground">Cleared</p>

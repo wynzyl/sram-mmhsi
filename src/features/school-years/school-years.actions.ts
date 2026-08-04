@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
-import { schoolYears, enrollments, registrations } from "@/lib/db/schema";
+import { schoolYears, enrollments, registrations, gradingPeriodSystems } from "@/lib/db/schema";
 import { eq, and, ilike, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -125,7 +125,7 @@ export async function updateSchoolYearAction(
     return { errors: result.errors };
   }
 
-  const { schoolYearId, ...updateData } = result.data;
+  const { schoolYearId, gradingSystemType, ...updateData } = result.data;
 
   // 3. Get existing school year
   const [existingSchoolYear] = await db
@@ -185,6 +185,33 @@ export async function updateSchoolYearAction(
         updatedAt: new Date(),
       })
       .where(eq(schoolYears.id, schoolYearId));
+
+    // 6b. Upsert grading system type if provided
+    if (gradingSystemType) {
+      try {
+        await db
+          .insert(gradingPeriodSystems)
+          .values({
+            schoolYearId,
+            systemType: gradingSystemType,
+            createdBy: session.userId,
+            updatedBy: session.userId,
+          })
+          .onConflictDoUpdate({
+            target: gradingPeriodSystems.schoolYearId,
+            set: {
+              systemType: gradingSystemType,
+              updatedBy: session.userId,
+              updatedAt: new Date(),
+            },
+          });
+      } catch (e) {
+        // Table may not exist yet - migrations not applied
+        logger.warn("[school_years] Could not save grading system type - table may not exist", {
+          error: String(e),
+        });
+      }
+    }
 
     // 7. Audit log
     await logUpdateAction(

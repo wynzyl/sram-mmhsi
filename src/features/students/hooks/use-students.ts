@@ -7,7 +7,7 @@ import {
   keepPreviousData,
 } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
-import { schoolYearFreshness } from "@/lib/query/staleness";
+import { schoolYearFreshness, STANDARD_STALE_TIME } from "@/lib/query/staleness";
 import { useActiveSchoolYearId } from "@/components/providers/ActiveSchoolYearProvider";
 import { createStudentAction, updateStudentAction } from "../students.actions";
 import type {
@@ -128,7 +128,7 @@ export function useStudent(studentId: string | null) {
       return res.json();
     },
     enabled: !!studentId,
-    staleTime: 60 * 1000,
+    staleTime: STANDARD_STALE_TIME,
   });
 }
 

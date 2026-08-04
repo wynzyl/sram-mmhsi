@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { decryptSessionJwt, SESSION_COOKIE_NAME, SESSION_INVALID_PARAM } from "@/lib/auth/session-token";
-import type { Role } from "@/lib/constants/roles";
-import { ROLES, STAFF_ROLES, PORTAL_ROLES, normalizeRole } from "@/lib/constants/roles";
+import { ROLES, STAFF_ROLES, PORTAL_ROLES, ROLE_LANDING, normalizeRole } from "@/lib/constants/roles";
 
 // Header name for request correlation ID (used for distributed tracing)
 const CORRELATION_ID_HEADER = "x-correlation-id";
@@ -18,17 +17,6 @@ const STAFF_PREFIXES = ["/admin", "/staff"];
 const PORTAL_PREFIXES = ["/portal"];
 
 const ADMIN_PREFIXES = ["/admin"];
-
-const ROLE_LANDING: Record<Role, string> = {
-  super_admin: "/admin/dashboard",
-  admin: "/admin/dashboard",
-  registrar: "/staff/dashboard",
-  finance_officer: "/staff/finance",
-  cashier: "/staff/payments",
-  teacher: "/staff/grades",
-  student: "/portal/dashboard",
-  parent_guardian: "/portal/dashboard",
-};
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;

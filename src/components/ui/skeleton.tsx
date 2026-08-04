@@ -70,7 +70,7 @@ export function SkeletonTableRow({
 }: React.HTMLAttributes<HTMLDivElement> & { columns?: number }) {
   return (
     <div
-      className={cn("flex items-center gap-4 p-4 border-b border-border", className)}
+      className={cn("flex-row-4 p-4 border-b border-border", className)}
       {...props}
     >
       {Array.from({ length: columns }).map((_, i) => (
@@ -98,7 +98,7 @@ export function SkeletonTable({
       {...props}
     >
       {/* Header */}
-      <div className="flex items-center gap-4 p-4 bg-card border-b border-border">
+      <div className="flex-row-4 p-4 bg-card border-b border-border">
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton key={i} className={cn("h-4 flex-1", i === 0 && "w-24 flex-none")} />
         ))}
@@ -138,7 +138,7 @@ export function SkeletonFilterBar({
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & { tabs?: number }) {
   return (
-    <div className={cn("flex items-center gap-2", className)} {...props}>
+    <div className={cn("flex-row-2", className)} {...props}>
       {Array.from({ length: tabs }).map((_, i) => (
         <Skeleton key={i} className="h-9 w-24 rounded-md" />
       ))}

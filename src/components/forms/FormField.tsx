@@ -20,7 +20,7 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
         </label>
         {children}
         {hint && !errorText && (
-          <p className="text-xs text-muted-foreground">{hint}</p>
+          <p className="text-helper">{hint}</p>
         )}
         {errorText && (
           <p className="text-xs text-destructive font-medium">{errorText}</p>

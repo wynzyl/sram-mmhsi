@@ -7,6 +7,7 @@ import {
   getDocumentRequestsSummary,
   getSchoolYearOptions,
 } from "@/features/documents/document-requests.queries";
+import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import { DocumentRequestsTable } from "@/features/documents/components/DocumentRequestsTable";
 import { DocumentRequestFilters } from "@/features/documents/components/DocumentRequestFilters";
 import { TablePagination } from "@/components/ui/TablePagination";
@@ -43,9 +44,13 @@ export default async function DocumentRequestsPage({
   const page = parseInt(params.page || "1", 10);
   const status = params.status as DocumentRequestStatus | undefined;
   const documentType = params.type as DocumentRequestType | undefined;
-  const schoolYearId = params.sy;
   const search = params.q;
   const studentId = params.studentId;
+
+  // Fetch active school year ID for default selection
+  const activeSchoolYearId = await getActiveSchoolYearId();
+  // Default to active school year if no filter specified
+  const schoolYearId = params.sy ?? activeSchoolYearId ?? undefined;
 
   // Fetch data
   const [requestsData, summary, schoolYearOptions] = await Promise.all([
@@ -62,71 +67,87 @@ export default async function DocumentRequestsPage({
     getSchoolYearOptions(),
   ]);
 
+  const pendingCount = summary.byStatus.requested + summary.byStatus.processing;
+
   return (
-    <div className="mx-auto max-w-7xl p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <nav className="mb-2 text-sm text-muted-foreground">
-          <Link href="/staff/archive" className="hover:text-primary">
-            Archive
-          </Link>
-          <span className="mx-2">/</span>
-          <span>Document Requests</span>
-        </nav>
-        <h1 className="text-2xl font-bold">Document Requests</h1>
-        <p className="mt-1 text-muted-foreground">
-          Manage requests for official school documents from students and alumni.
+    <div className="page-container--full space-y-6">
+      {/* Breadcrumb */}
+      <nav className="text-sm text-muted-foreground">
+        <Link href="/staff/archive" className="hover:text-primary">
+          Archive
+        </Link>
+        <span className="mx-2">/</span>
+        <span>Document Requests</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Document Requests
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Manage requests for official school documents from students and alumni
         </p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard
-          label="Pending"
-          count={summary.byStatus.requested + summary.byStatus.processing}
-          color="amber"
-        />
-        <SummaryCard
-          label="Ready for Release"
-          count={summary.byStatus.ready}
-          color="blue"
-        />
-        <SummaryCard
-          label="Released"
-          count={summary.byStatus.released}
-          color="green"
-        />
-        <SummaryCard
-          label="Total Requests"
-          count={summary.total}
-          color="gray"
-        />
-      </div>
+      {/* Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="documents-heading"
+      >
+        {/* Card Header with gradient effect */}
+        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          {/* Left: Title + Stats Badges */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2
+              id="documents-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+            >
+              Request Queue
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+              {summary.total} Total
+            </span>
+            {pendingCount > 0 && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                {pendingCount} Pending
+              </span>
+            )}
+            {summary.byStatus.ready > 0 && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                {summary.byStatus.ready} Ready
+              </span>
+            )}
+          </div>
 
-      {/* Filters */}
-      <div className="mb-6 rounded-lg border bg-card p-4">
-        <DocumentRequestFilters schoolYearOptions={schoolYearOptions} />
-      </div>
+          {/* Right: Inline Filters */}
+          <DocumentRequestFilters
+            schoolYearOptions={schoolYearOptions}
+            defaultSchoolYearId={schoolYearId}
+            inline
+          />
+        </div>
 
-      {/* Table */}
-      <div className="rounded-lg border bg-card">
+        {/* Table Content */}
         <DocumentRequestsTable
           rows={requestsData.rows}
           emptyMessage="No document requests found matching your criteria."
         />
-      </div>
 
-      {/* Pagination */}
-      <div className="mt-4">
-        <TablePagination
-          currentPage={requestsData.currentPage}
-          totalPages={requestsData.totalPages}
-          totalRecords={requestsData.totalCount}
-          pageSize={25}
-          baseUrl={buildBaseUrl(params)}
-          itemLabel="requests"
-        />
-      </div>
+        {/* Pagination */}
+        {requestsData.totalCount > 0 && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              currentPage={requestsData.currentPage}
+              totalPages={requestsData.totalPages}
+              totalRecords={requestsData.totalCount}
+              pageSize={25}
+              baseUrl={buildBaseUrl({ ...params, sy: schoolYearId })}
+              itemLabel="requests"
+            />
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -148,34 +169,4 @@ function buildBaseUrl(params: {
   return `/staff/archive/documents${qs ? `?${qs}` : ""}`;
 }
 
-function SummaryCard({
-  label,
-  count,
-  color,
-}: {
-  label: string;
-  count: number;
-  color: "amber" | "blue" | "green" | "gray";
-}) {
-  const colorClasses = {
-    amber: "bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800",
-    blue: "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800",
-    green: "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800",
-    gray: "bg-muted border-border",
-  };
-
-  const textClasses = {
-    amber: "text-amber-700 dark:text-amber-300",
-    blue: "text-blue-700 dark:text-blue-300",
-    green: "text-green-700 dark:text-green-300",
-    gray: "text-foreground",
-  };
-
-  return (
-    <div className={`rounded-lg border p-4 ${colorClasses[color]}`}>
-      <p className="text-sm font-medium text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${textClasses[color]}`}>{count}</p>
-    </div>
-  );
-}
 

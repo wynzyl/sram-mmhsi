@@ -19,6 +19,7 @@ import {
 } from "./shared/report-format";
 import {
   PAYMENT_METHOD_LABELS,
+  USAGE_MODE_LABELS,
   type PaymentCollectionRow,
   type PaymentCollectionSummary,
 } from "./payment-collection-report.types";
@@ -35,6 +36,11 @@ const SHEET_NAME = "Payment Collection";
 
 function methodLabel(method: string): string {
   return PAYMENT_METHOD_LABELS[method] ?? method;
+}
+
+function modeLabel(mode: string | null): string {
+  if (!mode) return "—";
+  return USAGE_MODE_LABELS[mode] ?? mode;
 }
 
 function buildSummaryItems(
@@ -54,23 +60,24 @@ function buildSummaryItems(
 // ─── PDF (Track 1) ─────────────────────────────────────────────────────────────
 
 const pdfColumns: ReportColumn<PaymentCollectionRow>[] = [
-  { header: "OR #", width: "13%", mono: true, cell: (r) => r.orNumber || "—" },
-  { header: "Date", width: "13%", cell: (r) => reportDate(r.collectionDate) },
+  { header: "OR #", width: "12%", mono: true, cell: (r) => r.orNumber || "—" },
+  { header: "Date", width: "11%", cell: (r) => reportDate(r.collectionDate) },
   {
     header: "Student",
-    width: "26%",
+    width: "24%",
     cell: (r) => r.studentName,
     subCell: (r) => r.studentRef,
   },
-  { header: "Grade", width: "12%", cell: (r) => r.gradeLevel },
+  { header: "Grade", width: "10%", cell: (r) => r.gradeLevel },
   {
     header: "Amount",
-    width: "12%",
+    width: "11%",
     align: "right",
     cell: (r) => pesoText(r.amount),
   },
-  { header: "Method", width: "14%", cell: (r) => methodLabel(r.paymentMethod) },
-  { header: "Processed By", width: "10%", cell: (r) => r.processedBy },
+  { header: "Method", width: "11%", cell: (r) => methodLabel(r.paymentMethod) },
+  { header: "Mode", width: "8%", align: "center", cell: (r) => modeLabel(r.usageMode) },
+  { header: "Processed By", width: "13%", cell: (r) => r.processedBy },
 ];
 
 export function PaymentCollectionPdfDocument({
@@ -113,6 +120,7 @@ const xlsxColumns: XlsxColumn<PaymentCollectionRow>[] = [
     value: (r) => pesoNumber(r.amount),
   },
   { header: "Method", width: 14, value: (r) => methodLabel(r.paymentMethod) },
+  { header: "Mode", width: 10, align: "center", value: (r) => modeLabel(r.usageMode) },
   { header: "Reference", width: 16, value: (r) => r.referenceNumber ?? "" },
   { header: "Processed By", width: 16, value: (r) => r.processedBy },
 ];

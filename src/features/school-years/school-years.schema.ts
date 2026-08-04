@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { BaseFormState } from "@/lib/validators/common-schemas";
+import { GRADING_SYSTEM_TYPES } from "@/lib/constants/grading-systems";
 
 // ─── Create School Year Schema ───────────────────────────────────────────────
 
@@ -76,6 +77,8 @@ export const UpdateSchoolYearSchema = z
       .string()
       .optional()
       .transform((v) => (v ? new Date(v) : undefined)),
+    /** Grading system type: quarterly (Q1-Q4) or trimester (T1-T3). */
+    gradingSystemType: z.enum(GRADING_SYSTEM_TYPES).optional(),
   })
   .refine((data) => data.endDate > data.startDate, {
     message: "End date must be after start date.",

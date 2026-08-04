@@ -32,7 +32,7 @@ export default function CancellationRequestsTable({
         cell: ({ row }) => (
           <div>
             <div className="font-medium">{row.original.studentName}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-helper">
               <ReferenceCode code={row.original.studentRef} />
             </div>
           </div>
@@ -44,7 +44,7 @@ export default function CancellationRequestsTable({
         cell: ({ row }) => (
           <div className="text-sm">
             <div>{row.original.gradeLevelName}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-helper">
               {row.original.schoolYearLabel}
             </div>
           </div>
@@ -75,7 +75,7 @@ export default function CancellationRequestsTable({
         cell: ({ row }) => (
           <div className="text-sm">
             <div>{row.original.requestedByName}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-helper">
               {formatDate(row.original.requestedAt)}
             </div>
           </div>

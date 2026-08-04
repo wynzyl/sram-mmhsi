@@ -2,9 +2,18 @@
 
 > Per SRAMS Engineering spec §16 — Delivery Procedure
 
-> Last sync: 2026-07-14
+> Last sync: 2026-07-21
 
-### Current update highlights (2026-07-14)
+### Current update highlights (2026-07-21)
+- **Academics Module Optimization complete** — Comprehensive review and optimization of Curriculum, Subjects, Teacher/Adviser Assignments, and Grades modules. All critical and high-priority performance issues resolved.
+- **Query Performance Improvements** — Fixed N+1 audit user queries (3 queries → 1 with LEFT JOINs), optimized period completion check (N queries → 1 aggregated query), added EXISTS subquery for grade level filtering (post-query → SQL-level), pagination support for teacher assignments.
+- **Grade Completion Validation** — Server-side `validateGradeSheetCompleteness()` prevents incomplete grade sheet submission; client-side validation disables submit button with "X missing" message.
+- **Sequential Period Locking** — `validatePreviousPeriodsSubmitted()` enforces Q1→Q2→Q3→Q4 order; grade sheets cannot be submitted until previous periods are approved.
+- **AlertDialog Accessibility** — Replaced browser `confirm()` with Shadcn/ui `AlertDialog` for WCAG compliance in grade submission confirmation.
+- **Form Pattern Consistency** — Removed redundant inline error displays in favor of `useFormToast` pattern across curriculum/adviser forms.
+- **Documentation** — Updated CLAUDE.md grade encoding workflow to document adviser-based grade sheets as primary system; teacher assignment workflow marked as legacy.
+
+### Previous highlights (2026-07-14)
 - **Full payment cash discount in CashierPaymentProcessingView** — Cash discount eligibility check and preview card integrated into the main cashier payment modal. When full balance is entered, API checks eligibility, `CashDiscountPreviewCard` displays discount breakdown (base amount, discount value, new balance, amount to collect), and cashier can apply with one click. Server processes via `applyCashDiscount` hidden field.
 
 ### Previous highlights (2026-07-08)
@@ -176,13 +185,31 @@
 ---
 
 ## Phase 8 — Grade Encoding
-**Status: ✅ Complete**
+**Status: ✅ Complete (Enhanced with adviser-based workflow)**
 
+**Primary Workflow: Adviser-Based Grade Sheets**
+- [x] Section adviser assignment management — `/staff/academics/advisers`
+- [x] Adviser grade entry grid — all subjects per student per period at `/staff/grades/adviser/sections/[sectionId]`
+- [x] Grade sheet workflow: `draft` → `submitted` → `approved`/`returned`
+- [x] Client-side completion validation — prevents submission of incomplete sheets (X/Y grades entered)
+- [x] Server-side completion validation — `validateGradeSheetCompleteness()` blocks incomplete submissions
+- [x] Sequential period locking — Q2 cannot be submitted until Q1 is approved (`validatePreviousPeriodsSubmitted()`)
+- [x] Principal review workflow — approve or return sheets for revision
+- [x] AlertDialog confirmation — WCAG-compliant submission confirmation (replaces browser `confirm()`)
+- [x] Audit events: grade sheet created/submitted/approved/returned
+
+**Legacy: Teacher Assignment Workflow**
 - [x] Teacher assignment management (Admin) — `actions/academics.ts`, assignment pages
-- [x] Grade entry per assigned class/subject/period (Teacher) — `/staff/grades`, `components/academics/GradeEncodingTable.tsx`, `actions/teacher.ts`
+- [x] Grade entry per assigned class/subject/period (Teacher) — `/staff/grades`, `components/academics/GradeEncodingTable.tsx`
 - [x] Grade submission and lock workflow (draft → submitted → locked)
 - [x] Grade period locking (Admin-only unlock)
 - [x] Audit events: grade saved/submitted/locked
+
+**Performance Optimizations (2026-07-21)**
+- [x] N+1 audit user queries fixed — 3 queries → 1 query with LEFT JOINs
+- [x] Period completion query optimized — N queries → 1 aggregated query
+- [x] Server-side pagination ready — `getPaginatedTeacherAssignments()`
+- [x] Grade level filtering moved to SQL — EXISTS subquery replaces post-query filter
 
 ---
 

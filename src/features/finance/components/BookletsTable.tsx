@@ -216,7 +216,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
         cell: ({ row }) => {
           const username = row.original.assignedToUsername;
           if (!username) {
-            return <span className="text-sm text-muted-foreground">—</span>;
+            return <span className="text-secondary">—</span>;
           }
           return (
             <span className="inline-flex items-center rounded-md border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-300">
@@ -230,7 +230,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
         id: "dateIssued",
         accessorKey: "createdAt",
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-secondary">
             {formatDate(row.original.createdAt, {
               year: "numeric",
               month: "short",
@@ -277,7 +277,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
           <h2 className="font-display text-3xl text-foreground">
             Active Booklets
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex-row-2">
             <button
               type="button"
               className="flex items-center justify-center w-8 h-8 text-muted-foreground bg-transparent border-none rounded-md cursor-pointer transition-colors hover:text-foreground hover:bg-muted"

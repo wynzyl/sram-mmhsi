@@ -14,7 +14,7 @@ interface ToggleSwitchProps {
   /** Optional description text below the label */
   description?: string;
   /** Custom color when checked (default: primary) */
-  checkedColor?: "primary" | "green" | "blue" | "amber";
+  checkedColor?: "primary" | "success" | "blue" | "amber";
   /** Whether the toggle is disabled */
   disabled?: boolean;
   /** Optional id for the toggle button */
@@ -23,7 +23,7 @@ interface ToggleSwitchProps {
 
 const colorClasses = {
   primary: "bg-primary border-primary",
-  green: "bg-green-500 border-green-500",
+  success: "bg-success border-success",
   blue: "bg-blue-500 border-blue-500",
   amber: "bg-amber-500 border-amber-500",
 } as const;

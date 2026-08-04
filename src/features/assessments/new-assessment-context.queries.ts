@@ -184,7 +184,6 @@ export async function loadNewAssessmentPageContext(
       .select({
         firstName: parentsGuardians.firstName,
         lastName: parentsGuardians.lastName,
-        isPrimary: studentGuardianLinks.isPrimary,
       })
       .from(studentGuardianLinks)
       .innerJoin(parentsGuardians, eq(studentGuardianLinks.guardianId, parentsGuardians.id))

@@ -346,7 +346,7 @@ function TimelineItem({
   variant?: "default" | "destructive" | "muted";
 }) {
   const dotColor = {
-    default: completed ? "bg-green-500" : "bg-muted",
+    default: completed ? "bg-success" : "bg-muted",
     destructive: "bg-destructive",
     muted: "bg-muted-foreground",
   };

@@ -50,11 +50,11 @@ export default function StudentClearanceCard({
           <div className="space-y-4">
             {/* Summary Stats */}
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-md bg-green-50 p-2">
-                <p className="text-lg font-semibold text-green-600">
+              <div className="rounded-md bg-success/10 p-2">
+                <p className="text-lg font-semibold text-success">
                   {summary.clearedCount}
                 </p>
-                <p className="text-xs text-green-700">Cleared</p>
+                <p className="text-xs text-success">Cleared</p>
               </div>
               <div className="rounded-md bg-amber-50 p-2">
                 <p className="text-lg font-semibold text-amber-600">

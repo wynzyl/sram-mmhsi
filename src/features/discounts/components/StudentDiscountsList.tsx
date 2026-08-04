@@ -117,19 +117,19 @@ export default function StudentDiscountsList({
                 className="p-3 bg-muted rounded-lg flex justify-between items-start"
               >
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex-row-2">
                     <span className="font-medium">
                       {discount.discountTypeName}
                     </span>
                     <Badge variant="success">Active</Badge>
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1">
+                  <div className="text-secondary mt-1">
                     {formatDiscountValue(discount)} {formatBaseInfo(discount)}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-helper mt-1">
                     Base: <CurrencyDisplay amount={Number(discount.baseAmount)} className="inline" />
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-helper">
                     Applied {formatDate(discount.appliedAt, { year: "numeric", month: "numeric", day: "numeric" })} by{" "}
                     {discount.appliedByName}
                   </div>
@@ -143,7 +143,7 @@ export default function StudentDiscountsList({
                     />
                   </div>
                   {isReversalCounter(discount) && (
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-helper mt-1">
                       added back to balance
                     </div>
                   )}
@@ -177,22 +177,22 @@ export default function StudentDiscountsList({
                 className="p-3 bg-card rounded-lg opacity-70 flex justify-between items-start"
               >
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex-row-2">
                     <span className="font-medium line-through">
                       {discount.discountTypeName}
                     </span>
                     <Badge variant="danger">Reversed</Badge>
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1 line-through">
+                  <div className="text-secondary mt-1 line-through">
                     {formatDiscountValue(discount)} {formatBaseInfo(discount)}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-helper mt-1">
                     Reversed{" "}
                     {formatDate(discount.reversedAt!, { year: "numeric", month: "numeric", day: "numeric" })}
                     {discount.reversedByName && ` by ${discount.reversedByName}`}
                   </div>
                   {discount.reversalRemarks && (
-                    <div className="text-xs text-muted-foreground italic mt-1">
+                    <div className="text-helper italic mt-1">
                       Reason: {discount.reversalRemarks}
                     </div>
                   )}
@@ -205,7 +205,7 @@ export default function StudentDiscountsList({
                     </a>
                   )}
                   {!canRequest && !discount.hasReplacement && requestBlockReason && (
-                    <div className="mt-2 text-xs text-muted-foreground italic">
+                    <div className="mt-2 text-helper italic">
                       {requestBlockReason}
                     </div>
                   )}
@@ -223,7 +223,7 @@ export default function StudentDiscountsList({
                       className="inline"
                     />
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-helper mt-1">
                     offset above
                   </div>
                 </div>
@@ -248,7 +248,7 @@ export default function StudentDiscountsList({
         <div className="pt-3 border-t border-border space-y-1">
           {discountTotals.reversalOffsets > 0 && (
             <>
-              <div className="flex justify-between items-center text-sm text-muted-foreground">
+              <div className="flex justify-between items-center text-secondary">
                 <span>Gross discounts</span>
                 <span className="font-[family-name:var(--font-mono)]">
                   −
@@ -258,7 +258,7 @@ export default function StudentDiscountsList({
                   />
                 </span>
               </div>
-              <div className="flex justify-between items-center text-sm text-muted-foreground">
+              <div className="flex justify-between items-center text-secondary">
                 <span>Reversal offsets</span>
                 <span className="font-[family-name:var(--font-mono)]">
                   +

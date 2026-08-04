@@ -248,7 +248,7 @@ export async function InternalInvoiceDetailPage(props: {
                   : formatCurrency(Number(invoice.amountDue))}
               </span>
               {invoice.currentBalance != null && Number(invoice.currentBalance) <= 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-semibold uppercase tracking-wide text-green-600 bg-green-600/10 border border-green-600/30">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-semibold uppercase tracking-wide text-success bg-success/10 border border-success/30">
                   Fully Paid
                 </span>
               )}

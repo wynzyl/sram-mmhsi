@@ -33,3 +33,33 @@ export function isUndefinedColumnError(err: unknown): boolean {
     t.includes("undefined_column")
   );
 }
+
+/** Missing table / undefined_table (42P01) — usually migration not applied. */
+export function isUndefinedTableError(err: unknown): boolean {
+  const t = collectPgErrorText(err).toLowerCase();
+  return (
+    t.includes("42p01") ||
+    (t.includes("relation") && t.includes("does not exist")) ||
+    t.includes("undefined_table")
+  );
+}
+
+/** Unique-constraint violation (23505 / unique_violation). */
+export function isUniqueViolationError(err: unknown): boolean {
+  const t = collectPgErrorText(err).toLowerCase();
+  return (
+    t.includes("23505") ||
+    t.includes("duplicate key") ||
+    t.includes("unique_violation")
+  );
+}
+
+/** Foreign-key violation (23503 / foreign_key_violation). */
+export function isForeignKeyViolationError(err: unknown): boolean {
+  const t = collectPgErrorText(err).toLowerCase();
+  return (
+    t.includes("23503") ||
+    t.includes("foreign key") ||
+    t.includes("foreign_key_violation")
+  );
+}

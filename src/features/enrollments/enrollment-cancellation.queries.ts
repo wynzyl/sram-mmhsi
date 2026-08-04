@@ -13,6 +13,7 @@ import {
   systemSettings,
 } from "@/lib/db/schema";
 import { eq, and, isNull, desc, sql, inArray } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import {
   type PaginationParams,
   type PaginatedResult,
@@ -21,53 +22,23 @@ import {
 } from "@/lib/types/pagination";
 import type { CancellationReason } from "@/lib/constants/cancellation-reasons";
 
-// ─── Type Definitions ─────────────────────────────────────────────────────────
+// ─── Type Definitions (re-exported from enrollment-cancellation.types.ts) ─────
 
-export type CancellationRequestListItem = {
-  id: string;
-  enrollmentId: string;
-  studentId: string;
-  studentRef: string;
-  studentName: string;
-  gradeLevelName: string;
-  schoolYearLabel: string;
-  reasonType: CancellationReason;
-  remarks: string | null;
-  status: "pending" | "approved" | "rejected" | "cancelled";
-  requestedAt: Date;
-  requestedByName: string;
-  reviewedAt: Date | null;
-  reviewedByName: string | null;
-};
+export type {
+  CancellationRequestListItem,
+  CancellationRequestDetail,
+  RefundCalculation,
+  PendingCancellationInfo,
+  EnrollmentForCancellation,
+  CancellationRequestForValidation,
+  CancellationHistoryItem,
+} from "./enrollment-cancellation.types";
 
-export type CancellationRequestDetail = CancellationRequestListItem & {
-  enrollmentStatus: "pending" | "assessed" | "enrolled" | "cancelled";
-  reviewRemarks: string | null;
-  // Assessment info (if exists)
-  assessment: {
-    id: string;
-    totalAmount: string;
-    totalPaid: string;
-    balance: string;
-    billingStatus: string;
-  } | null;
-  // Refund calculation preview (computed)
-  refundPreview: RefundCalculation | null;
-};
-
-export type RefundCalculation = {
-  isEligibleForRefund: boolean;
-  cutoffDate: Date;
-  refundableAmount: number;
-  nonRefundableAmount: number;
-  totalPaid: number;
-  itemBreakdown: Array<{
-    description: string;
-    paidAmount: number;
-    isRefundable: boolean;
-    willRefund: boolean;
-  }>;
-};
+import type {
+  CancellationRequestListItem,
+  CancellationRequestDetail,
+  RefundCalculation,
+} from "./enrollment-cancellation.types";
 
 // ─── System Settings Queries ──────────────────────────────────────────────────
 
@@ -230,6 +201,7 @@ export async function getPendingCancellationRequest(
   remarks: string | null;
   requestedByName: string;
 } | null> {
+  // Single query with JOIN to get user name (fixes N+1)
   const [result] = await db
     .select({
       id: enrollmentCancellationRequests.id,
@@ -237,8 +209,10 @@ export async function getPendingCancellationRequest(
       requestedAt: enrollmentCancellationRequests.requestedAt,
       reasonType: enrollmentCancellationRequests.reasonType,
       remarks: enrollmentCancellationRequests.remarks,
+      requestedByName: users.username,
     })
     .from(enrollmentCancellationRequests)
+    .leftJoin(users, eq(enrollmentCancellationRequests.requestedBy, users.id))
     .where(
       and(
         eq(enrollmentCancellationRequests.enrollmentId, enrollmentId),
@@ -250,16 +224,13 @@ export async function getPendingCancellationRequest(
 
   if (!result) return null;
 
-  // Get user name
-  const [user] = await db
-    .select({ username: users.username })
-    .from(users)
-    .where(eq(users.id, result.requestedBy))
-    .limit(1);
-
   return {
-    ...result,
-    requestedByName: user?.username ?? "Unknown",
+    id: result.id,
+    requestedBy: result.requestedBy,
+    requestedAt: result.requestedAt,
+    reasonType: result.reasonType,
+    remarks: result.remarks,
+    requestedByName: result.requestedByName ?? "Unknown",
   };
 }
 
@@ -288,6 +259,10 @@ export async function getCancellationRequests(
     conditions.push(eq(enrollments.schoolYearId, filters.schoolYearId));
   }
 
+  // Create aliases for user joins (requestedBy and reviewedBy are different users)
+  const requestedByUser = alias(users, "requested_by_user");
+  const reviewedByUser = alias(users, "reviewed_by_user");
+
   // Get total count
   const [countResult] = await db
     .select({ count: sql<number>`count(*)` })
@@ -297,7 +272,7 @@ export async function getCancellationRequests(
 
   const totalRecords = Number(countResult?.count || 0);
 
-  // Get paginated data with joins
+  // Get paginated data with joins (single query, no N+1)
   const rows = await db
     .select({
       id: enrollmentCancellationRequests.id,
@@ -312,36 +287,21 @@ export async function getCancellationRequests(
       remarks: enrollmentCancellationRequests.remarks,
       status: enrollmentCancellationRequests.status,
       requestedAt: enrollmentCancellationRequests.requestedAt,
-      requestedBy: enrollmentCancellationRequests.requestedBy,
       reviewedAt: enrollmentCancellationRequests.reviewedAt,
-      reviewedBy: enrollmentCancellationRequests.reviewedBy,
+      requestedByName: requestedByUser.username,
+      reviewedByName: reviewedByUser.username,
     })
     .from(enrollmentCancellationRequests)
     .innerJoin(enrollments, eq(enrollmentCancellationRequests.enrollmentId, enrollments.id))
     .innerJoin(students, eq(enrollments.studentId, students.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .leftJoin(requestedByUser, eq(enrollmentCancellationRequests.requestedBy, requestedByUser.id))
+    .leftJoin(reviewedByUser, eq(enrollmentCancellationRequests.reviewedBy, reviewedByUser.id))
     .where(and(...conditions))
     .orderBy(desc(enrollmentCancellationRequests.requestedAt))
     .limit(params.pageSize)
     .offset(offset);
-
-  // Fetch user names for requestedBy and reviewedBy
-  const userIds = new Set<string>();
-  rows.forEach((r) => {
-    userIds.add(r.requestedBy);
-    if (r.reviewedBy) userIds.add(r.reviewedBy);
-  });
-
-  const userNames = new Map<string, string>();
-  if (userIds.size > 0) {
-    const usersData = await db
-      .select({ id: users.id, username: users.username })
-      .from(users)
-      .where(inArray(users.id, Array.from(userIds)));
-
-    usersData.forEach((u) => userNames.set(u.id, u.username));
-  }
 
   const data: CancellationRequestListItem[] = rows.map((r) => ({
     id: r.id,
@@ -355,9 +315,9 @@ export async function getCancellationRequests(
     remarks: r.remarks,
     status: r.status as "pending" | "approved" | "rejected" | "cancelled",
     requestedAt: r.requestedAt,
-    requestedByName: userNames.get(r.requestedBy) ?? "Unknown",
+    requestedByName: r.requestedByName ?? "Unknown",
     reviewedAt: r.reviewedAt,
-    reviewedByName: r.reviewedBy ? userNames.get(r.reviewedBy) ?? "Unknown" : null,
+    reviewedByName: r.reviewedByName ?? null,
   }));
 
   return {
@@ -389,6 +349,11 @@ export async function getPendingCancellationRequestsCount(): Promise<number> {
 export async function getCancellationRequestById(
   requestId: string
 ): Promise<CancellationRequestDetail | null> {
+  // Create aliases for user joins
+  const requestedByUser = alias(users, "requested_by_user");
+  const reviewedByUser = alias(users, "reviewed_by_user");
+
+  // Single query with JOINs for user names (fixes N+1)
   const [row] = await db
     .select({
       id: enrollmentCancellationRequests.id,
@@ -403,17 +368,19 @@ export async function getCancellationRequestById(
       remarks: enrollmentCancellationRequests.remarks,
       status: enrollmentCancellationRequests.status,
       requestedAt: enrollmentCancellationRequests.requestedAt,
-      requestedBy: enrollmentCancellationRequests.requestedBy,
       reviewedAt: enrollmentCancellationRequests.reviewedAt,
-      reviewedBy: enrollmentCancellationRequests.reviewedBy,
       reviewRemarks: enrollmentCancellationRequests.reviewRemarks,
       enrollmentStatus: enrollments.status,
+      requestedByName: requestedByUser.username,
+      reviewedByName: reviewedByUser.username,
     })
     .from(enrollmentCancellationRequests)
     .innerJoin(enrollments, eq(enrollmentCancellationRequests.enrollmentId, enrollments.id))
     .innerJoin(students, eq(enrollments.studentId, students.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .leftJoin(requestedByUser, eq(enrollmentCancellationRequests.requestedBy, requestedByUser.id))
+    .leftJoin(reviewedByUser, eq(enrollmentCancellationRequests.reviewedBy, reviewedByUser.id))
     .where(
       and(
         eq(enrollmentCancellationRequests.id, requestId),
@@ -423,18 +390,6 @@ export async function getCancellationRequestById(
     .limit(1);
 
   if (!row) return null;
-
-  // Get user names
-  const userIds = [row.requestedBy];
-  if (row.reviewedBy) userIds.push(row.reviewedBy);
-
-  const usersData = await db
-    .select({ id: users.id, username: users.username })
-    .from(users)
-    .where(inArray(users.id, userIds));
-
-  const userNames = new Map<string, string>();
-  usersData.forEach((u) => userNames.set(u.id, u.username));
 
   // Get assessment info
   const [assessment] = await db
@@ -469,9 +424,9 @@ export async function getCancellationRequestById(
     remarks: row.remarks,
     status: row.status as "pending" | "approved" | "rejected" | "cancelled",
     requestedAt: row.requestedAt,
-    requestedByName: userNames.get(row.requestedBy) ?? "Unknown",
+    requestedByName: row.requestedByName ?? "Unknown",
     reviewedAt: row.reviewedAt,
-    reviewedByName: row.reviewedBy ? userNames.get(row.reviewedBy) ?? "Unknown" : null,
+    reviewedByName: row.reviewedByName ?? null,
     enrollmentStatus: row.enrollmentStatus as "pending" | "assessed" | "enrolled" | "cancelled",
     reviewRemarks: row.reviewRemarks,
     assessment: assessment
@@ -674,6 +629,11 @@ export async function getEnrollmentCancellationHistory(
     reviewRemarks: string | null;
   }>
 > {
+  // Create aliases for user joins
+  const requestedByUser = alias(users, "requested_by_user");
+  const reviewedByUser = alias(users, "reviewed_by_user");
+
+  // Single query with JOINs for user names (fixes N+1)
   const rows = await db
     .select({
       id: enrollmentCancellationRequests.id,
@@ -681,31 +641,16 @@ export async function getEnrollmentCancellationHistory(
       remarks: enrollmentCancellationRequests.remarks,
       status: enrollmentCancellationRequests.status,
       requestedAt: enrollmentCancellationRequests.requestedAt,
-      requestedBy: enrollmentCancellationRequests.requestedBy,
       reviewedAt: enrollmentCancellationRequests.reviewedAt,
-      reviewedBy: enrollmentCancellationRequests.reviewedBy,
       reviewRemarks: enrollmentCancellationRequests.reviewRemarks,
+      requestedByName: requestedByUser.username,
+      reviewedByName: reviewedByUser.username,
     })
     .from(enrollmentCancellationRequests)
+    .leftJoin(requestedByUser, eq(enrollmentCancellationRequests.requestedBy, requestedByUser.id))
+    .leftJoin(reviewedByUser, eq(enrollmentCancellationRequests.reviewedBy, reviewedByUser.id))
     .where(eq(enrollmentCancellationRequests.enrollmentId, enrollmentId))
     .orderBy(desc(enrollmentCancellationRequests.requestedAt));
-
-  // Get user names
-  const userIds = new Set<string>();
-  rows.forEach((r) => {
-    userIds.add(r.requestedBy);
-    if (r.reviewedBy) userIds.add(r.reviewedBy);
-  });
-
-  const userNames = new Map<string, string>();
-  if (userIds.size > 0) {
-    const usersData = await db
-      .select({ id: users.id, username: users.username })
-      .from(users)
-      .where(inArray(users.id, Array.from(userIds)));
-
-    usersData.forEach((u) => userNames.set(u.id, u.username));
-  }
 
   return rows.map((r) => ({
     id: r.id,
@@ -713,9 +658,9 @@ export async function getEnrollmentCancellationHistory(
     remarks: r.remarks,
     status: r.status,
     requestedAt: r.requestedAt,
-    requestedByName: userNames.get(r.requestedBy) ?? "Unknown",
+    requestedByName: r.requestedByName ?? "Unknown",
     reviewedAt: r.reviewedAt,
-    reviewedByName: r.reviewedBy ? userNames.get(r.reviewedBy) ?? "Unknown" : null,
+    reviewedByName: r.reviewedByName ?? null,
     reviewRemarks: r.reviewRemarks,
   }));
 }

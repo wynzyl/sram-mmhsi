@@ -10,6 +10,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./DataTable";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils/cn";
+import { STANDARD_STALE_TIME } from "@/lib/query/staleness";
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -153,7 +154,7 @@ export function QueryDataTable<TData>({
   enableVirtualization = false,
   virtualRowHeight = 50,
   refetchInterval,
-  staleTime = 60 * 1000,
+  staleTime = STANDARD_STALE_TIME,
   emptyMessage = "No data available.",
   queryOptions,
   className,
@@ -175,7 +176,7 @@ export function QueryDataTable<TData>({
         <div className={cn("flex items-center justify-center py-12", className)}>
           <div className="flex flex-col items-center gap-3">
             <Spinner size="lg" />
-            <p className="text-sm text-muted-foreground">Loading data...</p>
+            <p className="text-secondary">Loading data...</p>
           </div>
         </div>
       )
@@ -213,7 +214,7 @@ export function QueryDataTable<TData>({
             <p className="text-sm font-medium text-foreground">
               Failed to load data
             </p>
-            <p className="text-xs text-muted-foreground max-w-xs">
+            <p className="text-helper max-w-xs">
               {errorMessage}
             </p>
           </div>
@@ -229,9 +230,9 @@ export function QueryDataTable<TData>({
       {/* Refetching indicator */}
       {isFetching && !isLoading && (
         <div className="absolute top-2 right-2 z-20">
-          <div className="flex items-center gap-2 rounded-full bg-card px-3 py-1 shadow-sm border border-border">
+          <div className="flex-row-2 rounded-full bg-card px-3 py-1 shadow-sm border border-border">
             <Spinner size="sm" />
-            <span className="text-xs text-muted-foreground">Refreshing...</span>
+            <span className="text-helper">Refreshing...</span>
           </div>
         </div>
       )}
@@ -249,13 +250,13 @@ export function QueryDataTable<TData>({
 
       {tableData.length === 0 && (
         <div className="py-8 text-center">
-          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+          <p className="text-secondary">{emptyMessage}</p>
         </div>
       )}
 
       {/* Server pagination info (if provided) */}
       {data?.pagination && data.pagination.totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+        <div className="mt-4 flex items-center justify-between text-secondary">
           <p>
             Page {data.pagination.currentPage} of {data.pagination.totalPages}
           </p>

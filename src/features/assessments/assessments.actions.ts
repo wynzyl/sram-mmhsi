@@ -34,7 +34,7 @@ import {
   applyApprovedDiscountsToAssessment,
 } from "@/features/discounts";
 import { hasPendingCancellationRequest } from "@/features/enrollments/enrollment-cancellation.queries";
-import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
+import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import {
   assertStudentMutable,
   StudentArchivedException,

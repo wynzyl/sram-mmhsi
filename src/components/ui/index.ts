@@ -9,3 +9,4 @@ export * from "./input";
 export * from "./card";
 export * from "./spinner";
 export * from "./ThemeToggle";
+export * from "./ColorThemePicker";

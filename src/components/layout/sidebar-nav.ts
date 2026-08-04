@@ -5,7 +5,8 @@ export type NavIconName =
   | "students"
   | "registrations"
   | "enrollments"
-  | "subjects"
+  | "curriculums"
+  | "sections"
   | "assignments"
   | "fee-schedules"
   | "booklets"
@@ -23,7 +24,9 @@ export type NavIconName =
   | "cancellation-requests"
   | "clearances"
   | "archive"
-  | "documents";
+  | "documents"
+  | "strands"
+  | "electives";
 
 /** One level of nested links (e.g. Register Student). Deeper nesting is not rendered. */
 export type NavItem = {
@@ -47,6 +50,25 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Overview",
       items: [{ href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" }],
+    },
+    {
+      label: "Academics",
+      items: [
+        {
+          href: "/staff/academics/curriculums",
+          label: "Curriculums",
+          icon: "curriculums",
+          children: [
+            { href: "/staff/academics/curriculums", label: "All Curriculums", icon: "curriculums", pathMatch: "exact" },
+            { href: "/staff/academics/curriculums/adoptions", label: "Adoptions", icon: "curriculums" },
+          ],
+        },
+        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
+        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
+        { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
+        { href: "/staff/academics/strands", label: "SHS Strands", icon: "strands" },
+        { href: "/staff/academics/electives", label: "SHS Electives", icon: "electives" },
+      ],
     },
     {
       label: "Approvals",
@@ -90,6 +112,25 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/students", label: "Students", icon: "students" },
         { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
         { href: "/staff/enrollments", label: "Enrollments", icon: "enrollments" },
+      ],
+    },
+    {
+      label: "Academics",
+      items: [
+        {
+          href: "/staff/academics/curriculums",
+          label: "Curriculums",
+          icon: "curriculums",
+          children: [
+            { href: "/staff/academics/curriculums", label: "All Curriculums", icon: "curriculums", pathMatch: "exact" },
+            { href: "/staff/academics/curriculums/adoptions", label: "Adoptions", icon: "curriculums" },
+          ],
+        },
+        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
+        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
+        { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
+        { href: "/staff/academics/strands", label: "SHS Strands", icon: "strands" },
+        { href: "/staff/academics/electives", label: "SHS Electives", icon: "electives" },
       ],
     },
     {
@@ -143,6 +184,20 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/students", label: "Students", icon: "students" },
         { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
         { href: "/staff/enrollments", label: "Enrollments", icon: "enrollments" },
+      ],
+    },
+    {
+      label: "Academics",
+      items: [
+        {
+          href: "/staff/academics/curriculums",
+          label: "Curriculums",
+          icon: "curriculums",
+          children: [
+            { href: "/staff/academics/curriculums", label: "All Curriculums", icon: "curriculums", pathMatch: "exact" },
+            { href: "/staff/academics/curriculums/adoptions", label: "Adoptions", icon: "curriculums" },
+          ],
+        },
       ],
     },
     {
@@ -234,6 +289,41 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Academics",
       items: [{ href: "/staff/grades", label: "My Classes", icon: "grades" }],
+    },
+  ],
+
+  coordinator: [
+    {
+      label: "Grades",
+      items: [
+        { href: "/staff/grades", label: "My Sections", icon: "grades" },
+      ],
+    },
+    {
+      label: "Academics",
+      items: [
+        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
+        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
+        { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
+      ],
+    },
+  ],
+
+  principal: [
+    {
+      label: "Grades",
+      items: [
+        { href: "/staff/grades", label: "Overview", icon: "grades" },
+        { href: "/staff/grades/approvals", label: "Pending Approvals", icon: "grades" },
+      ],
+    },
+    {
+      label: "Academics",
+      items: [
+        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
+        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
+        { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
+      ],
     },
   ],
 

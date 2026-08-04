@@ -9,16 +9,22 @@ import type { PaymentFormState } from "../payments.schema";
 import type { CashDiscountEligibility } from "../payments.queries";
 import { NumericKeypad } from "./NumericKeypad";
 import { CashDiscountPreviewCard } from "./CashDiscountPreviewCard";
+import {
+  PaymentSuccessOverlay,
+  PaymentProcessingHeader,
+  AssessmentSummaryCard,
+  LastPaymentCard,
+  ChangeDisplayCard,
+} from "./cashier";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/forms/FormField";
 import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { formatCurrency, roundToTwoDecimals } from "@/lib/utils/currency";
 import { generateUuid } from "@/lib/utils/uuid";
-import { ArrowLeft, Copy, Check, Loader2 } from "lucide-react";
+import { Copy, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 type PaymentMethod = "cash" | "check" | "bank_transfer" | "gcash" | "other";
@@ -105,14 +111,9 @@ export function CashierPaymentProcessingView({
   const [cashDiscountLoading, setCashDiscountLoading] = useState(false);
   const [applyCashDiscount, setApplyCashDiscount] = useState(false);
 
-  // One key per form mount: a retried submit replays as the SAME payment
-  // server-side instead of consuming a second OR (audit finding F7).
-  // Generated after mount — an SSR-generated UUID would differ from the
-  // client render and cause a hydration mismatch on the hidden input.
+  // Idempotency key for retried submissions
   const [idempotencyKey, setIdempotencyKey] = useState("");
   useEffect(() => {
-    // One-time client-only initialization: legitimate setState-in-effect —
-    // the UUID must not be SSR-rendered or hydration would mismatch.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIdempotencyKey(generateUuid());
   }, []);
@@ -149,12 +150,10 @@ export function CashierPaymentProcessingView({
   // Numpad handlers
   const handleDigit = useCallback((digit: string) => {
     setAmountTendered(prev => {
-      // Handle decimal points
       if (digit === ".") {
         if (prev.includes(".")) return prev;
         return prev === "" ? "0." : prev + ".";
       }
-      // Limit decimal places to 2
       const parts = prev.split(".");
       if (parts[1]?.length >= 2) return prev;
       return prev + digit;
@@ -202,17 +201,13 @@ export function CashierPaymentProcessingView({
     }
   };
 
-  // Check cash discount eligibility when amount equals or exceeds balance
+  // Check cash discount eligibility
   const checkCashDiscountEligibility = useCallback(async () => {
-    // Skip eligibility check if discount is already confirmed
-    if (applyCashDiscount) {
-      return;
-    }
+    if (applyCashDiscount) return;
 
     const payNum = parseFloat(amountToPay);
     const EPSILON = 0.01;
 
-    // Only check if amount is approximately equal to or exceeds balance
     if (isNaN(payNum) || payNum < totals.balance - EPSILON) {
       setCashDiscountEligibility(null);
       return;
@@ -239,7 +234,7 @@ export function CashierPaymentProcessingView({
     }
   }, [amountToPay, totals.balance, assessmentId, applyCashDiscount]);
 
-  // Debounced eligibility check on amount change
+  // Debounced eligibility check
   useEffect(() => {
     const timer = setTimeout(() => {
       checkCashDiscountEligibility();
@@ -250,20 +245,10 @@ export function CashierPaymentProcessingView({
   // Success state
   if (state.success) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
-        <div className="rounded-2xl border border-border bg-card p-8 shadow-lg">
-          <p className="font-display text-xl font-extrabold text-foreground">Payment posted</p>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{state.message}</p>
-          <Button
-            type="button"
-            variant="secondary"
-            className="mt-4"
-            onClick={() => router.push("/staff/payments")}
-          >
-            Close
-          </Button>
-        </div>
-      </div>
+      <PaymentSuccessOverlay
+        message={state.message}
+        onClose={() => router.push("/staff/payments")}
+      />
     );
   }
 
@@ -275,42 +260,14 @@ export function CashierPaymentProcessingView({
         aria-labelledby="cashier-payment-modal-title"
         className="flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-lg max-h-[100dvh] sm:max-h-[calc(100dvh-1.5rem)] md:max-h-[calc(100dvh-2rem)]"
       >
-        {/* Header Banner */}
-        <div className="shrink-0 border-b border-border bg-card px-4 py-4 md:px-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Payment Processing
-              </p>
-              <div className="mt-2 flex items-center gap-3">
-                <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-sm font-mono font-semibold text-foreground">
-                  {referenceNumber}
-                </span>
-                <h1
-                  id="cashier-payment-modal-title"
-                  className="font-display text-lg font-extrabold text-foreground md:text-xl"
-                >
-                  {studentName}
-                </h1>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {gradeLevel} · {schoolYear}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="shrink-0"
-              onClick={() => router.push("/staff/payments")}
-            >
-              <ArrowLeft className="mr-1.5 h-4 w-4" />
-              Back to queue
-            </Button>
-          </div>
-        </div>
+        <PaymentProcessingHeader
+          referenceNumber={referenceNumber}
+          studentName={studentName}
+          gradeLevel={gradeLevel}
+          schoolYear={schoolYear}
+          onBack={() => router.push("/staff/payments")}
+        />
 
-        {/* Content */}
         <form action={action} className="flex-1 overflow-y-auto">
           <div className="px-3 py-3 md:px-4 md:py-4">
             {/* Error messages */}
@@ -407,7 +364,7 @@ export function CashierPaymentProcessingView({
                       </div>
 
                       {/* Manual Entry Toggle */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex-row-2">
                         <input
                           type="checkbox"
                           id="isManualEntryToggle"
@@ -465,7 +422,7 @@ export function CashierPaymentProcessingView({
                       {/* OR Booklet - only show when NOT manual entry */}
                       {!isManualEntry && (
                         <div>
-                          <label className="mb-1.5 block text-sm font-medium">
+                          <label htmlFor="bookletId" className="mb-1.5 block text-sm font-medium">
                             OR booklet <span className="text-destructive">*</span>
                           </label>
                           {activeBooklets.length === 0 ? (
@@ -525,8 +482,11 @@ export function CashierPaymentProcessingView({
                       {/* Online sub-select */}
                       {paymentMethodCategory === "ONLINE" && (
                         <div>
-                          <label className="mb-1.5 block text-sm font-medium">Online method</label>
+                          <label htmlFor="onlineMethod" className="mb-1.5 block text-sm font-medium">
+                            Online method
+                          </label>
                           <select
+                            id="onlineMethod"
                             className="form-control h-9 w-full"
                             value={onlineMethod}
                             onChange={(e) => setOnlineMethod(e.target.value as typeof onlineMethod)}
@@ -543,9 +503,12 @@ export function CashierPaymentProcessingView({
                   {/* Amount Entry Card */}
                   <Card>
                     <CardContent className="p-4">
-                      {/* Amount to Pay - always shown first */}
+                      {/* Amount to Pay */}
                       <div className="mb-3">
-                        <label className="mb-1.5 block text-sm font-medium">
+                        <label
+                          htmlFor="amountToPayInput"
+                          className="mb-1.5 block text-sm font-medium"
+                        >
                           Amount to pay {applyCashDiscount && "(after discount)"} <span className="text-destructive">*</span>
                         </label>
                         <div className="relative">
@@ -553,6 +516,7 @@ export function CashierPaymentProcessingView({
                             ₱
                           </span>
                           <Input
+                            id="amountToPayInput"
                             type="text"
                             inputMode="decimal"
                             value={formatWithCommas(amountToPay)}
@@ -570,10 +534,13 @@ export function CashierPaymentProcessingView({
                         )}
                       </div>
 
-                      {/* Amount Tendered - only for cash payments */}
+                      {/* Amount Tendered - only for cash */}
                       {paymentMethod === "cash" && (
                         <div className="mt-3 pt-3 border-t border-border">
-                          <label className="mb-1.5 block text-sm font-medium">
+                          <label
+                            htmlFor="amountTenderedInput"
+                            className="mb-1.5 block text-sm font-medium"
+                          >
                             Amount tendered <span className="text-destructive">*</span>
                           </label>
                           <div className="relative">
@@ -581,6 +548,7 @@ export function CashierPaymentProcessingView({
                               ₱
                             </span>
                             <Input
+                              id="amountTenderedInput"
                               type="text"
                               inputMode="decimal"
                               value={formatWithCommas(amountTendered)}
@@ -653,95 +621,15 @@ export function CashierPaymentProcessingView({
 
               {/* Right Column */}
               <div className="space-y-3 md:space-y-4 lg:col-span-4">
-                {/* Assessment Summary */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-                      Assessment Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">Total assessed</span>
-                      <span className="font-semibold">
-                        <CurrencyDisplay amount={totals.totalAssessed} />
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">Paid to date</span>
-                      <span className="font-semibold text-emerald-600">
-                        <CurrencyDisplay amount={totals.totalPaid} />
-                      </span>
-                    </div>
-                    <div className="h-px w-full bg-border" />
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">Remaining balance</span>
-                      <span className="font-display text-lg font-black text-primary">
-                        <CurrencyDisplay amount={totals.balance} />
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+                <AssessmentSummaryCard
+                  totalAssessed={totals.totalAssessed}
+                  totalPaid={totals.totalPaid}
+                  balance={totals.balance}
+                />
 
-                {/* Last Payment */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-                      Last Payment
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {lastPayment ? (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-muted-foreground">Amount</span>
-                          <span className="font-semibold">
-                            <CurrencyDisplay amount={lastPayment.amount} />
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-muted-foreground">Method</span>
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            {lastPayment.paymentMethod}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-muted-foreground">Date</span>
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            {lastPayment.paymentDateLabel}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-muted-foreground">OR</span>
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            {lastPayment.orNumber ? (
-                              <ReferenceCode code={lastPayment.orNumber} />
-                            ) : (
-                              "—"
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No payments posted yet.</p>
-                    )}
-                  </CardContent>
-                </Card>
+                <LastPaymentCard lastPayment={lastPayment} />
 
-                {/* Calculated Change Card */}
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      Calculated Change
-                    </p>
-                    <p className="mt-2 font-display text-3xl font-black text-foreground">
-                      <CurrencyDisplay amount={change} />
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {isReadyToPost ? "Ready for processing" : "Enter amount to continue"}
-                    </p>
-                  </CardContent>
-                </Card>
+                <ChangeDisplayCard change={change} isReadyToPost={isReadyToPost} />
 
                 {/* Action Buttons */}
                 <div className="space-y-2">

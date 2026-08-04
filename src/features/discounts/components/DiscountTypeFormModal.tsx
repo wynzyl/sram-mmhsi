@@ -257,7 +257,7 @@ export default function DiscountTypeFormModal({
               onChange={setIsActive}
               label="Active"
               description="Available for selection when applying discounts"
-              checkedColor="green"
+              checkedColor="success"
             />
 
             <ToggleSwitch

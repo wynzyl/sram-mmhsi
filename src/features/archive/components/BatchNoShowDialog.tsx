@@ -35,7 +35,7 @@ import { batchCancelNoShowAction } from "../archive.actions";
 import type { BatchCancelNoShowFormState } from "../archive.schema";
 
 interface BatchNoShowDialogProps {
-  schoolYearOptions: Array<{ id: string; label: string }>;
+  schoolYearOptions: Array<{ id: string; label: string; isActive: boolean }>;
   trigger?: React.ReactNode;
   onSuccess?: () => void;
 }
@@ -130,6 +130,7 @@ export function BatchNoShowDialog({
                   {schoolYearOptions.map((sy) => (
                     <SelectItem key={sy.id} value={sy.id}>
                       {sy.label}
+                      {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -7,67 +7,116 @@ import {
   useState,
   useCallback,
 } from "react";
+import {
+  COLOR_THEMES,
+  COLOR_THEME_STORAGE_KEY,
+  type ColorTheme,
+} from "@/lib/constants/color-themes";
 
-type Theme = "light" | "dark" | "system";
+type Mode = "light" | "dark" | "system";
 
 interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
+  /** Current mode preference (light/dark/system) */
+  mode: Mode;
+  /** Set the mode preference */
+  setMode: (mode: Mode) => void;
+  /** Current color theme (default/ocean/forest/purple) */
+  colorTheme: ColorTheme;
+  /** Set the color theme */
+  setColorTheme: (theme: ColorTheme) => void;
+  /** Whether the component has mounted (for hydration safety) */
   mounted: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-function getResolvedTheme(theme: Theme): "light" | "dark" {
-  if (theme === "system") {
+function getResolvedMode(mode: Mode): "light" | "dark" {
+  if (mode === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light";
   }
-  return theme;
+  return mode;
 }
 
 /**
- * Theme provider for managing light/dark mode
+ * Applies the color theme class to the document root
+ * Removes any existing theme-* classes before applying the new one
+ */
+function applyColorThemeClass(theme: ColorTheme) {
+  const root = document.documentElement;
+  // Remove all existing theme classes
+  COLOR_THEMES.forEach((t) => {
+    if (t !== "default") {
+      root.classList.remove(`theme-${t}`);
+    }
+  });
+  // Apply new theme class (skip for default)
+  if (theme !== "default") {
+    root.classList.add(`theme-${theme}`);
+  }
+}
+
+/**
+ * Theme provider for managing light/dark mode AND color themes
  *
  * The inline script in layout.tsx handles initial DOM state (no flash).
  * This provider syncs React state with localStorage and handles user changes.
  *
- * IMPORTANT: useState must initialize with a constant value ("system") to avoid
+ * IMPORTANT: useState must initialize with constant values to avoid
  * hydration mismatch between server (no localStorage) and client (has localStorage).
- * The actual stored theme is synced via useEffect after hydration completes.
+ * The actual stored values are synced via useEffect after hydration completes.
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Initialize with constant value to avoid hydration mismatch
-  // Server and client both render with "system" initially
-  const [theme, setThemeState] = useState<Theme>("system");
+  // Initialize with constant values to avoid hydration mismatch
+  // Server and client both render with these initially
+  const [mode, setModeState] = useState<Mode>("system");
+  const [colorTheme, setColorThemeState] = useState<ColorTheme>("default");
   const [mounted, setMounted] = useState(false);
 
   // Sync with localStorage after hydration completes
   useEffect(() => {
-    const storedTheme = localStorage.getItem("theme") as Theme | null;
-    if (storedTheme && ["light", "dark", "system"].includes(storedTheme)) {
-      setThemeState(storedTheme); // eslint-disable-line react-hooks/set-state-in-effect -- Init from localStorage
+    const storedMode = localStorage.getItem("theme") as Mode | null;
+    if (storedMode && ["light", "dark", "system"].includes(storedMode)) {
+      setModeState(storedMode); // eslint-disable-line react-hooks/set-state-in-effect -- Init from localStorage
     }
-    setMounted(true);  
+
+    const storedColorTheme = localStorage.getItem(
+      COLOR_THEME_STORAGE_KEY
+    ) as ColorTheme | null;
+    if (
+      storedColorTheme &&
+      (COLOR_THEMES as readonly string[]).includes(storedColorTheme)
+    ) {
+      setColorThemeState(storedColorTheme); // eslint-disable-line react-hooks/set-state-in-effect -- Init from localStorage
+    }
+
+    setMounted(true);
   }, []);
 
-  // User-triggered theme change: update DOM, localStorage, and React state
-  const setTheme = useCallback((newTheme: Theme) => {
-    setThemeState(newTheme);
+  // User-triggered mode change: update DOM, localStorage, and React state
+  const setMode = useCallback((newMode: Mode) => {
+    setModeState(newMode);
 
     const root = document.documentElement;
-    const resolved = getResolvedTheme(newTheme);
+    const resolved = getResolvedMode(newMode);
 
     root.classList.remove("light", "dark");
     root.classList.add(resolved);
     root.style.colorScheme = resolved;
-    localStorage.setItem("theme", newTheme);
+    localStorage.setItem("theme", newMode);
   }, []);
 
-  // Listen for system preference changes when theme is "system"
+  // User-triggered color theme change: update DOM, localStorage, and React state
+  const setColorTheme = useCallback((newTheme: ColorTheme) => {
+    setColorThemeState(newTheme);
+    applyColorThemeClass(newTheme);
+    localStorage.setItem(COLOR_THEME_STORAGE_KEY, newTheme);
+  }, []);
+
+  // Listen for system preference changes when mode is "system"
   useEffect(() => {
-    if (theme !== "system") return;
+    if (mode !== "system") return;
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = () => {
@@ -80,10 +129,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme]);
+  }, [mode]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, mounted }}>
+    <ThemeContext.Provider
+      value={{ mode, setMode, colorTheme, setColorTheme, mounted }}
+    >
       {children}
     </ThemeContext.Provider>
   );
@@ -91,7 +142,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 /**
  * Hook to access theme context
- * Returns current theme and setTheme function
+ * Returns current mode, color theme, and setter functions
  */
 export function useTheme() {
   const context = useContext(ThemeContext);

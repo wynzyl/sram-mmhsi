@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -22,6 +23,8 @@ interface ArchiveFiltersProps {
   currentStatus?: string;
   currentSchoolYearId?: string;
   currentSearch?: string;
+  /** Render in inline mode for card headers (no labels, compact) */
+  inline?: boolean;
 }
 
 export function ArchiveFilters({
@@ -29,6 +32,7 @@ export function ArchiveFilters({
   currentStatus,
   currentSchoolYearId,
   currentSearch,
+  inline = false,
 }: ArchiveFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,6 +43,7 @@ export function ArchiveFilters({
   // and we adjust local state during render — React's recommended pattern for
   // "adjusting state when a prop changes" without useEffect.
   const [search, setSearch] = useState(currentSearch ?? "");
+  const debouncedSearch = useDebounce(search, 300);
   const [syncedSearch, setSyncedSearch] = useState(currentSearch ?? "");
   if ((currentSearch ?? "") !== syncedSearch) {
     setSyncedSearch(currentSearch ?? "");
@@ -67,10 +72,12 @@ export function ArchiveFilters({
     [router, searchParams]
   );
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateFilters({ search: search.trim() || undefined });
-  };
+  // Auto-update URL when debounced search changes
+  useEffect(() => {
+    const trimmed = debouncedSearch.trim();
+    if (trimmed === (currentSearch ?? "")) return;
+    updateFilters({ search: trimmed || undefined });
+  }, [debouncedSearch, currentSearch, updateFilters]);
 
   const handleClearFilters = () => {
     setSearch("");
@@ -81,30 +88,103 @@ export function ArchiveFilters({
 
   const hasFilters = currentStatus || currentSchoolYearId || currentSearch;
 
+  // Inline mode: compact layout for card headers (single row, no wrapping)
+  if (inline) {
+    return (
+      <div className="filter-controls-inline">
+        {/* Search */}
+        <div className="filter-search w-48">
+          <span className="filter-search-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+              <path
+                fillRule="evenodd"
+                d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </span>
+          <input
+            type="search"
+            className="filter-search-input"
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoComplete="off"
+          />
+        </div>
+
+        {/* Status Filter */}
+        <select
+          value={currentStatus ?? "all"}
+          onChange={(e) =>
+            updateFilters({ status: e.target.value === "all" ? undefined : e.target.value })
+          }
+          aria-label="Filter by status"
+          className="filter-select w-28"
+        >
+          <option value="all">All Archived</option>
+          {ARCHIVED_STUDENT_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {STUDENT_STATUS_LABELS[status]}
+            </option>
+          ))}
+        </select>
+
+        {/* School Year Filter */}
+        <Select
+          value={currentSchoolYearId ?? "all"}
+          onValueChange={(value) =>
+            updateFilters({ schoolYearId: value === "all" ? undefined : value })
+          }
+        >
+          <SelectTrigger className="w-44 h-10" aria-label="Filter by school year">
+            <SelectValue placeholder="All Years" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Years</SelectItem>
+            {schoolYearOptions.map((sy) => (
+              <SelectItem key={sy.id} value={sy.id}>
+                {sy.label}
+                {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Clear Filters */}
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            disabled={isPending}
+            className="filter-clear"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Default mode: with labels
   return (
     <div className="flex flex-wrap items-end gap-4">
       {/* Search */}
-      <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[200px]">
+      <div className="flex-1 min-w-[200px]">
         <label
           htmlFor="archive-search"
           className="mb-1.5 block text-sm font-medium"
         >
           Search
         </label>
-        <div className="flex gap-2">
-          <Input
-            id="archive-search"
-            type="search"
-            placeholder="Name or student ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1"
-          />
-          <Button type="submit" variant="secondary" disabled={isPending}>
-            Search
-          </Button>
-        </div>
-      </form>
+        <Input
+          id="archive-search"
+          type="search"
+          placeholder="Name or student ID..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
       {/* Status Filter */}
       <div className="min-w-[160px]">
@@ -135,7 +215,7 @@ export function ArchiveFilters({
       </div>
 
       {/* School Year Filter */}
-      <div className="min-w-[160px]">
+      <div className="min-w-[180px]">
         <label
           htmlFor="archive-school-year"
           className="mb-1.5 block text-sm font-medium"
@@ -156,6 +236,7 @@ export function ArchiveFilters({
             {schoolYearOptions.map((sy) => (
               <SelectItem key={sy.id} value={sy.id}>
                 {sy.label}
+                {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
               </SelectItem>
             ))}
           </SelectContent>

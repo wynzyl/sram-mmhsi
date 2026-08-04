@@ -18,7 +18,7 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
 // parseFormData is not used in this file - form parsing is done manually for complex wizard forms
 import { extractConstraintName } from "@/lib/errors";
-import { getActiveSchoolYearId } from "@/lib/utils/query-helpers";
+import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import { CreateStudentWithRegistrationSchema } from "../registrations/registrations.schema";
 import { UpdateStudentSchema } from "./students.schema";
 import type { CreateStudentFormState, UpdateStudentFormState } from "./students.schema";

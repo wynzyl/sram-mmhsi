@@ -78,6 +78,83 @@
       "when": 1783919379169,
       "tag": "0010_add_cash_discount_cutoff_date",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1783942518813,
+      "tag": "0011_curriculum_versioning",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784264247407,
+      "tag": "0012_add_sections_soft_delete_and_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1784276970912,
+      "tag": "0013_add_curriculum_root_version_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784339776625,
+      "tag": "0014_add_curriculum_adoptions_soft_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1784344659075,
+      "tag": "0015_add_grade_sheets_and_advisers",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1784880400000,
+      "tag": "0016_add_coordinator_principal_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1785350400000,
+      "tag": "0017_add_missing_grading_period_systems",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785436800000,
+      "tag": "0018_fix_grade_sheets_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1785523200000,
+      "tag": "0019_add_subject_offering_module",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1785609600000,
+      "tag": "0020_add_source_curriculum_to_subject_offerings",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1785696000000,
+      "tag": "0021_add_term_offering_to_subject_offerings",
+      "breakpoints": true
     }
   ]
 }

@@ -319,7 +319,7 @@ function IntakeRingBlock({
 }) {
   const { completed, total } = countIntakeDocuments(intakeDocuments);
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex-row-3">
       <DocumentProgressRing completed={completed} total={total} size="sm" showLabel={false} />
       <div>
         <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
@@ -350,7 +350,7 @@ function FinanceProgress({ paid, total }: { paid: number; total: number }) {
 
 function CancelledBlock() {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-dashed border-gray-200 px-3 py-2 text-xs text-muted-foreground">
+    <div className="flex-row-2 rounded-md border border-dashed border-gray-200 px-3 py-2 text-xs text-muted-foreground">
       <X className="h-3.5 w-3.5" />
       Enrollment cancelled
     </div>
@@ -411,7 +411,7 @@ function OverrideEnrollBlock({
             <p className="text-[11px] text-red-700">{state.message}</p>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex-row-2">
             <button
               type="submit"
               disabled={pending}

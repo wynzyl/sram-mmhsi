@@ -18,6 +18,11 @@ import { FEE_ASSESSMENT_BANDS } from "@/lib/constants/assessment-bands";
 import { CANCELLATION_REASONS } from "@/lib/constants/cancellation-reasons";
 import { STUDENT_STATUSES } from "@/lib/constants/student-status";
 import { DOCUMENT_REQUEST_TYPES, DOCUMENT_REQUEST_STATUSES } from "@/lib/constants/document-requests";
+import { GRADING_PERIODS, GRADE_SHEET_STATUSES, GRADE_APPROVAL_ACTIONS } from "@/lib/constants/grading-periods";
+import { GRADING_SYSTEM_TYPES } from "@/lib/constants/grading-systems";
+import { GRADE_GROUPS } from "@/lib/constants/grade-groups";
+import { SHS_STRAND_CODES } from "@/lib/constants/strands";
+import { TERM_OFFERINGS } from "@/lib/constants/term-offerings";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -28,6 +33,8 @@ export const roleEnum = pgEnum("role", [
   "finance_officer",
   "cashier",
   "teacher",
+  "coordinator",  // Grade sheet reviewer for assigned grade level groups
+  "principal",    // Final approver for grade sheets
   "student",
   "parent_guardian",
 ]);
@@ -72,6 +79,34 @@ export const gradeStatusEnum = pgEnum("grade_status", [
   "draft",
   "submitted",
   "locked",
+]);
+
+/** Grading periods (quarters) for academic year */
+export const gradingPeriodEnum = pgEnum("grading_period", GRADING_PERIODS);
+
+/** Grade sheet workflow: draft → submitted → returned/approved → released */
+export const gradeSheetStatusEnum = pgEnum("grade_sheet_status", GRADE_SHEET_STATUSES);
+
+/** Grade approval workflow actions */
+export const gradeApprovalActionEnum = pgEnum("grade_approval_action", GRADE_APPROVAL_ACTIONS);
+
+/** Grading system type: quarterly (Q1-Q4) or trimester (T1-T3) per school year */
+export const gradingSystemTypeEnum = pgEnum("grading_system_type", GRADING_SYSTEM_TYPES);
+
+/** Grade level groups for coordinator assignment */
+export const gradeGroupEnum = pgEnum("grade_group", GRADE_GROUPS);
+
+/** SHS academic strand codes (STEM, ABM, HUMSS, GAS, TVL-*) */
+export const strandCodeEnum = pgEnum("strand_code", SHS_STRAND_CODES);
+
+/** Term offering for SHS subjects (when the subject is offered within the school year) */
+export const termOfferingEnum = pgEnum("term_offering", TERM_OFFERINGS);
+
+/** Curriculum lifecycle: draft → published → archived */
+export const curriculumStatusEnum = pgEnum("curriculum_status", [
+  "draft",
+  "published",
+  "archived",
 ]);
 
 export const bookletStatusEnum = pgEnum("booklet_status", [
@@ -278,19 +313,61 @@ export const sections = pgTable(
     schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at"),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
     index("sections_grade_sy_idx").on(t.gradeLevelId, t.schoolYearId),
+    // Unique section name per grade level + school year (active records only)
+    uniqueIndex("sections_name_grade_sy_uidx")
+      .on(t.name, t.gradeLevelId, t.schoolYearId)
+      .where(sql`${t.deletedAt} IS NULL`),
   ]
 );
 
-export const curriculums = pgTable("curriculums", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  effectiveSchoolYearId: uuid("effective_school_year_id").references(() => schoolYears.id).notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  createdBy: uuid("created_by").references(() => users.id),
-});
+export const curriculums = pgTable(
+  "curriculums",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    status: curriculumStatusEnum("status").notNull().default("draft"),
+    /** Version number within the same version chain (1, 2, 3...) */
+    version: integer("version").notNull().default(1),
+    /** Root of the version chain (points to the original v1 curriculum, or self for v1) */
+    rootId: uuid("root_id"), // Self-reference - FK enforced in migration
+    /** Predecessor version (null for v1, points to parent version for clones) */
+    predecessorId: uuid("predecessor_id"), // Self-reference - FK enforced in migration
+    /** @deprecated Legacy column - use curriculum_adoptions table instead */
+    effectiveSchoolYearId: uuid("effective_school_year_id").references(() => schoolYears.id),
+    /** Audit: when published */
+    publishedAt: timestamp("published_at"),
+    publishedBy: uuid("published_by").references(() => users.id),
+    /** Audit: when archived */
+    archivedAt: timestamp("archived_at"),
+    archivedBy: uuid("archived_by").references(() => users.id),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+  },
+  (t) => [
+    index("curriculums_status_idx").on(t.status),
+    index("curriculums_root_idx").on(t.rootId),
+    // Enforce one version number per version chain (root_id + version unique).
+    uniqueIndex("curriculums_root_version_uidx").on(t.rootId, t.version),
+    // Only one draft allowed per predecessor (prevents multiple parallel drafts from same source)
+    uniqueIndex("curriculums_pred_draft_uidx")
+      .on(t.predecessorId)
+      .where(sql`${t.status} = 'draft' AND ${t.predecessorId} IS NOT NULL`),
+    // Unique name within the same status (prevents duplicate draft names)
+    uniqueIndex("curriculums_name_status_uidx")
+      .on(t.name, t.status)
+      .where(sql`${t.status} = 'draft'`),
+  ]
+);
 
 export const subjects = pgTable(
   "subjects",
@@ -298,19 +375,125 @@ export const subjects = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     code: text("code").notNull(),
+    description: text("description"),
     curriculumId: uuid("curriculum_id").references(() => curriculums.id).notNull(),
     gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
+    /** Credit units for this subject (e.g., 1.0, 1.5, 3.0) */
+    units: numeric("units", { precision: 4, scale: 2 }).notNull().default("0"),
+    /** Display order within the grade level (for sorting subjects) */
+    sequenceOrder: integer("sequence_order").notNull().default(0),
+    /** Whether this is a core/required subject vs elective */
+    isCore: boolean("is_core").notNull().default(true),
+    /** Optional grading weight (future use for weighted averages) */
+    gradingWeight: numeric("grading_weight", { precision: 5, scale: 2 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    index("subjects_curriculum_idx").on(t.curriculumId),
+    // Composite index for curriculum + grade level (common query pattern)
+    index("subjects_curriculum_grade_idx").on(t.curriculumId, t.gradeLevelId),
+    // Partial index for active subjects (soft delete optimization)
+    index("subjects_active_idx")
+      .on(t.id)
+      .where(sql`${t.deletedAt} IS NULL`),
+    // Unique subject code within curriculum (active subjects only)
+    uniqueIndex("subjects_curriculum_code_uidx")
+      .on(t.curriculumId, t.code)
+      .where(sql`${t.deletedAt} IS NULL`),
+  ]
+);
+
+/**
+ * Curriculum adoptions bind a published curriculum to a school year + grade level.
+ * Decouples curriculum from school year for proper version management.
+ * One adoption per (school_year_id, grade_level_id) - enforced by unique index.
+ */
+export const curriculumAdoptions = pgTable(
+  "curriculum_adoptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    gradeLevelId: uuid("grade_level_id").notNull().references(() => gradeLevels.id),
+    curriculumId: uuid("curriculum_id").notNull().references(() => curriculums.id),
+    adoptedAt: timestamp("adopted_at").notNull().defaultNow(),
+    adoptedBy: uuid("adopted_by").notNull().references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // One curriculum adoption per grade level per school year (active records only)
+    uniqueIndex("curriculum_adoptions_sy_grade_uidx")
+      .on(t.schoolYearId, t.gradeLevelId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("curriculum_adoptions_curriculum_idx").on(t.curriculumId),
+    index("curriculum_adoptions_sy_idx").on(t.schoolYearId),
+  ]
+);
+
+// ─── SHS Strands ──────────────────────────────────────────────────────────────
+
+/**
+ * SHS Academic Strands - tracks available strands for Senior High School.
+ * STEM, ABM, HUMSS, GAS, TVL-ICT, TVL-HE, TVL-IA, TVL-AFA
+ */
+export const strands = pgTable(
+  "strands",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: strandCodeEnum("code").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    displayOrder: integer("display_order").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // Unique strand code (active records only)
+    uniqueIndex("strands_code_uidx")
+      .on(t.code)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("strands_active_idx")
+      .on(t.isActive)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+    index("strands_display_order_idx").on(t.displayOrder),
+  ]
+);
+
+/**
+ * Subject-Strand associations - links subjects to applicable strands.
+ * Core subjects have no strand links (available to all).
+ * Elective subjects link to strands they're available to.
+ */
+export const subjectStrands = pgTable(
+  "subject_strands",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    subjectId: uuid("subject_id").notNull().references(() => subjects.id, { onDelete: "cascade" }),
+    strandId: uuid("strand_id").notNull().references(() => strands.id, { onDelete: "cascade" }),
+    /** Whether this subject is required (core) for this strand, vs optional elective */
+    isStrandCore: boolean("is_strand_core").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     deletedAt: timestamp("deleted_at"),
     deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
-    index("subjects_curriculum_idx").on(t.curriculumId),
-    // Partial index for active subjects (soft delete optimization)
-    index("subjects_active_idx")
-      .on(t.id)
+    // Unique subject-strand pair (active records only)
+    uniqueIndex("subject_strands_subject_strand_uidx")
+      .on(t.subjectId, t.strandId)
       .where(sql`${t.deletedAt} IS NULL`),
+    index("subject_strands_subject_idx").on(t.subjectId),
+    index("subject_strands_strand_idx").on(t.strandId),
   ]
 );
 
@@ -466,6 +649,8 @@ export const enrollments = pgTable(
     gradeLevelId: uuid("grade_level_id").notNull().references(() => gradeLevels.id),
     sectionId: uuid("section_id").references(() => sections.id),
     registrationId: uuid("registration_id").references(() => registrations.id),
+    /** SHS strand for senior high school students (Grade 11-12). Nullable for non-SHS. */
+    strandId: uuid("strand_id").references(() => strands.id),
     /** NEW_STUDENT | TRANSFEREE | OLD_STUDENT workflow classification. */
     studentType: enrollmentStudentTypeEnum("student_type").notNull().default("new_student"),
     /** Required for new_student / transferee enrollments; null for old_student or legacy rows. */
@@ -690,6 +875,10 @@ export const feeScheduleOverrides = pgTable("fee_schedule_overrides", {
       index("assessments_transferred_at_idx").on(t.transferredAt), // PERFORMANCE: Filter active assessments (WHERE transferredAt IS NULL)
       // PERFORMANCE: Finance reports by school year + billing status
       index("assessments_sy_billing_idx").on(t.schoolYearId, t.billingStatus),
+      // PERFORMANCE: Outstanding balance lookup for finance dashboard (audit 2026-07)
+      index("assessments_sy_outstanding_idx")
+        .on(t.schoolYearId, t.billingStatus, t.balance)
+        .where(sql`${t.cancelledAt} IS NULL AND ${t.transferredAt} IS NULL`),
       // DB-level: All transfer fields must be NULL or all NOT NULL
       check(
         "assessments_transfer_fields_atomic",
@@ -768,6 +957,10 @@ export const receiptBooklets = pgTable(
     index("receipt_booklets_status_active_idx")
       .on(t.status)
       .where(sql`${t.status} = 'active'`), // PERFORMANCE: Payment processing active booklet lookups
+    // PERFORMANCE: Active booklet lookup by usage mode (audit 2026-07)
+    index("booklets_active_usage_idx")
+      .on(t.status, t.usageMode)
+      .where(sql`${t.status} = 'active'`),
   ]
 );
 
@@ -887,6 +1080,10 @@ export const payments = pgTable(
     index("payments_posted_date_idx")
       .on(t.paymentDate)
       .where(sql`${t.status} = 'posted'`),
+    // PERFORMANCE: Payment reconciliation by date + method (audit 2026-07)
+    index("payments_date_method_posted_idx")
+      .on(t.paymentDate, t.paymentMethod)
+      .where(sql`${t.status} = 'posted'`),
   ]
 );
 
@@ -990,6 +1187,320 @@ export const gradeRecords = pgTable(
     index("gr_student_idx").on(t.studentId),
     index("gr_status_idx").on(t.status),
     index("grade_records_teacher_status_period_idx").on(t.teacherAssignmentId, t.status, t.gradingPeriod), // PERFORMANCE: Grade submission workflow queries
+  ]
+);
+
+// ─── Subject Offerings ────────────────────────────────────────────────────────
+
+/**
+ * Subject offerings - operational layer between curriculum and grading.
+ * Tracks subjects offered per section per school year with optional teacher assignment.
+ * Enables:
+ * - SHS strand-specific subject availability
+ * - Teacher assignment per section+subject
+ * - Student-subject enrollment traceability
+ */
+export const subjectOfferings = pgTable(
+  "subject_offerings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sectionId: uuid("section_id").notNull().references(() => sections.id),
+    subjectId: uuid("subject_id").notNull().references(() => subjects.id),
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    /** Optional teacher assignment - can be assigned later */
+    teacherId: uuid("teacher_id").references(() => users.id),
+    /** Optional strand for SHS strand-specific subjects */
+    strandId: uuid("strand_id").references(() => strands.id),
+    /** Source curriculum for manually added offerings (null = from adopted curriculum) */
+    sourceCurriculumId: uuid("source_curriculum_id").references(() => curriculums.id),
+    /** Term when this subject is offered (SHS only) - defaults to full year */
+    termOffered: termOfferingEnum("term_offered").notNull().default("full_year"),
+    isActive: boolean("is_active").notNull().default(true),
+    /** Display order for subject list */
+    sequenceOrder: integer("sequence_order").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // Unique subject offering per section + school year (active records only)
+    uniqueIndex("subject_offerings_section_subject_sy_uidx")
+      .on(t.sectionId, t.subjectId, t.schoolYearId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("subject_offerings_section_idx").on(t.sectionId),
+    index("subject_offerings_subject_idx").on(t.subjectId),
+    index("subject_offerings_teacher_idx").on(t.teacherId),
+    index("subject_offerings_strand_idx").on(t.strandId),
+    index("subject_offerings_sy_idx").on(t.schoolYearId),
+    // Active offerings for section
+    index("subject_offerings_section_active_idx")
+      .on(t.sectionId)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+  ]
+);
+
+/**
+ * Student subject enrollments - explicit link between students and subject offerings.
+ * Created when student is assigned to a section.
+ * Enables grade sheet traceability to specific student-subject enrollment.
+ */
+export const studentSubjectEnrollments = pgTable(
+  "student_subject_enrollments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    enrollmentId: uuid("enrollment_id").notNull().references(() => enrollments.id),
+    subjectOfferingId: uuid("subject_offering_id").notNull().references(() => subjectOfferings.id),
+    /** Denormalized for query performance */
+    studentId: uuid("student_id").notNull().references(() => students.id),
+    /** Denormalized for query performance */
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    isActive: boolean("is_active").notNull().default(true),
+    /** Withdrawal tracking */
+    withdrawnAt: timestamp("withdrawn_at"),
+    withdrawnBy: uuid("withdrawn_by").references(() => users.id),
+    withdrawalReason: text("withdrawal_reason"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // Unique enrollment + offering (active records only)
+    uniqueIndex("sse_enrollment_offering_uidx")
+      .on(t.enrollmentId, t.subjectOfferingId)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+    index("sse_enrollment_idx").on(t.enrollmentId),
+    index("sse_offering_idx").on(t.subjectOfferingId),
+    index("sse_student_idx").on(t.studentId),
+    index("sse_school_year_idx").on(t.schoolYearId),
+    // Student's active subject enrollments
+    index("sse_student_active_idx")
+      .on(t.studentId)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+    // School year active enrollments for reporting
+    index("sse_sy_active_idx")
+      .on(t.schoolYearId)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+  ]
+);
+
+// ─── Section Advisers ─────────────────────────────────────────────────────────
+
+/**
+ * Section adviser assignments - one homeroom adviser per section per school year.
+ * Different from teacherAssignments which tracks subject teachers.
+ */
+export const sectionAdvisers = pgTable(
+  "section_advisers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sectionId: uuid("section_id").notNull().references(() => sections.id),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+
+    // Audit
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // One adviser per section per school year (soft delete aware)
+    uniqueIndex("section_advisers_section_sy_uidx")
+      .on(t.sectionId, t.schoolYearId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("section_advisers_user_idx").on(t.userId),
+    index("section_advisers_sy_idx").on(t.schoolYearId),
+  ]
+);
+
+// ─── Grade Sheets & Approval Workflow ─────────────────────────────────────────
+
+/**
+ * Grade sheets - batch grade submission per section per grading period.
+ * Adviser enters ALL subject grades for their section students.
+ * Tracks workflow status: draft → submitted → principal_approved → published → locked.
+ * Can be returned at any stage for corrections.
+ */
+export const gradeSheets = pgTable(
+  "grade_sheets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sectionId: uuid("section_id").notNull().references(() => sections.id),
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    adviserId: uuid("adviser_id").references(() => users.id),
+    gradingPeriod: gradingPeriodEnum("grading_period").notNull(),
+    status: gradeSheetStatusEnum("status").notNull().default("draft"),
+
+    // Workflow timestamps - submission
+    submittedAt: timestamp("submitted_at"),
+    submittedBy: uuid("submitted_by").references(() => users.id),
+
+    // Workflow timestamps - principal review
+    principalApprovedAt: timestamp("principal_approved_at"),
+    principalApprovedBy: uuid("principal_approved_by").references(() => users.id),
+
+    // Workflow timestamps - publishing
+    publishedAt: timestamp("published_at"),
+    publishedBy: uuid("published_by").references(() => users.id),
+
+    // Workflow timestamps - locking
+    lockedAt: timestamp("locked_at"),
+    lockedBy: uuid("locked_by").references(() => users.id),
+
+    // Workflow timestamps - return
+    returnedAt: timestamp("returned_at"),
+    returnedBy: uuid("returned_by").references(() => users.id),
+    returnRemarks: text("return_remarks"),
+
+    // Audit
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+  },
+  (t) => [
+    // One sheet per section per school year per grading period
+    uniqueIndex("grade_sheets_section_sy_period_uidx")
+      .on(t.sectionId, t.schoolYearId, t.gradingPeriod),
+    index("grade_sheets_status_idx").on(t.status),
+    index("grade_sheets_sy_status_idx").on(t.schoolYearId, t.status),
+    index("grade_sheets_adviser_idx").on(t.adviserId),
+    // PERFORMANCE: Principal review queue (audit 2026-07)
+    index("grade_sheets_pending_review_idx")
+      .on(t.schoolYearId, t.status, t.submittedAt)
+      .where(sql`${t.status} = 'submitted'`),
+  ]
+);
+
+/**
+ * Grade sheet entries - individual student grades per subject within a grade sheet.
+ * Advisers enter quarterly grades for all subjects for their section students.
+ */
+export const gradeSheetEntries = pgTable(
+  "grade_sheet_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    gradeSheetId: uuid("grade_sheet_id").notNull().references(() => gradeSheets.id),
+    studentId: uuid("student_id").notNull().references(() => students.id),
+    subjectId: uuid("subject_id").notNull().references(() => subjects.id),
+    /**
+     * Link to student subject enrollment for traceability.
+     * Nullable during migration - will be populated for new entries.
+     * @deprecated studentId + subjectId kept for backward compatibility during migration
+     */
+    studentSubjectEnrollmentId: uuid("student_subject_enrollment_id").references(
+      () => studentSubjectEnrollments.id
+    ),
+
+    // Direct quarterly grade entry (no computation)
+    // DepEd transmutation range: 60-100
+    grade: numeric("grade", { precision: 5, scale: 2 }),
+    remarks: text("remarks"), // Teacher remarks (optional)
+
+    // Audit
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // One entry per student per subject per grade sheet
+    uniqueIndex("grade_sheet_entries_sheet_student_subject_uidx")
+      .on(t.gradeSheetId, t.studentId, t.subjectId),
+    index("grade_sheet_entries_student_idx").on(t.studentId),
+    index("grade_sheet_entries_subject_idx").on(t.subjectId),
+    index("grade_sheet_entries_sse_idx").on(t.studentSubjectEnrollmentId),
+    // Partial index for grade completeness queries (entries with grades filled)
+    index("grade_sheet_entries_filled_idx")
+      .on(t.gradeSheetId)
+      .where(sql`${t.grade} IS NOT NULL`),
+  ]
+);
+
+/**
+ * Grade approvals - audit trail of approval workflow actions.
+ * Records every status transition with actor, timestamp, and remarks.
+ */
+export const gradeApprovals = pgTable(
+  "grade_approvals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    gradeSheetId: uuid("grade_sheet_id").notNull().references(() => gradeSheets.id),
+    action: gradeApprovalActionEnum("action").notNull(),
+    remarks: text("remarks"),
+
+    // Actor
+    actorId: uuid("actor_id").notNull().references(() => users.id),
+    actorRole: roleEnum("actor_role").notNull(),
+
+    // Timestamp
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("grade_approvals_sheet_idx").on(t.gradeSheetId),
+    index("grade_approvals_actor_idx").on(t.actorId),
+    index("grade_approvals_created_idx").on(t.createdAt),
+  ]
+);
+
+// ─── Grading Period Systems ──────────────────────────────────────────────────
+
+/**
+ * Grading period system configuration per school year.
+ * Determines whether the school uses quarterly (Q1-Q4) or trimester (T1-T3) for that year.
+ */
+export const gradingPeriodSystems = pgTable(
+  "grading_period_systems",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    systemType: gradingSystemTypeEnum("system_type").notNull(),
+
+    // Audit
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+  },
+  (t) => [
+    // One grading system per school year
+    uniqueIndex("grading_period_systems_sy_uidx").on(t.schoolYearId),
+  ]
+);
+
+// ─── Coordinator Assignments ─────────────────────────────────────────────────
+
+/**
+ * Coordinator assignments - assigns coordinators to grade level groups.
+ * Coordinators review grade sheet submissions for their assigned groups.
+ */
+export const coordinatorAssignments = pgTable(
+  "coordinator_assignments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    gradeGroup: gradeGroupEnum("grade_group").notNull(),
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+
+    // Audit
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // One coordinator per grade group per school year (soft delete aware)
+    uniqueIndex("coordinator_assignments_group_sy_uidx")
+      .on(t.gradeGroup, t.schoolYearId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("coordinator_assignments_user_idx").on(t.userId),
+    index("coordinator_assignments_sy_idx").on(t.schoolYearId),
   ]
 );
 
@@ -1101,6 +1612,10 @@ export const discountRequests = pgTable(
     index("discount_requests_pending_idx")
       .on(t.status)
       .where(sql`${t.status} = 'pending'`),
+    // PERFORMANCE: Pending discount request queue with FIFO ordering (audit 2026-07)
+    index("discount_requests_pending_created_idx")
+      .on(t.status, t.createdAt)
+      .where(sql`${t.status} = 'pending'`),
     // PERFORMANCE: Discount type lookups
     index("discount_requests_type_idx").on(t.discountTypeId),
   ]
@@ -1211,6 +1726,10 @@ export const enrollmentCancellationRequests = pgTable(
       .on(t.status, t.deletedAt)
       .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
     index("ecr_requested_by_idx").on(t.requestedBy),
+    // PERFORMANCE: Pending cancellation queue with FIFO ordering (audit 2026-07)
+    index("ecr_pending_created_idx")
+      .on(t.status, t.requestedAt)
+      .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
   ]
 );
 
@@ -1254,6 +1773,10 @@ export const studentClearances = pgTable(
     index("clearances_status_idx").on(t.status),
     index("clearances_pending_idx")
       .on(t.status)
+      .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
+    // PERFORMANCE: Student pending clearance lookup for document release (audit 2026-07)
+    index("clearances_student_pending_idx")
+      .on(t.studentId, t.status)
       .where(sql`${t.status} = 'pending' AND ${t.deletedAt} IS NULL`),
     // Prevent duplicate clearances for same enrollment + type (active only)
     uniqueIndex("clearances_enrollment_type_uidx")
@@ -1320,6 +1843,10 @@ export const documentRequests = pgTable(
     index("doc_requests_status_idx").on(t.status),
     index("doc_requests_school_year_idx").on(t.schoolYearId),
     index("doc_requests_requested_at_idx").on(t.requestedAt),
+    // PERFORMANCE: Student document history (audit 2026-07)
+    index("doc_requests_student_history_idx")
+      .on(t.studentId, t.status, t.requestedAt)
+      .where(sql`${t.deletedAt} IS NULL`),
     index("doc_requests_pending_idx")
       .on(t.status)
       .where(sql`${t.status} IN ('requested', 'processing', 'ready') AND ${t.deletedAt} IS NULL`),
@@ -1401,6 +1928,95 @@ export const assessmentsRelations = relations(assessments, ({ one, many }) => ({
 
 export const schoolYearsRelations = relations(schoolYears, ({ many }) => ({
   feeSchedules: many(schoolYearFeeSchedules),
+  curriculumAdoptions: many(curriculumAdoptions),
+}));
+
+// Curriculum Relations
+export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
+  /** The root curriculum of this version chain (self for v1) */
+  root: one(curriculums, {
+    fields: [curriculums.rootId],
+    references: [curriculums.id],
+    relationName: "curriculum_root",
+  }),
+  /** The parent version this was cloned from */
+  predecessor: one(curriculums, {
+    fields: [curriculums.predecessorId],
+    references: [curriculums.id],
+    relationName: "curriculum_predecessor",
+  }),
+  /** All versions in this curriculum's chain (where rootId matches) */
+  versionChain: many(curriculums, {
+    relationName: "curriculum_root",
+  }),
+  /** Successor versions cloned from this curriculum */
+  successors: many(curriculums, {
+    relationName: "curriculum_predecessor",
+  }),
+  /** Subjects belonging to this curriculum */
+  subjects: many(subjects),
+  /** Adoption bindings to school years */
+  adoptions: many(curriculumAdoptions),
+  /** @deprecated Legacy school year reference */
+  effectiveSchoolYear: one(schoolYears, {
+    fields: [curriculums.effectiveSchoolYearId],
+    references: [schoolYears.id],
+  }),
+  publishedByUser: one(users, {
+    fields: [curriculums.publishedBy],
+    references: [users.id],
+    relationName: "curriculum_publisher",
+  }),
+  archivedByUser: one(users, {
+    fields: [curriculums.archivedBy],
+    references: [users.id],
+    relationName: "curriculum_archiver",
+  }),
+  createdByUser: one(users, {
+    fields: [curriculums.createdBy],
+    references: [users.id],
+    relationName: "curriculum_creator",
+  }),
+}));
+
+export const subjectsRelations = relations(subjects, ({ one, many }) => ({
+  curriculum: one(curriculums, {
+    fields: [subjects.curriculumId],
+    references: [curriculums.id],
+  }),
+  gradeLevel: one(gradeLevels, {
+    fields: [subjects.gradeLevelId],
+    references: [gradeLevels.id],
+  }),
+  createdByUser: one(users, {
+    fields: [subjects.createdBy],
+    references: [users.id],
+    relationName: "subject_creator",
+  }),
+  /** Strand associations for SHS elective subjects */
+  subjectStrands: many(subjectStrands),
+  /** Subject offerings across sections */
+  subjectOfferings: many(subjectOfferings),
+}));
+
+export const curriculumAdoptionsRelations = relations(curriculumAdoptions, ({ one }) => ({
+  schoolYear: one(schoolYears, {
+    fields: [curriculumAdoptions.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  gradeLevel: one(gradeLevels, {
+    fields: [curriculumAdoptions.gradeLevelId],
+    references: [gradeLevels.id],
+  }),
+  curriculum: one(curriculums, {
+    fields: [curriculumAdoptions.curriculumId],
+    references: [curriculums.id],
+  }),
+  adoptedByUser: one(users, {
+    fields: [curriculumAdoptions.adoptedBy],
+    references: [users.id],
+    relationName: "adoption_adopter",
+  }),
 }));
 
 // Void Request Relations
@@ -1542,10 +2158,16 @@ export const enrollmentsRelations = relations(enrollments, ({ one, many }) => ({
     fields: [enrollments.registrationId],
     references: [registrations.id],
   }),
+  /** SHS strand for senior high school students */
+  strand: one(strands, {
+    fields: [enrollments.strandId],
+    references: [strands.id],
+  }),
   assessments: many(assessments),
   discountRequests: many(discountRequests),
   cancellationRequests: many(enrollmentCancellationRequests),
   clearances: many(studentClearances),
+  studentSubjectEnrollments: many(studentSubjectEnrollments),
 }));
 
 export const studentsRelations = relations(students, ({ one, many }) => ({
@@ -1567,6 +2189,7 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   studentDiscounts: many(studentDiscounts),
   clearances: many(studentClearances),
   documentRequests: many(documentRequests),
+  studentSubjectEnrollments: many(studentSubjectEnrollments),
 }));
 
 // Enrollment Cancellation Request Relations
@@ -1642,4 +2265,195 @@ export const documentRequestsRelations = relations(documentRequests, ({ one }) =
     references: [users.id],
     relationName: "docRequest_releaser",
   }),
+}));
+
+// Section Adviser Relations
+export const sectionAdvisersRelations = relations(sectionAdvisers, ({ one }) => ({
+  section: one(sections, {
+    fields: [sectionAdvisers.sectionId],
+    references: [sections.id],
+  }),
+  user: one(users, {
+    fields: [sectionAdvisers.userId],
+    references: [users.id],
+    relationName: "adviser_user",
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [sectionAdvisers.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  createdByUser: one(users, {
+    fields: [sectionAdvisers.createdBy],
+    references: [users.id],
+    relationName: "adviser_creator",
+  }),
+}));
+
+// Grade Sheet Relations
+export const gradeSheetsRelations = relations(gradeSheets, ({ one, many }) => ({
+  section: one(sections, {
+    fields: [gradeSheets.sectionId],
+    references: [sections.id],
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [gradeSheets.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  adviser: one(users, {
+    fields: [gradeSheets.adviserId],
+    references: [users.id],
+    relationName: "gradeSheet_adviser",
+  }),
+  entries: many(gradeSheetEntries),
+  approvals: many(gradeApprovals),
+  submittedByUser: one(users, {
+    fields: [gradeSheets.submittedBy],
+    references: [users.id],
+    relationName: "gradeSheet_submitter",
+  }),
+  returnedByUser: one(users, {
+    fields: [gradeSheets.returnedBy],
+    references: [users.id],
+    relationName: "gradeSheet_returner",
+  }),
+  principalApprovedByUser: one(users, {
+    fields: [gradeSheets.principalApprovedBy],
+    references: [users.id],
+    relationName: "gradeSheet_principalApprover",
+  }),
+  publishedByUser: one(users, {
+    fields: [gradeSheets.publishedBy],
+    references: [users.id],
+    relationName: "gradeSheet_publisher",
+  }),
+  lockedByUser: one(users, {
+    fields: [gradeSheets.lockedBy],
+    references: [users.id],
+    relationName: "gradeSheet_locker",
+  }),
+}));
+
+// Grade Sheet Entry Relations
+export const gradeSheetEntriesRelations = relations(gradeSheetEntries, ({ one }) => ({
+  gradeSheet: one(gradeSheets, {
+    fields: [gradeSheetEntries.gradeSheetId],
+    references: [gradeSheets.id],
+  }),
+  student: one(students, {
+    fields: [gradeSheetEntries.studentId],
+    references: [students.id],
+  }),
+  subject: one(subjects, {
+    fields: [gradeSheetEntries.subjectId],
+    references: [subjects.id],
+  }),
+  studentSubjectEnrollment: one(studentSubjectEnrollments, {
+    fields: [gradeSheetEntries.studentSubjectEnrollmentId],
+    references: [studentSubjectEnrollments.id],
+  }),
+}));
+
+// Grade Approval Relations
+export const gradeApprovalsRelations = relations(gradeApprovals, ({ one }) => ({
+  gradeSheet: one(gradeSheets, {
+    fields: [gradeApprovals.gradeSheetId],
+    references: [gradeSheets.id],
+  }),
+  actor: one(users, {
+    fields: [gradeApprovals.actorId],
+    references: [users.id],
+  }),
+}));
+
+// ─── Subject Offering Relations ───────────────────────────────────────────────
+
+// Strand Relations
+export const strandsRelations = relations(strands, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [strands.createdBy],
+    references: [users.id],
+    relationName: "strand_creator",
+  }),
+  subjectStrands: many(subjectStrands),
+  subjectOfferings: many(subjectOfferings),
+  enrollments: many(enrollments),
+}));
+
+// Subject-Strand Relations
+export const subjectStrandsRelations = relations(subjectStrands, ({ one }) => ({
+  subject: one(subjects, {
+    fields: [subjectStrands.subjectId],
+    references: [subjects.id],
+  }),
+  strand: one(strands, {
+    fields: [subjectStrands.strandId],
+    references: [strands.id],
+  }),
+  createdByUser: one(users, {
+    fields: [subjectStrands.createdBy],
+    references: [users.id],
+    relationName: "subjectStrand_creator",
+  }),
+}));
+
+// Subject Offering Relations
+export const subjectOfferingsRelations = relations(subjectOfferings, ({ one, many }) => ({
+  section: one(sections, {
+    fields: [subjectOfferings.sectionId],
+    references: [sections.id],
+  }),
+  subject: one(subjects, {
+    fields: [subjectOfferings.subjectId],
+    references: [subjects.id],
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [subjectOfferings.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  teacher: one(users, {
+    fields: [subjectOfferings.teacherId],
+    references: [users.id],
+    relationName: "offering_teacher",
+  }),
+  strand: one(strands, {
+    fields: [subjectOfferings.strandId],
+    references: [strands.id],
+  }),
+  createdByUser: one(users, {
+    fields: [subjectOfferings.createdBy],
+    references: [users.id],
+    relationName: "offering_creator",
+  }),
+  studentSubjectEnrollments: many(studentSubjectEnrollments),
+}));
+
+// Student Subject Enrollment Relations
+export const studentSubjectEnrollmentsRelations = relations(studentSubjectEnrollments, ({ one, many }) => ({
+  enrollment: one(enrollments, {
+    fields: [studentSubjectEnrollments.enrollmentId],
+    references: [enrollments.id],
+  }),
+  subjectOffering: one(subjectOfferings, {
+    fields: [studentSubjectEnrollments.subjectOfferingId],
+    references: [subjectOfferings.id],
+  }),
+  student: one(students, {
+    fields: [studentSubjectEnrollments.studentId],
+    references: [students.id],
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [studentSubjectEnrollments.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  withdrawnByUser: one(users, {
+    fields: [studentSubjectEnrollments.withdrawnBy],
+    references: [users.id],
+    relationName: "sse_withdrawer",
+  }),
+  createdByUser: one(users, {
+    fields: [studentSubjectEnrollments.createdBy],
+    references: [users.id],
+    relationName: "sse_creator",
+  }),
+  gradeSheetEntries: many(gradeSheetEntries),
 }));

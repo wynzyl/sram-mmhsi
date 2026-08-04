@@ -15,6 +15,14 @@ export type Permission =
   | "registrations:read"
   | "registrations:create"
   | "registrations:review"
+  // Curriculums
+  | "curriculums:read"
+  | "curriculums:create"
+  | "curriculums:edit"
+  | "curriculums:publish"
+  | "curriculums:archive"
+  | "curriculums:adopt"
+  | "subjects:manage"
   // Enrollments
   | "enrollments:read"
   | "enrollments:create"
@@ -52,7 +60,19 @@ export type Permission =
   | "grades:read"
   | "grades:encode"
   | "grades:submit"
+  /** Review grade sheets at principal level — principal/admin */
+  | "grades:principal_review"
+  /** Publish grades to student portal — principal/admin */
+  | "grades:publish"
+  /** Lock grades (immutable) — principal/admin */
   | "grades:lock"
+  /** Unlock locked grades — admin only */
+  | "grades:unlock"
+  // Advisers
+  /** View adviser assignments */
+  | "advisers:read"
+  /** Assign/remove section advisers */
+  | "advisers:manage"
   // Receipts
   | "booklets:manage"
   // Reports
@@ -84,6 +104,28 @@ export type Permission =
   | "documents:process"
   /** Release documents (final step, requires clearance) */
   | "documents:release"
+  // Sections
+  /** Assign/remove students from sections */
+  | "sections:assign"
+  // Strands (SHS)
+  /** View strands */
+  | "strands:read"
+  /** Manage strands (create/edit/delete) */
+  | "strands:manage"
+  // Subject Offerings
+  /** View subject offerings */
+  | "subject_offerings:read"
+  /** Generate subject offerings for sections */
+  | "subject_offerings:generate"
+  /** Create manual subject offerings from any published curriculum */
+  | "subject_offerings:create"
+  /** Assign teachers to subject offerings */
+  | "subject_offerings:assign_teacher"
+  // Student Subject Enrollments
+  /** View student subject enrollments */
+  | "student_subject_enrollments:read"
+  /** Manage student subject enrollments (withdraw/enroll) */
+  | "student_subject_enrollments:manage"
   // Admin
   | "users:manage"
   | "school_years:manage"
@@ -97,6 +139,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   super_admin: [
     "students:read", "students:create", "students:update", "students:delete",
     "registrations:read", "registrations:create", "registrations:review",
+    "curriculums:read", "curriculums:create", "curriculums:edit", "curriculums:publish", "curriculums:archive", "curriculums:adopt", "subjects:manage",
     "enrollments:read",
     "enrollments:create",
     "enrollments:update",
@@ -108,19 +151,25 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "assessments:cancel", "assessments:cancel_with_balance",
     "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
-    "grades:read", "grades:encode", "grades:submit", "grades:lock",
+    "grades:read", "grades:encode", "grades:submit", "grades:principal_review", "grades:publish", "grades:lock", "grades:unlock",
+    "advisers:read", "advisers:manage",
     "booklets:manage",
     "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
     "clearances:read", "clearances:create", "clearances:resolve",
     "archive:read", "archive:manage",
     "documents:read", "documents:create", "documents:process", "documents:release",
     "reports:view", "reports:finance", "reports:academic",
+    "sections:assign",
+    "strands:read", "strands:manage",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:create", "subject_offerings:assign_teacher",
+    "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage", "system:manage",
   ],
   admin: [
     "students:read", "students:create", "students:update", "students:delete",
     "registrations:read", "registrations:create", "registrations:review",
+    "curriculums:read", "curriculums:create", "curriculums:edit", "curriculums:publish", "curriculums:archive", "curriculums:adopt", "subjects:manage",
     "enrollments:read",
     "enrollments:create",
     "enrollments:update",
@@ -132,7 +181,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "assessments:cancel", "assessments:cancel_with_balance",
     "payments:read", "payments:post", "payments:void", "payments:void_request", "payments:void_approve",
     "invoices:read", "invoices:send",
-    "grades:read", "grades:encode", "grades:submit", "grades:lock",
+    "grades:read", "grades:encode", "grades:submit", "grades:principal_review", "grades:publish", "grades:lock", "grades:unlock",
+    "advisers:read", "advisers:manage",
     "booklets:manage",
     "discounts:read", "discounts:request", "discounts:review", "discounts:manage", "discounts:apply",
     "clearances:read", "clearances:create", "clearances:resolve",
@@ -140,13 +190,20 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "documents:read", "documents:create", "documents:process", "documents:release",
     "fee_schedules:manage",
     "school_years:manage",
+    "sections:manage",
+    "sections:assign",
+    "strands:read", "strands:manage",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:create", "subject_offerings:assign_teacher",
+    "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "reports:view", "reports:finance", "reports:academic",
     "users:manage",
+    "assignments:manage",
     "system:manage",
   ],
   registrar: [
     "students:read", "students:create", "students:update",
     "registrations:read", "registrations:create", "registrations:review",
+    "curriculums:read",
     "enrollments:read", "enrollments:create", "enrollments:update", "enrollments:confirm", "enrollments:cancel",
     "assessments:read", "assessments:create",
     "payments:read", "payments:post", "payments:void", "payments:void_request",
@@ -155,8 +212,12 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "archive:read", "archive:manage",
     "documents:read", "documents:create", "documents:process",
     "grades:read",
+    "advisers:read",
+    "strands:read",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:create", "subject_offerings:assign_teacher",
+    "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "reports:view", "reports:academic",
-    "sections:manage", "school_years:manage",
+    "school_years:manage",
   ],
   finance_officer: [
     "students:read",
@@ -181,7 +242,35 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   ],
   teacher: [
     "students:read",
+    "curriculums:read",
     "grades:read", "grades:encode", "grades:submit",
+    "strands:read",
+    "subject_offerings:read",
+    "student_subject_enrollments:read",
+  ],
+  coordinator: [
+    "students:read",
+    "curriculums:read",
+    "grades:read",
+    "advisers:read", "advisers:manage",
+    "sections:manage", "sections:assign",
+    "strands:read",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:assign_teacher",
+    "student_subject_enrollments:read",
+    "assignments:manage",
+    "reports:view", "reports:academic",
+  ],
+  principal: [
+    "students:read",
+    "curriculums:read",
+    "grades:read", "grades:principal_review", "grades:publish", "grades:lock",
+    "advisers:read", "advisers:manage",
+    "sections:manage", "sections:assign",
+    "strands:read",
+    "subject_offerings:read", "subject_offerings:generate", "subject_offerings:assign_teacher",
+    "student_subject_enrollments:read",
+    "assignments:manage",
+    "reports:view", "reports:academic",
   ],
   student: [
     "assessments:read",

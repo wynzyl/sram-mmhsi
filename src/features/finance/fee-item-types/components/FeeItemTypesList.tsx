@@ -119,14 +119,14 @@ function FeeTypeGroup({
                 </td>
                 <td className="px-4 py-2.5 text-[0.8125rem] border-b border-border">
                   {ft.isDiscount ? (
-                    <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-green-500 bg-green-500/10 rounded">DISC</span>
+                    <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-success bg-success/10 rounded">DISC</span>
                   ) : (
                     <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide bg-muted text-muted-foreground rounded">FEE</span>
                   )}
                 </td>
                 <td className="px-4 py-2.5 text-[0.8125rem] border-b border-border text-center">
                   {ft.isRefundable ? (
-                    <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-green-500 bg-green-500/10 rounded">YES</span>
+                    <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-success bg-success/10 rounded">YES</span>
                   ) : (
                     <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-amber-500 bg-amber-500/10 rounded">NO</span>
                   )}

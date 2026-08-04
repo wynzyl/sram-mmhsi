@@ -11,6 +11,23 @@ const passwordSchema = z
   .regex(/[a-z]/, "Password must contain at least one lowercase letter.")
   .regex(/[0-9]/, "Password must contain at least one number.");
 
+/** Shared role enum so create/update stay in sync. */
+export const UserRoleSchema = z.enum(
+  [
+    ROLES.SUPER_ADMIN,
+    ROLES.ADMIN,
+    ROLES.REGISTRAR,
+    ROLES.FINANCE_OFFICER,
+    ROLES.CASHIER,
+    ROLES.TEACHER,
+    ROLES.COORDINATOR,
+    ROLES.PRINCIPAL,
+    ROLES.STUDENT,
+    ROLES.PARENT_GUARDIAN,
+  ] as const,
+  { message: "Role is required." }
+);
+
 // ─── Create User Schema ──────────────────────────────────────────────────────
 
 export const CreateUserSchema = z.object({
@@ -31,19 +48,7 @@ export const CreateUserSchema = z.object({
     .trim()
     .toLowerCase(),
   password: passwordSchema,
-  role: z.enum(
-    [
-      ROLES.SUPER_ADMIN,
-      ROLES.ADMIN,
-      ROLES.REGISTRAR,
-      ROLES.FINANCE_OFFICER,
-      ROLES.CASHIER,
-      ROLES.TEACHER,
-      ROLES.STUDENT,
-      ROLES.PARENT_GUARDIAN,
-    ] as const,
-    { message: "Role is required." }
-  ),
+  role: UserRoleSchema,
   forcePasswordChange: z.boolean().default(true),
 });
 
@@ -73,19 +78,7 @@ export const UpdateUserSchema = z.object({
     )
     .trim()
     .toLowerCase(),
-  role: z.enum(
-    [
-      ROLES.SUPER_ADMIN,
-      ROLES.ADMIN,
-      ROLES.REGISTRAR,
-      ROLES.FINANCE_OFFICER,
-      ROLES.CASHIER,
-      ROLES.TEACHER,
-      ROLES.STUDENT,
-      ROLES.PARENT_GUARDIAN,
-    ] as const,
-    { message: "Role is required." }
-  ),
+  role: UserRoleSchema,
   isActive: z.boolean().optional(),
 });
 

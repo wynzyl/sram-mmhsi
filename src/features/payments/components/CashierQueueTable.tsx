@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import {
@@ -10,8 +11,8 @@ import {
   createStatusColumn,
   createCurrencyColumn,
 } from "@/components/tables/column-factories";
-import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
+import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { cn } from "@/lib/utils/cn";
 import { ClientTablePagination } from "@/components/ui/ClientTablePagination";
 import type { CashierQueueRow } from "../payments.queries";
@@ -21,17 +22,26 @@ export type { CashierQueueRow };
 
 const PAGE_SIZE = 25;
 
-interface CashierQueueTableProps {
-  rows: CashierQueueRow[];
+interface CashierQueueStats {
+  pendingPaymentsCount: number;
+  totalCollectedToday: number;
+  totalCollectibles: number;
 }
 
-export function CashierQueueTable({ rows }: CashierQueueTableProps) {
+interface CashierQueueTableProps {
+  rows: CashierQueueRow[];
+  stats?: CashierQueueStats;
+  isFetching?: boolean;
+}
+
+export function CashierQueueTable({ rows, stats, isFetching }: CashierQueueTableProps) {
   const [filterMode, setFilterMode] = useState<"all" | "newly_assessed" | "with_balance">("newly_assessed");
   const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 300);
   const [currentPage, setCurrentPage] = useState(1);
 
   const filteredRows = useMemo(() => {
-    const normalizedSearch = searchInput.trim().toLowerCase();
+    const normalizedSearch = debouncedSearch.trim().toLowerCase();
 
     let filtered: CashierQueueRow[];
 
@@ -61,7 +71,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
 
     // Sort alphabetically by student name (A-Z) for "all" and "with_balance"
     return filtered.sort((a, b) => a.studentName.localeCompare(b.studentName));
-  }, [filterMode, rows, searchInput]);
+  }, [filterMode, rows, debouncedSearch]);
 
   // Calculate pagination - clamp page to valid range
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
@@ -78,11 +88,15 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
     setCurrentPage(1);
   };
 
-  // Search change handler - reset page to 1
-  const handleSearchChange = (value: string) => {
-    setSearchInput(value);
+  // Reset page when debounced search changes (skip initial mount)
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setCurrentPage(1);
-  };
+  }, [debouncedSearch]);
 
   const columns: ColumnDef<CashierQueueRow>[] = [
     createStudentColumn<CashierQueueRow>({ refKey: "referenceNumber" }),
@@ -120,16 +134,58 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
   ];
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Input
-          type="search"
-          value={searchInput}
-          onChange={(event) => handleSearchChange(event.target.value)}
-          placeholder="Search student name / reference number..."
-          className="max-w-sm"
-        />
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col">
+      {/* Card Header with Filters */}
+      <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Left: Title + Stats Badges */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2 className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary">
+            Pending Payments
+          </h2>
+          {stats && (
+            <>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+                {stats.pendingPaymentsCount} Pending
+              </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
+                Today: <CurrencyDisplay amount={stats.totalCollectedToday} />
+              </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                Collectibles: <CurrencyDisplay amount={stats.totalCollectibles} />
+              </span>
+            </>
+          )}
+          {isFetching && (
+            <span className="text-xs text-muted-foreground" aria-live="polite">
+              Refreshing…
+            </span>
+          )}
+        </div>
+
+        {/* Right: Search + Filter Buttons */}
+        <div className="filter-controls-inline">
+          {/* Search */}
+          <div className="filter-search w-48">
+            <span className="filter-search-icon">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+                <path
+                  fillRule="evenodd"
+                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search..."
+              className="filter-search-input"
+              autoComplete="off"
+            />
+          </div>
+
+          {/* Filter Buttons */}
           <button
             type="button"
             className={cn(
@@ -137,7 +193,7 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
             )}
             onClick={() => handleFilterModeChange("all")}
           >
-            All Queue
+            All
           </button>
           <button
             type="button"
@@ -161,11 +217,12 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
             )}
             onClick={() => handleFilterModeChange("with_balance")}
           >
-            Student with Balance
+            With Balance
           </button>
         </div>
       </div>
 
+      {/* Table */}
       <DataTable
         columns={columns}
         data={paginatedRows}
@@ -174,14 +231,16 @@ export function CashierQueueTable({ rows }: CashierQueueTableProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <ClientTablePagination
-          currentPage={effectivePage}
-          totalPages={totalPages}
-          totalRecords={filteredRows.length}
-          pageSize={PAGE_SIZE}
-          onPageChange={setCurrentPage}
-          itemLabel="students"
-        />
+        <div className="border-t border-border px-4 py-3">
+          <ClientTablePagination
+            currentPage={effectivePage}
+            totalPages={totalPages}
+            totalRecords={filteredRows.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setCurrentPage}
+            itemLabel="students"
+          />
+        </div>
       )}
     </div>
   );

@@ -149,7 +149,7 @@ export default async function FeeScheduleDetailPage({ params }: PageProps) {
             <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
               Status
             </p>
-            <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded ${schedule.isActive ? "bg-green-500/15 text-green-500" : "bg-muted text-muted-foreground"}`}>
+            <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded ${schedule.isActive ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
               {schedule.isActive ? "Active" : "Inactive"}
             </span>
           </div>
@@ -205,7 +205,7 @@ export default async function FeeScheduleDetailPage({ params }: PageProps) {
                       <td className="px-4 py-2.5 text-[0.8125rem] text-foreground">
                         <span className="font-medium">{item.feeItemType.name}</span>
                         {item.feeItemType.isDiscount && (
-                          <span className="inline-flex ml-2 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-green-500 bg-green-500/10 rounded">DISC</span>
+                          <span className="inline-flex ml-2 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-success bg-success/10 rounded">DISC</span>
                         )}
                       </td>
                       <td className="px-4 py-2.5 text-[0.8125rem] text-muted-foreground capitalize">{item.feeItemType.category}</td>

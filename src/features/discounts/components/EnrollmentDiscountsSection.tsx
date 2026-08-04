@@ -108,7 +108,7 @@ export default function EnrollmentDiscountsSection({
       </CardHeader>
       <CardContent className="space-y-4">
         {requestBlockReason && !showForm && (
-          <p className="text-xs text-muted-foreground italic">
+          <p className="text-helper italic">
             {requestBlockReason}
           </p>
         )}
@@ -152,14 +152,14 @@ export default function EnrollmentDiscountsSection({
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="font-medium">{request.discountTypeName}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-secondary">
                         {formatDiscountValue(request)} -{" "}
                         {request.baseType === "tuition_only"
                           ? "Tuition Only"
                           : "Full Assessment"}
                       </div>
                       {request.requestReason && (
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="text-helper mt-1">
                           {request.requestReason}
                         </div>
                       )}
@@ -192,14 +192,14 @@ export default function EnrollmentDiscountsSection({
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="font-medium">{request.discountTypeName}</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-secondary">
                           {formatDiscountValue(request)} -{" "}
                           {request.baseType === "tuition_only"
                             ? "Tuition Only"
                             : "Full Assessment"}
                         </div>
                         {request.overrideValue && request.overrideReason && (
-                          <div className="text-xs text-muted-foreground mt-1">
+                          <div className="text-helper mt-1">
                             Override: {request.overrideReason}
                           </div>
                         )}
@@ -251,7 +251,7 @@ export default function EnrollmentDiscountsSection({
                         {request.discountTypeName}
                       </div>
                       {request.decisionRemarks && (
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="text-helper mt-1">
                           Reason: {request.decisionRemarks}
                         </div>
                       )}
@@ -267,7 +267,7 @@ export default function EnrollmentDiscountsSection({
         {/* Empty State */}
         {discountRequests.length === 0 && !showForm && (
           <div className="text-center py-4 text-muted-foreground">
-            <p className="text-sm">No discount requests for this enrollment.</p>
+            <p className="text-secondary">No discount requests for this enrollment.</p>
             {canRequest && (
               <Button
                 variant="ghost"

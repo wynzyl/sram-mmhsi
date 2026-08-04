@@ -230,40 +230,49 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
   };
 
   return (
-    <div className="page-container space-y-6">
-      {/* Unified Header: Title + Subtitle (left), Filters + Action (right) */}
-      <EnrollmentQueueHeader
-        basePath={enrollmentsBasePath}
-        gradeLevels={allGradeLevels}
-        schoolYearLabel={activeSchoolYear.label}
-        totalCount={getCurrentTabCount(currentTab)}
-        canCreate={canCreate}
-      />
-
-      {/* Tabs Navigation */}
-      <EnrollmentQueueTabs
-        counts={tabCounts}
-        currentTab={currentTab}
-        basePath={enrollmentsBasePath}
-      />
-
-      {/* Tab Content */}
-      <div>{renderTabContent()}</div>
-
-      {/* Legacy Link */}
-      <div className="rounded-md border border-border bg-muted p-4">
-        <p className="text-xs text-muted-foreground">
-          <strong>Note:</strong> This is the new list-first enrollment queue. If you need to manually create an
-          enrollment record, use the{" "}
-          <Link
-            href={`${enrollmentsBasePath}/new`}
-            className="font-medium text-primary hover:underline"
-          >
-            manual entry form
-          </Link>
-          .
+    <div className="page-container--full space-y-6">
+      {/* Clean Page Header - Title + Subtitle Only */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Enrollment Queue
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {activeSchoolYear.label} • {getCurrentTabCount(currentTab).toLocaleString()} Enrollment{getCurrentTabCount(currentTab) !== 1 ? "s" : ""} in this tab
         </p>
       </div>
+
+      {/* Card with Embedded Controls */}
+      <section className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        {/* Card Header - Inline Controls */}
+        <EnrollmentQueueHeader
+          basePath={enrollmentsBasePath}
+          gradeLevels={allGradeLevels}
+          totalCount={getCurrentTabCount(currentTab)}
+          canCreate={canCreate}
+        />
+
+        {/* Tabs Navigation - Inside Card */}
+        <EnrollmentQueueTabs
+          counts={tabCounts}
+          currentTab={currentTab}
+          basePath={enrollmentsBasePath}
+        />
+
+        {/* Tab Content */}
+        <div>{renderTabContent()}</div>
+      </section>
+
+      {/* Legacy Link */}
+      <p className="text-center text-[0.7rem] text-muted-foreground pb-2">
+        Need manual entry?{" "}
+        <Link
+          href={`${enrollmentsBasePath}/new`}
+          className="font-medium text-primary hover:underline"
+        >
+          Create enrollment manually
+        </Link>
+        . Confidential institutional data.
+      </p>
     </div>
   );
 }

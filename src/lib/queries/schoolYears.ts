@@ -48,3 +48,23 @@ export const getActiveSchoolYear = cache(async () => {
 
   return active ?? null;
 });
+
+/**
+ * Get only the active school year ID.
+ * Uses React cache() for request-level deduplication.
+ * Convenience function for operations that only need the ID.
+ */
+export const getActiveSchoolYearId = cache(async (): Promise<string | null> => {
+  const [row] = await db
+    .select({ id: schoolYears.id })
+    .from(schoolYears)
+    .where(
+      and(
+        eq(schoolYears.isActive, true),
+        isNull(schoolYears.deletedAt)
+      )
+    )
+    .limit(1);
+
+  return row?.id ?? null;
+});

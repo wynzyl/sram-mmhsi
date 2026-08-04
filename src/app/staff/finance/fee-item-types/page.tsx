@@ -68,7 +68,7 @@ export default async function FeeItemTypesPage() {
           </div>
           <div className="w-px h-8 bg-border" aria-hidden />
           <div className="flex flex-col gap-0.5">
-            <span className="text-2xl font-bold text-green-500">{activeCount}</span>
+            <span className="text-2xl font-bold text-success">{activeCount}</span>
             <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Active</span>
           </div>
           <div className="w-px h-8 bg-border" aria-hidden />

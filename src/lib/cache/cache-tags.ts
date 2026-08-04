@@ -53,6 +53,24 @@ export const CACHE_TAGS = {
 
   /** Document requests (transactional — use forceUpdateTag for read-your-own-writes) */
   DOCUMENT_REQUESTS: "document-requests",
+
+  /** Curriculum definitions and versions */
+  CURRICULUMS: "curriculums",
+
+  /** Curriculum adoptions (school year + grade level bindings) */
+  CURRICULUM_ADOPTIONS: "curriculum-adoptions",
+
+  /** Sections (classroom sections per grade level per school year) */
+  SECTIONS: "sections",
+
+  /** SHS academic strands (STEM, ABM, HUMSS, GAS, TVL-*) */
+  STRANDS: "strands",
+
+  /** Subject offerings (section + subject + school year operational layer) */
+  SUBJECT_OFFERINGS: "subject-offerings",
+
+  /** Student subject enrollments (student-subject enrollment records) */
+  STUDENT_SUBJECT_ENROLLMENTS: "student-subject-enrollments",
 } as const;
 
 export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];

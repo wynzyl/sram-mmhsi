@@ -3,6 +3,8 @@ import { requireSession, INVALID_SESSION_REDIRECT } from "@/lib/auth/session";
 import { getCurrentUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { AppFooter } from "@/components/layout/AppFooter";
 import { CommandPaletteProvider } from "@/components/command-palette";
 import { ActiveSchoolYearProvider } from "@/components/providers/ActiveSchoolYearProvider";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
@@ -25,25 +27,47 @@ async function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <ActiveSchoolYearProvider activeSchoolYearId={activeSchoolYear?.id ?? null}>
-    <CommandPaletteProvider>
-      <div className="app-shell">
-        <Sidebar role={user.role as Role} username={user.username} />
-        <main className="app-main">{children}</main>
+      <CommandPaletteProvider>
+        <div className="app-shell">
+          <AppHeader
+            username={user.username}
+            role={user.role as Role}
+            schoolYear={activeSchoolYear?.label}
+          />
+          <div className="app-body">
+            <Sidebar role={user.role as Role} />
+            <main className="app-main">
+              <div className="app-content">{children}</div>
+              <AppFooter schoolYear={activeSchoolYear?.label} />
+            </main>
+          </div>
+        </div>
         <style>{`
           .app-shell {
             display: flex;
+            flex-direction: column;
             height: 100vh;
             overflow: hidden;
-            background: hsl(var(--muted));
+            background: var(--muted);
+          }
+          .app-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
           }
           .app-main {
             flex: 1;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--background);
+          }
+          .app-content {
+            flex: 1;
             padding: 1.5rem 2rem;
           }
         `}</style>
-      </div>
-    </CommandPaletteProvider>
+      </CommandPaletteProvider>
     </ActiveSchoolYearProvider>
   );
 }
@@ -58,16 +82,27 @@ export default function AdminLayout({
     <Suspense
       fallback={
         <div className="app-shell">
-          <aside className="sidebar" style={{ width: 220, flexShrink: 0 }} aria-hidden />
-          <main className="app-main" style={{ flex: 1, overflow: "auto", padding: "1.5rem 2rem" }}>
-            <div className="animate-pulse" style={{ height: "100%" }} />
-          </main>
+          <div
+            className="app-header-skeleton"
+            style={{ height: 64, flexShrink: 0, background: "var(--card)", borderBottom: "1px solid var(--border)" }}
+            aria-hidden
+          />
+          <div className="app-body" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+            <aside className="sidebar" style={{ width: 220, flexShrink: 0 }} aria-hidden />
+            <main
+              className="app-main"
+              style={{ flex: 1, overflow: "auto", padding: "1.5rem 2rem", backgroundColor: "var(--background)" }}
+            >
+              <div className="animate-pulse" style={{ height: "100%" }} />
+            </main>
+          </div>
           <style>{`
             .app-shell {
               display: flex;
+              flex-direction: column;
               height: 100vh;
               overflow: hidden;
-              background: hsl(var(--muted));
+              background: var(--muted);
             }
           `}</style>
         </div>

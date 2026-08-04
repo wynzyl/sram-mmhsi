@@ -21,9 +21,15 @@
   --accent-foreground: #92400e;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: #f59e0b;
+
+  /* Layout dimensions */
+  --header-height: 64px;
+  --sidebar-width: 220px;
   --chart-1: #f59e0b;
   --chart-2: #d97706;
   --chart-3: #b45309;
@@ -58,6 +64,29 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
+  /* ═══════════════════════════════════════════════════════════════
+     GRADIENT & GLOW EFFECTS (Light Theme)
+     Theme-aware gradient variables for visual polish
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Primary button gradient & glow */
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 70%, #ff6b6b) 100%);
+  --gradient-primary-hover: linear-gradient(135deg, color-mix(in srgb, var(--primary) 85%, #000) 0%, var(--primary) 100%);
+  --glow-primary: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
+  --glow-primary-strong: 0 0 30px color-mix(in srgb, var(--primary) 50%, transparent);
+
+  /* Card header gradient (subtle) */
+  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, color-mix(in srgb, var(--card) 95%, var(--primary)) 100%);
+
+  /* Avatar gradient */
+  --avatar-gradient: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 60%, #9333ea) 100%);
+
+  /* Success badge glow */
+  --glow-success: 0 0 12px color-mix(in srgb, var(--success) 30%, transparent);
+
+  /* Link accent - for reference codes (darker in light mode) */
+  --link-accent: #0891b2;
+
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      LEGACY COMPATIBILITY ALIASES (Light Theme)
      Maps old variable names to new theme tokens
@@ -82,6 +111,8 @@
   --accent-foreground: #fde68a;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+  --success: #4ade80;
+  --success-foreground: #052e16;
   --border: #404040;
   --input: #404040;
   --ring: #f59e0b;
@@ -121,6 +152,29 @@
      LEGACY COMPATIBILITY ALIASES (Dark Theme)
      Maps old variable names to new theme tokens
      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+  /* ═══════════════════════════════════════════════════════════════
+     GRADIENT & GLOW EFFECTS (Dark Theme)
+     Enhanced gradients for dark mode (more vibrant)
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Primary button gradient & glow - vibrant purple in dark mode */
+  --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a855f7 100%);
+  --glow-primary: 0 0 20px rgba(139, 92, 246, 0.5);
+  --glow-primary-strong: 0 0 35px rgba(139, 92, 246, 0.7);
+
+  /* Card header gradient - subtle purple tint */
+  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, color-mix(in srgb, var(--card) 85%, #7c3aed) 100%);
+
+  /* Avatar gradient - rich saturated purple tones */
+  --avatar-gradient: linear-gradient(145deg, #7c3aed 0%, #8b5cf6 40%, #a855f7 100%);
+
+  /* Success badge glow - vibrant green */
+  --glow-success: 0 0 12px rgba(74, 222, 128, 0.5);
+
+  /* Link accent - cyan/teal for student IDs */
+  --link-accent: #22d3ee;
 
   /* Surface variants */
   --color-surface: var(--card);
@@ -184,6 +238,302 @@
   --color-primary-300: color-mix(in srgb, var(--primary) 80%, white);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   COLOR THEMES
+   Additional color themes that work with both light and dark modes.
+   Apply theme class (e.g., .theme-ocean) alongside mode class (.dark).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ───────────────────────────────────────────────────────────────
+   COSMIC THEME
+   Deep purple/indigo palette inspired by cosmic night sky
+   ─────────────────────────────────────────────────────────────── */
+
+/* Cosmic Light */
+.theme-cosmic {
+  --primary: #6e56cf;
+  --primary-foreground: #ffffff;
+  --card: #f4f2ff;
+  --card-foreground: #2d2b55;
+  --ring: #6e56cf;
+  --sidebar-primary: #6e56cf;
+  --sidebar-primary-foreground: #ffffff;
+  --accent: #e4dfff;
+  --accent-foreground: #4a4080;
+  --secondary: #e4dfff;
+  --secondary-foreground: #4a4080;
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --chart-1: #6e56cf;
+  --chart-2: #8b7dd8;
+  --chart-3: #5746a8;
+  --chart-4: #4a4080;
+  --chart-5: #2d2b55;
+
+  /* Auth theme adjustments */
+  --auth-accent: #6e56cf;
+  --auth-gradient-1: rgba(110, 86, 207, 0.18);
+  --auth-gradient-2: rgba(110, 86, 207, 0.10);
+  --auth-gradient-3: rgba(110, 86, 207, 0.06);
+
+  /* Cosmic theme gradients */
+  --gradient-primary: linear-gradient(135deg, #6e56cf 0%, #a48fff 100%);
+  --avatar-gradient: linear-gradient(135deg, #6e56cf 0%, #9f7aea 50%, #c4b5fd 100%);
+}
+
+/* Cosmic Dark - Colors extracted from reference design */
+.dark.theme-cosmic {
+  /* Core backgrounds - deep purple-black tones */
+  --background: #0c0a14;
+  --foreground: #e8e6f0;
+  --card: #16121f;
+  --card-foreground: #e8e6f0;
+  --popover: #16121f;
+  --popover-foreground: #e8e6f0;
+
+  /* Primary - vibrant indigo/blue */
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --ring: #6366f1;
+
+  /* Sidebar - deepest purple */
+  --sidebar: #08060d;
+  --sidebar-foreground: #c4c2e0;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e1a2e;
+  --sidebar-accent-foreground: #e8e6f0;
+  --sidebar-border: #2a2438;
+
+  /* Secondary/Accent - muted purple */
+  --accent: #1e1a2e;
+  --accent-foreground: #c4c2e0;
+  --secondary: #1e1a2e;
+  --secondary-foreground: #c4c2e0;
+  --muted: #1e1a2e;
+  --muted-foreground: #9590a8;
+  --border: #2a2438;
+  --input: #2a2438;
+
+  /* Success - vibrant green */
+  --success: #22c55e;
+  --success-foreground: #052e16;
+
+  /* Charts */
+  --chart-1: #6366f1;
+  --chart-2: #818cf8;
+  --chart-3: #a78bfa;
+  --chart-4: #c084fc;
+  --chart-5: #7c3aed;
+
+  /* Auth theme adjustments */
+  --auth-bg: #0c0a14;
+  --auth-card: #16121f;
+  --auth-card-border: #2a2438;
+  --auth-accent: #6366f1;
+  --auth-gradient-1: rgba(99, 102, 241, 0.22);
+  --auth-gradient-2: rgba(99, 102, 241, 0.12);
+  --auth-gradient-3: transparent;
+
+  /* Override dark-mode specific aliases */
+  --color-success: #22c55e;
+  --color-primary-700: #818cf8;
+
+  /* Cosmic dark gradients - vibrant purple avatars, indigo buttons */
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  --glow-primary: 0 0 20px rgba(99, 102, 241, 0.5);
+  --glow-primary-strong: 0 0 35px rgba(99, 102, 241, 0.7);
+  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, #1a1528 100%);
+  --avatar-gradient: linear-gradient(145deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%);
+  --glow-success: 0 0 12px rgba(34, 197, 94, 0.5);
+
+  /* Student ID link color - cyan/teal */
+  --link-accent: #22d3ee;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   SLATE THEME
+   Clean indigo/slate palette for a professional modern look
+   ─────────────────────────────────────────────────────────────── */
+
+/* Slate Light */
+.theme-slate {
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --card: #f8fafc;
+  --card-foreground: #1e293b;
+  --ring: #6366f1;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #ffffff;
+  --accent: #e5e7eb;
+  --accent-foreground: #374151;
+  --secondary: #e5e7eb;
+  --secondary-foreground: #374151;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --chart-1: #6366f1;
+  --chart-2: #818cf8;
+  --chart-3: #4f46e5;
+  --chart-4: #4338ca;
+  --chart-5: #3730a3;
+
+  /* Auth theme adjustments */
+  --auth-accent: #4f46e5;
+  --auth-gradient-1: rgba(99, 102, 241, 0.18);
+  --auth-gradient-2: rgba(99, 102, 241, 0.10);
+  --auth-gradient-3: rgba(99, 102, 241, 0.06);
+
+  /* Slate theme gradients */
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  --avatar-gradient: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%);
+}
+
+/* Slate Dark */
+.dark.theme-slate {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --primary: #818cf8;
+  --primary-foreground: #0f172a;
+  --card: #1e293b;
+  --card-foreground: #e2e8f0;
+  --popover: #1e293b;
+  --popover-foreground: #e2e8f0;
+  --ring: #818cf8;
+  --sidebar: #0c1222;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #818cf8;
+  --sidebar-primary-foreground: #0f172a;
+  --sidebar-accent: #334155;
+  --sidebar-accent-foreground: #e2e8f0;
+  --sidebar-border: #334155;
+  --accent: #334155;
+  --accent-foreground: #e2e8f0;
+  --secondary: #334155;
+  --secondary-foreground: #e2e8f0;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #334155;
+  --input: #334155;
+  --success: #34d399;
+  --success-foreground: #064e3b;
+  --chart-1: #818cf8;
+  --chart-2: #a5b4fc;
+  --chart-3: #6366f1;
+  --chart-4: #4f46e5;
+  --chart-5: #4338ca;
+
+  /* Auth theme adjustments */
+  --auth-bg: #0f172a;
+  --auth-card: #1e293b;
+  --auth-card-border: #334155;
+  --auth-accent: #818cf8;
+  --auth-gradient-1: rgba(129, 140, 248, 0.22);
+  --auth-gradient-2: rgba(129, 140, 248, 0.12);
+  --auth-gradient-3: transparent;
+
+  /* Override dark-mode specific aliases */
+  --color-success: #34d399;
+  --color-primary-700: #a5b4fc;
+
+  /* Slate dark gradients */
+  --gradient-primary: linear-gradient(135deg, #818cf8 0%, #a5b4fc 100%);
+  --avatar-gradient: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #a5b4fc 100%);
+}
+
+/* ───────────────────────────────────────────────────────────────
+   GRAPHITE THEME
+   Neutral gray palette for a professional minimal look
+   ─────────────────────────────────────────────────────────────── */
+
+/* Graphite Light */
+.theme-graphite {
+  --primary: #606060;
+  --primary-foreground: #ffffff;
+  --card: #fafafa;
+  --card-foreground: #1a1a1a;
+  --ring: #606060;
+  --sidebar-primary: #606060;
+  --sidebar-primary-foreground: #ffffff;
+  --accent: #e0e0e0;
+  --accent-foreground: #333333;
+  --secondary: #e0e0e0;
+  --secondary-foreground: #333333;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --chart-1: #606060;
+  --chart-2: #808080;
+  --chart-3: #505050;
+  --chart-4: #404040;
+  --chart-5: #303030;
+
+  /* Auth theme adjustments */
+  --auth-accent: #505050;
+  --auth-gradient-1: rgba(96, 96, 96, 0.18);
+  --auth-gradient-2: rgba(96, 96, 96, 0.10);
+  --auth-gradient-3: rgba(96, 96, 96, 0.06);
+
+  /* Graphite theme gradients */
+  --gradient-primary: linear-gradient(135deg, #606060 0%, #909090 100%);
+  --avatar-gradient: linear-gradient(135deg, #505050 0%, #808080 100%);
+}
+
+/* Graphite Dark */
+.dark.theme-graphite {
+  --background: #121212;
+  --foreground: #e5e5e5;
+  --primary: #a0a0a0;
+  --primary-foreground: #1a1a1a;
+  --card: #1e1e1e;
+  --card-foreground: #e5e5e5;
+  --popover: #1e1e1e;
+  --popover-foreground: #e5e5e5;
+  --ring: #a0a0a0;
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #d9d9d9;
+  --sidebar-primary: #a0a0a0;
+  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-accent: #303030;
+  --sidebar-accent-foreground: #d9d9d9;
+  --sidebar-border: #303030;
+  --accent: #303030;
+  --accent-foreground: #d9d9d9;
+  --secondary: #303030;
+  --secondary-foreground: #d9d9d9;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
+  --border: #303030;
+  --input: #303030;
+  --success: #34d399;
+  --success-foreground: #064e3b;
+  --chart-1: #a0a0a0;
+  --chart-2: #b8b8b8;
+  --chart-3: #808080;
+  --chart-4: #686868;
+  --chart-5: #505050;
+
+  /* Auth theme adjustments */
+  --auth-bg: #121212;
+  --auth-card: #1e1e1e;
+  --auth-card-border: #303030;
+  --auth-accent: #a0a0a0;
+  --auth-gradient-1: rgba(160, 160, 160, 0.22);
+  --auth-gradient-2: rgba(160, 160, 160, 0.12);
+  --auth-gradient-3: transparent;
+
+  /* Override dark-mode specific aliases */
+  --color-success: #34d399;
+  --color-primary-700: #b8b8b8;
+
+  /* Graphite dark gradients */
+  --gradient-primary: linear-gradient(135deg, #808080 0%, #a0a0a0 100%);
+  --avatar-gradient: linear-gradient(135deg, #606060 0%, #808080 50%, #a0a0a0 100%);
+}
+
 /* Tailwind CSS 4 Theme Bridge - Maps CSS variables to Tailwind tokens */
 @theme inline {
   /* Core colors - bridges :root vars to Tailwind's color system */
@@ -203,6 +553,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -307,6 +659,19 @@
   padding: 1.5rem;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+/* Full-width variant for data-heavy list/table pages */
+.page-container--full {
+  padding: 1rem 1.5rem;
+  max-width: none;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .page-container--full {
+    padding: 0.75rem 1rem;
+  }
 }
 
 .page-header {
@@ -504,6 +869,90 @@
 
 .ml-2 {
   margin-left: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TYPOGRAPHY UTILITIES
+   Reduce repeated Tailwind patterns for common text styles
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Helper text / captions (text-xs text-muted-foreground) */
+.text-helper {
+  @apply text-xs text-muted-foreground;
+}
+
+/* Secondary content (text-sm text-muted-foreground) */
+.text-secondary {
+  @apply text-sm text-muted-foreground;
+}
+
+/* Form labels (text-sm font-medium text-foreground) */
+.text-label {
+  @apply text-sm font-medium text-foreground;
+}
+
+/* Eyebrow labels / section headings (text-xs font-semibold uppercase tracking-wide) */
+.text-eyebrow {
+  @apply text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT UTILITIES
+   Flex layout shortcuts for common patterns
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Horizontal flex with gap variants (flex items-center gap-N) */
+.flex-row-1 {
+  @apply flex items-center gap-1;
+}
+
+.flex-row-2 {
+  @apply flex items-center gap-2;
+}
+
+.flex-row-3 {
+  @apply flex items-center gap-3;
+}
+
+.flex-row-4 {
+  @apply flex items-center gap-4;
+}
+
+/* Vertical flex with gap variants (flex flex-col gap-N) */
+.flex-col-2 {
+  @apply flex flex-col gap-2;
+}
+
+.flex-col-3 {
+  @apply flex flex-col gap-3;
+}
+
+.flex-col-4 {
+  @apply flex flex-col gap-4;
+}
+
+.flex-col-6 {
+  @apply flex flex-col gap-6;
+}
+
+/* Inline flex center (inline-flex items-center) */
+.inline-center {
+  @apply inline-flex items-center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INTERACTIVE STATE UTILITIES
+   Common hover and transition patterns
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Hover with muted background (hover:bg-muted transition-colors) */
+.hover-muted {
+  @apply hover:bg-muted transition-colors;
+}
+
+/* Hover with primary tint (hover:bg-primary/10 transition-colors) */
+.hover-primary {
+  @apply hover:bg-primary/10 transition-colors;
 }
 
 /* Form utilities used by booklet form */
@@ -847,4 +1296,440 @@
   outline: 2px solid rgba(122, 13, 16, 0.18);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PILL TABS
+   Rounded pill-style tab navigation (e.g., grade level selector)
+   ═══════════════════════════════════════════════════════════════ */
+
+.pill-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background-color: var(--muted);
+  border-radius: 9999px;
+  width: fit-content;
+}
+
+.pill-tab {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.pill-tab:hover {
+  color: var(--foreground);
+  background-color: var(--background);
+}
+
+.pill-tab-active {
+  color: var(--primary-foreground);
+  background-color: var(--primary);
+  font-weight: 600;
+}
+
+.pill-tab-active:hover {
+  color: var(--primary-foreground);
+  background-color: var(--primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INFO BANNER
+   Contextual information banner with icon
+   ═══════════════════════════════════════════════════════════════ */
+
+.info-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  background-color: var(--muted);
+  border-radius: var(--radius);
+}
+
+.info-banner-icon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary);
+}
+
+.info-banner-text {
+  color: var(--muted-foreground);
+}
+
+.info-banner-emphasis {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PROMO CARD
+   Dark promotional/feature card with gradient background
+   ═══════════════════════════════════════════════════════════════ */
+
+.promo-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+  border-radius: var(--radius);
+  color: white;
+}
+
+.promo-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.03) 100%);
+  pointer-events: none;
+}
+
+.promo-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 0.5rem;
+}
+
+.promo-card-text {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
+.promo-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  text-decoration: none;
+  transition: gap 0.15s ease;
+}
+
+.promo-card-link:hover {
+  gap: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TIP BANNER
+   Dismissible tip/hint banner at bottom of page
+   ═══════════════════════════════════════════════════════════════ */
+
+.tip-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background-color: color-mix(in srgb, var(--primary) 8%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  border-radius: var(--radius);
+}
+
+.tip-banner-icon {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.25rem;
+  background-color: var(--primary);
+  color: white;
+  border-radius: 9999px;
+}
+
+.tip-banner-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tip-banner-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.tip-banner-text {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.tip-banner-close {
+  flex-shrink: 0;
+  padding: 0.25rem;
+  background: transparent;
+  border: none;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.tip-banner-close:hover {
+  color: var(--foreground);
+  background-color: var(--muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SUBJECT ICON
+   Colored icon container for subject list items
+   ═══════════════════════════════════════════════════════════════ */
+
+.subject-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.subject-icon-globe {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.subject-icon-language {
+  background-color: #fce7f3;
+  color: #db2777;
+}
+
+.subject-icon-book {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.subject-icon-calculator {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.subject-icon-flask {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.subject-icon-music {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+}
+
+.subject-icon-heart {
+  background-color: #fce7f3;
+  color: #ec4899;
+}
+
+.subject-icon-tools {
+  background-color: #f3e8ff;
+  color: #9333ea;
+}
+
+.subject-icon-default {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOGGLE TABS
+   Segmented control / toggle group (e.g., Primary/Intermediate)
+   ═══════════════════════════════════════════════════════════════ */
+
+.toggle-tabs {
+  display: inline-flex;
+  padding: 0.25rem;
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.toggle-tab {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.toggle-tab:hover {
+  color: var(--foreground);
+}
+
+.toggle-tab-active {
+  color: var(--foreground);
+  background-color: var(--background);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STAT CARD VARIANTS
+   Additional stat card styles for different contexts
+   ═══════════════════════════════════════════════════════════════ */
+
+.stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stat-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: var(--muted);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.stat-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-card-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.stat-card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0.25rem 0 0;
+  line-height: 1;
+}
+
+.stat-card-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INLINE FILTER CONTROLS
+   Single-row filter layout for card headers (no wrapping)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Inline filter controls container - prevents wrapping */
+.filter-controls-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+/* Filter search input with icon */
+.filter-search {
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+
+.filter-search-icon {
+  display: flex;
+  align-items: center;
+  padding-left: 0.75rem;
+  padding-right: 0.5rem;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+.filter-search-input {
+  min-height: 2.5rem;
+  flex: 1;
+  background-color: transparent;
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  outline: none;
+  border: none;
+}
+
+.filter-search-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* Filter select dropdown */
+.filter-select {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent);
+}
+
+.filter-select > option {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+/* Filter separator (vertical line) */
+.filter-separator {
+  height: 1.5rem;
+  width: 1px;
+  background-color: var(--border);
+  margin: 0 0.25rem;
+}
+
+/* Clear filter button */
+.filter-clear {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.filter-clear:hover {
+  color: var(--foreground);
+}
+
+.filter-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

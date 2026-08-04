@@ -41,8 +41,8 @@ export default function RequestCancellationForm({
 
   if (state.success) {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50/50 p-4">
-        <p className="text-sm text-green-700">
+      <div className="rounded-lg border border-success/30 bg-success/10 p-4">
+        <p className="text-sm text-success">
           Cancellation request submitted successfully. Request ID:{" "}
           <span className="font-mono text-xs">{state.requestId}</span>
         </p>

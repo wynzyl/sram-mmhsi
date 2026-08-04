@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { SectionHeader } from "@/components/ui/editorial/SectionHeader";
 import { TablePagination } from "@/components/ui/TablePagination";
 import AssessmentsTable from "@/features/finance/components/AssessmentsTable";
 import PendingAssessmentsQueue from "@/features/assessments/components/PendingAssessmentsQueue";
@@ -81,76 +80,114 @@ export function AssessmentsDirectoryView({ basePath }: { basePath: AssessmentsBa
 
   const isInitialLoading = query.isLoading;
 
+  // Build the subtitle based on view
+  const subtitle = typeof SUBTITLES[view] === "string" ? SUBTITLES[view] : null;
+
   return (
-    <div className="page-container space-y-6">
-      <SectionHeader size="md" accent title="Assessments" subtitle={SUBTITLES[view]} />
+    <div className="page-container--full space-y-6">
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Assessments
+        </h1>
+        {view === "pending" ? (
+          <div className="text-sm text-muted-foreground">
+            <strong>Step 1:</strong> pick a student below, then complete the one-time fee assessment.
+            <span className="mt-1 block">
+              <strong>Step 2:</strong> on the fee form, confirm catalog lines and save—the enrollment becomes{" "}
+              <strong>Assessed</strong>. Use other tabs to track payments and balances.
+            </span>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
+        )}
+      </div>
 
-      <nav className="tab-nav mb-6 flex flex-wrap gap-1" aria-label="Assessment views">
-        {TABS.map((tab) => {
-          const count = tab.view === "pending" ? pendingCount : tab.countKey ? tabCounts[tab.countKey] : 0;
-          return (
-            <Link
-              key={tab.view}
-              href={`${basePath}?view=${tab.view}`}
-              className={`tab-link ${view === tab.view ? "tab-link-active" : ""}`}
+      {/* Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="assessments-heading"
+      >
+        {/* Card Header with gradient effect */}
+        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Left: Title + Badge */}
+          <div className="flex items-center gap-3">
+            <h2
+              id="assessments-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
             >
-              {tab.label}
-              {count > 0 ? ` (${count})` : ""}
-            </Link>
-          );
-        })}
-        {/* Student Ledger is a per-student view of the same assessment data; surfaced
-            here as a tab so it no longer needs its own sidebar item. */}
-        <Link href="/staff/student-ledgers" className="tab-link">
-          Student Ledger
-        </Link>
-      </nav>
-
-      {query.isFetching && !isInitialLoading && (
-        <p className="text-xs text-muted-foreground" aria-live="polite">
-          Refreshing…
-        </p>
-      )}
-
-      {query.isError ? (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-6 text-center text-sm text-destructive">
-          Failed to load assessments. Please try again.
-          <div className="mt-3">
-            <button type="button" onClick={() => query.refetch()} className="btn-primary min-h-9 px-4">
-              Retry
-            </button>
+              {view === "pending" ? "Assessment Queue" : `${TABS.find(t => t.view === view)?.label ?? view} Assessments`}
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+              {totalCount} {view === "pending" ? "Pending" : "Record"}{totalCount !== 1 ? "s" : ""}
+            </span>
+            {query.isFetching && !isInitialLoading && (
+              <span className="text-xs text-muted-foreground" aria-live="polite">
+                Refreshing…
+              </span>
+            )}
           </div>
         </div>
-      ) : view === "pending" ? (
-        <>
+
+        {/* Navigation Tabs */}
+        <div className="border-b border-border px-4 py-2 bg-muted/30">
+          <nav className="flex flex-wrap gap-1" aria-label="Assessment views">
+            {TABS.map((tab) => {
+              const count = tab.view === "pending" ? pendingCount : tab.countKey ? tabCounts[tab.countKey] : 0;
+              return (
+                <Link
+                  key={tab.view}
+                  href={`${basePath}?view=${tab.view}`}
+                  className={`tab-link ${view === tab.view ? "tab-link-active" : ""}`}
+                >
+                  {tab.label}
+                  {count > 0 ? ` (${count})` : ""}
+                </Link>
+              );
+            })}
+            {/* Student Ledger is a per-student view of the same assessment data; surfaced
+                here as a tab so it no longer needs its own sidebar item. */}
+            <Link href="/staff/student-ledgers" className="tab-link">
+              Student Ledger
+            </Link>
+          </nav>
+        </div>
+
+        {/* Content */}
+        {query.isError ? (
+          <div className="p-6 text-center text-sm text-destructive">
+            Failed to load assessments. Please try again.
+            <div className="mt-3">
+              <button type="button" onClick={() => query.refetch()} className="btn-primary min-h-9 px-4">
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : view === "pending" ? (
           <PendingAssessmentsQueue
             rows={isInitialLoading ? [] : pendingRows}
             canCreate={canCreate}
             canCancel={canCancel}
             assessmentsBasePath={basePath}
           />
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalRecords={totalCount}
-            pageSize={PAGE_SIZE}
-            baseUrl={buildAssessmentsPaginationBaseUrl(basePath, "pending")}
-            itemLabel="enrollments"
-          />
-        </>
-      ) : (
-        <>
+        ) : (
           <AssessmentsTable assessments={isInitialLoading ? [] : rows} assessmentsBasePath={basePath} />
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalRecords={totalCount}
-            pageSize={PAGE_SIZE}
-            baseUrl={buildAssessmentsPaginationBaseUrl(basePath, view)}
-            itemLabel="assessments"
-          />
-        </>
-      )}
+        )}
+
+        {/* Pagination */}
+        {totalCount > 0 && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalRecords={totalCount}
+              pageSize={PAGE_SIZE}
+              baseUrl={buildAssessmentsPaginationBaseUrl(basePath, view)}
+              itemLabel={view === "pending" ? "enrollments" : "assessments"}
+            />
+          </div>
+        )}
+      </section>
     </div>
   );
 }

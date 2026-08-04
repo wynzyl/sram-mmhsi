@@ -100,6 +100,62 @@ export const queryKeys = {
     detail: (id: string) =>
       [...queryKeys.feeItemTypes.all, "detail", id] as const,
   },
+
+  // ─────────────────────────────────────────────────────────────────
+  // Grades (audit 2026-07)
+  // ─────────────────────────────────────────────────────────────────
+  grades: {
+    all: ["grades"] as const,
+    sheets: () => [...queryKeys.grades.all, "sheets"] as const,
+    sheet: (id: string) => [...queryKeys.grades.all, "sheet", id] as const,
+    bySection: (sectionId: string, schoolYearId: string) =>
+      [...queryKeys.grades.all, "section", sectionId, schoolYearId] as const,
+    byStudent: (studentId: string, schoolYearId: string) =>
+      [...queryKeys.grades.all, "student", studentId, schoolYearId] as const,
+    pendingReviews: (schoolYearId: string) =>
+      [...queryKeys.grades.all, "pending-reviews", schoolYearId] as const,
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // Document Requests (audit 2026-07)
+  // ─────────────────────────────────────────────────────────────────
+  documents: {
+    all: ["documents"] as const,
+    requests: () => [...queryKeys.documents.all, "requests"] as const,
+    request: (id: string) =>
+      [...queryKeys.documents.all, "request", id] as const,
+    byStudent: (studentId: string) =>
+      [...queryKeys.documents.all, "student", studentId] as const,
+    summary: () => [...queryKeys.documents.all, "summary"] as const,
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // Discounts (audit 2026-07)
+  // ─────────────────────────────────────────────────────────────────
+  discounts: {
+    all: ["discounts"] as const,
+    types: () => [...queryKeys.discounts.all, "types"] as const,
+    requests: () => [...queryKeys.discounts.all, "requests"] as const,
+    request: (id: string) =>
+      [...queryKeys.discounts.all, "request", id] as const,
+    byStudent: (studentId: string) =>
+      [...queryKeys.discounts.all, "student", studentId] as const,
+    pendingRequests: () =>
+      [...queryKeys.discounts.all, "pending-requests"] as const,
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  // Sections (audit 2026-07)
+  // ─────────────────────────────────────────────────────────────────
+  sections: {
+    all: ["sections"] as const,
+    lists: () => [...queryKeys.sections.all, "list"] as const,
+    list: (schoolYearId: string) =>
+      [...queryKeys.sections.lists(), schoolYearId] as const,
+    detail: (id: string) => [...queryKeys.sections.all, "detail", id] as const,
+    byAdviser: (adviserId: string, schoolYearId: string) =>
+      [...queryKeys.sections.all, "adviser", adviserId, schoolYearId] as const,
+  },
 } as const;
 
 // ─────────────────────────────────────────────────────────────────

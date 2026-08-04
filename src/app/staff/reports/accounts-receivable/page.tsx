@@ -1,16 +1,13 @@
 import { requireSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { canAccessFinanceReports } from "@/lib/rbac/permissions";
-import { getSchoolYears } from "@/lib/queries/schoolYears";
+import { getSchoolYears, getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import {
   getAccountsReceivableReport,
   getAccountsReceivableSummary,
 } from "@/features/reports/accounts-receivable-report.queries";
-import { AccountsReceivableFilters } from "@/features/reports/components/AccountsReceivableFilters";
-import { AccountsReceivableTable } from "@/features/reports/components/AccountsReceivableTable";
-import { AccountsReceivableReportActions } from "@/features/reports/components/AccountsReceivableReportActions";
+import { AccountsReceivableView } from "@/features/reports/components/AccountsReceivableView";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { TablePagination } from "@/components/ui/TablePagination";
 
 const PAGE_SIZE = 50;
 
@@ -31,7 +28,10 @@ export default async function AccountsReceivableReportPage({
   }
 
   const params = await searchParams;
-  const schoolYearId = params.schoolYearId || undefined;
+  // Fetch active school year ID for default selection
+  const activeSchoolYearId = await getActiveSchoolYearId();
+  // Default to active school year if no filter specified
+  const schoolYearId = params.schoolYearId ?? activeSchoolYearId ?? undefined;
   const page = parseInt(params.page || "1", 10) || 1;
 
   const [reportResult, summary, schoolYears] = await Promise.all([
@@ -54,75 +54,55 @@ export default async function AccountsReceivableReportPage({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-container--full space-y-6">
       {/* Page Header */}
-      <div className="flex items-start justify-between gap-3 no-print">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">
-            Accounts Receivable Report
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Outstanding student balances for {schoolYearLabel}
-          </p>
-        </div>
-        <AccountsReceivableReportActions schoolYearId={schoolYearId} />
+      <div className="space-y-1">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+          Accounts Receivable
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Outstanding student balances for {schoolYearLabel}
+        </p>
       </div>
 
-      {/* Filters */}
-      <div className="no-print">
-        <AccountsReceivableFilters
-          schoolYears={schoolYears.map((sy) => ({ id: sy.id, label: sy.label }))}
+      {/* Card with Embedded Controls */}
+      <section
+        className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+        aria-labelledby="ar-heading"
+      >
+        {/* Filters + Table + Pagination - Combined View */}
+        <AccountsReceivableView
+          data={rows}
+          schoolYears={schoolYears}
           defaultSchoolYearId={schoolYearId}
+          pagination={{
+            currentPage: page,
+            totalPages,
+            totalCount,
+            pageSize: PAGE_SIZE,
+            baseUrl: `/staff/reports/accounts-receivable${buildPaginationBaseUrl()}`,
+          }}
+          headerContent={
+            <>
+              <h2
+                id="ar-heading"
+                className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary"
+              >
+                Outstanding Balances
+              </h2>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
+                {summary.totalAccounts.toLocaleString()} Account{summary.totalAccounts !== 1 ? "s" : ""}
+              </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30">
+                <CurrencyDisplay amount={summary.totalOutstanding} />
+              </span>
+            </>
+          }
         />
-      </div>
-
-      {/* Summary */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-            Total Accounts
-          </p>
-          <p className="text-2xl font-bold text-foreground mt-1">
-            {summary.totalAccounts.toLocaleString()}
-          </p>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-            Total Outstanding
-          </p>
-          <CurrencyDisplay
-            amount={summary.totalOutstanding}
-            className="text-2xl font-bold text-primary mt-1 block"
-          />
-        </div>
-      </div>
-
-      {/* Preview */}
-      {rows.length === 0 ? (
-        <div className="p-8 text-center bg-card border border-border rounded-lg">
-          <p className="text-muted-foreground">
-            No outstanding balances found for the selected filters.
-          </p>
-        </div>
-      ) : (
-        <>
-          <AccountsReceivableTable data={rows} />
-          <div className="no-print">
-            <TablePagination
-              currentPage={page}
-              totalPages={totalPages}
-              totalRecords={totalCount}
-              pageSize={PAGE_SIZE}
-              baseUrl={`/staff/reports/accounts-receivable${buildPaginationBaseUrl()}`}
-              itemLabel="accounts"
-            />
-          </div>
-        </>
-      )}
+      </section>
 
       <p className="text-xs text-muted-foreground text-center no-print">
-        Export PDF for an official printable copy, or Export Excel for a
-        spreadsheet you can sort and total.
+        Export PDF for an official printable copy, or Export Excel for a spreadsheet you can sort and total.
       </p>
     </div>
   );

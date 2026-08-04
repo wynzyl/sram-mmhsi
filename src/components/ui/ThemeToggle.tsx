@@ -4,19 +4,19 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 
 /**
  * Theme toggle button for switching between light/dark modes
- * Displays current theme with icon and cycles through: light → dark → system
+ * Displays current mode with icon and cycles through: light → dark → system
  */
 export function ThemeToggle() {
-  const { theme, setTheme, mounted } = useTheme();
+  const { mode, setMode, mounted } = useTheme();
 
-  const cycleTheme = () => {
-    if (theme === "light") setTheme("dark");
-    else if (theme === "dark") setTheme("system");
-    else setTheme("light");
+  const cycleMode = () => {
+    if (mode === "light") setMode("dark");
+    else if (mode === "dark") setMode("system");
+    else setMode("light");
   };
 
   const getIcon = () => {
-    if (theme === "light") {
+    if (mode === "light") {
       return (
         <svg
           width="16"
@@ -39,7 +39,7 @@ export function ThemeToggle() {
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
         </svg>
       );
-    } else if (theme === "dark") {
+    } else if (mode === "dark") {
       return (
         <svg
           width="16"
@@ -75,17 +75,17 @@ export function ThemeToggle() {
   };
 
   const getLabel = () => {
-    if (theme === "light") return "Light";
-    if (theme === "dark") return "Dark";
+    if (mode === "light") return "Light";
+    if (mode === "dark") return "Dark";
     return "System";
   };
 
   return (
     <button
-      onClick={cycleTheme}
+      onClick={cycleMode}
       className="flex items-center gap-2 bg-muted border border-border px-2.5 py-1.5 rounded-md cursor-pointer text-gray-600 dark:text-gray-400 text-xs font-medium transition-colors whitespace-nowrap hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-primary hover:border-border"
-      title={mounted ? `Current theme: ${getLabel()} (click to cycle)` : undefined}
-      aria-label={mounted ? `Switch theme (current: ${getLabel()})` : "Switch theme"}
+      title={mounted ? `Current mode: ${getLabel()} (click to cycle)` : undefined}
+      aria-label={mounted ? `Switch mode (current: ${getLabel()})` : "Switch mode"}
       suppressHydrationWarning
     >
       <span suppressHydrationWarning>{mounted ? getIcon() : null}</span>

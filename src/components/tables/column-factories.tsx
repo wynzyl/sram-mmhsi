@@ -606,3 +606,72 @@ export function createRequestedByColumn<T extends RequestedByRow>(
     },
   };
 }
+
+// ─── Payment Method Column ────────────────────────────────────────────────────
+
+/** Payment method values as stored in database */
+type PaymentMethod = "cash" | "gcash" | "bank_transfer" | "check" | "other";
+
+/** Human-readable labels for payment methods */
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: "Cash",
+  gcash: "GCash",
+  bank_transfer: "Bank Transfer",
+  check: "Check",
+  other: "Other",
+};
+
+/** Badge styling for payment methods */
+const PAYMENT_METHOD_STYLES: Record<PaymentMethod, string> = {
+  cash: "bg-success/15 text-success",
+  gcash: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  bank_transfer: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  check: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  other: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
+};
+
+interface PaymentMethodColumnOptions {
+  /** Column header text. Defaults to "Method" */
+  header?: string;
+  /** Column ID. Defaults to accessor key */
+  id?: string;
+}
+
+/**
+ * Creates a column for displaying payment methods with styled badges
+ *
+ * @example
+ * ```tsx
+ * createPaymentMethodColumn<PaymentRow>("paymentMethod")
+ * createPaymentMethodColumn<PaymentRow>("method", { header: "Payment Type" })
+ * ```
+ */
+export function createPaymentMethodColumn<T>(
+  accessor: keyof T,
+  options: PaymentMethodColumnOptions = {}
+): ColumnDef<T> {
+  const { header = "Method", id } = options;
+
+  return {
+    header,
+    id: id ?? String(accessor),
+    accessorKey: accessor as string,
+    cell: ({ row }) => {
+      const value = row.original[accessor] as PaymentMethod | null | undefined;
+      if (!value) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+
+      const label = PAYMENT_METHOD_LABELS[value] ?? value;
+      const style = PAYMENT_METHOD_STYLES[value] ?? PAYMENT_METHOD_STYLES.other;
+
+      return (
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${style}`}
+        >
+          {label}
+        </span>
+      );
+    },
+  };
+}

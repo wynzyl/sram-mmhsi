@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md — SRAMS
 
-> Last updated: 2026-07-14
+> Last updated: 2026-07-21
 
 ## Current phase
 
@@ -8,11 +8,23 @@
 
 **Student Archival & End-of-Year (EOY) Processing is complete** — full student lifecycle management with status transitions (active → graduated/transferred/withdrawn/cancelled/inactive), batch archive operations, and a dedicated archive directory at `/staff/archive/`. **Document Requests feature is complete** — full workflow (request → processing → ready → released) with eligibility gates for archived and active students, routes at `/staff/archive/documents/`.
 
+**Academics Module Optimization is complete** — comprehensive review of Curriculum, Subjects, Teacher/Adviser Assignments, and Grades modules with all critical and high-priority performance issues resolved. The adviser-based grade sheet workflow is now documented as the primary system.
+
 **Deployment (Phase 12) is production-ready** — the Docker stack (multi-stage `runner` image, one-shot migrate job, nginx reverse proxy on :80) is built, running, and hardened with resource limits (memory/CPU caps for all services). **Auth hardening (Phase 2) is closed:** login rate limiting and the forced password-change gate are live. **The Playwright E2E suite is committed** with synthetic test-data provisioning and a CI workflow.
 
 **Active gaps:** full registration **review** workflow (approve/reject actions), expanded student/parent **portal** pages beyond dashboard, formal OR **receipt** print view, and the remaining Phase 10 reports (enrollment summary, grade summary).
 
-## Latest updates (2026-07-14)
+## Latest updates (2026-07-21)
+
+- [x] **Academics Module Optimization** — Comprehensive review and optimization of Curriculum, Subjects, Teacher/Adviser Assignments, and Grades modules. All 8 critical/high-priority items completed:
+  - **Query Performance:** N+1 audit user queries fixed (3→1 with LEFT JOINs), period completion optimized (N→1 aggregated query), EXISTS subquery for grade level filtering, pagination support added
+  - **Grade Completion Validation:** Server-side `validateGradeSheetCompleteness()` + client-side submit button validation prevents incomplete submissions
+  - **Sequential Period Locking:** `validatePreviousPeriodsSubmitted()` enforces Q1→Q2→Q3→Q4 submission order
+  - **Accessibility:** AlertDialog replaces browser `confirm()` for WCAG compliance
+- [x] **Form Pattern Consistency** — Removed redundant inline error displays in `ArchiveCurriculumDialog`, `CloneCurriculumForm`, and `AdviserAssignmentForm` in favor of `useFormToast` pattern
+- [x] **Documentation Updates** — CLAUDE.md grade encoding workflow updated to document adviser-based grade sheets as primary; teacher assignment workflow marked as legacy
+
+## Previous updates (2026-07-14)
 
 - [x] **Full payment cash discount in CashierPaymentProcessingView** — The cash discount eligibility check and preview card are now integrated into the main cashier payment processing modal (`CashierPaymentProcessingView.tsx`). When cashier enters full balance amount, system checks eligibility via `/api/cashier/cash-discount` API, displays `CashDiscountPreviewCard` with discount breakdown, and allows one-click discount application. Hidden form field `applyCashDiscount` submits with payment for server-side processing. Matches functionality in `PostPaymentForm.tsx`.
 
@@ -166,7 +178,7 @@ if (!schoolYearId) {
 - [x] **Fee schedules & assessments** — schedules, per-enrollment assessments, items, balances, refreshed assessment draft UX, assessment cancellation with re-assessment support, discount requests with auto-rejection on cancellation (`actions/finance.ts`, `actions/assessments.ts`, `admin/finance/*`, `admin/assessments/*`, `components/assessments/AssessmentDraftForm.tsx`, `src/features/discounts/`)
 - [x] **Cashier & OR** — booklet setup, post/void payment (with reverse-chronological void ordering), allocations, full payment cash discount (eligibility check + preview card + one-click apply), and shared internal ledger composition (`actions/cashier.ts`, booklet pages, payment UI on **assessment** ledger, `src/app/page-templates/assessments/assessment-ledger-page.tsx`, `CashierPaymentProcessingView.tsx`)
 - [x] **Invoices** — generate, send (Nodemailer/Gmail), status (`actions/invoices.ts`, `admin/finance/invoices/*`)
-- [x] **Academics & grades** — subjects, assignments, teacher grade encoding and lock (`actions/academics.ts`, `actions/teacher.ts`, `/staff/grades/*`, admin assignment pages)
+- [x] **Academics & grades** — curriculums, subjects, teacher/adviser assignments, **adviser-based grade sheet workflow** (primary: `draft→submitted→approved/returned` with completion validation + sequential period locking), legacy teacher grade encoding (`src/features/academics/`, `/staff/grades/*`, `/staff/academics/*`)
 - [x] **Users** — admin user CRUD, password reset / `forcePasswordChange` field (`actions/users.ts`)
 - [x] **Staff route coverage** — staff aliases/pages exist for key operational flows (`/staff/students`, `/staff/enrollments`, `/staff/payments`, `/staff/registrations`, `/staff/finance`, `/staff/grades`)
 - [x] **Portal shell** — authenticated `/portal/dashboard` page with role-aware links

@@ -44,7 +44,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   tuition: "hsl(var(--primary))",
   fees: "hsl(var(--foreground))",
   materials: "#f59e0b",
-  discount: "#16a34a",
+  discount: "hsl(var(--success))",
   other: "#9ca3af",
 };
 
@@ -138,7 +138,7 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
               <div className="w-px bg-border my-0.5" aria-hidden />
               <div className="flex flex-col gap-1 px-4">
                 <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">Discounts</span>
-                <span className="text-lg font-bold text-green-500">
+                <span className="text-lg font-bold text-success">
                   −{formatPHP(totalDiscount)}
                 </span>
               </div>
@@ -193,11 +193,11 @@ export function FeeTemplateDetailModal({ template }: FeeTemplateDetailModalProps
                           <span className="text-foreground inline-flex items-center gap-2">
                             {item.feeItemType.name}
                             {item.feeItemType.isDiscount && (
-                              <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-green-500 bg-green-500/10 rounded">DISC</span>
+                              <span className="inline-flex px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-success bg-success/10 rounded">DISC</span>
                             )}
                           </span>
                           <span
-                            className={`font-semibold tabular-nums ${item.feeItemType.isDiscount ? "text-green-500" : "text-foreground"}`}
+                            className={`font-semibold tabular-nums ${item.feeItemType.isDiscount ? "text-success" : "text-foreground"}`}
                           >
                             {item.feeItemType.isDiscount && (
                               <span className="mr-0.5">−</span>

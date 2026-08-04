@@ -10,6 +10,19 @@
  * data doesn't linger in memory.
  */
 
+// ─────────────────────────────────────────────────────────────────
+// Stale Time Constants
+// ─────────────────────────────────────────────────────────────────
+
+/** Standard stale time for most queries (1 minute). */
+export const STANDARD_STALE_TIME = 60 * 1000;
+
+/** For data that rarely changes (fee types, grade levels) - 2 minutes. */
+export const RARE_CHANGE_STALE_TIME = 2 * 60 * 1000;
+
+/** For live operational data (cashier queue) - 15 seconds. */
+export const LIVE_DATA_STALE_TIME = 15 * 1000;
+
 /** Current year: always considered stale → refetch on mount / focus. */
 const CURRENT_YEAR_STALE_TIME = 0;
 

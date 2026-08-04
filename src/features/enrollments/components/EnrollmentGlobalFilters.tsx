@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Filter, Search } from "lucide-react";
+import { Filter } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { SearchInput } from "@/components/shared/SearchInput";
 
 type GradeLevel = {
   id: string;
@@ -89,16 +89,13 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
     <div className="mb-6 space-y-3">
       <div className="flex items-center gap-3">
         {/* Search Input */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            value={searchInput}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search by name or student ID..."
-            className="max-w-md pl-9"
-          />
-        </div>
+        <SearchInput
+          value={searchInput}
+          onChange={handleSearchChange}
+          placeholder="Search by name or student ID..."
+          type="search"
+          className="max-w-md flex-1"
+        />
 
         {/* Grade Level Filter */}
         <div className="flex items-center gap-2">

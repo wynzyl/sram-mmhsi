@@ -21,7 +21,7 @@ interface PaymentCollectionTableProps {
 function getMethodBadgeClass(method: string): string {
   switch (method) {
     case "cash":
-      return "bg-green-100 text-green-800 border-green-200";
+      return "bg-success/15 text-success border-success/30";
     case "gcash":
       return "bg-blue-100 text-blue-800 border-blue-200";
     case "bank_transfer":
@@ -36,7 +36,7 @@ function getMethodBadgeClass(method: string): string {
 function getStatusBadgeClass(status: string): string {
   switch (status) {
     case "posted":
-      return "bg-green-100 text-green-800 border-green-200";
+      return "bg-success/15 text-success border-success/30";
     case "pending_confirmation":
       return "bg-yellow-100 text-yellow-800 border-yellow-200";
     default:

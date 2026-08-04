@@ -5,7 +5,7 @@ import type {
   PaymentCollectionRow,
   PaymentCollectionSummary,
 } from "../payment-collection-report.types";
-import { PAYMENT_METHOD_LABELS } from "../payment-collection-report.types";
+import { PAYMENT_METHOD_LABELS, USAGE_MODE_LABELS } from "../payment-collection-report.types";
 
 /** Format amount as number without currency symbol */
 function formatAmount(amount: number): string {
@@ -15,85 +15,71 @@ function formatAmount(amount: number): string {
   }).format(amount);
 }
 
-interface PaymentCollectionReportPreviewProps {
+interface PaymentCollectionReportContentProps {
   rows: PaymentCollectionRow[];
   summary: PaymentCollectionSummary;
 }
 
-export function PaymentCollectionReportPreview({
+/**
+ * Content-only component for the Payment Collection Report.
+ * Does NOT include the outer card wrapper or header/footer - those are managed by PaymentCollectionReportView.
+ * Contains: Summary section + Payment details table.
+ */
+export function PaymentCollectionReportContent({
   rows,
   summary,
-}: PaymentCollectionReportPreviewProps) {
+}: PaymentCollectionReportContentProps) {
   return (
-    <div
-      id="report-preview"
-      className="bg-card text-foreground rounded-lg shadow-lg border border-border overflow-hidden print:shadow-none print:border-none print:rounded-none"
-    >
-      {/* Report Header */}
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-8 py-6 border-b-2 border-primary/20 print:bg-white print:border-b print:border-black">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Payment Collection Report
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              SRAMS - School Registration and Accounts Monitoring System
-            </p>
-          </div>
-          <div className="text-right text-sm text-muted-foreground">
-            <p>
-              <span className="font-medium">Period:</span>{" "}
-              {formatDate(summary.periodStart, {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}{" "}
-              -{" "}
-              {formatDate(summary.periodEnd, {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </p>
-            <p className="mt-1">
-              <span className="font-medium">Generated:</span>{" "}
-              {formatDate(new Date(), {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </p>
-          </div>
-        </div>
-      </div>
-
+    <div id="report-preview">
       {/* Summary Section */}
-      <div className="px-8 py-6 bg-muted border-b border-border print:bg-white">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Summary</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="px-6 py-5 bg-muted/50 border-b border-border print:bg-white">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Summary</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
               Total Payments
             </p>
-            <p className="text-2xl font-bold text-foreground mt-1">
+            <p className="text-xl font-bold text-foreground mt-0.5">
               {summary.totalCount.toLocaleString()}
             </p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
               Total Amount
             </p>
-            <p className="text-2xl font-bold text-primary mt-1">
+            <p className="text-xl font-bold text-primary mt-0.5">
               {formatAmount(summary.totalAmount)}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+              Period Start
+            </p>
+            <p className="text-sm font-medium text-foreground mt-0.5">
+              {formatDate(summary.periodStart, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+              Period End
+            </p>
+            <p className="text-sm font-medium text-foreground mt-0.5">
+              {formatDate(summary.periodEnd, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
             </p>
           </div>
         </div>
 
         {/* Method Breakdown */}
         <div className="mt-4 pt-3 border-t border-border">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-2">
             Breakdown by Payment Method
           </p>
           <div className="grid grid-cols-5 gap-2">
@@ -132,10 +118,10 @@ export function PaymentCollectionReportPreview({
       </div>
 
       {/* Table Section */}
-      <div className="px-8 py-6">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
+      <div className="px-6 py-5">
+        <h3 className="text-sm font-semibold text-foreground mb-3">
           Payment Details ({rows.length.toLocaleString()} records)
-        </h2>
+        </h3>
 
         {rows.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
@@ -163,6 +149,9 @@ export function PaymentCollectionReportPreview({
                   </th>
                   <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                     Method
+                  </th>
+                  <th className="px-3 py-2 text-center font-semibold text-muted-foreground border-b border-border">
+                    Mode
                   </th>
                   <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                     Reference #
@@ -203,6 +192,19 @@ export function PaymentCollectionReportPreview({
                       {PAYMENT_METHOD_LABELS[row.paymentMethod] ||
                         row.paymentMethod}
                     </td>
+                    <td className="px-3 py-2 border-b border-border text-center">
+                      <span
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          row.usageMode === "manual_only"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                            : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        }`}
+                      >
+                        {row.usageMode
+                          ? USAGE_MODE_LABELS[row.usageMode]
+                          : "—"}
+                      </span>
+                    </td>
                     <td className="px-3 py-2 border-b border-border font-mono text-xs">
                       {row.referenceNumber || "—"}
                     </td>
@@ -224,7 +226,7 @@ export function PaymentCollectionReportPreview({
                     {formatAmount(summary.totalAmount)}
                   </td>
                   <td
-                    colSpan={3}
+                    colSpan={4}
                     className="px-3 py-2 border-t-2 border-border"
                   />
                 </tr>
@@ -233,14 +235,9 @@ export function PaymentCollectionReportPreview({
           </div>
         )}
       </div>
-
-      {/* Footer */}
-      <div className="px-8 py-4 bg-muted border-t border-border text-xs text-muted-foreground print:bg-white">
-        <div className="flex justify-between">
-          <span>SRAMS Payment Collection Report</span>
-          <span>Page 1 of 1</span>
-        </div>
-      </div>
     </div>
   );
 }
+
+// Legacy export for backwards compatibility (can be removed once page.tsx is updated)
+export { PaymentCollectionReportContent as PaymentCollectionReportPreview };
