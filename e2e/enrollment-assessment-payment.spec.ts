@@ -27,7 +27,13 @@ import {
 import { formatStoredOrNumber } from "../src/lib/utils/or-number";
 import type { E2eTestDataState, E2eCasaStudent } from "./ensure-test-data";
 
-test.describe.configure({ mode: "serial" });
+// `retries: 0` is deliberate. Every scenario below consumes single-use fixtures
+// provisioned once per run by global setup (a registration can only be enrolled
+// once, an OR number can only be consumed once). Playwright retries a serial
+// group from its FIRST test, so a retry always re-runs "confirm enrollment"
+// against a student who is no longer in the Ready-to-Enroll queue — it can
+// never pass, and it buries the real failure under a bogus "flaky" label.
+test.describe.configure({ mode: "serial", retries: 0 });
 test.setTimeout(120_000);
 
 let state: E2eTestDataState;
@@ -158,38 +164,51 @@ async function registrarPostsPayment(
   await login(page, e2eRegistrar);
   await page.goto(`/staff/payments/process/${assessmentId}`);
 
-  // Scope to the payment-processing dialog: a transient duplicate of the form
-  // was observed once in the production build (orphaned hydration copy outside
-  // the dialog), which breaks unscoped strict-mode locators.
-  const dialog = page.getByRole("dialog").filter({ hasText: "Payment details" }).first();
-  const bookletSelect = dialog.locator('select[name="bookletId"]');
-  await expect(bookletSelect).toBeVisible({ timeout: 20_000 });
+  // `CashierPaymentProcessingView` renders the whole form inside one modal
+  // dialog; scope to it so a stray dialog elsewhere on the page can never
+  // satisfy these locators.
+  const dialog = page.getByRole("dialog").filter({ hasText: "Payment Processing" }).first();
+  await expect(dialog).toBeVisible({ timeout: 20_000 });
 
   // Always pay from the dedicated E2E (ZZ) booklet — never consume real OR series.
   const booklet = (await getBooklet(state.bookletId))!;
   expect(booklet).not.toBeNull();
   expect(booklet.status).toBe("active");
+
+  const bookletSelect = dialog.getByLabel(/OR booklet/);
+  await expect(bookletSelect).toBeVisible({ timeout: 20_000 });
   await bookletSelect.selectOption(booklet.id);
   const expectedOrNumber = formatStoredOrNumber(booklet.prefix, booklet.nextNumber);
 
-  // Hydration gate: the cash-only "Amount tendered" section is swapped by React
-  // state. Re-select until the toggle takes effect, proving the form is
+  // The submitted payment method / amounts live in hidden inputs mirrored from
+  // React state — they are the contract with the server action, so assert on
+  // them rather than on the presentational controls.
+  const methodValue = dialog.locator('input[name="paymentMethod"]');
+
+  // Hydration gate: the CASH/CHECK/ONLINE toggle is React state with no
+  // no-JS fallback. Click ONLINE until the mirror flips, proving the dialog is
   // interactive before we drive it (a pre-hydration submit would fall back to a
   // full-page POST and skip the client success panel).
-  const methodSelect = dialog.locator('select[name="paymentMethod"]');
-  const amountTendered = dialog.locator('input[name="amountTendered"]');
   await expect(async () => {
-    await methodSelect.selectOption("gcash");
-    await expect(amountTendered).toBeHidden({ timeout: 1_000 });
+    await dialog.getByRole("button", { name: "ONLINE", exact: true }).click();
+    await expect(methodValue).toHaveValue("gcash", { timeout: 1_000 });
   }).toPass({ timeout: 20_000 });
 
+  // Now select the method under test. GCash is the default ONLINE sub-method.
+  if (opts.method === "cash") {
+    await dialog.getByRole("button", { name: "CASH", exact: true }).click();
+  } else {
+    await dialog.getByLabel("Online method").selectOption("gcash");
+  }
+  await expect(methodValue).toHaveValue(opts.method);
+
   if (opts.amount !== undefined) {
-    await dialog.locator('input[name="amount"]').fill(opts.amount.toFixed(2));
+    await dialog.getByLabel(/Amount to pay/).fill(opts.amount.toFixed(2));
   }
   const amountValue = await dialog.locator('input[name="amount"]').inputValue();
 
-  await methodSelect.selectOption(opts.method);
   if (opts.method === "cash") {
+    const amountTendered = dialog.getByLabel(/Amount tendered/);
     await expect(amountTendered).toBeVisible();
     await amountTendered.fill(amountValue);
   }
@@ -199,12 +218,15 @@ async function registrarPostsPayment(
 
   const paymentsBefore = (await getPaymentsForAssessment(assessmentId)).length;
 
-  await dialog.getByRole("button", { name: "Post payment & print OR" }).click();
+  // Submit stays disabled until the view is hydrated AND the amounts balance,
+  // so waiting for "enabled" is the authoritative readiness signal.
+  const submitButton = dialog.getByRole("button", { name: "Post Payment & Print OR" });
+  await expect(submitButton).toBeEnabled({ timeout: 20_000 });
+  await submitButton.click();
 
-  // The database is authoritative for the post. The client "Payment posted"
-  // panel normally renders, but an intermittent prod-build artifact (report
-  // finding F7) can leave the UI on a stale form even though the server action
-  // committed — so poll for the new payment row instead of requiring the panel.
+  // The database is authoritative for the post. The success overlay auto-
+  // redirects to /staff/payments ~1.6s after it appears, so asserting on it is
+  // an inherent race — poll for the new payment row instead.
   await expect
     .poll(async () => (await getPaymentsForAssessment(assessmentId)).length, {
       timeout: 30_000,
