@@ -4,7 +4,14 @@ FROM node:24-alpine AS dev
 WORKDIR /app
 ENV NODE_ENV=development
 COPY package*.json ./
-RUN npm ci
+# Slow-link hardening: @next/swc-linux-x64-musl is ~43MB and takes >300s on a
+# ~140KB/s connection, which exceeds npm's default fetch-timeout (300s) — npm
+# aborts mid-tarball and fails with ECONNRESET every run. Raise the per-request
+# timeout and keep npm's _cacache in a BuildKit cache mount so an interrupted
+# install resumes from what it already fetched (cache mounts survive --no-cache).
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --fetch-timeout=1800000 --fetch-retries=5 --fetch-retry-maxtimeout=300000 \
+           --maxsockets=3 --prefer-offline
 COPY . .
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
@@ -21,7 +28,10 @@ WORKDIR /app
 RUN apk add --no-cache postgresql su-exec vips-dev
 
 COPY package*.json ./
-RUN npm install --production=false
+# Same slow-link hardening as the dev stage — see the note there.
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --production=false --fetch-timeout=1800000 --fetch-retries=5 \
+                --fetch-retry-maxtimeout=300000 --maxsockets=3 --prefer-offline
 COPY . .
 
 ENV NEXT_PUBLIC_SKIP_ENV_VALIDATION="true"

@@ -16,3 +16,10 @@ LICENSE
 .env
 .env.*
 !.env.example
+
+ # Dev DB bind-mount and runtime uploads — never build inputs
+  .postgres_data
+  public/uploads
+  playwright-report
+  test-results
+  coverage

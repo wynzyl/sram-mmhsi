@@ -137,3 +137,7 @@ services:
 
 volumes:
   app-node-modules:
+  db-data:
+  uploads_data:
+    driver: local
+
