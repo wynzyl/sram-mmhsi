@@ -32,7 +32,10 @@ const cspDirectives = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
-  
+  // Standalone output for optimized Docker deployments
+  // Creates .next/standalone with minimal server + traced dependencies only
+  output: 'standalone',
+
   cacheComponents: true,
   // Exclude @react-pdf/renderer from bundling (has native dependencies)
   serverExternalPackages: ["@react-pdf/renderer"],
@@ -84,6 +87,14 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '3mb',
     },
+  },
+
+  // Ensure native dependencies are included in standalone trace
+  outputFileTracingIncludes: {
+    '/*': [
+      'node_modules/sharp/**/*',
+      'node_modules/@react-pdf/renderer/**/*',
+    ],
   },
 
   // Fallback webpack config for when using --webpack flag

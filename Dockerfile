@@ -64,17 +64,28 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat vips-dev su-exec
 # Create non-root user and group
 RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
-# Copy only production dependencies and built output
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
+
+# ============================================================================
+# STANDALONE OUTPUT: Next.js traces only the files needed for production,
+# drastically reducing image size (no full node_modules).
+# ============================================================================
+
+# Copy standalone server (self-contained with traced node_modules)
 # .next must be writable by the runtime user: Next writes refreshed "use cache"
 # / ISR prerenders back into .next/server at request time (EACCES otherwise).
-COPY --from=builder --chown=nextjs:nextjs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
+
+# Copy static assets (not included in standalone by default - meant for CDN)
+COPY --from=builder --chown=nextjs:nextjs /app/.next/static ./.next/static
+
+# Copy public folder (not included in standalone by default - meant for CDN)
 COPY --from=builder --chown=nextjs:nextjs /app/public ./public
-COPY --from=builder /app/next.config.ts ./next.config.ts
-# Next.js 16 proxy (formerly middleware.ts) - handles auth redirects and session management
-COPY --from=builder /app/proxy.ts ./proxy.ts
-COPY --from=builder /app/src ./src
+
+# ============================================================================
+# RUNTIME SCRIPTS: Drizzle migrations and maintenance scripts need separate
+# node_modules and source files since they run outside the Next.js server.
+# ============================================================================
+
 # Drizzle migrations + seed/maintenance scripts must exist at runtime
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/scripts ./scripts
@@ -83,6 +94,28 @@ COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 # `@/*` path aliases from it. Without it, any script importing schema.ts via `@/`
 # fails with "Cannot find module '@/lib/...'".
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
+# package.json needed for npm run db:migrate etc.
+COPY --from=builder /app/package*.json ./
+
+# Copy src directory for runtime scripts that import from @/lib/*
+COPY --from=builder /app/src ./src
+
+# Copy node_modules/.bin for CLI tools (tsx, drizzle-kit)
+COPY --from=builder /app/node_modules/.bin ./node_modules/.bin
+
+# Copy dependencies for runtime migrations (tsx, drizzle, dotenv, etc.)
+# These aren't in standalone output because they're devDependencies or script-only
+COPY --from=builder /app/node_modules/tsx ./node_modules/tsx
+COPY --from=builder /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
+COPY --from=builder /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
+COPY --from=builder /app/node_modules/postgres ./node_modules/postgres
+COPY --from=builder /app/node_modules/esbuild ./node_modules/esbuild
+COPY --from=builder /app/node_modules/@esbuild ./node_modules/@esbuild
+COPY --from=builder /app/node_modules/dotenv ./node_modules/dotenv
+COPY --from=builder /app/node_modules/dotenv-expand ./node_modules/dotenv-expand
+
+# Add node_modules/.bin to PATH for CLI tools
+ENV PATH="/app/node_modules/.bin:$PATH"
 
 # Ensure upload directory exists (permissions will be fixed at runtime by entrypoint
 # since Docker volume mounts override build-time ownership)
@@ -106,5 +139,6 @@ ENTRYPOINT ["docker-entrypoint.sh"]
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/readiness || exit 1
 
-# Run the production server
-CMD ["npm", "run", "start"]
+# Run standalone server directly with node (no npm overhead)
+# PORT and HOSTNAME can be set via environment variables
+CMD ["node", "server.js"]
