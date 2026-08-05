@@ -31,6 +31,10 @@ import {
   SHS_STRAND_ORDER,
 } from "@/lib/constants/strands";
 import { getGradeRemarks } from "@/lib/constants/grading-periods";
+import {
+  isAcceptableGradeInput,
+  resolveGradeCommit,
+} from "../grade-entry-validation";
 
 type TabCategory = "core" | ShsStrandCode;
 
@@ -104,21 +108,25 @@ const SHSGradeCell = memo(function SHSGradeCell({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (value === "" || (/^\d{0,3}$/.test(value) && parseInt(value, 10) <= 100)) {
-      setLocalValue(value);
+    if (!isAcceptableGradeInput(value)) return;
+    setLocalValue(value);
+
+    // Sync complete, in-range drafts upward immediately so the toolbar counter
+    // and Save/Submit eligibility track typing instead of lagging until blur.
+    // Partial drafts ("6" on the way to "60") resolve to `revert` and are left
+    // uncommitted — reverting mid-typing would make the cell impossible to fill.
+    const decision = resolveGradeCommit(value);
+    if (decision.action === "commit") {
+      onCommit(studentId, subjectId, decision.value);
     }
   };
 
   const handleBlur = () => {
-    if (localValue === "") {
-      onCommit(studentId, subjectId, "");
+    const decision = resolveGradeCommit(localValue);
+    if (decision.action === "commit") {
+      onCommit(studentId, subjectId, decision.value);
     } else {
-      const numValue = parseInt(localValue, 10);
-      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-        onCommit(studentId, subjectId, localValue);
-      } else {
-        setLocalValue(initialValue);
-      }
+      setLocalValue(initialValue);
     }
   };
 

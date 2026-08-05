@@ -13,6 +13,7 @@ import {
   deleteSubjectOfferingSchema,
   deleteAllSubjectOfferingsSchema,
   addManualSubjectOfferingSchema,
+  availableSubjectsForManualOfferingSchema,
   type GenerateSubjectOfferingsFormState,
   type AssignTeacherFormState,
   type DeleteSubjectOfferingFormState,
@@ -586,10 +587,24 @@ export async function getAvailableSubjectsForManualOfferingAction(
     return [];
   }
 
-  return getAvailableSubjectsForManualOffering(
+  // All four ids are client-supplied and are compared against uuid columns in
+  // the query; an unparsed value surfaces as a Postgres 22P02 error instead of
+  // an empty result. Mirrors the unauthorized case by returning no subjects.
+  const parsed = availableSubjectsForManualOfferingSchema.safeParse({
     curriculumId,
     gradeLevelId,
     sectionId,
-    schoolYearId
+    schoolYearId,
+  });
+
+  if (!parsed.success) {
+    return [];
+  }
+
+  return getAvailableSubjectsForManualOffering(
+    parsed.data.curriculumId,
+    parsed.data.gradeLevelId,
+    parsed.data.sectionId,
+    parsed.data.schoolYearId
   );
 }

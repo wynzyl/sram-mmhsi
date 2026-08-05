@@ -696,7 +696,7 @@ export async function submitGradeSheetAction(
       });
     });
 
-        return { success: true, message: "Grade sheet submitted for review." };
+    return { success: true, message: "Grade sheet submitted for review." };
   } catch (error) {
     logger.error("[grades] Failed to submit grade sheet", { error });
     return { message: "An unexpected error occurred." };
@@ -762,7 +762,7 @@ export async function principalReturnAction(
       });
     });
 
-        return { success: true, message: "Grade sheet returned to adviser." };
+    return { success: true, message: "Grade sheet returned to adviser." };
   } catch (error) {
     logger.error("[grades] Failed to return grade sheet", { error });
     return { message: "An unexpected error occurred." };
@@ -825,7 +825,7 @@ export async function principalApproveAction(
       });
     });
 
-        return { success: true, message: "Grade sheet approved by principal." };
+    return { success: true, message: "Grade sheet approved by principal." };
   } catch (error) {
     logger.error("[grades] Failed to approve grade sheet", { error });
     return { message: "An unexpected error occurred." };
@@ -888,7 +888,7 @@ export async function publishGradesAction(
       });
     });
 
-        return { success: true, message: "Grades published to student portal." };
+    return { success: true, message: "Grades published to student portal." };
   } catch (error) {
     logger.error("[grades] Failed to publish grades", { error });
     return { message: "An unexpected error occurred." };
@@ -951,7 +951,7 @@ export async function lockGradesAction(
       });
     });
 
-        return { success: true, message: "Grades locked." };
+    return { success: true, message: "Grades locked." };
   } catch (error) {
     logger.error("[grades] Failed to lock grades", { error });
     return { message: "An unexpected error occurred." };
@@ -1031,7 +1031,7 @@ export async function unlockGradesAction(
       newState: { reason },
     });
 
-        return { success: true, message: "Grades unlocked for editing." };
+    return { success: true, message: "Grades unlocked for editing." };
   } catch (error) {
     logger.error("[grades] Failed to unlock grades", { error });
     return { message: "An unexpected error occurred." };

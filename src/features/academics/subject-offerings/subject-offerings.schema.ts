@@ -70,6 +70,24 @@ export type AddManualSubjectOfferingInput = z.infer<typeof addManualSubjectOffer
 
 export type AddManualSubjectOfferingFormState = BaseFormState<AddManualSubjectOfferingInput>;
 
+// ─── Available Subjects Lookup Schema ─────────────────────────────────────────
+
+/**
+ * Args for the manual-offering subject lookup. These arrive from a client
+ * component and are compared against uuid columns, so they must be parsed
+ * before reaching the query.
+ */
+export const availableSubjectsForManualOfferingSchema = z.object({
+  curriculumId: uuidSchema,
+  gradeLevelId: uuidSchema,
+  sectionId: uuidSchema,
+  schoolYearId: uuidSchema,
+});
+
+export type AvailableSubjectsForManualOfferingInput = z.infer<
+  typeof availableSubjectsForManualOfferingSchema
+>;
+
 // ─── View Types ───────────────────────────────────────────────────────────────
 
 /**
