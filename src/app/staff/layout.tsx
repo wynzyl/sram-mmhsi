@@ -20,10 +20,12 @@ async function StaffLayoutContent({ children }: { children: React.ReactNode }) {
     redirect("/login");
   }
 
-  const user = await getCurrentUser();
+  // Parallelize independent queries after session validation
+  const [user, activeSchoolYear] = await Promise.all([
+    getCurrentUser(),
+    getActiveSchoolYear(),
+  ]);
   if (!user) redirect(INVALID_SESSION_REDIRECT);
-
-  const activeSchoolYear = await getActiveSchoolYear();
 
   return (
     <ActiveSchoolYearProvider activeSchoolYearId={activeSchoolYear?.id ?? null}>

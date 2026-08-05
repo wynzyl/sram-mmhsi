@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, startTransition } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   useReactTable,
@@ -480,7 +480,9 @@ export function SectionAssignmentTable({
         sections={availableSectionsForAssignment}
         onSuccess={() => {
           setRowSelection({});
-          router.refresh();
+          startTransition(() => {
+            router.refresh();
+          });
         }}
       />
     </div>

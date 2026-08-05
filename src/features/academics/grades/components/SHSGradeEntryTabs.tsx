@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, startTransition, memo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +75,81 @@ function getStatusColor(status: string): string {
   };
   return colors[status] || "bg-muted text-muted-foreground";
 }
+
+/**
+ * Memoized SHSGradeCell component.
+ * Owns its local input state and syncs to parent on blur.
+ * This prevents re-rendering all cells on every keystroke.
+ */
+interface SHSGradeCellProps {
+  studentId: string;
+  subjectId: string;
+  initialValue: string;
+  disabled: boolean;
+  isApplicable: boolean;
+  studentStrand: string | null;
+  onCommit: (studentId: string, subjectId: string, value: string) => void;
+}
+
+const SHSGradeCell = memo(function SHSGradeCell({
+  studentId,
+  subjectId,
+  initialValue,
+  disabled,
+  isApplicable,
+  studentStrand,
+  onCommit,
+}: SHSGradeCellProps) {
+  const [localValue, setLocalValue] = useState(initialValue);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === "" || (/^\d{0,3}$/.test(value) && parseInt(value, 10) <= 100)) {
+      setLocalValue(value);
+    }
+  };
+
+  const handleBlur = () => {
+    if (localValue === "") {
+      onCommit(studentId, subjectId, "");
+    } else {
+      const numValue = parseInt(localValue, 10);
+      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+        onCommit(studentId, subjectId, localValue);
+      } else {
+        setLocalValue(initialValue);
+      }
+    }
+  };
+
+  const cellDisabled = disabled || !isApplicable;
+
+  return (
+    <input
+      type="number"
+      min="60"
+      max="100"
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      disabled={cellDisabled}
+      className={cn(
+        "w-16 text-center rounded-md border-border shadow-sm text-sm",
+        !isApplicable
+          ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
+          : !disabled
+            ? "bg-background text-foreground focus:border-primary focus:ring-primary"
+            : "bg-muted text-muted-foreground cursor-not-allowed"
+      )}
+      placeholder={isApplicable ? "--" : ""}
+      title={
+        !isApplicable
+          ? `Not applicable - student is ${studentStrand || "no strand"}`
+          : undefined
+      }
+    />
+  );
+});
 
 /**
  * SHSGradeEntryTabs - Grade entry component for SHS sections with strand-based tabs.
@@ -298,7 +373,9 @@ export function SHSGradeEntryTabs({
       setSubmitState(result);
       if (result.success) {
         setCurrentStatus("submitted");
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       }
     } catch {
       setSubmitState({ message: "An unexpected error occurred while submitting." });
@@ -642,29 +719,14 @@ export function SHSGradeEntryTabs({
                       const isApplicable = isSubjectApplicableToStudent(student, subject);
                       return (
                         <td key={subject.id} className="px-2 py-2 text-center">
-                          <input
-                            type="number"
-                            min="60"
-                            max="100"
-                            value={getGrade(student.id, subject.subjectId)}
-                            onChange={(e) =>
-                              handleGradeChange(student.id, subject.subjectId, e.target.value)
-                            }
-                            disabled={!canEdit || !isApplicable}
-                            className={cn(
-                              "w-16 text-center rounded-md border-border shadow-sm text-sm",
-                              !isApplicable
-                                ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
-                                : canEdit
-                                  ? "bg-background text-foreground focus:border-primary focus:ring-primary"
-                                  : "bg-muted text-muted-foreground cursor-not-allowed"
-                            )}
-                            placeholder={isApplicable ? "--" : ""}
-                            title={
-                              !isApplicable
-                                ? `Not applicable - student is ${student.strandCode || "no strand"}`
-                                : undefined
-                            }
+                          <SHSGradeCell
+                            studentId={student.id}
+                            subjectId={subject.subjectId}
+                            initialValue={getGrade(student.id, subject.subjectId)}
+                            disabled={!canEdit}
+                            isApplicable={isApplicable}
+                            studentStrand={student.strandCode}
+                            onCommit={handleGradeChange}
                           />
                         </td>
                       );

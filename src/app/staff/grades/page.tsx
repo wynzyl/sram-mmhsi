@@ -3,7 +3,7 @@ import {
   getActiveSchoolYear,
   getAdviserSections,
 } from "@/features/academics/grades/grades.queries";
-import { getSubjectOfferingsForTeacher } from "@/features/academics/subject-offerings";
+import { getSubjectOfferingsForTeacher } from "@/features/academics/subject-offerings/subject-offerings.queries";
 import { AdviserSectionCards } from "@/features/academics/grades/components/AdviserSectionCards";
 import { TeacherClassesCards } from "@/features/academics/subject-offerings";
 

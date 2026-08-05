@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, startTransition, memo } from "react";
 import { useRouter } from "next/navigation";
 import {
   createOrGetGradeSheetAction,
@@ -67,6 +67,70 @@ function getStatusColor(status: string): string {
 }
 
 // Use the shared getGradeRemarks function from constants
+
+/**
+ * Memoized GradeCell component.
+ * Owns its local input state and syncs to parent on blur.
+ * This prevents re-rendering 400+ cells on every keystroke.
+ */
+interface GradeCellProps {
+  studentId: string;
+  subjectId: string;
+  initialValue: string;
+  disabled: boolean;
+  onCommit: (studentId: string, subjectId: string, value: string) => void;
+}
+
+const GradeCell = memo(function GradeCell({
+  studentId,
+  subjectId,
+  initialValue,
+  disabled,
+  onCommit,
+}: GradeCellProps) {
+  const [localValue, setLocalValue] = useState(initialValue);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty or valid grade range
+    if (value === "" || (/^\d{0,3}$/.test(value) && parseInt(value, 10) <= 100)) {
+      setLocalValue(value);
+    }
+  };
+
+  const handleBlur = () => {
+    // Validate final value on blur
+    if (localValue === "") {
+      onCommit(studentId, subjectId, "");
+    } else {
+      const numValue = parseInt(localValue, 10);
+      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+        onCommit(studentId, subjectId, localValue);
+      } else {
+        // Reset to initial if invalid
+        setLocalValue(initialValue);
+      }
+    }
+  };
+
+  return (
+    <input
+      type="number"
+      min="60"
+      max="100"
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      disabled={disabled}
+      className={`w-16 text-center rounded-md border-border bg-background text-foreground shadow-sm text-sm ${
+        disabled
+          ? "bg-muted text-muted-foreground cursor-not-allowed"
+          : "focus:border-primary focus:ring-primary"
+      }`}
+      placeholder="--"
+    />
+  );
+});
 
 export function AdviserGradeEntryGrid({
   sectionId,
@@ -215,7 +279,9 @@ export function AdviserGradeEntryGrid({
       setSubmitState(result);
       if (result.success) {
         setCurrentStatus("submitted");
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       }
     } finally {
       setIsSubmitting(false);
@@ -435,21 +501,12 @@ export function AdviserGradeEntryGrid({
                   </td>
                   {subjects.map((subject) => (
                     <td key={subject.id} className="px-2 py-2 text-center">
-                      <input
-                        type="number"
-                        min="60"
-                        max="100"
-                        value={getGrade(student.id, subject.id)}
-                        onChange={(e) =>
-                          handleGradeChange(student.id, subject.id, e.target.value)
-                        }
+                      <GradeCell
+                        studentId={student.id}
+                        subjectId={subject.id}
+                        initialValue={getGrade(student.id, subject.id)}
                         disabled={!canEdit}
-                        className={`w-16 text-center rounded-md border-border bg-background text-foreground shadow-sm text-sm ${
-                          canEdit
-                            ? "focus:border-primary focus:ring-primary"
-                            : "bg-muted text-muted-foreground cursor-not-allowed"
-                        }`}
-                        placeholder="--"
+                        onCommit={handleGradeChange}
                       />
                     </td>
                   ))}

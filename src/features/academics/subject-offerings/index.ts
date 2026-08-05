@@ -1,18 +1,11 @@
 // Schemas and types
 export * from "./subject-offerings.schema";
 
-// Queries
-export {
-  getSubjectOfferingsForSection,
-  getSubjectsForOfferingGeneration,
-  getTeachersForAssignment,
-  hasExistingOfferings,
-  getSubjectOfferingById,
-  getSubjectOfferingsForTeacher,
-  getCurriculumsWithSubjectsForGradeLevel,
-  getAvailableSubjectsForManualOffering,
-  type TeacherClassCard,
-} from "./subject-offerings.queries";
+// Re-export type only (no runtime import)
+export type { TeacherClassCard } from "./subject-offerings.queries";
+
+// NOTE: Query functions are NOT exported here because they contain "server-only".
+// Import queries directly from "./subject-offerings.queries" in server components only.
 
 // Actions
 export {
@@ -21,6 +14,7 @@ export {
   deleteSubjectOfferingAction,
   deleteAllSubjectOfferingsAction,
   addManualSubjectOfferingAction,
+  getAvailableSubjectsForManualOfferingAction,
 } from "./subject-offerings.actions";
 
 // Components

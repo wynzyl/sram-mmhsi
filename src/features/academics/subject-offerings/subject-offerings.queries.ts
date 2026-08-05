@@ -1,5 +1,4 @@
-"use server";
-
+import "server-only";
 import { db } from "@/lib/db";
 import {
   subjectOfferings,
@@ -27,6 +26,8 @@ import type { TermOffering } from "@/lib/constants/term-offerings";
 
 /**
  * Get all subject offerings for a section.
+ * Note: Cannot use "use cache" here because this file is re-exported through
+ * index.ts which is imported by client components.
  */
 export async function getSubjectOfferingsForSection(
   sectionId: string,

@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
   curriculums,
@@ -96,7 +95,7 @@ export async function createCurriculumAction(
 
     // Cache invalidation runs only after the transaction commits.
     invalidateTag(CACHE_TAGS.CURRICULUMS);
-    revalidatePath("/staff/academics/curriculums");
+    invalidateTag(CACHE_TAGS.CURRICULUMS);
 
     return { success: true, curriculumId: newCurriculumId };
   } catch (error) {
@@ -163,8 +162,6 @@ export async function updateCurriculumMetaAction(
     );
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
-    revalidatePath("/staff/academics/curriculums");
-    revalidatePath(`/staff/academics/curriculums/${curriculumId}`);
 
     return { success: true, message: "Curriculum updated successfully." };
   } catch (error) {
@@ -297,7 +294,7 @@ export async function cloneCurriculumAction(
     });
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
-    revalidatePath("/staff/academics/curriculums");
+    invalidateTag(CACHE_TAGS.CURRICULUMS);
 
     return { success: true, curriculumId: newCurriculumId };
   } catch (error) {
@@ -441,8 +438,6 @@ export async function publishCurriculumAction(
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
     invalidateTag(CACHE_TAGS.CURRICULUM_ADOPTIONS);
-    revalidatePath("/staff/academics/curriculums");
-    revalidatePath(`/staff/academics/curriculums/${curriculumId}`);
 
     return { success: true, message: "Curriculum published successfully." };
   } catch (error) {
@@ -572,8 +567,6 @@ export async function archiveCurriculumAction(
     });
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
-    revalidatePath("/staff/academics/curriculums");
-    revalidatePath(`/staff/academics/curriculums/${curriculumId}`);
 
     return { success: true, message: "Curriculum archived successfully." };
   } catch (error) {

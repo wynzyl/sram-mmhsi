@@ -1,5 +1,4 @@
-"use server";
-
+import "server-only";
 import { db } from "@/lib/db";
 import { strands, subjectStrands, enrollments, students } from "@/lib/db/schema";
 import { eq, and, isNull, sql, count, asc } from "drizzle-orm";
@@ -11,6 +10,8 @@ import type { StrandView, StrandOption } from "./strands.schema";
 
 /**
  * Get all active strands for dropdown selection.
+ * Note: Cannot use "use cache" here because this file is re-exported through
+ * index.ts which is imported by client components.
  */
 export async function getActiveStrands(): Promise<StrandOption[]> {
   const rows = await db
@@ -36,6 +37,8 @@ export async function getActiveStrands(): Promise<StrandOption[]> {
 /**
  * Get all strands (including inactive) for admin management.
  * Includes counts of associated subjects and enrollments.
+ * Note: Cannot use "use cache" here because this file is re-exported through
+ * index.ts which is imported by client components.
  */
 export async function getAllStrands(): Promise<StrandView[]> {
   // Get strands with subject counts

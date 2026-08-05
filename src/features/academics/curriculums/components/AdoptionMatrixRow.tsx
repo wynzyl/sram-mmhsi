@@ -41,7 +41,11 @@ export function AdoptionMatrixRow({
 
   useFormToast(updateState, {
     successMessage: "Curriculum adoption updated",
-    onSuccess: () => router.refresh(),
+    onSuccess: () => {
+      startRemoveTransition(() => {
+        router.refresh();
+      });
+    },
     // On failure the optimistic selection is stale (no refresh happens), so
     // restore the dropdown to the authoritative value from the cell.
     onError: () => setSelectedCurriculumId(cell.curriculumId ?? ""),
@@ -73,7 +77,9 @@ export function AdoptionMatrixRow({
         toast.success(result.message);
         setSelectedCurriculumId("");
         setConfirmRemove(false);
-        router.refresh();
+        startRemoveTransition(() => {
+          router.refresh();
+        });
       } else {
         toast.error(result.message);
         setConfirmRemove(false);

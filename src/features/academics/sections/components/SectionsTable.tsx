@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { deleteSectionAction } from "../sections.actions";
@@ -73,7 +73,9 @@ export default function SectionsTable({
       const result = await deleteSectionAction(section.id);
       if (result.success) {
         toast.success(result.message);
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       } else {
         toast.error(result.message);
       }

@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { curriculums, subjects, subjectStrands, strands } from "@/lib/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
@@ -256,7 +255,6 @@ export async function addSubjectToCurriculumAction(
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
     invalidateTag(CACHE_TAGS.STRANDS);
-    revalidatePath(`/staff/academics/curriculums/${curriculumId}`);
 
     return { success: true, subjectId: newSubjectId };
   } catch (error) {
@@ -386,7 +384,6 @@ export async function updateSubjectInCurriculumAction(
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
     invalidateTag(CACHE_TAGS.STRANDS);
-    revalidatePath(`/staff/academics/curriculums/${curriculumId}`);
 
     return { success: true, message: "Subject updated successfully." };
   } catch (error) {
@@ -447,7 +444,6 @@ export async function deleteSubjectFromCurriculumAction(
     await logDeleteAction(session, "subjects", subjectId, "Soft delete", { throwOnFail: true });
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
-    revalidatePath(`/staff/academics/curriculums/${subject.curriculumId}`);
 
     return { success: true, message: "Subject deleted successfully." };
   } catch (error) {
@@ -526,7 +522,6 @@ export async function restoreSubjectInCurriculumAction(
     });
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
-    revalidatePath(`/staff/academics/curriculums/${subject.curriculumId}`);
 
     return { success: true, message: "Subject restored successfully." };
   } catch (error) {
@@ -621,7 +616,6 @@ export async function reorderSubjectsAction(
     });
 
     invalidateTag(CACHE_TAGS.CURRICULUMS);
-    revalidatePath(`/staff/academics/curriculums/${curriculumId}`);
 
     return { success: true, message: "Subjects reordered successfully." };
   } catch (error) {

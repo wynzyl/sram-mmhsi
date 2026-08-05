@@ -27,6 +27,30 @@ import {
   type ManualEnrollSubjectFormState,
 } from "./student-subject-enrollments.schema";
 import { canChangeStrand } from "./student-subject-enrollments.queries";
+import type { CanChangeStrandResult } from "./student-subject-enrollments.schema";
+
+/**
+ * Server action wrapper for canChangeStrand.
+ * Used by client components that need to check strand change eligibility.
+ */
+export async function canChangeStrandAction(
+  enrollmentId: string
+): Promise<CanChangeStrandResult> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "student_subject_enrollments:manage")) {
+    return {
+      canChange: false,
+      reason: "You do not have permission to manage student enrollments.",
+      gradeCount: 0,
+      currentStrandId: null,
+      currentStrandCode: null,
+      currentStrandName: null,
+    };
+  }
+
+  return canChangeStrand(enrollmentId);
+}
 
 /**
  * Generate student subject enrollments for an enrollment.

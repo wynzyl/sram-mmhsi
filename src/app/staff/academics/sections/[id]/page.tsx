@@ -14,6 +14,8 @@ import {
   getTeachersForAssignment,
   hasExistingOfferings,
   getCurriculumsWithSubjectsForGradeLevel,
+} from "@/features/academics/subject-offerings/subject-offerings.queries";
+import {
   SubjectOfferingsTable,
   SubjectOfferingsByStrand,
   GenerateOfferingsButton,
@@ -22,8 +24,8 @@ import {
   type EnrolledStrandInfo,
 } from "@/features/academics/subject-offerings";
 import type { ShsStrandCode } from "@/lib/constants/strands";
-import { getActiveStrands } from "@/features/academics/strands";
-import { canChangeStrand } from "@/features/academics/student-subject-enrollments";
+import { getActiveStrands } from "@/features/academics/strands/strands.queries";
+import { canChangeStrandAction } from "@/features/academics/student-subject-enrollments";
 import { requiresStrandSelection } from "@/lib/constants/strands";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -284,7 +286,7 @@ export default async function SectionDetailPage({
             students={students}
             isShs={isShs}
             availableStrands={availableStrands}
-            onCheckCanChangeStrand={canManageStrands ? canChangeStrand : undefined}
+            onCheckCanChangeStrand={canManageStrands ? canChangeStrandAction : undefined}
           />
         </CardContent>
       </Card>

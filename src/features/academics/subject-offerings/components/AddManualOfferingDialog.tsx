@@ -25,8 +25,10 @@ import type {
   SubjectForManualOffering,
   AddManualSubjectOfferingFormState,
 } from "../subject-offerings.schema";
-import { addManualSubjectOfferingAction } from "../subject-offerings.actions";
-import { getAvailableSubjectsForManualOffering } from "../subject-offerings.queries";
+import {
+  addManualSubjectOfferingAction,
+  getAvailableSubjectsForManualOfferingAction,
+} from "../subject-offerings.actions";
 import type { GradingSystemType } from "@/lib/constants/grading-systems";
 import { getTermOptionsForSystem, type TermOffering } from "@/lib/constants/term-offerings";
 
@@ -123,7 +125,7 @@ export function AddManualOfferingDialog({
 
     setIsLoadingSubjects(true);
     try {
-      const subjects = await getAvailableSubjectsForManualOffering(
+      const subjects = await getAvailableSubjectsForManualOfferingAction(
         curriculumId,
         gradeLevelId,
         sectionId,

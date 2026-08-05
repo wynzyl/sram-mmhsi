@@ -1,14 +1,8 @@
 // Schemas and types
 export * from "./strands.schema";
 
-// Queries
-export {
-  getActiveStrands,
-  getAllStrands,
-  getStrandById,
-  strandCodeExists,
-  getStrandOptionsForEnrollment,
-} from "./strands.queries";
+// NOTE: Queries are NOT exported here because they contain "server-only".
+// Import queries directly from "./strands.queries" in server components only.
 
 // Actions
 export {

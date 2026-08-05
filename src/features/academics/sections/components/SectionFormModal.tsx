@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createSectionAction,
@@ -62,7 +62,9 @@ export default function SectionFormModal({
       ? "Section updated successfully"
       : "Section created successfully",
     onSuccess: () => {
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
       onClose();
     },
   });
