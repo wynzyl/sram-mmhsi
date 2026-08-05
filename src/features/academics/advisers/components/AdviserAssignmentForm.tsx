@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { assignAdviserAction } from "../advisers.actions";
 import type {
@@ -50,7 +50,9 @@ export default function AdviserAssignmentForm({
   useFormToast(state, {
     successMessage: "Adviser assigned successfully",
     onSuccess: () => {
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
       onClose();
     },
   });

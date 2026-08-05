@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -31,6 +31,54 @@ interface StrandsTableProps {
 export function StrandsTable({ strands, canManage }: StrandsTableProps) {
   const [editStrand, setEditStrand] = useState<StrandView | null>(null);
   const [deleteStrand, setDeleteStrand] = useState<StrandView | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Handle edit dialog open/close with proper cleanup
+  const handleEditClick = useCallback((strand: StrandView) => {
+    setEditStrand(strand);
+    setEditDialogOpen(true);
+  }, []);
+
+  const handleEditDialogChange = useCallback((open: boolean) => {
+    setEditDialogOpen(open);
+    if (!open) {
+      // Delay clearing strand data to allow Radix animation to complete
+      setTimeout(() => setEditStrand(null), 200);
+    }
+  }, []);
+
+  // Handle delete dialog open/close with proper cleanup
+  const handleDeleteClick = useCallback((strand: StrandView) => {
+    setDeleteStrand(strand);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleDeleteDialogChange = useCallback((open: boolean) => {
+    setDeleteDialogOpen(open);
+    if (!open) {
+      // Delay clearing strand data to allow Radix animation to complete
+      setTimeout(() => setDeleteStrand(null), 200);
+    }
+  }, []);
+
+  // Force cleanup of pointer-events when any dialog closes
+  useEffect(() => {
+    if (!editDialogOpen && !deleteDialogOpen) {
+      // Multiple cleanup attempts to ensure pointer-events is restored
+      const cleanup = () => {
+        document.body.style.pointerEvents = "";
+        document.body.style.removeProperty("pointer-events");
+      };
+      cleanup();
+      const t1 = setTimeout(cleanup, 100);
+      const t2 = setTimeout(cleanup, 300);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [editDialogOpen, deleteDialogOpen]);
 
   return (
     <>
@@ -114,13 +162,13 @@ export function StrandsTable({ strands, canManage }: StrandsTableProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => setEditStrand(strand)}
+                            onClick={() => handleEditClick(strand)}
                           >
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => setDeleteStrand(strand)}
+                            onClick={() => handleDeleteClick(strand)}
                             className="text-destructive focus:text-destructive"
                             disabled={
                               (strand.subjectCount ?? 0) > 0 ||
@@ -141,21 +189,21 @@ export function StrandsTable({ strands, canManage }: StrandsTableProps) {
         </Table>
       </div>
 
-      {/* Edit Dialog - conditionally rendered for proper cleanup */}
+      {/* Edit Dialog - use controlled open state for proper Radix cleanup */}
       {editStrand && (
         <StrandFormDialog
           strand={editStrand}
-          open={true}
-          onOpenChange={(open) => !open && setEditStrand(null)}
+          open={editDialogOpen}
+          onOpenChange={handleEditDialogChange}
         />
       )}
 
-      {/* Delete Dialog - conditionally rendered for proper cleanup */}
+      {/* Delete Dialog - use controlled open state for proper Radix cleanup */}
       {deleteStrand && (
         <DeleteStrandDialog
           strand={deleteStrand}
-          open={true}
-          onOpenChange={(open) => !open && setDeleteStrand(null)}
+          open={deleteDialogOpen}
+          onOpenChange={handleDeleteDialogChange}
         />
       )}
     </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { assignCoordinatorAction } from "../coordinators.actions";
 import type {
@@ -49,7 +49,9 @@ export default function CoordinatorAssignmentForm({
   useFormToast(state, {
     successMessage: "Coordinator assigned successfully",
     onSuccess: () => {
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
       onClose();
     },
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useFormToast } from "@/hooks/useFormToast";
 import { publishCurriculumAction } from "../curriculums.actions";
@@ -47,7 +47,9 @@ export function PublishCurriculumDialog({
     successMessage: "Curriculum published successfully",
     onSuccess: () => {
       onClose();
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     },
   });
 

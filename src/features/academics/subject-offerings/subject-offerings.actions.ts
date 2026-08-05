@@ -22,7 +22,9 @@ import {
 import {
   getSubjectsForOfferingGeneration,
   getSubjectOfferingById,
+  getAvailableSubjectsForManualOffering,
 } from "./subject-offerings.queries";
+import type { SubjectForManualOffering } from "./subject-offerings.schema";
 import { curriculums, sections, gradeLevels } from "@/lib/db/schema";
 
 /**
@@ -566,4 +568,28 @@ export async function addManualSubjectOfferingAction(
   invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
 
   return { success: true };
+}
+
+/**
+ * Server action wrapper for getAvailableSubjectsForManualOffering.
+ * Allows client components to fetch available subjects safely.
+ */
+export async function getAvailableSubjectsForManualOfferingAction(
+  curriculumId: string,
+  gradeLevelId: string,
+  sectionId: string,
+  schoolYearId: string
+): Promise<SubjectForManualOffering[]> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "subject_offerings:read")) {
+    return [];
+  }
+
+  return getAvailableSubjectsForManualOffering(
+    curriculumId,
+    gradeLevelId,
+    sectionId,
+    schoolYearId
+  );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertDialog,
@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { showSuccess, showError } from "@/lib/toast/index";
+import { useFormToast } from "@/hooks/useFormToast";
 import { SHS_STRAND_SHORT_LABELS } from "@/lib/constants/strands";
 import type { StrandView, DeleteStrandFormState } from "../strands.schema";
 import { deleteStrandAction } from "../strands.actions";
@@ -28,7 +28,6 @@ export function DeleteStrandDialog({
   onOpenChange,
 }: DeleteStrandDialogProps) {
   const router = useRouter();
-  const hasHandledRef = useRef(false);
 
   const [state, action, isPending] = useActionState<
     DeleteStrandFormState,
@@ -36,24 +35,15 @@ export function DeleteStrandDialog({
   >(deleteStrandAction, {});
 
   // Handle success/error state changes
-  useEffect(() => {
-    // Skip if already handled or no state yet
-    if (hasHandledRef.current) return;
-    if (!state.success && !state.message) return;
-
-    if (state.success) {
-      hasHandledRef.current = true;
-      showSuccess("Strand deleted successfully");
+  useFormToast(state, {
+    successMessage: "Strand deleted successfully",
+    onSuccess: () => {
       onOpenChange(false);
-      // Force cleanup of body pointer-events after Radix processes close
-      setTimeout(() => {
-        document.body.style.pointerEvents = "";
+      startTransition(() => {
         router.refresh();
-      }, 100);
-    } else if (state.message) {
-      showError(state.message);
-    }
-  }, [state.success, state.message, onOpenChange, router]);
+      });
+    },
+  });
 
   const hasAssociations =
     (strand.subjectCount ?? 0) > 0 || (strand.enrollmentCount ?? 0) > 0;

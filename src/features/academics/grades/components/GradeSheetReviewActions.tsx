@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   principalApproveAction,
@@ -54,7 +54,9 @@ export function GradeSheetReviewActions({
       if (result.success) {
         setShowApproveDialog(false);
         router.push("/staff/grades/approvals");
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       }
     } finally {
       setIsApproving(false);
@@ -75,7 +77,9 @@ export function GradeSheetReviewActions({
       if (result.success) {
         setShowReturnDialog(false);
         router.push("/staff/grades/approvals");
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       }
     } finally {
       setIsReturning(false);

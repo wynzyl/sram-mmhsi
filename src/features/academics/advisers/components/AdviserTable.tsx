@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { removeAdviserAction } from "../advisers.actions";
 import type { AdviserView, SectionOption, TeacherOption } from "../advisers.schema";
@@ -114,7 +114,7 @@ export default function AdviserTable({
               label="Remove"
               loadingLabel="Removing..."
               variant="danger"
-              onSuccess={() => router.refresh()}
+              onSuccess={() => startTransition(() => { router.refresh(); })}
               dialogTitle="Remove Adviser"
             />
           );

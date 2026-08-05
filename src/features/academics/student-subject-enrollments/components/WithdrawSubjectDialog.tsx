@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -41,7 +41,9 @@ export function WithdrawSubjectDialog({
     successMessage: "Student withdrawn from subject",
     onSuccess: () => {
       onOpenChange(false);
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     },
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { copySectionsFromSchoolYearAction } from "../sections.actions";
 import type { CopySectionsFormState } from "../sections.schema";
@@ -49,7 +49,9 @@ export default function CopySectionsModal({
   useFormToast(state, {
     successMessage: state.message,
     onSuccess: () => {
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
       onClose();
     },
   });

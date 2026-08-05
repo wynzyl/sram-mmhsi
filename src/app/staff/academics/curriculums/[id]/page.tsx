@@ -8,7 +8,7 @@ import {
   getGradeLevelsForDropdown,
   getActiveSchoolYear,
 } from "@/features/academics/curriculums";
-import { getActiveStrands } from "@/features/academics/strands";
+import { getActiveStrands } from "@/features/academics/strands/strands.queries";
 import { validatePublishPreflight } from "@/features/academics/curriculums/curriculum-preflight";
 import { CurriculumStatusBadge } from "@/features/academics/curriculums/components/CurriculumStatusBadge";
 import { CurriculumVersionChain } from "@/features/academics/curriculums/components/CurriculumVersionChain";

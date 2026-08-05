@@ -1,10 +1,8 @@
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import {
-  getAllStrands,
-  StrandsTable,
-} from "@/features/academics/strands";
+import { getAllStrands } from "@/features/academics/strands/strands.queries";
+import { StrandsTable } from "@/features/academics/strands";
 import { AddStrandButton } from "./AddStrandButton";
 
 export const metadata = {

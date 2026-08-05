@@ -28,6 +28,12 @@ import {
  * - FEE_ITEM_TYPES  -> src/features/finance/fee-templates/fee-templates.queries.ts (getAllFeeItemTypes)
  * - DISCOUNT_TYPES  -> src/features/discounts/discounts.queries.ts (getActiveDiscountTypes, getAllDiscountTypes)
  * - DOCUMENT_REQUESTS -> src/features/documents/document-requests.queries.ts (getDocumentRequestById, getDocumentRequestsSummary)
+ * - CURRICULUMS     -> src/features/academics/curriculums/curriculums.queries.ts (listCurriculums, getCurriculumById, getPublishedCurriculumsForDropdown)
+ * - CURRICULUM_ADOPTIONS -> src/features/academics/curriculums/curriculums.queries.ts (getAdoptionMatrix)
+ * - SECTIONS        -> src/features/academics/sections/sections.queries.ts (getAllSections, getSectionById, etc.)
+ * - STRANDS         -> src/features/academics/strands/strands.queries.ts (getActiveStrands, getAllStrands)
+ * - SUBJECT_OFFERINGS -> src/features/academics/subject-offerings/subject-offerings.queries.ts (getSubjectOfferingsForSection)
+ * - STUDENT_SUBJECT_ENROLLMENTS -> src/features/academics/student-subject-enrollments/student-subject-enrollments.queries.ts (getStudentSubjectEnrollments)
  */
 export const CACHE_TAGS = {
   /** Admin/Staff dashboard metrics */

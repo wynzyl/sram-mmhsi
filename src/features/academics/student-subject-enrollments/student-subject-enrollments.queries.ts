@@ -1,5 +1,4 @@
-"use server";
-
+import "server-only";
 import { db } from "@/lib/db";
 import {
   studentSubjectEnrollments,
@@ -24,6 +23,8 @@ import type {
 
 /**
  * Get all subject enrollments for a student enrollment.
+ * Note: Cannot use "use cache" here because this file is re-exported through
+ * index.ts which is imported by client components.
  */
 export async function getStudentSubjectEnrollments(
   enrollmentId: string

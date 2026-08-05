@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useMemo } from "react";
+import { useActionState, useEffect, useRef, useState, useMemo, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useFormToast } from "@/hooks/useFormToast";
 import {
@@ -88,7 +88,9 @@ export function SubjectFormDialog({
     successMessage: mode === "add" ? "Subject added" : "Subject updated",
     onSuccess: () => {
       onClose();
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     },
   });
 

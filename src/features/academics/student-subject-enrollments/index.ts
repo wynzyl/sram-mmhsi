@@ -1,16 +1,12 @@
 // Schemas and types
 export * from "./student-subject-enrollments.schema";
 
-// Queries
-export {
-  getStudentSubjectEnrollments,
-  canChangeStrand,
-  getSubjectEnrollmentsForSection,
-  getAvailableOfferingsForEnrollment,
-} from "./student-subject-enrollments.queries";
+// NOTE: Queries are NOT exported here because they contain "server-only".
+// Import queries directly from "./student-subject-enrollments.queries" in server components only.
 
 // Actions
 export {
+  canChangeStrandAction,
   generateStudentSubjectEnrollmentsAction,
   changeStudentStrandAction,
   withdrawFromSubjectAction,

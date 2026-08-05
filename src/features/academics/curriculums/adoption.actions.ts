@@ -1,7 +1,6 @@
 "use server";
 
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
   curriculums,
@@ -193,7 +192,6 @@ export async function updateAdoptionAction(
 
     invalidateTag(CACHE_TAGS.CURRICULUM_ADOPTIONS);
     invalidateTag(CACHE_TAGS.CURRICULUMS);
-    revalidatePath("/staff/academics/curriculums/adoptions");
 
     return { success: true, message: "Adoption updated successfully." };
   } catch (error) {
@@ -397,7 +395,6 @@ export async function removeAdoptionAction(
 
     invalidateTag(CACHE_TAGS.CURRICULUM_ADOPTIONS);
     invalidateTag(CACHE_TAGS.CURRICULUMS);
-    revalidatePath("/staff/academics/curriculums/adoptions");
 
     return { success: true, message: "Adoption removed successfully." };
   } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useFormToast } from "@/hooks/useFormToast";
 import {
@@ -44,7 +44,9 @@ export function CurriculumForm({ mode, curriculum }: CurriculumFormProps) {
       if (mode === "create" && "curriculumId" in state && state.curriculumId) {
         router.push(`/staff/academics/curriculums/${state.curriculumId}`);
       } else {
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       }
     },
   });

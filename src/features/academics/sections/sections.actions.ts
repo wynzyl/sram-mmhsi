@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { sections, schoolYears } from "@/lib/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
@@ -91,7 +90,6 @@ export async function createSectionAction(
       return newSection.id;
     });
 
-    revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
     return {
@@ -185,7 +183,6 @@ export async function updateSectionAction(
       return { message: "Section not found or has been deleted." };
     }
 
-    revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
     return {
@@ -273,7 +270,6 @@ export async function deleteSectionAction(
       };
     }
 
-    revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
     return {

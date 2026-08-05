@@ -1,6 +1,7 @@
 import "server-only";
-
+import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/lib/db";
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
   curriculums,
   curriculumAdoptions,
@@ -55,6 +56,10 @@ export async function listCurriculums(filter?: {
   rootId?: string;
   gradeLevelId?: string;
 }): Promise<CurriculumListRow[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.CURRICULUMS);
+  cacheLife("hours");
+
   // Build base query
   const baseConditions = [];
 
@@ -114,6 +119,10 @@ export async function listCurriculums(filter?: {
  * Get a single curriculum by ID with full details.
  */
 export async function getCurriculumById(id: string): Promise<CurriculumDetail | null> {
+  "use cache";
+  cacheTag(CACHE_TAGS.CURRICULUMS);
+  cacheLife("hours");
+
   // Query 1: Curriculum base info
   const curriculumRow = await db
     .select({
@@ -294,6 +303,10 @@ export async function getCurrentCurriculumForGradeAndYear(
 export async function getAdoptionMatrix(
   schoolYearId: string
 ): Promise<AdoptionMatrixCell[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.CURRICULUM_ADOPTIONS);
+  cacheLife("hours");
+
   // Get all grade levels
   const allGradeLevels = await db
     .select({
@@ -350,6 +363,10 @@ export async function getAdoptionMatrix(
 export async function getPublishedCurriculumsForDropdown(): Promise<
   CurriculumDropdownOption[]
 > {
+  "use cache";
+  cacheTag(CACHE_TAGS.CURRICULUMS);
+  cacheLife("hours");
+
   const rows = await db
     .select({
       id: curriculums.id,

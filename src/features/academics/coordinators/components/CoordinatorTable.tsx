@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { removeCoordinatorAction } from "../coordinators.actions";
 import type { CoordinatorView, CoordinatorUserOption } from "../coordinators.schema";
@@ -43,7 +43,9 @@ export default function CoordinatorTable({
       const result = await removeCoordinatorAction({}, formData);
       if (result.success) {
         toast.success(result.message);
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       } else {
         toast.error(result.message || "Failed to remove coordinator");
       }
