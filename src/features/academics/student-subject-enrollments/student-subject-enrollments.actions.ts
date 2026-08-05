@@ -14,6 +14,7 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { uuidSchema } from "@/lib/validators/common-schemas";
 import {
   generateStudentSubjectEnrollmentsSchema,
   changeStudentStrandSchema,
@@ -30,6 +31,21 @@ import { canChangeStrand } from "./student-subject-enrollments.queries";
 import type { CanChangeStrandResult } from "./student-subject-enrollments.schema";
 
 /**
+ * Build the "not eligible" result shape without hitting the database.
+ * Not exported — every export of a "use server" module becomes an endpoint.
+ */
+function ineligibleToChangeStrand(reason: string): CanChangeStrandResult {
+  return {
+    canChange: false,
+    reason,
+    gradeCount: 0,
+    currentStrandId: null,
+    currentStrandCode: null,
+    currentStrandName: null,
+  };
+}
+
+/**
  * Server action wrapper for canChangeStrand.
  * Used by client components that need to check strand change eligibility.
  */
@@ -39,17 +55,20 @@ export async function canChangeStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "student_subject_enrollments:manage")) {
-    return {
-      canChange: false,
-      reason: "You do not have permission to manage student enrollments.",
-      gradeCount: 0,
-      currentStrandId: null,
-      currentStrandCode: null,
-      currentStrandName: null,
-    };
+    return ineligibleToChangeStrand(
+      "You do not have permission to manage student enrollments."
+    );
   }
 
-  return canChangeStrand(enrollmentId);
+  // enrollmentId arrives straight from the client. canChangeStrand compares it
+  // against a uuid column, so a malformed value would surface as a Postgres
+  // 22P02 error rather than a handled result.
+  const parsed = uuidSchema.safeParse(enrollmentId);
+  if (!parsed.success) {
+    return ineligibleToChangeStrand("Invalid enrollment reference.");
+  }
+
+  return canChangeStrand(parsed.data);
 }
 
 /**
@@ -60,6 +79,40 @@ export async function canChangeStrandAction(
 export async function generateStudentSubjectEnrollmentsAction(
   enrollmentId: string
 ): Promise<{ success: boolean; createdCount: number; skippedCount: number; error?: string }> {
+  const session = await requireSession();
+
+  // Two already-authorized flows reach this write: direct SSE management, and
+  // section assignment (assignStudentsToSectionAction guards on "sections:assign"
+  // and generates SSE records as a side effect). Coordinator and principal hold
+  // "sections:assign" but NOT "student_subject_enrollments:manage", so checking
+  // only the latter would make section assignment silently produce students with
+  // no subject enrollments — the caller discards this return value. Accepting
+  // either permission grants no new capability; it names the one those roles
+  // already exercise through that flow.
+  const authorized =
+    hasPermission(session.role, "student_subject_enrollments:manage") ||
+    hasPermission(session.role, "sections:assign");
+
+  if (!authorized) {
+    return {
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      error: "You do not have permission to manage student enrollments.",
+    };
+  }
+
+  // enrollmentId is client-supplied and is compared against uuid columns below.
+  // uuidSchema applies no transform, so the original value is used as-is.
+  if (!uuidSchema.safeParse(enrollmentId).success) {
+    return {
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      error: "Invalid enrollment reference.",
+    };
+  }
+
   // Get enrollment details
   const [enrollment] = await db
     .select({

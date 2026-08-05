@@ -58,6 +58,9 @@ export async function listCurriculums(filter?: {
 }): Promise<CurriculumListRow[]> {
   "use cache";
   cacheTag(CACHE_TAGS.CURRICULUMS);
+  // adoptionCount is derived from curriculum_adoptions; roll-forward mutates
+  // adoptions without touching curriculums, so subscribe to that tag too.
+  cacheTag(CACHE_TAGS.CURRICULUM_ADOPTIONS);
   cacheLife("hours");
 
   // Build base query
@@ -121,6 +124,12 @@ export async function listCurriculums(filter?: {
 export async function getCurriculumById(id: string): Promise<CurriculumDetail | null> {
   "use cache";
   cacheTag(CACHE_TAGS.CURRICULUMS);
+  // This query joins grade_levels (name/order), school_years (label/isActive)
+  // and curriculum_adoptions. Those tables are mutated by actions that do not
+  // invalidate CURRICULUMS, so subscribe to their tags as well.
+  cacheTag(CACHE_TAGS.GRADE_LEVELS);
+  cacheTag(CACHE_TAGS.SCHOOL_YEARS);
+  cacheTag(CACHE_TAGS.CURRICULUM_ADOPTIONS);
   cacheLife("hours");
 
   // Query 1: Curriculum base info
