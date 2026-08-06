@@ -23,9 +23,9 @@ import {
 } from "@/components/ui/select";
 import { useFormToast } from "@/hooks/useFormToast";
 import {
-  SHS_STRAND_CODES,
-  SHS_STRAND_LABELS,
-} from "@/lib/constants/strands";
+  TRACK_CATEGORIES,
+  TRACK_CATEGORY_LABELS,
+} from "@/lib/constants/track-categories";
 import type { StrandView, CreateStrandFormState, UpdateStrandFormState } from "../strands.schema";
 import { createStrandAction, updateStrandAction } from "../strands.actions";
 
@@ -59,7 +59,7 @@ export function StrandFormDialog({
 
   // Handle success/error state changes
   useFormToast(state, {
-    successMessage: isEditing ? "Strand updated successfully" : "Strand created successfully",
+    successMessage: isEditing ? "Track updated successfully" : "Track created successfully",
     onSuccess: () => {
       onOpenChange(false);
       startTransition(() => {
@@ -72,46 +72,55 @@ export function StrandFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Strand" : "Add Strand"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Track" : "Add Track"}</DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Update the strand details below."
-              : "Add a new SHS academic strand."}
+              ? "Update the track details below."
+              : "Add a new SHS academic track. Tracks own subjects directly."}
           </DialogDescription>
         </DialogHeader>
 
         <form action={action} className="space-y-4">
           {isEditing && <input type="hidden" name="id" value={strand.id} />}
 
-          {/* Strand Code - only for new strands */}
-          {!isEditing && (
-            <div className="space-y-2">
-              <Label htmlFor="code">Strand Code *</Label>
-              <Select name="code" required>
-                <SelectTrigger id="code">
-                  <SelectValue placeholder="Select strand code" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SHS_STRAND_CODES.map((code) => (
-                    <SelectItem key={code} value={code}>
-                      {code} - {SHS_STRAND_LABELS[code]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!isEditing && (createState.errors as Record<string, string[]> | undefined)?.code && (
-                <p className="text-sm text-destructive">{(createState.errors as Record<string, string[]>).code[0]}</p>
-              )}
-            </div>
-          )}
+          {/* Track Code */}
+          <div className="space-y-2">
+            <Label htmlFor="code">Track Code *</Label>
+            <Input
+              id="code"
+              name="code"
+              defaultValue={strand?.code ?? ""}
+              placeholder="e.g., STEM, ABM, TVL-ICT"
+              required
+              className="uppercase"
+            />
+            <p className="text-xs text-muted-foreground">
+              Uppercase letters, numbers, and hyphens only. Example: STEM, TVL-ICT, MAHS
+            </p>
+            {state.errors?.code && (
+              <p className="text-sm text-destructive">{state.errors.code[0]}</p>
+            )}
+          </div>
 
-          {/* Display code for editing */}
-          {isEditing && (
-            <div className="space-y-2">
-              <Label>Strand Code</Label>
-              <p className="text-sm font-medium">{strand.code}</p>
-            </div>
-          )}
+          {/* Short Code */}
+          <div className="space-y-2">
+            <Label htmlFor="shortCode">Short Code *</Label>
+            <Input
+              id="shortCode"
+              name="shortCode"
+              defaultValue={strand?.shortCode ?? ""}
+              placeholder="e.g., STEM, ICT"
+              required
+              maxLength={10}
+              className="uppercase"
+            />
+            <p className="text-xs text-muted-foreground">
+              Abbreviation for badges. For TVL-ICT, use ICT as short code.
+            </p>
+            {state.errors?.shortCode && (
+              <p className="text-sm text-destructive">{state.errors.shortCode[0]}</p>
+            )}
+          </div>
 
           {/* Name */}
           <div className="space-y-2">
@@ -120,11 +129,31 @@ export function StrandFormDialog({
               id="name"
               name="name"
               defaultValue={strand?.name ?? ""}
-              placeholder="Full strand name"
+              placeholder="Full track name"
               required
             />
             {state.errors?.name && (
               <p className="text-sm text-destructive">{state.errors.name[0]}</p>
+            )}
+          </div>
+
+          {/* Track Category */}
+          <div className="space-y-2">
+            <Label htmlFor="trackCategory">Category *</Label>
+            <Select name="trackCategory" defaultValue={strand?.trackCategory ?? "academic"} required>
+              <SelectTrigger id="trackCategory">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {TRACK_CATEGORIES.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {TRACK_CATEGORY_LABELS[category]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {state.errors?.trackCategory && (
+              <p className="text-sm text-destructive">{state.errors.trackCategory[0]}</p>
             )}
           </div>
 
@@ -135,7 +164,7 @@ export function StrandFormDialog({
               id="description"
               name="description"
               defaultValue={strand?.description ?? ""}
-              placeholder="Brief description of the strand"
+              placeholder="Brief description of the track"
               rows={3}
             />
             {state.errors?.description && (
@@ -165,7 +194,7 @@ export function StrandFormDialog({
             <div className="space-y-0.5">
               <Label htmlFor="isActive">Active</Label>
               <p className="text-xs text-muted-foreground">
-                Inactive strands cannot be selected for new enrollments.
+                Inactive tracks cannot be selected for new enrollments.
               </p>
             </div>
             <Switch
@@ -193,7 +222,7 @@ export function StrandFormDialog({
                   : "Creating..."
                 : isEditing
                   ? "Save Changes"
-                  : "Create Strand"}
+                  : "Create Track"}
             </Button>
           </div>
         </form>

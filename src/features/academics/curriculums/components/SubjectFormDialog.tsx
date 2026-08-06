@@ -13,7 +13,12 @@ import type {
   StrandAssociation,
 } from "../curriculums.schema";
 import type { SubjectListRow, SubjectStrandAssociation } from "../curriculums.types";
-import { SHS_STRAND_LABELS, type ShsStrandCode } from "@/lib/constants/strands";
+import {
+  TERM_OFFERING_LABELS,
+  getValidTermsForSystem,
+  type TermOffering,
+} from "@/lib/constants/term-offerings";
+import type { GradingSystemType } from "@/lib/constants/grading-systems";
 
 interface GradeLevelOption {
   id: string;
@@ -23,6 +28,7 @@ interface GradeLevelOption {
 interface StrandOption {
   id: string;
   code: string;
+  shortCode: string;
   name: string;
 }
 
@@ -30,13 +36,15 @@ interface SubjectFormDialogProps {
   mode: "add" | "edit";
   curriculumId: string;
   gradeLevels: GradeLevelOption[];
-  subject?: SubjectListRow;
+  subject?: SubjectListRow & { strandId?: string | null; termOffered?: TermOffering };
   defaultGradeLevelId?: string;
   onClose: () => void;
-  /** Available strands for SHS elective selection */
+  /** Available tracks for SHS subject assignment */
   availableStrands?: StrandOption[];
-  /** Existing strand associations for the subject (edit mode) */
+  /** @deprecated - use strandId direct ownership instead */
   existingStrandAssociations?: SubjectStrandAssociation[];
+  /** School year grading system type for term options */
+  gradingSystemType?: GradingSystemType;
 }
 
 export function SubjectFormDialog({
@@ -48,22 +56,28 @@ export function SubjectFormDialog({
   onClose,
   availableStrands = [],
   existingStrandAssociations = [],
+  gradingSystemType = "quarterly",
 }: SubjectFormDialogProps) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
-  // Track isCore state for conditional strand display
+  // Track isCore state for conditional UI
   const [isCore, setIsCore] = useState(subject?.isCore ?? true);
   const [selectedGradeLevelId, setSelectedGradeLevelId] = useState(
     subject?.gradeLevelId ?? defaultGradeLevelId ?? ""
   );
 
-  // Track strand associations: Map<strandId, { selected: boolean, isStrandCore: boolean }>
+  // Track selection for SHS subjects (direct ownership model)
+  const [selectedTrackId, setSelectedTrackId] = useState<string>(subject?.strandId ?? "");
+
+  // Term offered selection
+  const [termOffered, setTermOffered] = useState<TermOffering>(subject?.termOffered ?? "full_year");
+
+  // Legacy strand associations (deprecated - for backward compatibility)
   const [strandSelections, setStrandSelections] = useState<
     Map<string, { selected: boolean; isStrandCore: boolean }>
   >(() => {
     const map = new Map();
-    // Initialize with existing associations
     for (const assoc of existingStrandAssociations) {
       map.set(assoc.strandId, { selected: true, isStrandCore: assoc.isStrandCore });
     }
@@ -111,12 +125,20 @@ export function SubjectFormDialog({
     return name.includes("grade 11") || name.includes("grade 12") || name.includes("g11") || name.includes("g12");
   }, [selectedGradeLevel]);
 
-  // Show strand selection only for SHS electives
-  const showStrandSelection = !isCore && isSHSGradeLevel && availableStrands.length > 0;
+  // Show track selection for SHS subjects
+  const showTrackSelection = isSHSGradeLevel && availableStrands.length > 0;
 
-  // Build strand associations JSON for form submission
+  // Get valid term options based on grading system
+  const termOptions = useMemo(() => {
+    return getValidTermsForSystem(gradingSystemType).map(term => ({
+      value: term,
+      label: TERM_OFFERING_LABELS[term],
+    }));
+  }, [gradingSystemType]);
+
+  // Legacy: Build strand associations JSON for form submission (deprecated)
   const strandAssociationsJson = useMemo(() => {
-    if (!showStrandSelection) return "";
+    if (!isSHSGradeLevel || selectedTrackId) return ""; // Use direct ownership if track selected
     const associations: StrandAssociation[] = [];
     strandSelections.forEach((value, strandId) => {
       if (value.selected) {
@@ -124,31 +146,7 @@ export function SubjectFormDialog({
       }
     });
     return JSON.stringify(associations);
-  }, [strandSelections, showStrandSelection]);
-
-  const handleStrandToggle = (strandId: string) => {
-    setStrandSelections((prev) => {
-      const next = new Map(prev);
-      const current = next.get(strandId);
-      if (current?.selected) {
-        next.delete(strandId);
-      } else {
-        next.set(strandId, { selected: true, isStrandCore: false });
-      }
-      return next;
-    });
-  };
-
-  const handleStrandCoreToggle = (strandId: string) => {
-    setStrandSelections((prev) => {
-      const next = new Map(prev);
-      const current = next.get(strandId);
-      if (current) {
-        next.set(strandId, { ...current, isStrandCore: !current.isStrandCore });
-      }
-      return next;
-    });
-  };
+  }, [strandSelections, isSHSGradeLevel, selectedTrackId]);
 
   const inputClass =
     "w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/20";
@@ -192,7 +190,7 @@ export function SubjectFormDialog({
               id="code"
               name="code"
               type="text"
-              placeholder="e.g., ENG101"
+              placeholder="e.g., STEM-GM11"
               defaultValue={subject?.code ?? ""}
               required
               className={inputClass}
@@ -211,7 +209,7 @@ export function SubjectFormDialog({
               id="name"
               name="name"
               type="text"
-              placeholder="e.g., English Language Arts"
+              placeholder="e.g., General Mathematics"
               defaultValue={subject?.name ?? ""}
               required
               className={inputClass}
@@ -230,7 +228,11 @@ export function SubjectFormDialog({
               id="gradeLevelId"
               name="gradeLevelId"
               value={selectedGradeLevelId}
-              onChange={(e) => setSelectedGradeLevelId(e.target.value)}
+              onChange={(e) => {
+                setSelectedGradeLevelId(e.target.value);
+                // Reset track selection when grade level changes
+                setSelectedTrackId("");
+              }}
               required
               className={inputClass}
             >
@@ -245,6 +247,61 @@ export function SubjectFormDialog({
               <p className="text-sm text-destructive">{state.errors.gradeLevelId[0]}</p>
             )}
           </div>
+
+          {/* Track Selection for SHS Subjects */}
+          {showTrackSelection && (
+            <>
+              <div className="space-y-1.5">
+                <label htmlFor="strandId" className="block text-sm font-medium text-foreground">
+                  Track
+                  <span className="text-destructive ml-0.5">*</span>
+                </label>
+                <select
+                  id="strandId"
+                  name="strandId"
+                  value={selectedTrackId}
+                  onChange={(e) => setSelectedTrackId(e.target.value)}
+                  required
+                  className={inputClass}
+                >
+                  <option value="">Select track...</option>
+                  {availableStrands.map((strand) => (
+                    <option key={strand.id} value={strand.id}>
+                      {strand.shortCode} - {strand.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  This subject will belong exclusively to the selected track.
+                </p>
+                {state.errors?.strandId && (
+                  <p className="text-sm text-destructive">{state.errors.strandId[0]}</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="termOffered" className="block text-sm font-medium text-foreground">
+                  Term Offered
+                </label>
+                <select
+                  id="termOffered"
+                  name="termOffered"
+                  value={termOffered}
+                  onChange={(e) => setTermOffered(e.target.value as TermOffering)}
+                  className={inputClass}
+                >
+                  {termOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  When this subject is available during the school year.
+                </p>
+              </div>
+            </>
+          )}
 
           <div className="space-y-1.5">
             <label htmlFor="description" className="block text-sm font-medium text-foreground">
@@ -279,73 +336,35 @@ export function SubjectFormDialog({
               )}
             </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="isCore" className="block text-sm font-medium text-foreground">
-                Type
-              </label>
-              <select
-                id="isCore"
-                name="isCore"
-                value={isCore ? "true" : "false"}
-                onChange={(e) => setIsCore(e.target.value === "true")}
-                className={inputClass}
-              >
-                <option value="true">Core Subject</option>
-                <option value="false">Elective</option>
-              </select>
-            </div>
+            {/* Show Type selection only for non-SHS subjects */}
+            {!isSHSGradeLevel && (
+              <div className="space-y-1.5">
+                <label htmlFor="isCore" className="block text-sm font-medium text-foreground">
+                  Type
+                </label>
+                <select
+                  id="isCore"
+                  name="isCore"
+                  value={isCore ? "true" : "false"}
+                  onChange={(e) => setIsCore(e.target.value === "true")}
+                  className={inputClass}
+                >
+                  <option value="true">Core Subject</option>
+                  <option value="false">Elective</option>
+                </select>
+              </div>
+            )}
           </div>
 
-          {/* Strand Selection for SHS Electives */}
-          {showStrandSelection && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-foreground">
-                Available to Strands
-                <span className="text-muted-foreground ml-1 font-normal">(select applicable strands)</span>
-              </label>
-              <div className="space-y-2 border border-border rounded-md p-3 max-h-48 overflow-y-auto">
-                {availableStrands.map((strand) => {
-                  const selection = strandSelections.get(strand.id);
-                  const isSelected = selection?.selected ?? false;
-                  const isStrandCore = selection?.isStrandCore ?? false;
-
-                  return (
-                    <div key={strand.id} className="flex items-center gap-3">
-                      <label className="flex items-center gap-2 flex-1 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleStrandToggle(strand.id)}
-                          className="h-4 w-4 rounded border-border"
-                        />
-                        <span className="text-sm">
-                          {strand.code} - {SHS_STRAND_LABELS[strand.code as ShsStrandCode] ?? strand.name}
-                        </span>
-                      </label>
-                      {isSelected && (
-                        <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={isStrandCore}
-                            onChange={() => handleStrandCoreToggle(strand.id)}
-                            className="h-3 w-3 rounded border-border"
-                          />
-                          Required
-                        </label>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Check &quot;Required&quot; if students in that strand must take this subject.
-              </p>
-              {/* Hidden input to submit strand associations */}
-              <input type="hidden" name="strandAssociations" value={strandAssociationsJson} />
-            </div>
+          {/* Hidden field for isCore - SHS subjects are always considered "core" within their track */}
+          {isSHSGradeLevel && (
+            <input type="hidden" name="isCore" value="true" />
           )}
 
-          {/* Form-level errors are shown via useFormToast, field errors stay inline */}
+          {/* Legacy strand associations for backward compatibility */}
+          {strandAssociationsJson && (
+            <input type="hidden" name="strandAssociations" value={strandAssociationsJson} />
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
             <button

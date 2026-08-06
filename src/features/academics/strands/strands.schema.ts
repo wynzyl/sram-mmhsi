@@ -1,15 +1,36 @@
 import { z } from "zod";
 import { uuidSchema, type BaseFormState } from "@/lib/validators/common-schemas";
-import { SHS_STRAND_CODES, type ShsStrandCode } from "@/lib/constants/strands";
+import { TRACK_CATEGORIES, type TrackCategory } from "@/lib/constants/track-categories";
 
-// ─── Create Strand Schema ─────────────────────────────────────────────────────
+// ─── Create Strand (Track) Schema ─────────────────────────────────────────────
 
 export const createStrandSchema = z.object({
-  code: z.enum(SHS_STRAND_CODES, {
-    message: "Please select a valid strand code",
-  }),
+  /** Full track code (e.g., "STEM", "TVL-ICT", "MAHS") - admin-defined TEXT */
+  code: z
+    .string()
+    .trim()
+    .min(1, "Track code is required")
+    .max(20, "Track code is too long")
+    .regex(
+      /^[A-Z][A-Z0-9-]*$/,
+      "Code must start with a letter and contain only uppercase letters, numbers, and hyphens"
+    ),
+  /** Short code for UI badges (e.g., "STEM", "ICT" for TVL-ICT) */
+  shortCode: z
+    .string()
+    .trim()
+    .min(1, "Short code is required")
+    .max(10, "Short code is too long")
+    .regex(
+      /^[A-Z][A-Z0-9]*$/,
+      "Short code must contain only uppercase letters and numbers"
+    ),
   name: z.string().trim().min(1, "Name is required").max(200, "Name is too long"),
   description: z.string().trim().max(500, "Description is too long").optional(),
+  /** Track category: academic, tvl, or specialized */
+  trackCategory: z.enum(TRACK_CATEGORIES, {
+    message: "Please select a valid track category",
+  }),
   displayOrder: z.coerce.number().int().min(0).default(0),
   isActive: z.coerce.boolean().default(true),
 });
@@ -20,12 +41,34 @@ export type CreateStrandFormState = BaseFormState<CreateStrandInput> & {
   strandId?: string;
 };
 
-// ─── Update Strand Schema ─────────────────────────────────────────────────────
+// ─── Update Strand (Track) Schema ─────────────────────────────────────────────
 
 export const updateStrandSchema = z.object({
   id: uuidSchema,
+  /** Code can be updated (admin-managed text, not enum) */
+  code: z
+    .string()
+    .trim()
+    .min(1, "Track code is required")
+    .max(20, "Track code is too long")
+    .regex(
+      /^[A-Z][A-Z0-9-]*$/,
+      "Code must start with a letter and contain only uppercase letters, numbers, and hyphens"
+    ),
+  shortCode: z
+    .string()
+    .trim()
+    .min(1, "Short code is required")
+    .max(10, "Short code is too long")
+    .regex(
+      /^[A-Z][A-Z0-9]*$/,
+      "Short code must contain only uppercase letters and numbers"
+    ),
   name: z.string().trim().min(1, "Name is required").max(200, "Name is too long"),
   description: z.string().trim().max(500, "Description is too long").nullable().optional(),
+  trackCategory: z.enum(TRACK_CATEGORIES, {
+    message: "Please select a valid track category",
+  }),
   displayOrder: z.coerce.number().int().min(0).default(0),
   isActive: z.coerce.boolean(),
 });
@@ -47,30 +90,48 @@ export type DeleteStrandFormState = BaseFormState<DeleteStrandInput>;
 // ─── View Types ───────────────────────────────────────────────────────────────
 
 /**
- * Strand view - includes all fields for display.
+ * Track (strand) view - includes all fields for display.
  */
 export interface StrandView {
   id: string;
-  code: ShsStrandCode;
+  /** Full track code (e.g., "STEM", "TVL-ICT", "MAHS") */
+  code: string;
+  /** Short code for UI badges (e.g., "STEM", "ICT") */
+  shortCode: string;
   name: string;
   description: string | null;
+  /** Track category: academic, tvl, or specialized */
+  trackCategory: TrackCategory;
   displayOrder: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
-  /** Count of subjects associated with this strand */
+  /** Count of subjects owned by this track (direct ownership) */
   subjectCount?: number;
-  /** Count of active enrollments with this strand */
+  /** Count of active enrollments with this track */
   enrollmentCount?: number;
+  /** Count of sections assigned to this track */
+  sectionCount?: number;
 }
 
 /**
- * Strand option for dropdown - minimal info for selection.
+ * Track option for dropdown - minimal info for selection.
  */
 export interface StrandOption {
   id: string;
-  code: ShsStrandCode;
+  code: string;
   name: string;
-  shortName: string;
+  /** Short code for UI badges */
+  shortCode: string;
+  trackCategory: TrackCategory;
   isActive: boolean;
+}
+
+/**
+ * Track category groups for UI display (grouped by category)
+ */
+export interface StrandsByCategory {
+  academic: StrandOption[];
+  tvl: StrandOption[];
+  specialized: StrandOption[];
 }

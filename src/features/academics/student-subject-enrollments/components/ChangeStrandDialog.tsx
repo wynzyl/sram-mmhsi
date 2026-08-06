@@ -21,7 +21,6 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { useFormToast } from "@/hooks/useFormToast";
-import { SHS_STRAND_LABELS, type ShsStrandCode } from "@/lib/constants/strands";
 import type {
   CanChangeStrandResult,
   ChangeStudentStrandFormState,
@@ -55,7 +54,7 @@ export function ChangeStrandDialog({
   >(changeStudentStrandAction, {});
 
   useFormToast(state, {
-    successMessage: "Strand changed successfully",
+    successMessage: "Track changed successfully",
     onSuccess: () => {
       onOpenChange(false);
       // Use startTransition to make refresh non-blocking
@@ -65,7 +64,7 @@ export function ChangeStrandDialog({
     },
   });
 
-  // Filter out current strand from options
+  // Filter out current track from options
   const selectableStrands = availableStrands.filter(
     (s) => s.id !== strandInfo.currentStrandId
   );
@@ -74,19 +73,19 @@ export function ChangeStrandDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
-          <DialogTitle>Change Strand</DialogTitle>
+          <DialogTitle>Change Track</DialogTitle>
           <DialogDescription>
-            Change the academic strand for <strong>{studentName}</strong>.
+            Change the academic track for <strong>{studentName}</strong>.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Current Strand */}
+        {/* Current Track */}
         <div className="space-y-2">
-          <Label>Current Strand</Label>
+          <Label>Current Track</Label>
           <p className="text-sm font-medium">
             {strandInfo.currentStrandCode
               ? `${strandInfo.currentStrandCode} - ${strandInfo.currentStrandName}`
-              : "No strand selected"}
+              : "No track selected"}
           </p>
         </div>
 
@@ -98,13 +97,13 @@ export function ChangeStrandDialog({
           </Alert>
         )}
 
-        {/* Warning about elective subjects */}
+        {/* Warning about subject enrollments */}
         {strandInfo.canChange && (
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Changing strand will remove current elective subject enrollments
-              and enroll the student in elective subjects for the new strand.
+              Changing track will remove current subject enrollments
+              and enroll the student in subjects for the new track.
             </AlertDescription>
           </Alert>
         )}
@@ -113,15 +112,15 @@ export function ChangeStrandDialog({
           <input type="hidden" name="enrollmentId" value={enrollmentId} />
 
           <div className="space-y-2">
-            <Label htmlFor="newStrandId">New Strand *</Label>
+            <Label htmlFor="newStrandId">New Track *</Label>
             <Select name="newStrandId" required disabled={!strandInfo.canChange}>
               <SelectTrigger id="newStrandId">
-                <SelectValue placeholder="Select new strand" />
+                <SelectValue placeholder="Select new track" />
               </SelectTrigger>
               <SelectContent>
                 {selectableStrands.map((strand) => (
                   <SelectItem key={strand.id} value={strand.id}>
-                    {strand.code} - {SHS_STRAND_LABELS[strand.code]}
+                    {strand.shortCode} - {strand.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -146,7 +145,7 @@ export function ChangeStrandDialog({
               type="submit"
               disabled={isPending || !strandInfo.canChange}
             >
-              {isPending ? "Changing..." : "Change Strand"}
+              {isPending ? "Changing..." : "Change Track"}
             </Button>
           </div>
         </form>

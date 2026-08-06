@@ -135,11 +135,13 @@ export async function generateStudentSubjectEnrollmentsAction(
   }
 
   // Get all subject offerings for the section
+  // Include both offering.strandId (legacy) and subject.strandId (new direct ownership)
   const offerings = await db
     .select({
       id: subjectOfferings.id,
       subjectId: subjectOfferings.subjectId,
-      strandId: subjectOfferings.strandId,
+      offeringStrandId: subjectOfferings.strandId, // Legacy: offering-level strand
+      subjectStrandId: subjects.strandId, // New: direct subject ownership
       isCore: subjects.isCore,
     })
     .from(subjectOfferings)
@@ -170,25 +172,31 @@ export async function generateStudentSubjectEnrollmentsAction(
 
   const existingOfferingIds = new Set(existingEnrollments.map((e) => e.subjectOfferingId));
 
-  // Filter offerings: include core subjects and strand-matched electives
+  // Filter offerings: include subjects that match student's track
   const applicableOfferings = offerings.filter((offering) => {
     // Already enrolled
     if (existingOfferingIds.has(offering.id)) {
       return false;
     }
 
-    // Core subjects are always included
+    // Check direct subject ownership (new model) - subject belongs to specific track
+    if (offering.subjectStrandId) {
+      // Subject is track-owned; include only if student is in that track
+      return enrollment.strandId === offering.subjectStrandId;
+    }
+
+    // Core subjects (non-SHS) are always included
     if (offering.isCore) {
       return true;
     }
 
-    // For electives without strand requirement, include them
-    if (!offering.strandId) {
+    // Legacy: For electives without strand requirement, include them
+    if (!offering.offeringStrandId) {
       return true;
     }
 
-    // For strand-specific electives, check if student's strand matches
-    if (enrollment.strandId && offering.strandId === enrollment.strandId) {
+    // Legacy: For strand-specific electives (offering-level), check if student's strand matches
+    if (enrollment.strandId && offering.offeringStrandId === enrollment.strandId) {
       return true;
     }
 

@@ -28,6 +28,7 @@ interface SchoolYear {
 interface StrandOption {
   id: string;
   code: string;
+  shortCode: string;
   name: string;
 }
 

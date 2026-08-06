@@ -96,7 +96,11 @@ export const gradingSystemTypeEnum = pgEnum("grading_system_type", GRADING_SYSTE
 /** Grade level groups for coordinator assignment */
 export const gradeGroupEnum = pgEnum("grade_group", GRADE_GROUPS);
 
-/** SHS academic strand codes (STEM, ABM, HUMSS, GAS, TVL-*) */
+/**
+ * @deprecated SHS strand codes are now stored as TEXT in strands.code for admin-managed tracks.
+ * This enum is kept for backward compatibility with existing data but should not be used for new code.
+ * Use strands.code (TEXT) directly instead.
+ */
 export const strandCodeEnum = pgEnum("strand_code", SHS_STRAND_CODES);
 
 /** Term offering for SHS subjects (when the subject is offered within the school year) */
@@ -311,6 +315,12 @@ export const sections = pgTable(
     name: text("name").notNull(),
     gradeLevelId: uuid("grade_level_id").notNull().references(() => gradeLevels.id),
     schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    /**
+     * Track association for SHS sections (Grade 11-12).
+     * When set, this section belongs to a specific track (e.g., STEM-A → STEM track).
+     * Null for non-SHS sections.
+     */
+    strandId: uuid("strand_id").references(() => strands.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at"),
@@ -323,6 +333,10 @@ export const sections = pgTable(
     // Unique section name per grade level + school year (active records only)
     uniqueIndex("sections_name_grade_sy_uidx")
       .on(t.name, t.gradeLevelId, t.schoolYearId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    // Index for strand-based section queries (SHS track sections)
+    index("sections_strand_idx")
+      .on(t.strandId)
       .where(sql`${t.deletedAt} IS NULL`),
   ]
 );
@@ -378,11 +392,24 @@ export const subjects = pgTable(
     description: text("description"),
     curriculumId: uuid("curriculum_id").references(() => curriculums.id).notNull(),
     gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
+    /**
+     * Direct track ownership for SHS subjects (Grade 11-12).
+     * When set, this subject belongs exclusively to this track.
+     * Null for non-SHS subjects (Casa, Elementary, JHS).
+     */
+    strandId: uuid("strand_id").references(() => strands.id),
+    /**
+     * Term when this subject is offered (SHS only).
+     * - full_year: Runs entire school year
+     * - first_semester / second_semester: Maps to Q1-Q2 / Q3-Q4
+     * - first_trimester / second_trimester / third_trimester: T1 / T2 / T3
+     */
+    termOffered: termOfferingEnum("term_offered").notNull().default("full_year"),
     /** Credit units for this subject (e.g., 1.0, 1.5, 3.0) */
     units: numeric("units", { precision: 4, scale: 2 }).notNull().default("0"),
     /** Display order within the grade level (for sorting subjects) */
     sequenceOrder: integer("sequence_order").notNull().default(0),
-    /** Whether this is a core/required subject vs elective */
+    /** Whether this is a core/required subject vs elective (used for non-SHS subjects) */
     isCore: boolean("is_core").notNull().default(true),
     /** Optional grading weight (future use for weighted averages) */
     gradingWeight: numeric("grading_weight", { precision: 5, scale: 2 }),
@@ -404,6 +431,14 @@ export const subjects = pgTable(
     // Unique subject code within curriculum (active subjects only)
     uniqueIndex("subjects_curriculum_code_uidx")
       .on(t.curriculumId, t.code)
+      .where(sql`${t.deletedAt} IS NULL`),
+    // Index for strand-based queries (SHS subjects by track)
+    index("subjects_strand_idx")
+      .on(t.strandId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    // Composite index for curriculum + strand queries
+    index("subjects_curriculum_strand_idx")
+      .on(t.curriculumId, t.strandId)
       .where(sql`${t.deletedAt} IS NULL`),
   ]
 );
@@ -435,19 +470,32 @@ export const curriculumAdoptions = pgTable(
   ]
 );
 
-// ─── SHS Strands ──────────────────────────────────────────────────────────────
+// ─── SHS Tracks (formerly Strands) ────────────────────────────────────────────
 
 /**
- * SHS Academic Strands - tracks available strands for Senior High School.
- * STEM, ABM, HUMSS, GAS, TVL-ICT, TVL-HE, TVL-IA, TVL-AFA
+ * SHS Academic Tracks - admin-managed tracks for Senior High School.
+ * Each track owns ALL its subjects directly (subjects.strandId → strands.id).
+ *
+ * Standard tracks: STEM, ABM, HUMSS, GAS, TVL-ICT, TVL-HE, TVL-IA, TVL-AFA
+ * Custom tracks can be added via admin UI (e.g., MAHS, EA, BAE)
+ *
+ * Track categories:
+ * - academic: STEM, ABM, HUMSS, GAS, custom academic tracks
+ * - tvl: TVL-ICT, TVL-HE, TVL-IA, TVL-AFA, custom TVL tracks
+ * - specialized: Sports, Arts, other specialized tracks
  */
 export const strands = pgTable(
   "strands",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    code: strandCodeEnum("code").notNull(),
+    /** Full track code (e.g., "STEM", "TVL-ICT", "MAHS") - now TEXT for admin-managed codes */
+    code: text("code").notNull(),
+    /** Short code for UI badges (e.g., "STEM", "ICT" for TVL-ICT) */
+    shortCode: text("short_code").notNull(),
     name: text("name").notNull(),
     description: text("description"),
+    /** Track category: academic, tvl, or specialized */
+    trackCategory: text("track_category").notNull(),
     displayOrder: integer("display_order").notNull().default(0),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -462,10 +510,16 @@ export const strands = pgTable(
     uniqueIndex("strands_code_uidx")
       .on(t.code)
       .where(sql`${t.deletedAt} IS NULL`),
+    // Unique short code (active records only)
+    uniqueIndex("strands_short_code_uidx")
+      .on(t.shortCode)
+      .where(sql`${t.deletedAt} IS NULL`),
     index("strands_active_idx")
       .on(t.isActive)
       .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
     index("strands_display_order_idx").on(t.displayOrder),
+    // Check constraint for track_category values
+    check("strands_track_category_chk", sql`${t.trackCategory} IN ('academic', 'tvl', 'specialized')`),
   ]
 );
 
@@ -1929,6 +1983,28 @@ export const assessmentsRelations = relations(assessments, ({ one, many }) => ({
 export const schoolYearsRelations = relations(schoolYears, ({ many }) => ({
   feeSchedules: many(schoolYearFeeSchedules),
   curriculumAdoptions: many(curriculumAdoptions),
+  sections: many(sections),
+}));
+
+// Section Relations
+export const sectionsRelations = relations(sections, ({ one, many }) => ({
+  gradeLevel: one(gradeLevels, {
+    fields: [sections.gradeLevelId],
+    references: [gradeLevels.id],
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [sections.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  /** Track association for SHS sections */
+  strand: one(strands, {
+    fields: [sections.strandId],
+    references: [strands.id],
+  }),
+  /** Subject offerings for this section */
+  subjectOfferings: many(subjectOfferings),
+  /** Section adviser assignment */
+  advisers: many(sectionAdvisers),
 }));
 
 // Curriculum Relations
@@ -1988,12 +2064,17 @@ export const subjectsRelations = relations(subjects, ({ one, many }) => ({
     fields: [subjects.gradeLevelId],
     references: [gradeLevels.id],
   }),
+  /** Direct track ownership for SHS subjects (Grade 11-12) */
+  strand: one(strands, {
+    fields: [subjects.strandId],
+    references: [strands.id],
+  }),
   createdByUser: one(users, {
     fields: [subjects.createdBy],
     references: [users.id],
     relationName: "subject_creator",
   }),
-  /** Strand associations for SHS elective subjects */
+  /** @deprecated Use strand direct ownership for SHS subjects instead */
   subjectStrands: many(subjectStrands),
   /** Subject offerings across sections */
   subjectOfferings: many(subjectOfferings),
@@ -2374,6 +2455,11 @@ export const strandsRelations = relations(strands, ({ one, many }) => ({
     references: [users.id],
     relationName: "strand_creator",
   }),
+  /** Subjects owned by this track (SHS direct ownership model) */
+  subjects: many(subjects),
+  /** Sections assigned to this track (SHS track-based sections) */
+  sections: many(sections),
+  /** @deprecated Use subjects direct ownership instead */
   subjectStrands: many(subjectStrands),
   subjectOfferings: many(subjectOfferings),
   enrollments: many(enrollments),

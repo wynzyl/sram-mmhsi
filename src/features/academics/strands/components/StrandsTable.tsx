@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { SHS_STRAND_SHORT_LABELS, SHS_STRAND_TRACKS, type ShsStrandCode } from "@/lib/constants/strands";
+import { TRACK_CATEGORY_SHORT_LABELS } from "@/lib/constants/track-categories";
 import type { StrandView } from "../strands.schema";
 import { StrandFormDialog } from "./StrandFormDialog";
 import { DeleteStrandDialog } from "./DeleteStrandDialog";
@@ -80,6 +80,20 @@ export function StrandsTable({ strands, canManage }: StrandsTableProps) {
     }
   }, [editDialogOpen, deleteDialogOpen]);
 
+  // Helper to get category badge variant
+  const getCategoryBadgeVariant = (category: string) => {
+    switch (category) {
+      case "academic":
+        return "info";
+      case "tvl":
+        return "warning";
+      case "specialized":
+        return "secondary";
+      default:
+        return "secondary";
+    }
+  };
+
   return (
     <>
       <div className="rounded-md border">
@@ -88,8 +102,9 @@ export function StrandsTable({ strands, canManage }: StrandsTableProps) {
             <TableRow>
               <TableHead className="w-[100px]">Code</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead className="w-[100px]">Track</TableHead>
+              <TableHead className="w-[100px]">Category</TableHead>
               <TableHead className="w-[80px] text-center">Subjects</TableHead>
+              <TableHead className="w-[80px] text-center">Sections</TableHead>
               <TableHead className="w-[80px] text-center">Enrollments</TableHead>
               <TableHead className="w-[80px] text-center">Status</TableHead>
               <TableHead className="w-[50px]">Order</TableHead>
@@ -100,19 +115,24 @@ export function StrandsTable({ strands, canManage }: StrandsTableProps) {
             {strands.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={canManage ? 8 : 7}
+                  colSpan={canManage ? 9 : 8}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No strands found. Add strands to enable SHS strand tracking.
+                  No tracks found. Add tracks to enable SHS track-based curriculum.
                 </TableCell>
               </TableRow>
             ) : (
               strands.map((strand) => (
                 <TableRow key={strand.id}>
                   <TableCell>
-                    <Badge variant="secondary">
-                      {SHS_STRAND_SHORT_LABELS[strand.code] ?? strand.code}
-                    </Badge>
+                    <div className="flex flex-col gap-0.5">
+                      <Badge variant="secondary">{strand.shortCode}</Badge>
+                      {strand.shortCode !== strand.code && (
+                        <span className="text-xs text-muted-foreground">
+                          {strand.code}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium">{strand.name}</div>
@@ -123,20 +143,15 @@ export function StrandsTable({ strands, canManage }: StrandsTableProps) {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        SHS_STRAND_TRACKS[strand.code] === "academic"
-                          ? "info"
-                          : "secondary"
-                      }
-                    >
-                      {SHS_STRAND_TRACKS[strand.code] === "academic"
-                        ? "Academic"
-                        : "TVL"}
+                    <Badge variant={getCategoryBadgeVariant(strand.trackCategory)}>
+                      {TRACK_CATEGORY_SHORT_LABELS[strand.trackCategory] ?? strand.trackCategory}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">
                     {strand.subjectCount ?? 0}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {strand.sectionCount ?? 0}
                   </TableCell>
                   <TableCell className="text-center">
                     {strand.enrollmentCount ?? 0}
@@ -172,6 +187,7 @@ export function StrandsTable({ strands, canManage }: StrandsTableProps) {
                             className="text-destructive focus:text-destructive"
                             disabled={
                               (strand.subjectCount ?? 0) > 0 ||
+                              (strand.sectionCount ?? 0) > 0 ||
                               (strand.enrollmentCount ?? 0) > 0
                             }
                           >
