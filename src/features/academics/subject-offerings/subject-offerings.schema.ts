@@ -91,13 +91,24 @@ export type AvailableSubjectsForManualOfferingInput = z.infer<
 // ─── Update Offering Track Schema ────────────────────────────────────────────
 
 /**
+ * Preprocessor for nullable UUID fields from form data.
+ * Converts empty strings and "null" string literals to actual null values.
+ */
+const nullableUuidPreprocess = (val: unknown) => {
+  if (val === "" || val === "null" || val === null || val === undefined) {
+    return null;
+  }
+  return val;
+};
+
+/**
  * Schema for updating the track (strand) assignment of a subject offering.
  * Setting strandId to null means "All Tracks" (core behavior).
  */
 export const updateOfferingTrackSchema = z.object({
   id: uuidSchema,
   /** Strand ID for track-specific assignment, or null for "All Tracks" */
-  strandId: uuidSchema.nullable(),
+  strandId: z.preprocess(nullableUuidPreprocess, uuidSchema.nullable()),
 });
 
 export type UpdateOfferingTrackInput = z.infer<typeof updateOfferingTrackSchema>;
