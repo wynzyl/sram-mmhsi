@@ -8,6 +8,7 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
 import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/observability/logger";
 import {
   createSectionSchema,
@@ -90,6 +91,7 @@ export async function createSectionAction(
       return newSection.id;
     });
 
+    revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
     return {
@@ -183,6 +185,7 @@ export async function updateSectionAction(
       return { message: "Section not found or has been deleted." };
     }
 
+    revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
     return {
@@ -270,6 +273,7 @@ export async function deleteSectionAction(
       };
     }
 
+    revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
     return {
@@ -435,8 +439,8 @@ export async function copySectionsFromSchoolYearAction(
       return insertedSections.length;
     });
 
-    // Client (CopySectionsModal) calls router.refresh() on success; the cache tag
-    // covers server-cached section reads. A route-wide revalidatePath here is redundant.
+    // Revalidate the page route for immediate UI update
+    revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
     return {

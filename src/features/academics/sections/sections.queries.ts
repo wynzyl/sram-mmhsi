@@ -13,7 +13,7 @@ import {
   subjectOfferings,
   subjects,
 } from "@/lib/db/schema";
-import { eq, and, isNull, sql, asc, desc, inArray, ne } from "drizzle-orm";
+import { eq, and, isNull, sql, asc, desc, inArray } from "drizzle-orm";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import type { SectionView, SectionDependencyCounts, StudentInSection } from "./sections.schema";
 
