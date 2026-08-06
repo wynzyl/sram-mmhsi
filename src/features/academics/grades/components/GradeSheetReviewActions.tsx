@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, startTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   principalApproveAction,
@@ -53,10 +53,9 @@ export function GradeSheetReviewActions({
       setApproveState(result);
       if (result.success) {
         setShowApproveDialog(false);
+        // Navigate to approvals page - navigation fetches fresh data automatically
+        // Avoid router.refresh() as it blocks in production Docker (CLAUDE.md Gotcha #11)
         router.push("/staff/grades/approvals");
-        startTransition(() => {
-          router.refresh();
-        });
       }
     } finally {
       setIsApproving(false);
@@ -76,10 +75,9 @@ export function GradeSheetReviewActions({
       setReturnState(result);
       if (result.success) {
         setShowReturnDialog(false);
+        // Navigate to approvals page - navigation fetches fresh data automatically
+        // Avoid router.refresh() as it blocks in production Docker (CLAUDE.md Gotcha #11)
         router.push("/staff/grades/approvals");
-        startTransition(() => {
-          router.refresh();
-        });
       }
     } finally {
       setIsReturning(false);
