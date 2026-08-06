@@ -286,6 +286,7 @@ async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
 
     // Count total active studentSubjectEnrollments for this section's students
     // These represent the exact subjects each student should have grades for
+    // Filter by active, non-deleted SSE records and offerings to match what's shown in grade entry UI
     const [sseCount] = await db
       .select({
         count: sql<number>`count(*)::int`,
@@ -299,9 +300,11 @@ async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
         and(
           inArray(studentSubjectEnrollments.enrollmentId, enrollmentIds),
           eq(studentSubjectEnrollments.isActive, true),
+          isNull(studentSubjectEnrollments.deletedAt),
           eq(subjectOfferings.sectionId, gradeSheet.sectionId),
           eq(subjectOfferings.schoolYearId, gradeSheet.schoolYearId),
-          eq(subjectOfferings.isActive, true)
+          eq(subjectOfferings.isActive, true),
+          isNull(subjectOfferings.deletedAt)
         )
       );
 

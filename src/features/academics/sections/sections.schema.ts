@@ -93,8 +93,8 @@ export interface StudentInSection {
   strandCode: string | null;
   /** SHS strand name */
   strandName: string | null;
-  /** Number of elective subjects student is enrolled in */
-  electiveCount: number;
-  /** Total elective subjects available for student's strand */
-  electiveTotal: number;
+  /** Number of subjects student is enrolled in (strand-aware: core + strand-specific) */
+  subjectCount: number;
+  /** Total subjects available for student's strand (core + strand-specific) */
+  subjectTotal: number;
 }

@@ -88,6 +88,22 @@ export type AvailableSubjectsForManualOfferingInput = z.infer<
   typeof availableSubjectsForManualOfferingSchema
 >;
 
+// ─── Update Offering Track Schema ────────────────────────────────────────────
+
+/**
+ * Schema for updating the track (strand) assignment of a subject offering.
+ * Setting strandId to null means "All Tracks" (core behavior).
+ */
+export const updateOfferingTrackSchema = z.object({
+  id: uuidSchema,
+  /** Strand ID for track-specific assignment, or null for "All Tracks" */
+  strandId: uuidSchema.nullable(),
+});
+
+export type UpdateOfferingTrackInput = z.infer<typeof updateOfferingTrackSchema>;
+
+export type UpdateOfferingTrackFormState = BaseFormState<UpdateOfferingTrackInput>;
+
 // ─── View Types ───────────────────────────────────────────────────────────────
 
 /**

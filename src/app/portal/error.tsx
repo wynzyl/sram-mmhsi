@@ -39,10 +39,10 @@ export default function PortalError({
         </div>
 
         <h2 className="mb-2 font-display text-xl font-bold text-foreground">
-          Portal Error
+          Something went wrong to the portal
         </h2>
         <p className="mb-4 text-sm text-muted-foreground">
-          An error occurred while loading the portal. Please try again.
+          Please contact the administrator. Please try again.
         </p>
 
         {error.digest && (

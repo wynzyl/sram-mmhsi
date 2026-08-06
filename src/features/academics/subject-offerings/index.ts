@@ -15,6 +15,7 @@ export {
   deleteAllSubjectOfferingsAction,
   addManualSubjectOfferingAction,
   getAvailableSubjectsForManualOfferingAction,
+  updateOfferingTrackAction,
 } from "./subject-offerings.actions";
 
 // Components
@@ -23,6 +24,7 @@ export {
   SubjectOfferingsByStrand,
   AssignTeacherDialog,
   DeleteOfferingDialog,
+  ChangeTrackDialog,
   GenerateOfferingsButton,
   DeleteAllOfferingsButton,
   TeacherClassesCards,
