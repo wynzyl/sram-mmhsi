@@ -1184,7 +1184,6 @@ export async function getStudentsWithSSEForSection(
 // ─── SHS Strand-Based Grade Entry Queries ──────────────────────────────────────
 
 import { strands } from "@/lib/db/schema";
-import type { ShsStrandCode } from "@/lib/constants/strands";
 import { type TermOffering, getValidTermsForPeriod } from "@/lib/constants/term-offerings";
 
 /**
@@ -1207,14 +1206,15 @@ export type SHSSubjectOffering = {
 
 /**
  * SHS grade entry subjects organized by category.
+ * With the new track-based model, subjects are grouped by track code.
  */
 export type SHSGradeEntrySubjects = {
-  /** Core subjects that all students take (isCore = true) */
+  /** @deprecated Universal core subjects - empty in new model (all subjects owned by track) */
   universalCore: SHSSubjectOffering[];
-  /** Strand-specific subjects grouped by strand code */
-  strandSubjects: Map<ShsStrandCode, SHSSubjectOffering[]>;
-  /** All available strands in this section */
-  availableStrands: ShsStrandCode[];
+  /** Track-specific subjects grouped by track code (dynamic, not enum) */
+  strandSubjects: Map<string, SHSSubjectOffering[]>;
+  /** All available tracks in this section (dynamic track codes, not enum) */
+  availableStrands: string[];
 };
 
 /**
@@ -1253,6 +1253,7 @@ export async function getSubjectsForSHSGradeEntry(
   }
 
   // Get all active subject offerings with strand info
+  // Support both new direct ownership (subjects.strandId) and legacy (subjectOfferings.strandId)
   const rows = await db
     .select({
       id: subjectOfferings.id,
@@ -1262,34 +1263,60 @@ export async function getSubjectsForSHSGradeEntry(
       subjectUnits: subjects.units,
       isCore: subjects.isCore,
       sequenceOrder: subjectOfferings.sequenceOrder,
-      strandId: subjectOfferings.strandId,
-      strandCode: strands.code,
+      // New direct ownership model: subject belongs to a track
+      subjectStrandId: subjects.strandId,
+      // Legacy: offering-level strand
+      offeringStrandId: subjectOfferings.strandId,
       termOffered: subjectOfferings.termOffered,
       teacherId: subjectOfferings.teacherId,
       teacherName: users.username,
     })
     .from(subjectOfferings)
     .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
-    .leftJoin(strands, eq(subjectOfferings.strandId, strands.id))
     .leftJoin(users, eq(subjectOfferings.teacherId, users.id))
     .where(and(...baseConditions))
     .orderBy(asc(subjectOfferings.sequenceOrder), asc(subjects.name));
+
+  // Fetch strand codes for both subject-level and offering-level strands
+  const strandIds = new Set<string>();
+  for (const row of rows) {
+    if (row.subjectStrandId) strandIds.add(row.subjectStrandId);
+    if (row.offeringStrandId) strandIds.add(row.offeringStrandId);
+  }
+
+  const strandMap = new Map<string, { code: string; shortCode: string }>();
+  if (strandIds.size > 0) {
+    const strandRows = await db
+      .select({ id: strands.id, code: strands.code, shortCode: strands.shortCode })
+      .from(strands)
+      .where(inArray(strands.id, Array.from(strandIds)));
+    for (const s of strandRows) {
+      strandMap.set(s.id, { code: s.code, shortCode: s.shortCode });
+    }
+  }
 
   if (rows.length === 0) {
     return null;
   }
 
-  // Categorize subjects (deduplicate by subject code to handle duplicate offerings)
-  const universalCore: SHSSubjectOffering[] = [];
-  const strandSubjects = new Map<ShsStrandCode, SHSSubjectOffering[]>();
-  const availableStrands = new Set<ShsStrandCode>();
+  // New model: Group subjects by track
+  // - Track-specific subjects (strandId set) belong only to their track
+  // - Core subjects (isCore = true, no strandId) appear in ALL tracks
+  const trackSubjects = new Map<string, SHSSubjectOffering[]>();
+  const availableTracks = new Set<string>();
 
-  // Track seen subject codes to prevent duplicates
-  const seenCoreCodes = new Set<string>();
-  const seenStrandCodes = new Map<ShsStrandCode, Set<string>>();
+  // Track seen subject codes per track to prevent duplicates
+  const seenTrackCodes = new Map<string, Set<string>>();
 
+  // Collect core subjects without track assignment (to add to all tracks later)
+  const coreSubjectsWithoutTrack: SHSSubjectOffering[] = [];
+
+  // First pass: identify all available tracks and collect subjects
   for (const row of rows) {
-    // Term filtering is now done at SQL level via WHERE clause
+    // Determine the effective track: prefer subject-level ownership, fall back to offering-level
+    const effectiveStrandId = row.subjectStrandId ?? row.offeringStrandId;
+    const effectiveStrand = effectiveStrandId ? strandMap.get(effectiveStrandId) : null;
+    const trackCode = effectiveStrand?.code ?? null;
 
     const offering: SHSSubjectOffering = {
       id: row.id,
@@ -1299,49 +1326,82 @@ export async function getSubjectsForSHSGradeEntry(
       subjectUnits: row.subjectUnits,
       isCore: row.isCore,
       sequenceOrder: row.sequenceOrder,
-      strandId: row.strandId,
-      strandCode: row.strandCode,
+      strandId: effectiveStrandId,
+      strandCode: trackCode,
       termOffered: (row.termOffered as TermOffering) || "full_year",
       teacherId: row.teacherId,
       teacherName: row.teacherName,
     };
 
-    if (row.isCore) {
-      // Universal core subject - deduplicate by subject code
-      if (!seenCoreCodes.has(row.subjectCode)) {
-        seenCoreCodes.add(row.subjectCode);
-        universalCore.push(offering);
-      }
-    } else if (row.strandCode) {
-      // Strand-specific subject - deduplicate by strand + subject code
-      const strandCode = row.strandCode as ShsStrandCode;
-      availableStrands.add(strandCode);
+    if (trackCode) {
+      // Track-owned subject
+      availableTracks.add(trackCode);
 
-      // Initialize seen set for this strand if needed
-      if (!seenStrandCodes.has(strandCode)) {
-        seenStrandCodes.set(strandCode, new Set<string>());
+      // Initialize seen set for this track if needed
+      if (!seenTrackCodes.has(trackCode)) {
+        seenTrackCodes.set(trackCode, new Set<string>());
       }
-      const seenForStrand = seenStrandCodes.get(strandCode)!;
+      const seenForTrack = seenTrackCodes.get(trackCode)!;
 
-      if (!seenForStrand.has(row.subjectCode)) {
-        seenForStrand.add(row.subjectCode);
-        const existing = strandSubjects.get(strandCode) || [];
+      if (!seenForTrack.has(row.subjectCode)) {
+        seenForTrack.add(row.subjectCode);
+        const existing = trackSubjects.get(trackCode) || [];
         existing.push(offering);
-        strandSubjects.set(strandCode, existing);
+        trackSubjects.set(trackCode, existing);
+      }
+    } else if (row.isCore) {
+      // Core subject without track assignment - collect for adding to all tracks
+      coreSubjectsWithoutTrack.push(offering);
+    }
+  }
+
+  // Second pass: Add core subjects (without track) to ALL available tracks
+  // This ensures core subjects like Oral Communication, General Mathematics appear for all tracks
+  for (const coreOffering of coreSubjectsWithoutTrack) {
+    for (const trackCode of availableTracks) {
+      // Initialize seen set for this track if needed
+      if (!seenTrackCodes.has(trackCode)) {
+        seenTrackCodes.set(trackCode, new Set<string>());
+      }
+      const seenForTrack = seenTrackCodes.get(trackCode)!;
+
+      if (!seenForTrack.has(coreOffering.subjectCode)) {
+        seenForTrack.add(coreOffering.subjectCode);
+        const existing = trackSubjects.get(trackCode) || [];
+        // Create a copy with the track code set for this track
+        existing.push({ ...coreOffering, strandCode: trackCode });
+        trackSubjects.set(trackCode, existing);
       }
     }
   }
 
-  // Sort strands by defined order
-  const { SHS_STRAND_ORDER } = await import("@/lib/constants/strands");
-  const sortedStrands = Array.from(availableStrands).sort(
-    (a, b) => SHS_STRAND_ORDER[a] - SHS_STRAND_ORDER[b]
+  // Sort tracks by display order from database
+  const trackOrder = new Map<string, number>();
+  if (strandMap.size > 0) {
+    const orderRows = await db
+      .select({ code: strands.code, displayOrder: strands.displayOrder })
+      .from(strands)
+      .where(inArray(strands.code, Array.from(availableTracks)));
+    for (const r of orderRows) {
+      trackOrder.set(r.code, r.displayOrder);
+    }
+  }
+  const sortedTracks = Array.from(availableTracks).sort(
+    (a, b) => (trackOrder.get(a) ?? 999) - (trackOrder.get(b) ?? 999)
   );
 
+  // For backward compatibility, convert to old structure
+  // universalCore is empty (no universal core in new model - all subjects owned by track)
+  // strandSubjects contains track-specific subjects
+  const strandSubjects = new Map<string, SHSSubjectOffering[]>();
+  for (const [code, subs] of trackSubjects) {
+    strandSubjects.set(code, subs);
+  }
+
   return {
-    universalCore,
+    universalCore: [], // No universal core in new model
     strandSubjects,
-    availableStrands: sortedStrands,
+    availableStrands: sortedTracks,
   };
 }
 
@@ -1356,7 +1416,8 @@ export type SHSSectionStudent = {
   fullName: string;
   enrollmentId: string;
   strandId: string | null;
-  strandCode: ShsStrandCode | null;
+  /** Track code (dynamic, not enum) */
+  strandCode: string | null;
 };
 
 /**
@@ -1393,6 +1454,6 @@ export async function getStudentsWithStrandsInSection(
 
   return rows.map((row) => ({
     ...row,
-    strandCode: row.strandCode as ShsStrandCode | null,
+    strandCode: row.strandCode ?? null,
   }));
 }

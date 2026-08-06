@@ -155,6 +155,34 @@
       "when": 1785696000000,
       "tag": "0021_add_term_offering_to_subject_offerings",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1785782400000,
+      "tag": "0022_remove_coordinator_approval_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1785868800000,
+      "tag": "0023_add_grade_completeness_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1785955200000,
+      "tag": "0024_add_reconciliation_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1786041600000,
+      "tag": "0025_refactor_strands_for_shs_tracks",
+      "breakpoints": true
     }
   ]
 }

@@ -1,32 +1,31 @@
 /**
  * SHS Academic Strand Constants
  *
- * Defines the Senior High School academic tracks/strands.
- * These are system-level configuration values that map to:
- * - PostgreSQL enum `strand_code` (defined in schema.ts)
- * - Strand table (stores strand metadata)
- * - Enrollment strand assignment (stored in enrollments.strandId)
+ * @deprecated The enum-based approach is deprecated in favor of admin-managed tracks.
+ * Tracks are now stored as TEXT in strands.code, allowing dynamic creation via UI.
+ *
+ * For new code, use:
+ * - Query strands table directly for available tracks
+ * - Use TrackCategory from '@/lib/constants/track-categories' for categorization
+ *
+ * These constants are kept for backward compatibility with existing code.
+ *
+ * **Adding a New Track (New Approach):**
+ * 1. Use the admin UI at /staff/academics/strands to create new tracks
+ * 2. Tracks are stored in the `strands` table with TEXT code
+ * 3. No migration needed for new tracks
  *
  * **Database Design:**
  * Strands are stored in the `strands` table.
+ * - strands.code: TEXT (admin-managed, no longer enum)
+ * - strands.short_code: TEXT (display abbreviation)
+ * - strands.track_category: TEXT (academic, tvl, specialized)
  * Access via relationship: enrollment → strand → code/name
- *
- * **Strand Types:**
- * - Academic Track: STEM, ABM, HUMSS, GAS
- * - TVL Track: Various specializations (ICT, HE, etc.)
- *
- * **Adding a New Strand:**
- * 1. Add code to SHS_STRAND_CODES array below
- * 2. Add corresponding label to SHS_STRAND_LABELS
- * 3. Add track categorization to SHS_STRAND_TRACKS
- * 4. Generate migration: npm run db:generate
- * 5. Review the migration SQL in drizzle/ directory
- * 6. Apply migration: npm run db:migrate
- * 7. Seed the strand in database if needed
  */
 
 /**
  * SHS Strand Codes - used as enum values
+ * @deprecated Use database query for strands instead. Tracks are now admin-managed.
  */
 export const SHS_STRAND_CODES = [
   // Academic Track
@@ -75,11 +74,15 @@ export const SHS_STRAND_SHORT_LABELS: Record<ShsStrandCode, string> = {
 
 /**
  * Track categories for grouping strands
+ * @deprecated Use TRACK_CATEGORIES from '@/lib/constants/track-categories' instead.
+ * The new system includes 'specialized' category in addition to 'academic' and 'tvl'.
  */
 export const SHS_TRACKS = ["academic", "tvl"] as const;
 
+/** @deprecated Use TrackCategory from '@/lib/constants/track-categories' */
 export type ShsTrack = (typeof SHS_TRACKS)[number];
 
+/** @deprecated Use TRACK_CATEGORY_LABELS from '@/lib/constants/track-categories' */
 export const SHS_TRACK_LABELS: Record<ShsTrack, string> = {
   academic: "Academic Track",
   tvl: "Technical-Vocational-Livelihood Track",
@@ -136,6 +139,7 @@ export function requiresStrandSelection(gradeLevelName: string): boolean {
 
 /**
  * Get sorted strands for dropdown options
+ * @deprecated Query strands table directly instead. Use getActiveTracksForSHS() from strands.queries.ts.
  */
 export function getSortedStrands(): Array<{
   code: ShsStrandCode;

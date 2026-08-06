@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { BaseFormState } from "@/lib/validators/common-schemas";
+import { TERM_OFFERINGS } from "@/lib/constants/term-offerings";
 
 // ─── Curriculum Status ──────────────────────────────────────────────────────
 
@@ -117,17 +118,31 @@ export const AddSubjectToCurriculumSchema = z.object({
     .toUpperCase(),
   description: z.string().max(500).optional(),
   gradeLevelId: z.string().uuid("Grade level is required."),
+  /**
+   * Direct track ownership for SHS subjects (Grade 11-12).
+   * When set, this subject belongs exclusively to this track.
+   * Required for SHS subjects; should be null/undefined for non-SHS.
+   */
+  strandId: z.string().uuid("Track is required for SHS subjects.").optional(),
+  /**
+   * Term when this subject is offered (SHS only).
+   * Defaults to "full_year" if not specified.
+   */
+  termOffered: z.enum(TERM_OFFERINGS).optional().default("full_year"),
   units: z
     .string()
     .regex(/^\d+(\.\d{1,2})?$/, "Units must be a valid number (e.g., 1.0, 1.5)")
     .transform((v) => v)
     .optional(),
   sequenceOrder: z.coerce.number().int().min(0).optional(),
+  /**
+   * Whether this is a core/required subject (used for non-SHS subjects).
+   * For SHS, all subjects belong to a track (via strandId) instead.
+   */
   isCore: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   /**
-   * Strand associations for SHS elective subjects.
-   * Only applicable when isCore is false and grade level is SHS (Grade 11-12).
-   * JSON string of StrandAssociation[] when submitted via FormData.
+   * @deprecated Use strandId for direct track ownership instead.
+   * Strand associations for SHS elective subjects (legacy junction table approach).
    */
   strandAssociations: z.string().optional(),
 });
@@ -148,17 +163,27 @@ export const UpdateSubjectInCurriculumSchema = z.object({
     .optional(),
   description: z.string().max(500).optional(),
   gradeLevelId: z.string().uuid().optional(),
+  /**
+   * Direct track ownership for SHS subjects (Grade 11-12).
+   * When set, this subject belongs exclusively to this track.
+   */
+  strandId: z.string().uuid().optional().nullable(),
+  /**
+   * Term when this subject is offered (SHS only).
+   */
+  termOffered: z.enum(TERM_OFFERINGS).optional(),
   units: z
     .string()
     .regex(/^\d+(\.\d{1,2})?$/, "Units must be a valid number")
     .transform((v) => v)
     .optional(),
   sequenceOrder: z.coerce.number().int().min(0).optional(),
+  /**
+   * Whether this is a core/required subject (used for non-SHS subjects).
+   */
   isCore: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   /**
-   * Strand associations for SHS elective subjects.
-   * Only applicable when isCore is false and grade level is SHS (Grade 11-12).
-   * JSON string of StrandAssociation[] when submitted via FormData.
+   * @deprecated Use strandId for direct track ownership instead.
    */
   strandAssociations: z.string().optional(),
 });

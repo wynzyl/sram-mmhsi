@@ -21,7 +21,6 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Users } from "lucide-react";
 import { useFormToast } from "@/hooks/useFormToast";
-import { SHS_STRAND_LABELS, type ShsStrandCode } from "@/lib/constants/strands";
 import type { BulkAssignStrandFormState } from "../student-subject-enrollments.schema";
 import type { StrandOption } from "@/features/academics/strands";
 import { bulkAssignStrandAction } from "../student-subject-enrollments.actions";
@@ -51,8 +50,8 @@ export function BulkStrandAssignDialog({
 
   useFormToast(state, {
     successMessage: state.updatedCount
-      ? `Successfully assigned strand to ${state.updatedCount} student${state.updatedCount !== 1 ? "s" : ""}${state.skippedCount ? ` (${state.skippedCount} skipped)` : ""}`
-      : "Strand assignment complete",
+      ? `Successfully assigned track to ${state.updatedCount} student${state.updatedCount !== 1 ? "s" : ""}${state.skippedCount ? ` (${state.skippedCount} skipped)` : ""}`
+      : "Track assignment complete",
     onSuccess: () => {
       onOpenChange(false);
       startTransition(() => {
@@ -67,19 +66,19 @@ export function BulkStrandAssignDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Bulk Assign Strand
+            Bulk Assign Track
           </DialogTitle>
           <DialogDescription>
-            Assign a strand to <strong>{studentCount}</strong> selected student{studentCount !== 1 ? "s" : ""} without a current strand assignment.
+            Assign a track to <strong>{studentCount}</strong> selected student{studentCount !== 1 ? "s" : ""} without a current track assignment.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Warning about elective subjects */}
+        {/* Warning about subject enrollments */}
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            This will enroll the selected students in strand-specific elective subjects
-            based on the chosen strand.
+            This will enroll the selected students in subjects belonging to
+            the chosen track.
           </AlertDescription>
         </Alert>
 
@@ -91,15 +90,15 @@ export function BulkStrandAssignDialog({
           />
 
           <div className="space-y-2">
-            <Label htmlFor="strandId">Assign Strand *</Label>
+            <Label htmlFor="strandId">Assign Track *</Label>
             <Select name="strandId" required>
               <SelectTrigger id="strandId">
-                <SelectValue placeholder="Select strand to assign" />
+                <SelectValue placeholder="Select track to assign" />
               </SelectTrigger>
               <SelectContent>
                 {availableStrands.map((strand) => (
                   <SelectItem key={strand.id} value={strand.id}>
-                    {strand.code} - {SHS_STRAND_LABELS[strand.code as ShsStrandCode] || strand.name}
+                    {strand.shortCode} - {strand.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -114,8 +113,8 @@ export function BulkStrandAssignDialog({
           <div className="rounded-lg bg-muted p-3 text-sm">
             <p className="font-medium">This will:</p>
             <ul className="mt-1 ml-4 list-disc text-muted-foreground">
-              <li>Set the strand for all {studentCount} selected student{studentCount !== 1 ? "s" : ""}</li>
-              <li>Enroll them in strand-specific elective subjects</li>
+              <li>Set the track for all {studentCount} selected student{studentCount !== 1 ? "s" : ""}</li>
+              <li>Enroll them in subjects belonging to the selected track</li>
             </ul>
           </div>
 

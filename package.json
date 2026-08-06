@@ -18,6 +18,8 @@
     "db:seed-discounts": "npx tsx scripts/seed-discount-types.ts",
     "db:seed-subjects": "npx tsx scripts/seed-subjects.ts",
     "db:seed-electives": "npx tsx scripts/seed-electives.ts",
+    "db:seed-tracks": "npx tsx scripts/seed-tracks.ts",
+    "db:seed-shs-subjects": "npx tsx scripts/seed-shs-subjects.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
