@@ -232,22 +232,24 @@ function SubjectRow({ subject, isDraft, onEdit }: SubjectRowProps) {
   useFormToast(deleteState, { successMessage: "Subject deleted successfully" });
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors">
-      <div className="flex items-center gap-3 min-w-0">
-        <span className="inline-center px-2 py-0.5 bg-primary/10 text-primary text-xs font-mono rounded">
-          {subject.code}
-        </span>
-        <div className="min-w-0">
-          <p className="font-medium truncate">{subject.name}</p>
-          {subject.description && (
-            <p className="text-xs text-muted-foreground truncate max-w-md">
-              {subject.description}
-            </p>
-          )}
-        </div>
+    <div className="grid grid-cols-[10rem_1fr_auto] items-center gap-4 px-4 py-3 hover:bg-muted/20 transition-colors">
+      {/* Column 1: Subject Code */}
+      <span className="inline-flex justify-center px-2 py-0.5 bg-primary/10 text-primary text-xs font-mono rounded">
+        {subject.code}
+      </span>
+
+      {/* Column 2: Subject Name & Description */}
+      <div className="min-w-0">
+        <p className="font-medium truncate">{subject.name}</p>
+        {subject.description && (
+          <p className="text-xs text-muted-foreground truncate">
+            {subject.description}
+          </p>
+        )}
       </div>
 
-      <div className="flex items-center gap-4 shrink-0">
+      {/* Column 3: Units + Actions */}
+      <div className="flex items-center gap-4">
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>{subject.units} units</span>
           {!subject.isCore && (
