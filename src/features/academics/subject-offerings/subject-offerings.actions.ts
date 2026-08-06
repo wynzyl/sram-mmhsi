@@ -626,10 +626,10 @@ export async function updateOfferingTrackAction(
     return { message: "You do not have permission to update track assignments." };
   }
 
-  const strandIdRaw = formData.get("strandId");
+  // Schema handles null conversion via preprocess (empty string, "null" → null)
   const parsed = updateOfferingTrackSchema.safeParse({
     id: formData.get("id"),
-    strandId: strandIdRaw === "" || strandIdRaw === "null" ? null : strandIdRaw,
+    strandId: formData.get("strandId"),
   });
 
   if (!parsed.success) {
