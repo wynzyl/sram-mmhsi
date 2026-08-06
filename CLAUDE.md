@@ -772,6 +772,18 @@ Seeds: students, enrollments, assessments (for testing).
     return { success: true };
     ```
     All document request actions (`createDocumentRequestAction`, `processDocumentRequestAction`, `readyDocumentRequestAction`, `releaseDocumentRequestAction`, `rejectDocumentRequestAction`, `cancelDocumentRequestAction`) were fixed for this pattern (2026-06-29).
+12. **Cache Revalidation for `"use cache"` Queries:** When queries use the `"use cache"` directive with `cacheTag()`, calling only `invalidateTag()` may not update the UI instantly — users may need a hard refresh. **Add `revalidatePath()` before `invalidateTag()` for instant UI updates.** Pattern:
+    ```typescript
+    // ❌ BAD: UI doesn't update instantly (needs hard refresh)
+    invalidateTag(CACHE_TAGS.SECTIONS);
+    return { success: true };
+
+    // ✅ GOOD: UI updates instantly (matches Fee Templates pattern)
+    revalidatePath("/staff/academics/sections");
+    invalidateTag(CACHE_TAGS.SECTIONS);
+    return { success: true };
+    ```
+    The client component should still call `router.refresh()` in `onSuccess`. This pattern was validated in sections CRUD actions (2026-08-06).
 
 ### Integration Points (Future)
 
