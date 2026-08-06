@@ -39,11 +39,10 @@ export default function GlobalError({
         </div>
 
         <h1 className="mb-2 font-display text-2xl font-bold text-foreground">
-          Something went wrong
+          Something went wrong to the staff portal
         </h1>
         <p className="mb-6 text-muted-foreground">
-          An unexpected error occurred. Our team has been notified and is working to
-          resolve the issue.
+          Please try refreshing the page or contact the administrator if the problem persists.
         </p>
 
         {error.digest && (

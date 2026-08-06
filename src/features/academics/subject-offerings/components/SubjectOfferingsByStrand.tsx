@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import type { SubjectOfferingView, TeacherOption } from "../subject-offerings.schema";
+import type { StrandOption } from "@/features/academics/strands/strands.schema";
 import { SubjectOfferingsTable } from "./SubjectOfferingsTable";
 import {
   SHS_STRAND_SHORT_LABELS,
@@ -29,6 +30,10 @@ interface SubjectOfferingsByStrandProps {
   canDelete: boolean;
   /** Strands that have enrolled students - used to show warnings for missing subjects */
   enrolledStrands?: EnrolledStrandInfo[];
+  /** Available strands for track assignment */
+  availableStrands?: StrandOption[];
+  /** Whether user can change track assignment */
+  canChangeTrack?: boolean;
 }
 
 /**
@@ -45,19 +50,23 @@ export function SubjectOfferingsByStrand({
   canAssignTeacher,
   canDelete,
   enrolledStrands = [],
+  availableStrands = [],
+  canChangeTrack = false,
 }: SubjectOfferingsByStrandProps) {
   const [activeFilter, setActiveFilter] = useState<FilterCategory>("all");
 
   // Group offerings by category
-  const { validOfferings, coreOfferings, strandGroups, strandCounts, availableStrands, missingStrandSubjects } = useMemo(() => {
-    // Core subjects: isCore = true
-    const core = offerings.filter((o) => o.isCore === true);
+  const { validOfferings, coreOfferings, strandGroups, strandCounts, offeringStrandTabs, missingStrandSubjects } = useMemo(() => {
+    // Universal core subjects: isCore = true AND no strand restriction (strandCode = null)
+    // These are taken by ALL students regardless of strand
+    const core = offerings.filter((o) => o.isCore === true && !o.strandCode);
 
-    // Strand-specific subjects: isCore = false with a strandCode
+    // Strand-specific subjects: ANY offering with a strandCode (both core and electives)
+    // This includes strand-specific core subjects (e.g., "Oral Communication" for STEM only)
     const byStrand = new Map<ShsStrandCode, SubjectOfferingView[]>();
 
     for (const offering of offerings) {
-      if (!offering.isCore && offering.strandCode) {
+      if (offering.strandCode) {
         const strandCode = offering.strandCode as ShsStrandCode;
         const existing = byStrand.get(strandCode) || [];
         existing.push(offering);
@@ -65,10 +74,9 @@ export function SubjectOfferingsByStrand({
       }
     }
 
-    // Valid offerings = core + electives with strand assignment
-    // Excludes electives that aren't assigned to any strand
-    const allStrandElectives = Array.from(byStrand.values()).flat();
-    const valid = [...core, ...allStrandElectives];
+    // Valid offerings = universal core + all strand-specific subjects
+    const allStrandSubjects = Array.from(byStrand.values()).flat();
+    const valid = [...core, ...allStrandSubjects];
 
     // Build strand counts for badges
     const counts: Partial<Record<ShsStrandCode, number>> = {};
@@ -76,8 +84,8 @@ export function SubjectOfferingsByStrand({
       counts[strand] = items.length;
     }
 
-    // Get available strands sorted by order
-    const strands = Array.from(byStrand.keys()).sort(
+    // Get strand tabs from offerings (sorted by order)
+    const tabs = Array.from(byStrand.keys()).sort(
       (a, b) => SHS_STRAND_ORDER[a] - SHS_STRAND_ORDER[b]
     );
 
@@ -94,7 +102,7 @@ export function SubjectOfferingsByStrand({
       coreOfferings: core,
       strandGroups: byStrand,
       strandCounts: counts,
-      availableStrands: strands,
+      offeringStrandTabs: tabs,
       missingStrandSubjects: missingSubjects,
     };
   }, [offerings, enrolledStrands]);
@@ -162,12 +170,12 @@ export function SubjectOfferingsByStrand({
         />
 
         {/* Divider */}
-        {availableStrands.length > 0 && (
+        {offeringStrandTabs.length > 0 && (
           <div className="h-6 w-px bg-border mx-1" />
         )}
 
         {/* Strand tabs - shows only strand-specific electives */}
-        {availableStrands.map((strand) => (
+        {offeringStrandTabs.map((strand) => (
           <FilterButton
             key={strand}
             active={activeFilter === strand}
@@ -182,9 +190,9 @@ export function SubjectOfferingsByStrand({
       {/* Filter description */}
       <div className="px-4 text-sm text-muted-foreground">
         {activeFilter === "all" && "Showing all subject offerings for this section"}
-        {activeFilter === "core" && "Showing universal core subjects (all students take these)"}
+        {activeFilter === "core" && "Showing universal core subjects (taken by all students regardless of strand)"}
         {activeFilter !== "all" && activeFilter !== "core" && (
-          <>Showing electives specific to <strong>{activeFilter}</strong> strand only</>
+          <>Showing subjects for <strong>{activeFilter}</strong> strand (core and electives)</>
         )}
       </div>
 
@@ -195,6 +203,8 @@ export function SubjectOfferingsByStrand({
         canAssignTeacher={canAssignTeacher}
         canDelete={canDelete}
         showTermColumn={true}
+        availableStrands={availableStrands}
+        canChangeTrack={canChangeTrack}
       />
     </div>
   );

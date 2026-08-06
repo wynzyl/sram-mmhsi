@@ -228,24 +228,24 @@ export default function SectionStudentsTable({
         },
       });
 
-      // Add electives column for SHS sections
+      // Add subjects column for SHS sections (strand-aware: core + strand-specific)
       baseColumns.push({
-        header: "Electives",
-        accessorKey: "electiveCount",
+        header: "Subjects",
+        accessorKey: "subjectCount",
         cell: ({ row }) => {
-          const { electiveCount, electiveTotal } = row.original;
-          if (electiveTotal === 0) {
+          const { subjectCount, subjectTotal } = row.original;
+          if (subjectTotal === 0) {
             return <span className="text-muted-foreground text-sm">—</span>;
           }
-          const isComplete = electiveCount >= electiveTotal;
+          const isComplete = subjectCount >= subjectTotal;
           return (
             <Badge
               variant={isComplete ? "success" : "secondary"}
               className={cn(
-                !isComplete && electiveCount > 0 && "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+                !isComplete && subjectCount > 0 && "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
               )}
             >
-              {electiveCount}/{electiveTotal}
+              {subjectCount}/{subjectTotal}
             </Badge>
           );
         },

@@ -249,7 +249,7 @@ async function getSectionDependencyCountsBatch(
  * Get all enrolled students in a section for grade entry.
  * Only returns students with "enrolled" status (not pending/cancelled).
  * Includes strand information for SHS students (Grade 11-12).
- * Includes elective enrollment counts for SHS students.
+ * Includes strand-aware subject enrollment counts (core + strand-specific).
  * Ordered by lastName, firstName for consistent display.
  */
 export async function getStudentsInSection(
@@ -286,13 +286,16 @@ export async function getStudentsInSection(
     return [];
   }
 
-  // Get enrollment IDs for elective count queries
+  // Get enrollment IDs for subject count queries
   const enrollmentIds = rows.map((r) => r.enrollmentId);
 
-  // Count enrolled electives per enrollment (isCore = false, isActive = true)
-  const electiveCountsResult = await db
+  // Count enrolled subjects per enrollment with strand info
+  // This returns enrollmentId, strandId of the offering, and count
+  // Only counts active enrollments in active, non-deleted offerings FOR THIS SECTION
+  const subjectCountsResult = await db
     .select({
       enrollmentId: studentSubjectEnrollments.enrollmentId,
+      offeringStrandId: subjectOfferings.strandId,
       count: sql<number>`COUNT(*)::int`,
     })
     .from(studentSubjectEnrollments)
@@ -300,36 +303,74 @@ export async function getStudentsInSection(
       subjectOfferings,
       eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
     )
-    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
     .where(
       and(
         inArray(studentSubjectEnrollments.enrollmentId, enrollmentIds),
-        eq(subjects.isCore, false),
+        eq(subjectOfferings.sectionId, sectionId), // Only count this section's offerings
         eq(studentSubjectEnrollments.isActive, true),
-        isNull(studentSubjectEnrollments.deletedAt)
-      )
-    )
-    .groupBy(studentSubjectEnrollments.enrollmentId);
-
-  const electiveCountMap = new Map(
-    electiveCountsResult.map((r) => [r.enrollmentId, r.count])
-  );
-
-  // Count total available electives for the section (isCore = false)
-  const [totalElectives] = await db
-    .select({ count: sql<number>`COUNT(*)::int` })
-    .from(subjectOfferings)
-    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
-    .where(
-      and(
-        eq(subjectOfferings.sectionId, sectionId),
-        eq(subjects.isCore, false),
+        isNull(studentSubjectEnrollments.deletedAt),
         eq(subjectOfferings.isActive, true),
         isNull(subjectOfferings.deletedAt)
       )
-    );
+    )
+    .groupBy(studentSubjectEnrollments.enrollmentId, subjectOfferings.strandId);
 
-  const electiveTotal = totalElectives?.count ?? 0;
+  // Build a map: enrollmentId -> array of {strandId, count}
+  const enrollmentSubjectCounts = new Map<string, Array<{ strandId: string | null; count: number }>>();
+  for (const row of subjectCountsResult) {
+    const existing = enrollmentSubjectCounts.get(row.enrollmentId) || [];
+    existing.push({ strandId: row.offeringStrandId, count: row.count });
+    enrollmentSubjectCounts.set(row.enrollmentId, existing);
+  }
+
+  // Get all available offerings for the section with strand info
+  const availableOfferingsResult = await db
+    .select({
+      strandId: subjectOfferings.strandId,
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(subjectOfferings)
+    .where(
+      and(
+        eq(subjectOfferings.sectionId, sectionId),
+        eq(subjectOfferings.isActive, true),
+        isNull(subjectOfferings.deletedAt)
+      )
+    )
+    .groupBy(subjectOfferings.strandId);
+
+  // Build offering counts by strand
+  const offeringsByStrand = new Map<string | null, number>();
+  for (const row of availableOfferingsResult) {
+    offeringsByStrand.set(row.strandId, row.count);
+  }
+
+  // Helper to calculate strand-aware counts
+  function calculateSubjectCount(
+    enrollmentId: string,
+    studentStrandId: string | null
+  ): number {
+    const counts = enrollmentSubjectCounts.get(enrollmentId) || [];
+    let total = 0;
+    for (const { strandId, count } of counts) {
+      // Include if: strandId is null (core/all tracks) OR matches student's strand
+      if (strandId === null || strandId === studentStrandId) {
+        total += count;
+      }
+    }
+    return total;
+  }
+
+  function calculateSubjectTotal(studentStrandId: string | null): number {
+    let total = 0;
+    for (const [strandId, count] of offeringsByStrand) {
+      // Include if: strandId is null (core/all tracks) OR matches student's strand
+      if (strandId === null || strandId === studentStrandId) {
+        total += count;
+      }
+    }
+    return total;
+  }
 
   return rows.map((row) => ({
     studentId: row.studentId,
@@ -343,7 +384,7 @@ export async function getStudentsInSection(
     strandId: row.strandId,
     strandCode: row.strandCode,
     strandName: row.strandName,
-    electiveCount: electiveCountMap.get(row.enrollmentId) ?? 0,
-    electiveTotal,
+    subjectCount: calculateSubjectCount(row.enrollmentId, row.strandId),
+    subjectTotal: calculateSubjectTotal(row.strandId),
   }));
 }

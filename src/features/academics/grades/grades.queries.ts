@@ -895,6 +895,9 @@ export async function getGradeSheetForPeriod(
     return null;
   }
 
+  // Only return entries for subjects that have active, non-deleted offerings in this section
+  // This prevents stale entries (from deleted offerings) from being included
+  // Using EXISTS subquery to avoid duplicate rows when a subject has multiple offerings
   const entries = await db
     .select({
       studentId: gradeSheetEntries.studentId,
@@ -902,7 +905,19 @@ export async function getGradeSheetForPeriod(
       grade: gradeSheetEntries.grade,
     })
     .from(gradeSheetEntries)
-    .where(eq(gradeSheetEntries.gradeSheetId, sheet.id));
+    .where(
+      and(
+        eq(gradeSheetEntries.gradeSheetId, sheet.id),
+        sql`EXISTS (
+          SELECT 1 FROM ${subjectOfferings}
+          WHERE ${subjectOfferings.subjectId} = ${gradeSheetEntries.subjectId}
+            AND ${subjectOfferings.sectionId} = ${sectionId}
+            AND ${subjectOfferings.schoolYearId} = ${schoolYearId}
+            AND ${subjectOfferings.isActive} = true
+            AND ${subjectOfferings.deletedAt} IS NULL
+        )`
+      )
+    );
 
   return {
     id: sheet.id,
@@ -1041,7 +1056,8 @@ export async function getSubjectsFromOfferingsForSection(
       and(
         eq(subjectOfferings.sectionId, sectionId),
         eq(subjectOfferings.schoolYearId, schoolYearId),
-        eq(subjectOfferings.isActive, true)
+        eq(subjectOfferings.isActive, true),
+        isNull(subjectOfferings.deletedAt)
       )
     );
 
@@ -1055,6 +1071,7 @@ export async function getSubjectsFromOfferingsForSection(
     eq(subjectOfferings.sectionId, sectionId),
     eq(subjectOfferings.schoolYearId, schoolYearId),
     eq(subjectOfferings.isActive, true),
+    isNull(subjectOfferings.deletedAt),
     isNull(subjects.deletedAt),
   ];
 
@@ -1139,6 +1156,7 @@ export async function getStudentsWithSSEForSection(
   }
 
   // Get all SSE records for these enrollments
+  // Only include SSE records for active, non-deleted offerings
   const enrollmentIds = studentRows.map((s) => s.enrollmentId);
   const sseRows = await db
     .select({
@@ -1154,7 +1172,10 @@ export async function getStudentsWithSSEForSection(
     .where(
       and(
         inArray(studentSubjectEnrollments.enrollmentId, enrollmentIds),
-        eq(studentSubjectEnrollments.isActive, true)
+        eq(studentSubjectEnrollments.isActive, true),
+        isNull(studentSubjectEnrollments.deletedAt),
+        eq(subjectOfferings.isActive, true),
+        isNull(subjectOfferings.deletedAt)
       )
     );
 
@@ -1242,6 +1263,7 @@ export async function getSubjectsForSHSGradeEntry(
     eq(subjectOfferings.sectionId, sectionId),
     eq(subjectOfferings.schoolYearId, schoolYearId),
     eq(subjectOfferings.isActive, true),
+    isNull(subjectOfferings.deletedAt),
     isNull(subjects.deletedAt),
   ];
 

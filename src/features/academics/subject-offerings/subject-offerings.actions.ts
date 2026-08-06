@@ -14,11 +14,13 @@ import {
   deleteAllSubjectOfferingsSchema,
   addManualSubjectOfferingSchema,
   availableSubjectsForManualOfferingSchema,
+  updateOfferingTrackSchema,
   type GenerateSubjectOfferingsFormState,
   type AssignTeacherFormState,
   type DeleteSubjectOfferingFormState,
   type DeleteAllSubjectOfferingsFormState,
   type AddManualSubjectOfferingFormState,
+  type UpdateOfferingTrackFormState,
 } from "./subject-offerings.schema";
 import {
   getSubjectsForOfferingGeneration,
@@ -607,4 +609,69 @@ export async function getAvailableSubjectsForManualOfferingAction(
     parsed.data.sectionId,
     parsed.data.schoolYearId
   );
+}
+
+/**
+ * Update the track (strand) assignment for a subject offering.
+ * This allows changing which track a subject is offered to after curriculum is published.
+ * Setting strandId to null means "All Tracks" (core behavior for SHS).
+ */
+export async function updateOfferingTrackAction(
+  _prevState: UpdateOfferingTrackFormState,
+  formData: FormData
+): Promise<UpdateOfferingTrackFormState> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "subject_offerings:generate")) {
+    return { message: "You do not have permission to update track assignments." };
+  }
+
+  const strandIdRaw = formData.get("strandId");
+  const parsed = updateOfferingTrackSchema.safeParse({
+    id: formData.get("id"),
+    strandId: strandIdRaw === "" || strandIdRaw === "null" ? null : strandIdRaw,
+  });
+
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { id, strandId } = parsed.data;
+
+  // Get existing offering for validation and audit
+  const existing = await getSubjectOfferingById(id);
+  if (!existing) {
+    return { message: "Subject offering not found." };
+  }
+
+  // Update the strand assignment
+  await db
+    .update(subjectOfferings)
+    .set({
+      strandId: strandId,
+      updatedAt: new Date(),
+      updatedBy: session.userId,
+    })
+    .where(eq(subjectOfferings.id, id));
+
+  await logAudit({
+    actor: session.userId,
+    actorRole: session.role,
+    action: "subject_offerings:update_track",
+    targetEntity: "subject_offerings",
+    targetId: id,
+    previousState: {
+      strandId: existing.strandId,
+      strandCode: existing.strandCode,
+    },
+    newState: {
+      strandId,
+      subjectCode: existing.subjectCode,
+      sectionName: existing.sectionName,
+    },
+  });
+
+  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+
+  return { success: true };
 }

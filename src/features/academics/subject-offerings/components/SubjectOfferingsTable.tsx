@@ -17,10 +17,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, UserPlus, Trash2, Users } from "lucide-react";
+import { MoreHorizontal, UserPlus, Trash2, Users, ArrowRightLeft } from "lucide-react";
 import type { SubjectOfferingView, TeacherOption } from "../subject-offerings.schema";
+import type { StrandOption } from "@/features/academics/strands/strands.schema";
 import { AssignTeacherDialog } from "./AssignTeacherDialog";
 import { DeleteOfferingDialog } from "./DeleteOfferingDialog";
+import { ChangeTrackDialog } from "./ChangeTrackDialog";
 import { TERM_OFFERING_LABELS } from "@/lib/constants/term-offerings";
 
 interface SubjectOfferingsTableProps {
@@ -30,6 +32,10 @@ interface SubjectOfferingsTableProps {
   canDelete: boolean;
   /** Whether to show the Term column (SHS sections only) */
   showTermColumn?: boolean;
+  /** Available strands for track assignment (SHS only) */
+  availableStrands?: StrandOption[];
+  /** Whether user can change track assignment */
+  canChangeTrack?: boolean;
 }
 
 export function SubjectOfferingsTable({
@@ -38,9 +44,15 @@ export function SubjectOfferingsTable({
   canAssignTeacher,
   canDelete,
   showTermColumn = false,
+  availableStrands = [],
+  canChangeTrack = false,
 }: SubjectOfferingsTableProps) {
   const [assignOffering, setAssignOffering] = useState<SubjectOfferingView | null>(null);
   const [deleteOffering, setDeleteOffering] = useState<SubjectOfferingView | null>(null);
+  const [changeTrackOffering, setChangeTrackOffering] = useState<SubjectOfferingView | null>(null);
+
+  // Show change track option only if user has permission and strands are available
+  const showChangeTrack = canChangeTrack && availableStrands.length > 0;
 
   // Calculate column count for empty state
   const columnCount = 7 + (showTermColumn ? 1 : 0) + (canAssignTeacher || canDelete ? 1 : 0);
@@ -59,7 +71,7 @@ export function SubjectOfferingsTable({
               <TableHead>Teacher</TableHead>
               <TableHead className="w-[80px] text-center">Students</TableHead>
               <TableHead className="w-[80px] text-center">Status</TableHead>
-              {(canAssignTeacher || canDelete) && <TableHead className="w-[70px]" />}
+              {(canAssignTeacher || canDelete || showChangeTrack) && <TableHead className="w-[70px]" />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -123,7 +135,7 @@ export function SubjectOfferingsTable({
                       <Badge variant="secondary">Inactive</Badge>
                     )}
                   </TableCell>
-                  {(canAssignTeacher || canDelete) && (
+                  {(canAssignTeacher || canDelete || showChangeTrack) && (
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -139,6 +151,14 @@ export function SubjectOfferingsTable({
                             >
                               <UserPlus className="mr-2 h-4 w-4" />
                               {offering.teacherId ? "Change Teacher" : "Assign Teacher"}
+                            </DropdownMenuItem>
+                          )}
+                          {showChangeTrack && (
+                            <DropdownMenuItem
+                              onClick={() => setChangeTrackOffering(offering)}
+                            >
+                              <ArrowRightLeft className="mr-2 h-4 w-4" />
+                              Change Track
                             </DropdownMenuItem>
                           )}
                           {canDelete && (
@@ -178,6 +198,16 @@ export function SubjectOfferingsTable({
           offering={deleteOffering}
           open={!!deleteOffering}
           onOpenChange={(open) => !open && setDeleteOffering(null)}
+        />
+      )}
+
+      {/* Change Track Dialog */}
+      {changeTrackOffering && (
+        <ChangeTrackDialog
+          offering={changeTrackOffering}
+          availableStrands={availableStrands}
+          open={!!changeTrackOffering}
+          onOpenChange={(open) => !open && setChangeTrackOffering(null)}
         />
       )}
     </>
