@@ -114,26 +114,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/enrollments", label: "Enrollments", icon: "enrollments" },
       ],
     },
-    {
-      label: "Academics",
-      items: [
-        {
-          href: "/staff/academics/curriculums",
-          label: "Curriculums",
-          icon: "curriculums",
-          children: [
-            { href: "/staff/academics/curriculums", label: "All Curriculums", icon: "curriculums", pathMatch: "exact" },
-            { href: "/staff/academics/curriculums/adoptions", label: "Adoptions", icon: "curriculums" },
-          ],
-        },
-        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
-        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
-        { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
-        { href: "/staff/academics/strands", label: "SHS Strands", icon: "strands" },
-        { href: "/staff/academics/electives", label: "SHS Electives", icon: "electives" },
-      ],
-    },
-    {
+   {
       label: "Billing",
       items: [
         { href: "/staff/assessments", label: "Assessments", icon: "assessments" },
@@ -153,6 +134,25 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/archive", label: "Archived Students", icon: "archive", pathMatch: "exact" },
         { href: "/staff/archive/documents", label: "Document Requests", icon: "documents" },
+      ],
+    },
+    {
+      label: "Academics",
+      items: [
+        {
+          href: "/staff/academics/curriculums",
+          label: "Curriculums",
+          icon: "curriculums",
+          children: [
+            { href: "/staff/academics/curriculums", label: "All Curriculums", icon: "curriculums", pathMatch: "exact" },
+            { href: "/staff/academics/curriculums/adoptions", label: "Adoptions", icon: "curriculums" },
+          ],
+        },
+        { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
+        { href: "/staff/academics/section-assignments", label: "Section Assignments", icon: "assignments" },
+        { href: "/staff/academics/advisers", label: "Section Advisers", icon: "users" },
+        { href: "/staff/academics/strands", label: "SHS Strands", icon: "strands" },
+        { href: "/staff/academics/electives", label: "SHS Electives", icon: "electives" },
       ],
     },
     {
