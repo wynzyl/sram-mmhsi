@@ -152,7 +152,7 @@ Preferred:
 
 src/
 
-    modules/
+    app/
 
         registration/
 
