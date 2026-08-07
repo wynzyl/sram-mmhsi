@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { subjectOfferings, studentSubjectEnrollments, subjects } from "@/lib/db/schema";
-import { eq, and, isNull, count, inArray } from "drizzle-orm";
+import { eq, and, isNull, isNotNull, count, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
@@ -706,4 +706,78 @@ export async function updateOfferingTrackAction(
   invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
 
   return { success: true };
+}
+
+/**
+ * Clean up orphaned student subject enrollments.
+ * Finds SSE records where the parent subject offering has been soft-deleted
+ * but the SSE itself was not cleaned up (pre-fix data).
+ */
+export async function cleanupOrphanedSSEAction(): Promise<{
+  success: boolean;
+  cleanedCount: number;
+  message?: string;
+}> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "subject_offerings:generate")) {
+    return { success: false, cleanedCount: 0, message: "Permission denied." };
+  }
+
+  // Find orphaned SSE records: SSE not deleted, but parent offering IS deleted
+  const orphanedSSE = await db
+    .select({
+      sseId: studentSubjectEnrollments.id,
+      offeringId: subjectOfferings.id,
+      subjectCode: subjects.code,
+    })
+    .from(studentSubjectEnrollments)
+    .innerJoin(
+      subjectOfferings,
+      eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
+    )
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .where(
+      and(
+        isNull(studentSubjectEnrollments.deletedAt),
+        // Parent offering is soft-deleted
+        isNotNull(subjectOfferings.deletedAt)
+      )
+    );
+
+  if (orphanedSSE.length === 0) {
+    return { success: true, cleanedCount: 0, message: "No orphaned records found." };
+  }
+
+  const orphanedIds = orphanedSSE.map((r) => r.sseId);
+
+  // Soft-delete all orphaned SSE records
+  await db
+    .update(studentSubjectEnrollments)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: session.userId,
+      isActive: false,
+    })
+    .where(inArray(studentSubjectEnrollments.id, orphanedIds));
+
+  await logAudit({
+    actor: session.userId,
+    actorRole: session.role,
+    action: "student_subject_enrollments:cleanup_orphaned",
+    targetEntity: "student_subject_enrollments",
+    targetId: "batch",
+    newState: {
+      cleanedCount: orphanedSSE.length,
+      subjectCodes: [...new Set(orphanedSSE.map((r) => r.subjectCode))],
+    },
+  });
+
+  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+
+  return {
+    success: true,
+    cleanedCount: orphanedSSE.length,
+    message: `Cleaned up ${orphanedSSE.length} orphaned enrollment(s).`,
+  };
 }
