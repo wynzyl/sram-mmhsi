@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   principalApproveAction,
   principalReturnAction,
-} from "../grades.actions";
+} from "../grade-approval.actions";
 import type {
   ApproveGradeSheetFormState,
   ReturnGradeSheetFormState,

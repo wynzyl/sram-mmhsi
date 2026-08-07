@@ -6,31 +6,28 @@ import { cn } from "@/lib/utils/cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   createOrGetGradeSheetAction,
   saveGradeSheetEntriesAction,
   submitGradeSheetAction,
-} from "../grades.actions";
+} from "../grade-sheet.actions";
 import type {
   SaveGradeSheetEntriesFormState,
   SubmitGradeSheetFormState,
 } from "../grades.schema";
 import type { SHSGradeEntrySubjects, SHSSectionStudent, SHSSubjectOffering } from "../grades.queries";
-// Track codes are now dynamic from database, not from deprecated enum
 import { getGradeRemarks } from "@/lib/constants/grading-periods";
 import {
   isAcceptableGradeInput,
   resolveGradeCommit,
 } from "../grade-entry-validation";
+import {
+  getStatusLabel,
+  getStatusColor,
+  isEditableStatus,
+} from "../utils";
+import { GradeEntryLegend } from "./GradeEntryLegend";
+import { GradeEntryStatusMessage, GradeEntryErrorBanner } from "./GradeEntryStatusMessages";
+import { GradeSubmitConfirmDialog } from "./GradeSubmitConfirmDialog";
 
 type TabCategory = "all" | string; // "all" for all tracks, or track code
 
@@ -47,33 +44,6 @@ interface SHSGradeEntryTabsProps {
     grade: string | null;
   }>;
   gradeSheetStatus?: string | null;
-}
-
-// Statuses that allow editing
-const EDITABLE_STATUSES = ["draft", "returned"];
-
-function getStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    draft: "Draft",
-    submitted: "Submitted for Approval",
-    principal_approved: "Principal Approved",
-    published: "Published",
-    locked: "Locked",
-    returned: "Returned for Revision",
-  };
-  return labels[status] || status;
-}
-
-function getStatusColor(status: string): string {
-  const colors: Record<string, string> = {
-    draft: "bg-muted text-muted-foreground",
-    submitted: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    principal_approved: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-    published: "bg-success/15 text-success",
-    locked: "bg-muted text-muted-foreground",
-    returned: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  };
-  return colors[status] || "bg-muted text-muted-foreground";
 }
 
 /**
@@ -193,7 +163,7 @@ export function SHSGradeEntryTabs({
   const [createError, setCreateError] = useState<string | null>(null);
 
   // Determine if editing is allowed based on status
-  const canEdit = !currentStatus || EDITABLE_STATUSES.includes(currentStatus);
+  const canEdit = isEditableStatus(currentStatus);
 
   // Grade entries state: Map of "studentId:subjectId" -> grade value
   const [grades, setGrades] = useState<Map<string, string>>(() => {
@@ -297,7 +267,7 @@ export function SHSGradeEntryTabs({
         setCreateError(result.message || "Failed to create grade sheet");
         return null;
       }
-    } catch (error) {
+    } catch {
       setCreateError("An unexpected error occurred while creating grade sheet");
       return null;
     } finally {
@@ -595,34 +565,12 @@ export function SHSGradeEntryTabs({
       </div>
 
       {/* Status Messages */}
-      {createError && (
-        <div className="p-4 border-b bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800">
-          {createError}
-        </div>
-      )}
-
+      <GradeEntryErrorBanner error={createError} />
       {saveState.message && (
-        <div
-          className={`p-4 border-b ${
-            saveState.success
-              ? "bg-success/10 text-success border-success/30"
-              : "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
-          }`}
-        >
-          {saveState.message}
-        </div>
+        <GradeEntryStatusMessage message={saveState.message} isSuccess={!!saveState.success} />
       )}
-
       {submitState.message && (
-        <div
-          className={`p-4 border-b ${
-            submitState.success
-              ? "bg-success/10 text-success border-success/30"
-              : "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
-          }`}
-        >
-          {submitState.message}
-        </div>
+        <GradeEntryStatusMessage message={submitState.message} isSuccess={!!submitState.success} />
       )}
 
       {/* Grade Entry Grid */}
@@ -718,42 +666,14 @@ export function SHSGradeEntryTabs({
       )}
 
       {/* Legend */}
-      <div className="border-t border-border p-4 bg-muted">
-        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-          Grading Scale
-        </h4>
-        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <span><strong className="text-foreground">90-100:</strong> Outstanding</span>
-          <span><strong className="text-foreground">85-89:</strong> Very Satisfactory</span>
-          <span><strong className="text-foreground">80-84:</strong> Satisfactory</span>
-          <span><strong className="text-foreground">75-79:</strong> Fairly Satisfactory</span>
-          <span><strong className="text-foreground">Below 75:</strong> Did Not Meet Expectations</span>
-        </div>
-      </div>
+      <GradeEntryLegend />
 
       {/* Submit Confirmation Dialog */}
-      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Submit Grades for Review</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to submit these grades for principal approval?
-              You will not be able to edit them until they are returned for revision.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setShowSubmitConfirm(false);
-                handleSubmit();
-              }}
-            >
-              Submit for Review
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <GradeSubmitConfirmDialog
+        open={showSubmitConfirm}
+        onOpenChange={setShowSubmitConfirm}
+        onConfirm={handleSubmit}
+      />
     </div>
   );
 }
