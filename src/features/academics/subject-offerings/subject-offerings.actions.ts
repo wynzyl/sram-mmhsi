@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { subjectOfferings, studentSubjectEnrollments, subjects, gradeSheetEntries, gradeSheets } from "@/lib/db/schema";
 import { eq, and, isNull, isNotNull, count, inArray } from "drizzle-orm";
@@ -132,6 +133,9 @@ export async function generateSubjectOfferingsAction(
   });
 
   invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+
+  // Explicitly revalidate the section page to ensure fresh data
+  revalidatePath(`/staff/academics/sections/${sectionId}`);
 
   return {
     success: true,
@@ -281,6 +285,7 @@ export async function deleteSubjectOfferingAction(
   });
 
   invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  revalidatePath(`/staff/academics/sections/${existing.sectionId}`);
 
   return { success: true };
 }
@@ -397,6 +402,7 @@ export async function deleteAllSubjectOfferingsAction(
   });
 
   invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  revalidatePath(`/staff/academics/sections/${sectionId}`);
 
   return {
     success: true,
@@ -554,6 +560,7 @@ export async function addManualSubjectOfferingAction(
       });
 
       invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+      revalidatePath(`/staff/academics/sections/${sectionId}`);
 
       return { success: true };
     } else {
@@ -599,8 +606,9 @@ export async function addManualSubjectOfferingAction(
     },
   });
 
-  // 7. Invalidate cache
+  // 7. Invalidate cache and revalidate the section page
   invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  revalidatePath(`/staff/academics/sections/${sectionId}`);
 
   return { success: true };
 }
@@ -726,6 +734,7 @@ export async function updateOfferingTrackAction(
   });
 
   invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  revalidatePath(`/staff/academics/sections/${existing.sectionId}`);
 
   return { success: true };
 }
