@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { subjectOfferings, studentSubjectEnrollments, subjects, gradeSheetEntries } from "@/lib/db/schema";
+import { subjectOfferings, studentSubjectEnrollments, subjects, gradeSheetEntries, gradeSheets } from "@/lib/db/schema";
 import { eq, and, isNull, isNotNull, count, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -678,16 +678,16 @@ export async function updateOfferingTrackAction(
 
   // Check if there are any grade entries for this subject offering
   // Cannot change track if grades have been entered
+  // Grade entries link via subjectId + gradeSheet's section/schoolYear
   const [gradeEntryCount] = await db
     .select({ count: count() })
     .from(gradeSheetEntries)
-    .innerJoin(
-      studentSubjectEnrollments,
-      eq(gradeSheetEntries.studentSubjectEnrollmentId, studentSubjectEnrollments.id)
-    )
+    .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
     .where(
       and(
-        eq(studentSubjectEnrollments.subjectOfferingId, id),
+        eq(gradeSheetEntries.subjectId, existing.subjectId),
+        eq(gradeSheets.sectionId, existing.sectionId),
+        eq(gradeSheets.schoolYearId, existing.schoolYearId),
         isNotNull(gradeSheetEntries.grade)
       )
     );
