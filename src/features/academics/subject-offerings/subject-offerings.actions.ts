@@ -6,7 +6,7 @@ import { eq, and, isNull, isNotNull, count, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
-import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { invalidateTags, CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
   generateSubjectOfferingsSchema,
   assignTeacherSchema,
@@ -131,7 +131,7 @@ export async function generateSubjectOfferingsAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
 
   return {
     success: true,
@@ -190,7 +190,7 @@ export async function assignTeacherAction(
     newState: { teacherId },
   });
 
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
 
   return { success: true };
 }
@@ -280,7 +280,7 @@ export async function deleteSubjectOfferingAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
 
   return { success: true };
 }
@@ -396,7 +396,7 @@ export async function deleteAllSubjectOfferingsAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
 
   return {
     success: true,
@@ -553,7 +553,7 @@ export async function addManualSubjectOfferingAction(
         },
       });
 
-      invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+      invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
 
       return { success: true };
     } else {
@@ -600,7 +600,7 @@ export async function addManualSubjectOfferingAction(
   });
 
   // 7. Invalidate cache
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
 
   return { success: true };
 }
@@ -725,7 +725,7 @@ export async function updateOfferingTrackAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
 
   return { success: true };
 }
@@ -795,7 +795,7 @@ export async function cleanupOrphanedSSEAction(): Promise<{
     },
   });
 
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
 
   return {
     success: true,

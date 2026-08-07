@@ -85,7 +85,7 @@ export default async function SectionDetailPage({
 
   // Fetch all data in parallel
   const [students, adviser, offerings, teachers, hasOfferings, availableStrands, curriculumsForPicker, gradingSystemType] = await Promise.all([
-    getStudentsInSection(id),
+    getStudentsInSection(id, section.schoolYearId),
     getAdviserForSection(id, section.schoolYearId),
     getSubjectOfferingsForSection(id, section.schoolYearId),
     getTeachersForAssignment(),
