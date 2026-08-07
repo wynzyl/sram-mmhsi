@@ -6,3 +6,9 @@ export {
   getStatusColor,
   isEditableStatus,
 } from "./grade-sheet-status";
+
+export {
+  type GradeKey,
+  gradeKey,
+  parseGradeKey,
+} from "./grade-key";

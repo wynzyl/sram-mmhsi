@@ -1,12 +1,19 @@
 import { z } from "zod";
-import { GRADING_PERIODS, type GradingPeriod, type GradeSheetStatus } from "@/lib/constants/grading-periods";
+import {
+  GRADING_PERIODS,
+  QUARTERLY_PERIODS,
+  type GradingPeriod,
+  type GradeSheetStatus,
+} from "@/lib/constants/grading-periods";
 import { uuidSchema, type BaseFormState } from "@/lib/validators/common-schemas";
 
-// ─── Teacher: Grade Encoding ────────────────────────────────────────────────
+// ─── Teacher: Grade Encoding (Legacy) ────────────────────────────────────────
+// These schemas use QUARTERLY_PERIODS for backward compatibility with
+// the legacy teacher assignment workflow.
 
 export const GradeEntrySchema = z.object({
   studentId: uuidSchema,
-  gradingPeriod: z.enum(["Q1", "Q2", "Q3", "Q4"]),
+  gradingPeriod: z.enum(QUARTERLY_PERIODS),
   grade: z.union([z.coerce.number().min(0).max(100), z.literal("")]).optional().nullable(),
 });
 
@@ -22,16 +29,16 @@ export type SaveGradesFormState = BaseFormState<SaveGradesInput>;
 
 export const SubmitGradesSchema = z.object({
   assignmentId: uuidSchema,
-  gradingPeriod: z.enum(["Q1", "Q2", "Q3", "Q4"]),
+  gradingPeriod: z.enum(QUARTERLY_PERIODS),
 });
 
 export type SubmitGradesFormState = BaseFormState<z.infer<typeof SubmitGradesSchema>>;
 
-// ─── Admin: Grade Locking ───────────────────────────────────────────────────
+// ─── Admin: Grade Locking (Legacy) ───────────────────────────────────────────
 
 export const LockGradesSchema = z.object({
   assignmentId: uuidSchema,
-  gradingPeriod: z.enum(["Q1", "Q2", "Q3", "Q4"]),
+  gradingPeriod: z.enum(QUARTERLY_PERIODS),
 });
 
 export type LockGradesFormState = BaseFormState<z.infer<typeof LockGradesSchema>>;

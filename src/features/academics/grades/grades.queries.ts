@@ -34,6 +34,11 @@ export {
   getGradeSheetForPeriod,
   type PeriodCompletionStatus,
   getPeriodsCompletionStatus,
+  // Unified page data fetcher
+  type GradeEntryPageData,
+  type RegularGradeEntryPageData,
+  type SHSGradeEntryPageData,
+  getGradeEntryPageData,
 } from "./grade-sheet.queries";
 
 // ─── Adviser Queries ─────────────────────────────────────────────────────────

@@ -184,6 +184,16 @@ export async function getSubjectsFromOfferingsForSection(
 
 /**
  * Get subjects for SHS grade entry, organized by universal core vs strand-specific.
+ *
+ * This query handles the complexity of SHS subject assignments where:
+ * - Core subjects (no strand) are offered to all students
+ * - Strand-specific subjects are only for students in that strand
+ * - The effective strand is determined by: subject.strandId ?? offering.strandId
+ *
+ * @param sectionId - The section ID to fetch subjects for
+ * @param schoolYearId - The school year context
+ * @param gradingPeriod - Optional grading period to filter by term (Q1/Q2/T1/etc)
+ * @returns SHSGradeEntrySubjects with universalCore (deprecated, empty) and strandSubjects map
  */
 export async function getSubjectsForSHSGradeEntry(
   sectionId: string,
@@ -254,6 +264,20 @@ export async function getSubjectsForSHSGradeEntry(
   const coreSubjectsWithoutTrack: SHSSubjectOffering[] = [];
 
   for (const row of rows) {
+    /**
+     * Determine the effective strand for a subject offering.
+     *
+     * Precedence:
+     * 1. Subject's own strandId (from subjects table) - subject is inherently strand-specific
+     *    Example: "Applied Economics for STEM" has strandId set at the curriculum level
+     * 2. Offering's strandId (from subjectOfferings) - subject offered for a specific strand
+     *    Example: A general elective configured for HUMSS students only
+     * 3. null - core subject available to all strands
+     *    Example: "Oral Communication" is core for all SHS students
+     *
+     * This null-coalescing ensures strand-specific subjects are properly filtered
+     * while core subjects (both nulls) are shown to all students.
+     */
     const effectiveStrandId = row.subjectStrandId ?? row.offeringStrandId;
     const effectiveStrand = effectiveStrandId ? strandMap.get(effectiveStrandId) : null;
     const trackCode = effectiveStrand?.code ?? null;

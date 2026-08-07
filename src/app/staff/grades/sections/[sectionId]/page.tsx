@@ -74,20 +74,8 @@ export default async function AdviserGradeEntryPage({
       getGradeSheetForPeriod(sectionId, section.schoolYearId, selectedPeriod),
     ]);
 
-    // Calculate total subjects and students for completion status
-    // For SHS, we need to count based on what each student should have
-    let totalExpected = 0;
-    if (shsSubjects) {
-      // Core subjects for all students
-      totalExpected += shsStudents.length * shsSubjects.universalCore.length;
-      // Strand subjects for students in each strand
-      for (const [strandCode, strandSubjs] of shsSubjects.strandSubjects) {
-        const strandStudentCount = shsStudents.filter((s) => s.strandCode === strandCode).length;
-        totalExpected += strandStudentCount * strandSubjs.length;
-      }
-    }
-
-    // For completion status, use a simplified count
+    // Calculate subject count for completion status
+    // For SHS, we count core + all strand subjects (simplified - actual validation is per-student)
     const [completionStatus] = await Promise.all([
       getPeriodsCompletionStatus(
         sectionId,
