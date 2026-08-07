@@ -1,5 +1,5 @@
 import "server-only";
-import { cacheLife, cacheTag } from "next/cache";
+import { cacheLife, cacheTag, unstable_noStore } from "next/cache";
 import { db } from "@/lib/db";
 import {
   sections,
@@ -259,12 +259,28 @@ async function getSectionDependencyCountsBatch(
  * Ordered by lastName, firstName for consistent display.
  *
  * Performance: Runs independent queries in parallel where possible.
+ *
+ * @param sectionId - The section ID
+ * @param schoolYearId - Optional school year ID for filtering offerings (recommended for accuracy)
  */
 export async function getStudentsInSection(
-  sectionId: string
+  sectionId: string,
+  schoolYearId?: string
 ): Promise<StudentInSection[]> {
+  // Opt out of Next.js caching to ensure fresh data after offerings change
+  unstable_noStore();
+
+  // Build offerings filter conditions
+  const offeringsConditions = [
+    eq(subjectOfferings.sectionId, sectionId),
+    eq(subjectOfferings.isActive, true),
+    isNull(subjectOfferings.deletedAt),
+  ];
+  if (schoolYearId) {
+    offeringsConditions.push(eq(subjectOfferings.schoolYearId, schoolYearId));
+  }
+
   // Phase 1: Run students query and available offerings query in PARALLEL
-  // (offerings query only needs sectionId, not enrollment data)
   const [rows, availableOfferingsResult] = await Promise.all([
     db
       .select({
@@ -300,13 +316,7 @@ export async function getStudentsInSection(
         count: sql<number>`COUNT(*)::int`,
       })
       .from(subjectOfferings)
-      .where(
-        and(
-          eq(subjectOfferings.sectionId, sectionId),
-          eq(subjectOfferings.isActive, true),
-          isNull(subjectOfferings.deletedAt)
-        )
-      )
+      .where(and(...offeringsConditions))
       .groupBy(subjectOfferings.strandId),
   ]);
 
