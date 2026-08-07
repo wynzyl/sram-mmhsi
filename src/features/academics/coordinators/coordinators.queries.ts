@@ -98,28 +98,8 @@ export async function getCoordinatorForGradeGroup(
 
 // ─── Get Available Coordinators ──────────────────────────────────────────────
 
-/**
- * Get all users with coordinator role for assignment dropdown.
- */
-export async function getAvailableCoordinators(): Promise<CoordinatorUserOption[]> {
-  const rows = await db
-    .select({
-      id: users.id,
-      name: users.username,
-      email: users.email,
-    })
-    .from(users)
-    .where(
-      and(
-        eq(users.role, "coordinator"),
-        eq(users.isActive, true),
-        isNull(users.deletedAt)
-      )
-    )
-    .orderBy(asc(users.username));
-
-  return rows;
-}
+// Re-export from shared module for backwards compatibility
+export { getAvailableCoordinators } from "../shared/user-queries";
 
 // ─── Get Grade Groups With Assignments ───────────────────────────────────────
 

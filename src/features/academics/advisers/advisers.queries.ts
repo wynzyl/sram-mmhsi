@@ -150,28 +150,8 @@ export async function getAdviserSections(
 
 // ─── Get Available Teachers ──────────────────────────────────────────────────
 
-/**
- * Get all users with teacher role for adviser assignment dropdown.
- */
-export async function getAvailableTeachers(): Promise<TeacherOption[]> {
-  const rows = await db
-    .select({
-      id: users.id,
-      name: users.username,
-      email: users.email,
-    })
-    .from(users)
-    .where(
-      and(
-        eq(users.role, "teacher"),
-        eq(users.isActive, true),
-        isNull(users.deletedAt)
-      )
-    )
-    .orderBy(asc(users.username));
-
-  return rows;
-}
+// Re-export from shared module for backwards compatibility
+export { getAvailableTeachers } from "../shared/user-queries";
 
 // ─── Get Sections For Assignment ─────────────────────────────────────────────
 

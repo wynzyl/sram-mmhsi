@@ -1,5 +1,5 @@
 import "server-only";
-
+import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/lib/db";
 import {
   subjects,
@@ -11,6 +11,7 @@ import {
   gradeLevels,
 } from "@/lib/db/schema";
 import { eq, and, isNull, sql, asc, inArray } from "drizzle-orm";
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import type { ShsStrandCode } from "@/lib/constants/strands";
 import type {
   ElectiveSubjectView,
@@ -21,13 +22,22 @@ import type {
 /**
  * Get all elective subjects (isCore = false) with strand associations.
  * Optionally filtered by curriculum, school year, or strand.
+ *
+ * Performance: Uses parallel queries where possible to reduce latency.
+ * Query flow: subjects → strand associations → (offering counts || enrollment counts)
+ *
+ * Cached for performance since elective definitions rarely change.
  */
 export async function getElectiveSubjects(
   params: ElectiveSubjectQueryParams = {}
 ): Promise<ElectiveSubjectView[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.CURRICULUMS);
+  cacheLife("hours");
+
   const { curriculumId, schoolYearId, strandId, gradeLevelId } = params;
 
-  // Build conditions
+  // Build conditions for subjects query
   const conditions = [
     eq(subjects.isCore, false),
     isNull(subjects.deletedAt),
@@ -41,7 +51,7 @@ export async function getElectiveSubjects(
     conditions.push(eq(subjects.gradeLevelId, gradeLevelId));
   }
 
-  // Get elective subjects
+  // Phase 1: Get elective subjects
   const subjectRows = await db
     .select({
       id: subjects.id,
@@ -65,7 +75,7 @@ export async function getElectiveSubjects(
 
   const subjectIds = subjectRows.map((s) => s.id);
 
-  // Get strand associations for all subjects
+  // Phase 2: Get strand associations (needed to filter by strandId)
   const strandAssociations = await db
     .select({
       subjectId: subjectStrands.subjectId,
@@ -85,7 +95,7 @@ export async function getElectiveSubjects(
     )
     .orderBy(asc(strands.displayOrder));
 
-  // If filtering by strand, filter subjects that have this strand association
+  // Compute filtered subject IDs based on strand filter
   let filteredSubjectIds = new Set(subjectIds);
   if (strandId) {
     const matchingSubjectIds = strandAssociations
@@ -94,9 +104,16 @@ export async function getElectiveSubjects(
     filteredSubjectIds = new Set(matchingSubjectIds);
   }
 
-  // Get offering counts (optionally filtered by school year)
+  // Early return if no subjects match the strand filter
+  if (filteredSubjectIds.size === 0) {
+    return [];
+  }
+
+  const filteredSubjectIdArray = Array.from(filteredSubjectIds);
+
+  // Phase 3: Fetch offering and enrollment counts in PARALLEL
   const offeringCountConditions = [
-    inArray(subjectOfferings.subjectId, Array.from(filteredSubjectIds)),
+    inArray(subjectOfferings.subjectId, filteredSubjectIdArray),
     eq(subjectOfferings.isActive, true),
     isNull(subjectOfferings.deletedAt),
   ];
@@ -104,24 +121,12 @@ export async function getElectiveSubjects(
     offeringCountConditions.push(eq(subjectOfferings.schoolYearId, schoolYearId));
   }
 
-  const offeringCounts = await db
-    .select({
-      subjectId: subjectOfferings.subjectId,
-      count: sql<number>`COUNT(DISTINCT ${subjectOfferings.sectionId})::int`,
-    })
-    .from(subjectOfferings)
-    .where(and(...offeringCountConditions))
-    .groupBy(subjectOfferings.subjectId);
-
-  const offeringCountMap = new Map(offeringCounts.map((o) => [o.subjectId, o.count]));
-
-  // Get student enrollment counts (optionally filtered by school year)
   const enrollmentCountConditions = [
     inArray(studentSubjectEnrollments.subjectOfferingId,
       db.select({ id: subjectOfferings.id })
         .from(subjectOfferings)
         .where(and(
-          inArray(subjectOfferings.subjectId, Array.from(filteredSubjectIds)),
+          inArray(subjectOfferings.subjectId, filteredSubjectIdArray),
           isNull(subjectOfferings.deletedAt)
         ))
     ),
@@ -132,19 +137,33 @@ export async function getElectiveSubjects(
     enrollmentCountConditions.push(eq(studentSubjectEnrollments.schoolYearId, schoolYearId));
   }
 
-  const enrollmentCounts = await db
-    .select({
-      subjectId: subjectOfferings.subjectId,
-      count: sql<number>`COUNT(*)::int`,
-    })
-    .from(studentSubjectEnrollments)
-    .innerJoin(
-      subjectOfferings,
-      eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
-    )
-    .where(and(...enrollmentCountConditions))
-    .groupBy(subjectOfferings.subjectId);
+  // Run both count queries in parallel
+  const [offeringCounts, enrollmentCounts] = await Promise.all([
+    db
+      .select({
+        subjectId: subjectOfferings.subjectId,
+        count: sql<number>`COUNT(DISTINCT ${subjectOfferings.sectionId})::int`,
+      })
+      .from(subjectOfferings)
+      .where(and(...offeringCountConditions))
+      .groupBy(subjectOfferings.subjectId),
 
+    db
+      .select({
+        subjectId: subjectOfferings.subjectId,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(studentSubjectEnrollments)
+      .innerJoin(
+        subjectOfferings,
+        eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
+      )
+      .where(and(...enrollmentCountConditions))
+      .groupBy(subjectOfferings.subjectId),
+  ]);
+
+  // Build lookup maps
+  const offeringCountMap = new Map(offeringCounts.map((o) => [o.subjectId, o.count]));
   const enrollmentCountMap = new Map(enrollmentCounts.map((e) => [e.subjectId, e.count]));
 
   // Build strand associations map
@@ -181,30 +200,33 @@ export async function getElectiveSubjects(
 /**
  * Get elective subjects grouped by strand.
  * Each strand tab shows subjects associated with that strand.
+ *
+ * Performance: Fetches strands and electives in parallel since they're independent.
  */
 export async function getElectivesByStrand(
   params: Omit<ElectiveSubjectQueryParams, "strandId"> = {}
 ): Promise<ElectivesByStrand[]> {
-  // Get all active strands
-  const activeStrands = await db
-    .select({
-      id: strands.id,
-      code: strands.code,
-      name: strands.name,
-    })
-    .from(strands)
-    .where(
-      and(
-        eq(strands.isActive, true),
-        isNull(strands.deletedAt)
+  // Fetch strands and electives in PARALLEL (independent queries)
+  const [activeStrands, allElectives] = await Promise.all([
+    db
+      .select({
+        id: strands.id,
+        code: strands.code,
+        name: strands.name,
+      })
+      .from(strands)
+      .where(
+        and(
+          eq(strands.isActive, true),
+          isNull(strands.deletedAt)
+        )
       )
-    )
-    .orderBy(asc(strands.displayOrder));
+      .orderBy(asc(strands.displayOrder)),
 
-  // Get all electives first
-  const allElectives = await getElectiveSubjects(params);
+    getElectiveSubjects(params),
+  ]);
 
-  // Group by strand
+  // Group electives by strand
   const result: ElectivesByStrand[] = [];
 
   for (const strand of activeStrands) {
