@@ -225,7 +225,7 @@ export async function deleteSubjectOfferingAction(
     return { message: "Subject offering not found." };
   }
 
-  // Check for enrolled students
+  // Check for enrolled students with grades (active enrollments are blocking)
   const [enrollmentCount] = await db
     .select({ count: count() })
     .from(studentSubjectEnrollments)
@@ -243,7 +243,23 @@ export async function deleteSubjectOfferingAction(
     };
   }
 
-  // Soft delete
+  // Soft-delete all related student subject enrollments (including inactive ones)
+  // This prevents orphaned SSE records from appearing in grade entry
+  await db
+    .update(studentSubjectEnrollments)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: session.userId,
+      isActive: false,
+    })
+    .where(
+      and(
+        eq(studentSubjectEnrollments.subjectOfferingId, id),
+        isNull(studentSubjectEnrollments.deletedAt)
+      )
+    );
+
+  // Soft delete the offering itself
   await db
     .update(subjectOfferings)
     .set({
@@ -334,6 +350,22 @@ export async function deleteAllSubjectOfferingsAction(
       message: `Cannot delete offerings: ${enrollmentCount.count} student enrollment(s) exist. Remove student enrollments first.`,
     };
   }
+
+  // Soft-delete all related student subject enrollments (including inactive ones)
+  // This prevents orphaned SSE records from appearing in grade entry
+  await db
+    .update(studentSubjectEnrollments)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: session.userId,
+      isActive: false,
+    })
+    .where(
+      and(
+        inArray(studentSubjectEnrollments.subjectOfferingId, offeringIds),
+        isNull(studentSubjectEnrollments.deletedAt)
+      )
+    );
 
   // Soft delete all offerings
   await db
