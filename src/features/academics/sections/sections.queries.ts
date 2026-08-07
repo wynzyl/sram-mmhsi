@@ -1,5 +1,5 @@
 import "server-only";
-import { cacheLife, cacheTag, unstable_noStore } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/lib/db";
 import {
   sections,
@@ -267,8 +267,6 @@ export async function getStudentsInSection(
   sectionId: string,
   schoolYearId?: string
 ): Promise<StudentInSection[]> {
-  // Opt out of Next.js caching to ensure fresh data after offerings change
-  unstable_noStore();
 
   // Build offerings filter conditions
   const offeringsConditions = [
