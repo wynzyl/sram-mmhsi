@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { subjectOfferings, studentSubjectEnrollments, subjects } from "@/lib/db/schema";
+import { subjectOfferings, studentSubjectEnrollments, subjects, gradeSheetEntries } from "@/lib/db/schema";
 import { eq, and, isNull, isNotNull, count, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -674,6 +674,28 @@ export async function updateOfferingTrackAction(
   const existing = await getSubjectOfferingById(id);
   if (!existing) {
     return { message: "Subject offering not found." };
+  }
+
+  // Check if there are any grade entries for this subject offering
+  // Cannot change track if grades have been entered
+  const [gradeEntryCount] = await db
+    .select({ count: count() })
+    .from(gradeSheetEntries)
+    .innerJoin(
+      studentSubjectEnrollments,
+      eq(gradeSheetEntries.studentSubjectEnrollmentId, studentSubjectEnrollments.id)
+    )
+    .where(
+      and(
+        eq(studentSubjectEnrollments.subjectOfferingId, id),
+        isNotNull(gradeSheetEntries.grade)
+      )
+    );
+
+  if (gradeEntryCount.count > 0) {
+    return {
+      message: `Cannot change track: ${gradeEntryCount.count} grade(s) have been entered for this subject.`,
+    };
   }
 
   // Update the strand assignment
