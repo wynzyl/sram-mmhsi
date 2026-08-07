@@ -28,6 +28,30 @@ import {
 } from "./grades.schema";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import {
+  isUniqueViolationError,
+  isForeignKeyViolationError,
+} from "@/lib/utils/pg-error";
+
+// ─── Error Handling Helpers ─────────────────────────────────────────────────
+
+/**
+ * Get a user-friendly error message for common PostgreSQL errors.
+ * Uses pg-error utilities to check error codes without relying on PostgresError type.
+ *
+ * @param error - The caught error
+ * @param context - Context for the error message (e.g., "grade sheet return", "grade sheet approval")
+ * @returns User-friendly message or null if not a recognized PostgreSQL error
+ */
+function getPostgresErrorMessage(error: unknown, context: string): string | null {
+  if (isUniqueViolationError(error)) {
+    return `This ${context} has already been processed. Please refresh and try again.`;
+  }
+  if (isForeignKeyViolationError(error)) {
+    return `Invalid reference: the ${context} references data that no longer exists.`;
+  }
+  return null;
+}
 
 // ─── Principal Review Actions ────────────────────────────────────────────────
 
@@ -101,8 +125,18 @@ export async function principalReturnAction(
 
     return { success: true, message: "Grade sheet returned to adviser." };
   } catch (error) {
-    logger.error("[grades] Failed to return grade sheet", { error });
-    return { message: "An unexpected error occurred." };
+    logger.error("[grades] Failed to return grade sheet", {
+      error,
+      gradeSheetId,
+      userId: session.userId,
+    });
+
+    const pgMessage = getPostgresErrorMessage(error, "grade sheet return");
+    if (pgMessage) {
+      return { message: pgMessage };
+    }
+
+    return { message: "Failed to return grade sheet. Please try again or contact support." };
   }
 }
 
@@ -172,8 +206,18 @@ export async function principalApproveAction(
 
     return { success: true, message: "Grade sheet approved by principal." };
   } catch (error) {
-    logger.error("[grades] Failed to approve grade sheet", { error });
-    return { message: "An unexpected error occurred." };
+    logger.error("[grades] Failed to approve grade sheet", {
+      error,
+      gradeSheetId,
+      userId: session.userId,
+    });
+
+    const pgMessage = getPostgresErrorMessage(error, "grade sheet approval");
+    if (pgMessage) {
+      return { message: pgMessage };
+    }
+
+    return { message: "Failed to approve grade sheet. Please try again or contact support." };
   }
 }
 
@@ -245,8 +289,18 @@ export async function publishGradesAction(
 
     return { success: true, message: "Grades published to student portal." };
   } catch (error) {
-    logger.error("[grades] Failed to publish grades", { error });
-    return { message: "An unexpected error occurred." };
+    logger.error("[grades] Failed to publish grades", {
+      error,
+      gradeSheetId,
+      userId: session.userId,
+    });
+
+    const pgMessage = getPostgresErrorMessage(error, "grade publication");
+    if (pgMessage) {
+      return { message: pgMessage };
+    }
+
+    return { message: "Failed to publish grades. Please try again or contact support." };
   }
 }
 
@@ -316,8 +370,18 @@ export async function lockGradesAction(
 
     return { success: true, message: "Grades locked." };
   } catch (error) {
-    logger.error("[grades] Failed to lock grades", { error });
-    return { message: "An unexpected error occurred." };
+    logger.error("[grades] Failed to lock grades", {
+      error,
+      gradeSheetId,
+      userId: session.userId,
+    });
+
+    const pgMessage = getPostgresErrorMessage(error, "grade lock");
+    if (pgMessage) {
+      return { message: pgMessage };
+    }
+
+    return { message: "Failed to lock grades. Please try again or contact support." };
   }
 }
 
@@ -396,7 +460,18 @@ export async function unlockGradesAction(
 
     return { success: true, message: "Grades unlocked for editing." };
   } catch (error) {
-    logger.error("[grades] Failed to unlock grades", { error });
-    return { message: "An unexpected error occurred." };
+    logger.error("[grades] Failed to unlock grades", {
+      error,
+      gradeSheetId,
+      reason,
+      userId: session.userId,
+    });
+
+    const pgMessage = getPostgresErrorMessage(error, "grade unlock");
+    if (pgMessage) {
+      return { message: pgMessage };
+    }
+
+    return { message: "Failed to unlock grades. Please try again or contact support." };
   }
 }

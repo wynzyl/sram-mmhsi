@@ -456,3 +456,171 @@ export async function getPeriodsCompletionStatus(
 
   return result;
 }
+
+// ─── Unified Page Data Fetcher ───────────────────────────────────────────────
+
+import type { SectionStudent, GradeLevelSubject } from "./adviser.queries";
+import type { SHSSectionStudent, SHSGradeEntrySubjects } from "./shs.queries";
+import {
+  getStudentsInSection,
+  getSubjectsForGradeLevel,
+} from "./adviser.queries";
+import {
+  getStudentsWithStrandsInSection,
+  getSubjectsForSHSGradeEntry,
+  getGradingSystemType,
+} from "./shs.queries";
+import { requiresStrandSelection } from "@/lib/constants/strands";
+import { QUARTERLY_PERIODS, TRIMESTER_PERIODS } from "@/lib/constants/grading-periods";
+import type { GradingSystemType } from "@/lib/constants/grading-systems";
+
+/**
+ * Regular (non-SHS) grade entry page data.
+ */
+export type RegularGradeEntryPageData = {
+  type: "regular";
+  students: SectionStudent[];
+  subjects: GradeLevelSubject[];
+  gradeSheetData: GradeSheetData | null;
+  completionStatus: Map<string, PeriodCompletionStatus>;
+  gradingSystemType: GradingSystemType;
+  periods: readonly string[];
+  canEdit: boolean;
+  isReturnedForRevision: boolean;
+};
+
+/**
+ * SHS (strand-based) grade entry page data.
+ */
+export type SHSGradeEntryPageData = {
+  type: "shs";
+  students: SHSSectionStudent[];
+  subjects: SHSGradeEntrySubjects | null;
+  gradeSheetData: GradeSheetData | null;
+  completionStatus: Map<string, PeriodCompletionStatus>;
+  gradingSystemType: GradingSystemType;
+  periods: readonly string[];
+  canEdit: boolean;
+  isReturnedForRevision: boolean;
+};
+
+/**
+ * Discriminated union for grade entry page data.
+ */
+export type GradeEntryPageData = RegularGradeEntryPageData | SHSGradeEntryPageData;
+
+/**
+ * Section info required for page data fetching.
+ */
+type SectionInfo = {
+  id: string;
+  name: string;
+  gradeLevelId: string;
+  gradeLevelName: string;
+  schoolYearId: string;
+  schoolYearLabel: string;
+};
+
+/**
+ * Unified data fetcher for the grade entry page.
+ *
+ * Fetches all data needed for the grade entry page in a single function,
+ * using parallel queries where possible. Returns a discriminated union
+ * that can be used to render the appropriate component (SHS vs regular).
+ *
+ * @param section - Section details (from getSectionDetails)
+ * @param selectedPeriod - The grading period to fetch data for
+ * @returns Discriminated union of SHS or regular grade entry data
+ */
+export async function getGradeEntryPageData(
+  section: SectionInfo,
+  selectedPeriod: string
+): Promise<GradeEntryPageData> {
+  const isShs = requiresStrandSelection(section.gradeLevelName);
+
+  // Fetch grading system type first (needed for both paths)
+  const gradingSystemType = await getGradingSystemType(section.schoolYearId);
+  const periods = gradingSystemType === "trimester" ? TRIMESTER_PERIODS : QUARTERLY_PERIODS;
+
+  if (isShs) {
+    // SHS: Use strand-based queries with term filtering
+    const [shsStudents, shsSubjects, gradeSheetData] = await Promise.all([
+      getStudentsWithStrandsInSection(section.id, section.schoolYearId),
+      getSubjectsForSHSGradeEntry(section.id, section.schoolYearId, selectedPeriod),
+      getGradeSheetForPeriod(section.id, section.schoolYearId, selectedPeriod),
+    ]);
+
+    // Calculate subject count for completion status
+    // Core subjects + sum of all strand subjects
+    let subjectCount = 0;
+    if (shsSubjects) {
+      subjectCount = shsSubjects.universalCore.length;
+      for (const strandSubjs of shsSubjects.strandSubjects.values()) {
+        subjectCount += strandSubjs.length;
+      }
+    }
+
+    const completionStatus = await getPeriodsCompletionStatus(
+      section.id,
+      section.schoolYearId,
+      periods,
+      shsStudents.length,
+      subjectCount
+    );
+
+    // Determine if editing is allowed
+    const periodIndex = (periods as readonly string[]).indexOf(selectedPeriod);
+    const isReturnedForRevision = gradeSheetData?.status === "returned";
+    const canEdit =
+      isReturnedForRevision ||
+      periodIndex === 0 ||
+      (periodIndex > 0 && completionStatus.get(periods[periodIndex - 1])?.isComplete === true);
+
+    return {
+      type: "shs",
+      students: shsStudents,
+      subjects: shsSubjects,
+      gradeSheetData,
+      completionStatus,
+      gradingSystemType,
+      periods,
+      canEdit,
+      isReturnedForRevision,
+    };
+  }
+
+  // Non-SHS: Use standard curriculum-based queries
+  const [students, subjects, gradeSheetData] = await Promise.all([
+    getStudentsInSection(section.id, section.schoolYearId),
+    getSubjectsForGradeLevel(section.gradeLevelId, section.schoolYearId),
+    getGradeSheetForPeriod(section.id, section.schoolYearId, selectedPeriod),
+  ]);
+
+  const completionStatus = await getPeriodsCompletionStatus(
+    section.id,
+    section.schoolYearId,
+    periods,
+    students.length,
+    subjects.length
+  );
+
+  // Determine if editing is allowed
+  const periodIndex = (periods as readonly string[]).indexOf(selectedPeriod);
+  const isReturnedForRevision = gradeSheetData?.status === "returned";
+  const canEdit =
+    isReturnedForRevision ||
+    periodIndex === 0 ||
+    (periodIndex > 0 && completionStatus.get(periods[periodIndex - 1])?.isComplete === true);
+
+  return {
+    type: "regular",
+    students,
+    subjects,
+    gradeSheetData,
+    completionStatus,
+    gradingSystemType,
+    periods,
+    canEdit,
+    isReturnedForRevision,
+  };
+}

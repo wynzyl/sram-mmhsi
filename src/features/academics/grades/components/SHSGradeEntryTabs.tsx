@@ -24,6 +24,8 @@ import {
   getStatusLabel,
   getStatusColor,
   isEditableStatus,
+  gradeKey,
+  parseGradeKey,
 } from "../utils";
 import { GradeEntryLegend } from "./GradeEntryLegend";
 import { GradeEntryStatusMessage, GradeEntryErrorBanner } from "./GradeEntryStatusMessages";
@@ -165,12 +167,15 @@ export function SHSGradeEntryTabs({
   // Determine if editing is allowed based on status
   const canEdit = isEditableStatus(currentStatus);
 
-  // Grade entries state: Map of "studentId:subjectId" -> grade value
+  // Grade entries state: Map of GradeKey -> grade value
+  // Note: State is initialized from props on mount. Parent component uses `key` prop
+  // (e.g., `key={sectionId}-${selectedPeriod}`) to force remount when period changes,
+  // which resets this state with new initialEntries. No useEffect sync needed.
   const [grades, setGrades] = useState<Map<string, string>>(() => {
     const map = new Map<string, string>();
     initialEntries.forEach((entry) => {
       if (entry.grade) {
-        map.set(`${entry.studentId}:${entry.subjectId}`, entry.grade);
+        map.set(gradeKey(entry.studentId, entry.subjectId), entry.grade);
       }
     });
     return map;
@@ -278,7 +283,7 @@ export function SHSGradeEntryTabs({
   // Handle grade input change
   const handleGradeChange = useCallback(
     (studentId: string, subjectId: string, value: string) => {
-      const key = `${studentId}:${subjectId}`;
+      const key = gradeKey(studentId, subjectId);
       setGrades((prev) => {
         const next = new Map(prev);
         if (value === "") {
@@ -302,7 +307,7 @@ export function SHSGradeEntryTabs({
     if (!sheetId) return false;
 
     const entries = Array.from(grades.entries()).map(([key, grade]) => {
-      const [studentId, subjectId] = key.split(":");
+      const { studentId, subjectId } = parseGradeKey(key as ReturnType<typeof gradeKey>);
       const numGrade = parseInt(grade, 10);
       return {
         studentId,
@@ -367,7 +372,7 @@ export function SHSGradeEntryTabs({
 
   // Get grade value for a student-subject pair
   const getGrade = (studentId: string, subjectId: string): string => {
-    return grades.get(`${studentId}:${subjectId}`) || "";
+    return grades.get(gradeKey(studentId, subjectId)) || "";
   };
 
   /**
@@ -399,7 +404,7 @@ export function SHSGradeEntryTabs({
         const trackSubjs = subjects.strandSubjects.get(student.strandCode) || [];
         for (const subject of trackSubjs) {
           totalExpected++;
-          if (grades.has(`${student.id}:${subject.subjectId}`)) {
+          if (grades.has(gradeKey(student.id, subject.subjectId))) {
             totalEntered++;
           }
         }
@@ -410,7 +415,7 @@ export function SHSGradeEntryTabs({
     const isComplete = totalExpected > 0 && missingCount === 0;
 
     return { totalExpected, totalEntered, missingCount, isComplete };
-  }, [students, subjects, grades]);
+  }, [students, subjects.strandSubjects, grades]);
 
   // Current tab completion
   const tabCompletion = useMemo(() => {
@@ -421,7 +426,7 @@ export function SHSGradeEntryTabs({
     expected = filteredStudents.length * filteredSubjects.length;
     for (const student of filteredStudents) {
       for (const subject of filteredSubjects) {
-        if (grades.has(`${student.id}:${subject.subjectId}`)) {
+        if (grades.has(gradeKey(student.id, subject.subjectId))) {
           entered++;
         }
       }

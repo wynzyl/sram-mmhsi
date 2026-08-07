@@ -33,6 +33,30 @@ import {
 import { logger } from "@/lib/observability/logger";
 import { logCreateAction } from "@/lib/utils/audit-logger";
 import {
+  isUniqueViolationError,
+  isForeignKeyViolationError,
+} from "@/lib/utils/pg-error";
+
+// ─── Error Handling Helpers ─────────────────────────────────────────────────
+
+/**
+ * Get a user-friendly error message for common PostgreSQL errors.
+ * Uses pg-error utilities to check error codes without relying on PostgresError type.
+ *
+ * @param error - The caught error
+ * @param context - Context for the error message (e.g., "grade sheet", "grade entry")
+ * @returns User-friendly message or null if not a recognized PostgreSQL error
+ */
+function getPostgresErrorMessage(error: unknown, context: string): string | null {
+  if (isUniqueViolationError(error)) {
+    return `This ${context} has already been processed. Please refresh and try again.`;
+  }
+  if (isForeignKeyViolationError(error)) {
+    return `Invalid reference: the ${context} references data that no longer exists.`;
+  }
+  return null;
+}
+import {
   getGradeRemarks,
   QUARTERLY_PERIODS,
   TRIMESTER_PERIODS,
@@ -166,6 +190,12 @@ export async function getValidSubjectIdsForSection(
 
 /**
  * Validate that all enrolled students have grades for all subjects.
+ *
+ * Performance: Uses parallel queries via Promise.all to minimize sequential DB round-trips.
+ * - Step 1: Fetch grade sheet (required for subsequent queries)
+ * - Step 2: Parallel fetch of section info and students
+ * - Step 3: For SHS, parallel fetch of enrollments, SSE count, and entered grades count
+ * - Step 4: For non-SHS, parallel fetch of subjects and entered grades count
  */
 export async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
   isComplete: boolean;
@@ -173,6 +203,7 @@ export async function validateGradeSheetCompleteness(gradeSheetId: string): Prom
   missingCount?: number;
   totalExpected?: number;
 }> {
+  // Step 1: Get grade sheet (required first - other queries depend on its values)
   const gradeSheet = await db.query.gradeSheets.findFirst({
     where: eq(gradeSheets.id, gradeSheetId),
     columns: {
@@ -187,16 +218,20 @@ export async function validateGradeSheetCompleteness(gradeSheetId: string): Prom
     return { isComplete: false, message: "Grade sheet not found." };
   }
 
-  const sectionWithGrade = await db
-    .select({
-      sectionId: sections.id,
-      gradeLevelId: sections.gradeLevelId,
-      gradeLevelName: gradeLevels.name,
-    })
-    .from(sections)
-    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
-    .where(eq(sections.id, gradeSheet.sectionId))
-    .limit(1);
+  // Step 2: Parallel fetch section info and students
+  const [sectionWithGrade, studentsList] = await Promise.all([
+    db
+      .select({
+        sectionId: sections.id,
+        gradeLevelId: sections.gradeLevelId,
+        gradeLevelName: gradeLevels.name,
+      })
+      .from(sections)
+      .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+      .where(eq(sections.id, gradeSheet.sectionId))
+      .limit(1),
+    getStudentsInSection(gradeSheet.sectionId, gradeSheet.schoolYearId),
+  ]);
 
   if (sectionWithGrade.length === 0) {
     return { isComplete: false, message: "Section not found." };
@@ -205,11 +240,6 @@ export async function validateGradeSheetCompleteness(gradeSheetId: string): Prom
   const section = sectionWithGrade[0];
   const gradeGroup = getGradeGroup(section.gradeLevelName);
   const isSHS = gradeGroup === "shs";
-
-  const studentsList = await getStudentsInSection(
-    gradeSheet.sectionId,
-    gradeSheet.schoolYearId
-  );
   const studentCount = studentsList.length;
 
   if (studentCount === 0) {
@@ -225,6 +255,7 @@ export async function validateGradeSheetCompleteness(gradeSheetId: string): Prom
   if (isSHS) {
     const studentIds = studentsList.map((s) => s.id);
 
+    // SHS Step 3a: Fetch enrollments first (needed for SSE query)
     const enrollmentRows = await db
       .select({
         studentId: enrollments.studentId,
@@ -258,31 +289,46 @@ export async function validateGradeSheetCompleteness(gradeSheetId: string): Prom
       gradingSystemType
     );
 
-    const [sseCount] = await db
-      .select({
-        count: sql<number>`count(*)::int`,
-      })
-      .from(studentSubjectEnrollments)
-      .innerJoin(
-        subjectOfferings,
-        eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
-      )
-      .where(
-        and(
-          inArray(studentSubjectEnrollments.enrollmentId, enrollmentIds),
-          eq(studentSubjectEnrollments.isActive, true),
-          isNull(studentSubjectEnrollments.deletedAt),
-          eq(subjectOfferings.sectionId, gradeSheet.sectionId),
-          eq(subjectOfferings.schoolYearId, gradeSheet.schoolYearId),
-          eq(subjectOfferings.isActive, true),
-          isNull(subjectOfferings.deletedAt),
-          inArray(subjectOfferings.termOffered, validTerms)
+    // SHS Step 3b: Parallel fetch SSE count and entered grades count
+    const [sseCountResult, enteredCountResult] = await Promise.all([
+      db
+        .select({
+          count: sql<number>`count(*)::int`,
+        })
+        .from(studentSubjectEnrollments)
+        .innerJoin(
+          subjectOfferings,
+          eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
         )
-      );
+        .where(
+          and(
+            inArray(studentSubjectEnrollments.enrollmentId, enrollmentIds),
+            eq(studentSubjectEnrollments.isActive, true),
+            isNull(studentSubjectEnrollments.deletedAt),
+            eq(subjectOfferings.sectionId, gradeSheet.sectionId),
+            eq(subjectOfferings.schoolYearId, gradeSheet.schoolYearId),
+            eq(subjectOfferings.isActive, true),
+            isNull(subjectOfferings.deletedAt),
+            inArray(subjectOfferings.termOffered, validTerms)
+          )
+        ),
+      db
+        .select({
+          count: sql<number>`count(*)::int`,
+        })
+        .from(gradeSheetEntries)
+        .where(
+          and(
+            eq(gradeSheetEntries.gradeSheetId, gradeSheetId),
+            isNotNull(gradeSheetEntries.grade)
+          )
+        ),
+    ]);
 
-    totalExpected = sseCount?.count ?? 0;
+    totalExpected = sseCountResult[0]?.count ?? 0;
     subjectCount = studentCount > 0 ? Math.round(totalExpected / studentCount) : 0;
 
+    // Fallback to curriculum-based if no SSE records
     if (totalExpected === 0) {
       const subjects = await getSubjectsForGradeLevel(
         section.gradeLevelId,
@@ -297,46 +343,84 @@ export async function validateGradeSheetCompleteness(gradeSheetId: string): Prom
           message: "No subjects configured for this grade level or no student subject enrollments found.",
         };
       }
-    }
-  } else {
-    const subjects = await getSubjectsForGradeLevel(
-      section.gradeLevelId,
-      gradeSheet.schoolYearId
-    );
-    subjectCount = subjects.length;
-    totalExpected = studentCount * subjectCount;
 
-    if (totalExpected === 0) {
+      // Re-query entered count if we had to fallback (rare edge case)
+      const [countResult] = await db
+        .select({
+          count: sql<number>`count(*)::int`,
+        })
+        .from(gradeSheetEntries)
+        .where(
+          and(
+            eq(gradeSheetEntries.gradeSheetId, gradeSheetId),
+            isNotNull(gradeSheetEntries.grade)
+          )
+        );
+
+      const totalEntered = countResult?.count ?? 0;
+      const missingCount = totalExpected - totalEntered;
+
+      if (missingCount > 0) {
+        return {
+          isComplete: false,
+          message: `Cannot submit: ${missingCount} grade${missingCount > 1 ? "s" : ""} missing. All ${totalExpected} entries (${studentCount} students × ${subjectCount} subjects) must be filled.`,
+          missingCount,
+          totalExpected,
+        };
+      }
+
+      return { isComplete: true };
+    }
+
+    // Use already-fetched entered count
+    const totalEntered = enteredCountResult[0]?.count ?? 0;
+    const missingCount = totalExpected - totalEntered;
+
+    if (missingCount > 0) {
       return {
         isComplete: false,
-        message: "No subjects configured for this grade level.",
+        message: `Cannot submit: ${missingCount} grade${missingCount > 1 ? "s" : ""} missing. All ${totalExpected} entries (${totalExpected} expected entries based on student subject enrollments) must be filled.`,
+        missingCount,
+        totalExpected,
       };
     }
+
+    return { isComplete: true };
   }
 
-  const [countResult] = await db
-    .select({
-      count: sql<number>`count(*)::int`,
-    })
-    .from(gradeSheetEntries)
-    .where(
-      and(
-        eq(gradeSheetEntries.gradeSheetId, gradeSheetId),
-        isNotNull(gradeSheetEntries.grade)
-      )
-    );
+  // Non-SHS path: Parallel fetch subjects and entered grades count
+  const [subjectsResult, enteredCountResult] = await Promise.all([
+    getSubjectsForGradeLevel(section.gradeLevelId, gradeSheet.schoolYearId),
+    db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(gradeSheetEntries)
+      .where(
+        and(
+          eq(gradeSheetEntries.gradeSheetId, gradeSheetId),
+          isNotNull(gradeSheetEntries.grade)
+        )
+      ),
+  ]);
 
-  const totalEntered = countResult?.count ?? 0;
+  subjectCount = subjectsResult.length;
+  totalExpected = studentCount * subjectCount;
+
+  if (totalExpected === 0) {
+    return {
+      isComplete: false,
+      message: "No subjects configured for this grade level.",
+    };
+  }
+
+  const totalEntered = enteredCountResult[0]?.count ?? 0;
   const missingCount = totalExpected - totalEntered;
 
   if (missingCount > 0) {
-    const subjectInfo = isSHS
-      ? `${totalExpected} expected entries based on student subject enrollments`
-      : `${studentCount} students × ${subjectCount} subjects`;
-
     return {
       isComplete: false,
-      message: `Cannot submit: ${missingCount} grade${missingCount > 1 ? "s" : ""} missing. All ${totalExpected} entries (${subjectInfo}) must be filled.`,
+      message: `Cannot submit: ${missingCount} grade${missingCount > 1 ? "s" : ""} missing. All ${totalExpected} entries (${studentCount} students × ${subjectCount} subjects) must be filled.`,
       missingCount,
       totalExpected,
     };
@@ -420,8 +504,20 @@ export async function createOrGetGradeSheetAction(
 
     return { success: true, gradeSheetId: newSheet.id };
   } catch (error) {
-    logger.error("[grades] Failed to create grade sheet", { error });
-    return { message: "An unexpected error occurred." };
+    logger.error("[grades] Failed to create grade sheet", {
+      error,
+      sectionId,
+      schoolYearId,
+      gradingPeriod,
+      userId: session.userId,
+    });
+
+    const pgMessage = getPostgresErrorMessage(error, "grade sheet");
+    if (pgMessage) {
+      return { message: pgMessage };
+    }
+
+    return { message: "Failed to create grade sheet. Please try again or contact support." };
   }
 }
 
@@ -559,8 +655,19 @@ export async function saveGradeSheetEntriesAction(
 
     return { success: true, message: "Grades saved successfully." };
   } catch (error) {
-    logger.error("[grades] Failed to save grade entries", { error });
-    return { message: "An unexpected error occurred." };
+    logger.error("[grades] Failed to save grade entries", {
+      error,
+      gradeSheetId,
+      entryCount: entries.length,
+      userId: session.userId,
+    });
+
+    const pgMessage = getPostgresErrorMessage(error, "grade entry");
+    if (pgMessage) {
+      return { message: pgMessage };
+    }
+
+    return { message: "Failed to save grades. Please try again or contact support." };
   }
 }
 
@@ -654,7 +761,17 @@ export async function submitGradeSheetAction(
 
     return { success: true, message: "Grade sheet submitted for review." };
   } catch (error) {
-    logger.error("[grades] Failed to submit grade sheet", { error });
-    return { message: "An unexpected error occurred." };
+    logger.error("[grades] Failed to submit grade sheet", {
+      error,
+      gradeSheetId,
+      userId: session.userId,
+    });
+
+    const pgMessage = getPostgresErrorMessage(error, "grade sheet submission");
+    if (pgMessage) {
+      return { message: pgMessage };
+    }
+
+    return { message: "Failed to submit grade sheet. Please try again or contact support." };
   }
 }
