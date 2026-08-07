@@ -12,6 +12,7 @@ import {
   users,
   strands,
   gradeSheetEntries,
+  gradeSheets,
 } from "@/lib/db/schema";
 import type { SubjectOfferingOption } from "./components/ManualSubjectEnrollDialog";
 import { eq, and, isNull, sql, asc, count, notInArray, inArray } from "drizzle-orm";
@@ -109,9 +110,12 @@ export async function getStudentSubjectEnrollments(
 export async function canChangeStrand(
   enrollmentId: string
 ): Promise<CanChangeStrandResult> {
-  // Get enrollment with current strand
+  // Get enrollment with current strand and related info for grade check
   const [enrollment] = await db
     .select({
+      studentId: enrollments.studentId,
+      sectionId: enrollments.sectionId,
+      schoolYearId: enrollments.schoolYearId,
       strandId: enrollments.strandId,
       strandCode: strands.code,
       strandName: strands.name,
@@ -132,17 +136,29 @@ export async function canChangeStrand(
     };
   }
 
-  // Count grade entries for this enrollment's subjects
+  // Enrollment must have section to check grades
+  if (!enrollment.sectionId || !enrollment.schoolYearId) {
+    return {
+      canChange: true,
+      reason: undefined,
+      gradeCount: 0,
+      currentStrandId: enrollment.strandId,
+      currentStrandCode: enrollment.strandCode as ShsStrandCode | null,
+      currentStrandName: enrollment.strandName,
+    };
+  }
+
+  // Count grade entries for this student in this section/school year
+  // Grade entries link via studentId + gradeSheet's section/schoolYear
   const [gradeCount] = await db
     .select({ count: count() })
     .from(gradeSheetEntries)
-    .innerJoin(
-      studentSubjectEnrollments,
-      eq(gradeSheetEntries.studentSubjectEnrollmentId, studentSubjectEnrollments.id)
-    )
+    .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
     .where(
       and(
-        eq(studentSubjectEnrollments.enrollmentId, enrollmentId),
+        eq(gradeSheetEntries.studentId, enrollment.studentId),
+        eq(gradeSheets.sectionId, enrollment.sectionId),
+        eq(gradeSheets.schoolYearId, enrollment.schoolYearId),
         sql`${gradeSheetEntries.grade} IS NOT NULL`
       )
     );
