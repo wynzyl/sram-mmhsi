@@ -41,6 +41,7 @@ import {
   TRIMESTER_PERIODS,
 } from "@/lib/constants/grading-periods";
 import { getGradeGroup } from "@/lib/constants/grade-groups";
+import { getValidTermsForPeriod } from "@/lib/constants/term-offerings";
 import {
   getStudentsInSection,
   getSubjectsForGradeLevel,
@@ -203,13 +204,14 @@ async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
   missingCount?: number;
   totalExpected?: number;
 }> {
-  // Get grade sheet with section info
+  // Get grade sheet with section info and grading period
   const gradeSheet = await db.query.gradeSheets.findFirst({
     where: eq(gradeSheets.id, gradeSheetId),
     columns: {
       id: true,
       sectionId: true,
       schoolYearId: true,
+      gradingPeriod: true,
     },
   });
 
@@ -284,9 +286,22 @@ async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
 
     const enrollmentIds = enrollmentRows.map((e) => e.enrollmentId);
 
+    // Determine grading system type from period (T* = trimester, Q* = quarterly)
+    const gradingSystemType = gradeSheet.gradingPeriod.startsWith("T")
+      ? "trimester"
+      : "quarterly";
+
+    // Get valid term_offered values for this grading period
+    // E.g., for T2 (2nd trimester): ["full_year", "second_trimester"]
+    const validTerms = getValidTermsForPeriod(
+      gradeSheet.gradingPeriod,
+      gradingSystemType
+    );
+
     // Count total active studentSubjectEnrollments for this section's students
     // These represent the exact subjects each student should have grades for
     // Filter by active, non-deleted SSE records and offerings to match what's shown in grade entry UI
+    // IMPORTANT: Also filter by term_offered to only count subjects applicable to this grading period
     const [sseCount] = await db
       .select({
         count: sql<number>`count(*)::int`,
@@ -304,7 +319,9 @@ async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
           eq(subjectOfferings.sectionId, gradeSheet.sectionId),
           eq(subjectOfferings.schoolYearId, gradeSheet.schoolYearId),
           eq(subjectOfferings.isActive, true),
-          isNull(subjectOfferings.deletedAt)
+          isNull(subjectOfferings.deletedAt),
+          // Only count subjects offered in this term (full_year + current term)
+          inArray(subjectOfferings.termOffered, validTerms)
         )
       );
 
