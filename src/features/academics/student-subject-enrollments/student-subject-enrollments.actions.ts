@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
   studentSubjectEnrollments,
@@ -222,6 +223,11 @@ export async function generateStudentSubjectEnrollmentsAction(
 
   await db.insert(studentSubjectEnrollments).values(newEnrollments);
 
+  // Revalidate section page to update student counts in subject offerings table
+  if (enrollment.sectionId) {
+    revalidatePath(`/staff/academics/sections/${enrollment.sectionId}`);
+  }
+
   return {
     success: true,
     createdCount: applicableOfferings.length,
@@ -358,6 +364,11 @@ export async function changeStudentStrandAction(
 
   invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
 
+  // Revalidate section page to update student counts
+  if (enrollment.sectionId) {
+    revalidatePath(`/staff/academics/sections/${enrollment.sectionId}`);
+  }
+
   return { success: true };
 }
 
@@ -385,15 +396,17 @@ export async function withdrawFromSubjectAction(
 
   const { studentSubjectEnrollmentId, reason } = parsed.data;
 
-  // Get existing enrollment
+  // Get existing enrollment with section info for revalidation
   const [existing] = await db
     .select({
       id: studentSubjectEnrollments.id,
       enrollmentId: studentSubjectEnrollments.enrollmentId,
       subjectOfferingId: studentSubjectEnrollments.subjectOfferingId,
       isActive: studentSubjectEnrollments.isActive,
+      sectionId: subjectOfferings.sectionId,
     })
     .from(studentSubjectEnrollments)
+    .innerJoin(subjectOfferings, eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id))
     .where(
       and(
         eq(studentSubjectEnrollments.id, studentSubjectEnrollmentId),
@@ -433,6 +446,11 @@ export async function withdrawFromSubjectAction(
   });
 
   invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+
+  // Revalidate section page to update student counts
+  if (existing.sectionId) {
+    revalidatePath(`/staff/academics/sections/${existing.sectionId}`);
+  }
 
   return { success: true };
 }
@@ -486,6 +504,7 @@ export async function bulkAssignStrandAction(
   let updatedCount = 0;
   let skippedCount = 0;
   const skippedReasons: string[] = [];
+  const affectedSectionIds = new Set<string>();
 
   for (const enrollmentId of enrollmentIds) {
     // Check if strand change is allowed
@@ -567,6 +586,11 @@ export async function bulkAssignStrandAction(
     // Regenerate subject enrollments for new strand
     await generateStudentSubjectEnrollmentsAction(enrollmentId);
     updatedCount++;
+
+    // Track affected section for revalidation
+    if (enrollment.sectionId) {
+      affectedSectionIds.add(enrollment.sectionId);
+    }
   }
 
   await logAudit({
@@ -584,6 +608,11 @@ export async function bulkAssignStrandAction(
   });
 
   invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+
+  // Revalidate all affected section pages
+  for (const sectionId of affectedSectionIds) {
+    revalidatePath(`/staff/academics/sections/${sectionId}`);
+  }
 
   if (skippedCount > 0 && updatedCount === 0) {
     return {
@@ -645,6 +674,7 @@ export async function manuallyEnrollStudentInSubjectAction(
       id: subjectOfferings.id,
       subjectId: subjectOfferings.subjectId,
       strandId: subjectOfferings.strandId,
+      sectionId: subjectOfferings.sectionId,
       subjectCode: subjects.code,
       subjectName: subjects.name,
     })
@@ -726,6 +756,11 @@ export async function manuallyEnrollStudentInSubjectAction(
   });
 
   invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+
+  // Revalidate section page to update student counts
+  if (offering.sectionId) {
+    revalidatePath(`/staff/academics/sections/${offering.sectionId}`);
+  }
 
   return { success: true, warning };
 }
