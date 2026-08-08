@@ -6,6 +6,8 @@ import {
   curriculums,
   curriculumAdoptions,
   gradeRecords,
+  gradeSheets,
+  gradeSheetEntries,
   teacherAssignments,
   sections,
   subjectOfferings,
@@ -78,6 +80,47 @@ async function hasSubjectOfferingsForGradeLevel(
   return (row?.count ?? 0) > 0;
 }
 
+/**
+ * Returns true if any grade sheet entries exist for the given school year + grade level.
+ *
+ * This checks the primary modern workflow (adviser-based grade sheets) where grades
+ * are entered via gradeSheetEntries linked to gradeSheets → sections → gradeLevelId.
+ */
+async function hasGradeSheetEntriesForGradeLevel(
+  schoolYearId: string,
+  gradeLevelId: string
+): Promise<boolean> {
+  const [row] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(gradeSheetEntries)
+    .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
+    .innerJoin(sections, eq(gradeSheets.sectionId, sections.id))
+    .where(
+      and(
+        eq(gradeSheets.schoolYearId, schoolYearId),
+        eq(sections.gradeLevelId, gradeLevelId)
+      )
+    );
+
+  return (row?.count ?? 0) > 0;
+}
+
+/**
+ * Checks if any grade data exists for the given school year + grade level.
+ * Combines checks for both legacy (gradeRecords) and modern (gradeSheetEntries) workflows.
+ */
+async function hasAnyGradeDataForGradeLevel(
+  schoolYearId: string,
+  gradeLevelId: string
+): Promise<boolean> {
+  const [legacyGrades, modernGrades] = await Promise.all([
+    hasGradeRecordsForGradeLevel(schoolYearId, gradeLevelId),
+    hasGradeSheetEntriesForGradeLevel(schoolYearId, gradeLevelId),
+  ]);
+
+  return legacyGrades || modernGrades;
+}
+
 // ─── Update Adoption ────────────────────────────────────────────────────────
 
 export async function updateAdoptionAction(
@@ -110,13 +153,14 @@ export async function updateAdoptionAction(
     return { message: "Only published curriculums can be adopted." };
   }
 
-  // Check if there are existing grade records for this school year + grade level
-  // This would indicate grades have been entered and adoption shouldn't change
-  const hasGradeRecords = await hasGradeRecordsForGradeLevel(
+  // Check if there are existing grade entries for this school year + grade level
+  // This checks both legacy (gradeRecords) and modern (gradeSheetEntries) workflows
+  // If grades have been entered, adoption shouldn't change
+  const hasGrades = await hasAnyGradeDataForGradeLevel(
     schoolYearId,
     gradeLevelId
   );
-  const eligibilityError = checkAdoptionChangeEligibility(hasGradeRecords);
+  const eligibilityError = checkAdoptionChangeEligibility(hasGrades);
 
   if (eligibilityError) {
     return { message: eligibilityError };
@@ -348,8 +392,8 @@ export async function removeAdoptionAction(
     return { success: false, message: "Adoption not found." };
   }
 
-  // Check if grades exist
-  const gradesExist = await hasGradeRecordsForGradeLevel(
+  // Check if any grades exist (both legacy gradeRecords and modern gradeSheetEntries)
+  const gradesExist = await hasAnyGradeDataForGradeLevel(
     adoption.schoolYearId,
     adoption.gradeLevelId
   );
@@ -357,7 +401,7 @@ export async function removeAdoptionAction(
   if (gradesExist) {
     return {
       success: false,
-      message: "Cannot remove adoption: grade records exist for this school year and grade level.",
+      message: "Cannot remove adoption: grade entries exist for this school year and grade level.",
     };
   }
 
