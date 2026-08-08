@@ -75,6 +75,24 @@ Expired sessions are cleaned up via:
 
 **Recommended schedule:** Run cleanup every 6 hours.
 
+### Audit Log Retention
+
+`audit_logs` rows are purged after **365 days** (`AUDIT_LOG_RETENTION_DAYS` in
+`src/lib/utils/audit-logger.ts`) so the audit trail does not become a permanent
+PII-bearing store.
+
+1. **Cron endpoint:** `DELETE /api/cron/cleanup-audit-logs` (protected by CRON_SECRET)
+
+**Recommended schedule:** Daily — retention granularity is days.
+
+**Client IP handling:** `audit_logs.ip_address` never stores a raw IP. `logAudit()`
+passes every value through `anonymizeIpAddressForAuditLog()`, which stores a
+SHA-256 digest, and the column is nullable. Note this is an unsalted digest of a
+low-entropy value, so it is a correlation fingerprint rather than an irreversible
+anonymisation — a known IP can still be confirmed by hashing it. Raw client IPs
+*are* retained separately in `sessions.ip_address` for session-hijack detection
+(`src/lib/auth/session.ts`); that store is out of scope of this retention job.
+
 ### Session Cookie
 
 ```typescript
@@ -255,6 +273,18 @@ if (!parsed.success) {
 ---
 
 ## Audit Logging
+
+### Privacy & retention posture
+
+SRAMS publishes audit event records through the centralized audit helper in `src/lib/utils/audit-logger.ts`.
+The audit-log schema still exposes the legacy shape of `audit_logs.ip_address`, but the current implementation is privacy-safe:
+
+- The application does not persist a raw client IP string in `audit_logs.ip_address`.
+- `logAudit()` normalizes an inbound request IP using the SHA-256 fingerprint helper before account storage.
+- The column remains nullable so older records or call sites that do not supply the request context can still insert without a privacy liability.
+- The operational retention goal is a 365-day lifecycle for audit-log rows; this should be enforced by a scheduled cleanup job / SQL TTL or a bespoke archival workflow coordinated with records management.
+
+This is a legitimate business/operational use under the system’s internal control requirements. The legal basis for processing is security incident investigation, access-control accountability, and auditability for financial and enrollment workflows. A user-facing privacy notice should explain that request metadata may be used for security monitoring and retained for a limited period.
 
 ### Coverage
 

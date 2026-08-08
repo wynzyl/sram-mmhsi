@@ -1,7 +1,32 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 import { auditLogs } from "@/lib/db/schema";
 import { logger } from "@/lib/observability/logger";
+import { lte } from "drizzle-orm";
+
+/**
+ * Internal retention policy: audit records should be purged after 365 days so
+ * exported/correlation data doesn't become a permanent PII-bearing store.
+ * A scheduled cleanup job or database TTL can enforce this boundary.
+ */
+export const AUDIT_LOG_RETENTION_DAYS = 365;
+
+/**
+ * Audit logging stores a fixed-size SHA-256 digest of the client IP, not the raw
+ * IP string. The existing `audit_logs.ip_address` column remains nullable for
+ * compatibility, but callers should treat it as a privacy-safe fingerprint only.
+ */
+export function anonymizeIpAddressForAuditLog(ipAddress?: string | null): string | null {
+  if (!ipAddress) return null;
+
+  const normalized = ipAddress.trim();
+  if (!normalized || normalized === "unknown" || normalized === "null") {
+    return null;
+  }
+
+  return createHash("sha256").update(normalized).digest("hex");
+}
 
 /**
  * Type representing a user session for audit logging.
@@ -35,7 +60,7 @@ export type AuditParams = {
   context?: string;
   /** Correlation ID for tracing related operations */
   correlationId?: string;
-  /** IP address of the request */
+  /** Client IP from request context; stored as a SHA-256 digest in `audit_logs.ip_address`. */
   ipAddress?: string;
 };
 
@@ -83,7 +108,7 @@ export async function logAudit(
       newState: params.newState ? JSON.stringify(params.newState) : undefined,
       context: params.context,
       correlationId: params.correlationId ?? crypto.randomUUID(),
-      ipAddress: params.ipAddress,
+      ipAddress: anonymizeIpAddressForAuditLog(params.ipAddress),
     });
     return { success: true };
   } catch (err) {
@@ -94,6 +119,32 @@ export async function logAudit(
     }
     return { success: false, error: errorMessage };
   }
+}
+
+/**
+ * Retention boundary for audit records. This is a server-only cleanup helper that
+ * can be invoked from a cron route or scheduler and is documented in assistance
+ * material as the operational mechanism enforcing the stated 365-day policy.
+ */
+export async function cleanupExpiredAuditLogs(): Promise<{ deletedCount: number }> {
+  const cutoff = new Date(Date.now() - AUDIT_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+
+  const rows = await db
+    .delete(auditLogs)
+    .where(lte(auditLogs.createdAt, cutoff))
+    .returning({ id: auditLogs.id });
+
+  const deletedCount = rows.length;
+
+  if (deletedCount > 0) {
+    logger.info("[audit] Purged expired audit-log rows", {
+      deletedCount,
+      retentionDays: AUDIT_LOG_RETENTION_DAYS,
+      cutoff: cutoff.toISOString(),
+    });
+  }
+
+  return { deletedCount };
 }
 
 /**

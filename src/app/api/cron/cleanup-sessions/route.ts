@@ -21,27 +21,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "crypto";
 import { cleanupExpiredSessions } from "@/lib/auth/session-cleanup";
+import { timingSafeCompare } from "@/lib/utils/cron-auth";
 import { logger } from "@/lib/observability/logger";
-
-/**
- * Timing-safe comparison of two strings.
- * Prevents timing attacks by always comparing the same number of bytes.
- */
-function timingSafeCompare(a: string, b: string): boolean {
-  const aBuffer = Buffer.from(a);
-  const bBuffer = Buffer.from(b);
-
-  // If lengths differ, compare against a same-length dummy to prevent timing leak
-  if (aBuffer.length !== bBuffer.length) {
-    // Compare b against itself (same length) to maintain constant time
-    timingSafeEqual(bBuffer, bBuffer);
-    return false;
-  }
-
-  return timingSafeEqual(aBuffer, bBuffer);
-}
 
 export async function DELETE(req: NextRequest) {
   // Validate cron secret for security

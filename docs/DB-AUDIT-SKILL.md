@@ -8,6 +8,8 @@ Updated: 5/21/2026
 
 **SRAMS = School Registration and Accounts Monitoring System**
 
+Audit-log privacy note: the current table shape includes the `audit_logs.ip_address` column, but the application now treats it as an optional hashed/audit fingerprint column. Raw client IP strings shall not be written to the `ip_address` storage path. Retention should be 365 days by default via a scheduled purge/TTL on records older than the business legal hold window.
+
 The system handles:
 - Student registration
 - Enrollment per school year

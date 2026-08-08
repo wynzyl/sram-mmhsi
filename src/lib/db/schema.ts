@@ -1573,6 +1573,9 @@ export const auditLogs = pgTable(
     newState: text("new_state"),             // JSON summary
     context: text("context"),
     correlationId: text("correlation_id"),
+    // Privacy-safe audit-log channel: nullable legacy-compatible field; raw IPs
+    // must not be persisted here. The helper in audit-logger normalizes this
+    // field to a SHA-256 fingerprint before insert and retention should purge it.
     ipAddress: text("ip_address"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },

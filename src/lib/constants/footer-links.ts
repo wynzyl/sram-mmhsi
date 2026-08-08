@@ -17,7 +17,7 @@ export const FOOTER_LINKS = {
     { label: "Academic Calendar", href: "#" },
   ],
   legal: [
-    { label: "Privacy Policy", href: "#" },
+    { label: "Privacy Policy", href: "/privacy-policy" },
     { label: "Terms of Service", href: "#" },
     { label: "Security Controls", href: "#" },
   ],

@@ -13,9 +13,9 @@ name: sram-mmhsi
 networks:
   srams-network:
     driver: bridge
-  # proxy-network:
-  #   external: true
-  #   driver: bridge
+  proxy-network:
+    external: true
+    driver: bridge
 
 services:
   srams_db:
@@ -97,7 +97,7 @@ services:
         condition: service_completed_successfully
     networks:
       - srams-network
-      # - proxy-network
+      - proxy-network
 
 volumes:
   db-data:
