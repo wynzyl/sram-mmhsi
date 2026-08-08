@@ -80,11 +80,12 @@ export default async function SectionDetailPage({
   const canCreateOffering = hasPermission(session.role, "subject_offerings:create");
   const canAssignTeacher = hasPermission(session.role, "subject_offerings:assign_teacher");
   const canDeleteOffering = hasPermission(session.role, "subject_offerings:generate"); // Using same permission for delete
+  const canChangeTrack = hasPermission(session.role, "subject_offerings:generate"); // Same permission for track changes
   const canManageStrands = hasPermission(session.role, "sections:manage");
 
   // Fetch all data in parallel
   const [students, adviser, offerings, teachers, hasOfferings, availableStrands, curriculumsForPicker, gradingSystemType] = await Promise.all([
-    getStudentsInSection(id),
+    getStudentsInSection(id, section.schoolYearId),
     getAdviserForSection(id, section.schoolYearId),
     getSubjectOfferingsForSection(id, section.schoolYearId),
     getTeachersForAssignment(),
@@ -253,6 +254,8 @@ export default async function SectionDetailPage({
               canAssignTeacher={canAssignTeacher}
               canDelete={canDeleteOffering}
               enrolledStrands={enrolledStrands}
+              availableStrands={availableStrands}
+              canChangeTrack={canChangeTrack}
             />
           ) : (
             <SubjectOfferingsTable

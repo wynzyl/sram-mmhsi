@@ -10,13 +10,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/date";
 import { GRADING_PERIOD_LABELS } from "@/lib/constants/grading-periods";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 
 export const metadata = {
   title: "Pending Approvals | SRAMS",
   description: "Review and approve grade sheets submitted by section advisers",
 };
 
-export default async function GradeApprovalsPage() {
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function GradeApprovalsPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || "1", 10));
   const session = await requireSession();
 
   // Only principals can access this page
@@ -39,10 +46,16 @@ export default async function GradeApprovalsPage() {
     );
   }
 
-  // Without pagination params, returns GradeSheetView[] (the array form)
-  const result = await getPrincipalPendingReviews(activeSY.id);
-  // Type guard: without pagination params, we always get an array
-  const pendingReviews = Array.isArray(result) ? result : result.data;
+  // Use pagination to avoid loading all pending reviews at once
+  const PAGE_SIZE = 12; // 4x3 grid layout
+  const result = await getPrincipalPendingReviews(activeSY.id, {
+    page,
+    pageSize: PAGE_SIZE,
+  });
+  // With pagination params, we get PaginatedResult
+  const { data: pendingReviews, pagination } = Array.isArray(result)
+    ? { data: result, pagination: null }
+    : result;
 
   return (
     <div className="p-6 space-y-6">
@@ -81,67 +94,77 @@ export default async function GradeApprovalsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {pendingReviews.map((sheet) => (
-            <Link
-              key={sheet.id}
-              href={`/staff/grades/sheets/${sheet.id}`}
-              className="block group"
-            >
-              <Card className="hover:shadow-md hover:border-primary/30 transition-all h-full">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Badge variant="info" className="text-xs">
-                      Submitted
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {GRADING_PERIOD_LABELS[sheet.gradingPeriod]}
-                    </span>
-                  </div>
-
-                  <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                    {sheet.gradeLevelName}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Section {sheet.sectionName}
-                  </p>
-
-                  <div className="mt-4 pt-4 border-t border-border space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Adviser:</span>
-                      <span className="font-medium text-foreground">{sheet.adviserName || "—"}</span>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pendingReviews.map((sheet) => (
+              <Link
+                key={sheet.id}
+                href={`/staff/grades/sheets/${sheet.id}`}
+                className="block group"
+              >
+                <Card className="hover:shadow-md hover:border-primary/30 transition-all h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <Badge variant="info" className="text-xs">
+                        Submitted
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {GRADING_PERIOD_LABELS[sheet.gradingPeriod]}
+                      </span>
                     </div>
-                    {sheet.submittedAt && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Submitted:</span>
-                        <span className="font-medium text-foreground">
-                          {formatDate(sheet.submittedAt)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="mt-4 pt-4 border-t border-border flex items-center text-sm text-primary font-medium">
-                    Review & Approve
-                    <svg
-                      className="ml-1.5 h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                    <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                      {sheet.gradeLevelName}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Section {sheet.sectionName}
+                    </p>
+
+                    <div className="mt-4 pt-4 border-t border-border space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Adviser:</span>
+                        <span className="font-medium text-foreground">{sheet.adviserName || "—"}</span>
+                      </div>
+                      {sheet.submittedAt && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Submitted:</span>
+                          <span className="font-medium text-foreground">
+                            {formatDate(sheet.submittedAt)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-border flex items-center text-sm text-primary font-medium">
+                      Review & Approve
+                      <svg
+                        className="ml-1.5 h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+
+          {/* Pagination controls */}
+          {pagination && (
+            <PaginationControls
+              pagination={pagination}
+              basePath="/staff/grades/approvals"
+            />
+          )}
+        </>
       )}
     </div>
   );

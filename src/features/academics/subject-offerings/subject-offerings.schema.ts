@@ -70,6 +70,51 @@ export type AddManualSubjectOfferingInput = z.infer<typeof addManualSubjectOffer
 
 export type AddManualSubjectOfferingFormState = BaseFormState<AddManualSubjectOfferingInput>;
 
+// ─── Available Subjects Lookup Schema ─────────────────────────────────────────
+
+/**
+ * Args for the manual-offering subject lookup. These arrive from a client
+ * component and are compared against uuid columns, so they must be parsed
+ * before reaching the query.
+ */
+export const availableSubjectsForManualOfferingSchema = z.object({
+  curriculumId: uuidSchema,
+  gradeLevelId: uuidSchema,
+  sectionId: uuidSchema,
+  schoolYearId: uuidSchema,
+});
+
+export type AvailableSubjectsForManualOfferingInput = z.infer<
+  typeof availableSubjectsForManualOfferingSchema
+>;
+
+// ─── Update Offering Track Schema ────────────────────────────────────────────
+
+/**
+ * Preprocessor for nullable UUID fields from form data.
+ * Converts empty strings and "null" string literals to actual null values.
+ */
+const nullableUuidPreprocess = (val: unknown) => {
+  if (val === "" || val === "null" || val === null || val === undefined) {
+    return null;
+  }
+  return val;
+};
+
+/**
+ * Schema for updating the track (strand) assignment of a subject offering.
+ * Setting strandId to null means "All Tracks" (core behavior).
+ */
+export const updateOfferingTrackSchema = z.object({
+  id: uuidSchema,
+  /** Strand ID for track-specific assignment, or null for "All Tracks" */
+  strandId: z.preprocess(nullableUuidPreprocess, uuidSchema.nullable()),
+});
+
+export type UpdateOfferingTrackInput = z.infer<typeof updateOfferingTrackSchema>;
+
+export type UpdateOfferingTrackFormState = BaseFormState<UpdateOfferingTrackInput>;
+
 // ─── View Types ───────────────────────────────────────────────────────────────
 
 /**

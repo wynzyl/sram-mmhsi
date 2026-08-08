@@ -74,29 +74,14 @@ export default async function AdviserGradeEntryPage({
       getGradeSheetForPeriod(sectionId, section.schoolYearId, selectedPeriod),
     ]);
 
-    // Calculate total subjects and students for completion status
-    // For SHS, we need to count based on what each student should have
-    let totalExpected = 0;
-    if (shsSubjects) {
-      // Core subjects for all students
-      totalExpected += shsStudents.length * shsSubjects.universalCore.length;
-      // Strand subjects for students in each strand
-      for (const [strandCode, strandSubjs] of shsSubjects.strandSubjects) {
-        const strandStudentCount = shsStudents.filter((s) => s.strandCode === strandCode).length;
-        totalExpected += strandStudentCount * strandSubjs.length;
-      }
-    }
-
-    // For completion status, use a simplified count
-    const [completionStatus] = await Promise.all([
-      getPeriodsCompletionStatus(
-        sectionId,
-        section.schoolYearId,
-        periods,
-        shsStudents.length,
-        shsSubjects ? shsSubjects.universalCore.length + Array.from(shsSubjects.strandSubjects.values()).reduce((acc, s) => acc + s.length, 0) : 0
-      ),
-    ]);
+    // Per-period sheet status for the period selector's lock chain. Grade
+    // totals are intentionally not sourced here — SHSGradeEntryTabs computes
+    // the per-student, strand-aware, per-period figure it displays.
+    const completionStatus = await getPeriodsCompletionStatus(
+      sectionId,
+      section.schoolYearId,
+      periods
+    );
 
     const completionStatusObj = Object.fromEntries(completionStatus);
     const periodIndex = (periods as readonly string[]).indexOf(selectedPeriod);
@@ -272,13 +257,7 @@ export default async function AdviserGradeEntryPage({
   // Fetch grade sheet data and completion status in parallel
   const [gradeSheetData, completionStatus] = await Promise.all([
     getGradeSheetForPeriod(sectionId, section.schoolYearId, selectedPeriod),
-    getPeriodsCompletionStatus(
-      sectionId,
-      section.schoolYearId,
-      periods,
-      students.length,
-      subjects.length
-    ),
+    getPeriodsCompletionStatus(sectionId, section.schoolYearId, periods),
   ]);
 
   // Convert completion status Map to a serializable object

@@ -12,6 +12,7 @@ import {
   users,
   strands,
   gradeSheetEntries,
+  gradeSheets,
 } from "@/lib/db/schema";
 import type { SubjectOfferingOption } from "./components/ManualSubjectEnrollDialog";
 import { eq, and, isNull, sql, asc, count, notInArray, inArray } from "drizzle-orm";
@@ -109,9 +110,12 @@ export async function getStudentSubjectEnrollments(
 export async function canChangeStrand(
   enrollmentId: string
 ): Promise<CanChangeStrandResult> {
-  // Get enrollment with current strand
+  // Get enrollment with current strand and related info for grade check
   const [enrollment] = await db
     .select({
+      studentId: enrollments.studentId,
+      sectionId: enrollments.sectionId,
+      schoolYearId: enrollments.schoolYearId,
       strandId: enrollments.strandId,
       strandCode: strands.code,
       strandName: strands.name,
@@ -132,17 +136,29 @@ export async function canChangeStrand(
     };
   }
 
-  // Count grade entries for this enrollment's subjects
+  // Enrollment must have section to check grades
+  if (!enrollment.sectionId || !enrollment.schoolYearId) {
+    return {
+      canChange: true,
+      reason: undefined,
+      gradeCount: 0,
+      currentStrandId: enrollment.strandId,
+      currentStrandCode: enrollment.strandCode as ShsStrandCode | null,
+      currentStrandName: enrollment.strandName,
+    };
+  }
+
+  // Count grade entries for this student in this section/school year
+  // Grade entries link via studentId + gradeSheet's section/schoolYear
   const [gradeCount] = await db
     .select({ count: count() })
     .from(gradeSheetEntries)
-    .innerJoin(
-      studentSubjectEnrollments,
-      eq(gradeSheetEntries.studentSubjectEnrollmentId, studentSubjectEnrollments.id)
-    )
+    .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
     .where(
       and(
-        eq(studentSubjectEnrollments.enrollmentId, enrollmentId),
+        eq(gradeSheetEntries.studentId, enrollment.studentId),
+        eq(gradeSheets.sectionId, enrollment.sectionId),
+        eq(gradeSheets.schoolYearId, enrollment.schoolYearId),
         sql`${gradeSheetEntries.grade} IS NOT NULL`
       )
     );
@@ -159,6 +175,128 @@ export async function canChangeStrand(
     currentStrandCode: enrollment.strandCode as ShsStrandCode | null,
     currentStrandName: enrollment.strandName,
   };
+}
+
+/**
+ * Check if multiple students can change their strands (batch operation).
+ * More efficient than calling canChangeStrand() individually for each enrollment.
+ *
+ * Performance: Uses two batched queries instead of N×2 individual queries.
+ *
+ * @param enrollmentIds - Array of enrollment IDs to check
+ * @returns Map of enrollmentId to CanChangeStrandResult
+ */
+export async function canChangeStrandBatch(
+  enrollmentIds: string[]
+): Promise<Map<string, CanChangeStrandResult>> {
+  if (enrollmentIds.length === 0) {
+    return new Map();
+  }
+
+  // Batch query 1: Get all enrollments with strand info
+  const enrollmentRows = await db
+    .select({
+      id: enrollments.id,
+      studentId: enrollments.studentId,
+      sectionId: enrollments.sectionId,
+      schoolYearId: enrollments.schoolYearId,
+      strandId: enrollments.strandId,
+      strandCode: strands.code,
+      strandName: strands.name,
+    })
+    .from(enrollments)
+    .leftJoin(strands, eq(enrollments.strandId, strands.id))
+    .where(inArray(enrollments.id, enrollmentIds));
+
+  // Build enrollment map for quick lookup
+  const enrollmentMap = new Map(enrollmentRows.map((e) => [e.id, e]));
+
+  // Get unique section/schoolYear/studentId combinations for grade check
+  const studentsToCheck = enrollmentRows
+    .filter((e) => e.sectionId && e.schoolYearId)
+    .map((e) => ({
+      enrollmentId: e.id,
+      studentId: e.studentId,
+      sectionId: e.sectionId!,
+      schoolYearId: e.schoolYearId!,
+    }));
+
+  // Batch query 2: Get grade counts for all students at once
+  const gradeCounts = studentsToCheck.length > 0
+    ? await db
+        .select({
+          studentId: gradeSheetEntries.studentId,
+          sectionId: gradeSheets.sectionId,
+          schoolYearId: gradeSheets.schoolYearId,
+          count: sql<number>`COUNT(*)::int`,
+        })
+        .from(gradeSheetEntries)
+        .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
+        .where(
+          and(
+            inArray(gradeSheetEntries.studentId, studentsToCheck.map((s) => s.studentId)),
+            sql`${gradeSheetEntries.grade} IS NOT NULL`
+          )
+        )
+        .groupBy(gradeSheetEntries.studentId, gradeSheets.sectionId, gradeSheets.schoolYearId)
+    : [];
+
+  // Build grade count lookup: `studentId:sectionId:schoolYearId` -> count
+  const gradeCountMap = new Map<string, number>();
+  for (const gc of gradeCounts) {
+    const key = `${gc.studentId}:${gc.sectionId}:${gc.schoolYearId}`;
+    gradeCountMap.set(key, gc.count);
+  }
+
+  // Build results
+  const results = new Map<string, CanChangeStrandResult>();
+
+  for (const enrollmentId of enrollmentIds) {
+    const enrollment = enrollmentMap.get(enrollmentId);
+
+    if (!enrollment) {
+      results.set(enrollmentId, {
+        canChange: false,
+        reason: "Enrollment not found",
+        gradeCount: 0,
+        currentStrandId: null,
+        currentStrandCode: null,
+        currentStrandName: null,
+      });
+      continue;
+    }
+
+    // No section/school year = can change
+    if (!enrollment.sectionId || !enrollment.schoolYearId) {
+      results.set(enrollmentId, {
+        canChange: true,
+        reason: undefined,
+        gradeCount: 0,
+        currentStrandId: enrollment.strandId,
+        currentStrandCode: enrollment.strandCode as ShsStrandCode | null,
+        currentStrandName: enrollment.strandName,
+      });
+      continue;
+    }
+
+    // Check grade count
+    const key = `${enrollment.studentId}:${enrollment.sectionId}:${enrollment.schoolYearId}`;
+    const gradeCount = gradeCountMap.get(key) ?? 0;
+    const hasGrades = gradeCount > 0;
+
+    results.set(enrollmentId, {
+      canChange: !hasGrades,
+      reason: hasGrades
+        ? `Cannot change strand after grades have been entered (${gradeCount} grade(s) recorded).`
+        : undefined,
+      gradeCount,
+      currentStrandId: enrollment.strandId,
+      currentStrandCode: enrollment.strandCode as ShsStrandCode | null,
+      currentStrandName: enrollment.strandName,
+    });
+  }
+
+  return results;
 }
 
 /**
@@ -250,39 +388,43 @@ export async function getSubjectEnrollmentsForSection(
 /**
  * Get available subject offerings for manual enrollment.
  * Returns offerings in the student's section that they are not yet enrolled in.
+ *
+ * Performance: Runs enrollment lookup and existing enrollments in parallel.
  */
 export async function getAvailableOfferingsForEnrollment(
   enrollmentId: string
 ): Promise<SubjectOfferingOption[]> {
-  // Get enrollment's section and existing subject enrollments
-  const [enrollment] = await db
-    .select({
-      sectionId: enrollments.sectionId,
-      schoolYearId: enrollments.schoolYearId,
-    })
-    .from(enrollments)
-    .where(eq(enrollments.id, enrollmentId))
-    .limit(1);
+  // Phase 1: Get enrollment info and existing enrollments in PARALLEL
+  const [enrollmentRows, existingEnrollments] = await Promise.all([
+    db
+      .select({
+        sectionId: enrollments.sectionId,
+        schoolYearId: enrollments.schoolYearId,
+      })
+      .from(enrollments)
+      .where(eq(enrollments.id, enrollmentId))
+      .limit(1),
 
+    db
+      .select({ subjectOfferingId: studentSubjectEnrollments.subjectOfferingId })
+      .from(studentSubjectEnrollments)
+      .where(
+        and(
+          eq(studentSubjectEnrollments.enrollmentId, enrollmentId),
+          eq(studentSubjectEnrollments.isActive, true),
+          isNull(studentSubjectEnrollments.deletedAt)
+        )
+      ),
+  ]);
+
+  const enrollment = enrollmentRows[0];
   if (!enrollment || !enrollment.sectionId) {
     return [];
   }
 
-  // Get subject offering IDs the student is already enrolled in
-  const existingEnrollments = await db
-    .select({ subjectOfferingId: studentSubjectEnrollments.subjectOfferingId })
-    .from(studentSubjectEnrollments)
-    .where(
-      and(
-        eq(studentSubjectEnrollments.enrollmentId, enrollmentId),
-        eq(studentSubjectEnrollments.isActive, true),
-        isNull(studentSubjectEnrollments.deletedAt)
-      )
-    );
-
   const enrolledOfferingIds = existingEnrollments.map((e) => e.subjectOfferingId);
 
-  // Get available offerings (active, not already enrolled)
+  // Phase 2: Get available offerings (active, not already enrolled)
   const conditions = [
     eq(subjectOfferings.sectionId, enrollment.sectionId),
     eq(subjectOfferings.schoolYearId, enrollment.schoolYearId),
@@ -290,7 +432,6 @@ export async function getAvailableOfferingsForEnrollment(
     isNull(subjectOfferings.deletedAt),
   ];
 
-  // Only add notInArray condition if there are enrolled offerings
   if (enrolledOfferingIds.length > 0) {
     conditions.push(notInArray(subjectOfferings.id, enrolledOfferingIds));
   }

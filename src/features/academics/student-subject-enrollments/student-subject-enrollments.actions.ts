@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
   studentSubjectEnrollments,
@@ -13,7 +14,8 @@ import { eq, and, isNull, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
-import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { invalidateTag, invalidateTags, CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { uuidSchema } from "@/lib/validators/common-schemas";
 import {
   generateStudentSubjectEnrollmentsSchema,
   changeStudentStrandSchema,
@@ -30,6 +32,21 @@ import { canChangeStrand } from "./student-subject-enrollments.queries";
 import type { CanChangeStrandResult } from "./student-subject-enrollments.schema";
 
 /**
+ * Build the "not eligible" result shape without hitting the database.
+ * Not exported — every export of a "use server" module becomes an endpoint.
+ */
+function ineligibleToChangeStrand(reason: string): CanChangeStrandResult {
+  return {
+    canChange: false,
+    reason,
+    gradeCount: 0,
+    currentStrandId: null,
+    currentStrandCode: null,
+    currentStrandName: null,
+  };
+}
+
+/**
  * Server action wrapper for canChangeStrand.
  * Used by client components that need to check strand change eligibility.
  */
@@ -39,17 +56,20 @@ export async function canChangeStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "student_subject_enrollments:manage")) {
-    return {
-      canChange: false,
-      reason: "You do not have permission to manage student enrollments.",
-      gradeCount: 0,
-      currentStrandId: null,
-      currentStrandCode: null,
-      currentStrandName: null,
-    };
+    return ineligibleToChangeStrand(
+      "You do not have permission to manage student enrollments."
+    );
   }
 
-  return canChangeStrand(enrollmentId);
+  // enrollmentId arrives straight from the client. canChangeStrand compares it
+  // against a uuid column, so a malformed value would surface as a Postgres
+  // 22P02 error rather than a handled result.
+  const parsed = uuidSchema.safeParse(enrollmentId);
+  if (!parsed.success) {
+    return ineligibleToChangeStrand("Invalid enrollment reference.");
+  }
+
+  return canChangeStrand(parsed.data);
 }
 
 /**
@@ -60,6 +80,40 @@ export async function canChangeStrandAction(
 export async function generateStudentSubjectEnrollmentsAction(
   enrollmentId: string
 ): Promise<{ success: boolean; createdCount: number; skippedCount: number; error?: string }> {
+  const session = await requireSession();
+
+  // Two already-authorized flows reach this write: direct SSE management, and
+  // section assignment (assignStudentsToSectionAction guards on "sections:assign"
+  // and generates SSE records as a side effect). Coordinator and principal hold
+  // "sections:assign" but NOT "student_subject_enrollments:manage", so checking
+  // only the latter would make section assignment silently produce students with
+  // no subject enrollments — the caller discards this return value. Accepting
+  // either permission grants no new capability; it names the one those roles
+  // already exercise through that flow.
+  const authorized =
+    hasPermission(session.role, "student_subject_enrollments:manage") ||
+    hasPermission(session.role, "sections:assign");
+
+  if (!authorized) {
+    return {
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      error: "You do not have permission to manage student enrollments.",
+    };
+  }
+
+  // enrollmentId is client-supplied and is compared against uuid columns below.
+  // uuidSchema applies no transform, so the original value is used as-is.
+  if (!uuidSchema.safeParse(enrollmentId).success) {
+    return {
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      error: "Invalid enrollment reference.",
+    };
+  }
+
   // Get enrollment details
   const [enrollment] = await db
     .select({
@@ -82,11 +136,13 @@ export async function generateStudentSubjectEnrollmentsAction(
   }
 
   // Get all subject offerings for the section
+  // Include both offering.strandId (legacy) and subject.strandId (new direct ownership)
   const offerings = await db
     .select({
       id: subjectOfferings.id,
       subjectId: subjectOfferings.subjectId,
-      strandId: subjectOfferings.strandId,
+      offeringStrandId: subjectOfferings.strandId, // Legacy: offering-level strand
+      subjectStrandId: subjects.strandId, // New: direct subject ownership
       isCore: subjects.isCore,
     })
     .from(subjectOfferings)
@@ -117,25 +173,31 @@ export async function generateStudentSubjectEnrollmentsAction(
 
   const existingOfferingIds = new Set(existingEnrollments.map((e) => e.subjectOfferingId));
 
-  // Filter offerings: include core subjects and strand-matched electives
+  // Filter offerings: include subjects that match student's track
   const applicableOfferings = offerings.filter((offering) => {
     // Already enrolled
     if (existingOfferingIds.has(offering.id)) {
       return false;
     }
 
-    // Core subjects are always included
+    // Check direct subject ownership (new model) - subject belongs to specific track
+    if (offering.subjectStrandId) {
+      // Subject is track-owned; include only if student is in that track
+      return enrollment.strandId === offering.subjectStrandId;
+    }
+
+    // Core subjects (non-SHS) are always included
     if (offering.isCore) {
       return true;
     }
 
-    // For electives without strand requirement, include them
-    if (!offering.strandId) {
+    // Legacy: For electives without strand requirement, include them
+    if (!offering.offeringStrandId) {
       return true;
     }
 
-    // For strand-specific electives, check if student's strand matches
-    if (enrollment.strandId && offering.strandId === enrollment.strandId) {
+    // Legacy: For strand-specific electives (offering-level), check if student's strand matches
+    if (enrollment.strandId && offering.offeringStrandId === enrollment.strandId) {
       return true;
     }
 
@@ -160,6 +222,11 @@ export async function generateStudentSubjectEnrollmentsAction(
   }));
 
   await db.insert(studentSubjectEnrollments).values(newEnrollments);
+
+  // Revalidate section page to update student counts in subject offerings table
+  if (enrollment.sectionId) {
+    revalidatePath(`/staff/academics/sections/${enrollment.sectionId}`);
+  }
 
   return {
     success: true,
@@ -295,7 +362,14 @@ export async function changeStudentStrandAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+  // STRANDS too: this writes enrollments.strandId, which getAllStrands
+  // aggregates into each track's enrollmentCount.
+  invalidateTags(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS, CACHE_TAGS.STRANDS);
+
+  // Revalidate section page to update student counts
+  if (enrollment.sectionId) {
+    revalidatePath(`/staff/academics/sections/${enrollment.sectionId}`);
+  }
 
   return { success: true };
 }
@@ -324,15 +398,17 @@ export async function withdrawFromSubjectAction(
 
   const { studentSubjectEnrollmentId, reason } = parsed.data;
 
-  // Get existing enrollment
+  // Get existing enrollment with section info for revalidation
   const [existing] = await db
     .select({
       id: studentSubjectEnrollments.id,
       enrollmentId: studentSubjectEnrollments.enrollmentId,
       subjectOfferingId: studentSubjectEnrollments.subjectOfferingId,
       isActive: studentSubjectEnrollments.isActive,
+      sectionId: subjectOfferings.sectionId,
     })
     .from(studentSubjectEnrollments)
+    .innerJoin(subjectOfferings, eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id))
     .where(
       and(
         eq(studentSubjectEnrollments.id, studentSubjectEnrollmentId),
@@ -372,6 +448,11 @@ export async function withdrawFromSubjectAction(
   });
 
   invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+
+  // Revalidate section page to update student counts
+  if (existing.sectionId) {
+    revalidatePath(`/staff/academics/sections/${existing.sectionId}`);
+  }
 
   return { success: true };
 }
@@ -425,6 +506,7 @@ export async function bulkAssignStrandAction(
   let updatedCount = 0;
   let skippedCount = 0;
   const skippedReasons: string[] = [];
+  const affectedSectionIds = new Set<string>();
 
   for (const enrollmentId of enrollmentIds) {
     // Check if strand change is allowed
@@ -506,6 +588,11 @@ export async function bulkAssignStrandAction(
     // Regenerate subject enrollments for new strand
     await generateStudentSubjectEnrollmentsAction(enrollmentId);
     updatedCount++;
+
+    // Track affected section for revalidation
+    if (enrollment.sectionId) {
+      affectedSectionIds.add(enrollment.sectionId);
+    }
   }
 
   await logAudit({
@@ -522,7 +609,14 @@ export async function bulkAssignStrandAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+  // STRANDS too: this writes enrollments.strandId, which getAllStrands
+  // aggregates into each track's enrollmentCount.
+  invalidateTags(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS, CACHE_TAGS.STRANDS);
+
+  // Revalidate all affected section pages
+  for (const sectionId of affectedSectionIds) {
+    revalidatePath(`/staff/academics/sections/${sectionId}`);
+  }
 
   if (skippedCount > 0 && updatedCount === 0) {
     return {
@@ -584,6 +678,7 @@ export async function manuallyEnrollStudentInSubjectAction(
       id: subjectOfferings.id,
       subjectId: subjectOfferings.subjectId,
       strandId: subjectOfferings.strandId,
+      sectionId: subjectOfferings.sectionId,
       subjectCode: subjects.code,
       subjectName: subjects.name,
     })
@@ -665,6 +760,11 @@ export async function manuallyEnrollStudentInSubjectAction(
   });
 
   invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+
+  // Revalidate section page to update student counts
+  if (offering.sectionId) {
+    revalidatePath(`/staff/academics/sections/${offering.sectionId}`);
+  }
 
   return { success: true, warning };
 }

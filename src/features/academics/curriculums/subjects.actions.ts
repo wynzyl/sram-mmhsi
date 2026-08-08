@@ -171,6 +171,8 @@ export async function addSubjectToCurriculumAction(
     code,
     description,
     gradeLevelId,
+    strandId,
+    termOffered,
     units,
     sequenceOrder,
     isCore,
@@ -218,6 +220,9 @@ export async function addSubjectToCurriculumAction(
           description: description ?? null,
           curriculumId,
           gradeLevelId,
+          // Direct track ownership for SHS subjects
+          strandId: strandId ?? null,
+          termOffered: termOffered ?? "full_year",
           units: units ?? "0",
           sequenceOrder: finalSequenceOrder,
           isCore: isCore ?? true,
@@ -226,8 +231,9 @@ export async function addSubjectToCurriculumAction(
         })
         .returning({ id: subjects.id });
 
-      // Save strand associations for elective subjects
-      if (!isCore && strandAssociations && strandAssociations.length > 0) {
+      // Save strand associations for elective subjects (legacy - deprecated)
+      // Only used when strandId is not set
+      if (!strandId && !isCore && strandAssociations && strandAssociations.length > 0) {
         await saveSubjectStrandAssociations(
           tx,
           newSubject.id,
@@ -248,6 +254,8 @@ export async function addSubjectToCurriculumAction(
         code,
         curriculumId,
         gradeLevelId,
+        strandId,
+        termOffered,
         strandCount: strandAssociations?.length ?? 0,
       },
       { throwOnFail: true }
@@ -285,6 +293,8 @@ export async function updateSubjectInCurriculumAction(
     code,
     description,
     gradeLevelId,
+    strandId,
+    termOffered,
     units,
     sequenceOrder,
     isCore,
@@ -335,6 +345,8 @@ export async function updateSubjectInCurriculumAction(
       if (code !== undefined) updateData.code = code;
       if (description !== undefined) updateData.description = description;
       if (gradeLevelId !== undefined) updateData.gradeLevelId = gradeLevelId;
+      if (strandId !== undefined) updateData.strandId = strandId;
+      if (termOffered !== undefined) updateData.termOffered = termOffered;
       if (units !== undefined) updateData.units = units;
       if (sequenceOrder !== undefined) updateData.sequenceOrder = sequenceOrder;
       if (isCore !== undefined) updateData.isCore = isCore;
@@ -344,24 +356,33 @@ export async function updateSubjectInCurriculumAction(
         .set(updateData)
         .where(eq(subjects.id, subjectId));
 
-      // Update strand associations
-      // If subject is now core, remove all strand associations
-      // If subject is elective, update associations
-      const finalIsCore = isCore ?? existing.isCore;
+      // Update strand associations (legacy - only if not using direct strandId ownership)
+      // If strandId is set, that's the new direct ownership model - skip junction table updates
+      if (strandId === undefined) {
+        // Legacy junction table approach
+        const finalIsCore = isCore ?? existing.isCore;
 
-      if (finalIsCore) {
-        // Core subjects don't have strand associations - remove any existing
-        await tx.delete(subjectStrands).where(eq(subjectStrands.subjectId, subjectId));
-      } else if (strandAssociations !== null) {
-        // Elective subject with explicit strand associations
-        await saveSubjectStrandAssociations(
-          tx,
-          subjectId,
-          strandAssociations,
-          session.userId
-        );
+        if (finalIsCore) {
+          // Core subjects don't have strand associations - remove any existing
+          await tx.delete(subjectStrands).where(eq(subjectStrands.subjectId, subjectId));
+        } else if (strandAssociations !== null) {
+          // Elective subject with explicit strand associations
+          await saveSubjectStrandAssociations(
+            tx,
+            subjectId,
+            strandAssociations,
+            session.userId
+          );
+        }
       }
-      // If strandAssociations is null and subject is still elective, keep existing associations
+      // strandId was supplied (UUID or an explicit null "no track") — the caller
+      // is using direct ownership, so drop any legacy junction rows. Keyed on
+      // `!== undefined` rather than truthiness so this stays the exact
+      // complement of the branch above: the schema types strandId as
+      // `string | null | undefined`, and a null would otherwise match neither.
+      if (strandId !== undefined) {
+        await tx.delete(subjectStrands).where(eq(subjectStrands.subjectId, subjectId));
+      }
     });
 
     await logUpdateAction(

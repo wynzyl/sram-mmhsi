@@ -1,23 +1,27 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { subjectOfferings, studentSubjectEnrollments, subjects } from "@/lib/db/schema";
-import { eq, and, isNull, count, inArray } from "drizzle-orm";
+import { subjectOfferings, studentSubjectEnrollments, subjects, gradeSheetEntries, gradeSheets } from "@/lib/db/schema";
+import { eq, and, isNull, isNotNull, count, inArray, exists, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
-import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { invalidateTags, CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
   generateSubjectOfferingsSchema,
   assignTeacherSchema,
   deleteSubjectOfferingSchema,
   deleteAllSubjectOfferingsSchema,
   addManualSubjectOfferingSchema,
+  availableSubjectsForManualOfferingSchema,
+  updateOfferingTrackSchema,
   type GenerateSubjectOfferingsFormState,
   type AssignTeacherFormState,
   type DeleteSubjectOfferingFormState,
   type DeleteAllSubjectOfferingsFormState,
   type AddManualSubjectOfferingFormState,
+  type UpdateOfferingTrackFormState,
 } from "./subject-offerings.schema";
 import {
   getSubjectsForOfferingGeneration,
@@ -128,7 +132,10 @@ export async function generateSubjectOfferingsAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+
+  // Explicitly revalidate the section page to ensure fresh data
+  revalidatePath(`/staff/academics/sections/${sectionId}`);
 
   return {
     success: true,
@@ -187,7 +194,7 @@ export async function assignTeacherAction(
     newState: { teacherId },
   });
 
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
 
   return { success: true };
 }
@@ -222,7 +229,7 @@ export async function deleteSubjectOfferingAction(
     return { message: "Subject offering not found." };
   }
 
-  // Check for enrolled students
+  // Check for enrolled students with grades (active enrollments are blocking)
   const [enrollmentCount] = await db
     .select({ count: count() })
     .from(studentSubjectEnrollments)
@@ -240,7 +247,23 @@ export async function deleteSubjectOfferingAction(
     };
   }
 
-  // Soft delete
+  // Soft-delete all related student subject enrollments (including inactive ones)
+  // This prevents orphaned SSE records from appearing in grade entry
+  await db
+    .update(studentSubjectEnrollments)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: session.userId,
+      isActive: false,
+    })
+    .where(
+      and(
+        eq(studentSubjectEnrollments.subjectOfferingId, id),
+        isNull(studentSubjectEnrollments.deletedAt)
+      )
+    );
+
+  // Soft delete the offering itself
   await db
     .update(subjectOfferings)
     .set({
@@ -261,7 +284,8 @@ export async function deleteSubjectOfferingAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  revalidatePath(`/staff/academics/sections/${existing.sectionId}`);
 
   return { success: true };
 }
@@ -332,6 +356,22 @@ export async function deleteAllSubjectOfferingsAction(
     };
   }
 
+  // Soft-delete all related student subject enrollments (including inactive ones)
+  // This prevents orphaned SSE records from appearing in grade entry
+  await db
+    .update(studentSubjectEnrollments)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: session.userId,
+      isActive: false,
+    })
+    .where(
+      and(
+        inArray(studentSubjectEnrollments.subjectOfferingId, offeringIds),
+        isNull(studentSubjectEnrollments.deletedAt)
+      )
+    );
+
   // Soft delete all offerings
   await db
     .update(subjectOfferings)
@@ -361,7 +401,8 @@ export async function deleteAllSubjectOfferingsAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  revalidatePath(`/staff/academics/sections/${sectionId}`);
 
   return {
     success: true,
@@ -518,7 +559,8 @@ export async function addManualSubjectOfferingAction(
         },
       });
 
-      invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+      invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+      revalidatePath(`/staff/academics/sections/${sectionId}`);
 
       return { success: true };
     } else {
@@ -564,8 +606,9 @@ export async function addManualSubjectOfferingAction(
     },
   });
 
-  // 7. Invalidate cache
-  invalidateTag(CACHE_TAGS.SUBJECT_OFFERINGS);
+  // 7. Invalidate cache and revalidate the section page
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  revalidatePath(`/staff/academics/sections/${sectionId}`);
 
   return { success: true };
 }
@@ -586,10 +629,212 @@ export async function getAvailableSubjectsForManualOfferingAction(
     return [];
   }
 
-  return getAvailableSubjectsForManualOffering(
+  // All four ids are client-supplied and are compared against uuid columns in
+  // the query; an unparsed value surfaces as a Postgres 22P02 error instead of
+  // an empty result. Mirrors the unauthorized case by returning no subjects.
+  const parsed = availableSubjectsForManualOfferingSchema.safeParse({
     curriculumId,
     gradeLevelId,
     sectionId,
-    schoolYearId
+    schoolYearId,
+  });
+
+  if (!parsed.success) {
+    return [];
+  }
+
+  return getAvailableSubjectsForManualOffering(
+    parsed.data.curriculumId,
+    parsed.data.gradeLevelId,
+    parsed.data.sectionId,
+    parsed.data.schoolYearId
   );
+}
+
+/**
+ * Update the track (strand) assignment for a subject offering.
+ * This allows changing which track a subject is offered to after curriculum is published.
+ * Setting strandId to null means "All Tracks" (core behavior for SHS).
+ */
+export async function updateOfferingTrackAction(
+  _prevState: UpdateOfferingTrackFormState,
+  formData: FormData
+): Promise<UpdateOfferingTrackFormState> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "subject_offerings:generate")) {
+    return { message: "You do not have permission to update track assignments." };
+  }
+
+  // Schema handles null conversion via preprocess (empty string, "null" → null)
+  const parsed = updateOfferingTrackSchema.safeParse({
+    id: formData.get("id"),
+    strandId: formData.get("strandId"),
+  });
+
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { id, strandId } = parsed.data;
+
+  // Get existing offering for validation and audit
+  const existing = await getSubjectOfferingById(id);
+  if (!existing) {
+    return { message: "Subject offering not found." };
+  }
+
+  // Check if there are any grade entries for this subject offering
+  // Cannot change track if grades have been entered
+  // Grade entries link via subjectId + gradeSheet's section/schoolYear
+  const [gradeEntryCount] = await db
+    .select({ count: count() })
+    .from(gradeSheetEntries)
+    .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
+    .where(
+      and(
+        eq(gradeSheetEntries.subjectId, existing.subjectId),
+        eq(gradeSheets.sectionId, existing.sectionId),
+        eq(gradeSheets.schoolYearId, existing.schoolYearId),
+        isNotNull(gradeSheetEntries.grade)
+      )
+    );
+
+  if (gradeEntryCount.count > 0) {
+    return {
+      message: `Cannot change track: ${gradeEntryCount.count} grade(s) have been entered for this subject.`,
+    };
+  }
+
+  // Update the strand assignment
+  await db
+    .update(subjectOfferings)
+    .set({
+      strandId: strandId,
+      updatedAt: new Date(),
+      updatedBy: session.userId,
+    })
+    .where(eq(subjectOfferings.id, id));
+
+  await logAudit({
+    actor: session.userId,
+    actorRole: session.role,
+    action: "subject_offerings:update_track",
+    targetEntity: "subject_offerings",
+    targetId: id,
+    previousState: {
+      strandId: existing.strandId,
+      strandCode: existing.strandCode,
+    },
+    newState: {
+      strandId,
+      subjectCode: existing.subjectCode,
+      sectionName: existing.sectionName,
+    },
+  });
+
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  revalidatePath(`/staff/academics/sections/${existing.sectionId}`);
+
+  return { success: true };
+}
+
+/** Cap on distinct subject codes recorded in the cleanup audit entry. */
+const CLEANUP_AUDIT_SUBJECT_CODE_LIMIT = 50;
+
+/**
+ * Clean up orphaned student subject enrollments.
+ * Finds SSE records where the parent subject offering has been soft-deleted
+ * but the SSE itself was not cleaned up (pre-fix data).
+ */
+export async function cleanupOrphanedSSEAction(): Promise<{
+  success: boolean;
+  cleanedCount: number;
+  message?: string;
+}> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "subject_offerings:generate")) {
+    return { success: false, cleanedCount: 0, message: "Permission denied." };
+  }
+
+  // Orphan criteria: the SSE is still live but its parent offering is
+  // soft-deleted. Expressed as a correlated EXISTS so the update below applies
+  // it in-place — no id list crosses the wire, so this is not capped by
+  // Postgres' 65535 bind-parameter limit and does not scale with backlog size.
+  const isOrphanedSSE = and(
+    isNull(studentSubjectEnrollments.deletedAt),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(subjectOfferings)
+        .where(
+          and(
+            eq(subjectOfferings.id, studentSubjectEnrollments.subjectOfferingId),
+            isNotNull(subjectOfferings.deletedAt)
+          )
+        )
+    )
+  );
+
+  // Distinct affected subjects for the audit entry. Must run before the update
+  // (afterwards no row matches) and is LIMITed so a large backlog cannot
+  // inflate the audit payload.
+  const affectedSubjects = await db
+    .selectDistinct({ subjectCode: subjects.code })
+    .from(studentSubjectEnrollments)
+    .innerJoin(
+      subjectOfferings,
+      eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
+    )
+    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+    .where(
+      and(
+        isNull(studentSubjectEnrollments.deletedAt),
+        // Parent offering is soft-deleted
+        isNotNull(subjectOfferings.deletedAt)
+      )
+    )
+    .limit(CLEANUP_AUDIT_SUBJECT_CODE_LIMIT);
+
+  // Soft-delete every orphan in one statement.
+  const updated = await db
+    .update(studentSubjectEnrollments)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: session.userId,
+      isActive: false,
+    })
+    .where(isOrphanedSSE);
+
+  // Row count straight from the driver. Deliberately not RETURNING ids — that
+  // would materialize one row per cleaned record and reintroduce the unbounded
+  // payload this rewrite removes.
+  const cleanedCount = updated.count;
+
+  if (cleanedCount === 0) {
+    return { success: true, cleanedCount: 0, message: "No orphaned records found." };
+  }
+
+  await logAudit({
+    actor: session.userId,
+    actorRole: session.role,
+    action: "student_subject_enrollments:cleanup_orphaned",
+    targetEntity: "student_subject_enrollments",
+    targetId: "batch",
+    newState: {
+      cleanedCount,
+      subjectCodes: affectedSubjects.map((r) => r.subjectCode),
+      subjectCodesTruncated:
+        affectedSubjects.length === CLEANUP_AUDIT_SUBJECT_CODE_LIMIT,
+    },
+  });
+
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+
+  return {
+    success: true,
+    cleanedCount,
+    message: `Cleaned up ${cleanedCount} orphaned enrollment(s).`,
+  };
 }

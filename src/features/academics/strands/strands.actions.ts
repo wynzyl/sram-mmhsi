@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { strands, enrollments, subjectStrands } from "@/lib/db/schema";
+import { strands, enrollments, subjects, sections } from "@/lib/db/schema";
 import { eq, and, isNull, count } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -15,11 +15,11 @@ import {
   type UpdateStrandFormState,
   type DeleteStrandFormState,
 } from "./strands.schema";
-import { strandCodeExists, getStrandById } from "./strands.queries";
+import { strandCodeExists, shortCodeExists, getStrandById } from "./strands.queries";
 
 /**
- * Create a new strand.
- * Admin only - strands are system configuration.
+ * Create a new track (strand).
+ * Admin only - tracks are system configuration.
  */
 export async function createStrandAction(
   _prevState: CreateStrandFormState,
@@ -28,13 +28,15 @@ export async function createStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "strands:manage")) {
-    return { message: "You do not have permission to manage strands." };
+    return { message: "You do not have permission to manage tracks." };
   }
 
   const parsed = createStrandSchema.safeParse({
     code: formData.get("code"),
+    shortCode: formData.get("shortCode"),
     name: formData.get("name"),
     description: formData.get("description") || undefined,
+    trackCategory: formData.get("trackCategory"),
     displayOrder: formData.get("displayOrder") || 0,
     isActive: formData.get("isActive") === "true",
   });
@@ -43,19 +45,26 @@ export async function createStrandAction(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
-  const { code, name, description, displayOrder, isActive } = parsed.data;
+  const { code, shortCode, name, description, trackCategory, displayOrder, isActive } = parsed.data;
 
-  // Check if strand code already exists
+  // Check if track code already exists
   if (await strandCodeExists(code)) {
-    return { message: `Strand code "${code}" already exists.` };
+    return { message: `Track code "${code}" already exists.` };
+  }
+
+  // Check if short code already exists
+  if (await shortCodeExists(shortCode)) {
+    return { message: `Short code "${shortCode}" already exists.` };
   }
 
   const [strand] = await db
     .insert(strands)
     .values({
       code,
+      shortCode,
       name,
       description: description || null,
+      trackCategory,
       displayOrder,
       isActive,
       createdBy: session.userId,
@@ -69,7 +78,7 @@ export async function createStrandAction(
     action: "strands:create",
     targetEntity: "strands",
     targetId: strand.id,
-    newState: { code, name },
+    newState: { code, shortCode, name, trackCategory },
   });
 
   invalidateTag(CACHE_TAGS.STRANDS);
@@ -78,7 +87,7 @@ export async function createStrandAction(
 }
 
 /**
- * Update an existing strand.
+ * Update an existing track (strand).
  * Admin only.
  */
 export async function updateStrandAction(
@@ -88,13 +97,16 @@ export async function updateStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "strands:manage")) {
-    return { message: "You do not have permission to manage strands." };
+    return { message: "You do not have permission to manage tracks." };
   }
 
   const parsed = updateStrandSchema.safeParse({
     id: formData.get("id"),
+    code: formData.get("code"),
+    shortCode: formData.get("shortCode"),
     name: formData.get("name"),
     description: formData.get("description") || null,
+    trackCategory: formData.get("trackCategory"),
     displayOrder: formData.get("displayOrder") || 0,
     isActive: formData.get("isActive") === "true",
   });
@@ -103,12 +115,22 @@ export async function updateStrandAction(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
-  const { id, name, description, displayOrder, isActive } = parsed.data;
+  const { id, code, shortCode, name, description, trackCategory, displayOrder, isActive } = parsed.data;
 
-  // Get existing strand for audit
+  // Get existing track for audit
   const existing = await getStrandById(id);
   if (!existing) {
-    return { message: "Strand not found." };
+    return { message: "Track not found." };
+  }
+
+  // Check code uniqueness if changed
+  if (code !== existing.code && (await strandCodeExists(code, id))) {
+    return { message: `Track code "${code}" already exists.` };
+  }
+
+  // Check short code uniqueness if changed
+  if (shortCode !== existing.shortCode && (await shortCodeExists(shortCode, id))) {
+    return { message: `Short code "${shortCode}" already exists.` };
   }
 
   // If deactivating, check for active enrollments
@@ -125,7 +147,7 @@ export async function updateStrandAction(
 
     if (activeEnrollments.count > 0) {
       return {
-        message: `Cannot deactivate strand with ${activeEnrollments.count} active enrollment(s).`,
+        message: `Cannot deactivate track with ${activeEnrollments.count} active enrollment(s).`,
       };
     }
   }
@@ -133,8 +155,11 @@ export async function updateStrandAction(
   await db
     .update(strands)
     .set({
+      code,
+      shortCode,
       name,
       description,
+      trackCategory,
       displayOrder,
       isActive,
       updatedAt: new Date(),
@@ -149,10 +174,11 @@ export async function updateStrandAction(
     targetEntity: "strands",
     targetId: id,
     previousState: {
+      code: existing.code,
       name: existing.name,
       isActive: existing.isActive,
     },
-    newState: { name, isActive },
+    newState: { code, name, isActive },
   });
 
   invalidateTag(CACHE_TAGS.STRANDS);
@@ -161,8 +187,8 @@ export async function updateStrandAction(
 }
 
 /**
- * Soft delete a strand.
- * Admin only. Cannot delete if strand has enrollments or subjects.
+ * Soft delete a track (strand).
+ * Admin only. Cannot delete if track has enrollments, subjects, or sections.
  */
 export async function deleteStrandAction(
   _prevState: DeleteStrandFormState,
@@ -171,7 +197,7 @@ export async function deleteStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "strands:manage")) {
-    return { message: "You do not have permission to manage strands." };
+    return { message: "You do not have permission to manage tracks." };
   }
 
   const parsed = deleteStrandSchema.safeParse({
@@ -184,10 +210,10 @@ export async function deleteStrandAction(
 
   const { id } = parsed.data;
 
-  // Get existing strand
+  // Get existing track
   const existing = await getStrandById(id);
   if (!existing) {
-    return { message: "Strand not found." };
+    return { message: "Track not found." };
   }
 
   // Check for enrollments
@@ -198,19 +224,31 @@ export async function deleteStrandAction(
 
   if (enrollmentCount.count > 0) {
     return {
-      message: `Cannot delete strand with ${enrollmentCount.count} enrollment(s).`,
+      message: `Cannot delete track with ${enrollmentCount.count} enrollment(s).`,
     };
   }
 
-  // Check for subject associations
+  // Check for subjects with direct ownership (new model)
   const [subjectCount] = await db
     .select({ count: count() })
-    .from(subjectStrands)
-    .where(and(eq(subjectStrands.strandId, id), isNull(subjectStrands.deletedAt)));
+    .from(subjects)
+    .where(and(eq(subjects.strandId, id), isNull(subjects.deletedAt)));
 
   if (subjectCount.count > 0) {
     return {
-      message: `Cannot delete strand with ${subjectCount.count} subject association(s). Remove subject links first.`,
+      message: `Cannot delete track with ${subjectCount.count} subject(s). Remove or reassign subjects first.`,
+    };
+  }
+
+  // Check for sections assigned to this track
+  const [sectionCount] = await db
+    .select({ count: count() })
+    .from(sections)
+    .where(and(eq(sections.strandId, id), isNull(sections.deletedAt)));
+
+  if (sectionCount.count > 0) {
+    return {
+      message: `Cannot delete track with ${sectionCount.count} section(s). Remove or reassign sections first.`,
     };
   }
 

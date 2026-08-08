@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useFormToast } from "@/hooks/useFormToast";
-import { SHS_STRAND_SHORT_LABELS } from "@/lib/constants/strands";
 import type { StrandView, DeleteStrandFormState } from "../strands.schema";
 import { deleteStrandAction } from "../strands.actions";
 
@@ -36,7 +35,7 @@ export function DeleteStrandDialog({
 
   // Handle success/error state changes
   useFormToast(state, {
-    successMessage: "Strand deleted successfully",
+    successMessage: "Track deleted successfully",
     onSuccess: () => {
       onOpenChange(false);
       startTransition(() => {
@@ -46,33 +45,43 @@ export function DeleteStrandDialog({
   });
 
   const hasAssociations =
-    (strand.subjectCount ?? 0) > 0 || (strand.enrollmentCount ?? 0) > 0;
+    (strand.subjectCount ?? 0) > 0 ||
+    (strand.sectionCount ?? 0) > 0 ||
+    (strand.enrollmentCount ?? 0) > 0;
+
+  // Build association message
+  const getAssociationMessage = () => {
+    const parts: string[] = [];
+    if ((strand.subjectCount ?? 0) > 0) {
+      parts.push(`${strand.subjectCount} subject(s)`);
+    }
+    if ((strand.sectionCount ?? 0) > 0) {
+      parts.push(`${strand.sectionCount} section(s)`);
+    }
+    if ((strand.enrollmentCount ?? 0) > 0) {
+      parts.push(`${strand.enrollmentCount} enrollment(s)`);
+    }
+    return parts.join(", ");
+  };
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Strand</AlertDialogTitle>
+            <AlertDialogTitle>Delete Track</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
                 <p>
-                  Are you sure you want to delete the strand{" "}
+                  Are you sure you want to delete the track{" "}
                   <strong>
-                    {SHS_STRAND_SHORT_LABELS[strand.code]} - {strand.name}
+                    {strand.shortCode} - {strand.name}
                   </strong>
                   ?
                 </p>
                 {hasAssociations && (
                   <p className="text-destructive">
-                    This strand has{" "}
-                    {(strand.subjectCount ?? 0) > 0 &&
-                      `${strand.subjectCount} subject(s)`}
-                    {(strand.subjectCount ?? 0) > 0 &&
-                      (strand.enrollmentCount ?? 0) > 0 &&
-                      " and "}
-                    {(strand.enrollmentCount ?? 0) > 0 &&
-                      `${strand.enrollmentCount} enrollment(s)`}
-                    . Remove these associations before deleting.
+                    This track has {getAssociationMessage()}.
+                    Remove these associations before deleting.
                   </p>
                 )}
               </div>

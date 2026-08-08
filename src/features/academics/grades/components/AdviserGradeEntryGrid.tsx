@@ -6,23 +6,27 @@ import {
   createOrGetGradeSheetAction,
   saveGradeSheetEntriesAction,
   submitGradeSheetAction,
-} from "../grades.actions";
+} from "../grade-sheet.actions";
 import type { SectionStudent, GradeLevelSubject } from "../grades.queries";
 import type {
   SaveGradeSheetEntriesFormState,
   SubmitGradeSheetFormState,
 } from "../grades.schema";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { getGradeRemarks } from "@/lib/constants/grading-periods";
+import {
+  isAcceptableGradeInput,
+  resolveGradeCommit,
+} from "../grade-entry-validation";
+import {
+  getStatusLabel,
+  getStatusColor,
+  isEditableStatus,
+  gradeKey,
+  parseGradeKey,
+} from "../utils";
+import { GradeEntryLegend } from "./GradeEntryLegend";
+import { GradeEntryStatusMessage, GradeEntryErrorBanner } from "./GradeEntryStatusMessages";
+import { GradeSubmitConfirmDialog } from "./GradeSubmitConfirmDialog";
 
 interface AdviserGradeEntryGridProps {
   sectionId: string;
@@ -38,35 +42,6 @@ interface AdviserGradeEntryGridProps {
   }>;
   gradeSheetStatus?: string | null;
 }
-
-// Statuses that allow editing
-const EDITABLE_STATUSES = ["draft", "returned"];
-
-function getStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    draft: "Draft",
-    submitted: "Submitted for Approval",
-    principal_approved: "Principal Approved",
-    published: "Published",
-    locked: "Locked",
-    returned: "Returned for Revision",
-  };
-  return labels[status] || status;
-}
-
-function getStatusColor(status: string): string {
-  const colors: Record<string, string> = {
-    draft: "bg-muted text-muted-foreground",
-    submitted: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    principal_approved: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-    published: "bg-success/15 text-success",
-    locked: "bg-muted text-muted-foreground",
-    returned: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  };
-  return colors[status] || "bg-muted text-muted-foreground";
-}
-
-// Use the shared getGradeRemarks function from constants
 
 /**
  * Memoized GradeCell component.
@@ -92,24 +67,25 @@ const GradeCell = memo(function GradeCell({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Allow empty or valid grade range
-    if (value === "" || (/^\d{0,3}$/.test(value) && parseInt(value, 10) <= 100)) {
-      setLocalValue(value);
+    if (!isAcceptableGradeInput(value)) return;
+    setLocalValue(value);
+
+    // Sync complete, in-range drafts upward immediately so the toolbar counter
+    // and Save/Submit eligibility track typing instead of lagging until blur.
+    // Partial drafts ("6" on the way to "60") resolve to `revert` and are left
+    // uncommitted — reverting mid-typing would make the cell impossible to fill.
+    const decision = resolveGradeCommit(value);
+    if (decision.action === "commit") {
+      onCommit(studentId, subjectId, decision.value);
     }
   };
 
   const handleBlur = () => {
-    // Validate final value on blur
-    if (localValue === "") {
-      onCommit(studentId, subjectId, "");
+    const decision = resolveGradeCommit(localValue);
+    if (decision.action === "commit") {
+      onCommit(studentId, subjectId, decision.value);
     } else {
-      const numValue = parseInt(localValue, 10);
-      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-        onCommit(studentId, subjectId, localValue);
-      } else {
-        // Reset to initial if invalid
-        setLocalValue(initialValue);
-      }
+      setLocalValue(initialValue);
     }
   };
 
@@ -152,14 +128,17 @@ export function AdviserGradeEntryGrid({
   const [createError, setCreateError] = useState<string | null>(null);
 
   // Determine if editing is allowed based on status
-  const canEdit = !currentStatus || EDITABLE_STATUSES.includes(currentStatus);
+  const canEdit = isEditableStatus(currentStatus);
 
-  // Grade entries state: Map of "studentId:subjectId" -> grade value
+  // Grade entries state: Map of GradeKey -> grade value
+  // Note: State is initialized from props on mount. Parent component uses `key` prop
+  // (e.g., `key={sectionId}-${selectedPeriod}`) to force remount when period changes,
+  // which resets this state with new initialEntries. No useEffect sync needed.
   const [grades, setGrades] = useState<Map<string, string>>(() => {
     const map = new Map<string, string>();
     initialEntries.forEach((entry) => {
       if (entry.grade) {
-        map.set(`${entry.studentId}:${entry.subjectId}`, entry.grade);
+        map.set(gradeKey(entry.studentId, entry.subjectId), entry.grade);
       }
     });
     return map;
@@ -208,7 +187,7 @@ export function AdviserGradeEntryGrid({
   // Handle grade input change
   const handleGradeChange = useCallback(
     (studentId: string, subjectId: string, value: string) => {
-      const key = `${studentId}:${subjectId}`;
+      const key = gradeKey(studentId, subjectId);
       setGrades((prev) => {
         const next = new Map(prev);
         if (value === "") {
@@ -234,7 +213,7 @@ export function AdviserGradeEntryGrid({
     if (!sheetId) return false;
 
     const entries = Array.from(grades.entries()).map(([key, grade]) => {
-      const [studentId, subjectId] = key.split(":");
+      const { studentId, subjectId } = parseGradeKey(key as ReturnType<typeof gradeKey>);
       const numGrade = parseInt(grade, 10);
       return {
         studentId,
@@ -290,7 +269,7 @@ export function AdviserGradeEntryGrid({
 
   // Get grade value for a student-subject pair
   const getGrade = (studentId: string, subjectId: string): string => {
-    return grades.get(`${studentId}:${subjectId}`) || "";
+    return grades.get(gradeKey(studentId, subjectId)) || "";
   };
 
   // Calculate completion status for submit validation
@@ -431,34 +410,12 @@ export function AdviserGradeEntryGrid({
       </div>
 
       {/* Status Messages */}
-      {createError && (
-        <div className="p-4 border-b bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800">
-          {createError}
-        </div>
-      )}
-
+      <GradeEntryErrorBanner error={createError} />
       {saveState.message && (
-        <div
-          className={`p-4 border-b ${
-            saveState.success
-              ? "bg-success/10 text-success border-success/30"
-              : "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
-          }`}
-        >
-          {saveState.message}
-        </div>
+        <GradeEntryStatusMessage message={saveState.message} isSuccess={!!saveState.success} />
       )}
-
       {submitState.message && (
-        <div
-          className={`p-4 border-b ${
-            submitState.success
-              ? "bg-success/10 text-success border-success/30"
-              : "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
-          }`}
-        >
-          {submitState.message}
-        </div>
+        <GradeEntryStatusMessage message={submitState.message} isSuccess={!!submitState.success} />
       )}
 
       {/* Grade Entry Grid */}
@@ -518,52 +475,14 @@ export function AdviserGradeEntryGrid({
       </div>
 
       {/* Legend */}
-      <div className="border-t border-border p-4 bg-muted">
-        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-          Grading Scale
-        </h4>
-        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <span>
-            <strong className="text-foreground">90-100:</strong> Outstanding
-          </span>
-          <span>
-            <strong className="text-foreground">85-89:</strong> Very Satisfactory
-          </span>
-          <span>
-            <strong className="text-foreground">80-84:</strong> Satisfactory
-          </span>
-          <span>
-            <strong className="text-foreground">75-79:</strong> Fairly Satisfactory
-          </span>
-          <span>
-            <strong className="text-foreground">Below 75:</strong> Did Not Meet Expectations
-          </span>
-        </div>
-      </div>
+      <GradeEntryLegend />
 
-      {/* Submit Confirmation Dialog - replaces browser confirm() for accessibility */}
-      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Submit Grades for Review</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to submit these grades for principal approval?
-              You will not be able to edit them until they are returned for revision.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setShowSubmitConfirm(false);
-                handleSubmit();
-              }}
-            >
-              Submit for Review
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Submit Confirmation Dialog */}
+      <GradeSubmitConfirmDialog
+        open={showSubmitConfirm}
+        onOpenChange={setShowSubmitConfirm}
+        onConfirm={handleSubmit}
+      />
     </div>
   );
 }

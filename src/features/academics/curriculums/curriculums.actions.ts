@@ -95,7 +95,6 @@ export async function createCurriculumAction(
 
     // Cache invalidation runs only after the transaction commits.
     invalidateTag(CACHE_TAGS.CURRICULUMS);
-    invalidateTag(CACHE_TAGS.CURRICULUMS);
 
     return { success: true, curriculumId: newCurriculumId };
   } catch (error) {
@@ -293,7 +292,6 @@ export async function cloneCurriculumAction(
       return newCurriculum.id;
     });
 
-    invalidateTag(CACHE_TAGS.CURRICULUMS);
     invalidateTag(CACHE_TAGS.CURRICULUMS);
 
     return { success: true, curriculumId: newCurriculumId };
