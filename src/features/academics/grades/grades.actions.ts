@@ -14,13 +14,10 @@
  */
 
 // ─── Grade Sheet CRUD Actions ────────────────────────────────────────────────
+// Validation helpers are intentionally NOT re-exported here — they are internal
+// to the actions and live in ./grade-sheet-validation. Import that module
+// directly if a server-side caller ever needs them.
 export {
-  // Validation helpers (exported for testing/reuse)
-  isAssignedSectionAdviser,
-  validatePreviousPeriodsSubmitted,
-  getValidSubjectIdsForSection,
-  validateGradeSheetCompleteness,
-  // Actions
   createOrGetGradeSheetAction,
   saveGradeSheetEntriesAction,
   submitGradeSheetAction,

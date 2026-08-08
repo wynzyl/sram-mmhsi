@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { subjectOfferings, studentSubjectEnrollments, subjects, gradeSheetEntries, gradeSheets } from "@/lib/db/schema";
-import { eq, and, isNull, isNotNull, count, inArray } from "drizzle-orm";
+import { eq, and, isNull, isNotNull, count, inArray, exists, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
@@ -739,6 +739,9 @@ export async function updateOfferingTrackAction(
   return { success: true };
 }
 
+/** Cap on distinct subject codes recorded in the cleanup audit entry. */
+const CLEANUP_AUDIT_SUBJECT_CODE_LIMIT = 50;
+
 /**
  * Clean up orphaned student subject enrollments.
  * Finds SSE records where the parent subject offering has been soft-deleted
@@ -755,13 +758,30 @@ export async function cleanupOrphanedSSEAction(): Promise<{
     return { success: false, cleanedCount: 0, message: "Permission denied." };
   }
 
-  // Find orphaned SSE records: SSE not deleted, but parent offering IS deleted
-  const orphanedSSE = await db
-    .select({
-      sseId: studentSubjectEnrollments.id,
-      offeringId: subjectOfferings.id,
-      subjectCode: subjects.code,
-    })
+  // Orphan criteria: the SSE is still live but its parent offering is
+  // soft-deleted. Expressed as a correlated EXISTS so the update below applies
+  // it in-place — no id list crosses the wire, so this is not capped by
+  // Postgres' 65535 bind-parameter limit and does not scale with backlog size.
+  const isOrphanedSSE = and(
+    isNull(studentSubjectEnrollments.deletedAt),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(subjectOfferings)
+        .where(
+          and(
+            eq(subjectOfferings.id, studentSubjectEnrollments.subjectOfferingId),
+            isNotNull(subjectOfferings.deletedAt)
+          )
+        )
+    )
+  );
+
+  // Distinct affected subjects for the audit entry. Must run before the update
+  // (afterwards no row matches) and is LIMITed so a large backlog cannot
+  // inflate the audit payload.
+  const affectedSubjects = await db
+    .selectDistinct({ subjectCode: subjects.code })
     .from(studentSubjectEnrollments)
     .innerJoin(
       subjectOfferings,
@@ -774,23 +794,27 @@ export async function cleanupOrphanedSSEAction(): Promise<{
         // Parent offering is soft-deleted
         isNotNull(subjectOfferings.deletedAt)
       )
-    );
+    )
+    .limit(CLEANUP_AUDIT_SUBJECT_CODE_LIMIT);
 
-  if (orphanedSSE.length === 0) {
-    return { success: true, cleanedCount: 0, message: "No orphaned records found." };
-  }
-
-  const orphanedIds = orphanedSSE.map((r) => r.sseId);
-
-  // Soft-delete all orphaned SSE records
-  await db
+  // Soft-delete every orphan in one statement.
+  const updated = await db
     .update(studentSubjectEnrollments)
     .set({
       deletedAt: new Date(),
       deletedBy: session.userId,
       isActive: false,
     })
-    .where(inArray(studentSubjectEnrollments.id, orphanedIds));
+    .where(isOrphanedSSE);
+
+  // Row count straight from the driver. Deliberately not RETURNING ids — that
+  // would materialize one row per cleaned record and reintroduce the unbounded
+  // payload this rewrite removes.
+  const cleanedCount = updated.count;
+
+  if (cleanedCount === 0) {
+    return { success: true, cleanedCount: 0, message: "No orphaned records found." };
+  }
 
   await logAudit({
     actor: session.userId,
@@ -799,8 +823,10 @@ export async function cleanupOrphanedSSEAction(): Promise<{
     targetEntity: "student_subject_enrollments",
     targetId: "batch",
     newState: {
-      cleanedCount: orphanedSSE.length,
-      subjectCodes: [...new Set(orphanedSSE.map((r) => r.subjectCode))],
+      cleanedCount,
+      subjectCodes: affectedSubjects.map((r) => r.subjectCode),
+      subjectCodesTruncated:
+        affectedSubjects.length === CLEANUP_AUDIT_SUBJECT_CODE_LIMIT,
     },
   });
 
@@ -808,7 +834,7 @@ export async function cleanupOrphanedSSEAction(): Promise<{
 
   return {
     success: true,
-    cleanedCount: orphanedSSE.length,
-    message: `Cleaned up ${orphanedSSE.length} orphaned enrollment(s).`,
+    cleanedCount,
+    message: `Cleaned up ${cleanedCount} orphaned enrollment(s).`,
   };
 }

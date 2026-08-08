@@ -56,11 +56,11 @@ src/
 
 | Layer | Location | Responsibility |
 |-------|----------|----------------|
-| Server Actions | `src/features/*/*.actions.ts` | ALL business logic and DB writes |
-| Zod Schemas | `src/features/*/*.schema.ts` or `src/lib/validators/*.ts` | Data validation |
-| Server Queries | `src/features/*/*.queries.ts` | ALL database reads |
+| Server Actions | `src/features/**/*.actions.ts` | ALL business logic and DB writes |
+| Zod Schemas | `src/features/**/*.schema.ts` or `src/lib/validators/*.ts` | Data validation |
+| Server Queries | `src/features/**/*.queries.ts` | ALL database reads |
 | Utilities | `src/lib/utils/*.ts` | Pure transformations only |
-| Client Components | `src/features/*/components/*.tsx` | UI state and form interactions |
+| Client Components | `src/features/**/components/*.tsx` | UI state and form interactions |
 
 ### Dependency Direction
 

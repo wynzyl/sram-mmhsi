@@ -74,17 +74,14 @@ export default async function AdviserGradeEntryPage({
       getGradeSheetForPeriod(sectionId, section.schoolYearId, selectedPeriod),
     ]);
 
-    // Calculate subject count for completion status
-    // For SHS, we count core + all strand subjects (simplified - actual validation is per-student)
-    const [completionStatus] = await Promise.all([
-      getPeriodsCompletionStatus(
-        sectionId,
-        section.schoolYearId,
-        periods,
-        shsStudents.length,
-        shsSubjects ? shsSubjects.universalCore.length + Array.from(shsSubjects.strandSubjects.values()).reduce((acc, s) => acc + s.length, 0) : 0
-      ),
-    ]);
+    // Per-period sheet status for the period selector's lock chain. Grade
+    // totals are intentionally not sourced here — SHSGradeEntryTabs computes
+    // the per-student, strand-aware, per-period figure it displays.
+    const completionStatus = await getPeriodsCompletionStatus(
+      sectionId,
+      section.schoolYearId,
+      periods
+    );
 
     const completionStatusObj = Object.fromEntries(completionStatus);
     const periodIndex = (periods as readonly string[]).indexOf(selectedPeriod);
@@ -260,13 +257,7 @@ export default async function AdviserGradeEntryPage({
   // Fetch grade sheet data and completion status in parallel
   const [gradeSheetData, completionStatus] = await Promise.all([
     getGradeSheetForPeriod(sectionId, section.schoolYearId, selectedPeriod),
-    getPeriodsCompletionStatus(
-      sectionId,
-      section.schoolYearId,
-      periods,
-      students.length,
-      subjects.length
-    ),
+    getPeriodsCompletionStatus(sectionId, section.schoolYearId, periods),
   ]);
 
   // Convert completion status Map to a serializable object

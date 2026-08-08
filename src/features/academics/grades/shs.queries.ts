@@ -19,10 +19,12 @@ import {
   students,
   strands,
   studentSubjectEnrollments,
+  gradingPeriodSystems,
 } from "@/lib/db/schema";
 import type { TermOffering } from "@/lib/constants/term-offerings";
 import { getValidTermsForPeriod } from "@/lib/constants/term-offerings";
 import type { GradingSystemType } from "@/lib/constants/grading-systems";
+import { logger } from "@/lib/observability/logger";
 
 // ─── Type Definitions ────────────────────────────────────────────────────────
 
@@ -105,17 +107,27 @@ export type StudentWithSSE = {
 
 /**
  * Get the grading system type for a school year.
+ *
+ * Falls back to "quarterly" only when the school year has no
+ * `gradingPeriodSystems` row — that is the documented default for an
+ * unconfigured year. A lookup failure is NOT downgraded to "quarterly":
+ * callers derive valid term filters from this value, so guessing here would
+ * silently filter a trimester year's subject offerings to the wrong terms.
+ * Log and rethrow instead, and let the caller fail visibly.
  */
 export async function getGradingSystemType(schoolYearId: string): Promise<GradingSystemType> {
   try {
-    const { gradingPeriodSystems } = await import("@/lib/db/schema");
     const config = await db.query.gradingPeriodSystems.findFirst({
       where: eq(gradingPeriodSystems.schoolYearId, schoolYearId),
       columns: { systemType: true },
     });
     return (config?.systemType as GradingSystemType) ?? "quarterly";
-  } catch {
-    return "quarterly";
+  } catch (error) {
+    logger.error("[grades] Failed to resolve grading system type", {
+      error,
+      schoolYearId,
+    });
+    throw error;
   }
 }
 
@@ -244,10 +256,17 @@ export async function getSubjectsForSHSGradeEntry(
 
   const strandMap = new Map<string, { code: string; shortCode: string }>();
   if (strandIds.size > 0) {
+    // Soft-deleted tracks must not resolve to a code: deleting a track is
+    // blocked while subjects/sections/enrollments reference it, but NOT while a
+    // subject *offering* does, so `subjectOfferings.strandId` can outlive the
+    // track. Without this filter such an offering renders a grade-entry tab for
+    // a track the registrar already removed.
     const strandRows = await db
       .select({ id: strands.id, code: strands.code, shortCode: strands.shortCode })
       .from(strands)
-      .where(inArray(strands.id, Array.from(strandIds)));
+      .where(
+        and(inArray(strands.id, Array.from(strandIds)), isNull(strands.deletedAt))
+      );
     for (const s of strandRows) {
       strandMap.set(s.id, { code: s.code, shortCode: s.shortCode });
     }
@@ -333,10 +352,19 @@ export async function getSubjectsForSHSGradeEntry(
   // Sort tracks by display order
   const trackOrder = new Map<string, number>();
   if (strandMap.size > 0) {
+    // `strands_code_uidx` is partial on `deleted_at IS NULL`, so a deleted
+    // track's code can be reused by a new active one. Matching on code alone
+    // would return both rows and let the last one win, making tab order depend
+    // on row order — filter to the active track.
     const orderRows = await db
       .select({ code: strands.code, displayOrder: strands.displayOrder })
       .from(strands)
-      .where(inArray(strands.code, Array.from(availableTracks)));
+      .where(
+        and(
+          inArray(strands.code, Array.from(availableTracks)),
+          isNull(strands.deletedAt)
+        )
+      );
     for (const r of orderRows) {
       trackOrder.set(r.code, r.displayOrder);
     }

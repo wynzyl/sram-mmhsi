@@ -340,11 +340,15 @@ export async function getStudentsInSection(
     .where(
       and(
         inArray(studentSubjectEnrollments.enrollmentId, enrollmentIds),
-        eq(subjectOfferings.sectionId, sectionId),
         eq(studentSubjectEnrollments.isActive, true),
         isNull(studentSubjectEnrollments.deletedAt),
-        eq(subjectOfferings.isActive, true),
-        isNull(subjectOfferings.deletedAt)
+        // Reuse the same offering scope as the availableOfferings query above
+        // (section + active + not deleted, plus the school year when given).
+        // subjectCount and subjectTotal are compared against each other, so
+        // they must be drawn from one set: `subject_offerings` is unique on
+        // (section, subject, school_year), so a section carrying offerings in
+        // more than one year would otherwise inflate the count past the total.
+        ...offeringsConditions
       )
     )
     .groupBy(studentSubjectEnrollments.enrollmentId, subjectOfferings.strandId);

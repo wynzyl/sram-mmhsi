@@ -1,6 +1,6 @@
 "use server";
 
-import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
+import { CACHE_TAGS, invalidateTag, invalidateTags } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   enrollments,
@@ -324,8 +324,10 @@ export async function directCancelEnrollmentAction(
       refundResult,
     });
 
-    // Single revalidation - cache tags handle cross-page invalidation
-    invalidateTag(CACHE_TAGS.ENROLLMENTS);
+    // Single revalidation - cache tags handle cross-page invalidation.
+    // STRANDS too: getAllStrands counts enrollments per track excluding
+    // "cancelled", so cancelling one changes that track's enrollmentCount.
+    invalidateTags(CACHE_TAGS.ENROLLMENTS, CACHE_TAGS.STRANDS);
 
     const result: DirectCancelEnrollmentFormState = {
       success: true,
@@ -540,8 +542,10 @@ export async function approveEnrollmentCancellationAction(
       clearanceId,
     });
 
-    // Consolidated revalidation - cache tags handle cross-page invalidation
-    invalidateTag(CACHE_TAGS.ENROLLMENTS);
+    // Consolidated revalidation - cache tags handle cross-page invalidation.
+    // STRANDS too: getAllStrands counts enrollments per track excluding
+    // "cancelled", so cancelling one changes that track's enrollmentCount.
+    invalidateTags(CACHE_TAGS.ENROLLMENTS, CACHE_TAGS.STRANDS);
 
     const result: ApproveEnrollmentCancellationFormState = {
       success: true,

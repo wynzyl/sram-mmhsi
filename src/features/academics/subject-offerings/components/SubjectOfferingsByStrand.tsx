@@ -74,9 +74,13 @@ export function SubjectOfferingsByStrand({
       }
     }
 
-    // Valid offerings = universal core + all strand-specific subjects
-    const allStrandSubjects = Array.from(byStrand.values()).flat();
-    const valid = [...core, ...allStrandSubjects];
+    // "All" shows every offering. Composing this list from `core` + `byStrand`
+    // silently dropped a fourth case: a NON-core offering with no track, which
+    // arises both from generating an elective whose subject has no strand
+    // associations and from switching an elective to "All Tracks". Such an
+    // offering matched no tab at all — and because the row is what opens
+    // ChangeTrackDialog, its track could never be changed back.
+    const valid = offerings;
 
     // Build strand counts for badges
     const counts: Partial<Record<ShsStrandCode, number>> = {};
@@ -111,9 +115,9 @@ export function SubjectOfferingsByStrand({
   const filteredOfferings = useMemo(() => {
     switch (activeFilter) {
       case "all":
-        // Only show core + strand-assigned electives (excludes unassigned electives)
         return validOfferings;
       case "core":
+        // Universal core only — trackless electives stay out of this tab.
         return coreOfferings;
       default:
         // Strand filter: only strand-specific electives

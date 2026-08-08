@@ -152,6 +152,16 @@ export type AddSubjectToCurriculumFormState = BaseFormState<AddSubjectToCurricul
   subjectId?: string;
 };
 
+/**
+ * Sentinel a subject form submits to clear an existing track assignment.
+ *
+ * Deliberately NOT the empty string: `parseFormData` coerces "" to undefined
+ * before Zod runs, which would make "clear this track" indistinguishable from
+ * "this field was not submitted" — and the update action skips undefined
+ * fields, so the stale track would survive.
+ */
+export const CLEAR_STRAND_ID = "null";
+
 export const UpdateSubjectInCurriculumSchema = z.object({
   subjectId: z.string().uuid("Subject ID is required."),
   name: z.string().min(2, "Name must be at least 2 characters.").optional(),
@@ -166,8 +176,14 @@ export const UpdateSubjectInCurriculumSchema = z.object({
   /**
    * Direct track ownership for SHS subjects (Grade 11-12).
    * When set, this subject belongs exclusively to this track.
+   * Submit CLEAR_STRAND_ID to explicitly drop an existing track.
    */
-  strandId: z.string().uuid().optional().nullable(),
+  strandId: z
+    .preprocess(
+      (value) => (value === CLEAR_STRAND_ID ? null : value),
+      z.string().uuid().nullable()
+    )
+    .optional(),
   /**
    * Term when this subject is offered (SHS only).
    */
