@@ -126,20 +126,8 @@ export function SubjectFormDialog({
     return getGradeGroup(selectedGradeLevel.name) === "shs";
   }, [selectedGradeLevel]);
 
-  // Show track selection for SHS subjects
-  const showTrackSelection = isSHSGradeLevel && availableStrands.length > 0;
-
-  // An SHS grade level with no active strands: the Track (and Term) fields
-  // cannot render, which also removes the `required` attribute that is the only
-  // thing enforcing a track — AddSubjectToCurriculumSchema marks strandId
-  // optional.
-  const isMissingTrackConfig = isSHSGradeLevel && availableStrands.length === 0;
-
-  // Only creation is blocked. An update omits strandId/termOffered from the
-  // payload entirely, and updateSubjectInCurriculumAction skips undefined
-  // fields, so editing an existing subject leaves its track and term intact —
-  // no reason to prevent renaming one while tracks are unconfigured.
-  const blockCreateWithoutTrack = mode === "add" && isMissingTrackConfig;
+  // Show track selection for SHS subjects (always show for SHS since "All Tracks" is available)
+  const showTrackSelection = isSHSGradeLevel;
 
   // Get valid term options based on grading system
   const termOptions = useMemo(() => {
@@ -267,17 +255,15 @@ export function SubjectFormDialog({
               <div className="space-y-1.5">
                 <label htmlFor="strandId" className="block text-sm font-medium text-foreground">
                   Track
-                  <span className="text-destructive ml-0.5">*</span>
                 </label>
                 <select
                   id="strandId"
                   name="strandId"
                   value={selectedTrackId}
                   onChange={(e) => setSelectedTrackId(e.target.value)}
-                  required
                   className={inputClass}
                 >
-                  <option value="">Select track...</option>
+                  <option value="">All Tracks (Core)</option>
                   {availableStrands.map((strand) => (
                     <option key={strand.id} value={strand.id}>
                       {strand.shortCode} - {strand.name}
@@ -285,7 +271,9 @@ export function SubjectFormDialog({
                   ))}
                 </select>
                 <p className="text-xs text-muted-foreground">
-                  This subject will belong exclusively to the selected track.
+                  {selectedTrackId
+                    ? "This subject belongs exclusively to the selected track."
+                    : "Core subject available to all SHS students regardless of track."}
                 </p>
                 {state.errors?.strandId && (
                   <p className="text-sm text-destructive">{state.errors.strandId[0]}</p>
@@ -314,22 +302,6 @@ export function SubjectFormDialog({
                 </p>
               </div>
             </>
-          )}
-
-          {isMissingTrackConfig && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                No SHS tracks configured
-              </p>
-              <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                Senior High School subjects must belong to a track, and there
-                are no active tracks to choose from. Add one under Academics
-                &rarr; SHS Strands.
-                {mode === "add"
-                  ? " A subject cannot be created until then."
-                  : " This subject keeps its current track and term."}
-              </p>
-            </div>
           )}
 
           <div className="space-y-1.5">
@@ -418,7 +390,7 @@ export function SubjectFormDialog({
             </button>
             <button
               type="submit"
-              disabled={isPending || blockCreateWithoutTrack}
+              disabled={isPending}
               className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
             >
               {isPending ? "Saving..." : mode === "add" ? "Add Subject" : "Save Changes"}
