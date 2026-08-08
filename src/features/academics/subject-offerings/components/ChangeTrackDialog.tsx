@@ -27,6 +27,16 @@ import type {
 import type { StrandOption } from "@/features/academics/strands/strands.schema";
 import { updateOfferingTrackAction } from "../subject-offerings.actions";
 
+/**
+ * Sentinel for the "All Tracks" option.
+ *
+ * Radix treats a value of `""` as "nothing selected" (`shouldShowPlaceholder`),
+ * so an empty-string item makes the trigger fall back to the placeholder and the
+ * choice look like it never registered. Must stay one of the literals
+ * `nullableUuidPreprocess` maps to null in `updateOfferingTrackSchema`.
+ */
+const ALL_TRACKS_VALUE = "null";
+
 interface ChangeTrackDialogProps {
   offering: SubjectOfferingView;
   availableStrands: StrandOption[];
@@ -102,12 +112,15 @@ export function ChangeTrackDialog({
           {/* Track selection */}
           <div className="space-y-2">
             <Label htmlFor="strandId">Assign to Track</Label>
-            <Select name="strandId" defaultValue={offering.strandId ?? ""}>
+            <Select
+              name="strandId"
+              defaultValue={offering.strandId ?? ALL_TRACKS_VALUE}
+            >
               <SelectTrigger id="strandId">
                 <SelectValue placeholder="Select a track" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">
+                <SelectItem value={ALL_TRACKS_VALUE}>
                   <span className="font-medium">All Tracks</span>
                   <span className="text-muted-foreground ml-2">
                     (All students take this subject)
@@ -124,8 +137,8 @@ export function ChangeTrackDialog({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Select "All Tracks" to make this subject available to all students,
-              or select a specific track to restrict it.
+              Select &quot;All Tracks&quot; to make this subject available to all
+              students, or select a specific track to restrict it.
             </p>
             {state.errors?.strandId && (
               <p className="text-sm text-destructive">

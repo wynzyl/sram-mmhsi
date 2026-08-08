@@ -183,6 +183,13 @@
       "when": 1786041600000,
       "tag": "0025_refactor_strands_for_shs_tracks",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1786214400000,
+      "tag": "0026_fix_grade_sheets_pending_review_index",
+      "breakpoints": true
     }
   ]
 }

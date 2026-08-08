@@ -14,7 +14,7 @@ import { eq, and, isNull, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
-import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { invalidateTag, invalidateTags, CACHE_TAGS } from "@/lib/cache/cache-tags";
 import { uuidSchema } from "@/lib/validators/common-schemas";
 import {
   generateStudentSubjectEnrollmentsSchema,
@@ -362,7 +362,9 @@ export async function changeStudentStrandAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+  // STRANDS too: this writes enrollments.strandId, which getAllStrands
+  // aggregates into each track's enrollmentCount.
+  invalidateTags(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS, CACHE_TAGS.STRANDS);
 
   // Revalidate section page to update student counts
   if (enrollment.sectionId) {
@@ -607,7 +609,9 @@ export async function bulkAssignStrandAction(
     },
   });
 
-  invalidateTag(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS);
+  // STRANDS too: this writes enrollments.strandId, which getAllStrands
+  // aggregates into each track's enrollmentCount.
+  invalidateTags(CACHE_TAGS.STUDENT_SUBJECT_ENROLLMENTS, CACHE_TAGS.STRANDS);
 
   // Revalidate all affected section pages
   for (const sectionId of affectedSectionIds) {

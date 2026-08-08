@@ -375,8 +375,12 @@ export async function updateSubjectInCurriculumAction(
           );
         }
       }
-      // If strandId is set, clear legacy associations
-      if (strandId) {
+      // strandId was supplied (UUID or an explicit null "no track") — the caller
+      // is using direct ownership, so drop any legacy junction rows. Keyed on
+      // `!== undefined` rather than truthiness so this stays the exact
+      // complement of the branch above: the schema types strandId as
+      // `string | null | undefined`, and a null would otherwise match neither.
+      if (strandId !== undefined) {
         await tx.delete(subjectStrands).where(eq(subjectStrands.subjectId, subjectId));
       }
     });

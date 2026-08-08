@@ -9,17 +9,12 @@
 
 import { db } from "@/lib/db";
 import {
-  sections,
   gradeSheets,
   gradeSheetEntries,
   gradeApprovals,
   sectionAdvisers,
-  gradeLevels,
-  enrollments,
-  studentSubjectEnrollments,
-  subjectOfferings,
 } from "@/lib/db/schema";
-import { eq, and, sql, isNull, isNotNull, inArray } from "drizzle-orm";
+import { eq, and, or, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -56,378 +51,16 @@ function getPostgresErrorMessage(error: unknown, context: string): string | null
   }
   return null;
 }
+import { getGradeRemarks } from "@/lib/constants/grading-periods";
+// Validation helpers live in a non-"use server" module: exporting them from
+// this file would publish each one as its own callable server-action endpoint,
+// and none of them performs a session/permission check of its own.
 import {
-  getGradeRemarks,
-  QUARTERLY_PERIODS,
-  TRIMESTER_PERIODS,
-} from "@/lib/constants/grading-periods";
-import { getGradeGroup } from "@/lib/constants/grade-groups";
-import { getValidTermsForPeriod } from "@/lib/constants/term-offerings";
-import {
-  getStudentsInSection,
-  getSubjectsForGradeLevel,
-} from "./grades.queries";
-
-// ─── Grade Sheet Validation Helpers ──────────────────────────────────────────
-
-/**
- * Check whether a user is the assigned section adviser for a given
- * section + school year.
- */
-export async function isAssignedSectionAdviser(
-  userId: string,
-  sectionId: string,
-  schoolYearId: string
-): Promise<boolean> {
-  const adviser = await db.query.sectionAdvisers.findFirst({
-    where: and(
-      eq(sectionAdvisers.sectionId, sectionId),
-      eq(sectionAdvisers.schoolYearId, schoolYearId),
-      eq(sectionAdvisers.userId, userId),
-      isNull(sectionAdvisers.deletedAt)
-    ),
-    columns: { id: true },
-  });
-  return Boolean(adviser);
-}
-
-/**
- * Validate that previous grading periods have been submitted.
- * Enforces sequential period submission.
- */
-export async function validatePreviousPeriodsSubmitted(
-  sectionId: string,
-  schoolYearId: string,
-  currentPeriod: string
-): Promise<{ valid: boolean; message?: string }> {
-  const periods: readonly string[] = currentPeriod.startsWith("T")
-    ? TRIMESTER_PERIODS
-    : QUARTERLY_PERIODS;
-
-  const currentIndex = periods.indexOf(currentPeriod);
-
-  if (currentIndex <= 0) {
-    return { valid: true };
-  }
-
-  const previousPeriods = periods.slice(0, currentIndex);
-
-  const existingSheets = await db
-    .select({
-      gradingPeriod: gradeSheets.gradingPeriod,
-      status: gradeSheets.status,
-    })
-    .from(gradeSheets)
-    .where(
-      and(
-        eq(gradeSheets.sectionId, sectionId),
-        eq(gradeSheets.schoolYearId, schoolYearId)
-      )
-    );
-
-  const sheetMap = new Map<string, string>(
-    existingSheets.map((s) => [s.gradingPeriod, s.status])
-  );
-
-  const APPROVED_STATUSES = ["principal_approved", "published", "locked"];
-  for (const period of previousPeriods) {
-    const status = sheetMap.get(period);
-    if (!status || !APPROVED_STATUSES.includes(status)) {
-      const periodLabel = period.startsWith("T")
-        ? `Trimester ${period.slice(1)}`
-        : `Quarter ${period.slice(1)}`;
-      return {
-        valid: false,
-        message: `Cannot submit: ${periodLabel} grades must be approved first. Grades must be completed in order.`,
-      };
-    }
-  }
-
-  return { valid: true };
-}
-
-/**
- * Get valid subject IDs for a section.
- */
-export async function getValidSubjectIdsForSection(
-  sectionId: string,
-  schoolYearId: string
-): Promise<Set<string>> {
-  const validIds = new Set<string>();
-
-  const offeringRows = await db
-    .select({ subjectId: subjectOfferings.subjectId })
-    .from(subjectOfferings)
-    .where(
-      and(
-        eq(subjectOfferings.sectionId, sectionId),
-        eq(subjectOfferings.schoolYearId, schoolYearId),
-        eq(subjectOfferings.isActive, true),
-        isNull(subjectOfferings.deletedAt)
-      )
-    );
-
-  for (const row of offeringRows) {
-    validIds.add(row.subjectId);
-  }
-
-  if (validIds.size === 0) {
-    const section = await db.query.sections.findFirst({
-      where: eq(sections.id, sectionId),
-      columns: { gradeLevelId: true },
-    });
-
-    if (section) {
-      const subjects = await getSubjectsForGradeLevel(section.gradeLevelId, schoolYearId);
-      for (const subject of subjects) {
-        validIds.add(subject.id);
-      }
-    }
-  }
-
-  return validIds;
-}
-
-/**
- * Validate that all enrolled students have grades for all subjects.
- *
- * Performance: Uses parallel queries via Promise.all to minimize sequential DB round-trips.
- * - Step 1: Fetch grade sheet (required for subsequent queries)
- * - Step 2: Parallel fetch of section info and students
- * - Step 3: For SHS, parallel fetch of enrollments, SSE count, and entered grades count
- * - Step 4: For non-SHS, parallel fetch of subjects and entered grades count
- */
-export async function validateGradeSheetCompleteness(gradeSheetId: string): Promise<{
-  isComplete: boolean;
-  message?: string;
-  missingCount?: number;
-  totalExpected?: number;
-}> {
-  // Step 1: Get grade sheet (required first - other queries depend on its values)
-  const gradeSheet = await db.query.gradeSheets.findFirst({
-    where: eq(gradeSheets.id, gradeSheetId),
-    columns: {
-      id: true,
-      sectionId: true,
-      schoolYearId: true,
-      gradingPeriod: true,
-    },
-  });
-
-  if (!gradeSheet) {
-    return { isComplete: false, message: "Grade sheet not found." };
-  }
-
-  // Step 2: Parallel fetch section info and students
-  const [sectionWithGrade, studentsList] = await Promise.all([
-    db
-      .select({
-        sectionId: sections.id,
-        gradeLevelId: sections.gradeLevelId,
-        gradeLevelName: gradeLevels.name,
-      })
-      .from(sections)
-      .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
-      .where(eq(sections.id, gradeSheet.sectionId))
-      .limit(1),
-    getStudentsInSection(gradeSheet.sectionId, gradeSheet.schoolYearId),
-  ]);
-
-  if (sectionWithGrade.length === 0) {
-    return { isComplete: false, message: "Section not found." };
-  }
-
-  const section = sectionWithGrade[0];
-  const gradeGroup = getGradeGroup(section.gradeLevelName);
-  const isSHS = gradeGroup === "shs";
-  const studentCount = studentsList.length;
-
-  if (studentCount === 0) {
-    return {
-      isComplete: false,
-      message: "No students enrolled in this section.",
-    };
-  }
-
-  let totalExpected: number;
-  let subjectCount: number;
-
-  if (isSHS) {
-    const studentIds = studentsList.map((s) => s.id);
-
-    // SHS Step 3a: Fetch enrollments first (needed for SSE query)
-    const enrollmentRows = await db
-      .select({
-        studentId: enrollments.studentId,
-        enrollmentId: enrollments.id,
-      })
-      .from(enrollments)
-      .where(
-        and(
-          inArray(enrollments.studentId, studentIds),
-          eq(enrollments.sectionId, gradeSheet.sectionId),
-          eq(enrollments.schoolYearId, gradeSheet.schoolYearId),
-          eq(enrollments.status, "enrolled")
-        )
-      );
-
-    if (enrollmentRows.length === 0) {
-      return {
-        isComplete: false,
-        message: "No active enrollments found for students in this section.",
-      };
-    }
-
-    const enrollmentIds = enrollmentRows.map((e) => e.enrollmentId);
-
-    const gradingSystemType = gradeSheet.gradingPeriod.startsWith("T")
-      ? "trimester"
-      : "quarterly";
-
-    const validTerms = getValidTermsForPeriod(
-      gradeSheet.gradingPeriod,
-      gradingSystemType
-    );
-
-    // SHS Step 3b: Parallel fetch SSE count and entered grades count
-    const [sseCountResult, enteredCountResult] = await Promise.all([
-      db
-        .select({
-          count: sql<number>`count(*)::int`,
-        })
-        .from(studentSubjectEnrollments)
-        .innerJoin(
-          subjectOfferings,
-          eq(studentSubjectEnrollments.subjectOfferingId, subjectOfferings.id)
-        )
-        .where(
-          and(
-            inArray(studentSubjectEnrollments.enrollmentId, enrollmentIds),
-            eq(studentSubjectEnrollments.isActive, true),
-            isNull(studentSubjectEnrollments.deletedAt),
-            eq(subjectOfferings.sectionId, gradeSheet.sectionId),
-            eq(subjectOfferings.schoolYearId, gradeSheet.schoolYearId),
-            eq(subjectOfferings.isActive, true),
-            isNull(subjectOfferings.deletedAt),
-            inArray(subjectOfferings.termOffered, validTerms)
-          )
-        ),
-      db
-        .select({
-          count: sql<number>`count(*)::int`,
-        })
-        .from(gradeSheetEntries)
-        .where(
-          and(
-            eq(gradeSheetEntries.gradeSheetId, gradeSheetId),
-            isNotNull(gradeSheetEntries.grade)
-          )
-        ),
-    ]);
-
-    totalExpected = sseCountResult[0]?.count ?? 0;
-    subjectCount = studentCount > 0 ? Math.round(totalExpected / studentCount) : 0;
-
-    // Fallback to curriculum-based if no SSE records
-    if (totalExpected === 0) {
-      const subjects = await getSubjectsForGradeLevel(
-        section.gradeLevelId,
-        gradeSheet.schoolYearId
-      );
-      subjectCount = subjects.length;
-      totalExpected = studentCount * subjectCount;
-
-      if (totalExpected === 0) {
-        return {
-          isComplete: false,
-          message: "No subjects configured for this grade level or no student subject enrollments found.",
-        };
-      }
-
-      // Re-query entered count if we had to fallback (rare edge case)
-      const [countResult] = await db
-        .select({
-          count: sql<number>`count(*)::int`,
-        })
-        .from(gradeSheetEntries)
-        .where(
-          and(
-            eq(gradeSheetEntries.gradeSheetId, gradeSheetId),
-            isNotNull(gradeSheetEntries.grade)
-          )
-        );
-
-      const totalEntered = countResult?.count ?? 0;
-      const missingCount = totalExpected - totalEntered;
-
-      if (missingCount > 0) {
-        return {
-          isComplete: false,
-          message: `Cannot submit: ${missingCount} grade${missingCount > 1 ? "s" : ""} missing. All ${totalExpected} entries (${studentCount} students × ${subjectCount} subjects) must be filled.`,
-          missingCount,
-          totalExpected,
-        };
-      }
-
-      return { isComplete: true };
-    }
-
-    // Use already-fetched entered count
-    const totalEntered = enteredCountResult[0]?.count ?? 0;
-    const missingCount = totalExpected - totalEntered;
-
-    if (missingCount > 0) {
-      return {
-        isComplete: false,
-        message: `Cannot submit: ${missingCount} grade${missingCount > 1 ? "s" : ""} missing. All ${totalExpected} entries (${totalExpected} expected entries based on student subject enrollments) must be filled.`,
-        missingCount,
-        totalExpected,
-      };
-    }
-
-    return { isComplete: true };
-  }
-
-  // Non-SHS path: Parallel fetch subjects and entered grades count
-  const [subjectsResult, enteredCountResult] = await Promise.all([
-    getSubjectsForGradeLevel(section.gradeLevelId, gradeSheet.schoolYearId),
-    db
-      .select({
-        count: sql<number>`count(*)::int`,
-      })
-      .from(gradeSheetEntries)
-      .where(
-        and(
-          eq(gradeSheetEntries.gradeSheetId, gradeSheetId),
-          isNotNull(gradeSheetEntries.grade)
-        )
-      ),
-  ]);
-
-  subjectCount = subjectsResult.length;
-  totalExpected = studentCount * subjectCount;
-
-  if (totalExpected === 0) {
-    return {
-      isComplete: false,
-      message: "No subjects configured for this grade level.",
-    };
-  }
-
-  const totalEntered = enteredCountResult[0]?.count ?? 0;
-  const missingCount = totalExpected - totalEntered;
-
-  if (missingCount > 0) {
-    return {
-      isComplete: false,
-      message: `Cannot submit: ${missingCount} grade${missingCount > 1 ? "s" : ""} missing. All ${totalExpected} entries (${studentCount} students × ${subjectCount} subjects) must be filled.`,
-      missingCount,
-      totalExpected,
-    };
-  }
-
-  return { isComplete: true };
-}
+  isAssignedSectionAdviser,
+  validatePreviousPeriodsSubmitted,
+  getValidSubjectIdsForSection,
+  validateGradeSheetCompleteness,
+} from "./grade-sheet-validation";
 
 // ─── Grade Sheet CRUD Actions ────────────────────────────────────────────────
 
@@ -600,56 +233,93 @@ export async function saveGradeSheetEntriesAction(
     }
   }
 
+  // Collapse to one write per cell, last occurrence winning — the same result
+  // the previous per-entry loop produced. This is load-bearing, not tidiness:
+  // the payload is not deduplicated by the schema, and a multi-row
+  // INSERT ... ON CONFLICT DO UPDATE aborts if two rows hit the same conflict
+  // target ("cannot affect row a second time").
+  const latestByCell = new Map<string, (typeof entries)[number]>();
+  for (const entry of entries) {
+    latestByCell.set(`${entry.studentId}:${entry.subjectId}`, entry);
+  }
+
+  const gradedValues: (typeof gradeSheetEntries.$inferInsert)[] = [];
+  const clearedCells: { studentId: string; subjectId: string }[] = [];
+
+  for (const entry of latestByCell.values()) {
+    if (entry.grade === null || entry.grade === "" || entry.grade === undefined) {
+      clearedCells.push({ studentId: entry.studentId, subjectId: entry.subjectId });
+      continue;
+    }
+
+    const numGrade = typeof entry.grade === "number" ? entry.grade : parseFloat(String(entry.grade));
+    const validatedRemarks = !isNaN(numGrade) ? getGradeRemarks(numGrade) : entry.remarks;
+
+    gradedValues.push({
+      gradeSheetId,
+      studentId: entry.studentId,
+      subjectId: entry.subjectId,
+      grade: String(entry.grade),
+      remarks: validatedRemarks ?? null,
+    });
+  }
+
+  // One timestamp for the whole save — every statement below is in one
+  // transaction, so they shared an effectively identical `new Date()` before.
+  const savedAt = new Date();
+
   try {
     await db.transaction(async (tx) => {
-      for (const entry of entries) {
-        if (entry.grade === null || entry.grade === "" || entry.grade === undefined) {
-          // Clear grade by setting to null (soft clear, preserves row for audit trail)
-          await tx
-            .update(gradeSheetEntries)
-            .set({
-              grade: null,
-              remarks: null,
-              updatedAt: new Date(),
-            })
-            .where(
-              and(
-                eq(gradeSheetEntries.gradeSheetId, gradeSheetId),
-                eq(gradeSheetEntries.studentId, entry.studentId),
-                eq(gradeSheetEntries.subjectId, entry.subjectId)
-              )
-            );
-        } else {
-          const numGrade = typeof entry.grade === "number" ? entry.grade : parseFloat(String(entry.grade));
-          const validatedRemarks = !isNaN(numGrade) ? getGradeRemarks(numGrade) : entry.remarks;
+      if (gradedValues.length > 0) {
+        await tx
+          .insert(gradeSheetEntries)
+          .values(gradedValues)
+          .onConflictDoUpdate({
+            target: [
+              gradeSheetEntries.gradeSheetId,
+              gradeSheetEntries.studentId,
+              gradeSheetEntries.subjectId,
+            ],
+            // `excluded` is the row this statement proposed, so a single
+            // statement still applies each cell's own grade and remarks.
+            set: {
+              grade: sql`excluded.grade`,
+              remarks: sql`excluded.remarks`,
+              updatedAt: savedAt,
+            },
+          });
+      }
 
-          await tx
-            .insert(gradeSheetEntries)
-            .values({
-              gradeSheetId,
-              studentId: entry.studentId,
-              subjectId: entry.subjectId,
-              grade: String(entry.grade),
-              remarks: validatedRemarks,
-            })
-            .onConflictDoUpdate({
-              target: [
-                gradeSheetEntries.gradeSheetId,
-                gradeSheetEntries.studentId,
-                gradeSheetEntries.subjectId,
-              ],
-              set: {
-                grade: String(entry.grade),
-                remarks: validatedRemarks,
-                updatedAt: new Date(),
-              },
-            });
-        }
+      if (clearedCells.length > 0) {
+        // Clear grades by setting to null (soft clear, preserves rows for the
+        // audit trail). Matched as explicit (student, subject) pairs — filtering
+        // by two separate IN lists would form a cross-product and wipe cells the
+        // adviser never touched.
+        await tx
+          .update(gradeSheetEntries)
+          .set({
+            grade: null,
+            remarks: null,
+            updatedAt: savedAt,
+          })
+          .where(
+            and(
+              eq(gradeSheetEntries.gradeSheetId, gradeSheetId),
+              or(
+                ...clearedCells.map((cell) =>
+                  and(
+                    eq(gradeSheetEntries.studentId, cell.studentId),
+                    eq(gradeSheetEntries.subjectId, cell.subjectId)
+                  )
+                )
+              )
+            )
+          );
       }
 
       await tx
         .update(gradeSheets)
-        .set({ updatedAt: new Date(), updatedBy: session.userId })
+        .set({ updatedAt: savedAt, updatedBy: session.userId })
         .where(eq(gradeSheets.id, gradeSheetId));
     });
 

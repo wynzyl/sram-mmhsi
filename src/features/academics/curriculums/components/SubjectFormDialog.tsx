@@ -7,6 +7,7 @@ import {
   addSubjectToCurriculumAction,
   updateSubjectInCurriculumAction,
 } from "../subjects.actions";
+import { CLEAR_STRAND_ID } from "../curriculums.schema";
 import type {
   AddSubjectToCurriculumFormState,
   UpdateSubjectInCurriculumFormState,
@@ -127,6 +128,18 @@ export function SubjectFormDialog({
 
   // Show track selection for SHS subjects
   const showTrackSelection = isSHSGradeLevel && availableStrands.length > 0;
+
+  // An SHS grade level with no active strands: the Track (and Term) fields
+  // cannot render, which also removes the `required` attribute that is the only
+  // thing enforcing a track — AddSubjectToCurriculumSchema marks strandId
+  // optional.
+  const isMissingTrackConfig = isSHSGradeLevel && availableStrands.length === 0;
+
+  // Only creation is blocked. An update omits strandId/termOffered from the
+  // payload entirely, and updateSubjectInCurriculumAction skips undefined
+  // fields, so editing an existing subject leaves its track and term intact —
+  // no reason to prevent renaming one while tracks are unconfigured.
+  const blockCreateWithoutTrack = mode === "add" && isMissingTrackConfig;
 
   // Get valid term options based on grading system
   const termOptions = useMemo(() => {
@@ -303,6 +316,22 @@ export function SubjectFormDialog({
             </>
           )}
 
+          {isMissingTrackConfig && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                No SHS tracks configured
+              </p>
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+                Senior High School subjects must belong to a track, and there
+                are no active tracks to choose from. Add one under Academics
+                &rarr; SHS Strands.
+                {mode === "add"
+                  ? " A subject cannot be created until then."
+                  : " This subject keeps its current track and term."}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <label htmlFor="description" className="block text-sm font-medium text-foreground">
               Description
@@ -356,9 +385,30 @@ export function SubjectFormDialog({
             )}
           </div>
 
-          {/* Hidden field for isCore - SHS subjects are always considered "core" within their track */}
-          {isSHSGradeLevel && (
+          {/*
+            SHS subjects are "core" within their track — but only assert that
+            when a track is actually part of this submission. Asserting it
+            without a strandId sends updateSubjectInCurriculumAction down its
+            legacy branch with finalIsCore=true, which deletes the subject's
+            subjectStrands rows; those are still read by the electives and
+            subject-offering generation queries. Omitting the field lets the
+            action fall back to the stored isCore, so a legacy elective keeps
+            (and re-saves) its associations.
+          */}
+          {showTrackSelection && selectedTrackId !== "" && (
             <input type="hidden" name="isCore" value="true" />
+          )}
+
+          {/*
+            Moving a subject off an SHS grade level must drop its track. The
+            Track control is unmounted for non-SHS, so without this the field is
+            simply absent and updateSubjectInCurriculumAction — which skips
+            undefined fields — leaves the old SHS strandId on a non-SHS subject.
+            Edit-only: a new subject has no track to clear, and
+            AddSubjectToCurriculumSchema has no preprocess for this sentinel.
+          */}
+          {mode === "edit" && !isSHSGradeLevel && (
+            <input type="hidden" name="strandId" value={CLEAR_STRAND_ID} />
           )}
 
           {/* Legacy strand associations for backward compatibility */}
@@ -376,7 +426,7 @@ export function SubjectFormDialog({
             </button>
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || blockCreateWithoutTrack}
               className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
             >
               {isPending ? "Saving..." : mode === "add" ? "Add Subject" : "Save Changes"}

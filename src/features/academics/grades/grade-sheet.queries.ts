@@ -392,23 +392,27 @@ export type PeriodCompletionStatus = {
   hasGradeSheet: boolean;
   status: string | null;
   isComplete: boolean;
-  totalExpected: number;
-  totalEntered: number;
 };
 
 /**
- * Get completion status for all periods of a section.
- * Uses a single aggregated query for performance.
+ * Get per-period grade sheet status for a section — the lock/unlock chain the
+ * grading period selector renders.
+ *
+ * Reports only what that selector reads: whether a sheet exists, its status, and
+ * whether the status counts as complete. It deliberately does NOT report
+ * expected/entered grade totals. For SHS those are per student and per period —
+ * core subjects plus only the student's own strand, counting only offerings
+ * active in that period — which one section-wide number cannot express. The
+ * accurate figure is computed where it is actually used: `SHSGradeEntryTabs`
+ * for the on-screen progress, and `validateGradeSheetCompleteness` for the
+ * submission gate.
  */
 export async function getPeriodsCompletionStatus(
   sectionId: string,
   schoolYearId: string,
-  periods: readonly string[],
-  studentCount: number,
-  subjectCount: number
+  periods: readonly string[]
 ): Promise<Map<string, PeriodCompletionStatus>> {
   const result = new Map<string, PeriodCompletionStatus>();
-  const totalExpected = studentCount * subjectCount;
 
   for (const period of periods) {
     result.set(period, {
@@ -416,8 +420,6 @@ export async function getPeriodsCompletionStatus(
       hasGradeSheet: false,
       status: null,
       isComplete: false,
-      totalExpected,
-      totalEntered: 0,
     });
   }
 
@@ -426,14 +428,7 @@ export async function getPeriodsCompletionStatus(
   const sheetStats = await db
     .select({
       gradingPeriod: gradeSheets.gradingPeriod,
-      sheetId: gradeSheets.id,
       status: gradeSheets.status,
-      entryCount: sql<number>`(
-        SELECT COUNT(*)::int
-        FROM ${gradeSheetEntries}
-        WHERE ${gradeSheetEntries.gradeSheetId} = ${gradeSheets.id}
-        AND ${gradeSheetEntries.grade} IS NOT NULL
-      )`.as("entry_count"),
     })
     .from(gradeSheets)
     .where(
@@ -449,8 +444,6 @@ export async function getPeriodsCompletionStatus(
       hasGradeSheet: true,
       status: stat.status,
       isComplete: COMPLETE_STATUSES.includes(stat.status),
-      totalExpected,
-      totalEntered: stat.entryCount ?? 0,
     });
   }
 
@@ -550,22 +543,10 @@ export async function getGradeEntryPageData(
       getGradeSheetForPeriod(section.id, section.schoolYearId, selectedPeriod),
     ]);
 
-    // Calculate subject count for completion status
-    // Core subjects + sum of all strand subjects
-    let subjectCount = 0;
-    if (shsSubjects) {
-      subjectCount = shsSubjects.universalCore.length;
-      for (const strandSubjs of shsSubjects.strandSubjects.values()) {
-        subjectCount += strandSubjs.length;
-      }
-    }
-
     const completionStatus = await getPeriodsCompletionStatus(
       section.id,
       section.schoolYearId,
-      periods,
-      shsStudents.length,
-      subjectCount
+      periods
     );
 
     // Determine if editing is allowed
@@ -599,9 +580,7 @@ export async function getGradeEntryPageData(
   const completionStatus = await getPeriodsCompletionStatus(
     section.id,
     section.schoolYearId,
-    periods,
-    students.length,
-    subjects.length
+    periods
   );
 
   // Determine if editing is allowed

@@ -24,10 +24,10 @@ Never optimize for short-term convenience at the expense of long-term maintainab
 
 | Layer | Location | Rule |
 |-------|----------|------|
-| Actions | `src/features/*/*.actions.ts` | Business logic + DB writes |
-| Queries | `src/features/*/*.queries.ts` | DB reads only |
-| Schemas | `src/features/*/*.schema.ts` | Zod validation |
-| Components | `src/features/*/components/` | UI only |
+| Actions | `src/features/**/*.actions.ts` | Business logic + DB writes |
+| Queries | `src/features/**/*.queries.ts` | DB reads only |
+| Schemas | `src/features/**/*.schema.ts` | Zod validation |
+| Components | `src/features/**/components/` | UI only |
 | Shared | `src/lib/` | Utilities, auth, validators |
 
 ### Dependency Direction

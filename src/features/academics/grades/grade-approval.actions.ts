@@ -11,7 +11,7 @@
 
 import { db } from "@/lib/db";
 import { gradeSheets, gradeApprovals } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -34,6 +34,15 @@ import {
 } from "@/lib/utils/pg-error";
 
 // ─── Error Handling Helpers ─────────────────────────────────────────────────
+
+// Sentinel used to roll back a lifecycle transaction when a concurrent actor
+// already changed the sheet's status (compare-and-set found no matching row).
+class ConcurrentTransitionError extends Error {}
+
+// Standard message returned when a compare-and-set update matches no row,
+// meaning the sheet was transitioned concurrently by another actor.
+const CONCURRENT_TRANSITION_MESSAGE =
+  "This grade sheet was just updated by someone else. Please refresh and try again.";
 
 /**
  * Get a user-friendly error message for common PostgreSQL errors.
@@ -93,7 +102,9 @@ export async function principalReturnAction(
 
   try {
     await db.transaction(async (tx) => {
-      await tx
+      // Compare-and-set: only transition if the sheet is still "submitted", so a
+      // concurrent approve/return cannot double-apply this transition.
+      const updated = await tx
         .update(gradeSheets)
         .set({
           status: "returned",
@@ -103,7 +114,17 @@ export async function principalReturnAction(
           updatedAt: new Date(),
           updatedBy: session.userId,
         })
-        .where(eq(gradeSheets.id, gradeSheetId));
+        .where(
+          and(
+            eq(gradeSheets.id, gradeSheetId),
+            eq(gradeSheets.status, "submitted")
+          )
+        )
+        .returning({ id: gradeSheets.id });
+
+      if (updated.length === 0) {
+        throw new ConcurrentTransitionError();
+      }
 
       await tx.insert(gradeApprovals).values({
         gradeSheetId,
@@ -125,6 +146,10 @@ export async function principalReturnAction(
 
     return { success: true, message: "Grade sheet returned to adviser." };
   } catch (error) {
+    if (error instanceof ConcurrentTransitionError) {
+      return { message: CONCURRENT_TRANSITION_MESSAGE };
+    }
+
     logger.error("[grades] Failed to return grade sheet", {
       error,
       gradeSheetId,
@@ -177,7 +202,9 @@ export async function principalApproveAction(
 
   try {
     await db.transaction(async (tx) => {
-      await tx
+      // Compare-and-set: only transition if the sheet is still "submitted", so a
+      // concurrent approve/return cannot double-apply this transition.
+      const updated = await tx
         .update(gradeSheets)
         .set({
           status: "principal_approved",
@@ -186,7 +213,17 @@ export async function principalApproveAction(
           updatedAt: new Date(),
           updatedBy: session.userId,
         })
-        .where(eq(gradeSheets.id, gradeSheetId));
+        .where(
+          and(
+            eq(gradeSheets.id, gradeSheetId),
+            eq(gradeSheets.status, "submitted")
+          )
+        )
+        .returning({ id: gradeSheets.id });
+
+      if (updated.length === 0) {
+        throw new ConcurrentTransitionError();
+      }
 
       await tx.insert(gradeApprovals).values({
         gradeSheetId,
@@ -206,6 +243,10 @@ export async function principalApproveAction(
 
     return { success: true, message: "Grade sheet approved by principal." };
   } catch (error) {
+    if (error instanceof ConcurrentTransitionError) {
+      return { message: CONCURRENT_TRANSITION_MESSAGE };
+    }
+
     logger.error("[grades] Failed to approve grade sheet", {
       error,
       gradeSheetId,
@@ -260,7 +301,9 @@ export async function publishGradesAction(
 
   try {
     await db.transaction(async (tx) => {
-      await tx
+      // Compare-and-set: only transition if the sheet is still "principal_approved",
+      // so two operators cannot both publish the same sheet.
+      const updated = await tx
         .update(gradeSheets)
         .set({
           status: "published",
@@ -269,7 +312,17 @@ export async function publishGradesAction(
           updatedAt: new Date(),
           updatedBy: session.userId,
         })
-        .where(eq(gradeSheets.id, gradeSheetId));
+        .where(
+          and(
+            eq(gradeSheets.id, gradeSheetId),
+            eq(gradeSheets.status, "principal_approved")
+          )
+        )
+        .returning({ id: gradeSheets.id });
+
+      if (updated.length === 0) {
+        throw new ConcurrentTransitionError();
+      }
 
       await tx.insert(gradeApprovals).values({
         gradeSheetId,
@@ -289,6 +342,10 @@ export async function publishGradesAction(
 
     return { success: true, message: "Grades published to student portal." };
   } catch (error) {
+    if (error instanceof ConcurrentTransitionError) {
+      return { message: CONCURRENT_TRANSITION_MESSAGE };
+    }
+
     logger.error("[grades] Failed to publish grades", {
       error,
       gradeSheetId,
@@ -341,7 +398,9 @@ export async function lockGradesAction(
 
   try {
     await db.transaction(async (tx) => {
-      await tx
+      // Compare-and-set: only transition if the sheet is still "published", so a
+      // concurrent lock/unlock cannot double-apply this transition.
+      const updated = await tx
         .update(gradeSheets)
         .set({
           status: "locked",
@@ -350,7 +409,17 @@ export async function lockGradesAction(
           updatedAt: new Date(),
           updatedBy: session.userId,
         })
-        .where(eq(gradeSheets.id, gradeSheetId));
+        .where(
+          and(
+            eq(gradeSheets.id, gradeSheetId),
+            eq(gradeSheets.status, "published")
+          )
+        )
+        .returning({ id: gradeSheets.id });
+
+      if (updated.length === 0) {
+        throw new ConcurrentTransitionError();
+      }
 
       await tx.insert(gradeApprovals).values({
         gradeSheetId,
@@ -370,6 +439,10 @@ export async function lockGradesAction(
 
     return { success: true, message: "Grades locked." };
   } catch (error) {
+    if (error instanceof ConcurrentTransitionError) {
+      return { message: CONCURRENT_TRANSITION_MESSAGE };
+    }
+
     logger.error("[grades] Failed to lock grades", {
       error,
       gradeSheetId,
@@ -423,7 +496,9 @@ export async function unlockGradesAction(
 
   try {
     await db.transaction(async (tx) => {
-      await tx
+      // Compare-and-set: only transition if the sheet is still "locked", so a
+      // concurrent unlock cannot clear the workflow timestamps twice.
+      const updated = await tx
         .update(gradeSheets)
         .set({
           status: "draft",
@@ -438,7 +513,17 @@ export async function unlockGradesAction(
           updatedAt: new Date(),
           updatedBy: session.userId,
         })
-        .where(eq(gradeSheets.id, gradeSheetId));
+        .where(
+          and(
+            eq(gradeSheets.id, gradeSheetId),
+            eq(gradeSheets.status, "locked")
+          )
+        )
+        .returning({ id: gradeSheets.id });
+
+      if (updated.length === 0) {
+        throw new ConcurrentTransitionError();
+      }
 
       await tx.insert(gradeApprovals).values({
         gradeSheetId,
@@ -460,6 +545,10 @@ export async function unlockGradesAction(
 
     return { success: true, message: "Grades unlocked for editing." };
   } catch (error) {
+    if (error instanceof ConcurrentTransitionError) {
+      return { message: CONCURRENT_TRANSITION_MESSAGE };
+    }
+
     logger.error("[grades] Failed to unlock grades", {
       error,
       gradeSheetId,
