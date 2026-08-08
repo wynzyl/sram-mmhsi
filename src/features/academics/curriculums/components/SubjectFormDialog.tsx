@@ -20,6 +20,7 @@ import {
   type TermOffering,
 } from "@/lib/constants/term-offerings";
 import type { GradingSystemType } from "@/lib/constants/grading-systems";
+import { getGradeGroup } from "@/lib/constants/grade-groups";
 
 interface GradeLevelOption {
   id: string;
@@ -122,8 +123,7 @@ export function SubjectFormDialog({
   const selectedGradeLevel = gradeLevels.find((gl) => gl.id === selectedGradeLevelId);
   const isSHSGradeLevel = useMemo(() => {
     if (!selectedGradeLevel) return false;
-    const name = selectedGradeLevel.name.toLowerCase();
-    return name.includes("grade 11") || name.includes("grade 12") || name.includes("g11") || name.includes("g12");
+    return getGradeGroup(selectedGradeLevel.name) === "shs";
   }, [selectedGradeLevel]);
 
   // Show track selection for SHS subjects
@@ -365,8 +365,8 @@ export function SubjectFormDialog({
               )}
             </div>
 
-            {/* Show Type selection only for non-SHS subjects */}
-            {!isSHSGradeLevel && (
+            {/* Show Type (Core/Elective) selection only for SHS subjects */}
+            {isSHSGradeLevel && (
               <div className="space-y-1.5">
                 <label htmlFor="isCore" className="block text-sm font-medium text-foreground">
                   Type
@@ -385,19 +385,11 @@ export function SubjectFormDialog({
             )}
           </div>
 
-          {/*
-            SHS subjects are "core" within their track — but only assert that
-            when a track is actually part of this submission. Asserting it
-            without a strandId sends updateSubjectInCurriculumAction down its
-            legacy branch with finalIsCore=true, which deletes the subject's
-            subjectStrands rows; those are still read by the electives and
-            subject-offering generation queries. Omitting the field lets the
-            action fall back to the stored isCore, so a legacy elective keeps
-            (and re-saves) its associations.
-          */}
-          {showTrackSelection && selectedTrackId !== "" && (
+          {/* Non-SHS subjects are implicitly core - no track-specific electives */}
+          {!isSHSGradeLevel && (
             <input type="hidden" name="isCore" value="true" />
           )}
+
 
           {/*
             Moving a subject off an SHS grade level must drop its track. The
