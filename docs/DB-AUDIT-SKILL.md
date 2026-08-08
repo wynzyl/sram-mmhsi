@@ -11,6 +11,7 @@ Updated: 5/21/2026
 Audit-log privacy note: the current table shape includes the `audit_logs.ip_address` column, but the application now treats it as an optional hashed/audit fingerprint column. Raw client IP strings shall not be written to the `ip_address` storage path. Retention should be 365 days by default via a scheduled purge/TTL on records older than the business legal hold window.
 
 The system handles:
+
 - Student registration
 - Enrollment per school year
 - Assessment / fee charging
@@ -23,6 +24,7 @@ The system handles:
 - Registrar, Cashier, Finance, Teacher, Admin, Student/Parent access
 
 Tech assumptions:
+
 - Next.js App Router
 - Drizzle ORM or current project ORM implementation
 - PostgreSQL production target
@@ -38,6 +40,7 @@ Tech assumptions:
 Review the database layer like a production system.
 
 Find:
+
 1. Schema design problems
 2. Broken or weak relationships
 3. Missing foreign keys
@@ -72,6 +75,7 @@ Check if the schema supports:
 - Student ID generation must be safe, unique, and not race-condition prone.
 
 Validate:
+
 - Is `studentId` unique?
 - Is there a difference between internal database ID and human-readable student number?
 - Is duplicate detection strong enough?
@@ -95,7 +99,8 @@ Check if the schema supports:
 Expected enrollment statuses:
 
 ```ts
-PENDING     // added to enrollment, waiting for assessment
-ASSESSED    // assessment created, ready for payment
-ENROLLED    // payment processed / officially enrolled
-CANCELLED   // manually cancelled with reason
+PENDING; // added to enrollment, waiting for assessment
+ASSESSED; // assessment created, ready for payment
+ENROLLED; // payment processed / officially enrolled
+CANCELLED; // manually cancelled with reason
+```

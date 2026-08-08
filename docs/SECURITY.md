@@ -27,21 +27,24 @@ This document describes the security architecture, controls, and best practices 
 SRAMS uses JWT (JSON Web Tokens) for session management via the `jose` library.
 
 **Implementation:**
+
 - `src/lib/auth/session-token.ts` - JWT creation and verification
 - `src/lib/auth/session.ts` - Session lifecycle management
 
 **Token Structure:**
+
 ```typescript
 type SessionPayload = {
-  sessionId: string;        // UUID linking to DB session record
-  userId: string;           // User identifier
-  role: Role;               // User role for RBAC
-  expiresAt: Date;          // Token expiration
+  sessionId: string; // UUID linking to DB session record
+  userId: string; // User identifier
+  role: Role; // User role for RBAC
+  expiresAt: Date; // Token expiration
   forcePasswordChange?: boolean; // Password change gate flag
 };
 ```
 
 **Security Features:**
+
 - **Signed JWTs:** All tokens are signed with HS256 using AUTH_SECRET
 - **Short-lived:** 10-hour session duration per engineering spec
 - **Server-side verification:** Tokens are verified against database records
@@ -60,6 +63,7 @@ Users with `forcePasswordChange: true` are redirected to `/change-password` and 
 ### Session Storage
 
 Sessions are stored in the PostgreSQL `sessions` table with:
+
 - `id` - Session identifier (UUID)
 - `userId` - Foreign key to users table
 - `token` - The JWT token (for server-side revocation)
@@ -70,6 +74,7 @@ Sessions are stored in the PostgreSQL `sessions` table with:
 ### Session Cleanup
 
 Expired sessions are cleaned up via:
+
 1. **Cron endpoint:** `DELETE /api/cron/cleanup-sessions` (protected by CRON_SECRET)
 2. **Manual script:** `npx tsx scripts/cleanup-sessions.ts`
 
@@ -90,7 +95,7 @@ passes every value through `anonymizeIpAddressForAuditLog()`, which stores a
 SHA-256 digest, and the column is nullable. Note this is an unsalted digest of a
 low-entropy value, so it is a correlation fingerprint rather than an irreversible
 anonymisation — a known IP can still be confirmed by hashing it. Raw client IPs
-*are* retained separately in `sessions.ip_address` for session-hijack detection
+_are_ retained separately in `sessions.ip_address` for session-hijack detection
 (`src/lib/auth/session.ts`); that store is out of scope of this retention job.
 
 ### Session Cookie
@@ -144,16 +149,16 @@ SRAMS enforces Role-Based Access Control at three levels:
 
 ### User Roles
 
-| Role | Description | Access |
-|------|-------------|--------|
-| `super_admin` | System administrator | Full access including user management |
-| `admin` | Business administrator | All business operations |
-| `registrar` | Student records | Student CRUD, enrollments |
-| `finance_officer` | Fee management | Fee schedules, assessments, OR booklets |
-| `cashier` | Payment processing | Payment posting only |
-| `teacher` | Grade encoding | Only assigned subjects/sections |
-| `student` | Portal access | View own records only |
-| `parent_guardian` | Portal access | View linked student records |
+| Role              | Description            | Access                                  |
+| ----------------- | ---------------------- | --------------------------------------- |
+| `super_admin`     | System administrator   | Full access including user management   |
+| `admin`           | Business administrator | All business operations                 |
+| `registrar`       | Student records        | Student CRUD, enrollments               |
+| `finance_officer` | Fee management         | Fee schedules, assessments, OR booklets |
+| `cashier`         | Payment processing     | Payment posting only                    |
+| `teacher`         | Grade encoding         | Only assigned subjects/sections         |
+| `student`         | Portal access          | View own records only                   |
+| `parent_guardian` | Portal access          | View linked student records             |
 
 ### Permission System
 
@@ -198,28 +203,32 @@ SRAMS implements in-memory sliding window rate limiting in `src/lib/security/rat
 
 ### Rate Limit Contexts
 
-| Context | Window | Max Attempts | Notes |
-|---------|--------|--------------|-------|
-| Login (IP) | 15 minutes | 10 | Per IP address |
-| Login (Username) | 15 minutes | 5 | Per account (stricter) |
-| Admin Actions | 1 minute | 10 | Per user session |
+| Context          | Window     | Max Attempts | Notes                  |
+| ---------------- | ---------- | ------------ | ---------------------- |
+| Login (IP)       | 15 minutes | 10           | Per IP address         |
+| Login (Username) | 15 minutes | 5            | Per account (stricter) |
+| Admin Actions    | 1 minute   | 10           | Per user session       |
 
 ### Exponential Backoff
 
 After 3 consecutive failures, lockout duration increases:
 
-| Consecutive Failures | Lockout Window |
-|---------------------|----------------|
-| 1-3 | 15 minutes (base) |
-| 4 | 30 minutes (2x) |
-| 5 | 60 minutes (4x) |
-| 6+ | 120 minutes (8x max) |
+| Consecutive Failures | Lockout Window       |
+| -------------------- | -------------------- |
+| 1-3                  | 15 minutes (base)    |
+| 4                    | 30 minutes (2x)      |
+| 5                    | 60 minutes (4x)      |
+| 6+                   | 120 minutes (8x max) |
 
 ### Usage
 
 ```typescript
 import { extractClientIPForRateLimit } from "@/lib/security/ipExtraction";
-import { checkLoginRateLimits, recordLoginFailures, resetLoginRateLimits } from "@/lib/security/rateLimit";
+import {
+  checkLoginRateLimits,
+  recordLoginFailures,
+  resetLoginRateLimits,
+} from "@/lib/security/rateLimit";
 
 // Get secure client IP
 const clientIp = extractClientIPForRateLimit(headers, username);
@@ -290,13 +299,13 @@ This is a legitimate business/operational use under the system’s internal cont
 
 All security-sensitive operations are logged:
 
-| Category | Actions Logged |
-|----------|----------------|
-| Authentication | Login success/failure, logout, password change |
-| User Management | Create, update, deactivate users |
-| Financial | Payment posting, voiding, OR consumption |
-| Academic | Grade submission, locking |
-| Enrollment | Status changes, cancellations |
+| Category        | Actions Logged                                 |
+| --------------- | ---------------------------------------------- |
+| Authentication  | Login success/failure, logout, password change |
+| User Management | Create, update, deactivate users               |
+| Financial       | Payment posting, voiding, OR consumption       |
+| Academic        | Grade submission, locking                      |
+| Enrollment      | Status changes, cancellations                  |
 
 ### Log Structure
 
@@ -314,6 +323,7 @@ await logAudit({
 ### Storage
 
 Audit logs are stored in the `audit_logs` table with:
+
 - Actor identification
 - Action performed
 - Target entity and ID
@@ -410,12 +420,14 @@ For additional protection, consider adding CSP headers in production deployment 
 SRAMS requires TLS (HTTPS) in production for secure cookie transmission.
 
 **Recommended Architecture:**
+
 ```
 [Client] → HTTPS → [Reverse Proxy (nginx/Caddy)] → HTTP → [SRAMS Container]
                     ↑ TLS termination here
 ```
 
 **nginx Configuration Example:**
+
 ```nginx
 server {
     listen 443 ssl;
@@ -435,6 +447,7 @@ server {
 ```
 
 **Environment Variables:**
+
 ```bash
 # Number of reverse proxies between client and app (for IP extraction)
 TRUSTED_PROXY_COUNT=1
@@ -443,6 +456,7 @@ TRUSTED_PROXY_COUNT=1
 ### Session Cleanup Cron (A-5)
 
 The cleanup endpoint uses:
+
 - **DELETE method only** - no GET alias (prevents CSRF/accidental triggers)
 - **Timing-safe secret comparison** - prevents timing attacks on the CRON_SECRET
 
@@ -455,6 +469,7 @@ curl -X DELETE https://your-app/api/cron/cleanup-sessions \
 ### Docker Security (D-4)
 
 See `docs/SECURITY/DEPLOYMENT-HARDENING.md` for:
+
 - PostgreSQL internal network binding
 - Docker secrets management
 - Image pinning by SHA256 digest
@@ -473,23 +488,25 @@ The route middleware (`proxy.ts`) validates JWT signatures without database look
 - This is a deliberate performance trade-off
 
 **If instant logout-everywhere is required:**
+
 - Option 1: Add per-user `tokenVersion` claim, compare against DB in middleware
 - Option 2: Maintain short-TTL cache of revoked sessionIds in Redis
 - Option 3: Reduce JWT lifetime (increases renewal frequency)
 
 ### Authorization Denial Behavior (A-7)
 
-| Layer | Insufficient Permission Response |
-|-------|----------------------------------|
-| Route middleware (proxy.ts) | Redirect to role's landing page |
-| Server actions | `{ message: "You do not have permission..." }` |
-| Data API routes | HTTP 403 Forbidden JSON |
+| Layer                       | Insufficient Permission Response               |
+| --------------------------- | ---------------------------------------------- |
+| Route middleware (proxy.ts) | Redirect to role's landing page                |
+| Server actions              | `{ message: "You do not have permission..." }` |
+| Data API routes             | HTTP 403 Forbidden JSON                        |
 
 This is intentional UX design - page-level denials are graceful redirects, API-level denials are proper HTTP status codes.
 
 ### Zombie Session Handling (A-1)
 
 Sessions with valid JWT tokens but unrecognized roles (e.g., corrupted data) are handled gracefully:
+
 - Cookie is cleared
 - User is redirected to login
 - No infinite redirect loop
@@ -534,17 +551,17 @@ For security issues or vulnerabilities:
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
-| 2026-05-18 | Initial security documentation |
-| 2026-05-18 | Added force password change gate |
-| 2026-05-18 | Added grade encoding teacher validation |
-| 2026-05-18 | Added user creation rate limiting |
-| 2026-05-18 | Added session cleanup mechanism |
-| 2026-05-30 | (A-1) Fixed zombie session redirect loop |
-| 2026-05-30 | (A-2) Added session User-Agent binding validation |
-| 2026-05-30 | (A-4) Evaluated SameSite=Strict, kept Lax for redirect compatibility |
+| Date       | Change                                                                 |
+| ---------- | ---------------------------------------------------------------------- |
+| 2026-05-18 | Initial security documentation                                         |
+| 2026-05-18 | Added force password change gate                                       |
+| 2026-05-18 | Added grade encoding teacher validation                                |
+| 2026-05-18 | Added user creation rate limiting                                      |
+| 2026-05-18 | Added session cleanup mechanism                                        |
+| 2026-05-30 | (A-1) Fixed zombie session redirect loop                               |
+| 2026-05-30 | (A-2) Added session User-Agent binding validation                      |
+| 2026-05-30 | (A-4) Evaluated SameSite=Strict, kept Lax for redirect compatibility   |
 | 2026-05-30 | (A-5) Removed GET alias on cron endpoint, added timing-safe comparison |
-| 2026-05-30 | (A-6) Increased bcrypt cost factor to 12 with transparent re-hash |
-| 2026-05-30 | (D-1) Added secure IP extraction and per-account rate limiting |
-| 2026-05-30 | (D-2) Added TLS/deployment security documentation |
+| 2026-05-30 | (A-6) Increased bcrypt cost factor to 12 with transparent re-hash      |
+| 2026-05-30 | (D-1) Added secure IP extraction and per-account rate limiting         |
+| 2026-05-30 | (D-2) Added TLS/deployment security documentation                      |
