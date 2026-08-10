@@ -252,6 +252,7 @@ export default function PostPaymentForm({
             // Restore the original balance
             setAmountToPay(String(balance));
           }}
+          cascadePreview={cashDiscountEligibility.discountDetails.cascadePreview}
         />
       )}
 

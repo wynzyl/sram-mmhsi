@@ -201,3 +201,163 @@ export async function recalcAssessmentTotalsForDiscount(
     billingStatus,
   };
 }
+
+// ─── Cascade Adjustment Operations ─────────────────────────────────────────────
+
+export interface CascadeAdjustmentResult {
+  totalAmount: number;
+  totalDiscounts: number;
+  newBalance: number;
+  billingStatus: string;
+}
+
+/**
+ * Recalculate assessment totals after cascade adjustments are applied.
+ *
+ * Cascade adjustments occur when cash discount triggers recalculation of
+ * existing tuition_only discounts. The adjustments ADD to the balance
+ * (reduce effective discounts) because the original discounts were
+ * calculated on a higher base amount.
+ *
+ * This function:
+ * 1. INCREASES totalAmount by the cascade adjustment (reduces net discount)
+ * 2. DECREASES totalDiscounts by the cascade adjustment (less effective discount)
+ * 3. Recalculates balance = totalAmount - totalPaid
+ *
+ * @param executor - Database executor (tx or db)
+ * @param assessmentId - ID of the assessment to update
+ * @param cascadeAdjustment - Total cascade adjustment amount (positive = adds to balance)
+ * @param userId - User performing the operation
+ *
+ * @example
+ * // Original: Tuition 100k, ESC 20% = 20k discount
+ * // Cash discount: 10k, so new tuition base = 90k
+ * // ESC recalculated: 20% × 90k = 18k
+ * // Cascade adjustment: 20k - 18k = 2k (adds to balance)
+ * await recalcAssessmentTotalsForCascade(tx, assessmentId, 2000, session.userId);
+ */
+export async function recalcAssessmentTotalsForCascade(
+  executor: BalanceExecutor,
+  assessmentId: string,
+  cascadeAdjustment: number,
+  userId: string
+): Promise<CascadeAdjustmentResult> {
+  // 1. Fetch current values
+  const [current] = await executor
+    .select({
+      totalAmount: assessments.totalAmount,
+      totalDiscounts: assessments.totalDiscounts,
+      totalPaid: assessments.totalPaid,
+      cancelledAt: assessments.cancelledAt,
+      transferredAt: assessments.transferredAt,
+    })
+    .from(assessments)
+    .where(eq(assessments.id, assessmentId))
+    .limit(1);
+
+  if (!current) {
+    throw new Error(`Assessment not found: ${assessmentId}`);
+  }
+
+  // 2. Calculate new values
+  // Cascade adjustment INCREASES totalAmount (reduces net discount effect)
+  // Cascade adjustment DECREASES totalDiscounts (less effective discount)
+  const totalAmount = Number(current.totalAmount) + cascadeAdjustment;
+  const totalDiscounts = Number(current.totalDiscounts) - cascadeAdjustment;
+  const newBalance = totalAmount - Number(current.totalPaid);
+
+  // 3. Derive billing status
+  const billingStatus = assessmentBillingStatusFromState({
+    balance: newBalance,
+    cancelledAt: current.cancelledAt,
+    transferredAt: current.transferredAt,
+  });
+
+  // 4. Update atomically
+  await executor
+    .update(assessments)
+    .set({
+      totalAmount: totalAmount.toFixed(2),
+      totalDiscounts: totalDiscounts.toFixed(2),
+      balance: newBalance.toFixed(2),
+      billingStatus,
+      updatedBy: userId,
+      updatedAt: new Date(),
+    })
+    .where(eq(assessments.id, assessmentId));
+
+  return {
+    totalAmount,
+    totalDiscounts,
+    newBalance,
+    billingStatus,
+  };
+}
+
+/**
+ * Reverse cascade adjustments when voiding a payment with cash discount.
+ *
+ * This reverses the cascade calculation by:
+ * 1. DECREASING totalAmount by the cascade adjustment
+ * 2. INCREASING totalDiscounts by the cascade adjustment
+ * 3. Recalculating balance
+ *
+ * @param executor - Database executor (tx or db)
+ * @param assessmentId - ID of the assessment to update
+ * @param cascadeAdjustment - Total cascade adjustment to reverse (positive value)
+ * @param userId - User performing the operation
+ */
+export async function reverseCascadeAdjustment(
+  executor: BalanceExecutor,
+  assessmentId: string,
+  cascadeAdjustment: number,
+  userId: string
+): Promise<CascadeAdjustmentResult> {
+  // Reversing cascade is the opposite of applying it
+  // We DECREASE totalAmount and INCREASE totalDiscounts
+  const [current] = await executor
+    .select({
+      totalAmount: assessments.totalAmount,
+      totalDiscounts: assessments.totalDiscounts,
+      totalPaid: assessments.totalPaid,
+      cancelledAt: assessments.cancelledAt,
+      transferredAt: assessments.transferredAt,
+    })
+    .from(assessments)
+    .where(eq(assessments.id, assessmentId))
+    .limit(1);
+
+  if (!current) {
+    throw new Error(`Assessment not found: ${assessmentId}`);
+  }
+
+  // Reverse: DECREASE totalAmount, INCREASE totalDiscounts
+  const totalAmount = Number(current.totalAmount) - cascadeAdjustment;
+  const totalDiscounts = Number(current.totalDiscounts) + cascadeAdjustment;
+  const newBalance = totalAmount - Number(current.totalPaid);
+
+  const billingStatus = assessmentBillingStatusFromState({
+    balance: newBalance,
+    cancelledAt: current.cancelledAt,
+    transferredAt: current.transferredAt,
+  });
+
+  await executor
+    .update(assessments)
+    .set({
+      totalAmount: totalAmount.toFixed(2),
+      totalDiscounts: totalDiscounts.toFixed(2),
+      balance: newBalance.toFixed(2),
+      billingStatus,
+      updatedBy: userId,
+      updatedAt: new Date(),
+    })
+    .where(eq(assessments.id, assessmentId));
+
+  return {
+    totalAmount,
+    totalDiscounts,
+    newBalance,
+    billingStatus,
+  };
+}

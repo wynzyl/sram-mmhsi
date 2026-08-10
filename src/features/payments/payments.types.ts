@@ -86,6 +86,30 @@ export type ManualEntrySuggestions = {
 // Cash Discount Eligibility Types
 // ─────────────────────────────────────────────────────────────────
 
+/** Cascade adjustment preview for a single discount */
+export interface CascadeAdjustmentPreviewLine {
+  /** Name of the discount being adjusted (e.g., "ESC Scholarship") */
+  discountTypeName: string;
+  /** Original discount amount before cascade */
+  originalAmount: number;
+  /** Recalculated discount amount after cascade */
+  recalculatedAmount: number;
+  /** The adjustment delta (original - recalculated), always positive */
+  adjustmentAmount: number;
+}
+
+/** Cascade adjustment preview for UI display */
+export interface CascadeAdjustmentPreview {
+  /** Whether there are cascade adjustments to show */
+  hasCascadeAdjustments: boolean;
+  /** Individual adjustment lines for each affected discount */
+  lines: CascadeAdjustmentPreviewLine[];
+  /** Total cascade adjustment amount (reduces effective discount) */
+  totalAdjustment: number;
+  /** Human-readable explanation text */
+  explanation: string;
+}
+
 export interface CashDiscountEligibility {
   eligible: boolean;
   reason?: string;
@@ -101,11 +125,56 @@ export interface CashDiscountEligibility {
     cashDiscountAmount: number;
     /** Assessment balance before discount */
     currentBalance: number;
-    /** New balance after discount is applied */
+    /** New balance after discount is applied (includes cascade adjustments) */
     newBalance: number;
-    /** Amount the cashier should collect */
+    /** Amount the cashier should collect (includes cascade adjustments) */
     paymentRequired: number;
     /** Cutoff date for the school year */
     cutoffDate: Date;
+    /**
+     * Cascade adjustment preview - shows how existing scholarships are
+     * recalculated based on the discounted tuition amount.
+     * Only present if there are tuition_only discounts to cascade.
+     */
+    cascadePreview?: CascadeAdjustmentPreview;
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Applied Cash Discount Types (for display on payment page)
+// ─────────────────────────────────────────────────────────────────
+
+/** Cascade adjustment detail for an already-applied discount */
+export interface AppliedCascadeAdjustment {
+  /** Name of the discount that was adjusted (e.g., "ESC Scholarship") */
+  discountTypeName: string;
+  /** Original discount amount before cascade */
+  originalAmount: number;
+  /** The adjustment delta (original - recalculated), always positive */
+  adjustmentAmount: number;
+}
+
+/**
+ * Details of a cash discount that has already been applied to an assessment.
+ * Used to display read-only info on the payment page when discount was applied
+ * via the approval workflow (not at payment time).
+ */
+export interface AppliedCashDiscountDetails {
+  /** Whether a cash discount has been applied to this assessment */
+  hasAppliedCashDiscount: boolean;
+  /** Discount details (only present if hasAppliedCashDiscount is true) */
+  discountDetails?: {
+    /** The student discount record ID */
+    studentDiscountId: string;
+    /** Cash discount amount */
+    discountAmount: number;
+    /** When the discount was applied */
+    appliedAt: Date;
+    /** Name of the user who applied the discount */
+    appliedByName: string;
+    /** Cascade adjustments that were triggered (if any) */
+    cascadeAdjustments: AppliedCascadeAdjustment[];
+    /** Total cascade adjustment amount */
+    totalCascadeAdjustment: number;
   };
 }

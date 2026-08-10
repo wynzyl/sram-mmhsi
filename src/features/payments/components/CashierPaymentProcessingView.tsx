@@ -6,9 +6,10 @@ import { useActionState } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
 import { postPaymentAction } from "../payments.actions";
 import type { PaymentFormState } from "../payments.schema";
-import type { CashDiscountEligibility } from "../payments.queries";
+import type { CashDiscountEligibility, AppliedCashDiscountDetails } from "../payments.queries";
 import { NumericKeypad } from "./NumericKeypad";
 import { CashDiscountPreviewCard } from "./CashDiscountPreviewCard";
+import { AppliedCashDiscountCard } from "./AppliedCashDiscountCard";
 import {
   PaymentSuccessOverlay,
   PaymentProcessingHeader,
@@ -64,6 +65,8 @@ export type CashierPaymentProcessingViewProps = {
     lastManualPaymentDate: string | null;
     suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[];
   } | null;
+  /** Details of cash discount already applied via approval workflow */
+  appliedCashDiscountDetails?: AppliedCashDiscountDetails | null;
 };
 
 export function CashierPaymentProcessingView({
@@ -78,6 +81,7 @@ export function CashierPaymentProcessingView({
   activeBooklets,
   defaultBookletId,
   manualSuggestions,
+  appliedCashDiscountDetails,
 }: CashierPaymentProcessingViewProps) {
   const router = useRouter();
   const hydrated = useHydrated();
@@ -202,7 +206,12 @@ export function CashierPaymentProcessingView({
   };
 
   // Check cash discount eligibility
+  // Skip if discount is already applied via approval workflow
+  const hasAppliedCashDiscount = appliedCashDiscountDetails?.hasAppliedCashDiscount ?? false;
+
   const checkCashDiscountEligibility = useCallback(async () => {
+    // Skip if discount was already applied via approval workflow
+    if (hasAppliedCashDiscount) return;
     if (applyCashDiscount) return;
 
     const payNum = parseFloat(amountToPay);
@@ -232,15 +241,18 @@ export function CashierPaymentProcessingView({
     } finally {
       setCashDiscountLoading(false);
     }
-  }, [amountToPay, totals.balance, assessmentId, applyCashDiscount]);
+  }, [amountToPay, totals.balance, assessmentId, applyCashDiscount, hasAppliedCashDiscount]);
 
   // Debounced eligibility check
   useEffect(() => {
+    // Skip if discount was already applied
+    if (hasAppliedCashDiscount) return;
+
     const timer = setTimeout(() => {
       checkCashDiscountEligibility();
     }, 300);
     return () => clearTimeout(timer);
-  }, [checkCashDiscountEligibility]);
+  }, [checkCashDiscountEligibility, hasAppliedCashDiscount]);
 
   // Success state
   if (state.success) {
@@ -295,22 +307,30 @@ export function CashierPaymentProcessingView({
             <input type="hidden" name="assessmentId" value={assessmentId} />
             <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
             <input type="hidden" name="isManualEntry" value={String(isManualEntry)} />
-            <input type="hidden" name="applyCashDiscount" value={String(applyCashDiscount)} />
+            {/* Don't apply cash discount at payment time if already applied via approval workflow */}
+            <input type="hidden" name="applyCashDiscount" value={String(applyCashDiscount && !hasAppliedCashDiscount)} />
             <input type="hidden" name="paymentMethod" value={paymentMethod} />
             <input type="hidden" name="amount" value={amountToPay} />
             {paymentMethod === "cash" && (
               <input type="hidden" name="amountTendered" value={amountTendered} />
             )}
 
-            {/* Cash Discount Preview */}
-            {cashDiscountLoading && (
+            {/* Already Applied Cash Discount (read-only info card) */}
+            {hasAppliedCashDiscount && appliedCashDiscountDetails?.discountDetails && (
+              <div className="mb-4">
+                <AppliedCashDiscountCard details={appliedCashDiscountDetails.discountDetails} />
+              </div>
+            )}
+
+            {/* Cash Discount Eligibility Preview (only show if not already applied) */}
+            {!hasAppliedCashDiscount && cashDiscountLoading && (
               <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-4 py-3">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Checking discount eligibility...</span>
               </div>
             )}
 
-            {!cashDiscountLoading && cashDiscountEligibility?.eligible && cashDiscountEligibility.discountDetails && (
+            {!hasAppliedCashDiscount && !cashDiscountLoading && cashDiscountEligibility?.eligible && cashDiscountEligibility.discountDetails && (
               <div className="mb-4">
                 <CashDiscountPreviewCard
                   baseAmount={cashDiscountEligibility.discountDetails.baseAmount}
@@ -333,6 +353,7 @@ export function CashierPaymentProcessingView({
                     setApplyCashDiscount(false);
                     setAmountToPay(String(totals.balance));
                   }}
+                  cascadePreview={cashDiscountEligibility.discountDetails.cascadePreview}
                 />
               </div>
             )}

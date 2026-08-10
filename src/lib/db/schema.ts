@@ -972,6 +972,18 @@ export const assessmentItems = pgTable(
     sourceAssessmentId: uuid("source_assessment_id").references(() => assessments.id),
     /** Links to the student discount record that generated this line item (for discount lines) */
     studentDiscountId: uuid("student_discount_id"), // FK added after studentDiscounts table defined
+    /**
+     * Flag indicating this is a cascade adjustment item.
+     * Cascade adjustments are created when cash discount triggers recalculation
+     * of existing tuition_only discounts. This adds back the difference.
+     */
+    isCascadeAdjustment: boolean("is_cascade_adjustment").notNull().default(false),
+    /**
+     * Links to the original discount assessment item that this adjustment offsets.
+     * For cascade adjustments, points to the original scholarship discount line
+     * whose effective value was reduced by cascading.
+     */
+    adjustsItemId: uuid("adjusts_item_id"), // Self-reference to assessmentItems
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -983,6 +995,9 @@ export const assessmentItems = pgTable(
     index("ai_fee_template_item_idx").on(t.feeTemplateItemId),
     index("ai_source_assessment_idx").on(t.sourceAssessmentId), // PERFORMANCE: Reverse lookup for balance forward items
     index("ai_student_discount_idx").on(t.studentDiscountId), // PERFORMANCE: Discount line lookups
+    index("ai_cascade_adjustment_idx")
+      .on(t.adjustsItemId)
+      .where(sql`${t.isCascadeAdjustment} = true`), // PERFORMANCE: Cascade adjustment lookup
   ]
 );
 
@@ -1607,6 +1622,18 @@ export const discountTypes = pgTable(
     requiresDocumentation: boolean("requires_documentation").notNull().default(true),
     isStackable: boolean("is_stackable").notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),
+    /**
+     * Priority for cascading discount calculations.
+     * Lower values = applied first. Cash discounts apply first (priority 0),
+     * then other discounts cascade (recalculated) based on the discounted tuition.
+     * NULL means no cascade priority (legacy discounts).
+     */
+    cascadePriority: integer("cascade_priority"),
+    /**
+     * Flag indicating this is the cash payment discount type.
+     * When cash discount is applied, other tuition_only discounts cascade.
+     */
+    isCashDiscount: boolean("is_cash_discount").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1622,6 +1649,10 @@ export const discountTypes = pgTable(
       .on(t.isActive)
       .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
     index("discount_types_display_order_idx").on(t.displayOrder),
+    // Unique constraint: only one cash discount type can exist
+    uniqueIndex("discount_types_cash_discount_uidx")
+      .on(t.isCashDiscount)
+      .where(sql`${t.isCashDiscount} = true AND ${t.deletedAt} IS NULL`),
   ]
 );
 
@@ -1712,6 +1743,18 @@ export const studentDiscounts = pgTable(
     replacedByRequestId: uuid("replaced_by_request_id").references(
       (): AnyPgColumn => discountRequests.id
     ),
+    /**
+     * Cascade adjustment amount: the reduction in this discount due to cascading.
+     * When cash discount is applied, other tuition_only discounts are recalculated
+     * on the discounted tuition. This field stores the adjustment delta.
+     * Example: Original ESC = 20,000, Recalculated = 18,000 → adjustment = 2,000
+     */
+    cascadeAdjustmentAmount: numeric("cascade_adjustment_amount", { precision: 12, scale: 2 }),
+    /**
+     * Links to the cash discount that triggered this cascade adjustment.
+     * NULL if this discount was not affected by cascading.
+     */
+    cascadeTriggeredByDiscountId: uuid("cascade_triggered_by_discount_id"), // FK to studentDiscounts
     appliedAt: timestamp("applied_at").notNull().defaultNow(),
     appliedBy: uuid("applied_by").notNull().references(() => users.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -1724,6 +1767,10 @@ export const studentDiscounts = pgTable(
     uniqueIndex("student_discounts_request_active_uidx")
       .on(t.discountRequestId)
       .where(sql`${t.reversedAt} IS NULL`),
+    // PERFORMANCE: Lookup discounts affected by cascade for reversal
+    index("student_discounts_cascade_trigger_idx")
+      .on(t.cascadeTriggeredByDiscountId)
+      .where(sql`${t.cascadeTriggeredByDiscountId} IS NOT NULL`),
   ]
 );
 

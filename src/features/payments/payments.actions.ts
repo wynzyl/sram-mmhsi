@@ -11,7 +11,7 @@ import {
   invoices,
   users,
 } from "@/lib/db/schema";
-import { eq, and, lte, gte, ne, sql } from "drizzle-orm";
+import { eq, and, lte, gte, ne, sql, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -47,6 +47,8 @@ import {
 import {
   applyAssessmentBalanceDelta,
   recalcAssessmentTotalsForDiscount,
+  recalcAssessmentTotalsForCascade,
+  reverseCascadeAdjustment,
 } from "@/lib/utils/assessment-balance";
 import { assertNoPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
 import {
@@ -64,8 +66,18 @@ import {
   discountRequests,
   studentDiscounts,
   assessmentItems,
+  discountTypes,
 } from "@/lib/db/schema";
-import { formatDiscountDescription } from "@/features/discounts/utils/discount-calculations";
+import {
+  formatDiscountDescription,
+  calculateDiscountBase,
+} from "@/features/discounts/utils/discount-calculations";
+import {
+  calculateCascadeAdjustments,
+  formatCascadeAdjustmentDescription,
+  type StudentDiscountForCascade,
+} from "@/features/discounts/utils/cascade-calculations";
+import { feeItemTypes } from "@/lib/db/schema";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -595,7 +607,147 @@ export async function postPaymentAction(
           session.userId
         );
 
-        // The actual payment amount is the new reduced balance
+        // 3.6. Apply Cascading Discount Adjustments
+        // When cash discount is applied, recalculate existing tuition_only discounts
+        // based on the discounted tuition amount (not the original tuition).
+        let totalCascadeAdjustment = 0;
+
+        // Fetch existing tuition_only discounts that may cascade
+        const existingTuitionDiscounts = await tx
+          .select({
+            id: studentDiscounts.id,
+            studentId: studentDiscounts.studentId,
+            assessmentId: studentDiscounts.assessmentId,
+            discountTypeCode: studentDiscounts.discountTypeCode,
+            discountTypeName: studentDiscounts.discountTypeName,
+            calculationType: studentDiscounts.calculationType,
+            baseType: studentDiscounts.baseType,
+            baseAmount: studentDiscounts.baseAmount,
+            discountValue: studentDiscounts.discountValue,
+            discountAmount: studentDiscounts.discountAmount,
+            assessmentItemId: studentDiscounts.assessmentItemId,
+            cascadeAdjustmentAmount: studentDiscounts.cascadeAdjustmentAmount,
+          })
+          .from(studentDiscounts)
+          .where(
+            and(
+              eq(studentDiscounts.assessmentId, assessmentId),
+              eq(studentDiscounts.baseType, "tuition_only"),
+              isNull(studentDiscounts.reversedAt),
+              // Exclude the cash discount we just created
+              ne(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE)
+            )
+          );
+
+        if (existingTuitionDiscounts.length > 0) {
+          // Fetch assessment items for cascade calculation
+          const itemsForCascade = await tx
+            .select({
+              id: assessmentItems.id,
+              amount: assessmentItems.amount,
+              isDiscount: assessmentItems.isDiscount,
+              feeItemTypeCode: feeItemTypes.code,
+            })
+            .from(assessmentItems)
+            .leftJoin(feeItemTypes, eq(assessmentItems.feeItemTypeId, feeItemTypes.id))
+            .where(eq(assessmentItems.assessmentId, assessmentId));
+
+          const itemsForCalc = itemsForCascade.map((r) => ({
+            id: r.id,
+            amount: r.amount,
+            isDiscount: r.isDiscount,
+            feeItemTypeCode: r.feeItemTypeCode,
+          }));
+
+          // Convert to cascade calculation format
+          const discountsForCascade: StudentDiscountForCascade[] =
+            existingTuitionDiscounts.map((d) => ({
+              id: d.id,
+              studentId: d.studentId,
+              assessmentId: d.assessmentId,
+              discountTypeCode: d.discountTypeCode,
+              discountTypeName: d.discountTypeName,
+              calculationType: d.calculationType as "fixed_amount" | "percentage",
+              baseType: d.baseType as "tuition_only" | "full_assessment",
+              baseAmount: d.baseAmount,
+              discountValue: d.discountValue,
+              discountAmount: d.discountAmount,
+              assessmentItemId: d.assessmentItemId,
+              cascadeAdjustmentAmount: d.cascadeAdjustmentAmount,
+            }));
+
+          // Calculate cascade adjustments
+          const cascadeResult = calculateCascadeAdjustments(
+            discountsForCascade,
+            details.cashDiscountAmount,
+            itemsForCalc
+          );
+
+          // Create cascade adjustment items and update student discounts
+          for (const adj of cascadeResult.adjustments) {
+            // Create positive assessment item (adds to balance)
+            const adjustmentDescription = formatCascadeAdjustmentDescription(
+              adj,
+              adj.newBaseAmount
+            );
+
+            const [adjustmentItem] = await tx
+              .insert(assessmentItems)
+              .values({
+                assessmentId,
+                description: adjustmentDescription,
+                amount: String(adj.adjustmentAmount),
+                isDiscount: false, // Positive = adds to balance
+                isRefundable: false,
+                isCascadeAdjustment: true,
+                adjustsItemId: adj.originalAssessmentItemId,
+                createdBy: session.userId,
+                updatedBy: session.userId,
+              })
+              .returning({ id: assessmentItems.id });
+
+            // Update student discount with cascade tracking
+            await tx
+              .update(studentDiscounts)
+              .set({
+                cascadeAdjustmentAmount: String(adj.adjustmentAmount),
+                cascadeTriggeredByDiscountId: studentDiscount.id,
+              })
+              .where(eq(studentDiscounts.id, adj.studentDiscountId));
+
+            // Audit cascade adjustment
+            await logAudit({
+              actor: session.userId,
+              actorRole: session.role,
+              action: "cascade_discount_adjustment",
+              targetEntity: "student_discounts",
+              targetId: adj.studentDiscountId,
+              context: `Cascade adjustment due to cash discount`,
+              newState: {
+                originalDiscountAmount: adj.originalDiscountAmount,
+                recalculatedAmount: adj.recalculatedDiscountAmount,
+                adjustmentAmount: adj.adjustmentAmount,
+                triggeredByDiscountId: studentDiscount.id,
+                adjustmentItemId: adjustmentItem.id,
+              },
+            });
+          }
+
+          totalCascadeAdjustment = cascadeResult.totalAdjustment;
+
+          // Apply cascade adjustment to assessment balance
+          if (totalCascadeAdjustment > 0) {
+            await recalcAssessmentTotalsForCascade(
+              tx,
+              assessmentId,
+              totalCascadeAdjustment,
+              session.userId
+            );
+          }
+        }
+
+        // The actual payment amount is the new reduced balance (includes cascade)
+        // details.paymentRequired already includes cascade adjustment from eligibility check
         actualPaymentAmount = details.paymentRequired;
         cashDiscountApplied = true;
         cashDiscountAmount = details.cashDiscountAmount;
@@ -616,6 +768,7 @@ export async function postPaymentAction(
             originalBalance: details.currentBalance,
             newBalance: details.newBalance,
             paymentRequired: details.paymentRequired,
+            cascadeAdjustment: totalCascadeAdjustment,
           },
         });
       }
@@ -925,7 +1078,172 @@ export async function voidPaymentAction(
 
           const pAmount = Number(payment.amount);
 
-          // Apply negative delta (reversal)
+          // 3a. Check for cash discount associated with this payment
+          // If this payment was posted with a cash discount, we need to:
+          // 1. Reverse the cash discount itself
+          // 2. Reverse any cascade adjustments that were created
+          const cashDiscountOnPayment = await tx
+            .select({
+              id: studentDiscounts.id,
+              discountAmount: studentDiscounts.discountAmount,
+              assessmentItemId: studentDiscounts.assessmentItemId,
+            })
+            .from(studentDiscounts)
+            .where(
+              and(
+                eq(studentDiscounts.assessmentId, payment.assessmentId),
+                eq(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE),
+                isNull(studentDiscounts.reversedAt)
+              )
+            )
+            .limit(1);
+
+          let totalCascadeReversalAmount = 0;
+
+          if (cashDiscountOnPayment.length > 0) {
+            const cashDiscount = cashDiscountOnPayment[0];
+
+            // Find cascade adjustments triggered by this cash discount
+            const cascadeAdjustments = await tx
+              .select({
+                studentDiscountId: studentDiscounts.id,
+                cascadeAdjustmentAmount: studentDiscounts.cascadeAdjustmentAmount,
+                assessmentItemId: studentDiscounts.assessmentItemId,
+              })
+              .from(studentDiscounts)
+              .where(
+                and(
+                  eq(studentDiscounts.assessmentId, payment.assessmentId),
+                  eq(studentDiscounts.cascadeTriggeredByDiscountId, cashDiscount.id)
+                )
+              );
+
+            // Reverse cascade adjustments
+            for (const adj of cascadeAdjustments) {
+              const adjAmount = Number(adj.cascadeAdjustmentAmount ?? 0);
+              totalCascadeReversalAmount += adjAmount;
+
+              // Find and delete cascade adjustment assessment items
+              // Only search if we have an assessmentItemId to look for
+              const cascadeItems = adj.assessmentItemId
+                ? await tx
+                    .select({ id: assessmentItems.id })
+                    .from(assessmentItems)
+                    .where(
+                      and(
+                        eq(assessmentItems.assessmentId, payment.assessmentId),
+                        eq(assessmentItems.isCascadeAdjustment, true),
+                        eq(assessmentItems.adjustsItemId, adj.assessmentItemId)
+                      )
+                    )
+                : [];
+
+              // Delete cascade adjustment items (soft delete not applicable - these are system items)
+              for (const item of cascadeItems) {
+                await tx
+                  .delete(assessmentItems)
+                  .where(eq(assessmentItems.id, item.id));
+              }
+
+              // Clear cascade tracking on the affected discount
+              await tx
+                .update(studentDiscounts)
+                .set({
+                  cascadeAdjustmentAmount: null,
+                  cascadeTriggeredByDiscountId: null,
+                })
+                .where(eq(studentDiscounts.id, adj.studentDiscountId));
+
+              // Audit cascade reversal
+              await logAudit({
+                actor: session.userId,
+                actorRole: session.role,
+                action: "cascade_discount_reversal",
+                targetEntity: "student_discounts",
+                targetId: adj.studentDiscountId,
+                context: `Cascade adjustment reversed due to payment void`,
+                previousState: {
+                  cascadeAdjustmentAmount: adjAmount,
+                  cascadeTriggeredByDiscountId: cashDiscount.id,
+                },
+              });
+            }
+
+            // Reverse cascade adjustment impact on assessment balance
+            if (totalCascadeReversalAmount > 0) {
+              await reverseCascadeAdjustment(
+                tx,
+                payment.assessmentId,
+                totalCascadeReversalAmount,
+                session.userId
+              );
+            }
+
+            // Reverse the cash discount itself
+            await tx
+              .update(studentDiscounts)
+              .set({
+                reversedAt: new Date(),
+                reversedBy: session.userId,
+                reversalRemarks: `Reversed due to payment void: ${voidReason}`,
+              })
+              .where(eq(studentDiscounts.id, cashDiscount.id));
+
+            // Delete cash discount assessment item
+            if (cashDiscount.assessmentItemId) {
+              await tx
+                .delete(assessmentItems)
+                .where(eq(assessmentItems.id, cashDiscount.assessmentItemId));
+            }
+
+            // Reverse cash discount impact on assessment
+            await recalcAssessmentTotalsForDiscount(
+              tx,
+              payment.assessmentId,
+              Number(cashDiscount.discountAmount),
+              "reverse",
+              session.userId
+            );
+
+            // Also reverse the related discount request
+            await tx
+              .update(discountRequests)
+              .set({
+                status: "reversed",
+                reversedAt: new Date(),
+                reversedBy: session.userId,
+              })
+              .where(
+                and(
+                  eq(discountRequests.assessmentId, payment.assessmentId),
+                  eq(discountRequests.discountTypeId, (
+                    await tx
+                      .select({ id: discountTypes.id })
+                      .from(discountTypes)
+                      .where(eq(discountTypes.code, FULL_PAYMENT_DISCOUNT_CODE))
+                      .limit(1)
+                  )[0]?.id ?? ""),
+                  eq(discountRequests.status, "approved")
+                )
+              );
+
+            // Audit cash discount reversal
+            await logAudit({
+              actor: session.userId,
+              actorRole: session.role,
+              action: "cash_discount_reversed",
+              targetEntity: "student_discounts",
+              targetId: cashDiscount.id,
+              context: `Cash discount reversed due to payment void`,
+              previousState: {
+                discountAmount: Number(cashDiscount.discountAmount),
+                cascadeAdjustmentsReversed: cascadeAdjustments.length,
+                totalCascadeReversal: totalCascadeReversalAmount,
+              },
+            });
+          }
+
+          // Apply negative delta (reversal) for the payment amount
           const { newTotalPaid } = await applyAssessmentBalanceDelta(
             tx,
             payment.assessmentId,

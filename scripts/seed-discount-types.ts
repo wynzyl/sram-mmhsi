@@ -11,8 +11,24 @@ import { eq } from "drizzle-orm";
 import { config } from "dotenv";
 import { expand } from "dotenv-expand";
 
+// ─── Discount Type Seed Shape ─────────────────────────────────────────────────
+interface DiscountTypeSeed {
+  code: string;
+  name: string;
+  description: string;
+  calculationType: "percentage" | "fixed_amount";
+  baseType: "tuition_only" | "full_assessment";
+  defaultValue: string;
+  requiresDocumentation: boolean;
+  isStackable: boolean;
+  displayOrder: number;
+  // Cascade discount fields (optional)
+  cascadePriority?: number;
+  isCashDiscount?: boolean;
+}
+
 // ─── Discount Type Data ───────────────────────────────────────────────────────
-const defaultDiscountTypes = [
+const defaultDiscountTypes: DiscountTypeSeed[] = [
     // ─── Tuition-only discounts (most common) ────────────────────────────────
     {
       code: "ESC_20",
@@ -180,6 +196,21 @@ const defaultDiscountTypes = [
       requiresDocumentation: true,
       isStackable: true,
       displayOrder: 51,
+    },
+
+    // ─── Cash Payment Discount (triggers cascade recalculation) ─────────────
+    {
+      code: "FULL_PAYMENT_DISCOUNT",
+      name: "Full Payment Cash Discount",
+      description: "10% discount for paying the full assessment amount before the cutoff date. When applied, existing scholarship discounts are recalculated based on the discounted tuition amount.",
+      calculationType: "percentage" as const,
+      baseType: "tuition_only" as const,
+      defaultValue: "10.00",
+      requiresDocumentation: false,
+      isStackable: true, // Stacks with scholarships (triggers cascade)
+      displayOrder: 100,
+      cascadePriority: 0, // Applied first, triggers cascade recalculation
+      isCashDiscount: true, // Special flag for full payment detection
     },
 ];
 

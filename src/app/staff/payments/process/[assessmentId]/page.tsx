@@ -18,6 +18,7 @@ import {
   getAccessibleBookletsForUser,
   getCashierDefaultBookletId,
   getManualEntrySuggestions,
+  getAppliedCashDiscountDetails,
 } from "@/features/payments/payments.queries";
 
 interface PageProps {
@@ -66,9 +67,9 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
     redirect("/staff/payments");
   }
 
-  // Fetch last payment, accessible booklets, default booklet, and manual suggestions in parallel
+  // Fetch last payment, accessible booklets, default booklet, manual suggestions, and applied discount in parallel
   // Note: getAccessibleBookletsForUser() filters out booklets assigned to other users
-  const [lastPayment, activeBooklets, defaultBookletId, manualSuggestions] = await Promise.all([
+  const [lastPayment, activeBooklets, defaultBookletId, manualSuggestions, appliedCashDiscount] = await Promise.all([
     db
       .select({
         amount: payments.amount,
@@ -86,6 +87,8 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
     getAccessibleBookletsForUser(session.userId),
     getCashierDefaultBookletId(session.userId),
     getManualEntrySuggestions(session.userId),
+    // Check if cash discount was already applied via approval workflow
+    getAppliedCashDiscountDetails(assessmentId),
   ]);
 
   return (
@@ -115,6 +118,7 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
         activeBooklets={activeBooklets}
         defaultBookletId={defaultBookletId}
         manualSuggestions={manualSuggestions}
+        appliedCashDiscountDetails={appliedCashDiscount}
       />
     </div>
   );

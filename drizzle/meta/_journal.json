@@ -190,6 +190,13 @@
       "when": 1786214400000,
       "tag": "0026_fix_grade_sheets_pending_review_index",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1786300800000,
+      "tag": "0027_add_cascade_discount_fields",
+      "breakpoints": true
     }
   ]
 }

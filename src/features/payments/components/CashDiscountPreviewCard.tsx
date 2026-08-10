@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
 import { BadgePercent, CalendarClock, CircleCheck, X } from "lucide-react";
+import { CascadeDiscountPreview } from "./CascadeDiscountPreview";
+import type { CascadeAdjustmentPreview } from "../payments.types";
 
 interface CashDiscountPreviewCardProps {
   /** Tuition or full assessment total (base for percentage calculation) */
@@ -18,9 +20,9 @@ interface CashDiscountPreviewCardProps {
   cashDiscountAmount: number;
   /** Assessment balance before discount */
   currentBalance: number;
-  /** New balance after discount is applied */
+  /** New balance after discount is applied (includes cascade adjustments) */
   newBalance: number;
-  /** Amount the cashier should collect */
+  /** Amount the cashier should collect (includes cascade adjustments) */
   paymentRequired: number;
   /** Cutoff date for the school year */
   cutoffDate: Date;
@@ -30,6 +32,8 @@ interface CashDiscountPreviewCardProps {
   onConfirm: () => void;
   /** Called when user declines the discount */
   onDecline: () => void;
+  /** Cascade adjustment preview (if existing scholarships will be recalculated) */
+  cascadePreview?: CascadeAdjustmentPreview;
 }
 
 export function CashDiscountPreviewCard({
@@ -45,6 +49,7 @@ export function CashDiscountPreviewCard({
   isConfirmed,
   onConfirm,
   onDecline,
+  cascadePreview,
 }: CashDiscountPreviewCardProps) {
   const baseLabel = baseType === "tuition_only" ? "tuition" : "assessment total";
   const discountLabel =
@@ -101,6 +106,11 @@ export function CashDiscountPreviewCard({
             -<CurrencyDisplay amount={cashDiscountAmount} />
           </span>
         </div>
+
+        {/* Cascade adjustments (if any) */}
+        {cascadePreview?.hasCascadeAdjustments && (
+          <CascadeDiscountPreview preview={cascadePreview} />
+        )}
 
         {/* Divider */}
         <div className="my-2 border-t border-emerald-200 dark:border-emerald-800" />
