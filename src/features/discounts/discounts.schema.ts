@@ -162,6 +162,21 @@ export type ApplyApprovedDiscountFormState = BaseFormState<ApplyApprovedDiscount
   discountAmount?: number;
 };
 
+// ─── Recalculate Cascade Discounts Schema ────────────────────────────────────
+
+export const recalculateCascadeDiscountsSchema = z.object({
+  assessmentId: uuidSchema,
+});
+
+export type RecalculateCascadeDiscountsInput = z.infer<
+  typeof recalculateCascadeDiscountsSchema
+>;
+export type RecalculateCascadeDiscountsFormState =
+  BaseFormState<RecalculateCascadeDiscountsInput> & {
+    adjustmentsApplied?: number;
+    totalAdjustmentAmount?: number;
+  };
+
 // ─── Query/Filter Schemas ─────────────────────────────────────────────────────
 
 export const discountRequestFiltersSchema = z.object({
