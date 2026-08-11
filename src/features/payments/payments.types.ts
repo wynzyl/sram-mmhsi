@@ -154,6 +154,16 @@ export interface AppliedCascadeAdjustment {
   adjustmentAmount: number;
 }
 
+/** Related discount applied on the discounted tuition base (no adjustment needed) */
+export interface RelatedTuitionDiscount {
+  /** Name of the discount (e.g., "Sibling Discount") */
+  discountTypeName: string;
+  /** Base amount used (discounted tuition) */
+  baseAmount: number;
+  /** Discount amount applied */
+  discountAmount: number;
+}
+
 /**
  * Details of a cash discount that has already been applied to an assessment.
  * Used to display read-only info on the payment page when discount was applied
@@ -172,9 +182,64 @@ export interface AppliedCashDiscountDetails {
     appliedAt: Date;
     /** Name of the user who applied the discount */
     appliedByName: string;
-    /** Cascade adjustments that were triggered (if any) */
+    /** Cascade adjustments that were triggered (existing discounts recalculated) */
     cascadeAdjustments: AppliedCascadeAdjustment[];
     /** Total cascade adjustment amount */
     totalCascadeAdjustment: number;
+    /** Related tuition discounts correctly applied on discounted base (no adjustment needed) */
+    relatedDiscounts: RelatedTuitionDiscount[];
+    /** Cutoff date for the cash discount (from school year) */
+    cutoffDate: Date | null;
+    /** Whether the discount has expired (past cutoff date, no payment made) */
+    isExpired: boolean;
   };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Cascade Fix Types (for discounts applied out-of-order)
+// ─────────────────────────────────────────────────────────────────
+
+/** Individual cascade fix adjustment for a single discount */
+export interface CascadeFixAdjustment {
+  /** The student discount ID to be adjusted */
+  studentDiscountId: string;
+  /** Name of the discount being adjusted (e.g., "Sibling Discount") */
+  discountTypeName: string;
+  /** Original base amount (before cash discount was applied) */
+  originalBase: number;
+  /** Correct base amount (after cash discount) */
+  correctBase: number;
+  /** Original discount amount (calculated on wrong base) */
+  originalAmount: number;
+  /** Correct discount amount (recalculated on correct base) */
+  correctAmount: number;
+  /** The adjustment needed (originalAmount - correctAmount) */
+  adjustmentNeeded: number;
+  /** The assessment item created for this discount */
+  assessmentItemId: string | null;
+}
+
+/**
+ * Result of checking if cascade fix is needed.
+ * Returned when cash discount was applied first, but sibling/scholarship discounts
+ * were applied later using the original (non-discounted) tuition base.
+ */
+export interface CascadeFixNeeded {
+  /** Always true when returned (null is returned if no fix needed) */
+  needsFix: true;
+  /** ID of the cash discount that should have triggered cascade */
+  cashDiscountId: string;
+  /** Amount of the cash discount */
+  cashDiscountAmount: number;
+  /** List of discounts needing adjustment */
+  adjustments: CascadeFixAdjustment[];
+  /** Total adjustment amount (sum of all individual adjustments) */
+  totalAdjustment: number;
+}
+
+/** Form state for cascade fix action */
+export interface CascadeFixFormState {
+  success?: boolean;
+  message?: string;
+  totalAdjustment?: number;
 }

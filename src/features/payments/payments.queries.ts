@@ -48,6 +48,10 @@ export type {
   CascadeAdjustmentPreviewLine,
   AppliedCashDiscountDetails,
   AppliedCascadeAdjustment,
+  RelatedTuitionDiscount,
+  CascadeFixNeeded,
+  CascadeFixAdjustment,
+  CascadeFixFormState,
 } from "./payments.types";
 
 import type {
@@ -63,6 +67,9 @@ import type {
   CascadeAdjustmentPreview,
   AppliedCashDiscountDetails,
   AppliedCascadeAdjustment,
+  RelatedTuitionDiscount,
+  CascadeFixNeeded,
+  CascadeFixAdjustment,
 } from "./payments.types";
 
 // ─────────────────────────────────────────────────────────────────
@@ -904,7 +911,8 @@ export async function getDiscountTypeByCode(
  *
  * Used to display read-only info on the payment page when the discount was
  * applied via the approval workflow (not at payment time). Returns cascade
- * adjustments that were triggered by the cash discount.
+ * adjustments that were triggered by the cash discount, as well as related
+ * tuition-based discounts that were correctly applied on the discounted base.
  *
  * @param assessmentId - Assessment to check
  * @returns Applied cash discount details, or null if no discount applied
@@ -917,6 +925,7 @@ export async function getAppliedCashDiscountDetails(
     .select({
       id: studentDiscounts.id,
       discountAmount: studentDiscounts.discountAmount,
+      baseAmount: studentDiscounts.baseAmount,
       appliedAt: studentDiscounts.appliedAt,
       appliedById: studentDiscounts.appliedBy,
     })
@@ -934,7 +943,42 @@ export async function getAppliedCashDiscountDetails(
     return { hasAppliedCashDiscount: false };
   }
 
-  // 2. Fetch cascade adjustments triggered by this discount
+  // 2. Fetch cutoff date from school year and check for existing payments
+  const [assessmentInfo] = await db
+    .select({
+      schoolYearId: assessments.schoolYearId,
+      totalPaid: assessments.totalPaid,
+    })
+    .from(assessments)
+    .where(eq(assessments.id, assessmentId))
+    .limit(1);
+
+  let cutoffDate: Date | null = null;
+  let isExpired = false;
+
+  if (assessmentInfo) {
+    const [schoolYearInfo] = await db
+      .select({
+        cashDiscountCutoffDate: schoolYears.cashDiscountCutoffDate,
+      })
+      .from(schoolYears)
+      .where(eq(schoolYears.id, assessmentInfo.schoolYearId))
+      .limit(1);
+
+    cutoffDate = schoolYearInfo?.cashDiscountCutoffDate ?? null;
+
+    // Check if discount is expired: past cutoff AND no payment made yet
+    const hasPaid = Number(assessmentInfo.totalPaid) > 0;
+    if (cutoffDate && !hasPaid) {
+      const now = new Date();
+      // Set cutoff to end of day for comparison
+      const cutoffEndOfDay = new Date(cutoffDate);
+      cutoffEndOfDay.setHours(23, 59, 59, 999);
+      isExpired = now > cutoffEndOfDay;
+    }
+  }
+
+  // 3. Fetch cascade adjustments triggered by this discount (existing discounts that were recalculated)
   const cascadeAdjustments = await db
     .select({
       discountTypeName: studentDiscounts.discountTypeName,
@@ -949,7 +993,44 @@ export async function getAppliedCashDiscountDetails(
       )
     );
 
-  // 3. Fetch applier name (users table only has username, not first/last name)
+  // 4. Fetch related tuition_only discounts that were correctly applied on discounted base
+  //    These are discounts applied AFTER the cash discount that used the correct base
+  const originalTuitionBase = Number(cashDiscount.baseAmount);
+  const cashDiscountAmount = Number(cashDiscount.discountAmount);
+  const correctTuitionBase = Math.max(0, originalTuitionBase - cashDiscountAmount);
+  const EPSILON = 0.01;
+
+  const otherTuitionDiscounts = await db
+    .select({
+      discountTypeName: studentDiscounts.discountTypeName,
+      baseAmount: studentDiscounts.baseAmount,
+      discountAmount: studentDiscounts.discountAmount,
+    })
+    .from(studentDiscounts)
+    .where(
+      and(
+        eq(studentDiscounts.assessmentId, assessmentId),
+        eq(studentDiscounts.baseType, "tuition_only"),
+        ne(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE),
+        isNull(studentDiscounts.reversedAt),
+        // Exclude ones that have cascade adjustments (already shown in cascadeAdjustments)
+        isNull(studentDiscounts.cascadeTriggeredByDiscountId)
+      )
+    );
+
+  // Filter to only discounts that used the correct (discounted) tuition base
+  const relatedDiscounts: RelatedTuitionDiscount[] = otherTuitionDiscounts
+    .filter((d) => {
+      const baseAmount = Number(d.baseAmount);
+      return Math.abs(baseAmount - correctTuitionBase) < EPSILON;
+    })
+    .map((d) => ({
+      discountTypeName: d.discountTypeName,
+      baseAmount: Number(d.baseAmount),
+      discountAmount: Number(d.discountAmount),
+    }));
+
+  // 5. Fetch applier name (users table only has username, not first/last name)
   const [applier] = await db
     .select({
       username: users.username,
@@ -961,7 +1042,7 @@ export async function getAppliedCashDiscountDetails(
 
   const appliedByName = applier?.username ?? "Unknown";
 
-  // 4. Format cascade adjustments
+  // 6. Format cascade adjustments
   const formattedCascadeAdjustments: AppliedCascadeAdjustment[] = cascadeAdjustments
     .filter((adj) => adj.adjustmentAmount !== null)
     .map((adj) => ({
@@ -984,6 +1065,174 @@ export async function getAppliedCashDiscountDetails(
       appliedByName,
       cascadeAdjustments: formattedCascadeAdjustments,
       totalCascadeAdjustment,
+      relatedDiscounts,
+      cutoffDate,
+      isExpired,
     },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Cascade Fix Detection (for out-of-order discount application)
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Check if cascade fix is needed for an assessment.
+ *
+ * This detects the case where:
+ * 1. Cash discount (FULL_PAYMENT_DISCOUNT) was applied first
+ * 2. Sibling/scholarship discounts were applied later
+ * 3. The later discounts used the ORIGINAL tuition base instead of
+ *    the DISCOUNTED tuition base (which is incorrect)
+ *
+ * This can happen when:
+ * - Cash discount is applied via approval workflow (not at payment time)
+ * - Subsequently, sibling/scholarship discounts are added
+ *
+ * The fix involves creating positive adjustment items that "add back"
+ * the over-discounted amounts to the assessment balance.
+ *
+ * @param assessmentId - Assessment to check
+ * @returns CascadeFixNeeded if fix is required, null otherwise
+ */
+export async function checkCascadeFixNeeded(
+  assessmentId: string
+): Promise<CascadeFixNeeded | null> {
+  // 1. Check for existing non-reversed FULL_PAYMENT_DISCOUNT
+  const [cashDiscount] = await db
+    .select({
+      id: studentDiscounts.id,
+      discountAmount: studentDiscounts.discountAmount,
+      baseAmount: studentDiscounts.baseAmount, // The original tuition base used for cash discount
+    })
+    .from(studentDiscounts)
+    .where(
+      and(
+        eq(studentDiscounts.assessmentId, assessmentId),
+        eq(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE),
+        isNull(studentDiscounts.reversedAt)
+      )
+    )
+    .limit(1);
+
+  // No cash discount = no fix needed
+  if (!cashDiscount) {
+    return null;
+  }
+
+  // 2. Find tuition_only discounts that were applied WITHOUT cascade adjustment
+  //    These are discounts that were applied after the cash discount but
+  //    did not have their base recalculated
+  const potentiallyMisaligned = await db
+    .select({
+      id: studentDiscounts.id,
+      discountTypeName: studentDiscounts.discountTypeName,
+      baseAmount: studentDiscounts.baseAmount,
+      discountValue: studentDiscounts.discountValue,
+      discountAmount: studentDiscounts.discountAmount,
+      calculationType: studentDiscounts.calculationType,
+      assessmentItemId: studentDiscounts.assessmentItemId,
+    })
+    .from(studentDiscounts)
+    .where(
+      and(
+        eq(studentDiscounts.assessmentId, assessmentId),
+        eq(studentDiscounts.baseType, "tuition_only"),
+        // Exclude the cash discount itself
+        ne(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE),
+        // Only non-reversed discounts
+        isNull(studentDiscounts.reversedAt),
+        // Key condition: no cascade adjustment was applied yet
+        isNull(studentDiscounts.cascadeAdjustmentAmount)
+      )
+    );
+
+  // No candidates = no fix needed
+  if (potentiallyMisaligned.length === 0) {
+    return null;
+  }
+
+  // 3. Determine the ORIGINAL tuition base and CORRECT (discounted) base
+  //    The cash discount's baseAmount IS the original tuition
+  const originalTuitionBase = Number(cashDiscount.baseAmount);
+  const cashDiscountAmount = Number(cashDiscount.discountAmount);
+  const correctTuitionBase = Math.max(0, originalTuitionBase - cashDiscountAmount);
+
+  // Small tolerance for floating point comparisons
+  const EPSILON = 0.01;
+
+  // 4. Check each discount to see if it used the WRONG (original) base
+  //    A discount needs cascade fix only if:
+  //    - Its baseAmount matches the ORIGINAL tuition (was calculated on wrong base)
+  //    - NOT if its baseAmount already matches the CORRECT (discounted) tuition
+  const adjustments: CascadeFixAdjustment[] = [];
+
+  for (const discount of potentiallyMisaligned) {
+    const discountBaseAmount = Number(discount.baseAmount);
+    const discountValue = Number(discount.discountValue);
+    const originalAmount = Number(discount.discountAmount);
+
+    // Check if this discount used the ORIGINAL (incorrect) tuition base
+    // If the discount's base is close to the original tuition, it needs fixing
+    // If the discount's base is close to the correct (discounted) tuition, it was already cascaded correctly
+    const usedOriginalBase = Math.abs(discountBaseAmount - originalTuitionBase) < EPSILON;
+    const usedCorrectBase = Math.abs(discountBaseAmount - correctTuitionBase) < EPSILON;
+
+    // Skip if discount already used the correct (discounted) base
+    if (usedCorrectBase) {
+      continue;
+    }
+
+    // Only process if discount used the original (wrong) base
+    if (!usedOriginalBase) {
+      // The base doesn't match either expected value - could be a different scenario
+      // Skip to be safe (don't apply incorrect adjustments)
+      continue;
+    }
+
+    // This discount used the original tuition - it needs cascade adjustment
+    // Recalculate what the discount SHOULD have been on the correct base
+    let correctAmount: number;
+    if (discount.calculationType === "percentage") {
+      correctAmount = correctTuitionBase * (discountValue / 100);
+    } else {
+      // Fixed amount: capped at the base
+      correctAmount = Math.min(discountValue, correctTuitionBase);
+    }
+
+    const adjustmentNeeded = originalAmount - correctAmount;
+
+    // Only include meaningful adjustments (> 1 centavo)
+    if (adjustmentNeeded > EPSILON) {
+      adjustments.push({
+        studentDiscountId: discount.id,
+        discountTypeName: discount.discountTypeName,
+        originalBase: discountBaseAmount,
+        correctBase: correctTuitionBase,
+        originalAmount,
+        correctAmount,
+        adjustmentNeeded,
+        assessmentItemId: discount.assessmentItemId,
+      });
+    }
+  }
+
+  // No significant adjustments = no fix needed
+  if (adjustments.length === 0) {
+    return null;
+  }
+
+  // 4. Calculate total adjustment
+  const totalAdjustment = adjustments.reduce(
+    (sum, adj) => sum + adj.adjustmentNeeded,
+    0
+  );
+
+  return {
+    needsFix: true,
+    cashDiscountId: cashDiscount.id,
+    cashDiscountAmount,
+    adjustments,
+    totalAdjustment,
   };
 }

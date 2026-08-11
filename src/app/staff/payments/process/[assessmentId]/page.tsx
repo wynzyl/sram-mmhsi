@@ -19,6 +19,7 @@ import {
   getCashierDefaultBookletId,
   getManualEntrySuggestions,
   getAppliedCashDiscountDetails,
+  checkCascadeFixNeeded,
 } from "@/features/payments/payments.queries";
 
 interface PageProps {
@@ -67,9 +68,9 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
     redirect("/staff/payments");
   }
 
-  // Fetch last payment, accessible booklets, default booklet, manual suggestions, and applied discount in parallel
+  // Fetch last payment, accessible booklets, default booklet, manual suggestions, applied discount, and cascade fix in parallel
   // Note: getAccessibleBookletsForUser() filters out booklets assigned to other users
-  const [lastPayment, activeBooklets, defaultBookletId, manualSuggestions, appliedCashDiscount] = await Promise.all([
+  const [lastPayment, activeBooklets, defaultBookletId, manualSuggestions, appliedCashDiscount, cascadeFixData] = await Promise.all([
     db
       .select({
         amount: payments.amount,
@@ -89,6 +90,8 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
     getManualEntrySuggestions(session.userId),
     // Check if cash discount was already applied via approval workflow
     getAppliedCashDiscountDetails(assessmentId),
+    // Check if cascade fix is needed (cash discount applied, but later discounts missed cascade)
+    checkCascadeFixNeeded(assessmentId),
   ]);
 
   return (
@@ -119,6 +122,7 @@ export default async function CashierProcessPaymentPage({ params }: PageProps) {
         defaultBookletId={defaultBookletId}
         manualSuggestions={manualSuggestions}
         appliedCashDiscountDetails={appliedCashDiscount}
+        cascadeFixData={cascadeFixData}
       />
     </div>
   );

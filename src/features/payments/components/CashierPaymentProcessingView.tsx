@@ -6,10 +6,11 @@ import { useActionState } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
 import { postPaymentAction } from "../payments.actions";
 import type { PaymentFormState } from "../payments.schema";
-import type { CashDiscountEligibility, AppliedCashDiscountDetails } from "../payments.queries";
+import type { CashDiscountEligibility, AppliedCashDiscountDetails, CascadeFixNeeded } from "../payments.queries";
 import { NumericKeypad } from "./NumericKeypad";
 import { CashDiscountPreviewCard } from "./CashDiscountPreviewCard";
 import { AppliedCashDiscountCard } from "./AppliedCashDiscountCard";
+import { CascadeFixCard } from "./CascadeFixCard";
 import {
   PaymentSuccessOverlay,
   PaymentProcessingHeader,
@@ -25,7 +26,7 @@ import { FormField } from "@/components/forms/FormField";
 import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { formatCurrency, roundToTwoDecimals } from "@/lib/utils/currency";
 import { generateUuid } from "@/lib/utils/uuid";
-import { Copy, Check, Loader2 } from "lucide-react";
+import { Copy, Check, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 type PaymentMethod = "cash" | "check" | "bank_transfer" | "gcash" | "other";
@@ -67,6 +68,8 @@ export type CashierPaymentProcessingViewProps = {
   } | null;
   /** Details of cash discount already applied via approval workflow */
   appliedCashDiscountDetails?: AppliedCashDiscountDetails | null;
+  /** Data for cascade fix if discounts were applied out-of-order */
+  cascadeFixData?: CascadeFixNeeded | null;
 };
 
 export function CashierPaymentProcessingView({
@@ -82,6 +85,7 @@ export function CashierPaymentProcessingView({
   defaultBookletId,
   manualSuggestions,
   appliedCashDiscountDetails,
+  cascadeFixData,
 }: CashierPaymentProcessingViewProps) {
   const router = useRouter();
   const hydrated = useHydrated();
@@ -208,6 +212,7 @@ export function CashierPaymentProcessingView({
   // Check cash discount eligibility
   // Skip if discount is already applied via approval workflow
   const hasAppliedCashDiscount = appliedCashDiscountDetails?.hasAppliedCashDiscount ?? false;
+  const isDiscountExpired = appliedCashDiscountDetails?.discountDetails?.isExpired ?? false;
 
   const checkCashDiscountEligibility = useCallback(async () => {
     // Skip if discount was already applied via approval workflow
@@ -318,7 +323,20 @@ export function CashierPaymentProcessingView({
             {/* Already Applied Cash Discount (read-only info card) */}
             {hasAppliedCashDiscount && appliedCashDiscountDetails?.discountDetails && (
               <div className="mb-4">
-                <AppliedCashDiscountCard details={appliedCashDiscountDetails.discountDetails} />
+                <AppliedCashDiscountCard
+                  details={appliedCashDiscountDetails.discountDetails}
+                  assessmentId={assessmentId}
+                />
+              </div>
+            )}
+
+            {/* Cascade Fix Required (discounts applied out-of-order) */}
+            {cascadeFixData?.needsFix && (
+              <div className="mb-4">
+                <CascadeFixCard
+                  assessmentId={assessmentId}
+                  fixData={cascadeFixData}
+                />
               </div>
             )}
 
@@ -528,12 +546,23 @@ export function CashierPaymentProcessingView({
                       <div className="mb-3">
                         <label
                           htmlFor="amountToPayInput"
-                          className="mb-1.5 block text-sm font-medium"
+                          className="mb-1.5 flex items-center gap-2 text-sm font-medium"
                         >
-                          Amount to pay {applyCashDiscount && "(after discount)"} <span className="text-destructive">*</span>
+                          <span>
+                            Amount to pay {(applyCashDiscount || hasAppliedCashDiscount) && "(full payment required)"}
+                            <span className="text-destructive"> *</span>
+                          </span>
+                          {(applyCashDiscount || hasAppliedCashDiscount) && (
+                            <Lock className="h-4 w-4 text-amber-600" />
+                          )}
                         </label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-black text-emerald-600">
+                          <span className={cn(
+                            "absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-black",
+                            (applyCashDiscount || hasAppliedCashDiscount)
+                              ? "text-amber-600"
+                              : "text-emerald-600"
+                          )}>
                             ₱
                           </span>
                           <Input
@@ -542,14 +571,27 @@ export function CashierPaymentProcessingView({
                             inputMode="decimal"
                             value={formatWithCommas(amountToPay)}
                             onChange={(e) => setAmountToPay(stripFormatting(e.target.value))}
-                            className="h-14 pl-10 font-mono text-3xl font-black text-emerald-600"
+                            className={cn(
+                              "h-14 pl-10 font-mono text-3xl font-black",
+                              (applyCashDiscount || hasAppliedCashDiscount)
+                                ? "text-amber-600 bg-amber-50 dark:bg-amber-950/30 cursor-not-allowed"
+                                : "text-emerald-600"
+                            )}
                             placeholder="0.00"
                             autoComplete="off"
+                            disabled={applyCashDiscount || hasAppliedCashDiscount}
+                            readOnly={applyCashDiscount || hasAppliedCashDiscount}
                           />
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Maximum {formatCurrency(totals.balance)}
-                        </p>
+                        {(applyCashDiscount || hasAppliedCashDiscount) ? (
+                          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                            Full payment is required to receive the cash discount.
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Maximum {formatCurrency(totals.balance)}
+                          </p>
+                        )}
                         {state.errors?.amount && (
                           <p className="mt-1 text-sm text-destructive">{state.errors.amount[0]}</p>
                         )}
@@ -662,10 +704,11 @@ export function CashierPaymentProcessingView({
                       pending ||
                       (!isManualEntry && activeBooklets.length === 0) ||
                       !hydrated ||
-                      !isReadyToPost
+                      !isReadyToPost ||
+                      isDiscountExpired
                     }
                   >
-                    {pending ? "Posting…" : "Post Payment & Print OR"}
+                    {pending ? "Posting…" : isDiscountExpired ? "Discount Expired — Reversal Required" : "Post Payment & Print OR"}
                   </Button>
                   <Button
                     type="button"
