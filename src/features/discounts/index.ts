@@ -94,3 +94,20 @@ export type {
   ApprovedDiscountRequest,
   DiscountLine,
 } from "./utils/discount-calculations";
+
+// Query helpers
+export {
+  getTuitionOnlyDiscountsForCascade,
+  getAssessmentItemsForDiscountCalc,
+} from "./discounts.query-helpers";
+
+// Services
+export {
+  applyCascadeAdjustmentsForCashDiscount,
+} from "./services/cascade-operations";
+
+export type {
+  CascadeExecutor,
+  CascadeApplicationResult,
+  CascadeAssessmentItem,
+} from "./services/cascade-operations";

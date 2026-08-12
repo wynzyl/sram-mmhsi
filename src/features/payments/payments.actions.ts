@@ -61,8 +61,8 @@ import {
   checkFullPaymentCashDiscountEligibility,
   getDiscountTypeByCode,
   checkCascadeFixNeeded,
-  FULL_PAYMENT_DISCOUNT_CODE,
 } from "./payments.queries";
+import { FULL_PAYMENT_DISCOUNT_CODE } from "@/lib/constants/discount-codes";
 import type { CascadeFixFormState } from "./payments.types";
 import {
   discountRequests,
@@ -71,16 +71,8 @@ import {
   discountTypes,
   schoolYears,
 } from "@/lib/db/schema";
-import {
-  formatDiscountDescription,
-  calculateDiscountBase,
-} from "@/features/discounts/utils/discount-calculations";
-import {
-  calculateCascadeAdjustments,
-  formatCascadeAdjustmentDescription,
-  type StudentDiscountForCascade,
-} from "@/features/discounts/utils/cascade-calculations";
-import { feeItemTypes } from "@/lib/db/schema";
+import { formatDiscountDescription } from "@/features/discounts/utils/discount-calculations";
+import { applyCascadeAdjustmentsForCashDiscount } from "@/features/discounts/services/cascade-operations";
 
 // ─── Receipt Booklets ────────────────────────────────────────────────────────
 
@@ -613,141 +605,16 @@ export async function postPaymentAction(
         // 3.6. Apply Cascading Discount Adjustments
         // When cash discount is applied, recalculate existing tuition_only discounts
         // based on the discounted tuition amount (not the original tuition).
-        let totalCascadeAdjustment = 0;
+        const cascadeResult = await applyCascadeAdjustmentsForCashDiscount(
+          tx,
+          assessmentId,
+          studentDiscount.id,
+          details.cashDiscountAmount,
+          session.userId,
+          session.role
+        );
 
-        // Fetch existing tuition_only discounts that may cascade
-        const existingTuitionDiscounts = await tx
-          .select({
-            id: studentDiscounts.id,
-            studentId: studentDiscounts.studentId,
-            assessmentId: studentDiscounts.assessmentId,
-            discountTypeCode: studentDiscounts.discountTypeCode,
-            discountTypeName: studentDiscounts.discountTypeName,
-            calculationType: studentDiscounts.calculationType,
-            baseType: studentDiscounts.baseType,
-            baseAmount: studentDiscounts.baseAmount,
-            discountValue: studentDiscounts.discountValue,
-            discountAmount: studentDiscounts.discountAmount,
-            assessmentItemId: studentDiscounts.assessmentItemId,
-            cascadeAdjustmentAmount: studentDiscounts.cascadeAdjustmentAmount,
-          })
-          .from(studentDiscounts)
-          .where(
-            and(
-              eq(studentDiscounts.assessmentId, assessmentId),
-              eq(studentDiscounts.baseType, "tuition_only"),
-              isNull(studentDiscounts.reversedAt),
-              // Exclude the cash discount we just created
-              ne(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE)
-            )
-          );
-
-        if (existingTuitionDiscounts.length > 0) {
-          // Fetch assessment items for cascade calculation
-          const itemsForCascade = await tx
-            .select({
-              id: assessmentItems.id,
-              amount: assessmentItems.amount,
-              isDiscount: assessmentItems.isDiscount,
-              feeItemTypeCode: feeItemTypes.code,
-            })
-            .from(assessmentItems)
-            .leftJoin(feeItemTypes, eq(assessmentItems.feeItemTypeId, feeItemTypes.id))
-            .where(eq(assessmentItems.assessmentId, assessmentId));
-
-          const itemsForCalc = itemsForCascade.map((r) => ({
-            id: r.id,
-            amount: r.amount,
-            isDiscount: r.isDiscount,
-            feeItemTypeCode: r.feeItemTypeCode,
-          }));
-
-          // Convert to cascade calculation format
-          const discountsForCascade: StudentDiscountForCascade[] =
-            existingTuitionDiscounts.map((d) => ({
-              id: d.id,
-              studentId: d.studentId,
-              assessmentId: d.assessmentId,
-              discountTypeCode: d.discountTypeCode,
-              discountTypeName: d.discountTypeName,
-              calculationType: d.calculationType as "fixed_amount" | "percentage",
-              baseType: d.baseType as "tuition_only" | "full_assessment",
-              baseAmount: d.baseAmount,
-              discountValue: d.discountValue,
-              discountAmount: d.discountAmount,
-              assessmentItemId: d.assessmentItemId,
-              cascadeAdjustmentAmount: d.cascadeAdjustmentAmount,
-            }));
-
-          // Calculate cascade adjustments
-          const cascadeResult = calculateCascadeAdjustments(
-            discountsForCascade,
-            details.cashDiscountAmount,
-            itemsForCalc
-          );
-
-          // Create cascade adjustment items and update student discounts
-          for (const adj of cascadeResult.adjustments) {
-            // Create positive assessment item (adds to balance)
-            const adjustmentDescription = formatCascadeAdjustmentDescription(
-              adj,
-              adj.newBaseAmount
-            );
-
-            const [adjustmentItem] = await tx
-              .insert(assessmentItems)
-              .values({
-                assessmentId,
-                description: adjustmentDescription,
-                amount: String(adj.adjustmentAmount),
-                isDiscount: false, // Positive = adds to balance
-                isRefundable: false,
-                isCascadeAdjustment: true,
-                adjustsItemId: adj.originalAssessmentItemId,
-                createdBy: session.userId,
-                updatedBy: session.userId,
-              })
-              .returning({ id: assessmentItems.id });
-
-            // Update student discount with cascade tracking
-            await tx
-              .update(studentDiscounts)
-              .set({
-                cascadeAdjustmentAmount: String(adj.adjustmentAmount),
-                cascadeTriggeredByDiscountId: studentDiscount.id,
-              })
-              .where(eq(studentDiscounts.id, adj.studentDiscountId));
-
-            // Audit cascade adjustment
-            await logAudit({
-              actor: session.userId,
-              actorRole: session.role,
-              action: "cascade_discount_adjustment",
-              targetEntity: "student_discounts",
-              targetId: adj.studentDiscountId,
-              context: `Cascade adjustment due to cash discount`,
-              newState: {
-                originalDiscountAmount: adj.originalDiscountAmount,
-                recalculatedAmount: adj.recalculatedDiscountAmount,
-                adjustmentAmount: adj.adjustmentAmount,
-                triggeredByDiscountId: studentDiscount.id,
-                adjustmentItemId: adjustmentItem.id,
-              },
-            });
-          }
-
-          totalCascadeAdjustment = cascadeResult.totalAdjustment;
-
-          // Apply cascade adjustment to assessment balance
-          if (totalCascadeAdjustment > 0) {
-            await recalcAssessmentTotalsForCascade(
-              tx,
-              assessmentId,
-              totalCascadeAdjustment,
-              session.userId
-            );
-          }
-        }
+        const totalCascadeAdjustment = cascadeResult.totalCascadeAdjustment;
 
         // The actual payment amount is the new reduced balance (includes cascade)
         // details.paymentRequired already includes cascade adjustment from eligibility check

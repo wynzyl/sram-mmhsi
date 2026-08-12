@@ -18,6 +18,7 @@ import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, ne, notInArray, sql 
 import { parseOrNumber } from "@/lib/utils/or-number";
 import type { DbExecutor } from "@/lib/utils/tx-helpers";
 import type { Role } from "@/lib/constants/roles";
+import { FULL_PAYMENT_DISCOUNT_CODE } from "@/lib/constants/discount-codes";
 import { getPortalStudentIds, getPortalStudentLabels } from "@/lib/queries/portal-student";
 import { calculateOffset } from "@/lib/types/pagination";
 import {
@@ -580,9 +581,6 @@ export async function isPaymentMostRecentVoidable(
 // ─────────────────────────────────────────────────────────────────
 // Full Payment Cash Discount Eligibility
 // ─────────────────────────────────────────────────────────────────
-
-/** The code for the full payment cash discount in the discountTypes table */
-export const FULL_PAYMENT_DISCOUNT_CODE = "FULL_PAYMENT_DISCOUNT";
 
 /**
  * Check if a payment qualifies for the full payment cash discount.
