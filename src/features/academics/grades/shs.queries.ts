@@ -202,6 +202,9 @@ export async function getSubjectsFromOfferingsForSection(
  * - Strand-specific subjects are only for students in that strand
  * - The effective strand is determined by: subject.strandId ?? offering.strandId
  *
+ * Performance: Fixed N+1 by using LEFT JOINs for strand codes and display order
+ * directly in the initial query, eliminating 2 extra round-trips.
+ *
  * @param sectionId - The section ID to fetch subjects for
  * @param schoolYearId - The school year context
  * @param gradingPeriod - Optional grading period to filter by term (Q1/Q2/T1/etc)
@@ -226,6 +229,11 @@ export async function getSubjectsForSHSGradeEntry(
     baseConditions.push(inArray(subjectOfferings.termOffered, validTerms));
   }
 
+  // Aliases for strand JOINs - subject strand vs offering strand
+  const subjectStrand = strands;
+  const offeringStrand = strands;
+
+  // Single query with LEFT JOINs for strand codes - eliminates N+1 for strand lookup
   const rows = await db
     .select({
       id: subjectOfferings.id,
@@ -240,40 +248,54 @@ export async function getSubjectsForSHSGradeEntry(
       termOffered: subjectOfferings.termOffered,
       teacherId: subjectOfferings.teacherId,
       teacherName: users.username,
+      // Strand info from subject's strandId (alias: subjectStrand)
+      subjectStrandCode: sql<string | null>`CASE WHEN ${subjects.strandId} IS NOT NULL AND ss.deleted_at IS NULL THEN ss.code ELSE NULL END`,
+      subjectStrandShortCode: sql<string | null>`CASE WHEN ${subjects.strandId} IS NOT NULL AND ss.deleted_at IS NULL THEN ss.short_code ELSE NULL END`,
+      subjectStrandDisplayOrder: sql<number | null>`CASE WHEN ${subjects.strandId} IS NOT NULL AND ss.deleted_at IS NULL THEN ss.display_order ELSE NULL END`,
+      // Strand info from offering's strandId (alias: offeringStrand)
+      offeringStrandCode: sql<string | null>`CASE WHEN ${subjectOfferings.strandId} IS NOT NULL AND os.deleted_at IS NULL THEN os.code ELSE NULL END`,
+      offeringStrandShortCode: sql<string | null>`CASE WHEN ${subjectOfferings.strandId} IS NOT NULL AND os.deleted_at IS NULL THEN os.short_code ELSE NULL END`,
+      offeringStrandDisplayOrder: sql<number | null>`CASE WHEN ${subjectOfferings.strandId} IS NOT NULL AND os.deleted_at IS NULL THEN os.display_order ELSE NULL END`,
     })
     .from(subjectOfferings)
     .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
     .leftJoin(users, eq(subjectOfferings.teacherId, users.id))
+    // LEFT JOIN for subject's strand (aliased as ss)
+    .leftJoin(
+      sql`${subjectStrand} AS ss`,
+      sql`${subjects.strandId} = ss.id`
+    )
+    // LEFT JOIN for offering's strand (aliased as os)
+    .leftJoin(
+      sql`${offeringStrand} AS os`,
+      sql`${subjectOfferings.strandId} = os.id`
+    )
     .where(and(...baseConditions))
     .orderBy(asc(subjectOfferings.sequenceOrder), asc(subjects.name));
 
-  // Fetch strand codes
-  const strandIds = new Set<string>();
-  for (const row of rows) {
-    if (row.subjectStrandId) strandIds.add(row.subjectStrandId);
-    if (row.offeringStrandId) strandIds.add(row.offeringStrandId);
-  }
-
-  const strandMap = new Map<string, { code: string; shortCode: string }>();
-  if (strandIds.size > 0) {
-    // Soft-deleted tracks must not resolve to a code: deleting a track is
-    // blocked while subjects/sections/enrollments reference it, but NOT while a
-    // subject *offering* does, so `subjectOfferings.strandId` can outlive the
-    // track. Without this filter such an offering renders a grade-entry tab for
-    // a track the registrar already removed.
-    const strandRows = await db
-      .select({ id: strands.id, code: strands.code, shortCode: strands.shortCode })
-      .from(strands)
-      .where(
-        and(inArray(strands.id, Array.from(strandIds)), isNull(strands.deletedAt))
-      );
-    for (const s of strandRows) {
-      strandMap.set(s.id, { code: s.code, shortCode: s.shortCode });
-    }
-  }
-
   if (rows.length === 0) {
     return null;
+  }
+
+  // Build strand info map from JOIN results (no additional queries needed)
+  const strandMap = new Map<string, { code: string; shortCode: string; displayOrder: number }>();
+  for (const row of rows) {
+    // Add subject strand info if present
+    if (row.subjectStrandId && row.subjectStrandCode) {
+      strandMap.set(row.subjectStrandId, {
+        code: row.subjectStrandCode,
+        shortCode: row.subjectStrandShortCode ?? row.subjectStrandCode,
+        displayOrder: row.subjectStrandDisplayOrder ?? 999,
+      });
+    }
+    // Add offering strand info if present
+    if (row.offeringStrandId && row.offeringStrandCode) {
+      strandMap.set(row.offeringStrandId, {
+        code: row.offeringStrandCode,
+        shortCode: row.offeringStrandShortCode ?? row.offeringStrandCode,
+        displayOrder: row.offeringStrandDisplayOrder ?? 999,
+      });
+    }
   }
 
   // Group subjects by track
@@ -281,6 +303,7 @@ export async function getSubjectsForSHSGradeEntry(
   const availableTracks = new Set<string>();
   const seenTrackCodes = new Map<string, Set<string>>();
   const coreSubjectsWithoutTrack: SHSSubjectOffering[] = [];
+  const trackDisplayOrders = new Map<string, number>();
 
   for (const row of rows) {
     /**
@@ -318,6 +341,10 @@ export async function getSubjectsForSHSGradeEntry(
 
     if (trackCode) {
       availableTracks.add(trackCode);
+      // Track display order for sorting (from JOIN results)
+      if (effectiveStrand && !trackDisplayOrders.has(trackCode)) {
+        trackDisplayOrders.set(trackCode, effectiveStrand.displayOrder);
+      }
       if (!seenTrackCodes.has(trackCode)) {
         seenTrackCodes.set(trackCode, new Set<string>());
       }
@@ -349,28 +376,9 @@ export async function getSubjectsForSHSGradeEntry(
     }
   }
 
-  // Sort tracks by display order
-  const trackOrder = new Map<string, number>();
-  if (strandMap.size > 0) {
-    // `strands_code_uidx` is partial on `deleted_at IS NULL`, so a deleted
-    // track's code can be reused by a new active one. Matching on code alone
-    // would return both rows and let the last one win, making tab order depend
-    // on row order — filter to the active track.
-    const orderRows = await db
-      .select({ code: strands.code, displayOrder: strands.displayOrder })
-      .from(strands)
-      .where(
-        and(
-          inArray(strands.code, Array.from(availableTracks)),
-          isNull(strands.deletedAt)
-        )
-      );
-    for (const r of orderRows) {
-      trackOrder.set(r.code, r.displayOrder);
-    }
-  }
+  // Sort tracks by display order (from JOIN results, no extra query needed)
   const sortedTracks = Array.from(availableTracks).sort(
-    (a, b) => (trackOrder.get(a) ?? 999) - (trackOrder.get(b) ?? 999)
+    (a, b) => (trackDisplayOrders.get(a) ?? 999) - (trackDisplayOrders.get(b) ?? 999)
   );
 
   return {

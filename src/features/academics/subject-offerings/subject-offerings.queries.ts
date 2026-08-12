@@ -106,44 +106,42 @@ export async function getSubjectOfferingsForSection(
 /**
  * Get subjects from adopted curriculum for a section's grade level.
  * Used for generating subject offerings.
+ *
+ * Performance: Combined section + curriculum lookup into single JOIN query,
+ * reducing 3 sequential queries to 2.
  */
 export async function getSubjectsForOfferingGeneration(
   sectionId: string,
   schoolYearId: string
 ): Promise<SubjectForOffering[]> {
-  // Get section's grade level
-  const [section] = await db
+  // Combined query: Get section's grade level AND adopted curriculum in one query
+  const [sectionWithCurriculum] = await db
     .select({
       gradeLevelId: sections.gradeLevelId,
       gradeLevelName: gradeLevels.name,
+      curriculumId: curriculumAdoptions.curriculumId,
     })
     .from(sections)
     .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
-    .where(eq(sections.id, sectionId))
-    .limit(1);
-
-  if (!section) {
-    return [];
-  }
-
-  // Get adopted curriculum for this grade level + school year
-  const [adoption] = await db
-    .select({
-      curriculumId: curriculumAdoptions.curriculumId,
-    })
-    .from(curriculumAdoptions)
-    .innerJoin(curriculums, eq(curriculumAdoptions.curriculumId, curriculums.id))
-    .where(
+    .innerJoin(
+      curriculumAdoptions,
       and(
-        eq(curriculumAdoptions.gradeLevelId, section.gradeLevelId),
+        eq(curriculumAdoptions.gradeLevelId, sections.gradeLevelId),
         eq(curriculumAdoptions.schoolYearId, schoolYearId),
-        isNull(curriculumAdoptions.deletedAt),
+        isNull(curriculumAdoptions.deletedAt)
+      )
+    )
+    .innerJoin(
+      curriculums,
+      and(
+        eq(curriculumAdoptions.curriculumId, curriculums.id),
         eq(curriculums.status, "published")
       )
     )
+    .where(eq(sections.id, sectionId))
     .limit(1);
 
-  if (!adoption) {
+  if (!sectionWithCurriculum) {
     return [];
   }
 
@@ -161,8 +159,8 @@ export async function getSubjectsForOfferingGeneration(
     .from(subjects)
     .where(
       and(
-        eq(subjects.curriculumId, adoption.curriculumId),
-        eq(subjects.gradeLevelId, section.gradeLevelId),
+        eq(subjects.curriculumId, sectionWithCurriculum.curriculumId),
+        eq(subjects.gradeLevelId, sectionWithCurriculum.gradeLevelId),
         isNull(subjects.deletedAt)
       )
     )
@@ -208,7 +206,7 @@ export async function getSubjectsForOfferingGeneration(
     units: row.units,
     isCore: row.isCore,
     gradeLevelId: row.gradeLevelId!,
-    gradeLevelName: section.gradeLevelName,
+    gradeLevelName: sectionWithCurriculum.gradeLevelName,
     sequenceOrder: row.sequenceOrder,
     strandIds: row.isCore ? undefined : strandMap.get(row.id),
   }));
@@ -406,44 +404,53 @@ export async function getSubjectOfferingById(
 /**
  * Get published curriculums that have elective subjects for a grade level.
  * Used for the curriculum picker in manual subject offering dialog.
+ *
+ * Performance: Parallelized curriculum and elective count queries using Promise.all.
  */
 export async function getCurriculumsWithSubjectsForGradeLevel(
   gradeLevelId: string
 ): Promise<CurriculumForSubjectPicker[]> {
-  // First get all published curriculums
-  const publishedCurriculums = await db
-    .select({
-      id: curriculums.id,
-      name: curriculums.name,
-      version: curriculums.version,
-    })
-    .from(curriculums)
-    .where(eq(curriculums.status, "published"))
-    .orderBy(asc(curriculums.name), asc(curriculums.version));
+  // Parallelize: fetch curriculums and elective counts simultaneously
+  const [publishedCurriculums, subjectCounts] = await Promise.all([
+    // Query 1: Get all published curriculums
+    db
+      .select({
+        id: curriculums.id,
+        name: curriculums.name,
+        version: curriculums.version,
+      })
+      .from(curriculums)
+      .where(eq(curriculums.status, "published"))
+      .orderBy(asc(curriculums.name), asc(curriculums.version)),
+
+    // Query 2: Get ELECTIVE subject counts per curriculum for this grade level
+    // Note: This counts against ALL published curriculums, filtering happens in JS
+    db
+      .select({
+        curriculumId: subjects.curriculumId,
+        count: count(),
+      })
+      .from(subjects)
+      .innerJoin(
+        curriculums,
+        and(
+          eq(subjects.curriculumId, curriculums.id),
+          eq(curriculums.status, "published")
+        )
+      )
+      .where(
+        and(
+          eq(subjects.gradeLevelId, gradeLevelId),
+          eq(subjects.isCore, false), // Only electives
+          isNull(subjects.deletedAt)
+        )
+      )
+      .groupBy(subjects.curriculumId),
+  ]);
 
   if (publishedCurriculums.length === 0) {
     return [];
   }
-
-  // Get ELECTIVE subject counts per curriculum for this grade level
-  const subjectCounts = await db
-    .select({
-      curriculumId: subjects.curriculumId,
-      count: count(),
-    })
-    .from(subjects)
-    .where(
-      and(
-        eq(subjects.gradeLevelId, gradeLevelId),
-        eq(subjects.isCore, false), // Only electives
-        isNull(subjects.deletedAt),
-        inArray(
-          subjects.curriculumId,
-          publishedCurriculums.map((c) => c.id)
-        )
-      )
-    )
-    .groupBy(subjects.curriculumId);
 
   // Build map of curriculum -> elective count
   const countMap = new Map<string, number>();
@@ -469,6 +476,8 @@ export async function getCurriculumsWithSubjectsForGradeLevel(
  * Shows:
  * - Subjects not yet offered in the section
  * - Elective subjects (isCore=false) that don't have strand-specific offerings yet
+ *
+ * Performance: Parallelized existing offerings and curriculum info queries using Promise.all.
  */
 export async function getAvailableSubjectsForManualOffering(
   curriculumId: string,
@@ -476,23 +485,42 @@ export async function getAvailableSubjectsForManualOffering(
   sectionId: string,
   schoolYearId: string
 ): Promise<SubjectForManualOffering[]> {
-  // Get existing offerings with their strand assignments
-  const existingOfferings = await db
-    .select({
-      subjectId: subjectOfferings.subjectId,
-      subjectCode: subjects.code,
-      isCore: subjects.isCore,
-      strandId: subjectOfferings.strandId,
-    })
-    .from(subjectOfferings)
-    .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
-    .where(
-      and(
-        eq(subjectOfferings.sectionId, sectionId),
-        eq(subjectOfferings.schoolYearId, schoolYearId),
-        isNull(subjectOfferings.deletedAt)
-      )
-    );
+  // Parallelize: fetch existing offerings and curriculum info simultaneously
+  const [existingOfferings, curriculumResult] = await Promise.all([
+    // Query 1: Get existing offerings with their strand assignments
+    db
+      .select({
+        subjectId: subjectOfferings.subjectId,
+        subjectCode: subjects.code,
+        isCore: subjects.isCore,
+        strandId: subjectOfferings.strandId,
+      })
+      .from(subjectOfferings)
+      .innerJoin(subjects, eq(subjectOfferings.subjectId, subjects.id))
+      .where(
+        and(
+          eq(subjectOfferings.sectionId, sectionId),
+          eq(subjectOfferings.schoolYearId, schoolYearId),
+          isNull(subjectOfferings.deletedAt)
+        )
+      ),
+
+    // Query 2: Get curriculum info
+    db
+      .select({
+        id: curriculums.id,
+        name: curriculums.name,
+        status: curriculums.status,
+      })
+      .from(curriculums)
+      .where(eq(curriculums.id, curriculumId))
+      .limit(1),
+  ]);
+
+  const curriculum = curriculumResult[0];
+  if (!curriculum || curriculum.status !== "published") {
+    return [];
+  }
 
   // Track which subjects are fully offered (core) or have strand assignments
   const coreSubjectIds = new Set<string>();
@@ -509,21 +537,6 @@ export async function getAvailableSubjectsForManualOffering(
       electivesWithStrand.add(o.subjectId);
     }
     // Electives WITHOUT strand are still available for strand linking
-  }
-
-  // Get curriculum info
-  const [curriculum] = await db
-    .select({
-      id: curriculums.id,
-      name: curriculums.name,
-      status: curriculums.status,
-    })
-    .from(curriculums)
-    .where(eq(curriculums.id, curriculumId))
-    .limit(1);
-
-  if (!curriculum || curriculum.status !== "published") {
-    return [];
   }
 
   // Get ONLY elective subjects from the curriculum for the grade level

@@ -327,40 +327,33 @@ export type GradeSheetData = {
 /**
  * Get grade sheet for a section/period with entries.
  * Returns null if no grade sheet exists.
+ *
+ * Performance: Combined sheet + entries into single query using LEFT JOIN,
+ * eliminating sequential query pattern.
  */
 export async function getGradeSheetForPeriod(
   sectionId: string,
   schoolYearId: string,
   gradingPeriod: string
 ): Promise<GradeSheetData | null> {
-  const sheet = await db.query.gradeSheets.findFirst({
-    where: and(
-      eq(gradeSheets.sectionId, sectionId),
-      eq(gradeSheets.schoolYearId, schoolYearId),
-      sql`${gradeSheets.gradingPeriod} = ${gradingPeriod}`
-    ),
-    columns: {
-      id: true,
-      status: true,
-      returnRemarks: true,
-    },
-  });
-
-  if (!sheet) {
-    return null;
-  }
-
-  // Only return entries for subjects that have active, non-deleted offerings
-  const entries = await db
+  // Single query with LEFT JOIN for sheet + entries
+  const rows = await db
     .select({
-      studentId: gradeSheetEntries.studentId,
-      subjectId: gradeSheetEntries.subjectId,
-      grade: gradeSheetEntries.grade,
+      // Sheet fields
+      sheetId: gradeSheets.id,
+      status: gradeSheets.status,
+      returnRemarks: gradeSheets.returnRemarks,
+      // Entry fields (may be null if no entries)
+      entryStudentId: gradeSheetEntries.studentId,
+      entrySubjectId: gradeSheetEntries.subjectId,
+      entryGrade: gradeSheetEntries.grade,
     })
-    .from(gradeSheetEntries)
-    .where(
+    .from(gradeSheets)
+    .leftJoin(
+      gradeSheetEntries,
       and(
-        eq(gradeSheetEntries.gradeSheetId, sheet.id),
+        eq(gradeSheetEntries.gradeSheetId, gradeSheets.id),
+        // Only include entries for subjects with active, non-deleted offerings
         sql`EXISTS (
           SELECT 1 FROM ${subjectOfferings}
           WHERE ${subjectOfferings.subjectId} = ${gradeSheetEntries.subjectId}
@@ -370,17 +363,42 @@ export async function getGradeSheetForPeriod(
             AND ${subjectOfferings.deletedAt} IS NULL
         )`
       )
+    )
+    .where(
+      and(
+        eq(gradeSheets.sectionId, sectionId),
+        eq(gradeSheets.schoolYearId, schoolYearId),
+        sql`${gradeSheets.gradingPeriod} = ${gradingPeriod}`
+      )
     );
 
+  if (rows.length === 0) {
+    return null;
+  }
+
+  // Extract sheet info from first row
+  const firstRow = rows[0];
+  const sheetId = firstRow.sheetId;
+  const status = firstRow.status;
+  const returnRemarks = firstRow.returnRemarks;
+
+  // Build entries array from all rows (handle case where LEFT JOIN returned no entries)
+  const entries: Array<{ studentId: string; subjectId: string; grade: string | null }> = [];
+  for (const row of rows) {
+    if (row.entryStudentId && row.entrySubjectId) {
+      entries.push({
+        studentId: row.entryStudentId,
+        subjectId: row.entrySubjectId,
+        grade: row.entryGrade ? String(row.entryGrade) : null,
+      });
+    }
+  }
+
   return {
-    id: sheet.id,
-    status: sheet.status,
-    returnRemarks: sheet.returnRemarks,
-    entries: entries.map((e) => ({
-      studentId: e.studentId,
-      subjectId: e.subjectId,
-      grade: e.grade ? String(e.grade) : null,
-    })),
+    id: sheetId,
+    status,
+    returnRemarks,
+    entries,
   };
 }
 
@@ -406,6 +424,9 @@ export type PeriodCompletionStatus = {
  * accurate figure is computed where it is actually used: `SHSGradeEntryTabs`
  * for the on-screen progress, and `validateGradeSheetCompleteness` for the
  * submission gate.
+ *
+ * Performance: Added inArray filter to only fetch sheets for requested periods,
+ * reducing data transfer when only a subset of periods is needed.
  */
 export async function getPeriodsCompletionStatus(
   sectionId: string,
@@ -425,6 +446,11 @@ export async function getPeriodsCompletionStatus(
 
   const COMPLETE_STATUSES = ["principal_approved", "published", "locked"];
 
+  // Filter to only requested periods at DB level
+  // Cast periods to the grading period enum type for type safety
+  type GradingPeriodType = typeof gradeSheets.gradingPeriod.enumValues[number];
+  const periodValues = periods as unknown as GradingPeriodType[];
+
   const sheetStats = await db
     .select({
       gradingPeriod: gradeSheets.gradingPeriod,
@@ -434,7 +460,8 @@ export async function getPeriodsCompletionStatus(
     .where(
       and(
         eq(gradeSheets.sectionId, sectionId),
-        eq(gradeSheets.schoolYearId, schoolYearId)
+        eq(gradeSheets.schoolYearId, schoolYearId),
+        inArray(gradeSheets.gradingPeriod, periodValues)
       )
     );
 
@@ -521,6 +548,9 @@ type SectionInfo = {
  * using parallel queries where possible. Returns a discriminated union
  * that can be used to render the appropriate component (SHS vs regular).
  *
+ * Performance: Included completionStatus in Promise.all to eliminate
+ * sequential query after the main parallel batch.
+ *
  * @param section - Section details (from getSectionDetails)
  * @param selectedPeriod - The grading period to fetch data for
  * @returns Discriminated union of SHS or regular grade entry data
@@ -537,17 +567,13 @@ export async function getGradeEntryPageData(
 
   if (isShs) {
     // SHS: Use strand-based queries with term filtering
-    const [shsStudents, shsSubjects, gradeSheetData] = await Promise.all([
+    // All 4 queries run in parallel
+    const [shsStudents, shsSubjects, gradeSheetData, completionStatus] = await Promise.all([
       getStudentsWithStrandsInSection(section.id, section.schoolYearId),
       getSubjectsForSHSGradeEntry(section.id, section.schoolYearId, selectedPeriod),
       getGradeSheetForPeriod(section.id, section.schoolYearId, selectedPeriod),
+      getPeriodsCompletionStatus(section.id, section.schoolYearId, periods),
     ]);
-
-    const completionStatus = await getPeriodsCompletionStatus(
-      section.id,
-      section.schoolYearId,
-      periods
-    );
 
     // Determine if editing is allowed
     const periodIndex = (periods as readonly string[]).indexOf(selectedPeriod);
@@ -571,17 +597,13 @@ export async function getGradeEntryPageData(
   }
 
   // Non-SHS: Use standard curriculum-based queries
-  const [students, subjects, gradeSheetData] = await Promise.all([
+  // All 4 queries run in parallel
+  const [students, subjects, gradeSheetData, completionStatus] = await Promise.all([
     getStudentsInSection(section.id, section.schoolYearId),
     getSubjectsForGradeLevel(section.gradeLevelId, section.schoolYearId),
     getGradeSheetForPeriod(section.id, section.schoolYearId, selectedPeriod),
+    getPeriodsCompletionStatus(section.id, section.schoolYearId, periods),
   ]);
-
-  const completionStatus = await getPeriodsCompletionStatus(
-    section.id,
-    section.schoolYearId,
-    periods
-  );
 
   // Determine if editing is allowed
   const periodIndex = (periods as readonly string[]).indexOf(selectedPeriod);
