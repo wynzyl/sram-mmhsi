@@ -592,6 +592,9 @@ export async function isPaymentMostRecentVoidable(
  * 4. Assessment is not cancelled or transferred
  * 5. FULL_PAYMENT_DISCOUNT type exists and is active in discountTypes
  *
+ * PERFORMANCE: After initial assessment validation, runs 4 queries in parallel
+ * (discount type, existing discount, assessment items, tuition discounts).
+ *
  * @param assessmentId - Assessment to check
  * @param paymentAmount - Amount the student is paying
  * @returns Eligibility status with discount details if eligible
@@ -601,6 +604,7 @@ export async function checkFullPaymentCashDiscountEligibility(
   paymentAmount: number
 ): Promise<CashDiscountEligibility> {
   // 1. Fetch assessment with enrollment -> school year -> cutoff date
+  // This MUST run first for validation before other queries
   const [assessmentRow] = await db
     .select({
       id: assessments.id,
@@ -679,25 +683,92 @@ export async function checkFullPaymentCashDiscountEligibility(
     };
   }
 
-  // 5. Check FULL_PAYMENT_DISCOUNT type exists and is active
-  const [discountType] = await db
-    .select({
-      id: discountTypes.id,
-      name: discountTypes.name,
-      calculationType: discountTypes.calculationType,
-      baseType: discountTypes.baseType,
-      defaultValue: discountTypes.defaultValue,
-      isActive: discountTypes.isActive,
-    })
-    .from(discountTypes)
-    .where(
-      and(
-        eq(discountTypes.code, FULL_PAYMENT_DISCOUNT_CODE),
-        isNull(discountTypes.deletedAt)
+  // ─────────────────────────────────────────────────────────────────
+  // PERFORMANCE OPTIMIZATION: Run 4 independent queries in parallel
+  // These queries don't depend on each other, only on assessmentId
+  // ─────────────────────────────────────────────────────────────────
+  const [
+    discountTypeResult,
+    existingDiscountResult,
+    assessmentItemRows,
+    existingTuitionDiscounts,
+  ] = await Promise.all([
+    // Query 1: Check FULL_PAYMENT_DISCOUNT type exists and is active
+    db
+      .select({
+        id: discountTypes.id,
+        name: discountTypes.name,
+        calculationType: discountTypes.calculationType,
+        baseType: discountTypes.baseType,
+        defaultValue: discountTypes.defaultValue,
+        isActive: discountTypes.isActive,
+      })
+      .from(discountTypes)
+      .where(
+        and(
+          eq(discountTypes.code, FULL_PAYMENT_DISCOUNT_CODE),
+          isNull(discountTypes.deletedAt)
+        )
       )
-    )
-    .limit(1);
+      .limit(1),
 
+    // Query 2: Check student doesn't already have FULL_PAYMENT_DISCOUNT
+    db
+      .select({ id: studentDiscounts.id })
+      .from(studentDiscounts)
+      .where(
+        and(
+          eq(studentDiscounts.assessmentId, assessmentId),
+          eq(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE),
+          isNull(studentDiscounts.reversedAt)
+        )
+      )
+      .limit(1),
+
+    // Query 3: Fetch assessment items for base calculation
+    db
+      .select({
+        id: assessmentItems.id,
+        amount: assessmentItems.amount,
+        isDiscount: assessmentItems.isDiscount,
+        feeItemTypeCode: feeItemTypes.code,
+      })
+      .from(assessmentItems)
+      .leftJoin(feeItemTypes, eq(assessmentItems.feeItemTypeId, feeItemTypes.id))
+      .where(eq(assessmentItems.assessmentId, assessmentId)),
+
+    // Query 4: Fetch existing tuition_only discounts for cascade preview
+    db
+      .select({
+        id: studentDiscounts.id,
+        studentId: studentDiscounts.studentId,
+        assessmentId: studentDiscounts.assessmentId,
+        discountTypeCode: studentDiscounts.discountTypeCode,
+        discountTypeName: studentDiscounts.discountTypeName,
+        calculationType: studentDiscounts.calculationType,
+        baseType: studentDiscounts.baseType,
+        baseAmount: studentDiscounts.baseAmount,
+        discountValue: studentDiscounts.discountValue,
+        discountAmount: studentDiscounts.discountAmount,
+        assessmentItemId: studentDiscounts.assessmentItemId,
+        cascadeAdjustmentAmount: studentDiscounts.cascadeAdjustmentAmount,
+      })
+      .from(studentDiscounts)
+      .where(
+        and(
+          eq(studentDiscounts.assessmentId, assessmentId),
+          eq(studentDiscounts.baseType, "tuition_only"),
+          isNull(studentDiscounts.reversedAt),
+          ne(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE)
+        )
+      ),
+  ]);
+
+  // Extract results from parallel queries
+  const [discountType] = discountTypeResult;
+  const [existingDiscount] = existingDiscountResult;
+
+  // 5. Validate discount type
   if (!discountType) {
     return {
       eligible: false,
@@ -712,19 +783,7 @@ export async function checkFullPaymentCashDiscountEligibility(
     };
   }
 
-  // 6. Check student doesn't already have FULL_PAYMENT_DISCOUNT on this assessment
-  const [existingDiscount] = await db
-    .select({ id: studentDiscounts.id })
-    .from(studentDiscounts)
-    .where(
-      and(
-        eq(studentDiscounts.assessmentId, assessmentId),
-        eq(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE),
-        isNull(studentDiscounts.reversedAt)
-      )
-    )
-    .limit(1);
-
+  // 6. Check for existing discount
   if (existingDiscount) {
     return {
       eligible: false,
@@ -732,19 +791,7 @@ export async function checkFullPaymentCashDiscountEligibility(
     };
   }
 
-  // 7. Calculate discount amount
-  // Fetch assessment items for base calculation
-  const assessmentItemRows = await db
-    .select({
-      id: assessmentItems.id,
-      amount: assessmentItems.amount,
-      isDiscount: assessmentItems.isDiscount,
-      feeItemTypeCode: feeItemTypes.code,
-    })
-    .from(assessmentItems)
-    .leftJoin(feeItemTypes, eq(assessmentItems.feeItemTypeId, feeItemTypes.id))
-    .where(eq(assessmentItems.assessmentId, assessmentId));
-
+  // 7. Calculate discount amount using parallel-fetched items
   const items = assessmentItemRows.map((r) => ({
     id: r.id,
     amount: r.amount,
@@ -766,34 +813,6 @@ export async function checkFullPaymentCashDiscountEligibility(
       reason: "Calculated discount amount is zero.",
     };
   }
-
-  // 8. Check for cascade adjustments
-  // Fetch existing tuition_only discounts on this assessment
-  const existingTuitionDiscounts = await db
-    .select({
-      id: studentDiscounts.id,
-      studentId: studentDiscounts.studentId,
-      assessmentId: studentDiscounts.assessmentId,
-      discountTypeCode: studentDiscounts.discountTypeCode,
-      discountTypeName: studentDiscounts.discountTypeName,
-      calculationType: studentDiscounts.calculationType,
-      baseType: studentDiscounts.baseType,
-      baseAmount: studentDiscounts.baseAmount,
-      discountValue: studentDiscounts.discountValue,
-      discountAmount: studentDiscounts.discountAmount,
-      assessmentItemId: studentDiscounts.assessmentItemId,
-      cascadeAdjustmentAmount: studentDiscounts.cascadeAdjustmentAmount,
-    })
-    .from(studentDiscounts)
-    .where(
-      and(
-        eq(studentDiscounts.assessmentId, assessmentId),
-        eq(studentDiscounts.baseType, "tuition_only"),
-        isNull(studentDiscounts.reversedAt),
-        // Exclude the cash discount itself (by code, not checking discountType reference)
-        ne(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE)
-      )
-    );
 
   // Convert to cascade calculation format
   const discountsForCascade: StudentDiscountForCascade[] =
@@ -912,6 +931,10 @@ export async function getDiscountTypeByCode(
  * adjustments that were triggered by the cash discount, as well as related
  * tuition-based discounts that were correctly applied on the discounted base.
  *
+ * PERFORMANCE: After initial cash discount check, runs 4 queries in parallel
+ * (assessment info, cascade adjustments, other discounts, applier). Then runs
+ * 1 dependent query for school year info.
+ *
  * @param assessmentId - Assessment to check
  * @returns Applied cash discount details, or null if no discount applied
  */
@@ -919,6 +942,7 @@ export async function getAppliedCashDiscountDetails(
   assessmentId: string
 ): Promise<AppliedCashDiscountDetails | null> {
   // 1. Check for existing non-reversed FULL_PAYMENT_DISCOUNT
+  // This MUST run first - if no discount exists, we return early
   const [cashDiscount] = await db
     .select({
       id: studentDiscounts.id,
@@ -941,16 +965,76 @@ export async function getAppliedCashDiscountDetails(
     return { hasAppliedCashDiscount: false };
   }
 
-  // 2. Fetch cutoff date from school year and check for existing payments
-  const [assessmentInfo] = await db
-    .select({
-      schoolYearId: assessments.schoolYearId,
-      totalPaid: assessments.totalPaid,
-    })
-    .from(assessments)
-    .where(eq(assessments.id, assessmentId))
-    .limit(1);
+  // ─────────────────────────────────────────────────────────────────
+  // PERFORMANCE OPTIMIZATION: Run 4 independent queries in parallel
+  // These queries don't depend on each other (assessmentInfo, cascade,
+  // other discounts, applier all use different lookup keys)
+  // ─────────────────────────────────────────────────────────────────
+  const [
+    assessmentInfoResult,
+    cascadeAdjustments,
+    otherTuitionDiscounts,
+    applierResult,
+  ] = await Promise.all([
+    // Query 1: Fetch assessment info for school year lookup
+    db
+      .select({
+        schoolYearId: assessments.schoolYearId,
+        totalPaid: assessments.totalPaid,
+      })
+      .from(assessments)
+      .where(eq(assessments.id, assessmentId))
+      .limit(1),
 
+    // Query 2: Fetch cascade adjustments triggered by this discount
+    db
+      .select({
+        discountTypeName: studentDiscounts.discountTypeName,
+        originalAmount: studentDiscounts.discountAmount,
+        adjustmentAmount: studentDiscounts.cascadeAdjustmentAmount,
+      })
+      .from(studentDiscounts)
+      .where(
+        and(
+          eq(studentDiscounts.cascadeTriggeredByDiscountId, cashDiscount.id),
+          isNull(studentDiscounts.reversedAt)
+        )
+      ),
+
+    // Query 3: Fetch related tuition_only discounts (applied after cash discount)
+    db
+      .select({
+        discountTypeName: studentDiscounts.discountTypeName,
+        baseAmount: studentDiscounts.baseAmount,
+        discountAmount: studentDiscounts.discountAmount,
+      })
+      .from(studentDiscounts)
+      .where(
+        and(
+          eq(studentDiscounts.assessmentId, assessmentId),
+          eq(studentDiscounts.baseType, "tuition_only"),
+          ne(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE),
+          isNull(studentDiscounts.reversedAt),
+          isNull(studentDiscounts.cascadeTriggeredByDiscountId)
+        )
+      ),
+
+    // Query 4: Fetch applier info
+    db
+      .select({
+        username: users.username,
+        email: users.email,
+      })
+      .from(users)
+      .where(eq(users.id, cashDiscount.appliedById))
+      .limit(1),
+  ]);
+
+  // Extract results from parallel queries
+  const [assessmentInfo] = assessmentInfoResult;
+  const [applier] = applierResult;
+
+  // 2. Fetch school year cutoff date (depends on assessmentInfo.schoolYearId)
   let cutoffDate: Date | null = null;
   let isExpired = false;
 
@@ -976,45 +1060,14 @@ export async function getAppliedCashDiscountDetails(
     }
   }
 
-  // 3. Fetch cascade adjustments triggered by this discount (existing discounts that were recalculated)
-  const cascadeAdjustments = await db
-    .select({
-      discountTypeName: studentDiscounts.discountTypeName,
-      originalAmount: studentDiscounts.discountAmount,
-      adjustmentAmount: studentDiscounts.cascadeAdjustmentAmount,
-    })
-    .from(studentDiscounts)
-    .where(
-      and(
-        eq(studentDiscounts.cascadeTriggeredByDiscountId, cashDiscount.id),
-        isNull(studentDiscounts.reversedAt)
-      )
-    );
+  // 3. Process results from parallel queries
+  const appliedByName = applier?.username ?? "Unknown";
 
-  // 4. Fetch related tuition_only discounts that were correctly applied on discounted base
-  //    These are discounts applied AFTER the cash discount that used the correct base
+  // Calculate correct tuition base for filtering related discounts
   const originalTuitionBase = Number(cashDiscount.baseAmount);
   const cashDiscountAmount = Number(cashDiscount.discountAmount);
   const correctTuitionBase = Math.max(0, originalTuitionBase - cashDiscountAmount);
   const EPSILON = 0.01;
-
-  const otherTuitionDiscounts = await db
-    .select({
-      discountTypeName: studentDiscounts.discountTypeName,
-      baseAmount: studentDiscounts.baseAmount,
-      discountAmount: studentDiscounts.discountAmount,
-    })
-    .from(studentDiscounts)
-    .where(
-      and(
-        eq(studentDiscounts.assessmentId, assessmentId),
-        eq(studentDiscounts.baseType, "tuition_only"),
-        ne(studentDiscounts.discountTypeCode, FULL_PAYMENT_DISCOUNT_CODE),
-        isNull(studentDiscounts.reversedAt),
-        // Exclude ones that have cascade adjustments (already shown in cascadeAdjustments)
-        isNull(studentDiscounts.cascadeTriggeredByDiscountId)
-      )
-    );
 
   // Filter to only discounts that used the correct (discounted) tuition base
   const relatedDiscounts: RelatedTuitionDiscount[] = otherTuitionDiscounts
@@ -1028,19 +1081,7 @@ export async function getAppliedCashDiscountDetails(
       discountAmount: Number(d.discountAmount),
     }));
 
-  // 5. Fetch applier name (users table only has username, not first/last name)
-  const [applier] = await db
-    .select({
-      username: users.username,
-      email: users.email,
-    })
-    .from(users)
-    .where(eq(users.id, cashDiscount.appliedById))
-    .limit(1);
-
-  const appliedByName = applier?.username ?? "Unknown";
-
-  // 6. Format cascade adjustments
+  // Format cascade adjustments
   const formattedCascadeAdjustments: AppliedCascadeAdjustment[] = cascadeAdjustments
     .filter((adj) => adj.adjustmentAmount !== null)
     .map((adj) => ({
