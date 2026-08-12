@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useHydrated } from "@/hooks/useHydrated";
 import {
@@ -90,11 +90,20 @@ export function CashierPaymentProcessingView({
   const hydrated = useHydrated();
   const [copied, setCopied] = useState(false);
 
+  // ─────────────────────────────────────────────────────────────────
+  // Memoized Derived Values
+  // ─────────────────────────────────────────────────────────────────
+
   // Check if cash discount was already applied via approval workflow
-  const hasAppliedCashDiscount =
-    appliedCashDiscountDetails?.hasAppliedCashDiscount ?? false;
-  const isDiscountExpired =
-    appliedCashDiscountDetails?.discountDetails?.isExpired ?? false;
+  const { hasAppliedCashDiscount, isDiscountExpired } = useMemo(
+    () => ({
+      hasAppliedCashDiscount:
+        appliedCashDiscountDetails?.hasAppliedCashDiscount ?? false,
+      isDiscountExpired:
+        appliedCashDiscountDetails?.discountDetails?.isExpired ?? false,
+    }),
+    [appliedCashDiscountDetails]
+  );
 
   // Use shared payment form hook
   const form = usePaymentForm({
@@ -107,28 +116,29 @@ export function CashierPaymentProcessingView({
     onSuccess: () => router.push("/staff/payments"),
   });
 
-  // Prefetch queue page for fast navigation
-  // (handled via Next.js Link prefetching in header)
+  // ─────────────────────────────────────────────────────────────────
+  // Memoized Handlers
+  // ─────────────────────────────────────────────────────────────────
 
   // Copy amount to clipboard
-  const handleCopyAmount = async () => {
+  const handleCopyAmount = useCallback(async () => {
     await navigator.clipboard.writeText(String(totals.balance));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
+  }, [totals.balance]);
 
   // Format number with commas for display
-  const formatWithCommas = (value: string): string => {
+  const formatWithCommas = useCallback((value: string): string => {
     if (!value) return "";
     const parts = value.split(".");
     const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return parts.length > 1 ? `${intPart}.${parts[1]}` : intPart;
-  };
+  }, []);
 
   // Strip commas and non-numeric chars for storage
-  const stripFormatting = (value: string): string => {
+  const stripFormatting = useCallback((value: string): string => {
     return value.replace(/,/g, "").replace(/[^0-9.]/g, "");
-  };
+  }, []);
 
   // Success state
   if (form.state.success) {

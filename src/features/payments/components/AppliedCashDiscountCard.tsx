@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, startTransition, useEffect } from "react";
+import { useActionState, startTransition, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDateTime, formatDate } from "@/lib/utils/date";
@@ -29,9 +29,16 @@ interface AppliedCashDiscountCardProps {
  */
 export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDiscountCardProps) {
   const router = useRouter();
-  const hasRelatedDiscounts = details.relatedDiscounts && details.relatedDiscounts.length > 0;
-  const hasCascadeAdjustments = details.cascadeAdjustments.length > 0;
-  const isExpired = details.isExpired;
+
+  // Memoized derived values
+  const { hasRelatedDiscounts, hasCascadeAdjustments, isExpired } = useMemo(
+    () => ({
+      hasRelatedDiscounts: details.relatedDiscounts && details.relatedDiscounts.length > 0,
+      hasCascadeAdjustments: details.cascadeAdjustments.length > 0,
+      isExpired: details.isExpired,
+    }),
+    [details.relatedDiscounts, details.cascadeAdjustments.length, details.isExpired]
+  );
 
   // Reversal action state
   const initialState: CascadeFixFormState = {};
@@ -44,14 +51,14 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
     }
   }, [state.success, router]);
 
-  const handleReverse = () => {
+  const handleReverse = useCallback(() => {
     const formData = new FormData();
     formData.set("assessmentId", assessmentId);
     formData.set("studentDiscountId", details.studentDiscountId);
     startTransition(() => {
       action(formData);
     });
-  };
+  }, [assessmentId, details.studentDiscountId, action]);
 
   // If discount is expired, show error state
   if (isExpired) {

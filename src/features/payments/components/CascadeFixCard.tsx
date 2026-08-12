@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, startTransition, useEffect } from "react";
+import { useActionState, startTransition, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowRight, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,13 +34,13 @@ export function CascadeFixCard({ assessmentId, fixData }: CascadeFixCardProps) {
     }
   }, [state.success, router]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     const formData = new FormData();
     formData.set("assessmentId", assessmentId);
     startTransition(() => {
       action(formData);
     });
-  };
+  }, [assessmentId, action]);
 
   return (
     <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-4 dark:border-amber-600 dark:bg-amber-950/30">

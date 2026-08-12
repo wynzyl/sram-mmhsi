@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
@@ -51,11 +52,17 @@ export function CashDiscountPreviewCard({
   onDecline,
   cascadePreview,
 }: CashDiscountPreviewCardProps) {
-  const baseLabel = baseType === "tuition_only" ? "tuition" : "assessment total";
-  const discountLabel =
-    calculationType === "percentage"
-      ? `${discountValue}% of ${baseLabel}`
-      : `Fixed amount`;
+  // Memoized derived values
+  const { baseLabel, discountLabel } = useMemo(
+    () => ({
+      baseLabel: baseType === "tuition_only" ? "tuition" : "assessment total",
+      discountLabel:
+        calculationType === "percentage"
+          ? `${discountValue}% of ${baseType === "tuition_only" ? "tuition" : "assessment total"}`
+          : `Fixed amount`,
+    }),
+    [baseType, calculationType, discountValue]
+  );
 
   return (
     <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-700 dark:bg-emerald-950/30">
