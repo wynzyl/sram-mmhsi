@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowRight, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { applyCascadeFixAction } from "../payments.actions";
+import { applyCascadeFixAction } from "../actions/cash-discount.actions";
 import type { CascadeFixNeeded, CascadeFixFormState } from "../payments.types";
 
 interface CascadeFixCardProps {

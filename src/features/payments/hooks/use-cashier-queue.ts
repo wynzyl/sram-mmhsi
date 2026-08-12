@@ -4,10 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { queryKeys } from "@/lib/query/keys";
 import { LIVE_DATA_STALE_TIME } from "@/lib/query/staleness";
-import {
-  postPaymentAction,
-  voidPaymentAction,
-} from "../payments.actions";
+import { postPaymentAction } from "../payments.actions";
+import { voidPaymentAction } from "../actions/void-payment.actions";
 import type {
   PaymentFormState,
   VoidPaymentFormState,

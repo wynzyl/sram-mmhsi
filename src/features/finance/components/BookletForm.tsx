@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ClipboardPlus, Info } from "lucide-react";
-import { createBookletAction } from "@/features/payments/payments.actions";
+import { createBookletAction } from "@/features/payments/actions/booklets.actions";
 import type { BookletFormState } from "@/lib/validators/cashier";
 import { cn } from "@/lib/utils/cn";
 import { UsageModeField, AssignedCashierField } from "./BookletFormFields";

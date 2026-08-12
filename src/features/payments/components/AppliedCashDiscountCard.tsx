@@ -7,7 +7,7 @@ import { formatDateTime, formatDate } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/currency";
 import { Button } from "@/components/ui/button";
 import { BadgeCheck, Info, ArrowRight, User, Clock, CheckCircle2, AlertTriangle, XCircle, Calendar, RotateCcw, Loader2 } from "lucide-react";
-import { reverseExpiredCashDiscountAction } from "../payments.actions";
+import { reverseExpiredCashDiscountAction } from "../actions/cash-discount.actions";
 import type { AppliedCashDiscountDetails, CascadeFixFormState } from "../payments.types";
 
 interface AppliedCashDiscountCardProps {
