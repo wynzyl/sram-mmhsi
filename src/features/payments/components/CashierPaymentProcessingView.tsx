@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useActionState } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
-import { postPaymentAction } from "../payments.actions";
-import type { PaymentFormState } from "../payments.schema";
-import type { CashDiscountEligibility, AppliedCashDiscountDetails, CascadeFixNeeded } from "../payments.queries";
+import {
+  usePaymentForm,
+  type ActiveBooklet,
+  type ManualSuggestions,
+} from "../hooks";
+import type { AppliedCashDiscountDetails, CascadeFixNeeded } from "../payments.queries";
 import { NumericKeypad } from "./NumericKeypad";
 import { CashDiscountPreviewCard } from "./CashDiscountPreviewCard";
 import { AppliedCashDiscountCard } from "./AppliedCashDiscountCard";
@@ -24,21 +26,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/forms/FormField";
 import { formatStoredOrNumber } from "@/lib/utils/or-number";
-import { formatCurrency, roundToTwoDecimals } from "@/lib/utils/currency";
-import { generateUuid } from "@/lib/utils/uuid";
+import { formatCurrency } from "@/lib/utils/currency";
 import { Copy, Check, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
-type PaymentMethod = "cash" | "check" | "bank_transfer" | "gcash" | "other";
-type PaymentMethodCategory = "CASH" | "CHECK" | "ONLINE";
-
-type ActiveBooklet = {
-  id: string;
-  series: string;
-  prefix: string;
-  nextNumber: number;
-  endNumber: number;
-};
+// ─────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────
 
 export type CashierPaymentProcessingViewProps = {
   assessmentId: string;
@@ -52,26 +46,31 @@ export type CashierPaymentProcessingViewProps = {
     totalPaid: number;
     balance: number;
   };
-  lastPayment:
-    | {
-        amount: number;
-        paymentMethod: string;
-        paymentDateLabel: string;
-        orNumber: string | null;
-      }
-    | null;
+  lastPayment: {
+    amount: number;
+    paymentMethod: string;
+    paymentDateLabel: string;
+    orNumber: string | null;
+  } | null;
   activeBooklets: ActiveBooklet[];
   defaultBookletId?: string | null;
-  manualSuggestions?: {
-    lastManualPaymentDate: string | null;
-    suggestedOrNumbers: { bookletId: string; series: string; nextOr: string }[];
-  } | null;
+  manualSuggestions?: ManualSuggestions | null;
   /** Details of cash discount already applied via approval workflow */
   appliedCashDiscountDetails?: AppliedCashDiscountDetails | null;
   /** Data for cascade fix if discounts were applied out-of-order */
   cascadeFixData?: CascadeFixNeeded | null;
 };
 
+// ─────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Full-screen cashier payment processing view.
+ *
+ * Uses the shared usePaymentForm hook for state management and
+ * cash discount eligibility checking.
+ */
 export function CashierPaymentProcessingView({
   assessmentId,
   studentId,
@@ -89,92 +88,27 @@ export function CashierPaymentProcessingView({
 }: CashierPaymentProcessingViewProps) {
   const router = useRouter();
   const hydrated = useHydrated();
-
-  // Form state
-  const initialState: PaymentFormState = {};
-  const [state, action, pending] = useActionState(postPaymentAction, initialState);
-
-  // Payment form state
-  const [paymentMethodCategory, setPaymentMethodCategory] = useState<PaymentMethodCategory>("CASH");
-  const [onlineMethod, setOnlineMethod] = useState<"bank_transfer" | "gcash" | "other">("gcash");
-  const [amountToPay, setAmountToPay] = useState(String(totals.balance));
-  const [amountTendered, setAmountTendered] = useState("");
   const [copied, setCopied] = useState(false);
 
-  // Default booklet selection
-  const [selectedBookletId, setSelectedBookletId] = useState<string>(() => {
-    if (defaultBookletId && activeBooklets.some(b => b.id === defaultBookletId)) {
-      return defaultBookletId;
-    }
-    return activeBooklets[0]?.id ?? "";
+  // Check if cash discount was already applied via approval workflow
+  const hasAppliedCashDiscount =
+    appliedCashDiscountDetails?.hasAppliedCashDiscount ?? false;
+  const isDiscountExpired =
+    appliedCashDiscountDetails?.discountDetails?.isExpired ?? false;
+
+  // Use shared payment form hook
+  const form = usePaymentForm({
+    assessmentId,
+    balance: totals.balance,
+    activeBooklets,
+    defaultBookletId,
+    manualSuggestions,
+    hasAppliedCashDiscount,
+    onSuccess: () => router.push("/staff/payments"),
   });
 
-  // Manual entry state
-  const [isManualEntry, setIsManualEntry] = useState(false);
-  const [manualPaymentDate, setManualPaymentDate] = useState("");
-  const [manualOrNumber, setManualOrNumber] = useState("");
-
-  // Cash discount eligibility state
-  const [cashDiscountEligibility, setCashDiscountEligibility] = useState<CashDiscountEligibility | null>(null);
-  const [cashDiscountLoading, setCashDiscountLoading] = useState(false);
-  const [applyCashDiscount, setApplyCashDiscount] = useState(false);
-
-  // Idempotency key for retried submissions
-  const [idempotencyKey, setIdempotencyKey] = useState("");
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIdempotencyKey(generateUuid());
-  }, []);
-
-  // Prefetch and success handling
-  useEffect(() => {
-    router.prefetch("/staff/payments");
-  }, [router]);
-
-  useEffect(() => {
-    if (state.success) {
-      const t = window.setTimeout(() => router.push("/staff/payments"), 1600);
-      return () => window.clearTimeout(t);
-    }
-  }, [state.success, router]);
-
-  // Derived values
-  const paymentMethod: PaymentMethod = paymentMethodCategory === "CASH"
-    ? "cash"
-    : paymentMethodCategory === "CHECK"
-      ? "check"
-      : onlineMethod;
-
-  const payNum = Number.parseFloat(amountToPay) || 0;
-  const tenderNum = Number.parseFloat(amountTendered) || 0;
-  const change = paymentMethod === "cash" && tenderNum >= payNum && payNum > 0
-    ? roundToTwoDecimals(tenderNum - payNum)
-    : 0;
-
-  const isReadyToPost = paymentMethod === "cash"
-    ? tenderNum >= payNum && payNum > 0
-    : payNum > 0;
-
-  // Numpad handlers
-  const handleDigit = useCallback((digit: string) => {
-    setAmountTendered(prev => {
-      if (digit === ".") {
-        if (prev.includes(".")) return prev;
-        return prev === "" ? "0." : prev + ".";
-      }
-      const parts = prev.split(".");
-      if (parts[1]?.length >= 2) return prev;
-      return prev + digit;
-    });
-  }, []);
-
-  const handleClear = useCallback(() => {
-    setAmountTendered("");
-  }, []);
-
-  const handleBackspace = useCallback(() => {
-    setAmountTendered(prev => prev.slice(0, -1));
-  }, []);
+  // Prefetch queue page for fast navigation
+  // (handled via Next.js Link prefetching in header)
 
   // Copy amount to clipboard
   const handleCopyAmount = async () => {
@@ -196,74 +130,11 @@ export function CashierPaymentProcessingView({
     return value.replace(/,/g, "").replace(/[^0-9.]/g, "");
   };
 
-  // Manual entry toggle handler
-  const handleManualEntryToggle = (checked: boolean) => {
-    setIsManualEntry(checked);
-    if (checked && manualSuggestions) {
-      if (manualSuggestions.lastManualPaymentDate && !manualPaymentDate) {
-        setManualPaymentDate(manualSuggestions.lastManualPaymentDate);
-      }
-      if (manualSuggestions.suggestedOrNumbers[0] && !manualOrNumber) {
-        setManualOrNumber(manualSuggestions.suggestedOrNumbers[0].nextOr);
-      }
-    }
-  };
-
-  // Check cash discount eligibility
-  // Skip if discount is already applied via approval workflow
-  const hasAppliedCashDiscount = appliedCashDiscountDetails?.hasAppliedCashDiscount ?? false;
-  const isDiscountExpired = appliedCashDiscountDetails?.discountDetails?.isExpired ?? false;
-
-  const checkCashDiscountEligibility = useCallback(async () => {
-    // Skip if discount was already applied via approval workflow
-    if (hasAppliedCashDiscount) return;
-    if (applyCashDiscount) return;
-
-    const payNum = parseFloat(amountToPay);
-    const EPSILON = 0.01;
-
-    if (isNaN(payNum) || payNum < totals.balance - EPSILON) {
-      setCashDiscountEligibility(null);
-      return;
-    }
-
-    setCashDiscountLoading(true);
-    try {
-      const response = await fetch(
-        `/api/cashier/cash-discount?assessmentId=${assessmentId}&amount=${payNum}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.discountDetails?.cutoffDate) {
-          data.discountDetails.cutoffDate = new Date(data.discountDetails.cutoffDate);
-        }
-        setCashDiscountEligibility(data);
-      } else {
-        setCashDiscountEligibility(null);
-      }
-    } catch {
-      setCashDiscountEligibility(null);
-    } finally {
-      setCashDiscountLoading(false);
-    }
-  }, [amountToPay, totals.balance, assessmentId, applyCashDiscount, hasAppliedCashDiscount]);
-
-  // Debounced eligibility check
-  useEffect(() => {
-    // Skip if discount was already applied
-    if (hasAppliedCashDiscount) return;
-
-    const timer = setTimeout(() => {
-      checkCashDiscountEligibility();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [checkCashDiscountEligibility, hasAppliedCashDiscount]);
-
   // Success state
-  if (state.success) {
+  if (form.state.success) {
     return (
       <PaymentSuccessOverlay
-        message={state.message}
+        message={form.state.message}
         onClose={() => router.push("/staff/payments")}
       />
     );
@@ -285,39 +156,47 @@ export function CashierPaymentProcessingView({
           onBack={() => router.push("/staff/payments")}
         />
 
-        <form action={action} className="flex-1 overflow-y-auto">
+        <form action={form.action} className="flex-1 overflow-y-auto">
           <div className="px-3 py-3 md:px-4 md:py-4">
             {/* Error messages */}
-            {state.errors?._form && (
+            {form.state.errors?._form && (
               <div
                 className="mb-4 rounded-lg border border-border bg-muted px-4 py-3 text-sm text-destructive"
                 role="alert"
               >
-                {state.errors._form.map((err, i) => (
+                {form.state.errors._form.map((err, i) => (
                   <p key={i}>{err}</p>
                 ))}
               </div>
             )}
-            {state.message && !state.success && (
+            {form.state.message && !form.state.success && (
               <div
                 className="mb-4 rounded-lg border border-border bg-muted px-4 py-3 text-sm text-destructive"
                 role="alert"
               >
-                {state.message}
+                {form.state.message}
               </div>
             )}
 
             {/* Hidden fields */}
             <input type="hidden" name="studentId" value={studentId} />
             <input type="hidden" name="assessmentId" value={assessmentId} />
-            <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
-            <input type="hidden" name="isManualEntry" value={String(isManualEntry)} />
+            <input type="hidden" name="idempotencyKey" value={form.idempotencyKey} />
+            <input
+              type="hidden"
+              name="isManualEntry"
+              value={String(form.isManualEntry)}
+            />
             {/* Don't apply cash discount at payment time if already applied via approval workflow */}
-            <input type="hidden" name="applyCashDiscount" value={String(applyCashDiscount && !hasAppliedCashDiscount)} />
-            <input type="hidden" name="paymentMethod" value={paymentMethod} />
-            <input type="hidden" name="amount" value={amountToPay} />
-            {paymentMethod === "cash" && (
-              <input type="hidden" name="amountTendered" value={amountTendered} />
+            <input
+              type="hidden"
+              name="applyCashDiscount"
+              value={String(form.applyCashDiscount && !hasAppliedCashDiscount)}
+            />
+            <input type="hidden" name="paymentMethod" value={form.paymentMethod} />
+            <input type="hidden" name="amount" value={form.amountToPay} />
+            {form.paymentMethod === "cash" && (
+              <input type="hidden" name="amountTendered" value={form.amountTendered} />
             )}
 
             {/* Already Applied Cash Discount (read-only info card) */}
@@ -333,48 +212,54 @@ export function CashierPaymentProcessingView({
             {/* Cascade Fix Required (discounts applied out-of-order) */}
             {cascadeFixData?.needsFix && (
               <div className="mb-4">
-                <CascadeFixCard
-                  assessmentId={assessmentId}
-                  fixData={cascadeFixData}
-                />
+                <CascadeFixCard assessmentId={assessmentId} fixData={cascadeFixData} />
               </div>
             )}
 
             {/* Cash Discount Eligibility Preview (only show if not already applied) */}
-            {!hasAppliedCashDiscount && cashDiscountLoading && (
+            {!hasAppliedCashDiscount && form.cashDiscountLoading && (
               <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-4 py-3">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Checking discount eligibility...</span>
+                <span className="text-sm text-muted-foreground">
+                  Checking discount eligibility...
+                </span>
               </div>
             )}
 
-            {!hasAppliedCashDiscount && !cashDiscountLoading && cashDiscountEligibility?.eligible && cashDiscountEligibility.discountDetails && (
-              <div className="mb-4">
-                <CashDiscountPreviewCard
-                  baseAmount={cashDiscountEligibility.discountDetails.baseAmount}
-                  discountValue={cashDiscountEligibility.discountDetails.discountValue}
-                  calculationType={cashDiscountEligibility.discountDetails.calculationType}
-                  baseType={cashDiscountEligibility.discountDetails.baseType}
-                  cashDiscountAmount={cashDiscountEligibility.discountDetails.cashDiscountAmount}
-                  currentBalance={cashDiscountEligibility.discountDetails.currentBalance}
-                  newBalance={cashDiscountEligibility.discountDetails.newBalance}
-                  paymentRequired={cashDiscountEligibility.discountDetails.paymentRequired}
-                  cutoffDate={cashDiscountEligibility.discountDetails.cutoffDate}
-                  isConfirmed={applyCashDiscount}
-                  onConfirm={() => {
-                    setApplyCashDiscount(true);
-                    if (cashDiscountEligibility?.discountDetails) {
-                      setAmountToPay(String(cashDiscountEligibility.discountDetails.paymentRequired));
+            {!hasAppliedCashDiscount &&
+              !form.cashDiscountLoading &&
+              form.cashDiscountEligibility?.eligible &&
+              form.cashDiscountEligibility.discountDetails && (
+                <div className="mb-4">
+                  <CashDiscountPreviewCard
+                    baseAmount={form.cashDiscountEligibility.discountDetails.baseAmount}
+                    discountValue={
+                      form.cashDiscountEligibility.discountDetails.discountValue
                     }
-                  }}
-                  onDecline={() => {
-                    setApplyCashDiscount(false);
-                    setAmountToPay(String(totals.balance));
-                  }}
-                  cascadePreview={cashDiscountEligibility.discountDetails.cascadePreview}
-                />
-              </div>
-            )}
+                    calculationType={
+                      form.cashDiscountEligibility.discountDetails.calculationType
+                    }
+                    baseType={form.cashDiscountEligibility.discountDetails.baseType}
+                    cashDiscountAmount={
+                      form.cashDiscountEligibility.discountDetails.cashDiscountAmount
+                    }
+                    currentBalance={
+                      form.cashDiscountEligibility.discountDetails.currentBalance
+                    }
+                    newBalance={form.cashDiscountEligibility.discountDetails.newBalance}
+                    paymentRequired={
+                      form.cashDiscountEligibility.discountDetails.paymentRequired
+                    }
+                    cutoffDate={form.cashDiscountEligibility.discountDetails.cutoffDate}
+                    isConfirmed={form.applyCashDiscount}
+                    onConfirm={form.handleConfirmCashDiscount}
+                    onDecline={form.handleDeclineCashDiscount}
+                    cascadePreview={
+                      form.cashDiscountEligibility.discountDetails.cascadePreview
+                    }
+                  />
+                </div>
+              )}
 
             <div className="grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-12">
               {/* Left Column */}
@@ -387,14 +272,20 @@ export function CashierPaymentProcessingView({
                       {/* Amount Due */}
                       <div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-muted-foreground">Amount due</span>
+                          <span className="text-sm font-medium text-muted-foreground">
+                            Amount due
+                          </span>
                           <button
                             type="button"
                             onClick={handleCopyAmount}
                             className="p-1 text-muted-foreground hover:text-foreground transition-colors"
                             title="Copy amount"
                           >
-                            {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                            {copied ? (
+                              <Check className="h-4 w-4 text-emerald-500" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
                           </button>
                         </div>
                         <p className="font-display text-2xl font-black text-primary">
@@ -407,8 +298,10 @@ export function CashierPaymentProcessingView({
                         <input
                           type="checkbox"
                           id="isManualEntryToggle"
-                          checked={isManualEntry}
-                          onChange={(e) => handleManualEntryToggle(e.target.checked)}
+                          checked={form.isManualEntry}
+                          onChange={(e) =>
+                            form.handleManualEntryToggle(e.target.checked)
+                          }
                           className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                         />
                         <label htmlFor="isManualEntryToggle" className="text-sm">
@@ -417,7 +310,7 @@ export function CashierPaymentProcessingView({
                       </div>
 
                       {/* Manual Entry Fields */}
-                      {isManualEntry && (
+                      {form.isManualEntry && (
                         <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
                           <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
                             Offline Payment
@@ -425,33 +318,37 @@ export function CashierPaymentProcessingView({
                           <FormField
                             label="Payment date"
                             required
-                            error={state.errors?.manualPaymentDate}
+                            error={form.state.errors?.manualPaymentDate}
                           >
                             <Input
                               type="date"
                               id="manualPaymentDate"
                               name="manualPaymentDate"
-                              value={manualPaymentDate}
-                              onChange={(e) => setManualPaymentDate(e.target.value)}
+                              value={form.manualPaymentDate}
+                              onChange={(e) =>
+                                form.setManualPaymentDate(e.target.value)
+                              }
                               max={new Date().toISOString().split("T")[0]}
-                              required={isManualEntry}
+                              required={form.isManualEntry}
                               className="h-9"
                             />
                           </FormField>
                           <FormField
                             label="OR number"
                             required
-                            error={state.errors?.manualOrNumber}
+                            error={form.state.errors?.manualOrNumber}
                             hint="Format: AK 00050"
                           >
                             <Input
                               type="text"
                               id="manualOrNumber"
                               name="manualOrNumber"
-                              value={manualOrNumber}
-                              onChange={(e) => setManualOrNumber(e.target.value.toUpperCase())}
+                              value={form.manualOrNumber}
+                              onChange={(e) =>
+                                form.setManualOrNumber(e.target.value.toUpperCase())
+                              }
                               placeholder="AK 00050"
-                              required={isManualEntry}
+                              required={form.isManualEntry}
                               className="h-9 font-mono"
                             />
                           </FormField>
@@ -459,14 +356,18 @@ export function CashierPaymentProcessingView({
                       )}
 
                       {/* OR Booklet - only show when NOT manual entry */}
-                      {!isManualEntry && (
+                      {!form.isManualEntry && (
                         <div>
-                          <label htmlFor="bookletId" className="mb-1.5 block text-sm font-medium">
+                          <label
+                            htmlFor="bookletId"
+                            className="mb-1.5 block text-sm font-medium"
+                          >
                             OR booklet <span className="text-destructive">*</span>
                           </label>
                           {activeBooklets.length === 0 ? (
                             <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                              No active receipt booklets. Ask Finance to activate a booklet.
+                              No active receipt booklets. Ask Finance to activate a
+                              booklet.
                             </div>
                           ) : (
                             <select
@@ -475,18 +376,23 @@ export function CashierPaymentProcessingView({
                               className="form-control h-9 w-full"
                               required
                               disabled={activeBooklets.length === 0}
-                              value={selectedBookletId}
-                              onChange={(e) => setSelectedBookletId(e.target.value)}
+                              value={form.selectedBookletId}
+                              onChange={(e) =>
+                                form.setSelectedBookletId(e.target.value)
+                              }
                             >
                               {activeBooklets.map((b) => (
                                 <option key={b.id} value={b.id}>
-                                  {b.series} — Next: {formatStoredOrNumber(b.prefix, b.nextNumber)}
+                                  {b.series} — Next:{" "}
+                                  {formatStoredOrNumber(b.prefix, b.nextNumber)}
                                 </option>
                               ))}
                             </select>
                           )}
-                          {state.errors?.bookletId && (
-                            <p className="mt-1 text-sm text-destructive">{state.errors.bookletId[0]}</p>
+                          {form.state.errors?.bookletId && (
+                            <p className="mt-1 text-sm text-destructive">
+                              {form.state.errors.bookletId[0]}
+                            </p>
                           )}
                         </div>
                       )}
@@ -501,10 +407,10 @@ export function CashierPaymentProcessingView({
                             <button
                               key={cat}
                               type="button"
-                              onClick={() => setPaymentMethodCategory(cat)}
+                              onClick={() => form.setPaymentMethodCategory(cat)}
                               className={cn(
                                 "flex-1 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors",
-                                paymentMethodCategory === cat
+                                form.paymentMethodCategory === cat
                                   ? "bg-foreground text-background"
                                   : "text-muted-foreground hover:text-foreground"
                               )}
@@ -513,22 +419,31 @@ export function CashierPaymentProcessingView({
                             </button>
                           ))}
                         </div>
-                        {state.errors?.paymentMethod && (
-                          <p className="mt-1 text-sm text-destructive">{state.errors.paymentMethod[0]}</p>
+                        {form.state.errors?.paymentMethod && (
+                          <p className="mt-1 text-sm text-destructive">
+                            {form.state.errors.paymentMethod[0]}
+                          </p>
                         )}
                       </div>
 
                       {/* Online sub-select */}
-                      {paymentMethodCategory === "ONLINE" && (
+                      {form.paymentMethodCategory === "ONLINE" && (
                         <div>
-                          <label htmlFor="onlineMethod" className="mb-1.5 block text-sm font-medium">
+                          <label
+                            htmlFor="onlineMethod"
+                            className="mb-1.5 block text-sm font-medium"
+                          >
                             Online method
                           </label>
                           <select
                             id="onlineMethod"
                             className="form-control h-9 w-full"
-                            value={onlineMethod}
-                            onChange={(e) => setOnlineMethod(e.target.value as typeof onlineMethod)}
+                            value={form.onlineMethod}
+                            onChange={(e) =>
+                              form.setOnlineMethod(
+                                e.target.value as typeof form.onlineMethod
+                              )
+                            }
                           >
                             <option value="gcash">GCash</option>
                             <option value="bank_transfer">Bank transfer</option>
@@ -549,41 +464,47 @@ export function CashierPaymentProcessingView({
                           className="mb-1.5 flex items-center gap-2 text-sm font-medium"
                         >
                           <span>
-                            Amount to pay {(applyCashDiscount || hasAppliedCashDiscount) && "(full payment required)"}
+                            Amount to pay{" "}
+                            {(form.applyCashDiscount || hasAppliedCashDiscount) &&
+                              "(full payment required)"}
                             <span className="text-destructive"> *</span>
                           </span>
-                          {(applyCashDiscount || hasAppliedCashDiscount) && (
+                          {(form.applyCashDiscount || hasAppliedCashDiscount) && (
                             <Lock className="h-4 w-4 text-amber-600" />
                           )}
                         </label>
                         <div className="relative">
-                          <span className={cn(
-                            "absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-black",
-                            (applyCashDiscount || hasAppliedCashDiscount)
-                              ? "text-amber-600"
-                              : "text-emerald-600"
-                          )}>
+                          <span
+                            className={cn(
+                              "absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-black",
+                              form.applyCashDiscount || hasAppliedCashDiscount
+                                ? "text-amber-600"
+                                : "text-emerald-600"
+                            )}
+                          >
                             ₱
                           </span>
                           <Input
                             id="amountToPayInput"
                             type="text"
                             inputMode="decimal"
-                            value={formatWithCommas(amountToPay)}
-                            onChange={(e) => setAmountToPay(stripFormatting(e.target.value))}
+                            value={formatWithCommas(form.amountToPay)}
+                            onChange={(e) =>
+                              form.setAmountToPay(stripFormatting(e.target.value))
+                            }
                             className={cn(
                               "h-14 pl-10 font-mono text-3xl font-black",
-                              (applyCashDiscount || hasAppliedCashDiscount)
+                              form.applyCashDiscount || hasAppliedCashDiscount
                                 ? "text-amber-600 bg-amber-50 dark:bg-amber-950/30 cursor-not-allowed"
                                 : "text-emerald-600"
                             )}
                             placeholder="0.00"
                             autoComplete="off"
-                            disabled={applyCashDiscount || hasAppliedCashDiscount}
-                            readOnly={applyCashDiscount || hasAppliedCashDiscount}
+                            disabled={form.applyCashDiscount || hasAppliedCashDiscount}
+                            readOnly={form.applyCashDiscount || hasAppliedCashDiscount}
                           />
                         </div>
-                        {(applyCashDiscount || hasAppliedCashDiscount) ? (
+                        {form.applyCashDiscount || hasAppliedCashDiscount ? (
                           <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
                             Full payment is required to receive the cash discount.
                           </p>
@@ -592,13 +513,15 @@ export function CashierPaymentProcessingView({
                             Maximum {formatCurrency(totals.balance)}
                           </p>
                         )}
-                        {state.errors?.amount && (
-                          <p className="mt-1 text-sm text-destructive">{state.errors.amount[0]}</p>
+                        {form.state.errors?.amount && (
+                          <p className="mt-1 text-sm text-destructive">
+                            {form.state.errors.amount[0]}
+                          </p>
                         )}
                       </div>
 
                       {/* Amount Tendered - only for cash */}
-                      {paymentMethod === "cash" && (
+                      {form.paymentMethod === "cash" && (
                         <div className="mt-3 pt-3 border-t border-border">
                           <label
                             htmlFor="amountTenderedInput"
@@ -614,8 +537,10 @@ export function CashierPaymentProcessingView({
                               id="amountTenderedInput"
                               type="text"
                               inputMode="decimal"
-                              value={formatWithCommas(amountTendered)}
-                              onChange={(e) => setAmountTendered(stripFormatting(e.target.value))}
+                              value={formatWithCommas(form.amountTendered)}
+                              onChange={(e) =>
+                                form.setAmountTendered(stripFormatting(e.target.value))
+                              }
                               className="h-14 pl-10 font-mono text-3xl font-black text-emerald-600"
                               placeholder="0.00"
                             />
@@ -623,16 +548,18 @@ export function CashierPaymentProcessingView({
                           <p className="mt-1 text-xs text-muted-foreground">
                             Cash received — must be at least the amount to pay
                           </p>
-                          {state.errors?.amountTendered && (
-                            <p className="mt-1 text-sm text-destructive">{state.errors.amountTendered[0]}</p>
+                          {form.state.errors?.amountTendered && (
+                            <p className="mt-1 text-sm text-destructive">
+                              {form.state.errors.amountTendered[0]}
+                            </p>
                           )}
 
                           {/* Numeric Keypad */}
                           <div className="mt-3">
                             <NumericKeypad
-                              onDigit={handleDigit}
-                              onClear={handleClear}
-                              onBackspace={handleBackspace}
+                              onDigit={form.handleDigit}
+                              onClear={form.handleClear}
+                              onBackspace={form.handleBackspace}
                             />
                           </div>
                         </div>
@@ -647,10 +574,14 @@ export function CashierPaymentProcessingView({
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <FormField
                         label="Reference no."
-                        required={paymentMethod === "gcash" || paymentMethod === "bank_transfer"}
-                        error={state.errors?.referenceNumber}
+                        required={
+                          form.paymentMethod === "gcash" ||
+                          form.paymentMethod === "bank_transfer"
+                        }
+                        error={form.state.errors?.referenceNumber}
                         hint={
-                          paymentMethod === "gcash" || paymentMethod === "bank_transfer"
+                          form.paymentMethod === "gcash" ||
+                          form.paymentMethod === "bank_transfer"
                             ? "Required for GCash / bank transfer"
                             : "Check no., ref no., etc."
                         }
@@ -660,11 +591,15 @@ export function CashierPaymentProcessingView({
                           id="referenceNumber"
                           name="referenceNumber"
                           placeholder={
-                            paymentMethod === "gcash" || paymentMethod === "bank_transfer"
+                            form.paymentMethod === "gcash" ||
+                            form.paymentMethod === "bank_transfer"
                               ? "Transaction reference"
                               : "Optional"
                           }
-                          required={paymentMethod === "gcash" || paymentMethod === "bank_transfer"}
+                          required={
+                            form.paymentMethod === "gcash" ||
+                            form.paymentMethod === "bank_transfer"
+                          }
                           className="h-9 font-mono text-sm"
                         />
                       </FormField>
@@ -692,7 +627,10 @@ export function CashierPaymentProcessingView({
 
                 <LastPaymentCard lastPayment={lastPayment} />
 
-                <ChangeDisplayCard change={change} isReadyToPost={isReadyToPost} />
+                <ChangeDisplayCard
+                  change={form.change}
+                  isReadyToPost={form.isReadyToPost}
+                />
 
                 {/* Action Buttons */}
                 <div className="space-y-2">
@@ -701,14 +639,18 @@ export function CashierPaymentProcessingView({
                     className="w-full"
                     size="lg"
                     disabled={
-                      pending ||
-                      (!isManualEntry && activeBooklets.length === 0) ||
+                      form.pending ||
+                      (!form.isManualEntry && activeBooklets.length === 0) ||
                       !hydrated ||
-                      !isReadyToPost ||
+                      !form.isReadyToPost ||
                       isDiscountExpired
                     }
                   >
-                    {pending ? "Posting…" : isDiscountExpired ? "Discount Expired — Reversal Required" : "Post Payment & Print OR"}
+                    {form.pending
+                      ? "Posting…"
+                      : isDiscountExpired
+                        ? "Discount Expired — Reversal Required"
+                        : "Post Payment & Print OR"}
                   </Button>
                   <Button
                     type="button"
