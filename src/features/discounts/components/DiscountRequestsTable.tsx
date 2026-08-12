@@ -5,9 +5,9 @@ import {
   approveDiscountRequestAction,
   rejectDiscountRequestAction,
   bulkApproveDiscountsAction,
-  applyApprovedDiscountToExistingAssessment,
   cancelDiscountRequestAction,
-} from "../discounts.actions";
+} from "../actions/discount-requests.actions";
+import { applyApprovedDiscountToExistingAssessment } from "../actions/discount-application.actions";
 import type {
   ApproveDiscountRequestFormState,
   RejectDiscountRequestFormState,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { deleteDiscountTypeAction } from "../discounts.actions";
+import { deleteDiscountTypeAction } from "../actions/discount-types.actions";
 import type { DiscountTypeView } from "../discounts.schema";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";

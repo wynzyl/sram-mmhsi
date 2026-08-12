@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { reverseDiscountAction } from "../discounts.actions";
+import { reverseDiscountAction } from "../actions/discount-application.actions";
 import type {
   ReverseDiscountFormState,
   StudentDiscountView,

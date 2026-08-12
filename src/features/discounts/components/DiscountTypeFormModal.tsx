@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import {
   createDiscountTypeAction,
   updateDiscountTypeAction,
-} from "../discounts.actions";
+} from "../actions/discount-types.actions";
 import type {
   CreateDiscountTypeFormState,
   UpdateDiscountTypeFormState,

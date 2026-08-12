@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createDiscountRequestAction } from "../discounts.actions";
+import { createDiscountRequestAction } from "../actions/discount-requests.actions";
 import type {
   CreateDiscountRequestFormState,
   DiscountTypeView,

@@ -6,7 +6,7 @@ import type {
   DiscountRequestView,
   DiscountTypeView,
 } from "../discounts.schema";
-import { cancelDiscountRequestAction } from "../discounts.actions";
+import { cancelDiscountRequestAction } from "../actions/discount-requests.actions";
 import { Badge } from "@/components/ui/badge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { Button } from "@/components/ui/button";

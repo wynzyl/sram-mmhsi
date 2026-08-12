@@ -1,17 +1,21 @@
 // Actions
 export {
+  // Discount Types CRUD
   createDiscountTypeAction,
   updateDiscountTypeAction,
   deleteDiscountTypeAction,
+  // Discount Request Lifecycle
   createDiscountRequestAction,
   approveDiscountRequestAction,
   rejectDiscountRequestAction,
   bulkApproveDiscountsAction,
   cancelDiscountRequestAction,
+  // Discount Application
   reverseDiscountAction,
   applyApprovedDiscountsToAssessment,
   applyApprovedDiscountToExistingAssessment,
-} from "./discounts.actions";
+  recalculateCascadeDiscountsAction,
+} from "./actions";
 
 // Queries
 export {
@@ -43,6 +47,7 @@ export {
   cancelDiscountRequestSchema,
   reverseDiscountSchema,
   applyApprovedDiscountSchema,
+  recalculateCascadeDiscountsSchema,
   discountRequestFiltersSchema,
   discountCalculationTypeSchema,
   discountBaseTypeSchema,
@@ -69,6 +74,8 @@ export type {
   ReverseDiscountFormState,
   ApplyApprovedDiscountInput,
   ApplyApprovedDiscountFormState,
+  RecalculateCascadeDiscountsInput,
+  RecalculateCascadeDiscountsFormState,
   DiscountRequestFilters,
   DiscountCalculationType,
   DiscountBaseType,
