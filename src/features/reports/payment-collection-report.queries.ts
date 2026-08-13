@@ -9,7 +9,7 @@ import {
   users,
   receiptBooklets,
 } from "@/lib/db/schema";
-import { eq, and, gte, lte, sql, asc, desc, isNull } from "drizzle-orm";
+import { eq, and, gte, lte, sql, asc, desc, isNull, inArray } from "drizzle-orm";
 import { calculateOffset } from "@/lib/types/pagination";
 
 // Re-export types and constants from types file for backward compatibility
@@ -38,7 +38,8 @@ import type {
 
 /**
  * Get payment collection report with filtering and pagination.
- * Returns payments (excluding balance_forward and reversal kinds by default) within the specified date range.
+ * Returns payments and reversals (excluding balance_forward) within the specified date range.
+ * For reversals, the referenceNumber (e.g., "REV-CS 00007") is shown as the OR Number.
  * @param params.page - Page number (1-indexed), defaults to 1
  * @param params.pageSize - Number of items per page, defaults to 50, max 100
  */
@@ -112,7 +113,8 @@ export async function getPaymentCollectionReport(
 
   const rows = results.map((row) => ({
     id: row.id,
-    orNumber: row.orNumber ?? "",
+    // For reversals, use referenceNumber (e.g., "REV-CS 00007") as OR Number
+    orNumber: row.kind === "reversal" ? (row.referenceNumber ?? "") : (row.orNumber ?? ""),
     collectionDate: row.collectionDate,
     studentId: row.studentId,
     studentName: `${row.studentLastName}, ${row.studentFirstName}`,
@@ -205,6 +207,8 @@ export async function getPaymentCollectionSummary(params: {
 
 /**
  * Get all payment collection data for PDF export.
+ * Includes payments and reversals (excluding balance_forward).
+ * For reversals, the referenceNumber (e.g., "REV-CS 00007") is shown as the OR Number.
  * Maximum 5000 rows to prevent memory issues.
  */
 export async function getAllPaymentCollectionData(params: {
@@ -265,7 +269,8 @@ export async function getAllPaymentCollectionData(params: {
 
   return results.map((row) => ({
     id: row.id,
-    orNumber: row.orNumber ?? "",
+    // For reversals, use referenceNumber (e.g., "REV-CS 00007") as OR Number
+    orNumber: row.kind === "reversal" ? (row.referenceNumber ?? "") : (row.orNumber ?? ""),
     collectionDate: row.collectionDate,
     studentId: row.studentId,
     studentName: `${row.studentLastName}, ${row.studentFirstName}`,
@@ -313,9 +318,9 @@ function buildWhereConditions(params: {
   const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus, usageMode } =
     params;
 
-  // Base conditions: only actual payments (exclude BFX and reversals), within date range
+  // Base conditions: include payments and reversals (exclude BFX), within date range
   const conditions = [
-    eq(payments.kind, "payment"),
+    inArray(payments.kind, ["payment", "reversal"]),
     gte(payments.paymentDate, startDate),
     lte(payments.paymentDate, endDate),
     isNull(students.deletedAt),

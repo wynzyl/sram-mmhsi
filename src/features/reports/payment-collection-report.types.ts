@@ -65,6 +65,7 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   posted: "Posted",
   pending_confirmation: "Pending",
   reversed: "Reversed",
+  reversal: "Reversal",
 };
 
 export const USAGE_MODE_LABELS: Record<string, string> = {

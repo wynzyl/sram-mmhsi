@@ -185,7 +185,13 @@ export function PaymentCollectionReportContent({
                     <td className="px-3 py-2 border-b border-border">
                       {row.gradeLevel}
                     </td>
-                    <td className="px-3 py-2 border-b border-border text-right font-medium">
+                    <td
+                      className={`px-3 py-2 border-b border-border text-right font-medium ${
+                        Number(row.amount) < 0
+                          ? "text-destructive"
+                          : ""
+                      }`}
+                    >
                       {formatAmount(Number(row.amount))}
                     </td>
                     <td className="px-3 py-2 border-b border-border">

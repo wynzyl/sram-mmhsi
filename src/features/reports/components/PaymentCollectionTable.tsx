@@ -39,6 +39,9 @@ function getStatusBadgeClass(status: string): string {
       return "bg-success/15 text-success border-success/30";
     case "pending_confirmation":
       return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "reversal":
+    case "reversed":
+      return "bg-destructive/15 text-destructive border-destructive/30";
     default:
       return "bg-gray-100 text-gray-800 border-gray-200";
   }
@@ -96,11 +99,14 @@ export function PaymentCollectionTable({ data }: PaymentCollectionTableProps) {
       {
         header: "Amount",
         accessorKey: "amount",
-        cell: ({ row }) => (
-          <span className="font-medium">
-            <CurrencyDisplay amount={Number(row.original.amount)} />
-          </span>
-        ),
+        cell: ({ row }) => {
+          const amount = Number(row.original.amount);
+          return (
+            <span className={`font-medium ${amount < 0 ? "text-destructive" : ""}`}>
+              <CurrencyDisplay amount={amount} />
+            </span>
+          );
+        },
       },
       {
         header: "Method",
