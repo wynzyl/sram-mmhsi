@@ -211,6 +211,45 @@ export async function getPendingVoidRequestsForPayments(
 }
 
 /**
+ * Gets pending void requests for an assessment by joining via payments.
+ * Performance: Enables parallel fetch without waiting for payment IDs.
+ */
+export async function getPendingVoidRequestsForAssessment(
+  assessmentId: string
+): Promise<Map<string, VoidRequestSummary>> {
+  const results = await db
+    .select({
+      id: voidRequests.id,
+      paymentId: voidRequests.paymentId,
+      requestedBy: voidRequests.requestedBy,
+      requestedByUsername: users.username,
+      requestedAt: voidRequests.requestedAt,
+      status: voidRequests.status,
+    })
+    .from(voidRequests)
+    .innerJoin(payments, eq(voidRequests.paymentId, payments.id))
+    .innerJoin(users, eq(voidRequests.requestedBy, users.id))
+    .where(
+      and(
+        eq(payments.assessmentId, assessmentId),
+        eq(voidRequests.status, "pending")
+      )
+    );
+
+  const map = new Map<string, VoidRequestSummary>();
+  for (const r of results) {
+    map.set(r.paymentId, {
+      requestId: r.id,
+      requestedBy: r.requestedBy,
+      requestedByUsername: r.requestedByUsername,
+      requestedAt: r.requestedAt.toISOString(),
+      status: r.status,
+    });
+  }
+  return map;
+}
+
+/**
  * Counts pending void requests (for navigation badge).
  */
 export async function countPendingVoidRequests(): Promise<number> {

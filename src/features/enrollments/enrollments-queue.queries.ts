@@ -362,41 +362,43 @@ export async function getPendingEnrollments(
   filters?: EnrollmentQueueFilters
 ): Promise<PaginatedResult<PendingEnrollment>> {
   const whereCondition = enrollmentTabConditions(activeSchoolYearId, "pending", filters);
-
-  // Get total count (joins students so the search filter applies)
-  const [countResult] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(enrollments)
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .where(whereCondition);
-
-  const totalRecords = Number(countResult?.count || 0);
-
-  // Get paginated data
   const offset = calculateOffset(params.page, params.pageSize);
-  const rows = await db
-    .select({
-      enrollmentId: enrollments.id,
-      studentId: students.id,
-      studentRef: students.referenceNumber,
-      firstName: students.firstName,
-      lastName: students.lastName,
-      gradeLevelId: gradeLevels.id,
-      gradeName: gradeLevels.name,
-      sectionId: sections.id,
-      sectionName: sections.name,
-      studentType: enrollments.studentType,
-      createdAt: enrollments.createdAt,
-      createdBy: enrollments.createdBy,
-    })
-    .from(enrollments)
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .leftJoin(sections, eq(enrollments.sectionId, sections.id))
-    .where(whereCondition)
-    .orderBy(desc(enrollments.createdAt))
-    .limit(params.pageSize)
-    .offset(offset);
+
+  // Parallelize count and data queries
+  const [countResult, rows] = await Promise.all([
+    // Get total count (joins students so the search filter applies)
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .where(whereCondition),
+    // Get paginated data
+    db
+      .select({
+        enrollmentId: enrollments.id,
+        studentId: students.id,
+        studentRef: students.referenceNumber,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        gradeLevelId: gradeLevels.id,
+        gradeName: gradeLevels.name,
+        sectionId: sections.id,
+        sectionName: sections.name,
+        studentType: enrollments.studentType,
+        createdAt: enrollments.createdAt,
+        createdBy: enrollments.createdBy,
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .leftJoin(sections, eq(enrollments.sectionId, sections.id))
+      .where(whereCondition)
+      .orderBy(desc(enrollments.createdAt))
+      .limit(params.pageSize)
+      .offset(offset),
+  ]);
+
+  const totalRecords = Number(countResult[0]?.count || 0);
 
   const data = rows.map((r) => ({
     enrollmentId: r.enrollmentId,
@@ -428,45 +430,47 @@ export async function getAssessedEnrollments(
   filters?: EnrollmentQueueFilters
 ): Promise<PaginatedResult<AssessedEnrollment>> {
   const whereCondition = enrollmentTabConditions(activeSchoolYearId, "assessed", filters);
-
-  // Get total count (joins students so the search filter applies)
-  const [countResult] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(enrollments)
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .where(whereCondition);
-
-  const totalRecords = Number(countResult?.count || 0);
-
-  // Get paginated data
   const offset = calculateOffset(params.page, params.pageSize);
-  const rows = await db
-    .select({
-      enrollmentId: enrollments.id,
-      assessmentId: assessments.id,
-      studentId: students.id,
-      studentRef: students.referenceNumber,
-      firstName: students.firstName,
-      lastName: students.lastName,
-      gradeLevelId: gradeLevels.id,
-      gradeName: gradeLevels.name,
-      sectionId: sections.id,
-      sectionName: sections.name,
-      totalAmount: assessments.totalAmount,
-      totalPaid: assessments.totalPaid,
-      balance: assessments.balance,
-      billingStatus: assessments.billingStatus,
-      createdAt: assessments.createdAt,
-    })
-    .from(enrollments)
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .innerJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
-    .leftJoin(sections, eq(enrollments.sectionId, sections.id))
-    .where(whereCondition)
-    .orderBy(desc(assessments.createdAt))
-    .limit(params.pageSize)
-    .offset(offset);
+
+  // Parallelize count and data queries
+  const [countResult, rows] = await Promise.all([
+    // Get total count (joins students so the search filter applies)
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .where(whereCondition),
+    // Get paginated data
+    db
+      .select({
+        enrollmentId: enrollments.id,
+        assessmentId: assessments.id,
+        studentId: students.id,
+        studentRef: students.referenceNumber,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        gradeLevelId: gradeLevels.id,
+        gradeName: gradeLevels.name,
+        sectionId: sections.id,
+        sectionName: sections.name,
+        totalAmount: assessments.totalAmount,
+        totalPaid: assessments.totalPaid,
+        balance: assessments.balance,
+        billingStatus: assessments.billingStatus,
+        createdAt: assessments.createdAt,
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .innerJoin(assessments, eq(assessments.enrollmentId, enrollments.id))
+      .leftJoin(sections, eq(enrollments.sectionId, sections.id))
+      .where(whereCondition)
+      .orderBy(desc(assessments.createdAt))
+      .limit(params.pageSize)
+      .offset(offset),
+  ]);
+
+  const totalRecords = Number(countResult[0]?.count || 0);
 
   const data = rows.map((r) => ({
     enrollmentId: r.enrollmentId,
@@ -501,40 +505,42 @@ export async function getEnrolledStudents(
   filters?: EnrollmentQueueFilters
 ): Promise<PaginatedResult<EnrolledStudent>> {
   const whereCondition = enrollmentTabConditions(activeSchoolYearId, "enrolled", filters);
-
-  // Get total count (joins students so the search filter applies)
-  const [countResult] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(enrollments)
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .where(whereCondition);
-
-  const totalRecords = Number(countResult?.count || 0);
-
-  // Get paginated data
   const offset = calculateOffset(params.page, params.pageSize);
-  const rows = await db
-    .select({
-      enrollmentId: enrollments.id,
-      studentId: students.id,
-      studentRef: students.referenceNumber,
-      firstName: students.firstName,
-      lastName: students.lastName,
-      gradeLevelId: gradeLevels.id,
-      gradeName: gradeLevels.name,
-      sectionId: sections.id,
-      sectionName: sections.name,
-      enrolledAt: enrollments.enrolledAt,
-      studentType: enrollments.studentType,
-    })
-    .from(enrollments)
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .leftJoin(sections, eq(enrollments.sectionId, sections.id))
-    .where(whereCondition)
-    .orderBy(desc(enrollments.enrolledAt))
-    .limit(params.pageSize)
-    .offset(offset);
+
+  // Parallelize count and data queries
+  const [countResult, rows] = await Promise.all([
+    // Get total count (joins students so the search filter applies)
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .where(whereCondition),
+    // Get paginated data
+    db
+      .select({
+        enrollmentId: enrollments.id,
+        studentId: students.id,
+        studentRef: students.referenceNumber,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        gradeLevelId: gradeLevels.id,
+        gradeName: gradeLevels.name,
+        sectionId: sections.id,
+        sectionName: sections.name,
+        enrolledAt: enrollments.enrolledAt,
+        studentType: enrollments.studentType,
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .leftJoin(sections, eq(enrollments.sectionId, sections.id))
+      .where(whereCondition)
+      .orderBy(desc(enrollments.enrolledAt))
+      .limit(params.pageSize)
+      .offset(offset),
+  ]);
+
+  const totalRecords = Number(countResult[0]?.count || 0);
 
   const data = rows.map((r) => ({
     enrollmentId: r.enrollmentId,
@@ -565,39 +571,41 @@ export async function getCancelledEnrollments(
   filters?: EnrollmentQueueFilters
 ): Promise<PaginatedResult<CancelledEnrollment>> {
   const whereCondition = enrollmentTabConditions(activeSchoolYearId, "cancelled", filters);
-
-  // Get total count (joins students so the search filter applies)
-  const [countResult] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(enrollments)
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .where(whereCondition);
-
-  const totalRecords = Number(countResult?.count || 0);
-
-  // Get paginated data
   const offset = calculateOffset(params.page, params.pageSize);
-  const rows = await db
-    .select({
-      enrollmentId: enrollments.id,
-      studentId: students.id,
-      studentRef: students.referenceNumber,
-      firstName: students.firstName,
-      lastName: students.lastName,
-      gradeLevelId: gradeLevels.id,
-      gradeName: gradeLevels.name,
-      studentType: enrollments.studentType,
-      cancelledAt: enrollments.cancelledAt,
-      cancelledBy: enrollments.cancelledBy,
-      cancelRemarks: enrollments.cancelRemarks,
-    })
-    .from(enrollments)
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .where(whereCondition)
-    .orderBy(desc(enrollments.cancelledAt))
-    .limit(params.pageSize)
-    .offset(offset);
+
+  // Parallelize count and data queries
+  const [countResult, rows] = await Promise.all([
+    // Get total count (joins students so the search filter applies)
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .where(whereCondition),
+    // Get paginated data
+    db
+      .select({
+        enrollmentId: enrollments.id,
+        studentId: students.id,
+        studentRef: students.referenceNumber,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        gradeLevelId: gradeLevels.id,
+        gradeName: gradeLevels.name,
+        studentType: enrollments.studentType,
+        cancelledAt: enrollments.cancelledAt,
+        cancelledBy: enrollments.cancelledBy,
+        cancelRemarks: enrollments.cancelRemarks,
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .where(whereCondition)
+      .orderBy(desc(enrollments.cancelledAt))
+      .limit(params.pageSize)
+      .offset(offset),
+  ]);
+
+  const totalRecords = Number(countResult[0]?.count || 0);
 
   const data = rows.map((r) => ({
     enrollmentId: r.enrollmentId,

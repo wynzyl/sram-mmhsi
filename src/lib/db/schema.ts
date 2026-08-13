@@ -1119,6 +1119,8 @@ export const payments = pgTable(
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
     // OR-tracking invariant: whenever OR is marked consumed, the OR number must exist.
@@ -1153,6 +1155,10 @@ export const payments = pgTable(
     index("payments_date_method_posted_idx")
       .on(t.paymentDate, t.paymentMethod)
       .where(sql`${t.status} = 'posted'`),
+    // PERFORMANCE: Active (non-deleted) payment queries
+    index("payments_active_idx")
+      .on(t.studentId, t.assessmentId)
+      .where(sql`${t.deletedAt} IS NULL`),
   ]
 );
 

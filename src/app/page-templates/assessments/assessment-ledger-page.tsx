@@ -14,7 +14,7 @@ import { eq, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentLedgerRegister from "@/features/payments/components/AssessmentLedgerRegister";
-import { getPendingVoidRequestsForPayments } from "@/features/payments/void-requests.queries";
+import { getPendingVoidRequestsForAssessment } from "@/features/payments/void-requests.queries";
 import {
   getAccessibleBookletsForUser,
   getCashierDefaultBookletId,
@@ -75,14 +75,34 @@ export async function InternalAssessmentLedgerPage(props: {
       assessment.enrollmentId
     ));
 
-  // Run independent queries in parallel for better performance
-  const [balanceForwardType, items, paymentRecords] = await Promise.all([
-    // Get BALANCE_FORWARD fee type ID for visual indicators
+  // Check if student is archived - disable transactional actions for archived students
+  const isStudentArchived = isArchivedStatus(assessment.studentStatus);
+
+  // Disable posting, voiding, and cancellation for archived students
+  const canPost = hasPermission(session.role, "payments:post") && !isStudentArchived;
+  const canRequestVoid = hasPermission(session.role, "payments:void_request") && !isStudentArchived;
+  const canReverseDiscount = hasPermission(session.role, "discounts:manage") && !isStudentArchived;
+  const canRequestDiscount = hasPermission(session.role, "discounts:request") && !isStudentArchived;
+  const canCancel = hasPermission(session.role, "assessments:cancel") && !isStudentArchived;
+
+  // Performance: Run ALL independent queries in a single Promise.all
+  // Previously had 3 sequential stages; now parallelized via assessmentId-based void query
+  const [
+    balanceForwardType,
+    items,
+    paymentRecords,
+    pendingVoidMap,
+    appliedDiscounts,
+    bookletRows,
+    cashierDefaultBookletId,
+    suggestions,
+  ] = await Promise.all([
+    // Query 1: Get BALANCE_FORWARD fee type ID for visual indicators
     db.query.feeItemTypes.findFirst({
       where: eq(feeItemTypes.code, "BALANCE_FORWARD"),
       columns: { id: true },
     }),
-    // Fetch assessment line items
+    // Query 2: Fetch assessment line items
     db
       .select({
         id: assessmentItems.id,
@@ -95,7 +115,7 @@ export async function InternalAssessmentLedgerPage(props: {
       .from(assessmentItems)
       .where(eq(assessmentItems.assessmentId, id))
       .orderBy(desc(assessmentItems.createdAt)),
-    // Fetch payment records
+    // Query 3: Fetch payment records
     db
       .select({
         id: payments.id,
@@ -114,26 +134,16 @@ export async function InternalAssessmentLedgerPage(props: {
       .leftJoin(users, eq(payments.createdBy, users.id))
       .where(eq(payments.assessmentId, id))
       .orderBy(desc(payments.createdAt)),
-  ]);
-
-  // Check if student is archived - disable transactional actions for archived students
-  const isStudentArchived = isArchivedStatus(assessment.studentStatus);
-
-  // Disable posting, voiding, and cancellation for archived students
-  const canPost = hasPermission(session.role, "payments:post") && !isStudentArchived;
-  const canRequestVoid = hasPermission(session.role, "payments:void_request") && !isStudentArchived;
-  const canReverseDiscount = hasPermission(session.role, "discounts:manage") && !isStudentArchived;
-  const canRequestDiscount = hasPermission(session.role, "discounts:request") && !isStudentArchived;
-  const canCancel = hasPermission(session.role, "assessments:cancel") && !isStudentArchived;
-
-  // Fetch pending void requests for displayed payments + applied discounts in parallel
-  const paymentIds = paymentRecords.map((p) => p.id);
-  const [pendingVoidMap, appliedDiscounts] = await Promise.all([
-    paymentIds.length > 0
-      ? getPendingVoidRequestsForPayments(paymentIds)
-      : Promise.resolve(new Map()),
-    // Gracefully handle missing student_discounts table (migrations may not be applied)
+    // Query 4: Pending void requests (now by assessmentId, no dependency on paymentIds)
+    getPendingVoidRequestsForAssessment(id),
+    // Query 5: Applied discounts (gracefully handle missing table)
     getStudentDiscountsByAssessment(id).catch(() => []),
+    // Query 6: Booklets (conditional - empty if canPost is false)
+    canPost ? getAccessibleBookletsForUser(session.userId) : Promise.resolve([]),
+    // Query 7: Default booklet (conditional)
+    canPost ? getCashierDefaultBookletId(session.userId) : Promise.resolve(null),
+    // Query 8: Manual entry suggestions (conditional)
+    canPost ? getManualEntrySuggestions(session.userId) : Promise.resolve(null),
   ]);
 
   // Convert map to record for serialization
@@ -150,30 +160,9 @@ export async function InternalAssessmentLedgerPage(props: {
     };
   }
 
-  let activeBooklets: {
-    id: string;
-    series: string;
-    prefix: string;
-    nextNumber: number;
-    endNumber: number;
-  }[] = [];
-  let defaultBookletId: string | null = null;
-  let manualSuggestions: Awaited<ReturnType<typeof getManualEntrySuggestions>> | null = null;
-
-  if (canPost) {
-    // Fetch accessible booklets, default booklet, and manual suggestions in parallel
-    // Note: getAccessibleBookletsForUser() filters out booklets assigned to other users
-    const [bookletRows, cashierDefaultBookletId, suggestions] = await Promise.all([
-      // Get booklets accessible to this user (own assigned + unassigned booklets)
-      getAccessibleBookletsForUser(session.userId),
-      getCashierDefaultBookletId(session.userId),
-      getManualEntrySuggestions(session.userId),
-    ]);
-
-    activeBooklets = bookletRows;
-    defaultBookletId = cashierDefaultBookletId;
-    manualSuggestions = suggestions;
-  }
+  const activeBooklets = bookletRows;
+  const defaultBookletId = cashierDefaultBookletId;
+  const manualSuggestions = suggestions;
 
   const ledgerPayments = paymentRecords.map((p) => ({
     id: p.id,

@@ -122,6 +122,52 @@ export async function logAudit(
 }
 
 /**
+ * Batch audit logging - inserts multiple audit entries in a single query.
+ * Useful for operations that affect multiple entities (e.g., balance forward).
+ *
+ * @param paramsArray - Array of audit event parameters
+ * @param options - Audit options (e.g., throwOnFail for financial operations)
+ * @returns Batch result with count of logged entries
+ */
+export async function logAuditBatch(
+  paramsArray: AuditParams[],
+  options: AuditOptions = {}
+): Promise<{ success: boolean; count: number; error?: string }> {
+  if (paramsArray.length === 0) {
+    return { success: true, count: 0 };
+  }
+
+  try {
+    const correlationId = crypto.randomUUID();
+    const values = paramsArray.map((params) => ({
+      actor: params.actor ?? null,
+      actorRole: params.actorRole,
+      action: params.action,
+      targetEntity: params.targetEntity,
+      targetId: params.targetId,
+      previousState: params.previousState ? JSON.stringify(params.previousState) : undefined,
+      newState: params.newState ? JSON.stringify(params.newState) : undefined,
+      context: params.context,
+      correlationId: params.correlationId ?? correlationId,
+      ipAddress: anonymizeIpAddressForAuditLog(params.ipAddress),
+    }));
+
+    await db.insert(auditLogs).values(values);
+    return { success: true, count: paramsArray.length };
+  } catch (err) {
+    const errorMessage = String(err);
+    logger.error("[audit] Failed to write batch audit logs", {
+      error: errorMessage,
+      count: paramsArray.length,
+    });
+    if (options.throwOnFail) {
+      throw err;
+    }
+    return { success: false, count: 0, error: errorMessage };
+  }
+}
+
+/**
  * Retention boundary for audit records. This is a server-only cleanup helper that
  * can be invoked from a cron route or scheduler and is documented in assistance
  * material as the operational mechanism enforcing the stated 365-day policy.

@@ -170,38 +170,40 @@ export async function getAssessmentsList(
   // Combine all conditions with AND
   const whereClause = and(...conditions);
 
-  // Get total count for pagination metadata
-  const [countResult] = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(assessments)
-    .innerJoin(students, eq(assessments.studentId, students.id))
-    .where(whereClause);
+  // Parallelize count and data queries
+  const [countResult, rows] = await Promise.all([
+    // Get total count for pagination metadata
+    db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(assessments)
+      .innerJoin(students, eq(assessments.studentId, students.id))
+      .where(whereClause),
+    // Get paginated data (join with enrollments and gradeLevels for grade level name)
+    db
+      .select({
+        id: assessments.id,
+        totalAmount: assessments.totalAmount,
+        totalPaid: assessments.totalPaid,
+        balance: assessments.balance,
+        billingStatus: assessments.billingStatus,
+        transferredAt: assessments.transferredAt,
+        studentLastName: students.lastName,
+        studentFirstName: students.firstName,
+        schoolYear: schoolYears.label,
+        gradeLevel: gradeLevels.name,
+      })
+      .from(assessments)
+      .innerJoin(students, eq(assessments.studentId, students.id))
+      .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
+      .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .where(whereClause)
+      .orderBy(asc(students.lastName), asc(students.firstName))
+      .limit(pageSize)
+      .offset(offset),
+  ]);
 
-  const totalRecords = Number(countResult?.count ?? 0);
-
-  // Get paginated data (join with enrollments and gradeLevels for grade level name)
-  const rows = await db
-    .select({
-      id: assessments.id,
-      totalAmount: assessments.totalAmount,
-      totalPaid: assessments.totalPaid,
-      balance: assessments.balance,
-      billingStatus: assessments.billingStatus,
-      transferredAt: assessments.transferredAt,
-      studentLastName: students.lastName,
-      studentFirstName: students.firstName,
-      schoolYear: schoolYears.label,
-      gradeLevel: gradeLevels.name,
-    })
-    .from(assessments)
-    .innerJoin(students, eq(assessments.studentId, students.id))
-    .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
-    .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
-    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .where(whereClause)
-    .orderBy(asc(students.lastName), asc(students.firstName))
-    .limit(pageSize)
-    .offset(offset);
+  const totalRecords = Number(countResult[0]?.count ?? 0);
 
   const data = rows.map(
     (r): AssessmentListItem => ({
@@ -442,32 +444,33 @@ export async function resolveFeeScheduleForAssessment(
     return null;
   }
 
-  // ─── Step 2: Load Template Items with Fee Type Details ───────────────────
+  // ─── Steps 2 & 3: Parallelize template items + overrides (independent queries) ───
 
-  const templateItems = await executor.query.feeTemplateItems.findMany({
-    columns: { id: true, feeItemTypeId: true, defaultAmount: true, order: true },
-    where: and(
-      eq(feeTemplateItems.feeTemplateId, schedule.feeTemplateId),
-      isNull(feeTemplateItems.deletedAt)
-    ),
-    with: {
-      feeItemType: {
-        columns: { code: true, name: true, isDiscount: true, isRefundable: true },
+  const [templateItems, overrides] = await Promise.all([
+    // Load template items with fee type details
+    executor.query.feeTemplateItems.findMany({
+      columns: { id: true, feeItemTypeId: true, defaultAmount: true, order: true },
+      where: and(
+        eq(feeTemplateItems.feeTemplateId, schedule.feeTemplateId),
+        isNull(feeTemplateItems.deletedAt)
+      ),
+      with: {
+        feeItemType: {
+          columns: { code: true, name: true, isDiscount: true, isRefundable: true },
+        },
       },
-    },
-    orderBy: (t, { asc }) => [asc(t.order), asc(t.createdAt)],
-  });
+      orderBy: (t, { asc }) => [asc(t.order), asc(t.createdAt)],
+    }),
+    // Load overrides for this schedule
+    executor.query.feeScheduleOverrides.findMany({
+      columns: { feeTemplateItemId: true, overrideAmount: true },
+      where: eq(feeScheduleOverrides.scheduleId, schedule.id),
+    }),
+  ]);
 
   if (templateItems.length === 0) {
     return null;
   }
-
-  // ─── Step 3: Load Overrides for This Schedule ────────────────────────────
-
-  const overrides = await executor.query.feeScheduleOverrides.findMany({
-    columns: { feeTemplateItemId: true, overrideAmount: true },
-    where: eq(feeScheduleOverrides.scheduleId, schedule.id),
-  });
 
   const overrideMap = new Map(
     overrides.map((o) => [o.feeTemplateItemId, o.overrideAmount])

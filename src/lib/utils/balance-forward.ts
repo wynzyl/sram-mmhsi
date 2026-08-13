@@ -108,16 +108,26 @@ export async function reverseBalanceForwardItems(
       columns: { id: true, referenceNumber: true },
     });
 
+    const now = new Date();
     for (const bfxReceipt of bfxReceipts) {
-      await tx.delete(payments).where(eq(payments.id, bfxReceipt.id));
+      // Soft-delete BFX receipt (compliance: no hard deletes on financial records)
+      await tx
+        .update(payments)
+        .set({
+          deletedAt: now,
+          deletedBy: userId,
+          updatedAt: now,
+          updatedBy: userId,
+        })
+        .where(eq(payments.id, bfxReceipt.id));
       bfxReceiptsDeleted++;
 
-      // Audit log BFX deletion
+      // Audit log BFX soft-delete
       await logAudit(
         {
           actor: userId,
           actorRole: userRole,
-          action: "bfx_receipt_deleted",
+          action: "bfx_receipt_soft_deleted",
           targetEntity: "payments",
           targetId: bfxReceipt.id,
           context: bfItem.sourceAssessmentId,
@@ -126,6 +136,7 @@ export async function reverseBalanceForwardItems(
             reason,
             sourceAssessmentId: bfItem.sourceAssessmentId,
             targetAssessmentId,
+            deletedAt: now.toISOString(),
           },
         },
         { throwOnFail: true }

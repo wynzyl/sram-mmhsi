@@ -13,7 +13,7 @@ import {
   payments,
   discountRequests,
 } from "@/lib/db/schema";
-import { eq, and, ne, isNotNull, isNull, asc } from "drizzle-orm";
+import { eq, and, ne, isNotNull, isNull, asc, inArray } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "./assessments.queries";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -25,10 +25,10 @@ import {
 import type { AssessmentFormState, CancelAssessmentFormState } from "./assessments.schema";
 import { formatCurrency } from "@/lib/utils/currency";
 import { logger } from "@/lib/observability/logger";
-import { logAudit } from "@/lib/utils/audit-logger";
+import { logAudit, logAuditBatch } from "@/lib/utils/audit-logger";
 import { reverseBalanceForwardItems } from "@/lib/utils/balance-forward";
 import { parseFormData } from "@/lib/utils/form-validation";
-import { generateNextBfxNumber } from "@/lib/utils/reference";
+import { generateBatchBfxNumbers } from "@/lib/utils/reference";
 import {
   hasPendingDiscountRequests,
   applyApprovedDiscountsToAssessment,
@@ -354,61 +354,67 @@ export async function createAssessmentFromEnrollmentAction(
       );
 
       // ─── Mark Source Assessments as Transferred & Create BFX Receipts ─────────────
-      for (const bfItem of balanceForwardItems) {
-        // 1. Atomically claim the source assessment. Conditional UPDATE with
-        //    transferredAt IS NULL prevents two concurrent transfers from both
-        //    reading null and producing duplicate BFX receipts. If no row is
-        //    returned, another transaction beat us to it.
+      // Performance: Batch all balance forward operations to reduce 4N queries to ~4 queries
+      if (balanceForwardItems.length > 0) {
+        const sourceAssessmentIds = balanceForwardItems.map((bf) => bf.sourceAssessmentId);
+        const now = new Date();
+
+        // 1. Batch claim all source assessments. Conditional UPDATE with
+        //    transferredAt IS NULL prevents concurrent transfers. We verify ALL
+        //    expected assessments were claimed by checking returned count.
         const claimed = await tx
           .update(assessments)
           .set({
             balance: "0.00",
             billingStatus: "balance_forwarded",
-            transferredAt: new Date(),
+            transferredAt: now,
             transferredBy: session.userId,
             transferredToAssessmentId: newAssessment.id,
-            transferRemarks: `Balance of ${bfItem.amount} transferred to ${enrollmentRow.schoolYearLabel}`,
+            transferRemarks: `Balance transferred to ${enrollmentRow.schoolYearLabel}`,
             updatedBy: session.userId,
-            updatedAt: new Date(),
+            updatedAt: now,
           })
           .where(
             and(
-              eq(assessments.id, bfItem.sourceAssessmentId),
+              inArray(assessments.id, sourceAssessmentIds),
               isNull(assessments.transferredAt)
             )
           )
           .returning({ id: assessments.id });
 
-        if (claimed.length === 0) {
+        // If not all assessments were claimed, another transaction beat us
+        if (claimed.length !== balanceForwardItems.length) {
           throw new Error("SOURCE_ASSESSMENT_ALREADY_TRANSFERRED");
         }
 
-        // 2. Generate BFX number (atomic via bfx_reference_seq)
-        const bfxNumber = await generateNextBfxNumber(tx);
+        // 2. Generate all BFX numbers in a single query
+        const bfxNumbers = await generateBatchBfxNumbers(tx, balanceForwardItems.length);
 
-        // 3. Create BFX receipt in SOURCE assessment (negative amount = transferred out)
-        const [bfxPayment] = await tx
+        // 3. Batch INSERT all BFX receipts (negative amounts = transferred out)
+        const paymentValues = balanceForwardItems.map((bfItem, index) => ({
+          studentId: enrollmentRow.studentId,
+          assessmentId: bfItem.sourceAssessmentId,
+          bookletId: null,         // BFX doesn't use booklet
+          orNumber: null,          // BFX doesn't have OR number
+          orStatus: "voided" as const,      // Not consumed (no actual OR)
+          amount: String((Number(bfItem.amount) * -1).toFixed(2)), // Negative (transferred out)
+          paymentMethod: "balance_forward" as const,
+          referenceNumber: bfxNumbers[index],
+          paymentDate: now,
+          status: "balance_forward" as const,
+          kind: "balance_forward" as const,
+          remarks: `Balance forwarded to ${enrollmentRow.schoolYearLabel}`,
+          createdBy: session.userId,
+          updatedBy: session.userId,
+        }));
+
+        const bfxPayments = await tx
           .insert(payments)
-          .values({
-            studentId: enrollmentRow.studentId,
-            assessmentId: bfItem.sourceAssessmentId,
-            bookletId: null,         // BFX doesn't use booklet
-            orNumber: null,          // BFX doesn't have OR number
-            orStatus: "voided",      // Not consumed (no actual OR)
-            amount: String((Number(bfItem.amount) * -1).toFixed(2)), // Negative (transferred out)
-            paymentMethod: "balance_forward",
-            referenceNumber: bfxNumber,
-            paymentDate: new Date(),
-            status: "balance_forward",
-            kind: "balance_forward",
-            remarks: `Balance forwarded to ${enrollmentRow.schoolYearLabel}`,
-            createdBy: session.userId,
-            updatedBy: session.userId,
-          })
+          .values(paymentValues)
           .returning({ id: payments.id });
 
-        // 4. Audit log each transfer with BFX details
-        await logAudit({
+        // 4. Batch audit log all transfers
+        const auditParams = balanceForwardItems.map((bfItem, index) => ({
           actor: session.userId,
           actorRole: session.role,
           action: "assessment_balance_transferred",
@@ -420,10 +426,12 @@ export async function createAssessmentFromEnrollmentAction(
             transferredAmount: bfItem.amount,
             sourceSchoolYear: bfItem.schoolYearLabel,
             targetEnrollmentId: enrollmentId,
-            bfxReceiptId: bfxPayment.id,
-            bfxNumber: bfxNumber,
+            bfxReceiptId: bfxPayments[index]?.id,
+            bfxNumber: bfxNumbers[index],
           },
-        }, { throwOnFail: true });
+        }));
+
+        await logAuditBatch(auditParams, { throwOnFail: true });
       }
 
       // ─── Apply Approved Discounts ────────────────────────────────────────────

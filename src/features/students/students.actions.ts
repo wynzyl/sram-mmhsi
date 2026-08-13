@@ -156,18 +156,6 @@ export async function createStudentAction(
     };
   }
 
-  const gradeOk = await db
-    .select({ id: gradeLevels.id })
-    .from(gradeLevels)
-    .where(eq(gradeLevels.id, gradeLevelId))
-    .limit(1);
-  if (gradeOk.length === 0) {
-    return {
-      errors: { gradeLevelId: ["Invalid grade level."] },
-      fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
-    };
-  }
-
   const intakeDocuments: EnrollmentIntakeDocuments = {
     form138: intakeForm138,
     birthCertificatePsa: intakeBirthCertificatePsa,
@@ -176,91 +164,77 @@ export async function createStudentAction(
     escCertificate: intakeEscCertificate!,
   };
 
-  // 4. Duplicate detection — always runs.
-  // Base match: same first + last name + date of birth on an active record.
-  // Tightened by middleName when provided.
-  {
-    const conditions = [
-      ilike(students.firstName, studentData.firstName),
-      ilike(students.lastName, studentData.lastName),
-      eq(students.isActive, true),
-      eq(students.dateOfBirth, studentData.dateOfBirth),
-    ];
-    if (studentData.middleName) {
-      conditions.push(ilike(students.middleName, studentData.middleName));
-    }
+  // 4. Parallel validation queries — grade level, name/DOB duplicate, LRN duplicate
+  // Performance: Run all validation queries concurrently to reduce latency
+  const nameConditions = [
+    ilike(students.firstName, studentData.firstName),
+    ilike(students.lastName, studentData.lastName),
+    eq(students.isActive, true),
+    eq(students.dateOfBirth, studentData.dateOfBirth),
+  ];
+  if (studentData.middleName) {
+    nameConditions.push(ilike(students.middleName, studentData.middleName));
+  }
 
-    const existing = await db
+  const [gradeOk, nameDup, lrnDup] = await Promise.all([
+    // Query 1: Validate grade level exists
+    db
+      .select({ id: gradeLevels.id })
+      .from(gradeLevels)
+      .where(eq(gradeLevels.id, gradeLevelId))
+      .limit(1),
+    // Query 2: Check name/DOB duplicate
+    db
       .select({
         id: students.id,
         referenceNumber: students.referenceNumber,
       })
       .from(students)
-      .where(and(...conditions))
-      .limit(1);
+      .where(and(...nameConditions))
+      .limit(1),
+    // Query 3: Check LRN duplicate (only if LRN provided)
+    studentData.lrn
+      ? db
+          .select({ referenceNumber: students.referenceNumber })
+          .from(students)
+          .where(eq(students.lrn, studentData.lrn))
+          .limit(1)
+      : Promise.resolve([]),
+  ]);
 
-    if (existing.length > 0) {
-      const fullName = `${studentData.firstName} ${studentData.lastName}`;
-      const ref = existing[0].referenceNumber;
-      const message = `A student named ${fullName} with this date of birth already exists (Ref: ${ref}).`;
-      return {
-        errors: { _form: [message] },
-        fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
-      };
-    }
+  // Check validation results and return first error found
+  if (gradeOk.length === 0) {
+    return {
+      errors: { gradeLevelId: ["Invalid grade level."] },
+      fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
+    };
   }
 
-  if (studentData.lrn) {
-    const lrnDup = await db
-      .select({ referenceNumber: students.referenceNumber })
-      .from(students)
-      .where(eq(students.lrn, studentData.lrn))
-      .limit(1);
-    if (lrnDup.length > 0) {
-      return {
-        errors: {
-          lrn: [`This LRN is already assigned to student ${lrnDup[0].referenceNumber}.`],
-        },
-        fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
-      };
-    }
+  if (nameDup.length > 0) {
+    const fullName = `${studentData.firstName} ${studentData.lastName}`;
+    const ref = nameDup[0].referenceNumber;
+    const message = `A student named ${fullName} with this date of birth already exists (Ref: ${ref}).`;
+    return {
+      errors: { _form: [message] },
+      fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
+    };
+  }
+
+  if (lrnDup.length > 0) {
+    return {
+      errors: {
+        lrn: [`This LRN is already assigned to student ${lrnDup[0].referenceNumber}.`],
+      },
+      fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
+    };
   }
 
   try {
     // 5–8. Generate reference, insert student + guardians + approved registration (single transaction)
-    // Retry logic for duplicate reference numbers (handles sequence out-of-sync)
-    let referenceNumber: string = "";
-    let retries = 0;
-    const MAX_RETRIES = 5;
-
-    while (retries < MAX_RETRIES) {
-      const seq = await getNextStudentSequence();
-      referenceNumber = generateStudentRef(seq);
-
-      // Check if this reference already exists
-      const existing = await db
-        .select({ id: students.id })
-        .from(students)
-        .where(eq(students.referenceNumber, referenceNumber))
-        .limit(1);
-
-      if (existing.length === 0) {
-        break; // Reference is unique, proceed
-      }
-
-      retries++;
-      if (retries >= MAX_RETRIES) {
-        logger.error("[students] Failed to generate unique reference after retries", {
-          lastAttempt: referenceNumber,
-          retries,
-        });
-        return {
-          message:
-            "Unable to generate a unique student reference number. Please contact system administrator to resync the student sequence.",
-          fieldValues: buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]),
-        };
-      }
-    }
+    // Performance: Generate reference atomically via PostgreSQL sequence (no retry loop needed).
+    // The sequence is atomic and the UNIQUE constraint on reference_number provides defense-in-depth.
+    const seq = await getNextStudentSequence();
+    const referenceNumber = generateStudentRef(seq);
 
     const newStudent = await db.transaction(async (tx) => {
       const [insertedStudent] = await tx
@@ -348,6 +322,18 @@ export async function createStudentAction(
     logger.error("[students] Failed to create student", { error: String(err), detail });
     const restore = buildCreateStudentFormSnapshot(formData, parsed.data.guardians as GuardianInput[]);
     const constraint = extractConstraintName(err);
+
+    // Reference number uniqueness violation (rare - sequence out of sync)
+    if (constraint === "students_ref_idx") {
+      logger.error("[students] Reference number collision - sequence may need resync", {
+        constraint,
+        detail,
+      });
+      return {
+        message: "Unable to generate a unique student reference number. Please contact system administrator to resync the student sequence.",
+        fieldValues: restore,
+      };
+    }
 
     // LRN uniqueness violation
     if (constraint === "students_lrn_unique") {

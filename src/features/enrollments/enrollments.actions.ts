@@ -206,37 +206,45 @@ export async function createEnrollmentAction(
     };
   }
 
-  const [maxGradeRow] = await db
-    .select({ maxOrder: gradeLevels.order })
-    .from(gradeLevels)
-    .orderBy(desc(gradeLevels.order))
-    .limit(1);
-  const maxCatalogOrder = maxGradeRow?.maxOrder ?? 0;
+  // Parallelize grade validation queries — all are independent
+  // Performance: Run all 3 queries concurrently to reduce latency
+  const [maxGradeRows, newGradeRows, priorEnrollmentRows] = await Promise.all([
+    // Query 1: Get max grade order from catalog
+    db
+      .select({ maxOrder: gradeLevels.order })
+      .from(gradeLevels)
+      .orderBy(desc(gradeLevels.order))
+      .limit(1),
+    // Query 2: Get the target grade level order
+    db
+      .select({ order: gradeLevels.order })
+      .from(gradeLevels)
+      .where(eq(gradeLevels.id, gradeLevelId))
+      .limit(1),
+    // Query 3: Get prior enrollment's grade order
+    db
+      .select({ gradeOrder: gradeLevels.order })
+      .from(enrollments)
+      .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .where(
+        and(
+          eq(enrollments.studentId, studentId),
+          ne(enrollments.status, "cancelled"),
+          ne(enrollments.schoolYearId, schoolYearId)
+        )
+      )
+      .orderBy(desc(schoolYears.startDate))
+      .limit(1),
+  ]);
 
-  const [newGradeRow] = await db
-    .select({ order: gradeLevels.order })
-    .from(gradeLevels)
-    .where(eq(gradeLevels.id, gradeLevelId))
-    .limit(1);
+  const maxCatalogOrder = maxGradeRows[0]?.maxOrder ?? 0;
+  const newGradeRow = newGradeRows[0];
   if (!newGradeRow) {
     return { errors: { gradeLevelId: ["Invalid grade level."] } };
   }
 
-  const [priorEnrollmentRow] = await db
-    .select({ gradeOrder: gradeLevels.order })
-    .from(enrollments)
-    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
-    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .where(
-      and(
-        eq(enrollments.studentId, studentId),
-        ne(enrollments.status, "cancelled"),
-        ne(enrollments.schoolYearId, schoolYearId)
-      )
-    )
-    .orderBy(desc(schoolYears.startDate))
-    .limit(1);
-
+  const priorEnrollmentRow = priorEnrollmentRows[0];
   const priorGradeOrder = priorEnrollmentRow?.gradeOrder ?? null;
   const hasPriorEnrollmentElsewhere = priorEnrollmentRow != null;
 

@@ -42,6 +42,37 @@ export async function generateNextBfxNumber(
 }
 
 /**
+ * Generates multiple BFX numbers in a single query using generate_series.
+ * Format: BFX-NNNNN (e.g., BFX-00001, BFX-00002)
+ *
+ * Allocates `count` sequence values atomically from `bfx_reference_seq`.
+ * Returns an array of BFX numbers in order.
+ *
+ * @param tx - Database transaction
+ * @param count - Number of BFX numbers to generate
+ * @returns Array of BFX numbers
+ */
+export async function generateBatchBfxNumbers(
+  tx: {
+    execute: typeof import("@/lib/db").db.execute;
+  },
+  count: number
+): Promise<string[]> {
+  if (count === 0) return [];
+  if (count === 1) {
+    const single = await generateNextBfxNumber(tx);
+    return [single];
+  }
+
+  // Allocate `count` sequence values in a single query
+  const result = await tx.execute<{ nextval: number }>(
+    sql`SELECT nextval('bfx_reference_seq') AS nextval FROM generate_series(1, ${count})`
+  );
+
+  return result.map((row) => `BFX-${String(row.nextval).padStart(5, "0")}`);
+}
+
+/**
  * Formats a document number from a year and sequence.
  * Format: DOC-YYYY-NNNNN (e.g., DOC-2026-00001)
  *

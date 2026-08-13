@@ -134,77 +134,67 @@ export async function getPendingDiscountRequests(
     conditions.push(eq(enrollments.gradeLevelId, gradeLevelId));
   }
 
-  // Count query
-  const [countResult] = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(discountRequests)
-    .innerJoin(enrollments, eq(discountRequests.enrollmentId, enrollments.id))
-    .innerJoin(students, eq(discountRequests.studentId, students.id))
-    .where(
-      and(
-        ...conditions,
-        searchQuery
-          ? or(
-              ilike(students.firstName, `%${searchQuery}%`),
-              ilike(students.lastName, `%${searchQuery}%`),
-              ilike(students.referenceNumber, `%${searchQuery}%`)
-            )
-          : undefined
+  // Build search condition (reused in both queries)
+  const searchCondition = searchQuery
+    ? or(
+        ilike(students.firstName, `%${searchQuery}%`),
+        ilike(students.lastName, `%${searchQuery}%`),
+        ilike(students.referenceNumber, `%${searchQuery}%`)
       )
-    );
+    : undefined;
 
-  const totalRecords = Number(countResult?.count ?? 0);
+  // Parallelize count and data queries
+  const [countResult, rows] = await Promise.all([
+    // Count query
+    db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(discountRequests)
+      .innerJoin(enrollments, eq(discountRequests.enrollmentId, enrollments.id))
+      .innerJoin(students, eq(discountRequests.studentId, students.id))
+      .where(and(...conditions, searchCondition)),
 
-  // Data query
-  const rows = await db
-    .select({
-      id: discountRequests.id,
-      studentId: discountRequests.studentId,
-      studentFirstName: students.firstName,
-      studentLastName: students.lastName,
-      studentRef: students.referenceNumber,
-      enrollmentId: discountRequests.enrollmentId,
-      gradeLevelName: gradeLevels.name,
-      schoolYearLabel: schoolYears.label,
-      discountTypeId: discountRequests.discountTypeId,
-      discountTypeCode: discountTypes.code,
-      discountTypeName: discountTypes.name,
-      calculationType: discountTypes.calculationType,
-      baseType: discountTypes.baseType,
-      defaultValue: discountTypes.defaultValue,
-      requestReason: discountRequests.requestReason,
-      status: discountRequests.status,
-      requestedBy: discountRequests.requestedBy,
-      requestedByFirstName: requestedByUser.username,
-      requestedAt: discountRequests.requestedAt,
-      decidedBy: discountRequests.decidedBy,
-      decidedAt: discountRequests.decidedAt,
-      decisionRemarks: discountRequests.decisionRemarks,
-      overrideValue: discountRequests.overrideValue,
-      overrideReason: discountRequests.overrideReason,
-    })
-    .from(discountRequests)
-    .innerJoin(students, eq(discountRequests.studentId, students.id))
-    .innerJoin(enrollments, eq(discountRequests.enrollmentId, enrollments.id))
-    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
-    .innerJoin(discountTypes, eq(discountRequests.discountTypeId, discountTypes.id))
-    .innerJoin(requestedByUser, eq(discountRequests.requestedBy, requestedByUser.id))
-    .where(
-      and(
-        ...conditions,
-        searchQuery
-          ? or(
-              ilike(students.firstName, `%${searchQuery}%`),
-              ilike(students.lastName, `%${searchQuery}%`),
-              ilike(students.referenceNumber, `%${searchQuery}%`)
-            )
-          : undefined
-      )
-    )
-    .orderBy(desc(discountRequests.requestedAt))
-    .limit(pageSize)
-    .offset(offset);
+    // Data query
+    db
+      .select({
+        id: discountRequests.id,
+        studentId: discountRequests.studentId,
+        studentFirstName: students.firstName,
+        studentLastName: students.lastName,
+        studentRef: students.referenceNumber,
+        enrollmentId: discountRequests.enrollmentId,
+        gradeLevelName: gradeLevels.name,
+        schoolYearLabel: schoolYears.label,
+        discountTypeId: discountRequests.discountTypeId,
+        discountTypeCode: discountTypes.code,
+        discountTypeName: discountTypes.name,
+        calculationType: discountTypes.calculationType,
+        baseType: discountTypes.baseType,
+        defaultValue: discountTypes.defaultValue,
+        requestReason: discountRequests.requestReason,
+        status: discountRequests.status,
+        requestedBy: discountRequests.requestedBy,
+        requestedByFirstName: requestedByUser.username,
+        requestedAt: discountRequests.requestedAt,
+        decidedBy: discountRequests.decidedBy,
+        decidedAt: discountRequests.decidedAt,
+        decisionRemarks: discountRequests.decisionRemarks,
+        overrideValue: discountRequests.overrideValue,
+        overrideReason: discountRequests.overrideReason,
+      })
+      .from(discountRequests)
+      .innerJoin(students, eq(discountRequests.studentId, students.id))
+      .innerJoin(enrollments, eq(discountRequests.enrollmentId, enrollments.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+      .innerJoin(discountTypes, eq(discountRequests.discountTypeId, discountTypes.id))
+      .innerJoin(requestedByUser, eq(discountRequests.requestedBy, requestedByUser.id))
+      .where(and(...conditions, searchCondition))
+      .orderBy(desc(discountRequests.requestedAt))
+      .limit(pageSize)
+      .offset(offset),
+  ]);
+
+  const totalRecords = Number(countResult[0]?.count ?? 0);
 
   const data: DiscountRequestView[] = rows.map((r) => ({
     id: r.id,

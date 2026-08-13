@@ -458,34 +458,36 @@ export async function calculateRefundPreview(assessmentId: string): Promise<Refu
   const now = new Date();
   const isEligibleForRefund = now <= cutoffConfig.cutoffDate;
 
-  // Get assessment items with refundability
-  const items = await db
-    .select({
-      id: assessmentItems.id,
-      description: assessmentItems.description,
-      amount: assessmentItems.amount,
-      isRefundable: assessmentItems.isRefundable,
-      isDiscount: assessmentItems.isDiscount,
-    })
-    .from(assessmentItems)
-    .where(eq(assessmentItems.assessmentId, assessmentId));
-
-  // Get all posted payments and their allocations
-  const paymentsData = await db
-    .select({
-      id: payments.id,
-      amount: payments.amount,
-      status: payments.status,
-      kind: payments.kind,
-    })
-    .from(payments)
-    .where(
-      and(
-        eq(payments.assessmentId, assessmentId),
-        eq(payments.status, "posted"),
-        eq(payments.kind, "payment") // Only original payments, not reversals
-      )
-    );
+  // Parallelize assessment items and payments queries
+  const [items, paymentsData] = await Promise.all([
+    // Get assessment items with refundability
+    db
+      .select({
+        id: assessmentItems.id,
+        description: assessmentItems.description,
+        amount: assessmentItems.amount,
+        isRefundable: assessmentItems.isRefundable,
+        isDiscount: assessmentItems.isDiscount,
+      })
+      .from(assessmentItems)
+      .where(eq(assessmentItems.assessmentId, assessmentId)),
+    // Get all posted payments (only original payments, not reversals)
+    db
+      .select({
+        id: payments.id,
+        amount: payments.amount,
+        status: payments.status,
+        kind: payments.kind,
+      })
+      .from(payments)
+      .where(
+        and(
+          eq(payments.assessmentId, assessmentId),
+          eq(payments.status, "posted"),
+          eq(payments.kind, "payment")
+        )
+      ),
+  ]);
 
   // Calculate total paid from payments (lump-sum approach - no allocations needed)
   const totalPaid = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0);
