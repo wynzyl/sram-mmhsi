@@ -16,6 +16,6 @@ ADD COLUMN IF NOT EXISTS deleted_by UUID REFERENCES users(id);
 
 -- Partial index for active (non-deleted) payment queries
 -- Covers: All payment list/sum queries that filter by deletedAt IS NULL
-CREATE INDEX CONCURRENTLY IF NOT EXISTS payments_active_idx
+CREATE INDEX IF NOT EXISTS payments_active_idx
 ON payments (student_id, assessment_id)
 WHERE deleted_at IS NULL;

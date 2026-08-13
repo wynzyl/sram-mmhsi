@@ -197,6 +197,27 @@
       "when": 1786300800000,
       "tag": "0027_add_cascade_discount_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1786387200000,
+      "tag": "0028_add_academics_performance_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1786473600000,
+      "tag": "0029_add_payments_soft_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1786560000000,
+      "tag": "0030_add_registration_enrollment_assessment_indexes",
+      "breakpoints": true
     }
   ]
 }
