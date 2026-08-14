@@ -1352,7 +1352,8 @@ describe("Edge Cases & Boundary Conditions", () => {
       expect(base).toBe(50000.75);
 
       const discount = calculateDiscountAmount(base, "percentage", 10);
-      expect(discount).toBeCloseTo(5000.075, 3);
+      // Production rounds to 2 decimals: 5000.075 → 5000.08
+      expect(discount).toBe(5000.08);
     });
   });
 });
