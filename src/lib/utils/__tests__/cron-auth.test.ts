@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { timingSafeCompare } from "./cron-auth";
+import { timingSafeCompare } from "../cron-auth";
 
 describe("timingSafeCompare", () => {
   it("accepts identical secrets", () => {

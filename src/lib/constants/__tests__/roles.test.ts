@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeRole, ROLES } from "./roles";
+import { normalizeRole, ROLES } from "../roles";
 
 describe("normalizeRole", () => {
   it("returns canonical roles unchanged", () => {
@@ -17,4 +17,3 @@ describe("normalizeRole", () => {
     expect(normalizeRole("unknownRole")).toBeNull();
   });
 });
-

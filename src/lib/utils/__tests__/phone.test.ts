@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatPhoneNumber, formatPhoneInput, stripPhoneFormat } from "./phone";
+import { formatPhoneNumber, formatPhoneInput, stripPhoneFormat } from "../phone";
 
 describe("formatPhoneNumber", () => {
   it("formats a valid 11-digit phone number", () => {

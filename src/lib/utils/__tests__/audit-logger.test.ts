@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
-import { anonymizeIpAddressForAuditLog } from "@/lib/utils/audit-logger";
+import { anonymizeIpAddressForAuditLog } from "../audit-logger";
 
 describe("audit-log IP anonymization", () => {
   it("returns a stable SHA-256 fingerprint for a concrete client IP", () => {
