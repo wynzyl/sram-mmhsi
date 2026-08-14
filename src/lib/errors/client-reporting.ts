@@ -17,7 +17,7 @@
 export function reportClientError(
   error: Error & { digest?: string },
   context: {
-    source: "global" | "admin" | "staff" | "portal";
+    source: "global" | "root" | "admin" | "staff" | "portal";
     pathname?: string;
   }
 ): void {

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { reportClientError } from "@/lib/errors/client-reporting";
 
-export default function GlobalError({
+export default function RootError({
   error,
   reset,
 }: {
@@ -13,17 +13,17 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     // Report error to monitoring
-    reportClientError(error, { source: "global" });
+    reportClientError(error, { source: "root" });
   }, [error]);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
+    <div className="flex min-h-[50vh] flex-col items-center justify-center px-4">
       <div className="mx-auto max-w-md text-center">
         <div className="mb-6 flex justify-center">
           <div className="rounded-full bg-red-100 dark:bg-red-950 p-4">
             <svg
-              width="48"
-              height="48"
+              width="40"
+              height="40"
               viewBox="0 0 24 24"
               fill="none"
               className="stroke-destructive"
@@ -31,32 +31,33 @@ export default function GlobalError({
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           </div>
         </div>
 
-        <h1 className="mb-2 font-display text-2xl font-bold text-foreground">
-          Something went wrong to the staff portal
-        </h1>
-        <p className="mb-6 text-muted-foreground">
-          Please try refreshing the page or contact the administrator if the problem persists.
+        <h2 className="mb-2 font-display text-xl font-bold text-foreground">
+          Something went wrong
+        </h2>
+        <p className="mb-4 text-sm text-muted-foreground">
+          An unexpected error occurred. Please try again or contact support.
         </p>
 
         {error.digest && (
           <p className="mb-4 font-mono text-xs text-muted-foreground">
-            Error ID: {error.digest}
+            Reference: {error.digest}
           </p>
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button onClick={reset} variant="primary">
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <Button onClick={reset} size="sm">
             Try again
           </Button>
           <Button
             variant="secondary"
+            size="sm"
             onClick={() => (window.location.href = "/")}
           >
             Go to home
