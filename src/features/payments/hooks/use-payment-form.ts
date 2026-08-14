@@ -5,7 +5,7 @@ import { postPaymentAction } from "../payments.actions";
 import type { PaymentFormState } from "../payments.schema";
 import type { CashDiscountEligibility } from "../payments.queries";
 import { generateUuid } from "@/lib/utils/uuid";
-import { roundToTwoDecimals } from "@/lib/utils/currency";
+import { roundToTwoDecimals, formatDecimal } from "@/lib/utils/currency";
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -134,7 +134,7 @@ export function usePaymentForm({
   // ─────────────────────────────────────────────────────────────────
   // Amount State
   // ─────────────────────────────────────────────────────────────────
-  const [amountToPay, setAmountToPay] = useState(String(balance));
+  const [amountToPay, setAmountToPay] = useState(formatDecimal(balance));
   const [amountTendered, setAmountTendered] = useState("");
 
   // ─────────────────────────────────────────────────────────────────
@@ -231,13 +231,13 @@ export function usePaymentForm({
   const handleConfirmCashDiscount = useCallback(() => {
     setApplyCashDiscount(true);
     if (cashDiscountEligibility?.discountDetails) {
-      setAmountToPay(String(cashDiscountEligibility.discountDetails.paymentRequired));
+      setAmountToPay(formatDecimal(cashDiscountEligibility.discountDetails.paymentRequired));
     }
   }, [cashDiscountEligibility]);
 
   const handleDeclineCashDiscount = useCallback(() => {
     setApplyCashDiscount(false);
-    setAmountToPay(String(balance));
+    setAmountToPay(formatDecimal(balance));
   }, [balance]);
 
   // ─────────────────────────────────────────────────────────────────

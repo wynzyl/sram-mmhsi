@@ -127,12 +127,16 @@ export function CashierPaymentProcessingView({
     setTimeout(() => setCopied(false), 2000);
   }, [totals.balance]);
 
-  // Format number with commas for display
+  // Format number with commas for display and limit to 2 decimal places
   const formatWithCommas = useCallback((value: string): string => {
     if (!value) return "";
-    const parts = value.split(".");
+    // Parse and round to 2 decimal places first
+    const num = parseFloat(value);
+    if (isNaN(num)) return "";
+    const rounded = (Math.round(num * 100) / 100).toFixed(2);
+    const parts = rounded.split(".");
     const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return parts.length > 1 ? `${intPart}.${parts[1]}` : intPart;
+    return `${intPart}.${parts[1]}`;
   }, []);
 
   // Strip commas and non-numeric chars for storage

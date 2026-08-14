@@ -120,3 +120,21 @@ export function isValidCurrency(value: string): boolean {
 export function roundToTwoDecimals(amount: number): number {
   return Math.round(amount * 100) / 100;
 }
+
+/**
+ * Formats a number as a string with exactly 2 decimal places.
+ * Use for form inputs that display currency amounts.
+ *
+ * @param amount - Amount to format
+ * @returns String with exactly 2 decimal places (e.g., "1500.00")
+ *
+ * @example
+ * ```typescript
+ * formatDecimal(1500)      // "1500.00"
+ * formatDecimal(1500.5)    // "1500.50"
+ * formatDecimal(1500.555)  // "1500.56"
+ * ```
+ */
+export function formatDecimal(amount: number): string {
+  return roundToTwoDecimals(amount).toFixed(2);
+}

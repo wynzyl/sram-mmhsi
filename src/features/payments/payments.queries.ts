@@ -21,6 +21,7 @@ import type { Role } from "@/lib/constants/roles";
 import { FULL_PAYMENT_DISCOUNT_CODE } from "@/lib/constants/discount-codes";
 import { getPortalStudentIds, getPortalStudentLabels } from "@/lib/queries/portal-student";
 import { calculateOffset } from "@/lib/types/pagination";
+import { roundToTwoDecimals } from "@/lib/utils/currency";
 import {
   calculateDiscountBase,
   calculateDiscountAmount,
@@ -840,9 +841,9 @@ export async function checkFullPaymentCashDiscountEligibility(
 
   // Calculate final balance including cascade adjustments
   // New balance = current balance - cash discount + cascade adjustment
-  const effectiveBalance = Math.max(
-    0,
-    balance - cashDiscountAmount + cascadePreview.totalAdjustment
+  // Round all currency values to 2 decimal places to avoid floating-point precision issues
+  const effectiveBalance = roundToTwoDecimals(
+    Math.max(0, balance - cashDiscountAmount + cascadePreview.totalAdjustment)
   );
   const paymentRequired = effectiveBalance;
 
@@ -853,11 +854,11 @@ export async function checkFullPaymentCashDiscountEligibility(
       hasCascadeAdjustments: true,
       lines: cascadePreview.lines.map((line) => ({
         discountTypeName: line.discountTypeName,
-        originalAmount: line.originalAmount,
-        recalculatedAmount: line.recalculatedAmount,
-        adjustmentAmount: line.adjustmentAmount,
+        originalAmount: roundToTwoDecimals(line.originalAmount),
+        recalculatedAmount: roundToTwoDecimals(line.recalculatedAmount),
+        adjustmentAmount: roundToTwoDecimals(line.adjustmentAmount),
       })),
-      totalAdjustment: cascadePreview.totalAdjustment,
+      totalAdjustment: roundToTwoDecimals(cascadePreview.totalAdjustment),
       explanation: cascadePreview.explanation,
     };
   }
@@ -870,9 +871,9 @@ export async function checkFullPaymentCashDiscountEligibility(
       calculationType: discountType.calculationType,
       baseType: discountType.baseType,
       discountValue,
-      baseAmount,
-      cashDiscountAmount,
-      currentBalance: balance,
+      baseAmount: roundToTwoDecimals(baseAmount),
+      cashDiscountAmount: roundToTwoDecimals(cashDiscountAmount),
+      currentBalance: roundToTwoDecimals(balance),
       newBalance: effectiveBalance,
       paymentRequired,
       cutoffDate,

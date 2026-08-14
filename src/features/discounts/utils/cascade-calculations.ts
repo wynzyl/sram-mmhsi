@@ -25,7 +25,7 @@
  * the difference (₱2,000 in this example) to maintain correct accounting.
  */
 
-import { formatCurrency } from "@/lib/utils/currency";
+import { formatCurrency, roundToTwoDecimals } from "@/lib/utils/currency";
 import {
   calculateDiscountAmount,
   calculateDiscountBase,
@@ -136,11 +136,15 @@ export function calculateCascadeAdjustments(
   assessmentItems: CalculationAssessmentItem[]
 ): CascadeResult {
   // 1. Calculate original tuition base (before any discounts)
-  const originalTuitionBase = calculateDiscountBase(assessmentItems, "tuition_only");
+  const originalTuitionBase = roundToTwoDecimals(
+    calculateDiscountBase(assessmentItems, "tuition_only")
+  );
 
   // 2. Calculate new effective tuition base (after cash discount)
   // Cash discount is applied first, reducing the base for other discounts
-  const newTuitionBase = Math.max(0, originalTuitionBase - cashDiscountAmount);
+  const newTuitionBase = roundToTwoDecimals(
+    Math.max(0, originalTuitionBase - cashDiscountAmount)
+  );
 
   // 3. Filter to only tuition_only discounts that can cascade
   const cascadableDiscounts = existingDiscounts.filter(
@@ -151,19 +155,17 @@ export function calculateCascadeAdjustments(
   const adjustments: CascadeAdjustmentLine[] = [];
 
   for (const discount of cascadableDiscounts) {
-    const originalAmount = Number(discount.discountAmount);
+    const originalAmount = roundToTwoDecimals(Number(discount.discountAmount));
     const discountValue = Number(discount.discountValue);
 
     // Recalculate using the new (reduced) tuition base
-    const recalculatedAmount = calculateDiscountAmount(
-      newTuitionBase,
-      discount.calculationType,
-      discountValue
+    const recalculatedAmount = roundToTwoDecimals(
+      calculateDiscountAmount(newTuitionBase, discount.calculationType, discountValue)
     );
 
     // The adjustment is the difference (original - recalculated)
     // This is always positive because new base is smaller
-    const adjustmentAmount = originalAmount - recalculatedAmount;
+    const adjustmentAmount = roundToTwoDecimals(originalAmount - recalculatedAmount);
 
     // Only create adjustment if meaningful (> 1 centavo)
     if (adjustmentAmount > 0.01) {
@@ -181,9 +183,8 @@ export function calculateCascadeAdjustments(
   }
 
   // 5. Calculate total adjustment
-  const totalAdjustment = adjustments.reduce(
-    (sum, adj) => sum + adj.adjustmentAmount,
-    0
+  const totalAdjustment = roundToTwoDecimals(
+    adjustments.reduce((sum, adj) => sum + adj.adjustmentAmount, 0)
   );
 
   return {
@@ -228,9 +229,9 @@ export function generateCascadePreview(
 
   const lines: CascadePreviewLine[] = result.adjustments.map((adj) => ({
     discountTypeName: adj.discountTypeName,
-    originalAmount: adj.originalDiscountAmount,
-    recalculatedAmount: adj.recalculatedDiscountAmount,
-    adjustmentAmount: adj.adjustmentAmount,
+    originalAmount: roundToTwoDecimals(adj.originalDiscountAmount),
+    recalculatedAmount: roundToTwoDecimals(adj.recalculatedDiscountAmount),
+    adjustmentAmount: roundToTwoDecimals(adj.adjustmentAmount),
   }));
 
   // Build explanation text
@@ -242,7 +243,7 @@ export function generateCascadePreview(
   return {
     hasCascadeAdjustments: true,
     lines,
-    totalAdjustment: result.totalAdjustment,
+    totalAdjustment: roundToTwoDecimals(result.totalAdjustment),
     explanation,
   };
 }
@@ -298,9 +299,8 @@ export function calculateFinalPaymentWithCascade(
   // Current balance already includes existing discounts
   // Cash discount reduces balance
   // Cascade adjustment adds back (reduces effective discount)
-  return Math.max(
-    0,
-    currentBalance - cashDiscountAmount + totalCascadeAdjustment
+  return roundToTwoDecimals(
+    Math.max(0, currentBalance - cashDiscountAmount + totalCascadeAdjustment)
   );
 }
 

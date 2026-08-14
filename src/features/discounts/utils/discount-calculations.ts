@@ -11,7 +11,7 @@
  *   Employee 5% (full_assessment) = 5% × 57,000 = 2,850
  */
 
-import { formatCurrency } from "@/lib/utils/currency";
+import { formatCurrency, roundToTwoDecimals } from "@/lib/utils/currency";
 
 /** Assessment item with fee type info for calculation */
 export interface CalculationAssessmentItem {
@@ -67,16 +67,17 @@ export function calculateDiscountBase(
 
   if (baseType === "full_assessment") {
     // Sum all non-discount items
-    return nonDiscountItems.reduce(
-      (sum, item) => sum + Number(item.amount),
-      0
+    return roundToTwoDecimals(
+      nonDiscountItems.reduce((sum, item) => sum + Number(item.amount), 0)
     );
   }
 
   // tuition_only: Sum items where fee type code is 'TUITION'
-  return nonDiscountItems
-    .filter((item) => item.feeItemTypeCode === "TUITION")
-    .reduce((sum, item) => sum + Number(item.amount), 0);
+  return roundToTwoDecimals(
+    nonDiscountItems
+      .filter((item) => item.feeItemTypeCode === "TUITION")
+      .reduce((sum, item) => sum + Number(item.amount), 0)
+  );
 }
 
 /**
@@ -99,11 +100,11 @@ export function calculateDiscountAmount(
   if (calculationType === "percentage") {
     const amount = (baseAmount * discountValue) / 100;
     // Cap percentage-based discounts at 100% of base
-    return Math.min(amount, baseAmount);
+    return roundToTwoDecimals(Math.min(amount, baseAmount));
   }
 
   // Fixed amount - cannot exceed base
-  return Math.min(discountValue, baseAmount);
+  return roundToTwoDecimals(Math.min(discountValue, baseAmount));
 }
 
 /**
@@ -134,7 +135,7 @@ export function calculateTotalDiscounts(
       ? Number(request.overrideValue)
       : Number(discountType.defaultValue);
 
-    // Calculate the actual discount amount
+    // Calculate the actual discount amount (already rounded by calculateDiscountAmount)
     const discountAmount = calculateDiscountAmount(
       baseAmount,
       discountType.calculationType,
@@ -146,10 +147,10 @@ export function calculateTotalDiscounts(
       discountTypeCode: discountType.code,
       discountTypeName: discountType.name,
       baseType: discountType.baseType,
-      baseAmount,
+      baseAmount: roundToTwoDecimals(baseAmount),
       calculationType: discountType.calculationType,
-      discountValue,
-      discountAmount,
+      discountValue: roundToTwoDecimals(discountValue),
+      discountAmount: roundToTwoDecimals(discountAmount),
     };
   });
 }
@@ -161,7 +162,9 @@ export function calculateTotalDiscounts(
  * @returns Total discount amount in pesos
  */
 export function sumDiscountLines(discountLines: DiscountLine[]): number {
-  return discountLines.reduce((sum, line) => sum + line.discountAmount, 0);
+  return roundToTwoDecimals(
+    discountLines.reduce((sum, line) => sum + line.discountAmount, 0)
+  );
 }
 
 /**
