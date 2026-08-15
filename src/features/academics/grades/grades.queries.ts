@@ -50,6 +50,7 @@ export {
   // Section queries
   getAdviserSections,
   isAdviserForSection,
+  sectionHasAdviser,
   getSectionDetails,
   getSectionsForAssignment,
   // Student queries

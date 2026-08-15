@@ -54,6 +54,18 @@ const nextConfig: NextConfig = {
       : []),
   ],
 
+  // Rewrite /uploads/* to /api/uploads/* for serving runtime-uploaded files
+  // Next.js standalone mode does NOT serve runtime uploads from public/
+  // This rewrite ensures all upload URLs work via the API route handler
+  async rewrites() {
+    return [
+      {
+        source: '/uploads/:path*',
+        destination: '/api/uploads/:path*',
+      },
+    ];
+  },
+
   // Security headers for production
   async headers() {
     return [

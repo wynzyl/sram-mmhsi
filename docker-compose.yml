@@ -77,6 +77,8 @@ services:
       # modules from a stale cache. Leaving it in the container's writable
       # layer keeps the build cache fresh on every recreate.
       - app-node-modules:/app/node_modules
+      # Persist uploaded photos across container rebuilds
+      - uploads_data:/app/public/uploads
     develop:
       watch:
         # Sync application source into the running container

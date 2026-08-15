@@ -118,6 +118,25 @@ export async function isAdviserForSection(
   return !!adviser;
 }
 
+/**
+ * Check if a section has ANY adviser assigned for a school year.
+ * Used to gate grade entry - no adviser means no grade entry allowed.
+ */
+export async function sectionHasAdviser(
+  sectionId: string,
+  schoolYearId: string
+): Promise<boolean> {
+  const adviser = await db.query.sectionAdvisers.findFirst({
+    where: and(
+      eq(sectionAdvisers.sectionId, sectionId),
+      eq(sectionAdvisers.schoolYearId, schoolYearId),
+      isNull(sectionAdvisers.deletedAt)
+    ),
+    columns: { id: true },
+  });
+  return !!adviser;
+}
+
 // ─── Section Details Queries ─────────────────────────────────────────────────
 
 /**

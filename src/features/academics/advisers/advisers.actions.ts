@@ -6,8 +6,10 @@ import { db } from "@/lib/db";
 import { sectionAdvisers, sections, users } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { logCreateAction, logDeleteAction } from "@/lib/utils/audit-logger";
+import { revalidatePath } from "next/cache";
 import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
 import { isUniqueViolationError } from "@/lib/utils/pg-error";
+import { hasExistingOfferings } from "../subject-offerings/subject-offerings.queries";
 import {
   assignAdviserSchema,
   removeAdviserSchema,
@@ -65,6 +67,15 @@ export async function assignAdviserAction(
   if (section.schoolYearId !== schoolYearId) {
     return {
       message: "Section does not belong to the selected school year.",
+    };
+  }
+
+  // 3b. Validate subject offerings exist for the section
+  const hasOfferings = await hasExistingOfferings(sectionId, schoolYearId);
+  if (!hasOfferings) {
+    return {
+      message:
+        "Subject offerings must be configured before assigning an adviser. Please generate subject offerings first.",
     };
   }
 
@@ -144,7 +155,8 @@ export async function assignAdviserAction(
     schoolYearId,
   });
 
-  // 8. Invalidate cache
+  // 8. Invalidate cache - revalidatePath for instant UI update, then invalidateTag
+  revalidatePath("/staff/academics/advisers");
   invalidateTag(CACHE_TAGS.SECTIONS);
 
   return {
@@ -216,7 +228,8 @@ export async function removeAdviserAction(
   // 5. Audit log
   await logDeleteAction(session, "section_advisers", id, "Adviser removed");
 
-  // 6. Invalidate cache
+  // 6. Invalidate cache - revalidatePath for instant UI update, then invalidateTag
+  revalidatePath("/staff/academics/advisers");
   invalidateTag(CACHE_TAGS.SECTIONS);
 
   return {

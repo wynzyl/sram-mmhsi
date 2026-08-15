@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   getSectionDetails,
   isAdviserForSection,
+  sectionHasAdviser,
   getStudentsInSection,
   getSubjectsForGradeLevel,
   getGradingSystemType,
@@ -54,6 +55,85 @@ export default async function AdviserGradeEntryPage({
     if (!isAdviser) {
       redirect("/staff/grades");
     }
+  }
+
+  // Business Rule: Check if section has an adviser assigned
+  const hasAdviser = await sectionHasAdviser(sectionId, section.schoolYearId);
+  if (!hasAdviser) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <Link
+              href="/staff/grades"
+              className="hover:text-primary transition-colors"
+            >
+              Grades
+            </Link>
+            <span>/</span>
+            <span className="text-foreground">{section.gradeLevelName}</span>
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">
+            {section.gradeLevelName} - Grade Entry
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            <span className="font-medium text-foreground">
+              Section {section.name}
+            </span>{" "}
+            |{" "}
+            <span className="font-medium text-foreground">
+              {section.schoolYearLabel}
+            </span>
+          </p>
+        </div>
+
+        {/* No Adviser Empty State */}
+        <div className="p-12 text-center bg-card rounded-xl border border-border shadow-sm">
+          <svg
+            className="mx-auto h-12 w-12 text-amber-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-foreground">
+            No adviser assigned
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Grade entry is not available until an adviser is assigned to this
+            section.
+          </p>
+          {hasPermission(session.role, "advisers:manage") && (
+            <Link
+              href="/staff/academics/advisers"
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80"
+            >
+              Go to Adviser Management
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </Link>
+          )}
+        </div>
+      </div>
+    );
   }
 
   // Check if section is SHS (requires strand-based grade entry)
