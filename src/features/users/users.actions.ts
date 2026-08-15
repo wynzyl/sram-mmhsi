@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq, and, ilike, isNull, sql, count } from "drizzle-orm";
@@ -156,7 +155,9 @@ export async function createUserAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/users");
+    // Note: revalidatePath() removed — it's blocking in production Docker and
+    // the users list page doesn't use "use cache", so revalidation is unnecessary.
+    // The client navigates via router.push() on success which triggers a fresh fetch.
 
     return { success: true, userId: newUser.id };
   } catch (err) {
@@ -335,8 +336,8 @@ export async function updateUserAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/users");
-    revalidatePath(`/admin/users/${userId}`);
+    // Note: revalidatePath() removed — it's blocking in production Docker and
+    // the users pages don't use "use cache". Client handles refresh via router.
 
     return { success: true };
   } catch (err) {
@@ -421,8 +422,8 @@ export async function resetPasswordAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/users");
-    revalidatePath(`/admin/users/${userId}`);
+    // Note: revalidatePath() removed — it's blocking in production Docker and
+    // the users pages don't use "use cache". Client handles refresh via router.
 
     return { success: true, message: "Password reset successfully." };
   } catch (err) {
@@ -542,8 +543,8 @@ export async function toggleUserStatusAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/admin/users");
-    revalidatePath(`/admin/users/${userId}`);
+    // Note: revalidatePath() removed — it's blocking in production Docker and
+    // the users pages don't use "use cache". Client handles refresh via router.
 
     return { success: true };
   } catch (err) {

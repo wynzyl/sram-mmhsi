@@ -7,8 +7,8 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
-import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
 import { revalidatePath } from "next/cache";
+import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
 import { logger } from "@/lib/observability/logger";
 import {
   createSectionSchema,
@@ -91,6 +91,7 @@ export async function createSectionAction(
       return newSection.id;
     });
 
+    // revalidatePath for instant UI update, then invalidateTag for cache sync
     revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
@@ -185,6 +186,7 @@ export async function updateSectionAction(
       return { message: "Section not found or has been deleted." };
     }
 
+    // revalidatePath for instant UI update, then invalidateTag for cache sync
     revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
@@ -273,6 +275,7 @@ export async function deleteSectionAction(
       };
     }
 
+    // revalidatePath for instant UI update, then invalidateTag for cache sync
     revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 
@@ -439,7 +442,7 @@ export async function copySectionsFromSchoolYearAction(
       return insertedSections.length;
     });
 
-    // Revalidate the page route for immediate UI update
+    // revalidatePath for instant UI update, then invalidateTag for cache sync
     revalidatePath("/staff/academics/sections");
     invalidateTag(CACHE_TAGS.SECTIONS);
 

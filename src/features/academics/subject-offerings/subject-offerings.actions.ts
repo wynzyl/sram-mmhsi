@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { subjectOfferings, studentSubjectEnrollments, subjects, gradeSheetEntries, gradeSheets } from "@/lib/db/schema";
 import { eq, and, isNull, isNotNull, count, inArray, exists, sql } from "drizzle-orm";
@@ -132,10 +131,10 @@ export async function generateSubjectOfferingsAction(
     },
   });
 
+  // Note: revalidatePath() removed — it's blocking in production Docker.
+  // invalidateTags() provides non-blocking cache invalidation.
+  // Client should call router.refresh() on success for instant UI update.
   invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
-
-  // Explicitly revalidate the section page to ensure fresh data
-  revalidatePath(`/staff/academics/sections/${sectionId}`);
 
   return {
     success: true,
@@ -284,8 +283,8 @@ export async function deleteSubjectOfferingAction(
     },
   });
 
+  // Note: revalidatePath() removed — it's blocking in production Docker.
   invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
-  revalidatePath(`/staff/academics/sections/${existing.sectionId}`);
 
   return { success: true };
 }
@@ -401,8 +400,8 @@ export async function deleteAllSubjectOfferingsAction(
     },
   });
 
+  // Note: revalidatePath() removed — it's blocking in production Docker.
   invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
-  revalidatePath(`/staff/academics/sections/${sectionId}`);
 
   return {
     success: true,
@@ -559,8 +558,8 @@ export async function addManualSubjectOfferingAction(
         },
       });
 
+      // Note: revalidatePath() removed — it's blocking in production Docker.
       invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
-      revalidatePath(`/staff/academics/sections/${sectionId}`);
 
       return { success: true };
     } else {
@@ -606,9 +605,8 @@ export async function addManualSubjectOfferingAction(
     },
   });
 
-  // 7. Invalidate cache and revalidate the section page
+  // 7. Invalidate cache (revalidatePath removed — blocking in production Docker)
   invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
-  revalidatePath(`/staff/academics/sections/${sectionId}`);
 
   return { success: true };
 }
@@ -733,8 +731,8 @@ export async function updateOfferingTrackAction(
     },
   });
 
+  // Note: revalidatePath() removed — it's blocking in production Docker.
   invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
-  revalidatePath(`/staff/academics/sections/${existing.sectionId}`);
 
   return { success: true };
 }
