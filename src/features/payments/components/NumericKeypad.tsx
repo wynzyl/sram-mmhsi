@@ -20,7 +20,8 @@ export function NumericKeypad({
     ["7", "8", "9"],
     ["4", "5", "6"],
     ["1", "2", "3"],
-    ["C", "0", "⌫"],
+    [".", "0", "⌫"],
+    ["C"],
   ];
 
   const handleKeyPress = (key: string) => {
@@ -29,7 +30,7 @@ export function NumericKeypad({
     } else if (key === "⌫") {
       onBackspace();
     } else {
-      onDigit(key);
+      onDigit(key); // Handles digits and "."
     }
   };
 
@@ -42,7 +43,7 @@ export function NumericKeypad({
           variant="secondary"
           className={cn(
             "h-10 text-base font-semibold",
-            key === "C" && "text-destructive hover:bg-destructive/10",
+            key === "C" && "col-span-3 text-destructive hover:bg-destructive/10",
             key === "⌫" && "text-muted-foreground"
           )}
           onClick={() => handleKeyPress(key)}

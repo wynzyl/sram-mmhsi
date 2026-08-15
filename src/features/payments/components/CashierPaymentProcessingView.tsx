@@ -89,6 +89,8 @@ export function CashierPaymentProcessingView({
   const router = useRouter();
   const hydrated = useHydrated();
   const [copied, setCopied] = useState(false);
+  const [amountToPayFocused, setAmountToPayFocused] = useState(false);
+  const [amountTenderedFocused, setAmountTenderedFocused] = useState(false);
 
   // ─────────────────────────────────────────────────────────────────
   // Memoized Derived Values
@@ -137,11 +139,6 @@ export function CashierPaymentProcessingView({
     const parts = rounded.split(".");
     const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return `${intPart}.${parts[1]}`;
-  }, []);
-
-  // Strip commas and non-numeric chars for storage
-  const stripFormatting = useCallback((value: string): string => {
-    return value.replace(/,/g, "").replace(/[^0-9.]/g, "");
   }, []);
 
   // Success state
@@ -502,10 +499,18 @@ export function CashierPaymentProcessingView({
                             id="amountToPayInput"
                             type="text"
                             inputMode="decimal"
-                            value={formatWithCommas(form.amountToPay)}
-                            onChange={(e) =>
-                              form.setAmountToPay(stripFormatting(e.target.value))
+                            value={
+                              amountToPayFocused
+                                ? form.amountToPay
+                                : formatWithCommas(form.amountToPay)
                             }
+                            onChange={(e) =>
+                              form.setAmountToPay(
+                                e.target.value.replace(/[^0-9.]/g, "")
+                              )
+                            }
+                            onFocus={() => setAmountToPayFocused(true)}
+                            onBlur={() => setAmountToPayFocused(false)}
                             className={cn(
                               "h-14 pl-10 font-mono text-3xl font-black",
                               form.applyCashDiscount || hasAppliedCashDiscount
@@ -551,10 +556,18 @@ export function CashierPaymentProcessingView({
                               id="amountTenderedInput"
                               type="text"
                               inputMode="decimal"
-                              value={formatWithCommas(form.amountTendered)}
-                              onChange={(e) =>
-                                form.setAmountTendered(stripFormatting(e.target.value))
+                              value={
+                                amountTenderedFocused
+                                  ? form.amountTendered
+                                  : formatWithCommas(form.amountTendered)
                               }
+                              onChange={(e) =>
+                                form.setAmountTendered(
+                                  e.target.value.replace(/[^0-9.]/g, "")
+                                )
+                              }
+                              onFocus={() => setAmountTenderedFocused(true)}
+                              onBlur={() => setAmountTenderedFocused(false)}
                               className="h-14 pl-10 font-mono text-3xl font-black text-emerald-600"
                               placeholder="0.00"
                             />
