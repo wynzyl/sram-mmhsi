@@ -127,6 +127,14 @@ COPY docker-entrypoint.sh /usr/local/bin/
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# Bind all interfaces. Docker injects HOSTNAME=<container id> and Next's
+# standalone server.js honours it (`process.env.HOSTNAME || '0.0.0.0'`), so
+# without this the server listens on ONE network IP only: the localhost
+# HEALTHCHECK below always gets ECONNREFUSED, and with the app on both
+# srams-network and proxy-network the other network can't reach it at all.
+ENV HOSTNAME="0.0.0.0"
+ENV PORT=3000
+
 # Expose the default Next.js port
 EXPOSE 3000
 
@@ -136,8 +144,11 @@ ENTRYPOINT ["docker-entrypoint.sh"]
 # Healthcheck via /api/readiness: verifies the DB is reachable (SELECT 1) and
 # doubles as a pool keepalive — the 30s probe keeps a warm connection in the
 # shared postgres pool so the first user transaction never pays a TCP connect.
+# Probe 127.0.0.1, not `localhost`: busybox wget resolves localhost to [::1]
+# first and never falls back, while the server binds IPv4 (0.0.0.0) — the
+# container would sit permanently unhealthy on ECONNREFUSED.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/readiness || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/readiness || exit 1
 
 # Run standalone server directly with node (no npm overhead)
 # PORT and HOSTNAME can be set via environment variables
