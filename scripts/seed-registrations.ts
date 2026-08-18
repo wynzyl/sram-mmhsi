@@ -35,24 +35,34 @@ logDbTarget("seed-registrations", connectionString);
 const client = postgres(connectionString, { max: 1 });
 const db = drizzle(client);
 
-const TOTAL = 50;
+const TOTAL = 300;
 
 const FIRST_NAMES_F = [
   "Maria", "Ana", "Sofia", "Isabella", "Elena", "Andrea", "Camille",
   "Patricia", "Bea", "Angela", "Kristine", "Therese", "Janelle",
+  "Clarisse", "Samantha", "Nicole", "Katrina", "Jasmine", "Bianca",
+  "Charlene", "Denise", "Erica", "Fiona", "Giselle", "Hannah",
+  "Irene", "Julia", "Kyla", "Leah", "Marian", "Natalie",
 ];
 const FIRST_NAMES_M = [
   "Juan", "Miguel", "Carlos", "Jose", "Marco", "Luis", "Rafael",
   "Diego", "Joaquin", "Emilio", "Daniel", "Paolo", "Vincent",
+  "Adrian", "Brian", "Christian", "David", "Edward", "Francis",
+  "Gabriel", "Henry", "Ivan", "Jerome", "Kevin", "Lester",
+  "Mark", "Nathan", "Oscar", "Patrick", "Quentin", "Raymond",
 ];
 const MIDDLE_NAMES = [
   "Santos", "Cruz", "Dela Rosa", "Ramos", "Bautista", "Aguilar", "Flores",
   "Rivera", "Santiago", "Mendoza", "Reyes", "Torres", "Castillo",
+  "Valenzuela", "Soriano", "Mercado", "Dizon", "Abad", "Corpus",
+  "Manalo", "Aquino", "Marquez", "Pangilinan", "Hidalgo", "Macapagal",
 ];
 const LAST_NAMES = [
   "Reyes", "Garcia", "Cruz", "Torres", "Mendoza", "Villanueva",
   "Castillo", "Aquino", "Fernandez", "Gonzales", "Navarro", "Domingo",
   "Morales", "Pascual", "Lim", "Tan", "Ocampo", "Salazar",
+  "Santos", "Flores", "Rivera", "Ramos", "Bautista", "Aguilar",
+  "Lopez", "Martinez", "Hernandez", "Perez", "Diaz", "Ramirez",
 ];
 const GRADE_LEVELS = [
   "Junior Casa", "Senior Casa", "Advance Casa",
@@ -112,48 +122,25 @@ type SeedRow = {
 };
 
 function generateGuardians(studentLastName: string, index: number): GuardianData[] {
-  const guardians: GuardianData[] = [];
-  const hasSecondGuardian = index % 3 !== 2; // ~66% have 2 guardians
   const address = ADDRESSES[index % ADDRESSES.length];
 
-  // Primary guardian (Mother or Father based on index)
-  const isPrimaryMother = index % 2 === 0;
-  const primaryFirstNames = isPrimaryMother ? GUARDIAN_FIRST_NAMES_F : GUARDIAN_FIRST_NAMES_M;
-  const primaryRelationship = isPrimaryMother ? "Mother" : "Father";
-  const primaryFirstName = primaryFirstNames[index % primaryFirstNames.length];
-  const primaryEmail = `${primaryFirstName.toLowerCase()}.${studentLastName.toLowerCase().replace(/\s+/g, "")}.${index}@example.com`;
-  const primaryPhone = `0917${String(100000 + index * 2).padStart(7, "0")}`;
+  // Single guardian (Mother or Father based on index)
+  const isMother = index % 2 === 0;
+  const firstNames = isMother ? GUARDIAN_FIRST_NAMES_F : GUARDIAN_FIRST_NAMES_M;
+  const relationship: Relationship = isMother ? "Mother" : "Father";
+  const firstName = firstNames[index % firstNames.length];
+  const email = `${firstName.toLowerCase()}.${studentLastName.toLowerCase().replace(/\s+/g, "")}.${index}@example.com`;
+  const phone = `0917${String(100000 + index).padStart(7, "0")}`;
 
-  guardians.push({
-    firstName: primaryFirstName,
+  return [{
+    firstName,
     lastName: studentLastName,
-    relationship: primaryRelationship,
+    relationship,
     address,
     occupation: OCCUPATIONS[index % OCCUPATIONS.length],
-    contactNumber: primaryPhone,
-    email: primaryEmail,
-  });
-
-  // Secondary guardian (the other parent)
-  if (hasSecondGuardian) {
-    const secondaryFirstNames = isPrimaryMother ? GUARDIAN_FIRST_NAMES_M : GUARDIAN_FIRST_NAMES_F;
-    const secondaryRelationship = isPrimaryMother ? "Father" : "Mother";
-    const secondaryFirstName = secondaryFirstNames[(index + 3) % secondaryFirstNames.length];
-    const secondaryEmail = `${secondaryFirstName.toLowerCase()}.${studentLastName.toLowerCase().replace(/\s+/g, "")}.${index}@example.com`;
-    const secondaryPhone = `0918${String(100001 + index * 2).padStart(7, "0")}`;
-
-    guardians.push({
-      firstName: secondaryFirstName,
-      lastName: studentLastName,
-      relationship: secondaryRelationship,
-      address,
-      occupation: OCCUPATIONS[(index + 5) % OCCUPATIONS.length],
-      contactNumber: secondaryPhone,
-      email: secondaryEmail,
-    });
-  }
-
-  return guardians;
+    contactNumber: phone,
+    email,
+  }];
 }
 
 function buildSeedData(): SeedRow[] {

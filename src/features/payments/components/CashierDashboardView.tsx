@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -8,8 +9,11 @@ import { formatDate } from "@/lib/utils/date";
 import { CashierQueueTable } from "./CashierQueueTable";
 import { useCashierQueue } from "@/features/payments/hooks/use-cashier-queue";
 
+const PAGE_SIZE = 50;
+
 export function CashierDashboardView() {
-  const query = useCashierQueue();
+  const [currentPage, setCurrentPage] = useState(1);
+  const query = useCashierQueue({ page: currentPage, pageSize: PAGE_SIZE });
   const data = query.data;
 
   const stats = data?.stats ?? {
@@ -53,6 +57,10 @@ export function CashierDashboardView() {
             rows={queue}
             stats={stats}
             isFetching={query.isFetching && !query.isLoading}
+            totalCount={data?.queueTotalCount ?? 0}
+            currentPage={currentPage}
+            pageSize={PAGE_SIZE}
+            onPageChange={setCurrentPage}
           />
         )}
       </section>

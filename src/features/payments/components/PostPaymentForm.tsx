@@ -1,7 +1,12 @@
 "use client";
 
 import { useHydrated } from "@/hooks/useHydrated";
-import { usePaymentForm, type ActiveBooklet, type ManualSuggestions } from "../hooks";
+import {
+  usePaymentForm,
+  useCascadeInfo,
+  type ActiveBooklet,
+  type ManualSuggestions,
+} from "../hooks";
 import { FormField } from "@/components/forms/FormField";
 import { FormActions } from "@/components/forms/FormActions";
 import { Input } from "@/components/ui/input";
@@ -10,6 +15,8 @@ import { formatStoredOrNumber } from "@/lib/utils/or-number";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatCurrency } from "@/lib/utils/currency";
 import { CashDiscountPreviewCard } from "./CashDiscountPreviewCard";
+import { AppliedCashDiscountCard } from "./AppliedCashDiscountCard";
+import { CascadeFixCard } from "./CascadeFixCard";
 import { Loader2 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────
@@ -52,6 +59,9 @@ export default function PostPaymentForm({
 }: PostPaymentFormProps) {
   const hydrated = useHydrated();
 
+  // Fetch cascade discount info (applied cash discount + cascade fix data)
+  const { data: cascadeInfo } = useCascadeInfo(assessmentId);
+
   // Use shared payment form hook
   const form = usePaymentForm({
     assessmentId,
@@ -86,6 +96,23 @@ export default function PostPaymentForm({
 
   return (
     <form action={form.action} className="space-y-4">
+      {/* Applied Cash Discount Card (already applied via approval workflow) */}
+      {cascadeInfo?.appliedCashDiscount?.hasAppliedCashDiscount &&
+        cascadeInfo.appliedCashDiscount.discountDetails && (
+          <AppliedCashDiscountCard
+            details={cascadeInfo.appliedCashDiscount.discountDetails}
+            assessmentId={assessmentId}
+          />
+        )}
+
+      {/* Cascade Fix Card (out-of-order discounts needing correction) */}
+      {cascadeInfo?.cascadeFixNeeded?.needsFix && (
+        <CascadeFixCard
+          assessmentId={assessmentId}
+          fixData={cascadeInfo.cascadeFixNeeded}
+        />
+      )}
+
       {/* Error messages */}
       {form.state.errors?._form && (
         <div
