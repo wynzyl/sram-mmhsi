@@ -2,7 +2,9 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useHydrated } from "@/hooks/useHydrated";
+import { queryKeys } from "@/lib/query/keys";
 import {
   usePaymentForm,
   type ActiveBooklet,
@@ -87,6 +89,7 @@ export function CashierPaymentProcessingView({
   cascadeFixData,
 }: CashierPaymentProcessingViewProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const hydrated = useHydrated();
   const [copied, setCopied] = useState(false);
   const [amountToPayFocused, setAmountToPayFocused] = useState(false);
@@ -115,7 +118,13 @@ export function CashierPaymentProcessingView({
     defaultBookletId,
     manualSuggestions,
     hasAppliedCashDiscount,
-    onSuccess: () => router.push("/staff/payments"),
+    onSuccess: () => {
+      // Invalidate TanStack Query caches for instant refresh on queue page
+      queryClient.invalidateQueries({ queryKey: queryKeys.payments.queue() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.booklets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all });
+      router.push("/staff/payments");
+    },
   });
 
   // ─────────────────────────────────────────────────────────────────
