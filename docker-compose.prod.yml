@@ -34,7 +34,7 @@ services:
     ports:
       # Expose on 5433 (Production) — 5432 is taken by a native host Postgres
       # and 5434 by the dev stack's db, so prod can run side-by-side with both.
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
@@ -81,12 +81,16 @@ services:
       - .env.production
     environment:
       NODE_ENV: production
+      # Next.js standalone must bind to 0.0.0.0 so the localhost health check works
+      # and external traffic can reach it. Without this, it binds to the container
+      # hostname (e.g., "50e869fc3fdd") and health checks fail with "Connection refused".
+      HOSTNAME: "0.0.0.0"
       # This deployment is plain HTTP on the LAN (no TLS at nginx) — browsers drop
       # `Secure` cookies on http:// origins, which breaks login from other machines.
       # Default false HERE so the setting travels via git: the .env.production
       # override is gitignored and never reaches the server on pull. Flip via
       # shell env / --env-file once HTTPS is added at nginx.
-      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
     volumes:
       # Persist uploaded photos across container restarts
       - uploads_data:/app/public/uploads
