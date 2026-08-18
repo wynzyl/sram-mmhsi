@@ -127,6 +127,8 @@ COPY docker-entrypoint.sh /usr/local/bin/
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/docker-entrypoint.sh
 
+ENV HOSTNAME="0.0.0.0"   
+ENV PORT=3000 
 # Expose the default Next.js port
 EXPOSE 3000
 

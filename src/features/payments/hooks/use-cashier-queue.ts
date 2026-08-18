@@ -16,10 +16,16 @@ import type { CashierQueueRow, CashierStats, RecentCollection } from "../payment
 // Types
 // ─────────────────────────────────────────────────────────────────
 
+export type CashierQueueParams = {
+  page: number;
+  pageSize: number;
+};
+
 export type CashierQueueResponse = {
   queue: CashierQueueRow[];
   stats: CashierStats;
   recentCollections: Array<Omit<RecentCollection, "paymentDate"> & { paymentDate: string }>;
+  queueTotalCount: number;
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -58,14 +64,19 @@ const CashierQueueResponseSchema = z.object({
   queue: z.array(CashierQueueRowSchema),
   stats: CashierStatsSchema,
   recentCollections: z.array(RecentCollectionSchema),
+  queueTotalCount: z.number(),
 });
 
 // ─────────────────────────────────────────────────────────────────
 // Fetch Function
 // ─────────────────────────────────────────────────────────────────
 
-async function fetchCashierQueue(): Promise<CashierQueueResponse> {
-  const res = await fetch("/api/cashier/queue");
+async function fetchCashierQueue(params: CashierQueueParams): Promise<CashierQueueResponse> {
+  const searchParams = new URLSearchParams({
+    page: String(params.page),
+    pageSize: String(params.pageSize),
+  });
+  const res = await fetch(`/api/cashier/queue?${searchParams}`);
 
   if (!res.ok) {
     throw new Error(`Failed to fetch cashier queue: ${res.status}`);
@@ -86,17 +97,26 @@ async function fetchCashierQueue(): Promise<CashierQueueResponse> {
 // Query Hook
 // ─────────────────────────────────────────────────────────────────
 
+const DEFAULT_PAGE_SIZE = 50;
+
 /**
  * Fetches the cashier queue with stats and recent collections.
  *
  * Features:
+ * - Server-side pagination
  * - Auto-refresh every 30 seconds for real-time updates
  * - Instant refetch after posting payments
+ *
+ * @param params.page - Page number (1-indexed), defaults to 1
+ * @param params.pageSize - Number of items per page, defaults to 50
  */
-export function useCashierQueue() {
+export function useCashierQueue(params: Partial<CashierQueueParams> = {}) {
+  const page = params.page ?? 1;
+  const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
+
   return useQuery({
-    queryKey: queryKeys.payments.queue(),
-    queryFn: fetchCashierQueue,
+    queryKey: [...queryKeys.payments.queue(), { page, pageSize }],
+    queryFn: () => fetchCashierQueue({ page, pageSize }),
     // Auto-refresh every 30 seconds
     refetchInterval: 30 * 1000,
     // Keep stale data visible while refetching

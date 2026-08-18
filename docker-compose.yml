@@ -3,8 +3,9 @@
 # Usage:
 #   docker compose up --build
 #   docker compose watch                # sync file changes + auto-rebuild on dep changes
-#   docker compose run --rm seed        # optional: seed system config
-#   docker compose run --rm seed-data   # optional: seed sample data
+#   docker compose run --rm seed               # optional: seed system config
+#   docker compose run --rm seed-data          # optional: seed sample data
+#   docker compose run --rm seed-registrations # optional: seed 300 students with guardians
 #   docker compose exec app              # get a shell inside the running app container
 #   docker compose -f docker-compose.prod.yml up -d --build   # prod stack (separate project)
 #
@@ -135,6 +136,18 @@ services:
       db:
         condition: service_healthy
     command: ["npm", "run", "db:seed"]
+    profiles: ["tools"]
+
+  seed-registrations:
+    image: sram-mmhsi-app:dev
+    env_file:
+      - .env.local
+    environment:
+      DATABASE_URL: postgresql://postgres:722811@db:5432/SRAMS_DB
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["npm", "run", "db:seed-registrations"]
     profiles: ["tools"]
 
 volumes:

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
@@ -20,8 +20,6 @@ import type { CashierQueueRow } from "../payments.queries";
 // Re-export type for consumers of this component
 export type { CashierQueueRow };
 
-const PAGE_SIZE = 25;
-
 interface CashierQueueStats {
   pendingPaymentsCount: number;
   totalCollectedToday: number;
@@ -32,14 +30,30 @@ interface CashierQueueTableProps {
   rows: CashierQueueRow[];
   stats?: CashierQueueStats;
   isFetching?: boolean;
+  /** Total count of all outstanding assessments (from server) */
+  totalCount: number;
+  /** Current page number (1-indexed) */
+  currentPage: number;
+  /** Number of items per page */
+  pageSize: number;
+  /** Callback when page changes */
+  onPageChange: (page: number) => void;
 }
 
-export function CashierQueueTable({ rows, stats, isFetching }: CashierQueueTableProps) {
+export function CashierQueueTable({
+  rows,
+  stats,
+  isFetching,
+  totalCount,
+  currentPage,
+  pageSize,
+  onPageChange,
+}: CashierQueueTableProps) {
   const [filterMode, setFilterMode] = useState<"all" | "newly_assessed" | "with_balance">("newly_assessed");
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebounce(searchInput, 300);
-  const [currentPage, setCurrentPage] = useState(1);
 
+  // Client-side filtering on current page's data
   const filteredRows = useMemo(() => {
     const normalizedSearch = debouncedSearch.trim().toLowerCase();
 
@@ -73,30 +87,21 @@ export function CashierQueueTable({ rows, stats, isFetching }: CashierQueueTable
     return filtered.sort((a, b) => a.studentName.localeCompare(b.studentName));
   }, [filterMode, rows, debouncedSearch]);
 
-  // Calculate pagination - clamp page to valid range
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
-  const effectivePage = Math.min(Math.max(1, currentPage), totalPages);
+  // Server-side pagination calculations
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  const paginatedRows = useMemo(() => {
-    const start = (effectivePage - 1) * PAGE_SIZE;
-    return filteredRows.slice(start, start + PAGE_SIZE);
-  }, [filteredRows, effectivePage]);
+  // Check if client-side filtering is active (search or non-default filter)
+  const isClientFiltering = debouncedSearch.trim() !== "" || filterMode !== "all";
+  const showingFiltered = isClientFiltering && filteredRows.length < rows.length;
 
-  // Filter mode change handler - reset page to 1
+  // Filter mode change handler - reset to page 1
   const handleFilterModeChange = (mode: "all" | "newly_assessed" | "with_balance") => {
     setFilterMode(mode);
-    setCurrentPage(1);
-  };
-
-  // Reset page when debounced search changes (skip initial mount)
-  const isInitialMount = useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
+    // Only reset page if switching filters while not on page 1
+    if (currentPage !== 1) {
+      onPageChange(1);
     }
-    setCurrentPage(1);
-  }, [debouncedSearch]);
+  };
 
   const columns: ColumnDef<CashierQueueRow>[] = [
     createStudentColumn<CashierQueueRow>({ refKey: "referenceNumber" }),
@@ -225,23 +230,27 @@ export function CashierQueueTable({ rows, stats, isFetching }: CashierQueueTable
       {/* Table */}
       <DataTable
         columns={columns}
-        data={paginatedRows}
+        data={filteredRows}
         enablePagination={false}
       />
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="border-t border-border px-4 py-3">
-          <ClientTablePagination
-            currentPage={effectivePage}
-            totalPages={totalPages}
-            totalRecords={filteredRows.length}
-            pageSize={PAGE_SIZE}
-            onPageChange={setCurrentPage}
-            itemLabel="students"
-          />
-        </div>
-      )}
+      <div className="border-t border-border px-4 py-3">
+        {showingFiltered && (
+          <p className="mb-2 text-xs text-muted-foreground">
+            Showing {filteredRows.length} filtered result{filteredRows.length !== 1 ? "s" : ""} from current page.
+            Navigate pages to see more.
+          </p>
+        )}
+        <ClientTablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalRecords={totalCount}
+          pageSize={pageSize}
+          onPageChange={onPageChange}
+          itemLabel="students"
+        />
+      </div>
     </div>
   );
 }
