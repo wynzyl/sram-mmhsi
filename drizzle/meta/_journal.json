@@ -218,6 +218,13 @@
       "when": 1786560000000,
       "tag": "0030_add_registration_enrollment_assessment_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1786646400000,
+      "tag": "0031_add_session_last_activity_at",
+      "breakpoints": true
     }
   ]
 }

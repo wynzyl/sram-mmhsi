@@ -266,6 +266,8 @@ export const sessions = pgTable(
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    /** Last user activity time for idle timeout tracking */
+    lastActivityAt: timestamp("last_activity_at").notNull().defaultNow(),
   },
   (t) => [
     uniqueIndex("sessions_token_idx").on(t.token),

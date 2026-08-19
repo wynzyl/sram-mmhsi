@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { compare, hash, hashSync, getRounds } from "bcryptjs";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, sessions } from "@/lib/db/schema";
 import { eq, or } from "drizzle-orm";
 
 // SECURITY (A-6): bcrypt cost factor
@@ -316,4 +316,45 @@ export async function changePasswordAction(
   // 7. Always redirect to login after successful password change
   // redirect() throws internally — must be called outside try/catch
   redirect("/login?passwordChanged=true");
+}
+
+// ─── Update Activity Action (for idle timeout tracking) ──────────────────────
+
+/**
+ * Updates the session's lastActivityAt timestamp.
+ * Called by the client-side idle tracking hook to keep the session active.
+ * Returns the current idle timeout configuration for the client to use.
+ */
+export async function updateActivityAction(): Promise<{
+  ok: boolean;
+  idleTimeoutMs?: number;
+  warningBeforeMs?: number;
+}> {
+  const session = await getCurrentSession();
+  if (!session) {
+    return { ok: false };
+  }
+
+  try {
+    await db
+      .update(sessions)
+      .set({ lastActivityAt: new Date() })
+      .where(eq(sessions.id, session.sessionId));
+
+    // Return timeout configuration so client can stay in sync
+    const IDLE_TIMEOUT_MS = parseInt(process.env.IDLE_TIMEOUT_MINUTES || "10", 10) * 60 * 1000;
+    const IDLE_WARNING_BEFORE_MS = 2 * 60 * 1000;
+
+    return {
+      ok: true,
+      idleTimeoutMs: IDLE_TIMEOUT_MS,
+      warningBeforeMs: IDLE_WARNING_BEFORE_MS,
+    };
+  } catch (error) {
+    logger.error("[auth] Failed to update session activity", {
+      sessionId: session.sessionId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { ok: false };
+  }
 }

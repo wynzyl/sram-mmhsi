@@ -33,6 +33,15 @@ export type SessionUser = {
 // 10-hour session per Engineering spec §9 (8-12 hr idle business session)
 const SESSION_DURATION_MS = 10 * 60 * 60 * 1000;
 
+// Idle timeout: configurable via env (default 10 minutes)
+// After this period of inactivity, session will be invalidated
+const IDLE_TIMEOUT_MINUTES = parseInt(process.env.IDLE_TIMEOUT_MINUTES || "10", 10);
+const IDLE_TIMEOUT_MS = IDLE_TIMEOUT_MINUTES * 60 * 1000;
+
+// Warning period before logout (2 minutes before idle timeout)
+export const IDLE_WARNING_BEFORE_MS = 2 * 60 * 1000;
+export { IDLE_TIMEOUT_MS, IDLE_TIMEOUT_MINUTES };
+
 // SESSION_COOKIE_SECURE=false allows HTTP-on-LAN deployments (prod nginx serves
 // plain HTTP on :80 — browsers drop `Secure` cookies on non-HTTPS origins except
 // localhost, which silently breaks login from other machines).
@@ -136,6 +145,21 @@ export const getCurrentSession = cache(async (): Promise<SessionPayload | null> 
   });
 
   if (!dbSession) return null;
+
+  // SECURITY: Check idle timeout
+  // If user has been inactive for longer than IDLE_TIMEOUT_MS, invalidate session
+  const lastActivity = dbSession.lastActivityAt?.getTime() ?? dbSession.createdAt.getTime();
+  const idleTime = Date.now() - lastActivity;
+  if (idleTime > IDLE_TIMEOUT_MS) {
+    logger.info("[session] Session expired due to idle timeout", {
+      sessionId: dbSession.id,
+      idleMinutes: Math.round(idleTime / 60000),
+      timeoutMinutes: IDLE_TIMEOUT_MINUTES,
+    });
+    // Delete the expired session
+    await db.delete(sessions).where(eq(sessions.id, dbSession.id));
+    return null;
+  }
 
   // SECURITY (A-2): Validate session binding to User-Agent and IP
   // Wrapped in try-catch to ensure session validation doesn't break auth flow
