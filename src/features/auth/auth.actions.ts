@@ -213,7 +213,7 @@ export async function loginAction(
 export async function logoutAction(): Promise<void> {
   await deleteSession();
   logger.info("[auth] User logged out");
-  redirect("/login");
+  redirect("/");
 }
 
 // ─── Change Password Action ──────────────────────────────────────────────────

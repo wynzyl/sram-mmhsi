@@ -9,7 +9,7 @@ const CORRELATION_ID_HEADER = "x-correlation-id";
 // They must bypass auth: without this the proxy 302s them to /login, wget
 // follows the redirect and the healthcheck "passes" without ever reaching the
 // probe route (readiness would never run its SELECT 1). Neither returns data.
-const PUBLIC_ROUTES = ["/login", "/api/health", "/api/readiness"];
+const PUBLIC_ROUTES = ["/", "/login", "/api/health", "/api/readiness"];
 const PASSWORD_CHANGE_ROUTE = "/change-password";
 
 const STAFF_PREFIXES = ["/admin", "/staff"];

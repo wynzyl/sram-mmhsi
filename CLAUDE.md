@@ -784,6 +784,7 @@ Seeds: students, enrollments, assessments (for testing).
     return { success: true };
     ```
     The client component should still call `router.refresh()` in `onSuccess`. This pattern was validated in sections CRUD actions (2026-08-06).
+13. **Turbopack Performance Measurement Bug (Next.js 16):** During development, you may see `Failed to execute 'measure' on 'Performance': '[PageName] [Prerender]' cannot have a negative time stamp`. This is a **harmless internal Turbopack bug** where the performance timing API calculates negative durations during prerendering. It does **not** affect functionality — pages render and work correctly. The `dynamic = "force-dynamic"` workaround is incompatible with `cacheComponents`, so simply ignore these console errors. This affects redirect-only pages like `StaffDashboardPage` most frequently. (Documented 2026-08-19.)
 
 ### Integration Points (Future)
 
