@@ -242,7 +242,7 @@ describe("Assessment + Discount Integration", () => {
       const discountAmount = calculateDiscountAmount(
         base,
         cashDiscount.discountType.calculationType,
-        cashDiscount.discountType.defaultValue
+        Number(cashDiscount.discountType.defaultValue)
       );
 
       // 10% of 50,000 tuition = 5,000
@@ -361,7 +361,7 @@ describe("Cash Discount + Cascade Integration", () => {
       const cashDiscountAmount = calculateDiscountAmount(
         totals.tuition,
         cashDiscount.discountType.calculationType,
-        cashDiscount.discountType.defaultValue
+        Number(cashDiscount.discountType.defaultValue)
       );
       expect(cashDiscountAmount).toBe(10000);
 
