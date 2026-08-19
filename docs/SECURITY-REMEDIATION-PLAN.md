@@ -126,12 +126,18 @@
   - App container uses internal Docker network (`srams-network`) to reach `srams_db:5432`
   - DATABASE_URL in `.env.production` must use internal hostname: `postgresql://...@srams_db:5432/...`
 
-- [ ] **#6 Configure NPM Security Headers** (MEDIUM) — Infrastructure task
-    - [ ] Access NPM admin UI → Edit SRAMS proxy host
-  - [ ] Go to "Advanced" tab
-  - [ ] Add security headers configuration
-  - [ ] Save and verify with `curl -I https://domain`
-  - [ ] **Alternative:** Configure in Cloudflare Transform Rules
+- [x] **#6 Configure NPM Security Headers** (MEDIUM) — **ALREADY CONFIGURED**
+  - [x] ~~Add security headers configuration~~ → Verified via `curl -I https://srams-dev.au2m8dev.com`
+
+  **Verified Headers (2026-08-19):**
+  - `content-security-policy`: Full CSP with `'unsafe-inline'` for Next.js
+  - `strict-transport-security`: 63072000s + includeSubDomains + preload
+  - `x-frame-options`: DENY
+  - `x-content-type-options`: nosniff
+  - `x-xss-protection`: 1; mode=block
+  - `referrer-policy`: strict-origin-when-cross-origin
+  - `permissions-policy`: camera=(), microphone=(), geolocation=()
+  - Served via Cloudflare (CF-RAY header present)
 
 - [x] **#7 Remove .env.production from Git** (MEDIUM) — **ALREADY IMPLEMENTED**
   - [x] ~~Add to `.gitignore`~~ → `.gitignore:42-45` excludes all `.env*` files
@@ -363,8 +369,7 @@ services:
 |-------|-----------|-------------|------|
 | Phase 1 (Critical) | [x] Code | Claude Code | 2026-08-19 |
 | Phase 1 (Critical) | [ ] Infra | | |
-| Phase 2 (Network) | [x] Code (#3, #7) | Claude Code | 2026-08-19 |
-| Phase 2 (Network) | [ ] Infra (#6) | | |
+| Phase 2 (Network) | [x] Complete | Claude Code | 2026-08-19 |
 | Phase 3 (Application) | [x] Complete | Claude Code | 2026-08-19 |
 | Phase 4 (Scalability) | [ ] Optional | | |
 | Phase 5 (Documentation) | [x] Code (#9, #12) | Claude Code | 2026-08-19 |
@@ -382,6 +387,7 @@ services:
 | 2026-08-19 | Phase 2 verified: PostgreSQL port already localhost-only, .env.production not tracked | Claude Code |
 | 2026-08-19 | Phase 3 complete: Report export rate limiting (6 routes), ownership validation verified | Claude Code |
 | 2026-08-19 | Phase 5 docs: CSP policy in SECURITY.md, nginx.conf header comment | Claude Code |
+| 2026-08-19 | Phase 2 #6 verified: All security headers present via Cloudflare | curl verification |
 
 ---
 
