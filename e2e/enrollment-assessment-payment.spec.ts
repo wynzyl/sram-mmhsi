@@ -202,8 +202,28 @@ async function registrarPostsPayment(
   }
   await expect(methodValue).toHaveValue(opts.method);
 
+  // If paying a partial amount and a discount modal is visible, skip the discount.
+  // The discount is only valid for full-balance payments. Clicking Skip resets
+  // the amount to full balance, so we must dismiss the discount BEFORE filling.
   if (opts.amount !== undefined) {
-    await dialog.getByLabel(/Amount to pay/).fill(opts.amount.toFixed(2));
+    // Wait briefly for the discount eligibility check to complete (async API call)
+    await page.waitForTimeout(500);
+
+    const discountCard = dialog.locator("text=/Full Payment Cash Discount/i");
+    if (await discountCard.isVisible().catch(() => false)) {
+      // Click the Skip button to decline the discount
+      await dialog.getByRole("button", { name: /Skip/i }).click();
+      // Wait for discount card to disappear (decline sets discountDeclined=true)
+      await expect(discountCard).not.toBeVisible({ timeout: 5_000 });
+    }
+
+    // Now fill the partial amount after discount is dismissed
+    const amountInput = dialog.getByLabel(/Amount to pay/);
+    await amountInput.clear();
+    await amountInput.fill(opts.amount.toFixed(2));
+
+    // Wait for the amount input to update (debounced re-calculation)
+    await page.waitForTimeout(400);
   }
   const amountValue = await dialog.locator('input[name="amount"]').inputValue();
 
