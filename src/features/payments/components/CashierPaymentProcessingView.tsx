@@ -248,6 +248,7 @@ export function CashierPaymentProcessingView({
 
             {!hasAppliedCashDiscount &&
               !form.cashDiscountLoading &&
+              !form.discountDeclined &&
               form.cashDiscountEligibility?.eligible &&
               form.cashDiscountEligibility.discountDetails && (
                 <div className="mb-4">
@@ -513,11 +514,14 @@ export function CashierPaymentProcessingView({
                                 ? form.amountToPay
                                 : formatWithCommas(form.amountToPay)
                             }
-                            onChange={(e) =>
+                            onChange={(e) => {
                               form.setAmountToPay(
                                 e.target.value.replace(/[^0-9.]/g, "")
-                              )
-                            }
+                              );
+                              // Reset discount states when amount changes
+                              form.setApplyCashDiscount(false);
+                              form.setDiscountDeclined(false);
+                            }}
                             onFocus={() => setAmountToPayFocused(true)}
                             onBlur={() => setAmountToPayFocused(false)}
                             className={cn(

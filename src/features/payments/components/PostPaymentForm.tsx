@@ -17,7 +17,7 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { CashDiscountPreviewCard } from "./CashDiscountPreviewCard";
 import { AppliedCashDiscountCard } from "./AppliedCashDiscountCard";
 import { CascadeFixCard } from "./CascadeFixCard";
-import { Loader2 } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -62,6 +62,10 @@ export default function PostPaymentForm({
   // Fetch cascade discount info (applied cash discount + cascade fix data)
   const { data: cascadeInfo } = useCascadeInfo(assessmentId);
 
+  // Extract hasAppliedCashDiscount from cascadeInfo
+  const hasAppliedCashDiscount =
+    cascadeInfo?.appliedCashDiscount?.hasAppliedCashDiscount ?? false;
+
   // Use shared payment form hook
   const form = usePaymentForm({
     assessmentId,
@@ -69,6 +73,7 @@ export default function PostPaymentForm({
     activeBooklets,
     defaultBookletId,
     manualSuggestions,
+    hasAppliedCashDiscount,
     onSuccess: onPosted,
   });
 
@@ -161,6 +166,7 @@ export default function PostPaymentForm({
       )}
 
       {!form.cashDiscountLoading &&
+        !form.discountDeclined &&
         form.cashDiscountEligibility?.eligible &&
         form.cashDiscountEligibility.discountDetails && (
           <CashDiscountPreviewCard
@@ -272,14 +278,25 @@ export default function PostPaymentForm({
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <FormField
           label={
-            form.applyCashDiscount ? "Amount to pay (before discount)" : "Amount to pay"
+            <span className="flex items-center gap-2">
+              <span>
+                Amount to pay{" "}
+                {(form.applyCashDiscount || hasAppliedCashDiscount) &&
+                  "(full payment required)"}
+              </span>
+              {(form.applyCashDiscount || hasAppliedCashDiscount) && (
+                <Lock className="h-3.5 w-3.5 text-amber-600" />
+              )}
+            </span>
           }
           required
           error={form.state.errors?.amount}
           hint={
-            form.applyCashDiscount && form.cashDiscountEligibility?.discountDetails
-              ? `Collect: ${formatCurrency(form.cashDiscountEligibility.discountDetails.paymentRequired)}`
-              : `Maximum ${formatCurrency(balance)}`
+            form.applyCashDiscount || hasAppliedCashDiscount
+              ? "Full payment is required to receive the cash discount."
+              : form.cashDiscountEligibility?.discountDetails
+                ? `Collect: ${formatCurrency(form.cashDiscountEligibility.discountDetails.paymentRequired)}`
+                : `Maximum ${formatCurrency(balance)}`
           }
         >
           <Input
@@ -292,12 +309,19 @@ export default function PostPaymentForm({
             value={form.amountToPay}
             onChange={(e) => {
               form.setAmountToPay(e.target.value);
-              // Reset discount confirmation when amount changes
+              // Reset discount states when amount changes
               form.setApplyCashDiscount(false);
+              form.setDiscountDeclined(false);
             }}
             error={!!form.state.errors?.amount}
             required
-            className={`font-mono text-base ${form.applyCashDiscount ? "bg-emerald-50 dark:bg-emerald-950/20" : ""}`}
+            readOnly={form.applyCashDiscount || hasAppliedCashDiscount}
+            tabIndex={form.applyCashDiscount || hasAppliedCashDiscount ? -1 : undefined}
+            className={`font-mono text-base ${
+              form.applyCashDiscount || hasAppliedCashDiscount
+                ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 cursor-not-allowed pointer-events-none"
+                : ""
+            }`}
           />
         </FormField>
 

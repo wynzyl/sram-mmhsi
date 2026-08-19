@@ -77,6 +77,8 @@ export interface UsePaymentFormReturn {
   cashDiscountLoading: boolean;
   applyCashDiscount: boolean;
   setApplyCashDiscount: (apply: boolean) => void;
+  discountDeclined: boolean;
+  setDiscountDeclined: (declined: boolean) => void;
   handleConfirmCashDiscount: () => void;
   handleDeclineCashDiscount: () => void;
 
@@ -177,6 +179,7 @@ export function usePaymentForm({
     useState<CashDiscountEligibility | null>(null);
   const [cashDiscountLoading, setCashDiscountLoading] = useState(false);
   const [applyCashDiscount, setApplyCashDiscount] = useState(false);
+  const [discountDeclined, setDiscountDeclined] = useState(false);
 
   // Check cash discount eligibility (debounced)
   const checkCashDiscountEligibility = useCallback(async () => {
@@ -230,6 +233,7 @@ export function usePaymentForm({
   // Cash discount confirm/decline handlers
   const handleConfirmCashDiscount = useCallback(() => {
     setApplyCashDiscount(true);
+    setDiscountDeclined(false);
     if (cashDiscountEligibility?.discountDetails) {
       setAmountToPay(formatDecimal(cashDiscountEligibility.discountDetails.paymentRequired));
     }
@@ -237,6 +241,7 @@ export function usePaymentForm({
 
   const handleDeclineCashDiscount = useCallback(() => {
     setApplyCashDiscount(false);
+    setDiscountDeclined(true);
     setAmountToPay(formatDecimal(balance));
   }, [balance]);
 
@@ -357,6 +362,8 @@ export function usePaymentForm({
     cashDiscountLoading,
     applyCashDiscount,
     setApplyCashDiscount,
+    discountDeclined,
+    setDiscountDeclined,
     handleConfirmCashDiscount,
     handleDeclineCashDiscount,
 
