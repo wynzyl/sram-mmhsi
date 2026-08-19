@@ -38,8 +38,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (secrets - never commit)
 .env*
+!.env.example
 .env.local
 .env.production
 .env.development
@@ -51,11 +52,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# docs
+# docs (ignore generated/temporary, keep tracked docs)
 .gstack/
-docs*
-docs/*.md
-docs/**/*.md
+# Ignore docs that match these patterns, EXCEPT the negations below
+docs/TANSTACK-MIGRATION/
+docs/TANSTACK-FORM*.md
+docs/PROJECT*.md
 
 # Database dumps and backups (SECURITY: prevent accidental commits)
 *.sql

@@ -23,6 +23,7 @@ type RateLimitEntry = {
 const loginAttemptsByIP = new Map<string, RateLimitEntry>();
 const loginAttemptsByUsername = new Map<string, RateLimitEntry>();
 const adminActionAttempts = new Map<string, RateLimitEntry>();
+const reportExportAttempts = new Map<string, RateLimitEntry>();
 
 // ─── Login Rate Limit Configuration ──────────────────────────────────────────
 const LOGIN_BASE_WINDOW_MS = 15 * 60 * 1000;  // 15-minute base window
@@ -36,6 +37,10 @@ const MAX_LOCKOUT_MULTIPLIER = 8;              // Cap at 8x the base window (2 h
 // Admin action rate limits (for user creation, etc.)
 const ADMIN_ACTION_WINDOW_MS = 60 * 1000; // 1-minute window
 const ADMIN_ACTION_MAX_ATTEMPTS = 10;      // max 10 actions per minute per user
+
+// Report export rate limits (PDF/XLSX generation is resource-intensive)
+const REPORT_EXPORT_WINDOW_MS = 60 * 1000; // 1-minute window
+const REPORT_EXPORT_MAX_ATTEMPTS = 10;     // max 10 exports per minute per user
 
 // ─── Helper: Calculate lockout window with exponential backoff ───────────────
 
@@ -283,4 +288,41 @@ export function getAdminActionResetSeconds(userId: string): number {
   if (!entry) return 0;
   const elapsed = Date.now() - entry.firstAttempt;
   return Math.max(0, Math.ceil((ADMIN_ACTION_WINDOW_MS - elapsed) / 1000));
+}
+
+// ─── Report Export Rate Limiting ────────────────────────────────────────────────
+
+/**
+ * Check if a user has exceeded the report export rate limit.
+ * PDF/XLSX generation is resource-intensive, so we limit exports per user.
+ * Returns true if the request should be BLOCKED.
+ *
+ * @param userId - The user ID requesting the export
+ */
+export function isReportExportRateLimited(userId: string): boolean {
+  const now = Date.now();
+  const entry = reportExportAttempts.get(userId);
+
+  if (!entry || now - entry.firstAttempt > REPORT_EXPORT_WINDOW_MS) {
+    // New window — reset
+    reportExportAttempts.set(userId, { count: 1, firstAttempt: now });
+    return false;
+  }
+
+  if (entry.count >= REPORT_EXPORT_MAX_ATTEMPTS) {
+    return true;
+  }
+
+  entry.count++;
+  return false;
+}
+
+/**
+ * Get the remaining lockout time in seconds for report export.
+ */
+export function getReportExportResetSeconds(userId: string): number {
+  const entry = reportExportAttempts.get(userId);
+  if (!entry) return 0;
+  const elapsed = Date.now() - entry.firstAttempt;
+  return Math.max(0, Math.ceil((REPORT_EXPORT_WINDOW_MS - elapsed) / 1000));
 }

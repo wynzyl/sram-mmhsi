@@ -203,11 +203,26 @@ SRAMS implements in-memory sliding window rate limiting in `src/lib/security/rat
 
 ### Rate Limit Contexts
 
-| Context          | Window     | Max Attempts | Notes                  |
-| ---------------- | ---------- | ------------ | ---------------------- |
-| Login (IP)       | 15 minutes | 10           | Per IP address         |
-| Login (Username) | 15 minutes | 5            | Per account (stricter) |
-| Admin Actions    | 1 minute   | 10           | Per user session       |
+| Context          | Window     | Max Attempts | Notes                           |
+| ---------------- | ---------- | ------------ | ------------------------------- |
+| Login (IP)       | 15 minutes | 10           | Per IP address                  |
+| Login (Username) | 15 minutes | 5            | Per account (stricter)          |
+| Admin Actions    | 1 minute   | 10           | Per user session                |
+| Report Exports   | 1 minute   | 10           | Per user (PDF/XLSX generation)  |
+
+### Report Export Rate Limiting
+
+PDF and XLSX generation is CPU/memory intensive. All export routes are rate-limited to prevent resource exhaustion:
+
+**Protected Routes:**
+- `/staff/reports/payment-collection/export`
+- `/staff/reports/balance-forwards/export`
+- `/staff/reports/accounts-receivable/export`
+- `/staff/reports/student-list/export`
+- `/staff/finance/invoices/[id]/export`
+- `/staff/archive/documents/[id]/export`
+
+**Response on limit exceeded:** HTTP 429 with message indicating retry time.
 
 ### Exponential Backoff
 
@@ -407,9 +422,52 @@ React automatically escapes content rendered in JSX, preventing XSS:
 - No `dangerouslySetInnerHTML` usage in the codebase
 - User content is never rendered as raw HTML
 
-### Content Security Policy
+### Content Security Policy (CSP)
 
-For additional protection, consider adding CSP headers in production deployment configuration.
+SRAMS relies on React's automatic escaping as the primary XSS defense rather than a strict CSP with `script-src 'self'`. This is a deliberate trade-off:
+
+**Why `'unsafe-inline'` is Required:**
+
+Next.js App Router injects inline `<script>` tags for:
+- RSC (React Server Components) payload hydration
+- Client-side navigation prefetch data
+- Build manifest and runtime configuration
+
+A strict `script-src 'self'` policy would break the application without significant architectural changes (nonce injection throughout the render pipeline).
+
+**Current Mitigations:**
+
+1. **React Auto-Escaping:** All JSX content is automatically escaped, preventing injection of `<script>` tags through user data
+2. **No `dangerouslySetInnerHTML`:** The codebase does not use raw HTML injection
+3. **Zod Input Validation:** All user input is validated before storage/display
+4. **HttpOnly Cookies:** Session tokens cannot be stolen via XSS
+
+**Recommended CSP Headers (NPM or Cloudflare):**
+
+```
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: blob:;
+  font-src 'self';
+  connect-src 'self';
+  frame-ancestors 'none';
+  form-action 'self';
+  base-uri 'self';
+```
+
+**Defense-in-Depth Headers (Always Apply):**
+
+```nginx
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+```
+
+These headers are configured in **Nginx Proxy Manager (NPM)** for production deployments. See `docs/SECURITY-REMEDIATION-PLAN.md` Phase 2 for configuration details.
 
 ---
 
@@ -565,3 +623,5 @@ For security issues or vulnerabilities:
 | 2026-05-30 | (A-6) Increased bcrypt cost factor to 12 with transparent re-hash      |
 | 2026-05-30 | (D-1) Added secure IP extraction and per-account rate limiting         |
 | 2026-05-30 | (D-2) Added TLS/deployment security documentation                      |
+| 2026-08-19 | Added report export rate limiting (10/min per user)                    |
+| 2026-08-19 | Documented CSP policy and `'unsafe-inline'` trade-off                  |

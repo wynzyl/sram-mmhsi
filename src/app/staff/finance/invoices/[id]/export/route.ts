@@ -5,6 +5,10 @@ import { invoices, students, assessments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import {
+  isReportExportRateLimited,
+  getReportExportResetSeconds,
+} from "@/lib/security/rateLimit";
 import { InvoiceDocument } from "@/features/finance/invoices/invoice-document";
 import { pdfResponse } from "@/features/reports/shared/report-response";
 import { logReportExport } from "@/features/reports/shared/audit-report";
@@ -27,6 +31,15 @@ export async function GET(
   }
   if (!hasPermission(user.role, "invoices:read")) {
     return new NextResponse("Forbidden", { status: 403 });
+  }
+
+  // Rate limit: 10 exports per minute per user
+  if (isReportExportRateLimited(user.id)) {
+    const resetSeconds = getReportExportResetSeconds(user.id);
+    return NextResponse.json(
+      { error: `Too many export requests. Try again in ${resetSeconds} seconds.` },
+      { status: 429 }
+    );
   }
 
   const { id } = await params;

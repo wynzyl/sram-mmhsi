@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import {
+  isReportExportRateLimited,
+  getReportExportResetSeconds,
+} from "@/lib/security/rateLimit";
 import { getActiveSchoolYear, getSchoolYears } from "@/lib/queries/schoolYears";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { getAllStudentListData } from "@/features/reports/student-list-report.queries";
@@ -31,6 +35,15 @@ export async function GET(request: NextRequest) {
   }
   if (!hasPermission(user.role, "reports:view")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Rate limit: 10 exports per minute per user
+  if (isReportExportRateLimited(user.id)) {
+    const resetSeconds = getReportExportResetSeconds(user.id);
+    return NextResponse.json(
+      { error: `Too many export requests. Try again in ${resetSeconds} seconds.` },
+      { status: 429 }
+    );
   }
 
   const { searchParams } = new URL(request.url);
