@@ -245,6 +245,14 @@ export function usePaymentForm({
     setAmountToPay(formatDecimal(balance));
   }, [balance]);
 
+  // Sync amountToPay with balance when cash discount is already applied
+  // (e.g., after cascade recalculations update the balance)
+  useEffect(() => {
+    if (hasAppliedCashDiscount) {
+      setAmountToPay(formatDecimal(balance));
+    }
+  }, [balance, hasAppliedCashDiscount]);
+
   // ─────────────────────────────────────────────────────────────────
   // Idempotency Key
   // ─────────────────────────────────────────────────────────────────
