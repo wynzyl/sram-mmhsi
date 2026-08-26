@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -725,9 +725,10 @@
   font-weight: 600;
 }
 
-/* TAB UTILITIES*/
-
+/* TAB UTILITIES
    Simple tab navigation styles for consistent UI
+   ═══════════════════════════════════════════════════════════════ */
+
 .table-wrapper {
   overflow-x: auto;
   border-radius: var(--radius);

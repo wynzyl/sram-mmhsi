@@ -4,6 +4,7 @@ import Image from "next/image";
 import { logoutAction } from "@/features/auth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ColorThemePickerCompact } from "@/components/ui/ColorThemePicker";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useCommandPalette } from "@/components/command-palette";
 import { ROLE_LABELS, type Role } from "@/lib/constants/roles";
 import { cn } from "@/lib/utils/cn";
@@ -186,8 +187,9 @@ export function AppHeader({ username, role, schoolYear }: AppHeaderProps) {
         "flex items-center justify-between gap-4 px-4"
       )}
     >
-      {/* Left: Brand */}
-      <div className="flex items-center gap-3">
+      {/* Left: Sidebar Toggle + Brand */}
+      <div className="flex items-center gap-2">
+        <SidebarTrigger className="-ml-1" />
         <Image
           src="/MLAND LOGO.png"
           alt="Merryland logo"

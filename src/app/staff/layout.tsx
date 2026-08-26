@@ -3,7 +3,8 @@ import { requireSession, INVALID_SESSION_REDIRECT } from "@/lib/auth/session";
 import { getCurrentUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { STAFF_ROLES, normalizeRole } from "@/lib/constants/roles";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { CommandPaletteProvider } from "@/components/command-palette";
@@ -30,45 +31,20 @@ async function StaffLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <ActiveSchoolYearProvider activeSchoolYearId={activeSchoolYear?.id ?? null}>
       <CommandPaletteProvider>
-        <div className="app-shell">
-          <AppHeader
-            username={user.username}
-            role={user.role as Role}
-            schoolYear={activeSchoolYear?.label}
-          />
-          <div className="app-body">
-            <Sidebar role={user.role as Role} />
-            <main className="app-main">
-              <div className="app-content">{children}</div>
+        <SidebarProvider defaultOpen={true}>
+          <AppSidebar role={user.role as Role} />
+          <SidebarInset>
+            <AppHeader
+              username={user.username}
+              role={user.role as Role}
+              schoolYear={activeSchoolYear?.label}
+            />
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6">{children}</div>
               <AppFooter schoolYear={activeSchoolYear?.label} />
-            </main>
-          </div>
-        </div>
-        <style>{`
-          .app-shell {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-            background: var(--muted);
-          }
-          .app-body {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-          }
-          .app-main {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            background-color: var(--background);
-          }
-          .app-content {
-            flex: 1;
-            padding: 1.5rem 2rem;
-          }
-        `}</style>
+            </div>
+          </SidebarInset>
+        </SidebarProvider>
       </CommandPaletteProvider>
     </ActiveSchoolYearProvider>
   );
@@ -83,30 +59,21 @@ export default function StaffLayout({
   return (
     <Suspense
       fallback={
-        <div className="app-shell">
+        <div className="flex min-h-svh">
           <div
-            className="app-header-skeleton"
-            style={{ height: 64, flexShrink: 0, background: "var(--card)", borderBottom: "1px solid var(--border)" }}
+            className="hidden md:block shrink-0 bg-sidebar border-r border-border"
+            style={{ width: "var(--sidebar-width, 16rem)" }}
             aria-hidden
           />
-          <div className="app-body" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-            <aside className="sidebar" style={{ width: 220, flexShrink: 0 }} aria-hidden />
-            <main
-              className="app-main"
-              style={{ flex: 1, overflow: "auto", padding: "1.5rem 2rem", backgroundColor: "var(--background)" }}
-            >
-              <div className="animate-pulse" style={{ height: "100%" }} />
+          <div className="flex-1 flex flex-col">
+            <div
+              className="h-16 shrink-0 bg-sidebar border-b border-border"
+              aria-hidden
+            />
+            <main className="flex-1 p-6 bg-background">
+              <div className="animate-pulse h-full" />
             </main>
           </div>
-          <style>{`
-            .app-shell {
-              display: flex;
-              flex-direction: column;
-              height: 100vh;
-              overflow: hidden;
-              background: var(--muted);
-            }
-          `}</style>
         </div>
       }
     >
