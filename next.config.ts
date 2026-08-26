@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
-// Only enable HTTPS upgrade when running behind HTTPS (APP_BASE_URL starts with https://)
-const isHttps = process.env.APP_BASE_URL?.startsWith("https://") ?? false;
+// Only enable HTTPS upgrade when the primary allowed origin uses HTTPS.
+const primaryAppBaseUrl = process.env.APP_BASE_URL?.split(",")[0]?.trim();
+const isHttps = primaryAppBaseUrl?.toLowerCase().startsWith("https://") ?? false;
 
 /**
  * Content-Security-Policy (defense-in-depth).
@@ -32,6 +33,8 @@ const cspDirectives = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Empty turbopack config to silence Next.js 16 webpack migration warning
+  turbopack: {},
   // Standalone output for optimized Docker deployments
   // Creates .next/standalone with minimal server + traced dependencies only
   output: 'standalone',
@@ -92,7 +95,8 @@ const nextConfig: NextConfig = {
 
   experimental: {
     // Enable filesystem caching for `next dev`
-    turbopackFileSystemCacheForDev: true,
+    // Temporarily disabled - Windows "nul" path bug
+    // turbopackFileSystemCacheForDev: true,
     // Enable filesystem caching for `next build`
     // turbopackFileSystemCacheForBuild: true,
     // Allow larger file uploads (default is 1MB, our max is 2MB)
