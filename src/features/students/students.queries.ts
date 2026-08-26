@@ -8,6 +8,7 @@ import {
   type StudentSortDir,
 } from "@/lib/utils/student-directory-href";
 import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
+import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { buildStudentSearchCondition } from "@/lib/utils/query-conditions";
 
 export { STUDENT_DIRECTORY_PAGE_SIZE };
@@ -103,16 +104,13 @@ export async function fetchStudentDirectoryPage(params: {
         asc(enrollments.id),
       ];
 
-  const [schoolYearOptions, gradeLevelOptions, listRows, countResult] = await Promise.all([
+  const [schoolYearOptions, gradeLevelsData, listRows, countResult] = await Promise.all([
     db
       .select({ id: schoolYears.id, label: schoolYears.label })
       .from(schoolYears)
       .where(isNull(schoolYears.deletedAt))
       .orderBy(desc(schoolYears.startDate)),
-    db
-      .select({ id: gradeLevels.id, name: gradeLevels.name })
-      .from(gradeLevels)
-      .orderBy(asc(gradeLevels.order)),
+    getGradeLevels(),  // Use centralized cached query to avoid duplication bug
     db
       .select({
         enrollmentId: sql<string>`${enrollments.id}`.as("enrollment_id"),
@@ -161,6 +159,9 @@ export async function fetchStudentDirectoryPage(params: {
     gradeLevelName: r.gradeLevelName,
     sectionName: r.sectionName,
   }));
+
+  // Map to expected format (getGradeLevels includes 'order' which we don't need)
+  const gradeLevelOptions = gradeLevelsData.map(gl => ({ id: gl.id, name: gl.name }));
 
   return {
     rows,
