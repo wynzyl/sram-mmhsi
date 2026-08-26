@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { sections, schoolYears, gradeLevels } from "@/lib/db/schema";
+import { sections, schoolYears } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
+import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
@@ -108,18 +109,18 @@ export async function EnrollmentQueuePage(props: EnrollmentQueuePageProps) {
       gradeLevelFilter && gradeLevelFilter !== "all" ? gradeLevelFilter : undefined,
   };
 
-  const [queueData, allSections, allGradeLevels, tabCountsData] = await Promise.all([
+  const [queueData, allSections, gradeLevelsData, tabCountsData] = await Promise.all([
     getEnrollmentQueueData(currentTab, paginationParams, queueFilters),
     db
       .select({ id: sections.id, name: sections.name, gradeLevelId: sections.gradeLevelId })
       .from(sections)
       .where(eq(sections.schoolYearId, activeSchoolYear.id)),
-    db
-      .select({ id: gradeLevels.id, name: gradeLevels.name })
-      .from(gradeLevels)
-      .orderBy(gradeLevels.order),
+    getGradeLevels(),  // Use centralized cached query
     getEnrollmentQueueCounts(),
   ]);
+
+  // Map to the expected shape (getGradeLevels includes 'order' which we don't need for the dropdown)
+  const allGradeLevels = gradeLevelsData.map(gl => ({ id: gl.id, name: gl.name }));
 
   if (!queueData) {
     return (

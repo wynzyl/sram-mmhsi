@@ -1,8 +1,8 @@
 import { cache } from "react";
 import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import { gradeLevels } from "@/lib/db/schema";
-import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 
 export type GradeLevelOption = {
   id: string;
@@ -18,9 +18,9 @@ export type GradeLevelOption = {
 export async function getGradeLevels(): Promise<GradeLevelOption[]> {
   "use cache";
   cacheTag(CACHE_TAGS.GRADE_LEVELS);
-  cacheLife("hours"); // 1 hour revalidate
+  cacheLife("hours");
 
-  return db
+  const results = await db
     .select({
       id: gradeLevels.id,
       name: gradeLevels.name,
@@ -28,6 +28,8 @@ export async function getGradeLevels(): Promise<GradeLevelOption[]> {
     })
     .from(gradeLevels)
     .orderBy(gradeLevels.order);
+
+  return results;
 }
 
 /**
