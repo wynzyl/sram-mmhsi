@@ -42,6 +42,8 @@ async function main() {
   console.log("[migrate] done — schema is up to date.");
 
   await client.end();
+  // Explicit exit to prevent dangling handles from causing non-zero exit
+  process.exit(0);
 }
 
 main().catch((err) => {
