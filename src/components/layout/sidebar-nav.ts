@@ -80,6 +80,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
           children: [
             { href: "/staff/grades", label: "Overview", icon: "grades", pathMatch: "exact" },
             { href: "/staff/grades/approvals", label: "Pending Approvals", icon: "grades" },
+            { href: "/staff/grades/publish", label: "Ready to Publish", icon: "grades" },
           ],
         },
         {
@@ -151,6 +152,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
           children: [
             { href: "/staff/grades", label: "Overview", icon: "grades", pathMatch: "exact" },
             { href: "/staff/grades/approvals", label: "Pending Approvals", icon: "grades" },
+            { href: "/staff/grades/publish", label: "Ready to Publish", icon: "grades" },
           ],
         },
         {
@@ -391,6 +393,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       items: [
         { href: "/staff/grades", label: "Overview", icon: "grades" },
         { href: "/staff/grades/approvals", label: "Pending Approvals", icon: "grades" },
+        { href: "/staff/grades/publish", label: "Ready to Publish", icon: "grades" },
       ],
     },
     {

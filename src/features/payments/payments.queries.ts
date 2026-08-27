@@ -283,10 +283,17 @@ export async function getPortalPayments(
       paymentDate: payments.paymentDate,
       status: payments.status,
       referenceNumber: payments.referenceNumber,
+      schoolYearId: assessments.schoolYearId,
+      schoolYearLabel: schoolYears.label,
+      gradeLevelName: gradeLevels.name,
     })
     .from(payments)
+    .leftJoin(assessments, eq(payments.assessmentId, assessments.id))
+    .leftJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
+    .leftJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
+    .leftJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .where(inArray(payments.studentId, studentIds))
-    .orderBy(desc(payments.paymentDate));
+    .orderBy(desc(schoolYears.startDate), desc(payments.paymentDate));
 
   const rows: PortalPaymentRow[] = paymentRows.map((r) => {
     const who = labelMap.get(r.studentId);
@@ -301,6 +308,9 @@ export async function getPortalPayments(
       paymentDate: r.paymentDate.toISOString(),
       status: r.status,
       paymentReference: r.referenceNumber,
+      schoolYearId: r.schoolYearId,
+      schoolYearLabel: r.schoolYearLabel,
+      gradeLevelName: r.gradeLevelName,
     };
   });
 
@@ -325,10 +335,17 @@ export async function getPortalPaymentsByStudentId(
       paymentDate: payments.paymentDate,
       status: payments.status,
       referenceNumber: payments.referenceNumber,
+      schoolYearId: assessments.schoolYearId,
+      schoolYearLabel: schoolYears.label,
+      gradeLevelName: gradeLevels.name,
     })
     .from(payments)
+    .leftJoin(assessments, eq(payments.assessmentId, assessments.id))
+    .leftJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
+    .leftJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
+    .leftJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .where(eq(payments.studentId, studentId))
-    .orderBy(desc(payments.paymentDate));
+    .orderBy(desc(schoolYears.startDate), desc(payments.paymentDate));
 
   const rows: PortalPaymentRow[] = paymentRows.map((r) => ({
     id: r.id,
@@ -341,6 +358,9 @@ export async function getPortalPaymentsByStudentId(
     paymentDate: r.paymentDate.toISOString(),
     status: r.status,
     paymentReference: r.referenceNumber,
+    schoolYearId: r.schoolYearId,
+    schoolYearLabel: r.schoolYearLabel,
+    gradeLevelName: r.gradeLevelName,
   }));
 
   return { rows, showStudentColumn: false, hasLinkedStudents: true };
