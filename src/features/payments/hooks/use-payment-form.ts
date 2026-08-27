@@ -246,12 +246,26 @@ export function usePaymentForm({
   }, [balance]);
 
   // Sync amountToPay with balance when cash discount is already applied
-  // (e.g., after cascade recalculations update the balance)
-  useEffect(() => {
+  // (e.g., after cascade recalculations update the balance).
+  //
+  // Adjusted during render rather than in an effect: this is derived-from-props
+  // state, and mirroring it via useEffect triggers a cascading render
+  // (react-hooks/set-state-in-effect). React re-runs this render immediately,
+  // before committing, so the DOM never shows the stale amount.
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [lastSyncedDiscount, setLastSyncedDiscount] = useState({
+    balance,
+    hasAppliedCashDiscount,
+  });
+  if (
+    lastSyncedDiscount.balance !== balance ||
+    lastSyncedDiscount.hasAppliedCashDiscount !== hasAppliedCashDiscount
+  ) {
+    setLastSyncedDiscount({ balance, hasAppliedCashDiscount });
     if (hasAppliedCashDiscount) {
       setAmountToPay(formatDecimal(balance));
     }
-  }, [balance, hasAppliedCashDiscount]);
+  }
 
   // ─────────────────────────────────────────────────────────────────
   // Idempotency Key
