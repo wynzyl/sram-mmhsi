@@ -65,6 +65,9 @@ export type PortalPaymentRow = {
   paymentDate: string; // ISO (serialized for client)
   status: string;
   paymentReference: string | null;
+  schoolYearId: string | null;
+  schoolYearLabel: string | null;
+  gradeLevelName: string | null;
 };
 
 export type PortalPaymentsData = {
