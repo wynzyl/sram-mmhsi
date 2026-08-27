@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/date";
 import { GRADING_PERIOD_LABELS, type GradingPeriod } from "@/lib/constants/grading-periods";
 import { GradeSheetReviewActions } from "@/features/academics/grades/components/GradeSheetReviewActions";
+import { GradeSheetPublishActions } from "@/features/academics/grades/components/GradeSheetPublishActions";
 import { getGradeGroup } from "@/lib/constants/grade-groups";
 
 export const metadata = {
@@ -135,6 +136,9 @@ export default async function GradeSheetReviewPage({ params }: PageProps) {
   });
 
   const canApprove = gradeSheet.status === "submitted";
+  const canPublish = gradeSheet.status === "principal_approved" && hasPermission(session.role, "grades:publish");
+  const canLock = gradeSheet.status === "published" && hasPermission(session.role, "grades:lock");
+  const canUnlock = gradeSheet.status === "locked" && hasPermission(session.role, "grades:unlock");
 
   return (
     <div className="p-6 space-y-6">
@@ -284,6 +288,17 @@ export default async function GradeSheetReviewPage({ params }: PageProps) {
       {/* Actions */}
       {canApprove && (
         <GradeSheetReviewActions gradeSheetId={sheetId} />
+      )}
+
+      {/* Publish/Lock Actions */}
+      {(canPublish || canLock || canUnlock) && (
+        <GradeSheetPublishActions
+          gradeSheetId={sheetId}
+          status={gradeSheet.status}
+          canPublish={canPublish}
+          canLock={canLock}
+          canUnlock={canUnlock}
+        />
       )}
 
       {/* Return remarks if returned */}

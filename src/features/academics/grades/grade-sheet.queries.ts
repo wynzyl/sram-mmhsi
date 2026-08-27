@@ -174,6 +174,50 @@ export async function getPrincipalPendingReviews(
 }
 
 /**
+ * Get grade sheets that are approved and ready to publish.
+ */
+export async function getReadyToPublishSheets(
+  schoolYearId: string
+): Promise<GradeSheetView[]> {
+  const whereClause = and(
+    eq(gradeSheets.schoolYearId, schoolYearId),
+    eq(gradeSheets.status, "principal_approved")
+  );
+
+  const rows = await db
+    .select({
+      id: gradeSheets.id,
+      sectionId: gradeSheets.sectionId,
+      sectionName: sections.name,
+      gradeLevelId: sections.gradeLevelId,
+      gradeLevelName: gradeLevels.name,
+      gradeLevelOrder: gradeLevels.order,
+      schoolYearId: gradeSheets.schoolYearId,
+      schoolYearLabel: schoolYears.label,
+      adviserId: gradeSheets.adviserId,
+      adviserName: users.username,
+      gradingPeriod: gradeSheets.gradingPeriod,
+      status: gradeSheets.status,
+      submittedAt: gradeSheets.submittedAt,
+      principalApprovedAt: gradeSheets.principalApprovedAt,
+      publishedAt: gradeSheets.publishedAt,
+      lockedAt: gradeSheets.lockedAt,
+      returnedAt: gradeSheets.returnedAt,
+      returnRemarks: gradeSheets.returnRemarks,
+      createdAt: gradeSheets.createdAt,
+    })
+    .from(gradeSheets)
+    .innerJoin(sections, eq(gradeSheets.sectionId, sections.id))
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+    .innerJoin(schoolYears, eq(gradeSheets.schoolYearId, schoolYears.id))
+    .leftJoin(users, eq(gradeSheets.adviserId, users.id))
+    .where(whereClause)
+    .orderBy(asc(gradeLevels.order), asc(sections.name), asc(gradeSheets.gradingPeriod));
+
+  return rows as GradeSheetView[];
+}
+
+/**
  * Get a grade sheet by ID with all details.
  */
 export async function getGradeSheetById(gradeSheetId: string): Promise<GradeSheetView | null> {

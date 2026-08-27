@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse, connection } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getStaffUser } from "@/lib/auth/session";
 import { hasPermission, type Permission } from "@/lib/rbac/permissions";
 import type { SessionUser } from "@/lib/auth/session";
 import { logger } from "@/lib/observability/logger";
@@ -125,7 +125,8 @@ export function withAuth<T>(
     }
 
     try {
-      const user = await getCurrentUser();
+      // Staff-only routes: use getStaffUser() to reject portal sessions
+      const user = await getStaffUser();
 
       if (!user) {
         return responses.unauthorized();

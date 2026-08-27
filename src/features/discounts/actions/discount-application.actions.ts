@@ -12,7 +12,7 @@ import {
   feeItemTypes,
 } from "@/lib/db/schema";
 import { eq, and, isNull, ne, sql } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
@@ -56,7 +56,7 @@ export async function reverseDiscountAction(
   _prevState: ReverseDiscountFormState,
   formData: FormData
 ): Promise<ReverseDiscountFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "discounts:manage")) {
     return { message: "You do not have permission to reverse discounts." };
   }
@@ -291,7 +291,7 @@ export async function applyApprovedDiscountToExistingAssessment(
   _prevState: ApplyApprovedDiscountFormState,
   formData: FormData
 ): Promise<ApplyApprovedDiscountFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "discounts:apply")) {
     return {
       message: "You do not have permission to apply discounts to assessments.",
@@ -829,7 +829,7 @@ export async function recalculateCascadeDiscountsAction(
   _prevState: RecalculateCascadeDiscountsFormState,
   formData: FormData
 ): Promise<RecalculateCascadeDiscountsFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "discounts:apply")) {
     return {
       message: "You do not have permission to recalculate cascade discounts.",

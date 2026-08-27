@@ -15,7 +15,7 @@ import {
   sectionAdvisers,
 } from "@/lib/db/schema";
 import { eq, and, or, isNull, sql } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   CreateGradeSheetSchema,
@@ -71,7 +71,7 @@ export async function createOrGetGradeSheetAction(
   _prevState: CreateGradeSheetFormState,
   formData: FormData
 ): Promise<CreateGradeSheetFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:encode")) {
     return { message: "You do not have permission to create grade sheets." };
@@ -161,7 +161,7 @@ export async function saveGradeSheetEntriesAction(
   _prevState: SaveGradeSheetEntriesFormState,
   formData: FormData
 ): Promise<SaveGradeSheetEntriesFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:encode")) {
     return { message: "You do not have permission to encode grades." };
@@ -348,7 +348,7 @@ export async function submitGradeSheetAction(
   _prevState: SubmitGradeSheetFormState,
   formData: FormData
 ): Promise<SubmitGradeSheetFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:submit")) {
     return { message: "You do not have permission to submit grades." };

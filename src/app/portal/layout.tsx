@@ -1,8 +1,6 @@
 import { Suspense } from "react";
-import { requireSession, INVALID_SESSION_REDIRECT } from "@/lib/auth/session";
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireSession, INVALID_SESSION_REDIRECT, getPortalUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { PORTAL_ROLES } from "@/lib/constants/roles";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -16,16 +14,20 @@ import type { Role } from "@/lib/constants/roles";
 async function PortalLayoutContent({ children }: { children: React.ReactNode }) {
   const session = await requireSession();
 
-  if (!PORTAL_ROLES.includes(session.role)) {
+  // Portal layout only accepts portal sessions (accountSource === "portal")
+  if (session.accountSource !== "portal") {
     redirect("/login");
   }
 
   // Parallelize independent queries after session validation
   const [user, activeSchoolYear] = await Promise.all([
-    getCurrentUser(),
+    getPortalUser(),
     getActiveSchoolYear(),
   ]);
   if (!user) redirect(INVALID_SESSION_REDIRECT);
+
+  // For portal users, display name is student's name
+  const displayName = `${user.student.firstName} ${user.student.lastName}`;
 
   return (
     <ActiveSchoolYearProvider activeSchoolYearId={activeSchoolYear?.id ?? null}>
@@ -34,7 +36,7 @@ async function PortalLayoutContent({ children }: { children: React.ReactNode }) 
           <AppSidebar role={user.role as Role} />
           <SidebarInset>
             <AppHeader
-              username={user.username}
+              username={displayName}
               role={user.role as Role}
               schoolYear={activeSchoolYear?.label}
             />

@@ -8,7 +8,7 @@ import {
   voidRequests,
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   RequestVoidSchema,
@@ -61,7 +61,7 @@ export async function requestVoidAction(
   _prevState: RequestVoidFormState,
   formData: FormData
 ): Promise<RequestVoidFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "payments:void_request")) {
     return { message: "You do not have permission to request payment voids." };
@@ -191,7 +191,7 @@ export async function approveVoidRequestAction(
   _prevState: ApproveVoidRequestFormState,
   formData: FormData
 ): Promise<ApproveVoidRequestFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "payments:void_approve")) {
     return { message: "You do not have permission to approve void requests." };
@@ -419,7 +419,7 @@ export async function rejectVoidRequestAction(
   _prevState: RejectVoidRequestFormState,
   formData: FormData
 ): Promise<RejectVoidRequestFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "payments:void_approve")) {
     return { message: "You do not have permission to reject void requests." };
@@ -495,7 +495,7 @@ export async function cancelVoidRequestAction(
   _prevState: CancelVoidRequestFormState,
   formData: FormData
 ): Promise<CancelVoidRequestFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "payments:void_request")) {
     return { message: "You do not have permission to cancel void requests." };

@@ -28,6 +28,7 @@ import { RegistrationDetailView } from "@/features/registrations/components/Regi
 import { getStudentRequirementsSnapshots } from "@/features/registrations/registrations.queries";
 import { getDiscountRequestsByStudent, getActiveDiscountTypes } from "@/features/discounts/discounts.queries";
 import { getStudentEnrollmentsWithPendingCancellation } from "@/features/enrollments/enrollment-cancellation.queries";
+import { getPortalAccountForStudent } from "@/features/portal-accounts/portal-accounts.queries";
 
 /** Caller must have verified `students:read` before render (thin route pages use `redirect` when missing). */
 export async function InternalStudentProfilePage(props: {
@@ -49,6 +50,7 @@ export async function InternalStudentProfilePage(props: {
   const canRequestDiscounts = hasPermission(session.role, "discounts:request");
   const canManageDiscounts = hasPermission(session.role, "discounts:manage");
   const canCancelEnrollment = hasPermission(session.role, "enrollments:cancel");
+  const canManagePortalAccounts = hasPermission(session.role, "portal_accounts:manage");
 
   const studentRow = await db.query.students.findFirst({
     where: eq(students.id, id),
@@ -120,6 +122,7 @@ export async function InternalStudentProfilePage(props: {
     requirementsSnapshots,
     discountRequests,
     discountTypes,
+    portalAccount,
   ] = await Promise.all([
     // Enrollment query
     db
@@ -202,6 +205,7 @@ export async function InternalStudentProfilePage(props: {
     getStudentRequirementsSnapshots(id),
     canReadDiscounts ? getDiscountRequestsByStudent(id) : Promise.resolve([]),
     canRequestDiscounts ? getActiveDiscountTypes() : Promise.resolve([]),
+    canManagePortalAccounts ? getPortalAccountForStudent(id) : Promise.resolve(null),
   ]);
 
   // Map enrollment rows with pending cancellation status
@@ -255,6 +259,7 @@ export async function InternalStudentProfilePage(props: {
     canRequestDiscounts: canRequestDiscounts && !isStudentArchived,
     canManageDiscounts: canManageDiscounts && !isStudentArchived,
     canCancelEnrollment: canCancelEnrollment && !isStudentArchived,
+    canManagePortalAccounts,
   };
 
   // Find pending enrollment (no assessment yet) for discount requests
@@ -275,6 +280,7 @@ export async function InternalStudentProfilePage(props: {
       discountRequests={discountRequests}
       discountTypes={discountTypes}
       activeEnrollmentId={pendingEnrollmentForDiscount?.id}
+      portalAccount={portalAccount}
       flags={flags}
       backHref={backHref}
       backLabel="Back to registrations"

@@ -8,7 +8,7 @@ import {
   schoolYears,
 } from "@/lib/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction, logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
@@ -45,7 +45,7 @@ export async function createCurriculumAction(
   _prevState: CreateCurriculumFormState,
   formData: FormData
 ): Promise<CreateCurriculumFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:create")) {
     return { message: "You do not have permission to create curriculums." };
   }
@@ -109,7 +109,7 @@ export async function updateCurriculumMetaAction(
   _prevState: UpdateCurriculumMetaFormState,
   formData: FormData
 ): Promise<UpdateCurriculumMetaFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:edit")) {
     return { message: "You do not have permission to edit curriculums." };
   }
@@ -175,7 +175,7 @@ export async function cloneCurriculumAction(
   _prevState: CloneCurriculumFormState,
   formData: FormData
 ): Promise<CloneCurriculumFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:edit")) {
     return { message: "You do not have permission to clone curriculums." };
   }
@@ -307,7 +307,7 @@ export async function publishCurriculumAction(
   _prevState: PublishCurriculumFormState,
   formData: FormData
 ): Promise<PublishCurriculumFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:publish")) {
     return { message: "You do not have permission to publish curriculums." };
   }
@@ -470,7 +470,7 @@ export async function archiveCurriculumAction(
   _prevState: ArchiveCurriculumFormState,
   formData: FormData
 ): Promise<ArchiveCurriculumFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:archive")) {
     return { message: "You do not have permission to archive curriculums." };
   }

@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { curriculums, subjects, subjectStrands, strands } from "@/lib/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction, logDeleteAction, logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
@@ -155,7 +155,7 @@ export async function addSubjectToCurriculumAction(
   _prevState: AddSubjectToCurriculumFormState,
   formData: FormData
 ): Promise<AddSubjectToCurriculumFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "subjects:manage")) {
     return { message: "You do not have permission to manage subjects." };
   }
@@ -277,7 +277,7 @@ export async function updateSubjectInCurriculumAction(
   _prevState: UpdateSubjectInCurriculumFormState,
   formData: FormData
 ): Promise<UpdateSubjectInCurriculumFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "subjects:manage")) {
     return { message: "You do not have permission to manage subjects." };
   }
@@ -419,7 +419,7 @@ export async function deleteSubjectFromCurriculumAction(
   _prevState: DeleteSubjectFromCurriculumFormState,
   formData: FormData
 ): Promise<DeleteSubjectFromCurriculumFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "subjects:manage")) {
     return { message: "You do not have permission to manage subjects." };
   }
@@ -479,7 +479,7 @@ export async function restoreSubjectInCurriculumAction(
   _prevState: RestoreSubjectInCurriculumFormState,
   formData: FormData
 ): Promise<RestoreSubjectInCurriculumFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "subjects:manage")) {
     return { message: "You do not have permission to manage subjects." };
   }
@@ -557,7 +557,7 @@ export async function reorderSubjectsAction(
   _prevState: ReorderSubjectsFormState,
   formData: FormData
 ): Promise<ReorderSubjectsFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "subjects:manage")) {
     return { message: "You do not have permission to manage subjects." };
   }
@@ -655,7 +655,7 @@ export async function getSubjectStrandsAction(
   subjectId: string
 ): Promise<SubjectStrandAssociation[]> {
   // Authorization check - only staff with curriculum read access
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:read")) {
     return [];
   }

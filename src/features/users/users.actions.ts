@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq, and, ilike, isNull, sql, count } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
@@ -58,7 +58,7 @@ export async function createUserAction(
   formData: FormData
 ): Promise<CreateUserFormState> {
   // 1. Auth check
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "users:manage")) {
     return { message: "You do not have permission to create users." };
   }
@@ -173,7 +173,7 @@ export async function updateUserAction(
   formData: FormData
 ): Promise<UpdateUserFormState> {
   // 1. Auth check
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "users:manage")) {
     return { message: "You do not have permission to update users." };
   }
@@ -353,7 +353,7 @@ export async function resetPasswordAction(
   formData: FormData
 ): Promise<ResetPasswordFormState> {
   // 1. Auth check
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "users:manage")) {
     return { message: "You do not have permission to reset passwords." };
   }
@@ -439,7 +439,7 @@ export async function toggleUserStatusAction(
   formData: FormData
 ): Promise<ToggleUserStatusFormState> {
   // 1. Auth check
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "users:manage")) {
     return { message: "You do not have permission to change user status." };
   }

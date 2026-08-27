@@ -12,7 +12,7 @@ import {
   schoolYears,
 } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
@@ -79,7 +79,7 @@ export async function requestEnrollmentCancellationAction(
   _prevState: RequestEnrollmentCancellationFormState,
   formData: FormData
 ): Promise<RequestEnrollmentCancellationFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "enrollments:cancel")) {
     return { message: "You do not have permission to request enrollment cancellations." };
@@ -192,7 +192,7 @@ export async function directCancelEnrollmentAction(
   _prevState: DirectCancelEnrollmentFormState,
   formData: FormData
 ): Promise<DirectCancelEnrollmentFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "enrollments:cancel")) {
     return { message: "You do not have permission to cancel enrollments." };
@@ -368,7 +368,7 @@ export async function approveEnrollmentCancellationAction(
   _prevState: ApproveEnrollmentCancellationFormState,
   formData: FormData
 ): Promise<ApproveEnrollmentCancellationFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Only admin/super_admin can approve
   if (!["admin", "super_admin"].includes(session.role)) {
@@ -584,7 +584,7 @@ export async function rejectEnrollmentCancellationAction(
   _prevState: RejectEnrollmentCancellationFormState,
   formData: FormData
 ): Promise<RejectEnrollmentCancellationFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Only admin/super_admin can reject
   if (!["admin", "super_admin"].includes(session.role)) {
@@ -669,7 +669,7 @@ export async function withdrawCancellationRequestAction(
   _prevState: WithdrawCancellationRequestFormState,
   formData: FormData
 ): Promise<WithdrawCancellationRequestFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "enrollments:cancel")) {
     return { message: "You do not have permission to withdraw cancellation requests." };

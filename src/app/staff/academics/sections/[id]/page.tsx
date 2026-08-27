@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   getSectionById,
@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: SectionDetailPageProps) {
 export default async function SectionDetailPage({
   params,
 }: SectionDetailPageProps) {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   const { id } = await params;
 
   const section = await getSectionById(id);

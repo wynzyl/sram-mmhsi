@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { getCancellationRequestById } from "@/features/enrollments/enrollment-cancellation.queries";
 import CancellationRequestDetailView from "@/features/enrollments/components/CancellationRequestDetail";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ interface PageProps {
 export default async function CancellationRequestDetailPage({
   params,
 }: PageProps) {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Only admin/super_admin can access
   if (!["admin", "super_admin"].includes(session.role)) {

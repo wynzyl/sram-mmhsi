@@ -12,7 +12,7 @@ import {
   schoolYears,
 } from "@/lib/db/schema";
 import { eq, and, isNull, ne } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
@@ -47,7 +47,7 @@ export async function reverseExpiredCashDiscountAction(
   _prevState: CascadeFixFormState,
   formData: FormData
 ): Promise<CascadeFixFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "payments:post")) {
     return { message: "You do not have permission to reverse discounts." };
   }
@@ -388,7 +388,7 @@ export async function applyCascadeFixAction(
   _prevState: CascadeFixFormState,
   formData: FormData
 ): Promise<CascadeFixFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "payments:post")) {
     return { message: "You do not have permission to apply cascade fixes." };
   }

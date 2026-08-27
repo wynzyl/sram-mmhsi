@@ -24,7 +24,7 @@ import {
   assessmentItems,
 } from "@/lib/db/schema";
 import { eq, and, ne, sql } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { PostPaymentSchema, type PaymentFormState } from "./payments.schema";
 import { parseFormData } from "@/lib/utils/form-validation";
@@ -79,7 +79,7 @@ export async function postPaymentAction(
   _prevState: PaymentFormState,
   formData: FormData
 ): Promise<PaymentFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "payments:post")) {
     return { message: "You do not have permission to post payments." };
   }

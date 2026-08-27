@@ -35,6 +35,8 @@ import {
   Zap,
 } from "lucide-react";
 import type { DiscountRequestView, DiscountTypeView } from "@/features/discounts/discounts.schema";
+import { PortalAccountCard } from "@/features/students/components/PortalAccountCard";
+import type { PortalAccountInfo } from "@/features/portal-accounts/portal-accounts.schema";
 // Tab components extracted for maintainability (audit 2026-07)
 import {
   RegistrationHistoryTab,
@@ -88,6 +90,8 @@ export type RegistrationDetailViewProps = {
   discountTypes?: DiscountTypeView[];
   /** Active enrollment ID for new discount requests */
   activeEnrollmentId?: string;
+  /** Portal account info for this student */
+  portalAccount?: PortalAccountInfo | null;
   flags: StudentRecordFlags;
   backHref: string;
   backLabel?: string;
@@ -108,6 +112,7 @@ export function RegistrationDetailView({
   discountRequests = [],
   discountTypes = [],
   activeEnrollmentId,
+  portalAccount,
   flags,
   backHref,
   backLabel = "Back to queue",
@@ -502,6 +507,16 @@ export function RegistrationDetailView({
                 </p>
               </DataCard>
             ) : null}
+
+            {/* Portal Account Management */}
+            {flags.canManagePortalAccounts && (
+              <PortalAccountCard
+                studentId={student.id}
+                referenceNumber={student.referenceNumber}
+                account={portalAccount ?? null}
+                canManage={flags.canManagePortalAccounts}
+              />
+            )}
           </aside>
         </div>
       )}

@@ -2,8 +2,8 @@ import "server-only";
 import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
-import { sessions, users } from "@/lib/db/schema";
-import { eq, and, gt } from "drizzle-orm";
+import { sessions, users, portalAccounts, students } from "@/lib/db/schema";
+import { eq, and, gt, isNull } from "drizzle-orm";
 import type { Role } from "@/lib/constants/roles";
 import { logger } from "@/lib/observability/logger";
 import {
@@ -12,21 +12,47 @@ import {
   encryptSessionJwt,
   decryptSessionJwt,
   type SessionPayload,
+  type AccountSource,
 } from "@/lib/auth/session-token";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type { SessionPayload };
+export type { SessionPayload, AccountSource };
 // Re-exported so layouts/pages can import it alongside requireSession/getCurrentUser.
 export { INVALID_SESSION_REDIRECT };
 
+/** Base session user type for staff (users table) */
 export type SessionUser = {
   id: string;
   role: Role;
   email: string;
   username: string;
   forcePasswordChange: boolean;
+  accountSource: "staff";
 };
+
+/** Portal session user type for students (portalAccounts table) */
+export type PortalSessionUser = {
+  id: string;           // portalAccount.id
+  studentId: string;    // students.id (direct reference)
+  role: "student";      // Always student for portal accounts
+  email: string | null;
+  username: string;     // Reference number
+  forcePasswordChange: boolean;
+  accountSource: "portal";
+  /** Student info for display */
+  student: {
+    referenceNumber: string;
+    firstName: string;
+    middleName: string | null;
+    lastName: string;
+    suffix: string | null;
+    photoUrl: string | null;
+  };
+};
+
+/** Union type for either staff or portal user */
+export type AnySessionUser = SessionUser | PortalSessionUser;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -78,7 +104,7 @@ export async function decryptSession(
   return decryptSessionJwt(token);
 }
 
-// ─── Create session ───────────────────────────────────────────────────────────
+// ─── Create session (staff) ───────────────────────────────────────────────────
 
 export async function createSession(
   userId: string,
@@ -87,11 +113,12 @@ export async function createSession(
 ): Promise<void> {
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
 
-  // 1. Persist session record in DB
+  // 1. Persist session record in DB (staff session - userId set, portalAccountId null)
   const [row] = await db
     .insert(sessions)
     .values({
       userId,
+      portalAccountId: null, // Staff session
       token: crypto.randomUUID(), // placeholder, overwritten below
       expiresAt,
       ipAddress: meta.ipAddress,
@@ -106,6 +133,53 @@ export async function createSession(
     sessionId,
     userId,
     role,
+    accountSource: "staff",
+    expiresAt,
+    forcePasswordChange: meta.forcePasswordChange ?? false,
+  });
+
+  // 3. Update DB row with the actual token (used for server-side revocation)
+  await db
+    .update(sessions)
+    .set({ token: jwt })
+    .where(eq(sessions.id, sessionId));
+
+  // 4. Set the cookie (server-side only — httpOnly)
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, jwt, sessionCookieOptions(expiresAt));
+}
+
+// ─── Create session (portal) ───────────────────────────────────────────────────
+
+export async function createPortalSession(
+  portalAccountId: string,
+  studentId: string,
+  meta: { ipAddress?: string; userAgent?: string; forcePasswordChange?: boolean } = {}
+): Promise<void> {
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
+
+  // 1. Persist session record in DB (portal session - portalAccountId set, userId null)
+  const [row] = await db
+    .insert(sessions)
+    .values({
+      userId: null, // Portal session
+      portalAccountId,
+      token: crypto.randomUUID(), // placeholder, overwritten below
+      expiresAt,
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    })
+    .returning({ id: sessions.id });
+
+  const sessionId = row.id;
+
+  // 2. Build signed JWT containing the session ID and studentId for direct access
+  const jwt = await encryptSession({
+    sessionId,
+    portalAccountId,
+    studentId,
+    role: "student", // Portal accounts are always students
+    accountSource: "portal",
     expiresAt,
     forcePasswordChange: meta.forcePasswordChange ?? false,
   });
@@ -204,9 +278,72 @@ export const getCurrentSession = cache(async (): Promise<SessionPayload | null> 
 
 // ─── Get current session user ─────────────────────────────────────────────────
 
-export async function getCurrentUser(): Promise<SessionUser | null> {
+/**
+ * Get the current session user.
+ * Returns SessionUser for staff sessions, PortalSessionUser for portal sessions.
+ * Use type guards (user.accountSource === "staff") to narrow the type.
+ */
+export async function getCurrentUser(): Promise<AnySessionUser | null> {
   const session = await getCurrentSession();
   if (!session) return null;
+
+  // Handle portal sessions
+  if (session.accountSource === "portal" && session.portalAccountId) {
+    const account = await db.query.portalAccounts.findFirst({
+      where: and(
+        eq(portalAccounts.id, session.portalAccountId),
+        eq(portalAccounts.isActive, true),
+        isNull(portalAccounts.deletedAt)
+      ),
+      columns: {
+        id: true,
+        studentId: true,
+        email: true,
+        username: true,
+        forcePasswordChange: true,
+      },
+      with: {
+        student: {
+          columns: {
+            referenceNumber: true,
+            firstName: true,
+            middleName: true,
+            lastName: true,
+            suffix: true,
+            photoUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!account) return null;
+
+    // Also verify the student is active
+    const student = await db.query.students.findFirst({
+      where: and(
+        eq(students.id, account.studentId),
+        eq(students.isActive, true),
+        isNull(students.deletedAt)
+      ),
+      columns: { id: true },
+    });
+
+    if (!student) return null;
+
+    return {
+      id: account.id,
+      studentId: account.studentId,
+      role: "student",
+      email: account.email,
+      username: account.username,
+      forcePasswordChange: account.forcePasswordChange,
+      accountSource: "portal",
+      student: account.student,
+    };
+  }
+
+  // Handle staff sessions (default / backward compatible)
+  if (!session.userId) return null;
 
   const user = await db.query.users.findFirst({
     where: and(eq(users.id, session.userId), eq(users.isActive, true)),
@@ -220,7 +357,30 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   });
 
   if (!user) return null;
-  return user as SessionUser;
+  return {
+    ...user,
+    accountSource: "staff",
+  } as SessionUser;
+}
+
+/**
+ * Get the current staff user (for staff-only contexts).
+ * Returns null for portal sessions.
+ */
+export async function getStaffUser(): Promise<SessionUser | null> {
+  const user = await getCurrentUser();
+  if (!user || user.accountSource !== "staff") return null;
+  return user;
+}
+
+/**
+ * Get the current portal user (for portal-only contexts).
+ * Returns null for staff sessions.
+ */
+export async function getPortalUser(): Promise<PortalSessionUser | null> {
+  const user = await getCurrentUser();
+  if (!user || user.accountSource !== "portal") return null;
+  return user;
 }
 
 // ─── Sliding renewal ──────────────────────────────────────────────────────────
@@ -234,7 +394,11 @@ export async function renewSession(): Promise<void> {
   if (!payload) return;
 
   const newExpiresAt = new Date(Date.now() + SESSION_DURATION_MS);
-  const newJwt = await encryptSession({ ...payload, expiresAt: newExpiresAt });
+  // Preserve all payload fields including accountSource, studentId, etc.
+  const newJwt = await encryptSession({
+    ...payload,
+    expiresAt: newExpiresAt,
+  });
 
   await db
     .update(sessions)
@@ -272,4 +436,36 @@ export async function requireSession(): Promise<SessionPayload> {
     throw new Error("Redirecting...");
   }
   return session;
+}
+
+// ─── Staff-only session types ──────────────────────────────────────────────────
+
+/**
+ * Staff session payload with required userId.
+ * Use this type in staff-only actions/pages.
+ */
+export type StaffSessionPayload = SessionPayload & {
+  userId: string;
+  accountSource: "staff";
+};
+
+/**
+ * Require a staff session (not portal).
+ * Throws redirect if:
+ * - No session exists
+ * - Session is a portal session (not staff)
+ *
+ * Use this in staff-only actions/pages to get a session with guaranteed userId.
+ */
+export async function requireStaffSession(): Promise<StaffSessionPayload> {
+  const session = await requireSession();
+
+  if (session.accountSource !== "staff" || !session.userId) {
+    const { redirect } = await import("next/navigation");
+    // Portal users trying to access staff routes get redirected to portal
+    redirect("/portal/dashboard");
+    throw new Error("Redirecting...");
+  }
+
+  return session as StaffSessionPayload;
 }

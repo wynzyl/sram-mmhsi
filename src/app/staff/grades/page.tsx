@@ -1,4 +1,4 @@
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import {
   getActiveSchoolYear,
   getAdviserSections,
@@ -8,7 +8,7 @@ import { AdviserSectionCards } from "@/features/academics/grades/components/Advi
 import { TeacherClassesCards } from "@/features/academics/subject-offerings";
 
 export default async function GradesDashboardPage() {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Find active school year
   const activeSY = await getActiveSchoolYear();

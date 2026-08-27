@@ -1,30 +1,29 @@
-import { requireSession } from "@/lib/auth/session";
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireSession, getPortalUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { PORTAL_ROLES, ROLE_LABELS } from "@/lib/constants/roles";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Link from "next/link";
-import type { Role } from "@/lib/constants/roles";
 
 export default async function PortalDashboardPage() {
   const session = await requireSession();
 
-  if (!PORTAL_ROLES.includes(session.role)) {
+  // Only allow portal sessions
+  if (session.accountSource !== "portal") {
     redirect("/login");
   }
 
-  const user = await getCurrentUser();
+  const user = await getPortalUser();
   if (!user) redirect("/login");
 
-  const roleLabel = ROLE_LABELS[user.role as Role];
+  // Display student's name
+  const displayName = `${user.student.firstName} ${user.student.lastName}`;
 
   return (
     <PageContainer>
       <PageHeader
-        title={`Welcome, ${user.username}`}
-        description={`Logged in as ${roleLabel}. View your academic and payment information below.`}
+        title={`Welcome, ${displayName}`}
+        description="View your academic and payment information below."
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

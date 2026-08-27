@@ -12,7 +12,7 @@
 import { db } from "@/lib/db";
 import { gradeSheets, gradeApprovals } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   ReturnGradeSheetSchema,
@@ -71,7 +71,7 @@ export async function principalReturnAction(
   _prevState: ReturnGradeSheetFormState,
   formData: FormData
 ): Promise<ReturnGradeSheetFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:principal_review")) {
     return { message: "You do not have permission to review grades." };
@@ -172,7 +172,7 @@ export async function principalApproveAction(
   _prevState: ApproveGradeSheetFormState,
   formData: FormData
 ): Promise<ApproveGradeSheetFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:principal_review")) {
     return { message: "You do not have permission to approve grades." };
@@ -271,7 +271,7 @@ export async function publishGradesAction(
   _prevState: PublishGradeSheetFormState,
   formData: FormData
 ): Promise<PublishGradeSheetFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:publish")) {
     return { message: "You do not have permission to publish grades." };
@@ -368,7 +368,7 @@ export async function lockGradesAction(
   _prevState: LockGradeSheetFormState,
   formData: FormData
 ): Promise<LockGradeSheetFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:lock")) {
     return { message: "You do not have permission to lock grades." };
@@ -465,7 +465,7 @@ export async function unlockGradesAction(
   _prevState: UnlockGradeSheetFormState,
   formData: FormData
 ): Promise<UnlockGradeSheetFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:unlock")) {
     return { message: "You do not have permission to unlock grades." };

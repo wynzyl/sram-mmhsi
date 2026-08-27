@@ -256,11 +256,63 @@ export const users = pgTable(
   ]
 );
 
+/**
+ * Portal accounts for student self-service access.
+ * Separate from staff `users` table for clean isolation between internal operations and external portal access.
+ *
+ * Login pattern:
+ * - Username: Student reference number (7 digits, e.g., "0000001")
+ * - Password: Date of birth in YYYYMMDD format (e.g., "20100315")
+ * - Force password change on first login
+ */
+export const portalAccounts = pgTable(
+  "portal_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Foreign key to the student this account belongs to */
+    studentId: uuid("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
+    /** Username = student reference number (e.g., "0000001") */
+    username: text("username").notNull(),
+    /** bcrypt password hash (cost 12) */
+    passwordHash: text("password_hash").notNull(),
+    /** Optional email for notifications */
+    email: text("email"),
+    /** Whether the account is active (can login) */
+    isActive: boolean("is_active").notNull().default(true),
+    /** Force password change on next login (always true for new accounts) */
+    forcePasswordChange: boolean("force_password_change").notNull().default(true),
+    /** Last successful login timestamp */
+    lastLoginAt: timestamp("last_login_at"),
+    // Audit fields
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // One portal account per student (active records only)
+    uniqueIndex("portal_accounts_student_uidx")
+      .on(t.studentId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    // Username must be globally unique
+    uniqueIndex("portal_accounts_username_uidx").on(t.username),
+    // Active accounts lookup (for login queries)
+    index("portal_accounts_active_idx")
+      .on(t.isActive)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+  ]
+);
+
 export const sessions = pgTable(
   "sessions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    /** Staff user ID (nullable - either userId OR portalAccountId must be set) */
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    /** Portal account ID (nullable - either userId OR portalAccountId must be set) */
+    portalAccountId: uuid("portal_account_id").references(() => portalAccounts.id, { onDelete: "cascade" }),
     token: text("token").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
     ipAddress: text("ip_address"),
@@ -272,7 +324,13 @@ export const sessions = pgTable(
   (t) => [
     uniqueIndex("sessions_token_idx").on(t.token),
     index("sessions_user_idx").on(t.userId),
+    index("sessions_portal_account_idx").on(t.portalAccountId),
     index("sessions_expires_idx").on(t.expiresAt), // For session cleanup queries
+    // Constraint: exactly one of userId or portalAccountId must be set (XOR)
+    check(
+      "sessions_account_type_chk",
+      sql`(${t.userId} IS NOT NULL AND ${t.portalAccountId} IS NULL) OR (${t.userId} IS NULL AND ${t.portalAccountId} IS NOT NULL)`
+    ),
   ]
 );
 
@@ -2314,6 +2372,11 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
     fields: [students.userId],
     references: [users.id],
   }),
+  /** Portal account for student self-service access */
+  portalAccount: one(portalAccounts, {
+    fields: [students.id],
+    references: [portalAccounts.studentId],
+  }),
   archivedByUser: one(users, {
     fields: [students.archivedBy],
     references: [users.id],
@@ -2329,6 +2392,42 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   clearances: many(studentClearances),
   documentRequests: many(documentRequests),
   studentSubjectEnrollments: many(studentSubjectEnrollments),
+}));
+
+// Portal Account Relations
+export const portalAccountsRelations = relations(portalAccounts, ({ one, many }) => ({
+  student: one(students, {
+    fields: [portalAccounts.studentId],
+    references: [students.id],
+  }),
+  createdByUser: one(users, {
+    fields: [portalAccounts.createdBy],
+    references: [users.id],
+    relationName: "portalAccount_creator",
+  }),
+  updatedByUser: one(users, {
+    fields: [portalAccounts.updatedBy],
+    references: [users.id],
+    relationName: "portalAccount_updater",
+  }),
+  deletedByUser: one(users, {
+    fields: [portalAccounts.deletedBy],
+    references: [users.id],
+    relationName: "portalAccount_deleter",
+  }),
+  sessions: many(sessions),
+}));
+
+// Session Relations
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+  portalAccount: one(portalAccounts, {
+    fields: [sessions.portalAccountId],
+    references: [portalAccounts.id],
+  }),
 }));
 
 // Enrollment Cancellation Request Relations

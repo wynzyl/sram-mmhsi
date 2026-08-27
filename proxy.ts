@@ -11,6 +11,7 @@ const CORRELATION_ID_HEADER = "x-correlation-id";
 // probe route (readiness would never run its SELECT 1). Neither returns data.
 const PUBLIC_ROUTES = ["/", "/login", "/api/health", "/api/readiness"];
 const PASSWORD_CHANGE_ROUTE = "/change-password";
+const PORTAL_PASSWORD_CHANGE_ROUTE = "/portal/change-password";
 
 const STAFF_PREFIXES = ["/admin", "/staff"];
 
@@ -42,6 +43,8 @@ export async function proxy(req: NextRequest) {
 
   const isAuthenticated = !!session;
   const role = normalizeRole(session?.role);
+  // Detect portal session by accountSource (defaults to "staff" for backward compat)
+  const isPortalSession = session?.accountSource === "portal";
 
   if (!isAuthenticated && !isPublic) {
     const loginUrl = new URL("/login", req.nextUrl);
@@ -89,18 +92,30 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL(ROLE_LANDING[role], req.nextUrl));
   }
 
-  if (isAuthenticated && role && isStaffRoute && PORTAL_ROLES.includes(role)) {
+  // PORTAL SESSION ENFORCEMENT:
+  // Portal sessions (accountSource === "portal") can ONLY access /portal/* routes
+  if (isAuthenticated && isPortalSession && (isStaffRoute || isAdminRoute)) {
     return NextResponse.redirect(new URL("/portal/dashboard", req.nextUrl));
   }
 
-  if (isAuthenticated && role && isPortalRoute && STAFF_ROLES.includes(role)) {
-    const landing = ROLE_LANDING[role] ?? "/staff/dashboard";
+  // STAFF SESSION ENFORCEMENT:
+  // Staff sessions (accountSource === "staff") CANNOT access /portal/* routes
+  if (isAuthenticated && !isPortalSession && isPortalRoute) {
+    const landing = ROLE_LANDING[role!] ?? "/staff/dashboard";
     return NextResponse.redirect(new URL(landing, req.nextUrl));
   }
 
+  // Legacy role-based checks (for staff sessions using PORTAL_ROLES like "student" in users table)
+  // This is kept for backward compatibility if staff users have student/parent roles
+  if (isAuthenticated && role && !isPortalSession && isStaffRoute && PORTAL_ROLES.includes(role)) {
+    return NextResponse.redirect(new URL("/portal/dashboard", req.nextUrl));
+  }
+
+  // Admin route protection (staff sessions only)
   if (
     isAuthenticated &&
     role &&
+    !isPortalSession &&
     isAdminRoute &&
     role !== ROLES.SUPER_ADMIN &&
     role !== ROLES.ADMIN
@@ -110,14 +125,18 @@ export async function proxy(req: NextRequest) {
   }
 
   // SECURITY: Force password change gate - redirect users who need to change password
-  // Allow access to change-password page and logout action, redirect everything else
+  // Portal users go to /portal/change-password, staff go to /change-password
+  // Allow access to respective change-password pages and logout action
   if (
     isAuthenticated &&
-    session?.forcePasswordChange &&
-    pathname !== PASSWORD_CHANGE_ROUTE &&
-    !pathname.startsWith("/api/auth/logout")
+    session?.forcePasswordChange
   ) {
-    return NextResponse.redirect(new URL(PASSWORD_CHANGE_ROUTE, req.nextUrl));
+    const targetPasswordRoute = isPortalSession ? PORTAL_PASSWORD_CHANGE_ROUTE : PASSWORD_CHANGE_ROUTE;
+    const isOnPasswordRoute = pathname === targetPasswordRoute || pathname === PASSWORD_CHANGE_ROUTE || pathname === PORTAL_PASSWORD_CHANGE_ROUTE;
+
+    if (!isOnPasswordRoute && !pathname.startsWith("/api/auth/logout")) {
+      return NextResponse.redirect(new URL(targetPasswordRoute, req.nextUrl));
+    }
   }
 
   // Add correlation ID to response headers for tracing

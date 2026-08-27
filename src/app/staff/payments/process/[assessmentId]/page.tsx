@@ -10,7 +10,7 @@ import {
   students,
 } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { CashierPaymentProcessingView } from "@/features/payments/components/CashierPaymentProcessingView";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { formatDate } from "@/lib/utils/date";
@@ -34,7 +34,7 @@ const dateLabel = (d: Date) =>
   formatDate(d, { year: "numeric", month: "short", day: "numeric" });
 
 export default async function CashierProcessPaymentPage({ params }: PageProps) {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "payments:post")) redirect("/login");
 
   const { assessmentId } = await params;
