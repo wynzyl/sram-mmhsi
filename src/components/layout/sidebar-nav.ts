@@ -123,16 +123,6 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Management",
       items: [
         {
-          href: "/staff/students",
-          label: "Records",
-          icon: "records",
-          children: [
-            { href: "/staff/students", label: "Students", icon: "students", pathMatch: "exact" },
-            { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
-            { href: "/staff/enrollments", label: "Enrollments", icon: "enrollments" },
-          ],
-        },
-        {
           href: "/staff/academics",
           label: "Academics",
           icon: "academics",
@@ -143,6 +133,16 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
             { href: "/staff/academics/advisers", label: "Advisers", icon: "users" },
             { href: "/staff/academics/strands", label: "SHS Strands", icon: "strands" },
             { href: "/staff/academics/electives", label: "SHS Electives", icon: "electives" },
+          ],
+        },
+        {
+          href: "/staff/students",
+          label: "Records",
+          icon: "records",
+          children: [
+            { href: "/staff/students", label: "Students", icon: "students", pathMatch: "exact" },
+            { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
+            { href: "/staff/enrollments", label: "Enrollments", icon: "enrollments" },
           ],
         },
         {
@@ -206,6 +206,14 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "Management",
       items: [
         {
+          href: "/staff/academics/curriculums",
+          label: "Academics",
+          icon: "academics",
+          children: [
+            { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
+          ],
+        },
+        {
           href: "/staff/students",
           label: "Records",
           icon: "records",
@@ -213,14 +221,6 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
             { href: "/staff/students", label: "Students", icon: "students", pathMatch: "exact" },
             { href: "/staff/registrations", label: "Registrations", icon: "registrations" },
             { href: "/staff/enrollments", label: "Enrollments", icon: "enrollments" },
-          ],
-        },
-        {
-          href: "/staff/academics/curriculums",
-          label: "Academics",
-          icon: "academics",
-          children: [
-            { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
           ],
         },
         {
