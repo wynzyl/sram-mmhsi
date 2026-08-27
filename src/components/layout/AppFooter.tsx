@@ -221,7 +221,7 @@ export function AppFooter({ schoolYear }: AppFooterProps) {
         )}
       >
         <p className="text-xs text-muted-foreground">
-          &copy; {currentYear} Merryland Academy. All rights reserved.
+          &copy; {currentYear} Merryland Montessori & High School, Inc. All rights reserved.
         </p>
         <nav className="flex items-center gap-4">
           {FOOTER_LINKS.legal.map((link) => (
