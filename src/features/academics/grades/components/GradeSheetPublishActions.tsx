@@ -70,7 +70,8 @@ export function GradeSheetPublishActions({
       setPublishState(result);
       if (result.success) {
         setShowPublishDialog(false);
-        router.push("/staff/grades/approvals");
+        // Navigate to Ready to Publish page to see remaining sheets
+        router.push("/staff/grades/publish");
       }
     } finally {
       setIsPublishing(false);
@@ -87,7 +88,9 @@ export function GradeSheetPublishActions({
       setLockState(result);
       if (result.success) {
         setShowLockDialog(false);
-        router.push("/staff/grades/approvals");
+        // Navigate to grades overview - router.refresh() can block in production Docker
+        // (CLAUDE.md Gotcha #11). Navigation triggers a fresh server render.
+        router.push("/staff/grades");
       }
     } finally {
       setIsLocking(false);
@@ -107,7 +110,9 @@ export function GradeSheetPublishActions({
       setUnlockState(result);
       if (result.success) {
         setShowUnlockDialog(false);
-        router.push("/staff/grades/approvals");
+        // Navigate to grades overview - router.refresh() can block in production Docker
+        // (CLAUDE.md Gotcha #11). Navigation triggers a fresh server render.
+        router.push("/staff/grades");
       }
     } finally {
       setIsUnlocking(false);

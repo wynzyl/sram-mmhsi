@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   gradeSheetEntries,
@@ -13,15 +13,26 @@ import { requireSession } from "@/lib/auth/session";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Badge } from "@/components/ui/badge";
+import { PaginationControls } from "@/components/shared/PaginationControls";
+import { calculatePagination, calculateOffset } from "@/lib/types/pagination";
 import type { GradeSheetStatus } from "@/lib/constants/grading-periods";
 import { GRADING_PERIOD_LABELS, type GradingPeriod } from "@/lib/constants/grading-periods";
 
 /** Show grades from approved, published, or locked grade sheets */
 const VISIBLE_STATUSES: GradeSheetStatus[] = ["principal_approved", "published", "locked"];
 
+/** Pagination settings */
+const PAGE_SIZE = 100; // Entries per page (covers ~2 school years of data)
+
 export const metadata = { title: "My Grades" };
 
-export default async function PortalGradesPage() {
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function PortalGradesPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || "1", 10));
   const session = await requireSession();
 
   // Only allow portal sessions with direct studentId access
@@ -29,44 +40,53 @@ export default async function PortalGradesPage() {
     redirect("/login");
   }
 
-  // Fetch all grade entries for this student from visible grade sheets
-  const rows = await db
-    .select({
-      id: gradeSheetEntries.id,
-      schoolYearId: gradeSheets.schoolYearId,
-      schoolYearLabel: schoolYears.label,
-      schoolYearStart: schoolYears.startDate,
-      sectionId: gradeSheets.sectionId,
-      sectionName: sections.name,
-      gradeLevelName: gradeLevels.name,
-      gradeLevelOrder: gradeLevels.order,
-      subjectId: gradeSheetEntries.subjectId,
-      subjectCode: subjects.code,
-      subjectName: subjects.name,
-      gradingPeriod: gradeSheets.gradingPeriod,
-      grade: gradeSheetEntries.grade,
-      status: gradeSheets.status,
-    })
-    .from(gradeSheetEntries)
-    .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
-    .innerJoin(subjects, eq(gradeSheetEntries.subjectId, subjects.id))
-    .innerJoin(sections, eq(gradeSheets.sectionId, sections.id))
-    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
-    .innerJoin(schoolYears, eq(gradeSheets.schoolYearId, schoolYears.id))
-    .where(
-      and(
-        eq(gradeSheetEntries.studentId, session.studentId),
-        inArray(gradeSheets.status, VISIBLE_STATUSES)
-      )
-    )
-    .orderBy(
-      desc(schoolYears.startDate),
-      asc(gradeLevels.order),
-      asc(subjects.code),
-      asc(gradeSheets.gradingPeriod)
-    );
+  // Base where clause for all queries
+  const whereClause = and(
+    eq(gradeSheetEntries.studentId, session.studentId),
+    inArray(gradeSheets.status, VISIBLE_STATUSES)
+  );
 
-  if (rows.length === 0) {
+  // Step 1: Count distinct school year + section combinations for pagination
+  // This is the unit of display - we paginate by sections, not individual entries
+  const [countResult, distinctSections] = await Promise.all([
+    db
+      .select({
+        count: sql<number>`COUNT(DISTINCT CONCAT(${gradeSheets.schoolYearId}, '-', ${gradeSheets.sectionId}))`,
+      })
+      .from(gradeSheetEntries)
+      .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
+      .where(whereClause)
+      .then((r) => r[0]),
+
+    // Get paginated section IDs (for determining which sections to show)
+    db
+      .selectDistinct({
+        schoolYearId: gradeSheets.schoolYearId,
+        sectionId: gradeSheets.sectionId,
+        schoolYearStart: schoolYears.startDate,
+        gradeLevelOrder: gradeLevels.order,
+      })
+      .from(gradeSheetEntries)
+      .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
+      .innerJoin(sections, eq(gradeSheets.sectionId, sections.id))
+      .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+      .innerJoin(schoolYears, eq(gradeSheets.schoolYearId, schoolYears.id))
+      .where(whereClause)
+      .orderBy(desc(schoolYears.startDate), asc(gradeLevels.order))
+      .limit(PAGE_SIZE)
+      .offset(calculateOffset(page, PAGE_SIZE)),
+  ]);
+
+  const totalSections = Number(countResult?.count ?? 0);
+  const pagination = calculatePagination(page, PAGE_SIZE, totalSections);
+
+  // If no sections on this page, show empty state (for page 1) or redirect
+  if (distinctSections.length === 0) {
+    if (page > 1) {
+      // Redirect to page 1 if current page is beyond available data
+      redirect("/portal/grades");
+    }
+
     return (
       <PageContainer>
         <PageHeader title="My Grades" description="View your grades by grading period." />
@@ -92,6 +112,52 @@ export default async function PortalGradesPage() {
       </PageContainer>
     );
   }
+
+  // Step 2: Build filter for visible sections
+  const sectionKeys = distinctSections.map(
+    (s) => `${s.schoolYearId}-${s.sectionId}`
+  );
+
+  // Step 3: Fetch all grade entries for the visible sections
+  const rows = await db
+    .select({
+      id: gradeSheetEntries.id,
+      schoolYearId: gradeSheets.schoolYearId,
+      schoolYearLabel: schoolYears.label,
+      schoolYearStart: schoolYears.startDate,
+      sectionId: gradeSheets.sectionId,
+      sectionName: sections.name,
+      gradeLevelName: gradeLevels.name,
+      gradeLevelOrder: gradeLevels.order,
+      subjectId: gradeSheetEntries.subjectId,
+      subjectCode: subjects.code,
+      subjectName: subjects.name,
+      gradingPeriod: gradeSheets.gradingPeriod,
+      grade: gradeSheetEntries.grade,
+      status: gradeSheets.status,
+    })
+    .from(gradeSheetEntries)
+    .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
+    .innerJoin(subjects, eq(gradeSheetEntries.subjectId, subjects.id))
+    .innerJoin(sections, eq(gradeSheets.sectionId, sections.id))
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
+    .innerJoin(schoolYears, eq(gradeSheets.schoolYearId, schoolYears.id))
+    .where(
+      and(
+        whereClause,
+        // Filter to only the paginated sections
+        sql`CONCAT(${gradeSheets.schoolYearId}, '-', ${gradeSheets.sectionId}) IN (${sql.join(
+          sectionKeys.map((k) => sql`${k}`),
+          sql`, `
+        )})`
+      )
+    )
+    .orderBy(
+      desc(schoolYears.startDate),
+      asc(gradeLevels.order),
+      asc(subjects.code),
+      asc(gradeSheets.gradingPeriod)
+    );
 
   // Group data by school year + section
   type SectionGrades = {
@@ -269,6 +335,14 @@ export default async function PortalGradesPage() {
           </div>
         ))}
       </div>
+
+      {/* Pagination - only show if more than one page */}
+      {pagination.totalPages > 1 && (
+        <PaginationControls
+          pagination={pagination}
+          basePath="/portal/grades"
+        />
+      )}
     </PageContainer>
   );
 }
