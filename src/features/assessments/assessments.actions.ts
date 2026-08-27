@@ -15,7 +15,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, ne, isNotNull, isNull, asc, inArray } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "./assessments.queries";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   CreateAssessmentFromEnrollmentSchema,
@@ -45,7 +45,7 @@ export async function createAssessmentFromEnrollmentAction(
   _prevState: AssessmentFormState,
   formData: FormData
 ): Promise<AssessmentFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "assessments:create")) {
     return { message: "You do not have permission to create assessments." };
   }
@@ -563,7 +563,7 @@ export type ReverseBalanceTransferFormState = {
 export async function reverseBalanceTransferAction(
   assessmentId: string
 ): Promise<ReverseBalanceTransferFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check
   if (!hasPermission(session.role, "assessments:reverse_transfer")) {
@@ -729,7 +729,7 @@ export async function cancelAssessmentAction(
   _prevState: CancelAssessmentFormState,
   formData: FormData
 ): Promise<CancelAssessmentFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // 1. Permission check
   if (!hasPermission(session.role, "assessments:cancel")) {

@@ -10,9 +10,11 @@ import {
   enrollments,
   registrations,
   gradeLevels,
+  portalAccounts,
   type EnrollmentIntakeDocuments,
 } from "@/lib/db/schema";
 import { eq, ne, ilike, and, sql } from "drizzle-orm";
+import { hash } from "bcryptjs";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
@@ -24,6 +26,7 @@ import { UpdateStudentSchema } from "./students.schema";
 import type { CreateStudentFormState, UpdateStudentFormState } from "./students.schema";
 import { generateStudentRef } from "@/lib/utils/reference";
 import { buildCreateStudentFormSnapshot } from "./students.utils";
+import { generatePortalPassword } from "./students-portal.utils";
 import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
 import { logger } from "@/lib/observability/logger";
 import type { GuardianInput } from "./students.schema";
@@ -32,6 +35,9 @@ import {
   StudentArchivedException,
   formatArchiveError,
 } from "@/features/archive/archive.guards";
+
+// SECURITY (A-6): bcrypt cost factor - matches auth.actions.ts
+const BCRYPT_COST = 12;
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -236,6 +242,10 @@ export async function createStudentAction(
     const seq = await getNextStudentSequence();
     const referenceNumber = generateStudentRef(seq);
 
+    // Generate portal password from DOB (or fallback)
+    const initialPortalPassword = generatePortalPassword(studentData.dateOfBirth, referenceNumber!);
+    const portalPasswordHash = await hash(initialPortalPassword, BCRYPT_COST);
+
     const newStudent = await db.transaction(async (tx) => {
       const [insertedStudent] = await tx
         .insert(students)
@@ -289,6 +299,19 @@ export async function createStudentAction(
         status: "approved",
         reviewedBy: session.userId,
         reviewedAt: new Date(),
+        createdBy: session.userId,
+        updatedBy: session.userId,
+      });
+
+      // Auto-create portal account for student self-service access
+      // Username = reference number, Password = DOB in YYYYMMDD format
+      await tx.insert(portalAccounts).values({
+        studentId: insertedStudent.id,
+        username: referenceNumber!,
+        passwordHash: portalPasswordHash,
+        email: studentData.email ?? null,
+        isActive: true,
+        forcePasswordChange: true,
         createdBy: session.userId,
         updatedBy: session.userId,
       });

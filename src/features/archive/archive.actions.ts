@@ -13,7 +13,7 @@ import {
   students,
   studentClearances,
 } from "@/lib/db/schema";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { logPermissionDenied } from "@/lib/errors/audit-failures";
@@ -44,7 +44,7 @@ export async function archiveStudentAction(
   _prevState: ArchiveStudentFormState,
   formData: FormData
 ): Promise<ArchiveStudentFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check
   if (!hasPermission(session.role, "archive:manage")) {
@@ -136,7 +136,7 @@ export async function unarchiveStudentAction(
   _prevState: UnarchiveStudentFormState,
   formData: FormData
 ): Promise<UnarchiveStudentFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check
   if (!hasPermission(session.role, "archive:manage")) {
@@ -331,7 +331,7 @@ export async function batchArchiveGraduatesAction(
   _prevState: BatchArchiveGraduatesFormState,
   formData: FormData
 ): Promise<BatchArchiveGraduatesFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check
   if (!hasPermission(session.role, "archive:manage")) {
@@ -504,7 +504,7 @@ export async function batchCancelNoShowAction(
   _prevState: BatchCancelNoShowFormState,
   formData: FormData
 ): Promise<BatchCancelNoShowFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check - this flow both cancels enrollments AND archives the
   // students, so it requires both privileges (archive:manage gates the archive
@@ -646,7 +646,7 @@ export async function batchArchiveNonReturningAction(
   _prevState: BatchArchiveNonReturningFormState,
   formData: FormData
 ): Promise<BatchArchiveNonReturningFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check
   if (!hasPermission(session.role, "archive:manage")) {

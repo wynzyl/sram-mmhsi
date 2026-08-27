@@ -8,7 +8,7 @@
 
 import { db } from "@/lib/db";
 import { documentRequests } from "@/lib/db/schema";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { logPermissionDenied } from "@/lib/errors/audit-failures";
@@ -56,7 +56,7 @@ export async function createDocumentRequestAction(
   _prevState: CreateDocumentRequestFormState,
   formData: FormData
 ): Promise<CreateDocumentRequestFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check
   if (!hasPermission(session.role, "documents:create")) {
@@ -133,7 +133,7 @@ export async function processDocumentRequestAction(
   _prevState: ProcessDocumentRequestFormState,
   formData: FormData
 ): Promise<ProcessDocumentRequestFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check
   if (!hasPermission(session.role, "documents:process")) {
@@ -258,7 +258,7 @@ export async function readyDocumentRequestAction(
   _prevState: ReadyDocumentRequestFormState,
   formData: FormData
 ): Promise<ReadyDocumentRequestFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check
   if (!hasPermission(session.role, "documents:process")) {
@@ -342,7 +342,7 @@ export async function releaseDocumentRequestAction(
   _prevState: ReleaseDocumentRequestFormState,
   formData: FormData
 ): Promise<ReleaseDocumentRequestFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check
   if (!hasPermission(session.role, "documents:release")) {
@@ -429,7 +429,7 @@ export async function rejectDocumentRequestAction(
   _prevState: RejectDocumentRequestFormState,
   formData: FormData
 ): Promise<RejectDocumentRequestFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Permission check
   if (!hasPermission(session.role, "documents:process")) {
@@ -510,7 +510,7 @@ export async function cancelDocumentRequestAction(
   _prevState: CancelDocumentRequestFormState,
   formData: FormData
 ): Promise<CancelDocumentRequestFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   // Parse and validate input
   const parsed = cancelDocumentRequestSchema.safeParse({

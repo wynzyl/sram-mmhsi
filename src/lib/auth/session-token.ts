@@ -1,10 +1,20 @@
 import { SignJWT, jwtVerify } from "jose";
 import type { Role } from "@/lib/constants/roles";
 
+/** Source of authentication: staff (users table) or portal (portalAccounts table) */
+export type AccountSource = "staff" | "portal";
+
 export type SessionPayload = {
   sessionId: string;
-  userId: string;
+  /** Staff user ID (set for staff sessions, undefined for portal sessions) */
+  userId?: string;
+  /** Portal account ID (set for portal sessions, undefined for staff sessions) */
+  portalAccountId?: string;
+  /** Student ID (direct reference for portal sessions, undefined for staff sessions) */
+  studentId?: string;
   role: Role;
+  /** Source of authentication: staff or portal */
+  accountSource: AccountSource;
   expiresAt: Date;
   forcePasswordChange?: boolean;
 };
@@ -46,8 +56,12 @@ function getSecretKey() {
 export async function encryptSessionJwt(payload: SessionPayload): Promise<string> {
   return new SignJWT({
     sessionId: payload.sessionId,
+    // Staff sessions have userId, portal sessions have portalAccountId + studentId
     userId: payload.userId,
+    portalAccountId: payload.portalAccountId,
+    studentId: payload.studentId,
     role: payload.role,
+    accountSource: payload.accountSource,
     expiresAt: payload.expiresAt.toISOString(),
     forcePasswordChange: payload.forcePasswordChange ?? false,
   })
@@ -68,8 +82,13 @@ export async function decryptSessionJwt(
     });
     return {
       sessionId: payload.sessionId as string,
-      userId: payload.userId as string,
+      // Staff sessions have userId, portal sessions have portalAccountId + studentId
+      userId: payload.userId as string | undefined,
+      portalAccountId: payload.portalAccountId as string | undefined,
+      studentId: payload.studentId as string | undefined,
       role: payload.role as Role,
+      // Default to "staff" for backward compatibility with existing sessions
+      accountSource: (payload.accountSource as AccountSource | undefined) ?? "staff",
       expiresAt: new Date(payload.expiresAt as string),
       forcePasswordChange: payload.forcePasswordChange as boolean | undefined,
     };

@@ -307,6 +307,45 @@ export async function getPortalPayments(
   return { rows, showStudentColumn: studentIds.length > 1, hasLinkedStudents: true };
 }
 
+/**
+ * Read-only payment history for a single student (direct studentId access).
+ * Used by portal sessions where studentId is directly available in the JWT.
+ * Not cached — financial data must always be current.
+ */
+export async function getPortalPaymentsByStudentId(
+  studentId: string
+): Promise<PortalPaymentsData> {
+  const paymentRows = await db
+    .select({
+      id: payments.id,
+      studentId: payments.studentId,
+      orNumber: payments.orNumber,
+      amount: payments.amount,
+      paymentMethod: payments.paymentMethod,
+      paymentDate: payments.paymentDate,
+      status: payments.status,
+      referenceNumber: payments.referenceNumber,
+    })
+    .from(payments)
+    .where(eq(payments.studentId, studentId))
+    .orderBy(desc(payments.paymentDate));
+
+  const rows: PortalPaymentRow[] = paymentRows.map((r) => ({
+    id: r.id,
+    studentId: r.studentId,
+    studentName: "", // Not needed for single student view
+    studentReference: null,
+    orNumber: r.orNumber,
+    amount: Number(r.amount),
+    paymentMethod: r.paymentMethod,
+    paymentDate: r.paymentDate.toISOString(),
+    status: r.status,
+    paymentReference: r.referenceNumber,
+  }));
+
+  return { rows, showStudentColumn: false, hasLinkedStudents: true };
+}
+
 // ─────────────────────────────────────────────────────────────────
 // Booklet Assignment & Manual Entry Suggestions
 // ─────────────────────────────────────────────────────────────────

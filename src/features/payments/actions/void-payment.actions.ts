@@ -12,7 +12,7 @@ import {
   discountTypes,
 } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { VoidPaymentSchema, type VoidPaymentFormState } from "../payments.schema";
 import { parseFormData } from "@/lib/utils/form-validation";
@@ -63,7 +63,7 @@ export async function voidPaymentAction(
   _prevState: VoidPaymentFormState,
   formData: FormData
 ): Promise<VoidPaymentFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "payments:void")) {
     return { message: "You do not have permission to void payments." };
   }

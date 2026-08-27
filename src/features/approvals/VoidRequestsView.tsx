@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import {
   listPendingVoidRequests,
@@ -23,7 +23,7 @@ export default async function VoidRequestsView({
 }: {
   searchParams: Promise<{ tab?: string; page?: string }>;
 }) {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   const params = await searchParams;
 
   const canApprove = hasPermission(session.role, "payments:void_approve");

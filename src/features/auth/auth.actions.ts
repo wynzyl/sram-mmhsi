@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { compare, hash, hashSync, getRounds } from "bcryptjs";
 import { db } from "@/lib/db";
-import { users, sessions } from "@/lib/db/schema";
-import { eq, or } from "drizzle-orm";
+import { users, sessions, portalAccounts, students } from "@/lib/db/schema";
+import { eq, or, and, isNull } from "drizzle-orm";
 
 // SECURITY (A-6): bcrypt cost factor
 // Cost 12 provides ~4x more resistance than cost 10 against offline attacks
@@ -25,6 +25,7 @@ import {
 } from "./auth.schema";
 import {
   createSession,
+  createPortalSession,
   deleteSession,
   getCurrentSession,
 } from "@/lib/auth/session";
@@ -38,6 +39,7 @@ import {
   resetLoginRateLimits,
 } from "@/lib/security/rateLimit";
 import { extractClientIPForRateLimit, UNVERIFIED_IP_BUCKET } from "@/lib/security/ipExtraction";
+import { isStudentReferenceNumber } from "@/features/students/students-portal.utils";
 
 // ─── Login Action ─────────────────────────────────────────────────────────────
 
@@ -79,7 +81,153 @@ export async function loginAction(
     return { message: rateLimitCheck.message };
   }
 
-  // 2. Look up user by username OR email (constant-time pattern)
+  // 1. Detect account type by username pattern
+  // Student reference numbers are 7 digits (e.g., "0000001")
+  if (isStudentReferenceNumber(username)) {
+    return handlePortalLogin(username, password, clientIp);
+  }
+
+  // 2. Staff login: Look up user by username OR email (constant-time pattern)
+  return handleStaffLogin(username, password, clientIp);
+}
+
+// ─── Portal Login (Student) ───────────────────────────────────────────────────
+
+async function handlePortalLogin(
+  username: string,
+  password: string,
+  clientIp: string
+): Promise<LoginFormState> {
+  // 1. Look up portal account by username (reference number)
+  let account;
+  try {
+    account = await db.query.portalAccounts.findFirst({
+      where: and(
+        eq(portalAccounts.username, username),
+        isNull(portalAccounts.deletedAt)
+      ),
+      columns: {
+        id: true,
+        studentId: true,
+        username: true,
+        passwordHash: true,
+        isActive: true,
+        forcePasswordChange: true,
+      },
+      with: {
+        student: {
+          columns: {
+            id: true,
+            isActive: true,
+            status: true,
+            referenceNumber: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+  } catch (error) {
+    logger.error("[auth] Portal account database query failed", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return {
+      message: "Database error. Please ensure migrations are applied (npm run db:migrate) and the database is running.",
+    };
+  }
+
+  // 2. Compare password — always run compare to prevent timing attacks
+  const isValid = await compare(password, account?.passwordHash ?? DUMMY_PASSWORD_HASH);
+
+  // 3. Validate account, password, and student status
+  const isAccountActive = account?.isActive ?? false;
+  const isStudentActive = account?.student?.isActive ?? false;
+  const isStudentStatusOk = account?.student?.status === "active";
+
+  if (!account || !isValid || !isAccountActive || !isStudentActive || !isStudentStatusOk) {
+    // SECURITY (D-1): Record failure for exponential backoff
+    recordLoginFailures(clientIp, username);
+
+    logger.warn("[auth] Failed portal login attempt", {
+      username,
+      ip: clientIp,
+      reason: !account
+        ? "account_not_found"
+        : !isValid
+          ? "invalid_password"
+          : !isAccountActive
+            ? "account_inactive"
+            : !isStudentActive
+              ? "student_inactive"
+              : "student_archived",
+    });
+
+    await logAudit({
+      actor: account?.id ?? null,
+      actorRole: "system",
+      action: "auth:portal_login_failed",
+      targetEntity: "portal_accounts",
+      targetId: account?.id ?? "unknown",
+      context: `username=${username}, ip=${clientIp}`,
+    });
+
+    // Generic message — do not leak whether account exists
+    return { message: "Invalid credentials. Please try again." };
+  }
+
+  // 4. Create portal session
+  try {
+    await createPortalSession(account.id, account.studentId, {
+      ipAddress: clientIp,
+      forcePasswordChange: account.forcePasswordChange,
+    });
+  } catch (error) {
+    logger.error("[auth] Failed to create portal session", {
+      portalAccountId: account.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { message: "Login failed. Please try again." };
+  }
+
+  // 5. Update last login timestamp (fire-and-forget)
+  void db
+    .update(portalAccounts)
+    .set({ lastLoginAt: new Date() })
+    .where(eq(portalAccounts.id, account.id));
+
+  // 6. Reset rate limits on successful login
+  resetLoginRateLimits(clientIp, username);
+
+  // 7. Log success
+  logger.info("[auth] Portal user logged in", {
+    portalAccountId: account.id,
+    studentId: account.studentId,
+  });
+
+  void logAudit({
+    actor: account.id,
+    actorRole: "student",
+    action: "auth:portal_login_success",
+    targetEntity: "portal_accounts",
+    targetId: account.id,
+  });
+
+  // 8. Redirect - force password change or dashboard
+  const landing = account.forcePasswordChange
+    ? "/portal/change-password"
+    : "/portal/dashboard";
+  redirect(landing);
+}
+
+// ─── Staff Login ───────────────────────────────────────────────────────────────
+
+async function handleStaffLogin(
+  username: string,
+  password: string,
+  clientIp: string
+): Promise<LoginFormState> {
+  // 1. Look up user by username OR email (constant-time pattern)
   let user;
   try {
     user = await db.query.users.findFirst({
@@ -104,7 +252,7 @@ export async function loginAction(
     };
   }
 
-  // 3. Compare password — always run compare to prevent timing attacks.
+  // 2. Compare password — always run compare to prevent timing attacks.
   // Uses a cost-matched dummy hash (DUMMY_PASSWORD_HASH) so timing does not reveal
   // whether the account exists.
   const isValid = await compare(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
@@ -126,7 +274,7 @@ export async function loginAction(
     return { message: "Invalid credentials. Please try again." };
   }
 
-  // 4. Create server-side session
+  // 3. Create server-side session
   const normalizedRole = normalizeRole(user.role);
   if (!normalizedRole) {
     logger.error("[auth] User has unsupported role", { userId: user.id, role: user.role });
@@ -153,7 +301,7 @@ export async function loginAction(
     return { message: "Login failed. Please try again." };
   }
 
-  // 4.1 SECURITY (A-6): Transparent re-hash if password uses weaker cost factor
+  // 4. SECURITY (A-6): Transparent re-hash if password uses weaker cost factor
   // This upgrades existing passwords to the current BCRYPT_COST on successful login
   const currentCost = getRounds(user.passwordHash);
   if (currentCost < BCRYPT_COST) {
@@ -216,8 +364,12 @@ export async function logoutAction(): Promise<void> {
   redirect("/");
 }
 
-// ─── Change Password Action ──────────────────────────────────────────────────
+// ─── Change Password Action (Staff) ──────────────────────────────────────────
 
+/**
+ * Change password for staff users (users table).
+ * Portal users should use /portal/change-password which calls changePortalPasswordAction.
+ */
 export async function changePasswordAction(
   _prevState: ChangePasswordFormState,
   formData: FormData
@@ -226,6 +378,16 @@ export async function changePasswordAction(
   const session = await getCurrentSession();
   if (!session) {
     redirect("/login");
+  }
+
+  // 1.1 Portal users should use the portal change password flow
+  if (session.accountSource === "portal") {
+    return { message: "Portal users should use the portal change password page." };
+  }
+
+  // Staff sessions must have userId
+  if (!session.userId) {
+    return { message: "Invalid session. Please log in again." };
   }
 
   // 2. Validate inputs with Zod

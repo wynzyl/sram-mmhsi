@@ -23,6 +23,7 @@ export {
   // List queries
   getAdviserGradeSheets,
   getPrincipalPendingReviews,
+  getReadyToPublishSheets,
   getGradeSheetById,
   // Entry queries
   getGradeSheetEntries,

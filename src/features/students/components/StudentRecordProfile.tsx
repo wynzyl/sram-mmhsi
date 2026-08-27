@@ -107,6 +107,8 @@ export type StudentRecordFlags = {
   canManageDiscounts?: boolean;
   /** Registrar / admin — cancel enrollments or request cancellation. */
   canCancelEnrollment?: boolean;
+  /** Admin / registrar — manage portal accounts. */
+  canManagePortalAccounts?: boolean;
 };
 
 function computeAge(dob: Date): number {

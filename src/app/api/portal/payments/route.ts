@@ -1,21 +1,21 @@
 import { NextResponse, connection } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
-import { PORTAL_ROLES } from "@/lib/constants/roles";
-import type { Role } from "@/lib/constants/roles";
-import { getPortalPayments } from "@/features/payments/payments.queries";
+import { getCurrentSession } from "@/lib/auth/session";
+import { getPortalPaymentsByStudentId } from "@/features/payments/payments.queries";
 
 export async function GET() {
   await connection(); // Requires auth - exclude from prerendering
   try {
-    const user = await getCurrentUser();
-    if (!user) {
+    const session = await getCurrentSession();
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!PORTAL_ROLES.includes(user.role as Role)) {
+
+    // Only allow portal sessions with direct studentId
+    if (session.accountSource !== "portal" || !session.studentId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const data = await getPortalPayments(user.id, user.role as Role);
+    const data = await getPortalPaymentsByStudentId(session.studentId);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Error fetching portal payments:", error);

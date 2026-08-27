@@ -126,6 +126,13 @@ export type Permission =
   | "student_subject_enrollments:read"
   /** Manage student subject enrollments (withdraw/enroll) */
   | "student_subject_enrollments:manage"
+  // Portal Accounts
+  /** View portal accounts for students */
+  | "portal_accounts:view"
+  /** Manage portal accounts (create, activate/deactivate) */
+  | "portal_accounts:manage"
+  /** Reset portal account passwords */
+  | "portal_accounts:reset_password"
   // Admin
   | "users:manage"
   | "school_years:manage"
@@ -158,6 +165,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "clearances:read", "clearances:create", "clearances:resolve",
     "archive:read", "archive:manage",
     "documents:read", "documents:create", "documents:process", "documents:release",
+    "portal_accounts:view", "portal_accounts:manage", "portal_accounts:reset_password",
     "reports:view", "reports:finance", "reports:academic",
     "sections:assign",
     "strands:read", "strands:manage",
@@ -188,6 +196,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "clearances:read", "clearances:create", "clearances:resolve",
     "archive:read", "archive:manage",
     "documents:read", "documents:create", "documents:process", "documents:release",
+    "portal_accounts:view", "portal_accounts:manage", "portal_accounts:reset_password",
     "fee_schedules:manage",
     "school_years:manage",
     "sections:manage",
@@ -211,6 +220,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "clearances:read",
     "archive:read", "archive:manage",
     "documents:read", "documents:create", "documents:process",
+    "portal_accounts:view", "portal_accounts:manage", "portal_accounts:reset_password",
     "grades:read",
     "advisers:read",
     "strands:read",

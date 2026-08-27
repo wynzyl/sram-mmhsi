@@ -13,7 +13,7 @@ import {
   subjectOfferings,
 } from "@/lib/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction, logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
@@ -127,7 +127,7 @@ export async function updateAdoptionAction(
   _prevState: UpdateAdoptionFormState,
   formData: FormData
 ): Promise<UpdateAdoptionFormState> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:adopt")) {
     return { message: "You do not have permission to manage curriculum adoptions." };
   }
@@ -258,7 +258,7 @@ export async function rollForwardAdoptionsFromPriorYear(
   fromSchoolYearId: string,
   toSchoolYearId: string
 ): Promise<{ copied: number; errors: string[] }> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:adopt")) {
     return {
       copied: 0,
@@ -369,7 +369,7 @@ export async function rollForwardAdoptionsFromPriorYear(
 export async function removeAdoptionAction(
   adoptionId: string
 ): Promise<{ success: boolean; message?: string }> {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:adopt")) {
     return { success: false, message: "You do not have permission to manage curriculum adoptions." };
   }

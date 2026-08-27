@@ -11,7 +11,7 @@ import {
   enrollments,
 } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import AssessmentLedgerRegister from "@/features/payments/components/AssessmentLedgerRegister";
 import { getPendingVoidRequestsForAssessment } from "@/features/payments/void-requests.queries";
@@ -30,7 +30,7 @@ export async function InternalAssessmentLedgerPage(props: {
   studentRecordsBasePath?: string;
 }) {
   const { assessmentId: id, deniedRedirect, studentRecordsBasePath } = props;
-  const session = await requireSession();
+  const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "assessments:read")) {
     redirect(deniedRedirect);

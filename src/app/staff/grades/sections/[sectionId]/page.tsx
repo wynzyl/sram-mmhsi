@@ -1,4 +1,4 @@
-import { requireSession } from "@/lib/auth/session";
+import { requireStaffSession } from "@/lib/auth/session";
 import { notFound, redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac/permissions";
 import Link from "next/link";
@@ -18,6 +18,7 @@ import {
 import { AdviserGradeEntryGrid } from "@/features/academics/grades/components/AdviserGradeEntryGrid";
 import { SHSGradeEntryTabs } from "@/features/academics/grades/components/SHSGradeEntryTabs";
 import { GradingPeriodSelector } from "@/features/academics/grades/components/GradingPeriodSelector";
+import { GradeSheetPublishActions } from "@/features/academics/grades/components/GradeSheetPublishActions";
 import { QUARTERLY_PERIODS, TRIMESTER_PERIODS } from "@/lib/constants/grading-periods";
 import { requiresStrandSelection } from "@/lib/constants/strands";
 
@@ -30,7 +31,7 @@ export default async function AdviserGradeEntryPage({
   params,
   searchParams,
 }: PageProps) {
-  const session = await requireSession();
+  const session = await requireStaffSession();
   const { sectionId } = await params;
   const { period } = await searchParams;
 
@@ -324,6 +325,17 @@ export default async function AdviserGradeEntryPage({
             gradeSheetStatus={gradeSheetData?.status}
           />
         )}
+
+        {/* Publish/Lock Actions - show for approved/published/locked sheets */}
+        {gradeSheetData?.id && ["principal_approved", "published", "locked"].includes(gradeSheetData.status ?? "") && (
+          <GradeSheetPublishActions
+            gradeSheetId={gradeSheetData.id}
+            status={gradeSheetData.status ?? ""}
+            canPublish={gradeSheetData.status === "principal_approved" && hasPermission(session.role, "grades:publish")}
+            canLock={gradeSheetData.status === "published" && hasPermission(session.role, "grades:lock")}
+            canUnlock={gradeSheetData.status === "locked" && hasPermission(session.role, "grades:unlock")}
+          />
+        )}
       </div>
     );
   }
@@ -498,6 +510,17 @@ export default async function AdviserGradeEntryPage({
           initialGradeSheetId={gradeSheetData?.id}
           initialEntries={gradeSheetData?.entries}
           gradeSheetStatus={gradeSheetData?.status}
+        />
+      )}
+
+      {/* Publish/Lock Actions - show for approved/published/locked sheets */}
+      {gradeSheetData?.id && ["principal_approved", "published", "locked"].includes(gradeSheetData.status ?? "") && (
+        <GradeSheetPublishActions
+          gradeSheetId={gradeSheetData.id}
+          status={gradeSheetData.status ?? ""}
+          canPublish={gradeSheetData.status === "principal_approved" && hasPermission(session.role, "grades:publish")}
+          canLock={gradeSheetData.status === "published" && hasPermission(session.role, "grades:lock")}
+          canUnlock={gradeSheetData.status === "locked" && hasPermission(session.role, "grades:unlock")}
         />
       )}
     </div>
