@@ -24,6 +24,8 @@ const loginAttemptsByIP = new Map<string, RateLimitEntry>();
 const loginAttemptsByUsername = new Map<string, RateLimitEntry>();
 const adminActionAttempts = new Map<string, RateLimitEntry>();
 const reportExportAttempts = new Map<string, RateLimitEntry>();
+const emailSendAttempts = new Map<string, RateLimitEntry>();
+const documentRequestAttempts = new Map<string, RateLimitEntry>();
 
 // ─── Login Rate Limit Configuration ──────────────────────────────────────────
 const LOGIN_BASE_WINDOW_MS = 15 * 60 * 1000;  // 15-minute base window
@@ -41,6 +43,14 @@ const ADMIN_ACTION_MAX_ATTEMPTS = 10;      // max 10 actions per minute per user
 // Report export rate limits (PDF/XLSX generation is resource-intensive)
 const REPORT_EXPORT_WINDOW_MS = 60 * 1000; // 1-minute window
 const REPORT_EXPORT_MAX_ATTEMPTS = 10;     // max 10 exports per minute per user
+
+// Email sending rate limits (allows batch sending for end-of-month billing)
+const EMAIL_SEND_WINDOW_MS = 60 * 1000;    // 1-minute window
+const EMAIL_SEND_MAX_ATTEMPTS = 50;         // max 50 emails per minute per user (batch support)
+
+// Document request rate limits
+const DOC_REQUEST_WINDOW_MS = 60 * 1000;   // 1-minute window
+const DOC_REQUEST_MAX_ATTEMPTS = 10;        // max 10 requests per minute per user
 
 // ─── Helper: Calculate lockout window with exponential backoff ───────────────
 
@@ -325,4 +335,147 @@ export function getReportExportResetSeconds(userId: string): number {
   if (!entry) return 0;
   const elapsed = Date.now() - entry.firstAttempt;
   return Math.max(0, Math.ceil((REPORT_EXPORT_WINDOW_MS - elapsed) / 1000));
+}
+
+// ─── Email Send Rate Limiting ─────────────────────────────────────────────────
+
+/**
+ * Check if a user has exceeded the email send rate limit.
+ * Allows batch sending (50 emails/minute) for end-of-month billing operations.
+ * Returns true if the request should be BLOCKED.
+ *
+ * @param userId - The user ID sending the email
+ */
+export function isEmailSendRateLimited(userId: string): boolean {
+  const now = Date.now();
+  const entry = emailSendAttempts.get(userId);
+
+  if (!entry || now - entry.firstAttempt > EMAIL_SEND_WINDOW_MS) {
+    // New window — reset
+    emailSendAttempts.set(userId, { count: 1, firstAttempt: now });
+    return false;
+  }
+
+  if (entry.count >= EMAIL_SEND_MAX_ATTEMPTS) {
+    return true;
+  }
+
+  entry.count++;
+  return false;
+}
+
+/**
+ * Get the remaining lockout time in seconds for email sending.
+ */
+export function getEmailSendResetSeconds(userId: string): number {
+  const entry = emailSendAttempts.get(userId);
+  if (!entry) return 0;
+  const elapsed = Date.now() - entry.firstAttempt;
+  return Math.max(0, Math.ceil((EMAIL_SEND_WINDOW_MS - elapsed) / 1000));
+}
+
+/**
+ * Get the remaining email send capacity in the current window.
+ * Returns the number of emails that can still be sent before hitting the limit.
+ *
+ * @param userId - The user ID to check
+ * @returns Number of remaining sends available (0 to EMAIL_SEND_MAX_ATTEMPTS)
+ */
+export function getEmailSendRemainingCapacity(userId: string): number {
+  const now = Date.now();
+  const entry = emailSendAttempts.get(userId);
+
+  if (!entry || now - entry.firstAttempt > EMAIL_SEND_WINDOW_MS) {
+    // New window or no entry - full capacity
+    return EMAIL_SEND_MAX_ATTEMPTS;
+  }
+
+  return Math.max(0, EMAIL_SEND_MAX_ATTEMPTS - entry.count);
+}
+
+/**
+ * Check if a batch of emails can be sent without exceeding the rate limit.
+ * Unlike isEmailSendRateLimited, this checks if the ENTIRE batch can fit.
+ *
+ * @param userId - The user ID sending the emails
+ * @param batchSize - Number of emails in the batch
+ * @returns Object with blocked status and capacity info
+ */
+export function checkEmailBatchCapacity(
+  userId: string,
+  batchSize: number
+): { blocked: boolean; remainingCapacity: number; resetSeconds: number } {
+  const remainingCapacity = getEmailSendRemainingCapacity(userId);
+  const resetSeconds = getEmailSendResetSeconds(userId);
+
+  if (batchSize > remainingCapacity) {
+    return {
+      blocked: true,
+      remainingCapacity,
+      resetSeconds,
+    };
+  }
+
+  return {
+    blocked: false,
+    remainingCapacity,
+    resetSeconds,
+  };
+}
+
+/**
+ * Reserve email send capacity for a batch operation.
+ * Call this before sending to prevent other operations from consuming capacity.
+ *
+ * @param userId - The user ID sending the emails
+ * @param count - Number of emails to reserve
+ */
+export function reserveEmailSendCapacity(userId: string, count: number): void {
+  const now = Date.now();
+  const entry = emailSendAttempts.get(userId);
+
+  if (!entry || now - entry.firstAttempt > EMAIL_SEND_WINDOW_MS) {
+    // New window - start fresh with reserved count
+    emailSendAttempts.set(userId, { count, firstAttempt: now });
+  } else {
+    // Add to existing count
+    entry.count += count;
+  }
+}
+
+// ─── Document Request Rate Limiting ───────────────────────────────────────────
+
+/**
+ * Check if a user has exceeded the document request rate limit.
+ * Allows batch processing (10 requests/minute) for administrative workflows.
+ * Returns true if the request should be BLOCKED.
+ *
+ * @param userId - The user ID creating the document request
+ */
+export function isDocumentRequestRateLimited(userId: string): boolean {
+  const now = Date.now();
+  const entry = documentRequestAttempts.get(userId);
+
+  if (!entry || now - entry.firstAttempt > DOC_REQUEST_WINDOW_MS) {
+    // New window — reset
+    documentRequestAttempts.set(userId, { count: 1, firstAttempt: now });
+    return false;
+  }
+
+  if (entry.count >= DOC_REQUEST_MAX_ATTEMPTS) {
+    return true;
+  }
+
+  entry.count++;
+  return false;
+}
+
+/**
+ * Get the remaining lockout time in seconds for document requests.
+ */
+export function getDocumentRequestResetSeconds(userId: string): number {
+  const entry = documentRequestAttempts.get(userId);
+  if (!entry) return 0;
+  const elapsed = Date.now() - entry.firstAttempt;
+  return Math.max(0, Math.ceil((DOC_REQUEST_WINDOW_MS - elapsed) / 1000));
 }
