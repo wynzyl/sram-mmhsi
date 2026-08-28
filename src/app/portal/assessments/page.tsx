@@ -1,8 +1,5 @@
-import { redirect } from "next/navigation";
-import { eq, desc } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { assessments, schoolYears, enrollments, gradeLevels } from "@/lib/db/schema";
-import { requireSession } from "@/lib/auth/session";
+import { requirePortalSession } from "@/lib/auth/session";
+import { getStudentAssessments } from "@/features/portal/portal.queries";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -11,31 +8,8 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 export const metadata = { title: "My Assessments" };
 
 export default async function PortalAssessmentsPage() {
-  const session = await requireSession();
-
-  // Only allow portal sessions with direct studentId access
-  if (session.accountSource !== "portal" || !session.studentId) {
-    redirect("/login");
-  }
-
-  // Direct query using session.studentId with grade level info
-  const rows = await db
-    .select({
-      id: assessments.id,
-      schoolYearId: assessments.schoolYearId,
-      schoolYear: schoolYears.label,
-      gradeLevelName: gradeLevels.name,
-      totalAmount: assessments.totalAmount,
-      totalPaid: assessments.totalPaid,
-      balance: assessments.balance,
-      billingStatus: assessments.billingStatus,
-    })
-    .from(assessments)
-    .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
-    .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
-    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .where(eq(assessments.studentId, session.studentId))
-    .orderBy(desc(schoolYears.startDate));
+  const session = await requirePortalSession();
+  const rows = await getStudentAssessments(session.studentId);
 
   if (rows.length === 0) {
     return (

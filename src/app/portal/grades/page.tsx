@@ -1,28 +1,15 @@
 import { redirect } from "next/navigation";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { requirePortalSession } from "@/lib/auth/session";
 import {
-  gradeSheetEntries,
-  gradeSheets,
-  subjects,
-  sections,
-  schoolYears,
-  gradeLevels,
-} from "@/lib/db/schema";
-import { requireSession } from "@/lib/auth/session";
+  getStudentGrades,
+  PORTAL_GRADES_PAGE_SIZE,
+} from "@/features/portal/portal.queries";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Badge } from "@/components/ui/badge";
 import { PaginationControls } from "@/components/shared/PaginationControls";
-import { calculatePagination, calculateOffset } from "@/lib/types/pagination";
-import type { GradeSheetStatus } from "@/lib/constants/grading-periods";
+import { calculatePagination } from "@/lib/types/pagination";
 import { GRADING_PERIOD_LABELS, type GradingPeriod } from "@/lib/constants/grading-periods";
-
-/** Show grades from approved, published, or locked grade sheets */
-const VISIBLE_STATUSES: GradeSheetStatus[] = ["principal_approved", "published", "locked"];
-
-/** Pagination settings */
-const PAGE_SIZE = 100; // Entries per page (covers ~2 school years of data)
 
 export const metadata = { title: "My Grades" };
 
@@ -33,57 +20,19 @@ interface PageProps {
 export default async function PortalGradesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
-  const session = await requireSession();
 
-  // Only allow portal sessions with direct studentId access
-  if (session.accountSource !== "portal" || !session.studentId) {
-    redirect("/login");
-  }
-
-  // Base where clause for all queries
-  const whereClause = and(
-    eq(gradeSheetEntries.studentId, session.studentId),
-    inArray(gradeSheets.status, VISIBLE_STATUSES)
+  const session = await requirePortalSession();
+  const { sections, totalSections } = await getStudentGrades(
+    session.studentId,
+    page,
+    PORTAL_GRADES_PAGE_SIZE
   );
 
-  // Step 1: Count distinct school year + section combinations for pagination
-  // This is the unit of display - we paginate by sections, not individual entries
-  const [countResult, distinctSections] = await Promise.all([
-    db
-      .select({
-        count: sql<number>`COUNT(DISTINCT CONCAT(${gradeSheets.schoolYearId}, '-', ${gradeSheets.sectionId}))`,
-      })
-      .from(gradeSheetEntries)
-      .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
-      .where(whereClause)
-      .then((r) => r[0]),
+  const pagination = calculatePagination(page, PORTAL_GRADES_PAGE_SIZE, totalSections);
 
-    // Get paginated section IDs (for determining which sections to show)
-    db
-      .selectDistinct({
-        schoolYearId: gradeSheets.schoolYearId,
-        sectionId: gradeSheets.sectionId,
-        schoolYearStart: schoolYears.startDate,
-        gradeLevelOrder: gradeLevels.order,
-      })
-      .from(gradeSheetEntries)
-      .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
-      .innerJoin(sections, eq(gradeSheets.sectionId, sections.id))
-      .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
-      .innerJoin(schoolYears, eq(gradeSheets.schoolYearId, schoolYears.id))
-      .where(whereClause)
-      .orderBy(desc(schoolYears.startDate), asc(gradeLevels.order))
-      .limit(PAGE_SIZE)
-      .offset(calculateOffset(page, PAGE_SIZE)),
-  ]);
-
-  const totalSections = Number(countResult?.count ?? 0);
-  const pagination = calculatePagination(page, PAGE_SIZE, totalSections);
-
-  // If no sections on this page, show empty state (for page 1) or redirect
-  if (distinctSections.length === 0) {
+  // Handle empty state or invalid page
+  if (sections.length === 0) {
     if (page > 1) {
-      // Redirect to page 1 if current page is beyond available data
       redirect("/portal/grades");
     }
 
@@ -113,108 +62,12 @@ export default async function PortalGradesPage({ searchParams }: PageProps) {
     );
   }
 
-  // Step 2: Build filter for visible sections
-  const sectionKeys = distinctSections.map(
-    (s) => `${s.schoolYearId}-${s.sectionId}`
-  );
-
-  // Step 3: Fetch all grade entries for the visible sections
-  const rows = await db
-    .select({
-      id: gradeSheetEntries.id,
-      schoolYearId: gradeSheets.schoolYearId,
-      schoolYearLabel: schoolYears.label,
-      schoolYearStart: schoolYears.startDate,
-      sectionId: gradeSheets.sectionId,
-      sectionName: sections.name,
-      gradeLevelName: gradeLevels.name,
-      gradeLevelOrder: gradeLevels.order,
-      subjectId: gradeSheetEntries.subjectId,
-      subjectCode: subjects.code,
-      subjectName: subjects.name,
-      gradingPeriod: gradeSheets.gradingPeriod,
-      grade: gradeSheetEntries.grade,
-      status: gradeSheets.status,
-    })
-    .from(gradeSheetEntries)
-    .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
-    .innerJoin(subjects, eq(gradeSheetEntries.subjectId, subjects.id))
-    .innerJoin(sections, eq(gradeSheets.sectionId, sections.id))
-    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
-    .innerJoin(schoolYears, eq(gradeSheets.schoolYearId, schoolYears.id))
-    .where(
-      and(
-        whereClause,
-        // Filter to only the paginated sections
-        sql`CONCAT(${gradeSheets.schoolYearId}, '-', ${gradeSheets.sectionId}) IN (${sql.join(
-          sectionKeys.map((k) => sql`${k}`),
-          sql`, `
-        )})`
-      )
-    )
-    .orderBy(
-      desc(schoolYears.startDate),
-      asc(gradeLevels.order),
-      asc(subjects.code),
-      asc(gradeSheets.gradingPeriod)
-    );
-
-  // Group data by school year + section
-  type SectionGrades = {
-    schoolYearLabel: string;
-    sectionName: string;
-    gradeLevelName: string;
-    subjects: Map<string, { code: string; name: string }>;
-    periods: Set<string>;
-    grades: Map<string, Map<string, string | null>>; // period -> subjectCode -> grade
-  };
-
-  const groupedData = new Map<string, SectionGrades>();
-
-  for (const row of rows) {
-    const key = `${row.schoolYearId}-${row.sectionId}`;
-
-    if (!groupedData.has(key)) {
-      groupedData.set(key, {
-        schoolYearLabel: row.schoolYearLabel,
-        sectionName: row.sectionName,
-        gradeLevelName: row.gradeLevelName,
-        subjects: new Map(),
-        periods: new Set(),
-        grades: new Map(),
-      });
-    }
-
-    const group = groupedData.get(key)!;
-
-    // Add subject
-    if (!group.subjects.has(row.subjectCode)) {
-      group.subjects.set(row.subjectCode, { code: row.subjectCode, name: row.subjectName });
-    }
-
-    // Add period
-    group.periods.add(row.gradingPeriod);
-
-    // Add grade
-    if (!group.grades.has(row.gradingPeriod)) {
-      group.grades.set(row.gradingPeriod, new Map());
-    }
-    group.grades.get(row.gradingPeriod)!.set(row.subjectCode, row.grade);
-  }
-
-  // Convert to array and sort subjects by code
-  const sections_data = Array.from(groupedData.values()).map(group => ({
-    ...group,
-    subjects: Array.from(group.subjects.values()).sort((a, b) => a.code.localeCompare(b.code)),
-    periods: Array.from(group.periods).sort(),
-  }));
-
   return (
     <PageContainer>
       <PageHeader title="My Grades" description="View your grades by grading period." />
 
       <div className="space-y-8">
-        {sections_data.map((section, idx) => (
+        {sections.map((section, idx) => (
           <div key={idx} className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
             {/* Section Header */}
             <div className="bg-muted px-6 py-4 border-b border-border">
@@ -284,7 +137,7 @@ export default async function PortalGradesPage({ searchParams }: PageProps) {
                           ? gradeNum.toFixed(2)
                           : "—";
 
-                        // Determine grade color
+                        // Determine grade color based on DepEd scale
                         let gradeClass = "text-foreground";
                         if (gradeNum !== null) {
                           if (gradeNum >= 90) gradeClass = "text-green-600 dark:text-green-400";
@@ -336,7 +189,7 @@ export default async function PortalGradesPage({ searchParams }: PageProps) {
         ))}
       </div>
 
-      {/* Pagination - only show if more than one page */}
+      {/* Pagination */}
       {pagination.totalPages > 1 && (
         <PaginationControls
           pagination={pagination}

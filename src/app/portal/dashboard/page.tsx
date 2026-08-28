@@ -1,4 +1,4 @@
-import { requireSession, getPortalUser } from "@/lib/auth/session";
+import { requirePortalSession, getPortalUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -6,12 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import Link from "next/link";
 
 export default async function PortalDashboardPage() {
-  const session = await requireSession();
-
-  // Only allow portal sessions
-  if (session.accountSource !== "portal") {
-    redirect("/login");
-  }
+  await requirePortalSession();
 
   const user = await getPortalUser();
   if (!user) redirect("/login");
