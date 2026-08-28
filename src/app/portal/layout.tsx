@@ -7,6 +7,7 @@ import { PortalHeader } from "@/components/layout/PortalHeader";
 import { PortalFooter } from "@/components/layout/PortalFooter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActiveSchoolYearProvider } from "@/components/providers/ActiveSchoolYearProvider";
+import { IdleLogoutProvider } from "@/components/providers/IdleLogoutProvider";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import type { Role } from "@/lib/constants/roles";
 
@@ -31,19 +32,21 @@ async function PortalLayoutContent({ children }: { children: React.ReactNode }) 
 
   return (
     <ActiveSchoolYearProvider activeSchoolYearId={activeSchoolYear?.id ?? null}>
-      <SidebarProvider defaultOpen={false}>
-        <AppSidebar role={user.role as Role} />
-        <SidebarInset>
-          <PortalHeader
-            displayName={displayName}
-            schoolYear={activeSchoolYear?.label}
-          />
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-4 sm:p-6">{children}</div>
-            <PortalFooter schoolYear={activeSchoolYear?.label} />
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+      <IdleLogoutProvider>
+        <SidebarProvider defaultOpen={false}>
+          <AppSidebar role={user.role as Role} />
+          <SidebarInset>
+            <PortalHeader
+              displayName={displayName}
+              schoolYear={activeSchoolYear?.label}
+            />
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4 sm:p-6">{children}</div>
+              <PortalFooter schoolYear={activeSchoolYear?.label} />
+            </div>
+          </SidebarInset>
+        </SidebarProvider>
+      </IdleLogoutProvider>
     </ActiveSchoolYearProvider>
   );
 }
