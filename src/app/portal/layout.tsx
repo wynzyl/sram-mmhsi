@@ -3,9 +3,8 @@ import { requireSession, INVALID_SESSION_REDIRECT, getPortalUser } from "@/lib/a
 import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
-import { CommandPaletteProvider } from "@/components/command-palette";
+import { PortalHeader } from "@/components/layout/PortalHeader";
+import { PortalFooter } from "@/components/layout/PortalFooter";
 import { ActiveSchoolYearProvider } from "@/components/providers/ActiveSchoolYearProvider";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import type { Role } from "@/lib/constants/roles";
@@ -31,22 +30,19 @@ async function PortalLayoutContent({ children }: { children: React.ReactNode }) 
 
   return (
     <ActiveSchoolYearProvider activeSchoolYearId={activeSchoolYear?.id ?? null}>
-      <CommandPaletteProvider>
-        <SidebarProvider defaultOpen={true}>
-          <AppSidebar role={user.role as Role} />
-          <SidebarInset>
-            <AppHeader
-              username={displayName}
-              role={user.role as Role}
-              schoolYear={activeSchoolYear?.label}
-            />
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-6">{children}</div>
-              <AppFooter schoolYear={activeSchoolYear?.label} />
-            </div>
-          </SidebarInset>
-        </SidebarProvider>
-      </CommandPaletteProvider>
+      <SidebarProvider defaultOpen={false}>
+        <AppSidebar role={user.role as Role} />
+        <SidebarInset>
+          <PortalHeader
+            displayName={displayName}
+            schoolYear={activeSchoolYear?.label}
+          />
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4 sm:p-6">{children}</div>
+            <PortalFooter schoolYear={activeSchoolYear?.label} />
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     </ActiveSchoolYearProvider>
   );
 }
@@ -68,10 +64,10 @@ export default function PortalLayout({
           />
           <div className="flex-1 flex flex-col">
             <div
-              className="h-16 shrink-0 bg-sidebar border-b border-border"
+              className="h-14 sm:h-16 shrink-0 bg-sidebar border-b border-border"
               aria-hidden
             />
-            <main className="flex-1 p-6 bg-background">
+            <main className="flex-1 p-4 sm:p-6 bg-background">
               <div className="animate-pulse h-full" />
             </main>
           </div>
