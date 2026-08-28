@@ -8,7 +8,7 @@ import "server-only";
  */
 
 import { db } from "@/lib/db";
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import {
   assessments,
   enrollments,
@@ -101,7 +101,8 @@ export async function getStudentAssessments(
     .where(
       and(
         eq(assessments.studentId, studentId),
-        isNull(assessments.cancelledAt) // Exclude cancelled assessments
+        isNull(assessments.cancelledAt), // Exclude cancelled assessments
+        ne(enrollments.status, "cancelled") // Exclude cancelled enrollments
       )
     )
     .orderBy(desc(schoolYears.startDate));
