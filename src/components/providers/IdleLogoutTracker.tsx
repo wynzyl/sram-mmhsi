@@ -4,8 +4,8 @@ import { usePathname } from "next/navigation";
 import { useIdleLogout } from "@/hooks/useIdleLogout";
 import { IdleWarningDialog } from "@/features/auth/components/IdleWarningDialog";
 
-// Routes where idle tracking should be disabled (public routes)
-const PUBLIC_ROUTES = ["/login", "/change-password"];
+// Routes where idle tracking should be disabled (public/auth routes)
+const PUBLIC_ROUTES = ["/login", "/change-password", "/portal/change-password"];
 
 export function IdleLogoutTracker() {
   const pathname = usePathname();
