@@ -81,6 +81,8 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
             { href: "/staff/grades", label: "Overview", icon: "grades", pathMatch: "exact" },
             { href: "/staff/grades/approvals", label: "Pending Approvals", icon: "grades" },
             { href: "/staff/grades/publish", label: "Ready to Publish", icon: "grades" },
+            { href: "/staff/grades/published", label: "Published Grades", icon: "grades" },
+            { href: "/staff/grades/locked", label: "Locked Grades", icon: "grades" },
           ],
         },
         {
@@ -153,6 +155,8 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
             { href: "/staff/grades", label: "Overview", icon: "grades", pathMatch: "exact" },
             { href: "/staff/grades/approvals", label: "Pending Approvals", icon: "grades" },
             { href: "/staff/grades/publish", label: "Ready to Publish", icon: "grades" },
+            { href: "/staff/grades/published", label: "Published Grades", icon: "grades" },
+            { href: "/staff/grades/locked", label: "Locked Grades", icon: "grades" },
           ],
         },
         {
@@ -394,6 +398,8 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
         { href: "/staff/grades", label: "Overview", icon: "grades" },
         { href: "/staff/grades/approvals", label: "Pending Approvals", icon: "grades" },
         { href: "/staff/grades/publish", label: "Ready to Publish", icon: "grades" },
+        { href: "/staff/grades/published", label: "Published Grades", icon: "grades" },
+        { href: "/staff/grades/locked", label: "Locked Grades", icon: "grades" },
       ],
     },
     {

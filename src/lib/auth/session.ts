@@ -469,3 +469,37 @@ export async function requireStaffSession(): Promise<StaffSessionPayload> {
 
   return session as StaffSessionPayload;
 }
+
+// ─── Portal-only session types ──────────────────────────────────────────────────
+
+/**
+ * Portal session payload with required studentId.
+ * Use this type in portal-only pages.
+ */
+export type PortalSessionPayload = SessionPayload & {
+  portalAccountId: string;
+  studentId: string;
+  accountSource: "portal";
+};
+
+/**
+ * Require a portal session (not staff).
+ * Throws redirect if:
+ * - No session exists
+ * - Session is a staff session (not portal)
+ * - Session is missing studentId
+ *
+ * Use this in portal-only pages to get a session with guaranteed studentId.
+ */
+export async function requirePortalSession(): Promise<PortalSessionPayload> {
+  const session = await requireSession();
+
+  if (session.accountSource !== "portal" || !session.studentId) {
+    const { redirect } = await import("next/navigation");
+    // Staff users or invalid portal sessions get redirected to login
+    redirect("/login");
+    throw new Error("Redirecting...");
+  }
+
+  return session as PortalSessionPayload;
+}

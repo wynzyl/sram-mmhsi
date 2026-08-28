@@ -24,6 +24,8 @@ export {
   getAdviserGradeSheets,
   getPrincipalPendingReviews,
   getReadyToPublishSheets,
+  getPublishedSheets,
+  getLockedSheets,
   getGradeSheetById,
   // Entry queries
   getGradeSheetEntries,

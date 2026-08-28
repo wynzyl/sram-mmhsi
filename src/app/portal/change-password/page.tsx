@@ -10,11 +10,20 @@ export const metadata: Metadata = {
   description: "Change your password to continue using the Student Portal.",
 };
 
+/**
+ * Force password change page for portal users.
+ *
+ * This page handles the intermediate state where a user is authenticated
+ * but must change their password before accessing the portal.
+ *
+ * Note: Cannot use requirePortalSession() here because it would redirect
+ * to login, but the user IS logged in — they just need to change their password.
+ */
 export default async function PortalChangePasswordPage() {
   const session = await getCurrentSession();
 
   // Ensure user is logged in as a portal user
-  if (!session || session.accountSource !== "portal") {
+  if (!session || session.accountSource !== "portal" || !session.studentId) {
     redirect("/login");
   }
 
