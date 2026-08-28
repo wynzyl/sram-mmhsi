@@ -12,6 +12,10 @@ import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { logPermissionDenied } from "@/lib/errors/audit-failures";
+import {
+  isDocumentRequestRateLimited,
+  getDocumentRequestResetSeconds,
+} from "@/lib/security/rateLimit";
 import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { and, eq, like, sql } from "drizzle-orm";
 import { formatDocumentNumber } from "@/lib/utils/reference";
@@ -57,6 +61,14 @@ export async function createDocumentRequestAction(
   formData: FormData
 ): Promise<CreateDocumentRequestFormState> {
   const session = await requireStaffSession();
+
+  // Rate limit check
+  if (isDocumentRequestRateLimited(session.userId)) {
+    const resetSeconds = getDocumentRequestResetSeconds(session.userId);
+    return {
+      message: `Too many requests. Please wait ${resetSeconds} seconds.`,
+    };
+  }
 
   // Permission check
   if (!hasPermission(session.role, "documents:create")) {

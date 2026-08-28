@@ -1250,6 +1250,8 @@ export const invoices = pgTable(
     status: invoiceStatusEnum("status").notNull().default("draft"),
     sentAt: timestamp("sent_at"),
     sentBy: uuid("sent_by").references(() => users.id),
+    lastSentAt: timestamp("last_sent_at"),
+    sentCount: integer("sent_count").default(0),
     viewedAt: timestamp("viewed_at"),
     settledAt: timestamp("settled_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
