@@ -1,4 +1,5 @@
 import { formatCurrency } from "@/lib/utils/currency";
+import { formatDate } from "@/lib/utils/date";
 
 export type AssessmentLetterParams = {
   invoiceNumber: string;
@@ -17,11 +18,11 @@ export function generateAssessmentLetterHtml({
 }: AssessmentLetterParams): string {
   const invoiceDisplay = invoiceNumber.replace(/^INV-/, "");
 
-  const formattedDate = new Intl.DateTimeFormat("en-PH", {
+  const formattedDate = formatDate(date, {
     month: "long",
     day: "numeric",
     year: "numeric",
-  }).format(date);
+  });
 
   const formattedAmount = formatCurrency(amountDue);
 
