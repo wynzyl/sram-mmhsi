@@ -8,6 +8,7 @@ import Link from "next/link";
 import SendInvoiceDialog from "@/features/finance/components/invoices/SendInvoiceDialog";
 import PrintInvoiceButton from "@/features/finance/components/invoices/PrintInvoiceButton";
 import { formatCurrency } from "@/lib/utils/currency";
+import { formatDate as formatDateHelper } from "@/lib/utils/date";
 
 type InvoiceDetailRoute = "/staff/finance/invoices";
 type AssessmentsBase = "/staff/assessments";
@@ -23,25 +24,25 @@ const STATUS_CONFIG: Record<
   overdue:  { label: "Overdue",  color: "#c70000", bg: "rgba(199,0,0,0.10)",    border: "rgba(199,0,0,0.3)"     },
 };
 
+/** Format date with time using timezone-safe helper */
 function formatDate(d: Date | string | null): string {
-  if (!d) return "—";
-  return new Intl.DateTimeFormat("en-PH", {
+  return formatDateHelper(d, {
     month: "long",
     day: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-  }).format(new Date(d));
+  });
 }
 
+/** Format date without time using timezone-safe helper */
 function formatDateShort(d: Date | string | null): string {
-  if (!d) return "—";
-  return new Intl.DateTimeFormat("en-PH", {
+  return formatDateHelper(d, {
     month: "long",
     day: "numeric",
     year: "numeric",
-  }).format(new Date(d));
+  });
 }
 
 export async function InternalInvoiceDetailPage(props: {
