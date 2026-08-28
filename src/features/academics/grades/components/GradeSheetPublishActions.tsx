@@ -41,11 +41,6 @@ export function GradeSheetPublishActions({
 }: GradeSheetPublishActionsProps) {
   const router = useRouter();
 
-  // Don't render anything if user has no permissions for any action
-  if (!canPublish && !canLock && !canUnlock) {
-    return null;
-  }
-
   // Dialog states
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [showLockDialog, setShowLockDialog] = useState(false);
@@ -59,6 +54,11 @@ export function GradeSheetPublishActions({
   const [isPublishing, setIsPublishing] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+
+  // Don't render anything if user has no permissions for any action
+  if (!canPublish && !canLock && !canUnlock) {
+    return null;
+  }
 
   const handlePublish = async () => {
     const formData = new FormData();
