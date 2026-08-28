@@ -5,8 +5,22 @@ export const metadata: Metadata = {
   title: "Invoices | SRAMS",
 };
 
-export default async function StaffInvoicesPage() {
+type PageProps = {
+  searchParams: Promise<{
+    tab?: string;
+    search?: string;
+    gradeLevel?: string;
+    page?: string;
+    pageSize?: string;
+  }>;
+};
+
+export default async function StaffInvoicesPage({ searchParams }: PageProps) {
   return (
-    <InternalInvoicesListPage invoicesListPath="/staff/finance/invoices" deniedRedirect="/staff/finance" />
+    <InternalInvoicesListPage
+      searchParams={searchParams}
+      invoicesListPath="/staff/finance/invoices"
+      deniedRedirect="/staff/finance"
+    />
   );
 }

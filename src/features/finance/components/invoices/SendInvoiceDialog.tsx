@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useCallback } from "react";
+import { useActionState, useState, useCallback, useId } from "react";
 import { Mail, AlertCircle } from "lucide-react";
 import { sendInvoiceAction } from "../../invoices/invoices.actions";
 import type { InvoiceActionState } from "../../invoices/invoices.schema";
@@ -21,6 +21,8 @@ export default function SendInvoiceDialog({
 }: SendInvoiceDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [state, action, pending] = useActionState(sendInvoiceAction, initialState);
+  // Generate a unique idempotency key per dialog mount for extra safety
+  const idempotencyKey = useId().replace(/:/g, "-") + "-" + Date.now();
 
   const openModal = useCallback(() => setIsOpen(true), []);
   const closeModal = useCallback(() => setIsOpen(false), []);
@@ -59,6 +61,7 @@ export default function SendInvoiceDialog({
 
           <form action={action} className="space-y-4">
             <input type="hidden" name="invoiceId" value={invoiceId} />
+            <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
 
             {state.message && !state.success && (
               <div
