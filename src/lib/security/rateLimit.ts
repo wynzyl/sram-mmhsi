@@ -26,6 +26,7 @@ const adminActionAttempts = new Map<string, RateLimitEntry>();
 const reportExportAttempts = new Map<string, RateLimitEntry>();
 const emailSendAttempts = new Map<string, RateLimitEntry>();
 const documentRequestAttempts = new Map<string, RateLimitEntry>();
+const passwordChangeAttempts = new Map<string, RateLimitEntry>();
 
 // ─── Login Rate Limit Configuration ──────────────────────────────────────────
 const LOGIN_BASE_WINDOW_MS = 15 * 60 * 1000;  // 15-minute base window
@@ -51,6 +52,10 @@ const EMAIL_SEND_MAX_ATTEMPTS = 50;         // max 50 emails per minute per user
 // Document request rate limits
 const DOC_REQUEST_WINDOW_MS = 60 * 1000;   // 1-minute window
 const DOC_REQUEST_MAX_ATTEMPTS = 10;        // max 10 requests per minute per user
+
+// Password change rate limits (portal users)
+const PASSWORD_CHANGE_WINDOW_MS = 15 * 60 * 1000; // 15-minute window
+const PASSWORD_CHANGE_MAX_ATTEMPTS = 5;            // max 5 attempts per 15 minutes
 
 // ─── Helper: Calculate lockout window with exponential backoff ───────────────
 
@@ -478,4 +483,48 @@ export function getDocumentRequestResetSeconds(userId: string): number {
   if (!entry) return 0;
   const elapsed = Date.now() - entry.firstAttempt;
   return Math.max(0, Math.ceil((DOC_REQUEST_WINDOW_MS - elapsed) / 1000));
+}
+
+// ─── Password Change Rate Limiting ─────────────────────────────────────────────
+
+/**
+ * Check if a portal account has exceeded the password change rate limit.
+ * Prevents brute force attempts on password changes from compromised sessions.
+ * Returns true if the request should be BLOCKED.
+ *
+ * @param portalAccountId - The portal account ID attempting the change
+ */
+export function isPasswordChangeRateLimited(portalAccountId: string): boolean {
+  const now = Date.now();
+  const entry = passwordChangeAttempts.get(portalAccountId);
+
+  if (!entry || now - entry.firstAttempt > PASSWORD_CHANGE_WINDOW_MS) {
+    // New window — reset
+    passwordChangeAttempts.set(portalAccountId, { count: 1, firstAttempt: now });
+    return false;
+  }
+
+  if (entry.count >= PASSWORD_CHANGE_MAX_ATTEMPTS) {
+    return true;
+  }
+
+  entry.count++;
+  return false;
+}
+
+/**
+ * Get the remaining lockout time in seconds for password change.
+ */
+export function getPasswordChangeResetSeconds(portalAccountId: string): number {
+  const entry = passwordChangeAttempts.get(portalAccountId);
+  if (!entry) return 0;
+  const elapsed = Date.now() - entry.firstAttempt;
+  return Math.max(0, Math.ceil((PASSWORD_CHANGE_WINDOW_MS - elapsed) / 1000));
+}
+
+/**
+ * Reset password change rate limit after successful change.
+ */
+export function resetPasswordChangeRateLimit(portalAccountId: string): void {
+  passwordChangeAttempts.delete(portalAccountId);
 }

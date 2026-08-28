@@ -10,6 +10,12 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
 import { generatePortalPassword } from "@/features/students/students-portal.utils";
+import { logger } from "@/lib/observability/logger";
+import {
+  isPasswordChangeRateLimited,
+  getPasswordChangeResetSeconds,
+  resetPasswordChangeRateLimit,
+} from "@/lib/security/rateLimit";
 import {
   createPortalAccountSchema,
   resetPortalPasswordSchema,
@@ -121,7 +127,7 @@ export async function createPortalAccountAction(
       initialPassword, // Return for display to user
     };
   } catch (error) {
-    console.error("Failed to create portal account:", error);
+    logger.error("[portal-accounts] Failed to create portal account", { error, studentId });
     return { message: "Failed to create portal account. Please try again." };
   }
 }
@@ -205,7 +211,7 @@ export async function resetPortalPasswordAction(
       newPassword, // Return for display to user
     };
   } catch (error) {
-    console.error("Failed to reset portal password:", error);
+    logger.error("[portal-accounts] Failed to reset portal password", { error, portalAccountId });
     return { message: "Failed to reset password. Please try again." };
   }
 }
@@ -272,7 +278,7 @@ export async function togglePortalAccountStatusAction(
 
     return { success: true };
   } catch (error) {
-    console.error("Failed to toggle portal account status:", error);
+    logger.error("[portal-accounts] Failed to toggle portal account status", { error, portalAccountId });
     return { message: "Failed to update account status. Please try again." };
   }
 }
@@ -293,7 +299,16 @@ export async function changePortalPasswordAction(
     return { message: "You must be logged in as a portal user to change your password." };
   }
 
-  // 2. Validate input
+  // 2. Rate limit check - prevent brute force from compromised sessions
+  if (isPasswordChangeRateLimited(session.portalAccountId)) {
+    const resetSeconds = getPasswordChangeResetSeconds(session.portalAccountId);
+    const resetMinutes = Math.ceil(resetSeconds / 60);
+    return {
+      message: `Too many password change attempts. Please try again in ${resetMinutes} minute${resetMinutes !== 1 ? "s" : ""}.`,
+    };
+  }
+
+  // 3. Validate input
   const parsed = changePortalPasswordSchema.safeParse({
     currentPassword: formData.get("currentPassword"),
     newPassword: formData.get("newPassword"),
@@ -306,7 +321,7 @@ export async function changePortalPasswordAction(
 
   const { currentPassword, newPassword } = parsed.data;
 
-  // 3. Get account
+  // 4. Get account
   const account = await db.query.portalAccounts.findFirst({
     where: eq(portalAccounts.id, session.portalAccountId),
     columns: { id: true, passwordHash: true },
@@ -316,13 +331,13 @@ export async function changePortalPasswordAction(
     return { message: "Portal account not found." };
   }
 
-  // 4. Verify current password
+  // 5. Verify current password
   const isCurrentPasswordValid = await compare(currentPassword, account.passwordHash);
   if (!isCurrentPasswordValid) {
     return { errors: { currentPassword: ["Current password is incorrect."] } };
   }
 
-  // 5. Hash and save new password
+  // 6. Hash and save new password
   try {
     const newPasswordHash = await hash(newPassword, BCRYPT_COST);
 
@@ -335,7 +350,7 @@ export async function changePortalPasswordAction(
       })
       .where(eq(portalAccounts.id, session.portalAccountId));
 
-    // 6. Audit log (use portalAccountId as actor since it's a self-service action)
+    // 7. Audit log (use portalAccountId as actor since it's a self-service action)
     await logUpdateAction(
       { id: session.portalAccountId, role: "student" },
       "portal_accounts",
@@ -344,14 +359,20 @@ export async function changePortalPasswordAction(
       { forcePasswordChange: false }
     );
 
-    // 7. Delete session - user will need to log in with new password
+    // 8. Reset rate limit on successful password change
+    resetPasswordChangeRateLimit(session.portalAccountId);
+
+    // 9. Delete session - user will need to log in with new password
     await deleteSession();
   } catch (error) {
-    console.error("Failed to change portal password:", error);
+    logger.error("[portal-accounts] Failed to change portal password", {
+      error,
+      portalAccountId: session.portalAccountId,
+    });
     return { message: "Failed to change password. Please try again." };
   }
 
-  // 8. Redirect to login (must be outside try/catch as redirect throws)
+  // 10. Redirect to login (must be outside try/catch as redirect throws)
   redirect("/login?message=password_changed");
 }
 
