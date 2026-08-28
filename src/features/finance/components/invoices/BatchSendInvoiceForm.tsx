@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useEffect, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, AlertCircle, CheckCircle2, AlertTriangle, Users } from "lucide-react";
+import { Mail, AlertCircle, AlertTriangle, Users } from "lucide-react";
 import { batchSendInvoicesAction } from "../../invoices/invoices.actions";
 import { getInvoicesForBatchSending, getSectionsForGradeLevel } from "../../invoices/invoices.queries";
 import type { BatchSendInvoiceActionState } from "../../invoices/invoices.schema";
@@ -382,7 +382,7 @@ export default function BatchSendInvoiceForm({
           </div>
         )}
 
-        {/* Form-level Error */}
+        {/* Form-level Error (toast handles success) */}
         {state.message && !state.success && (
           <div
             role="alert"
@@ -393,28 +393,19 @@ export default function BatchSendInvoiceForm({
           </div>
         )}
 
-        {/* Success with Failures */}
+        {/* Partial Failures List - show detailed failures for user action */}
         {state.success && state.failures && state.failures.length > 0 && (
-          <div className="mx-4 mt-4 space-y-2">
-            <div
-              role="status"
-              className="flex items-start gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2 text-sm text-success"
-            >
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Sent {state.sentCount} invoice(s) successfully.</span>
-            </div>
-            <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2">
-              <p className="text-sm font-medium text-warning-foreground mb-2">
-                {state.failedCount} invoice(s) failed to send:
-              </p>
-              <ul className="text-xs text-warning-foreground/80 space-y-1">
-                {state.failures.map((f, i) => (
-                  <li key={i}>
-                    {f.invoiceNumber}: {f.reason}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="mx-4 mt-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2">
+            <p className="text-sm font-medium text-warning-foreground mb-2">
+              {state.failedCount} invoice(s) failed to send:
+            </p>
+            <ul className="text-xs text-warning-foreground/80 space-y-1">
+              {state.failures.map((f, i) => (
+                <li key={i}>
+                  {f.invoiceNumber}: {f.reason}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

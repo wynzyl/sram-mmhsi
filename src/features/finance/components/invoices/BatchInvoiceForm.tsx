@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useEffect, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, AlertCircle, CheckCircle2, Users } from "lucide-react";
+import { FileText, AlertCircle, Users } from "lucide-react";
 import { batchGenerateInvoicesAction } from "../../invoices/invoices.actions";
 import { getSectionsForGradeLevel, getBatchInvoiceCandidateCount } from "../../invoices/invoices.queries";
 import type { BatchInvoiceActionState } from "../../invoices/invoices.schema";
@@ -206,7 +206,7 @@ export default function BatchInvoiceForm({
             </div>
           )}
 
-          {/* Form-level Error */}
+          {/* Form-level Error (toast handles success) */}
           {state.message && !state.success && (
             <div
               role="alert"
@@ -214,22 +214,6 @@ export default function BatchInvoiceForm({
             >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{state.message}</span>
-            </div>
-          )}
-
-          {/* Success Message */}
-          {state.success && (
-            <div
-              role="status"
-              className="flex items-start gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2 text-sm text-success"
-            >
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                {state.message}
-                {state.skippedCount !== undefined && state.skippedCount > 0 && (
-                  <> ({state.skippedCount} already had invoices)</>
-                )}
-              </span>
             </div>
           )}
 

@@ -10,7 +10,6 @@ import {
   gradeLevels,
   parentsGuardians,
   studentGuardianLinks,
-  schoolYears,
 } from "@/lib/db/schema";
 import { eq, and, isNull, gt, sql, ne, notExists, inArray, or, desc, ilike } from "drizzle-orm";
 import type { BatchGenerateInvoicesInput } from "./invoices.schema";

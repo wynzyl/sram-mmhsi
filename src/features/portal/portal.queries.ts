@@ -8,7 +8,7 @@ import "server-only";
  */
 
 import { db } from "@/lib/db";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   assessments,
   enrollments,
@@ -98,7 +98,12 @@ export async function getStudentAssessments(
     .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
     .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .where(eq(assessments.studentId, studentId))
+    .where(
+      and(
+        eq(assessments.studentId, studentId),
+        isNull(assessments.cancelledAt) // Exclude cancelled assessments
+      )
+    )
     .orderBy(desc(schoolYears.startDate));
 
   return rows;
