@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useState, useCallback, useId } from "react";
+import { useActionState, useState, useCallback, useEffect } from "react";
 import { Mail, AlertCircle } from "lucide-react";
 import { sendInvoiceAction } from "../../invoices/invoices.actions";
 import type { InvoiceActionState } from "../../invoices/invoices.schema";
 import { Modal, ModalHeader, ModalBody } from "@/components/shared/Modal";
 import { Button } from "@/components/ui/button";
 import { useFormToast } from "@/hooks/useFormToast";
+import { generateUuid } from "@/lib/utils/uuid";
 
 interface SendInvoiceDialogProps {
   invoiceId: string;
@@ -21,8 +22,15 @@ export default function SendInvoiceDialog({
 }: SendInvoiceDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [state, action, pending] = useActionState(sendInvoiceAction, initialState);
-  // Generate a unique idempotency key per dialog mount for extra safety
-  const idempotencyKey = useId().replace(/:/g, "-") + "-" + Date.now();
+  // Unique idempotency key per dialog mount. Generated in an effect because
+  // it is impure (crypto/random) and must not be called during render or SSR --
+  // server-rendering it would also cause a hydration mismatch.
+  const [idempotencyKey, setIdempotencyKey] = useState("");
+  useEffect(() => {
+    // One-time client-only initialization: legitimate setState-in-effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIdempotencyKey(generateUuid());
+  }, []);
 
   const openModal = useCallback(() => setIsOpen(true), []);
   const closeModal = useCallback(() => setIsOpen(false), []);
