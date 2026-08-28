@@ -232,6 +232,20 @@
       "when": 1787510400000,
       "tag": "0032_add_portal_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1787596800000,
+      "tag": "0033_add_invoice_idempotency_tracking",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1787683200000,
+      "tag": "0034_add_invoice_number_sequence",
+      "breakpoints": true
     }
   ]
 }
