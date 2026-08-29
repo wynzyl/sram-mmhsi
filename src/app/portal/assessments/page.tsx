@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export const metadata = { title: "My Assessments" };
 
@@ -15,25 +16,11 @@ export default async function PortalAssessmentsPage() {
     return (
       <PageContainer>
         <PageHeader title="Assessments" description="Fee assessments by school year (read-only)." />
-        <div className="bg-card rounded-xl border border-border shadow-sm p-12 text-center">
-          <svg
-            className="mx-auto h-12 w-12 text-muted-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-            />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-foreground">No assessments yet</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Your fee assessments will appear here once you are enrolled.
-          </p>
-        </div>
+        <EmptyState
+          icon="assessments"
+          title="No assessments yet"
+          description="Your fee assessments will appear here once you are enrolled."
+        />
       </PageContainer>
     );
   }
@@ -75,10 +62,10 @@ export default async function PortalAssessmentsPage() {
                     <div
                       className={`h-2 rounded-full transition-all ${
                         paidPercentage >= 100
-                          ? "bg-green-500"
+                          ? "bg-success"
                           : paidPercentage >= 50
-                          ? "bg-blue-500"
-                          : "bg-amber-500"
+                          ? "bg-primary"
+                          : "bg-warning"
                       }`}
                       style={{ width: `${Math.min(paidPercentage, 100)}%` }}
                     />

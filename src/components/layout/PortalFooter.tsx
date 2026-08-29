@@ -1,63 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CheckCircle2, Mail, MapPin } from "lucide-react";
 import { FOOTER_HQ, FOOTER_LINKS } from "@/lib/constants/footer-links";
 import { cn } from "@/lib/utils/cn";
-
-// ─── Icons ─────────────────────────────────────────────────────────────────
-
-function CheckCircleIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function MailIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-      <polyline points="22,6 12,13 2,6" />
-    </svg>
-  );
-}
-
-function MapPinIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
-  );
-}
 
 // ─── PortalFooter ─────────────────────────────────────────────────────────────
 
@@ -111,7 +56,7 @@ export function PortalFooter({ schoolYear }: PortalFooterProps) {
                   "font-mono text-muted-foreground"
                 )}
               >
-                <CheckCircleIcon className="text-success" />v{version}
+                <CheckCircle2 className="size-3.5 text-success" aria-hidden="true" />v{version}
               </span>
               {schoolYear && (
                 <span
@@ -140,7 +85,7 @@ export function PortalFooter({ schoolYear }: PortalFooterProps) {
             <address className="not-italic space-y-2">
               <p className="text-sm font-medium text-foreground">{FOOTER_HQ.name}</p>
               <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
-                <MapPinIcon className="shrink-0 mt-0.5" />
+                <MapPin className="size-3.5 shrink-0 mt-0.5" aria-hidden="true" />
                 <span>{FOOTER_HQ.address}</span>
               </p>
               <a
@@ -150,7 +95,7 @@ export function PortalFooter({ schoolYear }: PortalFooterProps) {
                   "hover:text-primary transition-colors"
                 )}
               >
-                <MailIcon className="shrink-0" />
+                <Mail className="size-3.5 shrink-0" aria-hidden="true" />
                 {FOOTER_HQ.email}
               </a>
             </address>

@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { formatDate } from "@/lib/utils/date";
 import { usePortalPayments } from "@/features/payments/hooks/use-portal-payments";
 import type { PortalPaymentRow } from "@/features/payments/payments.types";
@@ -29,25 +30,11 @@ export function PortalPaymentsView() {
     );
   } else if (rows.length === 0) {
     emptyCopy = (
-      <div className="bg-card rounded-xl border border-border shadow-sm p-12 text-center">
-        <svg
-          className="mx-auto h-12 w-12 text-muted-foreground"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
-          />
-        </svg>
-        <h3 className="mt-2 text-sm font-medium text-foreground">No payments yet</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Your payment history will appear here once payments are posted.
-        </p>
-      </div>
+      <EmptyState
+        icon="payments"
+        title="No payments yet"
+        description="Your payment history will appear here once payments are posted."
+      />
     );
   }
 

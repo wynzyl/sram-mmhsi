@@ -8,13 +8,14 @@ import "server-only";
  */
 
 import { db } from "@/lib/db";
-import { and, asc, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, ne, sql, count } from "drizzle-orm";
 import {
   assessments,
   enrollments,
   gradeLevels,
   gradeSheetEntries,
   gradeSheets,
+  payments,
   schoolYears,
   sections,
   subjects,
@@ -276,4 +277,95 @@ export function groupGradesBySection(rows: PortalGradeRow[]): SectionGrades[] {
     ),
     periods: Array.from(group.periods).sort(),
   }));
+}
+
+// ─── Dashboard Summary Query ─────────────────────────────────────────────────
+
+export type PortalDashboardSummary = {
+  /** Current outstanding balance (null if no assessments) */
+  assessmentBalance: number | null;
+  /** Current billing status */
+  billingStatus: string | null;
+  /** Date of most recent posted payment */
+  lastPaymentDate: Date | null;
+  /** Total amount paid in the current school year */
+  totalPaidThisYear: number;
+  /** Latest grading period with published grades */
+  latestGradePeriod: string | null;
+  /** Count of published grade entries */
+  publishedGradeCount: number;
+};
+
+/**
+ * Get dashboard summary data for a student.
+ * Used to display live data previews on dashboard cards.
+ */
+export async function getPortalDashboardSummary(
+  studentId: string
+): Promise<PortalDashboardSummary> {
+  // Run all queries in parallel for performance
+  const [assessmentData, paymentData, gradeData] = await Promise.all([
+    // Get latest assessment (most recent school year)
+    db
+      .select({
+        balance: assessments.balance,
+        billingStatus: assessments.billingStatus,
+      })
+      .from(assessments)
+      .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
+      .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
+      .where(
+        and(
+          eq(assessments.studentId, studentId),
+          isNull(assessments.cancelledAt),
+          ne(enrollments.status, "cancelled")
+        )
+      )
+      .orderBy(desc(schoolYears.startDate))
+      .limit(1),
+
+    // Get payment summary: last payment date + total paid this year
+    db
+      .select({
+        lastPaymentDate: sql<Date | null>`MAX(${payments.paymentDate})`,
+        totalPaidThisYear: sql<number>`COALESCE(SUM(CASE WHEN ${payments.status} = 'posted' THEN ${payments.amount} ELSE 0 END), 0)`,
+      })
+      .from(payments)
+      .innerJoin(assessments, eq(payments.assessmentId, assessments.id))
+      .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
+      .where(
+        and(
+          eq(assessments.studentId, studentId),
+          eq(schoolYears.isActive, true)
+        )
+      ),
+
+    // Get grade summary: latest period + count of published grades
+    db
+      .select({
+        latestPeriod: sql<string | null>`MAX(${gradeSheets.gradingPeriod})`,
+        publishedCount: count(gradeSheetEntries.id),
+      })
+      .from(gradeSheetEntries)
+      .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
+      .where(
+        and(
+          eq(gradeSheetEntries.studentId, studentId),
+          inArray(gradeSheets.status, VISIBLE_GRADE_STATUSES)
+        )
+      ),
+  ]);
+
+  const assessment = assessmentData[0];
+  const payment = paymentData[0];
+  const grade = gradeData[0];
+
+  return {
+    assessmentBalance: assessment ? Number(assessment.balance) : null,
+    billingStatus: assessment?.billingStatus ?? null,
+    lastPaymentDate: payment?.lastPaymentDate ?? null,
+    totalPaidThisYear: Number(payment?.totalPaidThisYear ?? 0),
+    latestGradePeriod: grade?.latestPeriod ?? null,
+    publishedGradeCount: Number(grade?.publishedCount ?? 0),
+  };
 }

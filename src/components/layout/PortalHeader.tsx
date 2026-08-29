@@ -1,49 +1,20 @@
 "use client";
 
 import Image from "next/image";
+import { LogOut, ChevronDown } from "lucide-react";
 import { logoutAction } from "@/features/auth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ColorThemePickerCompact } from "@/components/ui/ColorThemePicker";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils/cn";
-
-// ─── Icons ─────────────────────────────────────────────────────────────────
-
-function LogoutIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-      aria-hidden="true"
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
 
 // ─── User Menu ─────────────────────────────────────────────────────────────
 
@@ -61,69 +32,63 @@ function PortalUserMenu({ displayName }: UserMenuProps) {
     .toUpperCase();
 
   return (
-    <div className="relative group">
-      <button
-        type="button"
-        className={cn(
-          "flex items-center gap-2.5 px-2 py-1.5 rounded-lg",
-          "hover:bg-muted transition-colors cursor-pointer",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        )}
-        aria-label="User menu"
-        aria-haspopup="true"
-      >
-        {/* Avatar */}
-        <div className="relative">
-          <div
-            className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center",
-              "bg-gradient-to-br from-primary to-primary/80",
-              "text-white text-sm font-bold"
-            )}
-          >
-            {initials}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "flex items-center gap-2.5 px-2 py-1.5 rounded-lg",
+            "hover:bg-muted transition-colors cursor-pointer",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          )}
+          aria-label="User menu"
+        >
+          {/* Avatar */}
+          <div className="relative">
+            <div
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center",
+                "bg-gradient-to-br from-primary to-primary/80",
+                "text-white text-sm font-bold"
+              )}
+            >
+              {initials}
+            </div>
+            {/* Online indicator */}
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-success rounded-full border-2 border-card" />
           </div>
-          {/* Online indicator */}
-          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-success rounded-full border-2 border-card" />
-        </div>
 
-        {/* Name */}
-        <div className="hidden sm:block text-left">
-          <p className="text-sm font-medium text-foreground leading-tight">{truncatedName}</p>
-          <p className="text-xs text-muted-foreground leading-tight">Student</p>
-        </div>
+          {/* Name */}
+          <div className="hidden sm:block text-left">
+            <p className="text-sm font-medium text-foreground leading-tight">{truncatedName}</p>
+            <p className="text-xs text-muted-foreground leading-tight">Student</p>
+          </div>
 
-        <ChevronDownIcon className="hidden sm:block text-muted-foreground" />
-      </button>
+          <ChevronDown className="hidden sm:block size-4 text-muted-foreground" aria-hidden="true" />
+        </button>
+      </DropdownMenuTrigger>
 
-      {/* Dropdown menu */}
-      <div
-        className={cn(
-          "absolute right-0 top-full mt-1 min-w-[200px] py-1",
-          "bg-popover border border-border rounded-lg shadow-lg",
-          "opacity-0 invisible group-hover:opacity-100 group-hover:visible",
-          "transition-all duration-150 z-50"
-        )}
-      >
-        <div className="px-3 py-2 border-b border-border sm:hidden">
+      <DropdownMenuContent align="end" className="min-w-[200px]">
+        {/* Mobile: show name in dropdown since it's hidden in trigger */}
+        <DropdownMenuLabel className="sm:hidden">
           <p className="text-sm font-medium text-foreground">{truncatedName}</p>
-          <p className="text-xs text-muted-foreground">Student</p>
-        </div>
-        <form action={logoutAction}>
-          <button
-            type="submit"
-            className={cn(
-              "w-full flex items-center gap-2 px-3 py-2 text-sm text-left",
-              "text-muted-foreground hover:text-destructive hover:bg-muted",
-              "transition-colors"
-            )}
-          >
-            <LogoutIcon />
-            Sign out
-          </button>
-        </form>
-      </div>
-    </div>
+          <p className="text-xs text-muted-foreground font-normal">Student</p>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator className="sm:hidden" />
+
+        <DropdownMenuItem asChild variant="destructive">
+          <form action={logoutAction} className="w-full">
+            <button
+              type="submit"
+              className="flex w-full items-center gap-2 text-left"
+            >
+              <LogOut className="size-4" aria-hidden="true" />
+              Sign out
+            </button>
+          </form>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
