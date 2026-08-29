@@ -17,6 +17,8 @@ import {
 } from "@/features/discounts/utils/discount-calculations";
 import type { DiscountRequestView } from "@/features/discounts/discounts.schema";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
+import { isEffectivelySpecialEducation } from "@/lib/utils/special-education";
+import { getSpedFeeAmount } from "@/features/settings/system-settings.actions";
 
 export type NewAssessmentFeeCatalogEntry = {
   feeTemplateItemId: string; // Changed from feeScheduleItemId
@@ -39,6 +41,10 @@ export type NewAssessmentEnrollmentContext = {
   syLabel: string;
   gradeName: string;
   assessmentBand: (typeof gradeLevels.$inferSelect)["assessmentBand"];
+  /** True if the student is effectively a SPED student for this enrollment */
+  isSpedStudent: boolean;
+  /** Default SPED fee amount from system settings (PHP) */
+  defaultSpedFeeAmount: number;
 };
 
 export type NewAssessmentPageReadyContext = {
@@ -147,6 +153,9 @@ export async function loadNewAssessmentPageContext(
       syLabel: schoolYears.label,
       gradeName: gradeLevels.name,
       assessmentBand: gradeLevels.assessmentBand,
+      // SPED status fields
+      studentIsSpecialEducation: students.isSpecialEducation,
+      specialEducationOverride: enrollments.specialEducationOverride,
     })
     .from(enrollments)
     .innerJoin(students, eq(enrollments.studentId, students.id))
@@ -175,8 +184,8 @@ export async function loadNewAssessmentPageContext(
     };
   }
 
-  // Run school year check and guardian lookup in parallel for better performance
-  const [activeSchoolYear, primaryRow] = await Promise.all([
+  // Run school year check, guardian lookup, and SPED fee amount in parallel for better performance
+  const [activeSchoolYear, primaryRow, defaultSpedFeeAmount] = await Promise.all([
     // Check school year is active (defense in depth)
     getActiveSchoolYear(),
     // Get primary guardian
@@ -195,7 +204,15 @@ export async function loadNewAssessmentPageContext(
       )
       .orderBy(desc(studentGuardianLinks.isPrimary), asc(studentGuardianLinks.createdAt))
       .limit(1),
+    // Get default SPED fee amount from system settings
+    getSpedFeeAmount(),
   ]);
+
+  // Calculate effective SPED status for this enrollment
+  const isSpedStudent = isEffectivelySpecialEducation(
+    { isSpecialEducation: e.studentIsSpecialEducation },
+    { specialEducationOverride: e.specialEducationOverride }
+  );
 
   if (!activeSchoolYear || e.schoolYearId !== activeSchoolYear.id) {
     return {
@@ -251,6 +268,8 @@ export async function loadNewAssessmentPageContext(
       syLabel: e.syLabel,
       gradeName: e.gradeName,
       assessmentBand: e.assessmentBand,
+      isSpedStudent,
+      defaultSpedFeeAmount,
     },
     catalogBandLabel,
     primaryGuardianLabel,

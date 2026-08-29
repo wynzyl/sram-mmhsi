@@ -13,6 +13,8 @@ export const CreateAssessmentFromEnrollmentSchema = z
     items: z
       .array(AssessmentScheduleLineSubmissionSchema)
       .min(1, "Select at least one fee from the catalog."),
+    /** Custom SPED fee amount (optional - only for SPED students) */
+    spedFeeAmount: z.coerce.number().positive("SPED fee amount must be greater than zero.").optional(),
   })
   .superRefine((data, ctx) => {
     const seen = new Set<string>();

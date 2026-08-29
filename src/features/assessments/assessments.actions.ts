@@ -75,6 +75,7 @@ export async function createAssessmentFromEnrollmentAction(
     enrollmentId: formData.get("enrollmentId"),
     remarks: formData.get("remarks") || undefined,
     items: itemsRaw,
+    spedFeeAmount: formData.get("spedFeeAmount") || undefined,
   });
 
   if (!parsed.success) {
@@ -85,7 +86,7 @@ export async function createAssessmentFromEnrollmentAction(
     };
   }
 
-  const { enrollmentId, remarks, items } = parsed.data;
+  const { enrollmentId, remarks, items, spedFeeAmount: customSpedFeeAmount } = parsed.data;
 
   // Fetch enrollment with school year label and SPED status for readable remarks
   const enrollmentResult = await db
@@ -331,8 +332,8 @@ export async function createAssessmentFromEnrollmentAction(
       };
     }
 
-    // Get configured SPED fee amount from system settings
-    const spedFeeAmount = await getSpedFeeAmount();
+    // Use custom SPED fee amount if provided (from confirmation dialog), otherwise use system default
+    const spedFeeAmount = customSpedFeeAmount ?? await getSpedFeeAmount();
 
     // Add SPED fee to resolved lines (after regular fees, before discounts)
     resolvedLines.push({
