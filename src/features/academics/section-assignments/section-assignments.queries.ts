@@ -55,6 +55,7 @@ export async function getStudentsForSectionAssignment(
       middleName: students.middleName,
       lastName: students.lastName,
       suffix: students.suffix,
+      isSpecialEducation: students.isSpecialEducation,
       gradeLevelId: enrollments.gradeLevelId,
       gradeLevelName: gradeLevels.name,
       gradeLevelOrder: gradeLevels.order,

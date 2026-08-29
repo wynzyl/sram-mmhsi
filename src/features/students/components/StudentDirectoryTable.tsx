@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { StudentDirectoryRow } from "../students.queries";
 import { StudentDirectoryRowActions } from "@/features/students/components/StudentDirectoryRowActions";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { getInitials } from "@/lib/utils/name";
 import type { StudentSortBy, StudentSortDir } from "@/lib/utils/student-directory-href";
 
@@ -130,7 +131,10 @@ export function StudentDirectoryTable({
                         {getInitials(s.firstName, s.lastName)}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-foreground">{displayName}</p>
+                        <p className="flex items-center truncate font-semibold text-foreground">
+                          {displayName}
+                          <SpedBadge isSped={s.isSpecialEducation} />
+                        </p>
                         <p className="truncate text-xs text-muted-foreground">{subtitle(s)}</p>
                       </div>
                     </div>

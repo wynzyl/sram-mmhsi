@@ -23,6 +23,8 @@ interface StudentAvatarCellProps {
   size?: AvatarSize;
   /** Whether to truncate the name. Defaults to true */
   truncate?: boolean;
+  /** Optional badge to display after the name (e.g., SpedBadge) */
+  badge?: React.ReactNode;
 }
 
 // ─── Size Configurations ───────────────────────────────────────────────────────
@@ -69,6 +71,7 @@ export function StudentAvatarCell({
   referenceNumber,
   size = "md",
   truncate = true,
+  badge,
 }: StudentAvatarCellProps) {
   const avatarClass = AVATAR_SIZES[size];
   const nameClass = NAME_SIZES[size];
@@ -83,9 +86,10 @@ export function StudentAvatarCell({
       </div>
       <div className="min-w-0">
         <p
-          className={`font-semibold text-foreground ${nameClass} ${truncate ? "truncate" : ""}`}
+          className={`flex items-center font-semibold text-foreground ${nameClass} ${truncate ? "truncate" : ""}`}
         >
           {name}
+          {badge}
         </p>
         {referenceNumber && (
           <div className="mt-0.5">

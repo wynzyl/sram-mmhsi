@@ -380,6 +380,7 @@ export async function getPendingEnrollments(
         studentRef: students.referenceNumber,
         firstName: students.firstName,
         lastName: students.lastName,
+        isSpecialEducation: students.isSpecialEducation,
         gradeLevelId: gradeLevels.id,
         gradeName: gradeLevels.name,
         sectionId: sections.id,
@@ -406,6 +407,7 @@ export async function getPendingEnrollments(
     studentRef: r.studentRef,
     firstName: r.firstName,
     lastName: r.lastName,
+    isSpecialEducation: r.isSpecialEducation,
     gradeLevelId: r.gradeLevelId,
     gradeName: r.gradeName,
     sectionId: r.sectionId,
@@ -449,6 +451,7 @@ export async function getAssessedEnrollments(
         studentRef: students.referenceNumber,
         firstName: students.firstName,
         lastName: students.lastName,
+        isSpecialEducation: students.isSpecialEducation,
         gradeLevelId: gradeLevels.id,
         gradeName: gradeLevels.name,
         sectionId: sections.id,
@@ -479,6 +482,7 @@ export async function getAssessedEnrollments(
     studentRef: r.studentRef,
     firstName: r.firstName,
     lastName: r.lastName,
+    isSpecialEducation: r.isSpecialEducation,
     gradeLevelId: r.gradeLevelId,
     gradeName: r.gradeName,
     sectionId: r.sectionId,
@@ -523,6 +527,7 @@ export async function getEnrolledStudents(
         studentRef: students.referenceNumber,
         firstName: students.firstName,
         lastName: students.lastName,
+        isSpecialEducation: students.isSpecialEducation,
         gradeLevelId: gradeLevels.id,
         gradeName: gradeLevels.name,
         sectionId: sections.id,
@@ -548,6 +553,7 @@ export async function getEnrolledStudents(
     studentRef: r.studentRef,
     firstName: r.firstName,
     lastName: r.lastName,
+    isSpecialEducation: r.isSpecialEducation,
     gradeLevelId: r.gradeLevelId,
     gradeName: r.gradeName,
     sectionId: r.sectionId,
@@ -589,6 +595,7 @@ export async function getCancelledEnrollments(
         studentRef: students.referenceNumber,
         firstName: students.firstName,
         lastName: students.lastName,
+        isSpecialEducation: students.isSpecialEducation,
         gradeLevelId: gradeLevels.id,
         gradeName: gradeLevels.name,
         studentType: enrollments.studentType,
@@ -613,6 +620,7 @@ export async function getCancelledEnrollments(
     studentRef: r.studentRef,
     firstName: r.firstName,
     lastName: r.lastName,
+    isSpecialEducation: r.isSpecialEducation,
     gradeLevelId: r.gradeLevelId,
     gradeName: r.gradeName,
     studentType: r.studentType as "new_student" | "transferee" | "old_student",
@@ -885,6 +893,7 @@ export async function getReadyToEnrollList(
     student_ref: string;
     first_name: string;
     last_name: string;
+    is_special_education: boolean;
     student_type: string;
     registration_id: string | null;
     registration_grade_level_id: string | null;
@@ -934,6 +943,7 @@ export async function getReadyToEnrollList(
           s.reference_number AS student_ref,
           s.first_name,
           s.last_name,
+          s.is_special_education,
           r.student_type::text AS student_type,
           r.id AS registration_id,
           r.grade_level_id AS registration_grade_level_id,
@@ -970,6 +980,7 @@ export async function getReadyToEnrollList(
           s.reference_number AS student_ref,
           s.first_name,
           s.last_name,
+          s.is_special_education,
           'old_student'::text AS student_type,
           NULL::uuid AS registration_id,
           NULL::uuid AS registration_grade_level_id,
@@ -1027,6 +1038,7 @@ export async function getReadyToEnrollList(
       studentRef: row.student_ref,
       firstName: row.first_name,
       lastName: row.last_name,
+      isSpecialEducation: row.is_special_education,
       studentType: row.student_type as "new_student" | "transferee" | "old_student",
       registrationId: row.registration_id,
       registrationGradeLevelId: row.registration_grade_level_id,
@@ -1063,6 +1075,7 @@ export async function getReadyToEnrollDetail(
       studentRef: students.referenceNumber,
       firstName: students.firstName,
       lastName: students.lastName,
+      isSpecialEducation: students.isSpecialEducation,
       studentType: registrations.studentType,
       gradeLevelId: registrations.gradeLevelId,
       gradeName: gradeLevels.name,
@@ -1096,6 +1109,7 @@ export async function getReadyToEnrollDetail(
       studentRef: registration.studentRef as string,
       firstName: registration.firstName as string,
       lastName: registration.lastName as string,
+      isSpecialEducation: registration.isSpecialEducation,
       studentType: registration.studentType as "new_student" | "transferee",
       registrationId: registration.id as string,
       registrationGradeLevelId: registration.gradeLevelId as string,
@@ -1115,6 +1129,7 @@ export async function getReadyToEnrollDetail(
     student_ref: string;
     first_name: string;
     last_name: string;
+    is_special_education: boolean;
     previous_grade_name: string;
     suggested_grade_level_id: string;
     suggested_grade_name: string;
@@ -1139,6 +1154,7 @@ export async function getReadyToEnrollDetail(
       s.reference_number AS student_ref,
       s.first_name,
       s.last_name,
+      s.is_special_education,
       gl.name AS previous_grade_name,
       next_gl.id AS suggested_grade_level_id,
       next_gl.name AS suggested_grade_name,
@@ -1166,6 +1182,7 @@ export async function getReadyToEnrollDetail(
       studentRef: oldStudentData.student_ref,
       firstName: oldStudentData.first_name,
       lastName: oldStudentData.last_name,
+      isSpecialEducation: oldStudentData.is_special_education,
       studentType: "old_student",
       registrationId: null,
       registrationGradeLevelId: null,

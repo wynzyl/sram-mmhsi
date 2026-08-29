@@ -44,6 +44,7 @@ export type ArchivedStudentRow = {
   middleName: string | null;
   lastName: string;
   suffix: string | null;
+  isSpecialEducation: boolean;
   status: StudentStatus;
   archivedAt: Date | null;
   archiveReason: string | null;
@@ -154,6 +155,7 @@ export async function fetchArchivedStudentsPage(
         middleName: students.middleName,
         lastName: students.lastName,
         suffix: students.suffix,
+        isSpecialEducation: students.isSpecialEducation,
         status: students.status,
         archivedAt: students.archivedAt,
         archiveReason: students.archiveReason,

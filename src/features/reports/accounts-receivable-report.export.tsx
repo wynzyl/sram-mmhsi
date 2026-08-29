@@ -52,9 +52,13 @@ function buildSummaryItems(
 
 // ─── PDF (Track 1) ─────────────────────────────────────────────────────────────
 
+function formatStudentName(r: AccountsReceivableRow): string {
+  return r.isSpecialEducation ? `${r.studentName} (SPED)` : r.studentName;
+}
+
 const pdfColumns: ReportColumn<AccountsReceivableRow>[] = [
   { header: "Student ID", width: "13%", mono: true, cell: (r) => r.studentRef },
-  { header: "Student Name", width: "30%", cell: (r) => r.studentName },
+  { header: "Student Name", width: "30%", cell: formatStudentName },
   { header: "School Year", width: "15%", cell: (r) => r.schoolYearLabel },
   {
     header: "Balance",
@@ -105,7 +109,7 @@ export function AccountsReceivablePdfDocument({
 
 const xlsxColumns: XlsxColumn<AccountsReceivableRow>[] = [
   { header: "Student ID", width: 14, value: (r) => r.studentRef },
-  { header: "Student Name", width: 30, value: (r) => r.studentName },
+  { header: "Student Name", width: 30, value: formatStudentName },
   { header: "School Year", width: 14, value: (r) => r.schoolYearLabel },
   {
     header: "Balance",

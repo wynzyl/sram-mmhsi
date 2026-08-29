@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatDate } from "@/lib/utils/date";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { AccountsReceivableRow } from "../accounts-receivable-report.queries";
@@ -36,12 +37,15 @@ export function AccountsReceivableTable({ data }: AccountsReceivableTableProps) 
         header: "Student Name",
         accessorKey: "studentName",
         cell: ({ row }) => (
-          <Link
-            href={`/staff/students/${row.original.studentId}`}
-            className="text-primary hover:underline font-medium"
-          >
-            {row.original.studentName}
-          </Link>
+          <span className="flex items-center">
+            <Link
+              href={`/staff/students/${row.original.studentId}`}
+              className="text-primary hover:underline font-medium"
+            >
+              {row.original.studentName}
+            </Link>
+            <SpedBadge isSped={row.original.isSpecialEducation} />
+          </span>
         ),
       },
       {

@@ -4,12 +4,14 @@ import { memo } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { StudentAvatarCell } from "@/components/shared/StudentAvatarCell";
 import { TableEmptyState } from "@/components/shared/TableEmptyState";
 
 interface Assessment {
   id: string;
   studentName: string;
+  isSpecialEducation: boolean;
   gradeLevel: string;
   schoolYear: string;
   totalAmount: number;
@@ -59,7 +61,10 @@ function AssessmentsTableComponent({
                 className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/80"
               >
                 <td className="align-middle py-3 pl-4 pr-4">
-                  <StudentAvatarCell name={assessment.studentName} />
+                  <StudentAvatarCell
+                    name={assessment.studentName}
+                    badge={<SpedBadge isSped={assessment.isSpecialEducation} />}
+                  />
                 </td>
                 <td className="align-middle py-3 text-foreground">
                   {assessment.gradeLevel}

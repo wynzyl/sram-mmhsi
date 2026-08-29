@@ -5,6 +5,7 @@ import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -77,12 +78,15 @@ export function PaymentCollectionTable({ data }: PaymentCollectionTableProps) {
         accessorKey: "studentName",
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <Link
-              href={`/staff/students/${row.original.studentId}`}
-              className="text-primary hover:underline font-medium"
-            >
-              {row.original.studentName}
-            </Link>
+            <span className="flex items-center">
+              <Link
+                href={`/staff/students/${row.original.studentId}`}
+                className="text-primary hover:underline font-medium"
+              >
+                {row.original.studentName}
+              </Link>
+              <SpedBadge isSped={row.original.isSpecialEducation} />
+            </span>
             <span className="text-xs text-muted-foreground">
               <ReferenceCode code={row.original.studentRef} />
             </span>

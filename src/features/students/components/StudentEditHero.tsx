@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { StudentPhotoUpload } from "./StudentPhotoUpload";
 
 export type StudentEditHeroProps = {
@@ -12,6 +13,7 @@ export type StudentEditHeroProps = {
   initials: string;
   referenceNumber: string;
   isActive: boolean;
+  isSpecialEducation: boolean;
   /** Student ID for photo upload API */
   studentId: string;
   /** Current photo URL or null */
@@ -31,6 +33,7 @@ export function StudentEditHero({
   initials,
   referenceNumber,
   isActive,
+  isSpecialEducation,
   studentId,
   photoUrl,
   canEditPhoto,
@@ -64,8 +67,9 @@ export function StudentEditHero({
                   Edit student
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+                  <h1 className="flex items-center font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
                     {fullName}
+                    <SpedBadge isSped={isSpecialEducation} />
                   </h1>
                   <span
                     className={cn(

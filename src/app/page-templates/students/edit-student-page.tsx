@@ -111,6 +111,7 @@ export async function InternalEditStudentPage(props: {
         initials={initials}
         referenceNumber={student.referenceNumber}
         isActive={student.isActive}
+        isSpecialEducation={student.isSpecialEducation}
         studentId={student.id}
         photoUrl={student.photoUrl}
         canEditPhoto={canEditPhoto}
