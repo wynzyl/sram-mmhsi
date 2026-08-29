@@ -75,6 +75,8 @@ export async function InternalNewAssessmentForEnrollmentPage(props: {
         existingDiscountRequests={existingDiscountRequests}
         canReviewDiscounts={canReviewDiscounts}
         expectedDiscounts={expectedDiscounts}
+        isSpedStudent={e.isSpedStudent}
+        defaultSpedFeeAmount={e.defaultSpedFeeAmount}
       />
     </div>
   );
