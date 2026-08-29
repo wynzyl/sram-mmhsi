@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, FileText, UserPlus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -51,8 +52,9 @@ export default function ReadyToEnrollTable({
         header: "Student Name",
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span className="font-semibold text-foreground">
+            <span className="flex items-center font-semibold text-foreground">
               {row.original.lastName}, {row.original.firstName}
+              <SpedBadge isSped={row.original.isSpecialEducation} />
             </span>
           </div>
         ),

@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatDate } from "@/lib/utils/date";
 import { getInitials } from "@/lib/utils/name";
 import type { ArchivedStudentRow } from "../archive.queries";
@@ -40,13 +41,16 @@ export function ArchiveDirectoryTable({
                 {getInitials(`${data.firstName} ${data.lastName}`)}
               </div>
               <div>
-                <Link
-                  href={`/staff/archive/${data.id}`}
-                  prefetch={false}
-                  className="font-medium text-foreground hover:text-primary hover:underline"
-                >
-                  {formatStudentName(data)}
-                </Link>
+                <span className="flex items-center">
+                  <Link
+                    href={`/staff/archive/${data.id}`}
+                    prefetch={false}
+                    className="font-medium text-foreground hover:text-primary hover:underline"
+                  >
+                    {formatStudentName(data)}
+                  </Link>
+                  <SpedBadge isSped={data.isSpecialEducation} />
+                </span>
                 {data.lastEnrollmentSchoolYear && (
                   <p className="text-xs text-muted-foreground">
                     {data.lastEnrollmentSchoolYear}

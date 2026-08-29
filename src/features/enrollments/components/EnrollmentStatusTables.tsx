@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import { TablePagination } from "@/components/ui/TablePagination";
@@ -71,12 +72,15 @@ export function PendingEnrollmentsTable({
         accessorKey: "lastName",
         header: "Student Name",
         cell: ({ row }) => (
-          <Link
-            href={`${basePath}/students/${row.original.studentId}`}
-            className="font-semibold text-primary hover:underline"
-          >
-            {row.original.lastName}, {row.original.firstName}
-          </Link>
+          <span className="flex items-center">
+            <Link
+              href={`${basePath}/students/${row.original.studentId}`}
+              className="font-semibold text-primary hover:underline"
+            >
+              {row.original.lastName}, {row.original.firstName}
+            </Link>
+            <SpedBadge isSped={row.original.isSpecialEducation} />
+          </span>
         ),
       },
       {
@@ -204,12 +208,15 @@ export function AssessedEnrollmentsTable({
         accessorKey: "lastName",
         header: "Student Name",
         cell: ({ row }) => (
-          <Link
-            href={`${basePath}/students/${row.original.studentId}`}
-            className="font-semibold text-primary hover:underline"
-          >
-            {row.original.lastName}, {row.original.firstName}
-          </Link>
+          <span className="flex items-center">
+            <Link
+              href={`${basePath}/students/${row.original.studentId}`}
+              className="font-semibold text-primary hover:underline"
+            >
+              {row.original.lastName}, {row.original.firstName}
+            </Link>
+            <SpedBadge isSped={row.original.isSpecialEducation} />
+          </span>
         ),
       },
       {
@@ -353,12 +360,15 @@ export function EnrolledStudentsTable({
         accessorKey: "lastName",
         header: "Student Name",
         cell: ({ row }) => (
-          <Link
-            href={`${basePath}/students/${row.original.studentId}`}
-            className="font-semibold text-primary hover:underline"
-          >
-            {row.original.lastName}, {row.original.firstName}
-          </Link>
+          <span className="flex items-center">
+            <Link
+              href={`${basePath}/students/${row.original.studentId}`}
+              className="font-semibold text-primary hover:underline"
+            >
+              {row.original.lastName}, {row.original.firstName}
+            </Link>
+            <SpedBadge isSped={row.original.isSpecialEducation} />
+          </span>
         ),
       },
       {
@@ -473,12 +483,15 @@ export function CancelledEnrollmentsTable({
         accessorKey: "lastName",
         header: "Student Name",
         cell: ({ row }) => (
-          <Link
-            href={`${basePath}/students/${row.original.studentId}`}
-            className="font-semibold text-muted-foreground hover:underline"
-          >
-            {row.original.lastName}, {row.original.firstName}
-          </Link>
+          <span className="flex items-center">
+            <Link
+              href={`${basePath}/students/${row.original.studentId}`}
+              className="font-semibold text-muted-foreground hover:underline"
+            >
+              {row.original.lastName}, {row.original.firstName}
+            </Link>
+            <SpedBadge isSped={row.original.isSpecialEducation} />
+          </span>
         ),
       },
       {

@@ -15,6 +15,7 @@ export type StudentListRow = {
   studentId: string;
   studentRef: string; // 7-digit Student ID (e.g. "0000001")
   studentName: string; // "DELA CRUZ, Juan Miguel" (Lastname, Firstname Middlename)
+  isSpecialEducation: boolean;
   gradeLevel: string;
   address: string; // student address
   guardianName: string; // primary guardian "Juan Dela Cruz"
@@ -82,6 +83,7 @@ function mapRow(row: {
   studentFirstName: string;
   studentMiddleName: string | null;
   studentLastName: string;
+  isSpecialEducation: boolean;
   gradeLevel: string;
   studentAddress: string | null;
   guardianFirstName: string | null;
@@ -103,6 +105,7 @@ function mapRow(row: {
     studentId: row.studentId,
     studentRef: row.referenceNumber,
     studentName: `${row.studentLastName}, ${firstAndMiddle}`,
+    isSpecialEducation: row.isSpecialEducation,
     gradeLevel: row.gradeLevel,
     address: row.studentAddress ?? "",
     guardianName,
@@ -117,6 +120,7 @@ const SELECT_SHAPE = (guardian: ReturnType<typeof primaryGuardianSubquery>) => (
   studentFirstName: students.firstName,
   studentMiddleName: students.middleName,
   studentLastName: students.lastName,
+  isSpecialEducation: students.isSpecialEducation,
   gradeLevel: gradeLevels.name,
   studentAddress: students.address,
   guardianFirstName: guardian.firstName,

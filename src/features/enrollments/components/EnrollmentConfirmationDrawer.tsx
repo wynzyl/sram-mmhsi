@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useFormToast } from "@/hooks/useFormToast";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import {
   confirmEnrollmentAction,
   fetchReadyToEnrollDetailAction,
@@ -89,8 +90,9 @@ export default function EnrollmentConfirmationDrawer({
           <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
             {isOldStudent ? "Re-Enrollment Confirmation" : "Enrollment Confirmation"}
           </p>
-          <DialogTitle className="font-display text-2xl font-bold tracking-tight">
+          <DialogTitle className="flex items-center font-display text-2xl font-bold tracking-tight">
             {student.lastName}, {student.firstName}
+            <SpedBadge isSped={student.isSpecialEducation} />
           </DialogTitle>
           <DialogDescription className="font-mono text-xs">
             {student.studentRef}

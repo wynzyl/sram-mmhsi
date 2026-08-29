@@ -15,6 +15,7 @@ export interface StudentForSectionAssignment {
   middleName: string | null;
   lastName: string;
   suffix: string | null;
+  isSpecialEducation: boolean;
   gradeLevelId: string;
   gradeLevelName: string;
   gradeLevelOrder: number;

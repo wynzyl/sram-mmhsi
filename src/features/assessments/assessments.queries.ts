@@ -25,6 +25,7 @@ import { formatDate } from "@/lib/utils/date";
 export type AssessmentListItem = {
   id: string;
   studentName: string;
+  isSpecialEducation: boolean;
   gradeLevel: string;
   schoolYear: string;
   totalAmount: number;
@@ -189,6 +190,7 @@ export async function getAssessmentsList(
         transferredAt: assessments.transferredAt,
         studentLastName: students.lastName,
         studentFirstName: students.firstName,
+        isSpecialEducation: students.isSpecialEducation,
         schoolYear: schoolYears.label,
         gradeLevel: gradeLevels.name,
       })
@@ -209,6 +211,7 @@ export async function getAssessmentsList(
     (r): AssessmentListItem => ({
       id: r.id,
       studentName: `${r.studentLastName}, ${r.studentFirstName}`,
+      isSpecialEducation: r.isSpecialEducation,
       gradeLevel: r.gradeLevel,
       schoolYear: r.schoolYear,
       totalAmount: Number(r.totalAmount),

@@ -16,6 +16,7 @@ export type AccountsReceivableRow = {
   studentId: string;
   studentRef: string; // user-facing 7-digit Student ID
   studentName: string; // "DELA CRUZ, Juan Miguel" (Lastname, Firstname Middlename)
+  isSpecialEducation: boolean;
   schoolYearLabel: string; // e.g. "2025-2026"
   balance: number; // outstanding balance (assessments.balance)
   lastPaymentDate: Date | null; // most recent posted payment, null if none
@@ -81,6 +82,7 @@ const SELECT_SHAPE = (lastPayment: ReturnType<typeof lastPaymentSubquery>) => ({
   studentFirstName: students.firstName,
   studentMiddleName: students.middleName,
   studentLastName: students.lastName,
+  isSpecialEducation: students.isSpecialEducation,
   schoolYearLabel: schoolYears.label,
   balance: assessments.balance,
   assessmentCreatedAt: assessments.createdAt,
@@ -100,6 +102,7 @@ function mapRow(row: {
   studentFirstName: string;
   studentMiddleName: string | null;
   studentLastName: string;
+  isSpecialEducation: boolean;
   schoolYearLabel: string;
   balance: string;
   assessmentCreatedAt: Date;
@@ -124,6 +127,7 @@ function mapRow(row: {
     studentId: row.studentId,
     studentRef: row.studentRef,
     studentName: `${row.studentLastName}, ${firstAndMiddle}`,
+    isSpecialEducation: row.isSpecialEducation,
     schoolYearLabel: row.schoolYearLabel,
     balance: Number(row.balance),
     lastPaymentDate,

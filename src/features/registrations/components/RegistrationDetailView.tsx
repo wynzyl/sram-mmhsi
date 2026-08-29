@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { DataCard } from "@/components/ui/editorial/DataCard";
 import { GuardianCard } from "@/features/registrations/components/GuardianCard";
 import { StatusIndicator } from "@/components/ui/editorial/StatusIndicator";
@@ -175,8 +176,9 @@ export function RegistrationDetailView({
               </div>
               <div className="min-w-0 space-y-2 pb-1 sm:pb-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+                  <h1 className="flex items-center font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
                     {fullName}
+                    <SpedBadge isSped={student.isSpecialEducation} />
                   </h1>
                   <span
                     className={cn(

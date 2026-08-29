@@ -10,6 +10,7 @@ export type BfxTransferRow = {
   studentId: string;
   studentName: string;
   studentRef: string;
+  isSpecialEducation: boolean;
   sourceSchoolYearId: string;
   sourceSchoolYearLabel: string;
   amount: string;
@@ -74,6 +75,7 @@ export async function getBfxTransfersReport(
         studentFirstName: students.firstName,
         studentLastName: students.lastName,
         studentRef: students.referenceNumber,
+        isSpecialEducation: students.isSpecialEducation,
         sourceSchoolYearId: assessments.schoolYearId,
         sourceSchoolYearLabel: schoolYears.label,
         amount: payments.amount,
@@ -105,6 +107,7 @@ export async function getBfxTransfersReport(
     studentId: row.studentId,
     studentName: `${row.studentLastName}, ${row.studentFirstName}`,
     studentRef: row.studentRef,
+    isSpecialEducation: row.isSpecialEducation,
     sourceSchoolYearId: row.sourceSchoolYearId,
     sourceSchoolYearLabel: row.sourceSchoolYearLabel,
     amount: row.amount,
@@ -152,6 +155,7 @@ export async function getAllBfxData(params: {
       studentFirstName: students.firstName,
       studentLastName: students.lastName,
       studentRef: students.referenceNumber,
+      isSpecialEducation: students.isSpecialEducation,
       sourceSchoolYearId: assessments.schoolYearId,
       sourceSchoolYearLabel: schoolYears.label,
       amount: payments.amount,
@@ -174,6 +178,7 @@ export async function getAllBfxData(params: {
     studentId: row.studentId,
     studentName: `${row.studentLastName}, ${row.studentFirstName}`,
     studentRef: row.studentRef,
+    isSpecialEducation: row.isSpecialEducation,
     sourceSchoolYearId: row.sourceSchoolYearId,
     sourceSchoolYearLabel: row.sourceSchoolYearLabel,
     amount: row.amount,

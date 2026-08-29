@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils/cn";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { ClientTablePagination } from "@/components/ui/ClientTablePagination";
 import {
   Select,
@@ -180,12 +181,13 @@ export function SectionAssignmentTable({
         accessorFn: (row) =>
           `${row.lastName}, ${row.firstName}${row.middleName ? ` ${row.middleName.charAt(0)}.` : ""}${row.suffix ? ` ${row.suffix}` : ""}`,
         cell: ({ row }) => {
-          const { firstName, lastName, middleName, suffix } = row.original;
+          const { firstName, lastName, middleName, suffix, isSpecialEducation } = row.original;
           return (
-            <span>
+            <span className="flex items-center">
               {lastName}, {firstName}
               {middleName ? ` ${middleName.charAt(0)}.` : ""}
               {suffix ? ` ${suffix}` : ""}
+              <SpedBadge isSped={isSpecialEducation} />
             </span>
           );
         },

@@ -56,6 +56,7 @@ export type DocumentRequestListItem = {
   studentId: string;
   studentRef: string;
   studentName: string;
+  isSpecialEducation: boolean;
   documentType: DocumentRequestType;
   purpose: string | null;
   copies: number;
@@ -268,6 +269,7 @@ export async function fetchDocumentRequestsPage(
         studentRef: students.referenceNumber,
         firstName: students.firstName,
         lastName: students.lastName,
+        isSpecialEducation: students.isSpecialEducation,
         documentType: documentRequests.documentType,
         purpose: documentRequests.purpose,
         copies: documentRequests.copies,
@@ -311,6 +313,7 @@ export async function fetchDocumentRequestsPage(
       studentId: r.studentId,
       studentRef: r.studentRef,
       studentName: `${r.lastName}, ${r.firstName}`,
+      isSpecialEducation: r.isSpecialEducation,
       documentType: r.documentType as DocumentRequestType,
       purpose: r.purpose,
       copies: r.copies,
@@ -349,6 +352,7 @@ export async function getDocumentRequestById(
       studentRef: students.referenceNumber,
       firstName: students.firstName,
       lastName: students.lastName,
+      isSpecialEducation: students.isSpecialEducation,
       schoolYearId: documentRequests.schoolYearId,
       documentType: documentRequests.documentType,
       purpose: documentRequests.purpose,
@@ -408,6 +412,7 @@ export async function getDocumentRequestById(
     studentId: row.studentId,
     studentRef: row.studentRef,
     studentName: `${row.lastName}, ${row.firstName}`,
+    isSpecialEducation: row.isSpecialEducation,
     schoolYearId: row.schoolYearId,
     schoolYearLabel,
     documentType: row.documentType as DocumentRequestType,

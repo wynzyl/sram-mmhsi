@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatDateTime } from "@/lib/utils/date";
 import { DOCUMENT_REQUEST_TYPE_LABELS } from "@/lib/constants/document-requests";
 import type { DocumentRequestListItem } from "../document-requests.queries";
@@ -60,13 +61,16 @@ export function DocumentRequestsTable({
                 {showStudentLink && (
                   <td className="py-3 pl-4">
                     <div>
-                      <Link
-                        href={`/staff/archive/${row.studentId}`}
-                        prefetch={false}
-                        className="font-medium text-foreground hover:text-primary hover:underline"
-                      >
-                        {row.studentName}
-                      </Link>
+                      <span className="flex items-center">
+                        <Link
+                          href={`/staff/archive/${row.studentId}`}
+                          prefetch={false}
+                          className="font-medium text-foreground hover:text-primary hover:underline"
+                        >
+                          {row.studentName}
+                        </Link>
+                        <SpedBadge isSped={row.isSpecialEducation} />
+                      </span>
                       <p className="font-mono text-xs text-muted-foreground">
                         {row.studentRef}
                       </p>
