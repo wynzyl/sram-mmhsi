@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { StudentRecordTabShell, type StudentRecordTabDef } from "@/features/students/components/StudentRecordTabShell";
 import { StudentAvatar } from "@/features/students/components/StudentAvatar";
+import { SpedStatusToggle } from "./SpedStatusToggle";
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import type { StudentRequirementsSnapshot } from "@/features/registrations/registrations.queries";
 import {
@@ -35,6 +36,7 @@ export type StudentRecordStudent = {
   submittedDocumentsNotes: string | null;
   photoUrl: string | null;
   isActive: boolean;
+  isSpecialEducation: boolean;
   createdAt: Date;
 };
 
@@ -678,6 +680,11 @@ export function StudentRecordProfile({
                     </span>
                   </span>
                 </div>
+                <SpedStatusToggle
+                  studentId={student.id}
+                  isSpecialEducation={student.isSpecialEducation}
+                  canEdit={flags.canEditStudent}
+                />
               </div>
             </div>
           </div>

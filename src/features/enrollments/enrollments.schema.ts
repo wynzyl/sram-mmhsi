@@ -29,6 +29,13 @@ export const CreateEnrollmentSchema = z
     sectionId: z.string().uuid().optional(),
     registrationId: z.string().uuid().optional(),
     studentType: enrollmentStudentTypeEnumSchema.default("new_student"),
+    /**
+     * Override the student's default SPED status for this enrollment.
+     * - undefined/null: Inherit from student.isSpecialEducation
+     * - true: Force SPED status for this enrollment
+     * - false: Force non-SPED status for this enrollment
+     */
+    specialEducationOverride: z.boolean().nullable().optional(),
     previousSchool: z.preprocess(
       preprocessOptionalTrimmedString,
       z.string().max(500, "Too long.").optional()
@@ -133,6 +140,8 @@ export const ConfirmEnrollmentSchema = z.object({
   registrationId: z.string().uuid("Invalid registration ID.").optional(),
   // For transferees, if previousSchool is not already in student record
   previousSchool: z.string().trim().max(500, "Previous school name is too long.").optional(),
+  /** Override the student's default SPED status for this enrollment. */
+  specialEducationOverride: z.boolean().nullable().optional(),
 });
 
 export type ConfirmEnrollmentInput = z.infer<typeof ConfirmEnrollmentSchema>;
@@ -153,6 +162,8 @@ export const QuickConfirmEnrollmentSchema = z.object({
   gradeLevelId: z.string().uuid(),
   studentType: enrollmentStudentTypeEnumSchema,
   registrationId: z.string().uuid().optional(),
+  /** Override the student's default SPED status for this enrollment. */
+  specialEducationOverride: z.boolean().nullable().optional(),
 });
 
 export type QuickConfirmEnrollmentInput = z.infer<typeof QuickConfirmEnrollmentSchema>;

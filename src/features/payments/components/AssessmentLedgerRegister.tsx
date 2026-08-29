@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useActionState, useMemo } from "react";
@@ -111,6 +112,8 @@ export type AssessmentLedgerRegisterProps = {
    * here — settle on the active enrollment instead. Computed server-side.
    */
   cancelledWithActiveEnrollment?: boolean;
+  /** Slot for SPED fee management component (rendered in actions area) */
+  spedFeeSlot?: ReactNode;
 };
 
 function lineSignedAmount(item: LedgerLineItem): number {
@@ -144,6 +147,7 @@ export default function AssessmentLedgerRegister({
   manualSuggestions,
   mostRecentVoidablePaymentId,
   cancelledWithActiveEnrollment = false,
+  spedFeeSlot,
 }: AssessmentLedgerRegisterProps) {
   const router = useRouter();
   const [payOpen, setPayOpen] = useState(false);
@@ -268,7 +272,7 @@ export default function AssessmentLedgerRegister({
           {canOpenPay && (
             <button
               type="button"
-              className="inline-flex items-center gap-[0.45rem] h-[38px] px-4 bg-primary text-white text-[13px] font-semibold tracking-[0.005em] border border-primary/80 rounded-md cursor-pointer shadow-sm transition-colors hover:bg-primary/90 active:translate-y-px focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+              className="inline-flex items-center justify-center gap-[0.45rem] h-[38px] min-w-[140px] px-4 bg-primary text-white text-[13px] font-semibold tracking-[0.005em] border border-primary/80 rounded-md cursor-pointer shadow-sm transition-colors hover:bg-primary/90 active:translate-y-px focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
               onClick={openPayment}
             >
               {/* Receipt icon */}
@@ -281,6 +285,8 @@ export default function AssessmentLedgerRegister({
               Receive payment
             </button>
           )}
+          {/* SPED Fee management slot */}
+          {spedFeeSlot}
           <GenerateInvoiceButton
             assessmentId={assessment.id}
             balance={balanceNum}
@@ -290,7 +296,7 @@ export default function AssessmentLedgerRegister({
           {canShowCancelButton && !cancelOpen && (
             <button
               type="button"
-              className="inline-flex items-center gap-[0.45rem] h-[38px] px-4 bg-transparent text-destructive text-[13px] font-semibold tracking-[0.005em] border border-destructive rounded-md cursor-pointer transition-colors hover:bg-destructive hover:text-white active:translate-y-px focus-visible:outline-2 focus-visible:outline-destructive focus-visible:outline-offset-2"
+              className="inline-flex items-center justify-center gap-[0.45rem] h-[38px] min-w-[140px] px-4 bg-transparent text-destructive text-[13px] font-semibold tracking-[0.005em] border border-destructive rounded-md cursor-pointer transition-colors hover:bg-destructive hover:text-white active:translate-y-px focus-visible:outline-2 focus-visible:outline-destructive focus-visible:outline-offset-2"
               onClick={() => setCancelOpen(true)}
             >
               {/* X icon */}

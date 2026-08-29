@@ -69,6 +69,16 @@ const defaultFeeTypes = [
     isDiscount: false,
     displayOrder: 7,
   },
+
+  // Special Education
+  {
+    code: "SPED_FEE",
+    name: "Special Education Fee",
+    category: "fees" as const,
+    isDiscount: false,
+    isRefundable: true,
+    displayOrder: 50,
+  },
 ];
 
 // ─── Exportable Seed Function ─────────────────────────────────────────────────

@@ -649,6 +649,8 @@ export const students = pgTable(
     archiveReason: text("archive_reason"),
     /** School year when the student was archived (for EOY batch operations) */
     archivedSchoolYearId: uuid("archived_school_year_id").references(() => schoolYears.id),
+    /** Whether this student requires Special Education (SPED) services */
+    isSpecialEducation: boolean("is_special_education").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -770,6 +772,13 @@ export const enrollments = pgTable(
     /** Required for new_student / transferee enrollments; null for old_student or legacy rows. */
     intakeDocuments: jsonb("intake_documents").$type<EnrollmentIntakeDocuments | null>(),
     status: enrollmentStatusEnum("status").notNull().default("pending"),
+    /**
+     * Override the student's default SPED status for this enrollment.
+     * - null: Inherit from student.isSpecialEducation
+     * - true: Force SPED status for this enrollment
+     * - false: Force non-SPED status for this enrollment
+     */
+    specialEducationOverride: boolean("special_education_override"),
     enrolledAt: timestamp("enrolled_at"),
     cancelledAt: timestamp("cancelled_at"),
     cancelledBy: uuid("cancelled_by").references(() => users.id),

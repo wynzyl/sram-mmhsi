@@ -11,6 +11,8 @@ interface GenerateInvoiceButtonProps {
   disabledReason?: string;
 }
 
+const buttonClass = "inline-flex items-center justify-center gap-[0.45rem] h-[38px] min-w-[140px] px-4 bg-card text-foreground text-[13px] font-semibold tracking-[0.005em] border border-border rounded-md cursor-pointer transition-colors hover:bg-muted active:translate-y-px focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2";
+
 export default function GenerateInvoiceButton({
   assessmentId,
   balance,
@@ -23,29 +25,29 @@ export default function GenerateInvoiceButton({
     ? disabledReason ?? "Invoice generation not available"
     : "Balance already settled!";
 
+  if (isDisabled) {
+    return (
+      <button
+        type="button"
+        disabled
+        className={buttonClass}
+        title={disabledTitle}
+        style={{ opacity: 0.5, cursor: "not-allowed" }}
+      >
+        Generate Invoice
+      </button>
+    );
+  }
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-      {isDisabled ? (
-        <button
-          type="button"
-          disabled
-          className="btn-secondary btn-sm"
-          title={disabledTitle}
-          style={{ opacity: 0.5, cursor: "not-allowed" }}
-        >
-          Generate Invoice
-        </button>
-      ) : (
-        <ConfirmActionButton
-          action={generateInvoiceConfirmAction}
-          confirmMessage="Generate invoice for this assessment? This creates a financial record."
-          hiddenFields={{ assessmentId }}
-          label="Generate Invoice"
-          loadingLabel="Generating..."
-          variant="secondary"
-          className="btn-secondary btn-sm"
-        />
-      )}
-    </div>
+    <ConfirmActionButton
+      action={generateInvoiceConfirmAction}
+      confirmMessage="Generate invoice for this assessment? This creates a financial record."
+      hiddenFields={{ assessmentId }}
+      label="Generate Invoice"
+      loadingLabel="Generating..."
+      variant="secondary"
+      className={buttonClass}
+    />
   );
 }
