@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Image from "next/image";
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -8,6 +9,7 @@ import { SpedBadge } from "@/components/shared/SpedBadge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, FileText, UserPlus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
+import { getInitials } from "@/lib/utils/name";
 import type { ReadyToEnrollListRow } from "../enrollments-queue.queries";
 
 type GradeLevel = {
@@ -50,14 +52,37 @@ export default function ReadyToEnrollTable({
       {
         accessorKey: "lastName",
         header: "Student Name",
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="flex items-center font-semibold text-foreground">
-              {row.original.lastName}, {row.original.firstName}
-              <SpedBadge isSped={row.original.isSpecialEducation} />
-            </span>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const student = row.original;
+          return (
+            <div className="flex items-center gap-3">
+              {student.hasEscDiscount ? (
+                <Image
+                  src="/ESC-Logo.png"
+                  alt="ESC Grantee"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 shrink-0 rounded-full object-cover"
+                  title="ESC Grantee"
+                  unoptimized
+                />
+              ) : (
+                <div
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-xs font-bold text-primary"
+                  aria-hidden
+                >
+                  {getInitials(`${student.firstName} ${student.lastName}`)}
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="flex items-center font-semibold text-foreground">
+                  {student.lastName}, {student.firstName}
+                  <SpedBadge isSped={student.isSpecialEducation} />
+                </span>
+              </div>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "studentType",

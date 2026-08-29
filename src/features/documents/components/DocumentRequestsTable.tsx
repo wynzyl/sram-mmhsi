@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatDateTime } from "@/lib/utils/date";
+import { getInitials } from "@/lib/utils/name";
 import { DOCUMENT_REQUEST_TYPE_LABELS } from "@/lib/constants/document-requests";
 import type { DocumentRequestListItem } from "../document-requests.queries";
 
@@ -60,20 +62,40 @@ export function DocumentRequestsTable({
               >
                 {showStudentLink && (
                   <td className="py-3 pl-4">
-                    <div>
-                      <span className="flex items-center">
-                        <Link
-                          href={`/staff/archive/${row.studentId}`}
-                          prefetch={false}
-                          className="font-medium text-foreground hover:text-primary hover:underline"
+                    <div className="flex items-center gap-2">
+                      {row.hasEscDiscount ? (
+                        <Image
+                          src="/ESC-Logo.png"
+                          alt="ESC Grantee"
+                          width={32}
+                          height={32}
+                          className="h-8 w-8 shrink-0 rounded-full object-cover"
+                          title="ESC Grantee"
+                          unoptimized
+                        />
+                      ) : (
+                        <div
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-xs font-bold text-primary"
+                          aria-hidden
                         >
-                          {row.studentName}
-                        </Link>
-                        <SpedBadge isSped={row.isSpecialEducation} />
-                      </span>
-                      <p className="font-mono text-xs text-muted-foreground">
-                        {row.studentRef}
-                      </p>
+                          {getInitials(row.studentName)}
+                        </div>
+                      )}
+                      <div>
+                        <span className="flex items-center">
+                          <Link
+                            href={`/staff/archive/${row.studentId}`}
+                            prefetch={false}
+                            className="font-medium text-foreground hover:text-primary hover:underline"
+                          >
+                            {row.studentName}
+                          </Link>
+                          <SpedBadge isSped={row.isSpecialEducation} />
+                        </span>
+                        <p className="font-mono text-xs text-muted-foreground">
+                          {row.studentRef}
+                        </p>
+                      </div>
                     </div>
                   </td>
                 )}

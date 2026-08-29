@@ -8,6 +8,7 @@ export type PaymentCollectionRow = {
   studentName: string; // "DELA CRUZ, Juan"
   studentRef: string; // "SRAMS-2026-00001"
   isSpecialEducation: boolean;
+  hasEscDiscount: boolean; // ESC grantee indicator
   gradeLevel: string; // "Grade 7"
   schoolYear: string; // "2025-2026"
   amount: string;

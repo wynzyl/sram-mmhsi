@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
+import Image from "next/image";
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
+import { getInitials } from "@/lib/utils/name";
 import { TablePagination } from "@/components/ui/TablePagination";
 import Link from "next/link";
 import type {
@@ -71,17 +73,40 @@ export function PendingEnrollmentsTable({
       {
         accessorKey: "lastName",
         header: "Student Name",
-        cell: ({ row }) => (
-          <span className="flex items-center">
-            <Link
-              href={`${basePath}/students/${row.original.studentId}`}
-              className="font-semibold text-primary hover:underline"
-            >
-              {row.original.lastName}, {row.original.firstName}
-            </Link>
-            <SpedBadge isSped={row.original.isSpecialEducation} />
-          </span>
-        ),
+        cell: ({ row }) => {
+          const data = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              {data.hasEscDiscount ? (
+                <Image
+                  src="/ESC-Logo.png"
+                  alt="ESC Grantee"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  title="ESC Grantee"
+                  unoptimized
+                />
+              ) : (
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-[10px] font-bold text-primary"
+                  aria-hidden
+                >
+                  {getInitials(`${data.firstName} ${data.lastName}`)}
+                </div>
+              )}
+              <span className="flex items-center">
+                <Link
+                  href={`${basePath}/students/${data.studentId}`}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  {data.lastName}, {data.firstName}
+                </Link>
+                <SpedBadge isSped={data.isSpecialEducation} />
+              </span>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "studentType",
@@ -207,17 +232,40 @@ export function AssessedEnrollmentsTable({
       {
         accessorKey: "lastName",
         header: "Student Name",
-        cell: ({ row }) => (
-          <span className="flex items-center">
-            <Link
-              href={`${basePath}/students/${row.original.studentId}`}
-              className="font-semibold text-primary hover:underline"
-            >
-              {row.original.lastName}, {row.original.firstName}
-            </Link>
-            <SpedBadge isSped={row.original.isSpecialEducation} />
-          </span>
-        ),
+        cell: ({ row }) => {
+          const data = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              {data.hasEscDiscount ? (
+                <Image
+                  src="/ESC-Logo.png"
+                  alt="ESC Grantee"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  title="ESC Grantee"
+                  unoptimized
+                />
+              ) : (
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-[10px] font-bold text-primary"
+                  aria-hidden
+                >
+                  {getInitials(`${data.firstName} ${data.lastName}`)}
+                </div>
+              )}
+              <span className="flex items-center">
+                <Link
+                  href={`${basePath}/students/${data.studentId}`}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  {data.lastName}, {data.firstName}
+                </Link>
+                <SpedBadge isSped={data.isSpecialEducation} />
+              </span>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "gradeName",
@@ -359,17 +407,40 @@ export function EnrolledStudentsTable({
       {
         accessorKey: "lastName",
         header: "Student Name",
-        cell: ({ row }) => (
-          <span className="flex items-center">
-            <Link
-              href={`${basePath}/students/${row.original.studentId}`}
-              className="font-semibold text-primary hover:underline"
-            >
-              {row.original.lastName}, {row.original.firstName}
-            </Link>
-            <SpedBadge isSped={row.original.isSpecialEducation} />
-          </span>
-        ),
+        cell: ({ row }) => {
+          const data = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              {data.hasEscDiscount ? (
+                <Image
+                  src="/ESC-Logo.png"
+                  alt="ESC Grantee"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  title="ESC Grantee"
+                  unoptimized
+                />
+              ) : (
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-[10px] font-bold text-primary"
+                  aria-hidden
+                >
+                  {getInitials(`${data.firstName} ${data.lastName}`)}
+                </div>
+              )}
+              <span className="flex items-center">
+                <Link
+                  href={`${basePath}/students/${data.studentId}`}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  {data.lastName}, {data.firstName}
+                </Link>
+                <SpedBadge isSped={data.isSpecialEducation} />
+              </span>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "studentType",
@@ -482,17 +553,40 @@ export function CancelledEnrollmentsTable({
       {
         accessorKey: "lastName",
         header: "Student Name",
-        cell: ({ row }) => (
-          <span className="flex items-center">
-            <Link
-              href={`${basePath}/students/${row.original.studentId}`}
-              className="font-semibold text-muted-foreground hover:underline"
-            >
-              {row.original.lastName}, {row.original.firstName}
-            </Link>
-            <SpedBadge isSped={row.original.isSpecialEducation} />
-          </span>
-        ),
+        cell: ({ row }) => {
+          const data = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              {data.hasEscDiscount ? (
+                <Image
+                  src="/ESC-Logo.png"
+                  alt="ESC Grantee"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 shrink-0 rounded-full object-cover opacity-60"
+                  title="ESC Grantee"
+                  unoptimized
+                />
+              ) : (
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-[10px] font-bold text-primary opacity-60"
+                  aria-hidden
+                >
+                  {getInitials(`${data.firstName} ${data.lastName}`)}
+                </div>
+              )}
+              <span className="flex items-center">
+                <Link
+                  href={`${basePath}/students/${data.studentId}`}
+                  className="font-semibold text-muted-foreground hover:underline"
+                >
+                  {data.lastName}, {data.firstName}
+                </Link>
+                <SpedBadge isSped={data.isSpecialEducation} />
+              </span>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "studentType",

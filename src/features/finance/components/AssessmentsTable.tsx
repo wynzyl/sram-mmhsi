@@ -12,6 +12,7 @@ interface Assessment {
   id: string;
   studentName: string;
   isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   gradeLevel: string;
   schoolYear: string;
   totalAmount: number;
@@ -64,6 +65,7 @@ function AssessmentsTableComponent({
                   <StudentAvatarCell
                     name={assessment.studentName}
                     badge={<SpedBadge isSped={assessment.isSpecialEducation} />}
+                    hasEscDiscount={assessment.hasEscDiscount}
                   />
                 </td>
                 <td className="align-middle py-3 text-foreground">
