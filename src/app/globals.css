@@ -448,90 +448,90 @@
    Neutral gray palette for a professional minimal look
    ─────────────────────────────────────────────────────────────── */
 
-/* Graphite Light */
-.theme-graphite {
-  --primary: #606060;
+/* Bubblegum Light */
+.theme-bubblegum {
+  --primary: #db2777;
   --primary-foreground: #ffffff;
-  --card: #fafafa;
-  --card-foreground: #1a1a1a;
-  --ring: #606060;
-  --sidebar-primary: #606060;
+  --card: #fdf2f8;
+  --card-foreground: #500724;
+  --ring: #db2777;
+  --sidebar-primary: #db2777;
   --sidebar-primary-foreground: #ffffff;
-  --accent: #e0e0e0;
-  --accent-foreground: #333333;
-  --secondary: #e0e0e0;
-  --secondary-foreground: #333333;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
+  --accent: #fbcfe8;
+  --accent-foreground: #9d174d;
+  --secondary: #fce7f3;
+  --secondary-foreground: #831843;
+  --muted: #fce7f3;
+  --muted-foreground: #9d174d;
   --success: #10b981;
   --success-foreground: #ffffff;
-  --chart-1: #606060;
-  --chart-2: #808080;
-  --chart-3: #505050;
-  --chart-4: #404040;
-  --chart-5: #303030;
+  --chart-1: #db2777;
+  --chart-2: #ec4899;
+  --chart-3: #be185d;
+  --chart-4: #9d174d;
+  --chart-5: #831843;
 
   /* Auth theme adjustments */
-  --auth-accent: #505050;
-  --auth-gradient-1: rgba(96, 96, 96, 0.18);
-  --auth-gradient-2: rgba(96, 96, 96, 0.10);
-  --auth-gradient-3: rgba(96, 96, 96, 0.06);
+  --auth-accent: #be185d;
+  --auth-gradient-1: rgba(219, 39, 119, 0.18);
+  --auth-gradient-2: rgba(219, 39, 119, 0.10);
+  --auth-gradient-3: rgba(219, 39, 119, 0.06);
 
-  /* Graphite theme gradients */
-  --gradient-primary: linear-gradient(135deg, #606060 0%, #909090 100%);
-  --avatar-gradient: linear-gradient(135deg, #505050 0%, #808080 100%);
+  /* Bubblegum theme gradients */
+  --gradient-primary: linear-gradient(135deg, #db2777 0%, #ec4899 100%);
+  --avatar-gradient: linear-gradient(135deg, #be185d 0%, #ec4899 100%);
 }
 
-/* Graphite Dark */
-.dark.theme-graphite {
-  --background: #121212;
-  --foreground: #e5e5e5;
-  --primary: #a0a0a0;
-  --primary-foreground: #1a1a1a;
-  --card: #1e1e1e;
-  --card-foreground: #e5e5e5;
-  --popover: #1e1e1e;
-  --popover-foreground: #e5e5e5;
-  --ring: #a0a0a0;
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #d9d9d9;
-  --sidebar-primary: #a0a0a0;
-  --sidebar-primary-foreground: #1a1a1a;
-  --sidebar-accent: #303030;
-  --sidebar-accent-foreground: #d9d9d9;
-  --sidebar-border: #303030;
-  --accent: #303030;
-  --accent-foreground: #d9d9d9;
-  --secondary: #303030;
-  --secondary-foreground: #d9d9d9;
-  --muted: #262626;
-  --muted-foreground: #a3a3a3;
-  --border: #303030;
-  --input: #303030;
+/* Bubblegum Dark */
+.dark.theme-bubblegum {
+  --background: #1a0a10;
+  --foreground: #fce7f3;
+  --primary: #f472b6;
+  --primary-foreground: #500724;
+  --card: #2d1320;
+  --card-foreground: #fce7f3;
+  --popover: #2d1320;
+  --popover-foreground: #fce7f3;
+  --ring: #f472b6;
+  --sidebar: #12080c;
+  --sidebar-foreground: #fbcfe8;
+  --sidebar-primary: #f472b6;
+  --sidebar-primary-foreground: #500724;
+  --sidebar-accent: #4a1d32;
+  --sidebar-accent-foreground: #fbcfe8;
+  --sidebar-border: #4a1d32;
+  --accent: #4a1d32;
+  --accent-foreground: #fbcfe8;
+  --secondary: #3d1628;
+  --secondary-foreground: #fce7f3;
+  --muted: #2d1320;
+  --muted-foreground: #f9a8d4;
+  --border: #4a1d32;
+  --input: #4a1d32;
   --success: #34d399;
   --success-foreground: #064e3b;
-  --chart-1: #a0a0a0;
-  --chart-2: #b8b8b8;
-  --chart-3: #808080;
-  --chart-4: #686868;
-  --chart-5: #505050;
+  --chart-1: #f472b6;
+  --chart-2: #f9a8d4;
+  --chart-3: #ec4899;
+  --chart-4: #db2777;
+  --chart-5: #be185d;
 
   /* Auth theme adjustments */
-  --auth-bg: #121212;
-  --auth-card: #1e1e1e;
-  --auth-card-border: #303030;
-  --auth-accent: #a0a0a0;
-  --auth-gradient-1: rgba(160, 160, 160, 0.22);
-  --auth-gradient-2: rgba(160, 160, 160, 0.12);
+  --auth-bg: #1a0a10;
+  --auth-card: #2d1320;
+  --auth-card-border: #4a1d32;
+  --auth-accent: #f472b6;
+  --auth-gradient-1: rgba(244, 114, 182, 0.22);
+  --auth-gradient-2: rgba(244, 114, 182, 0.12);
   --auth-gradient-3: transparent;
 
   /* Override dark-mode specific aliases */
   --color-success: #34d399;
-  --color-primary-700: #b8b8b8;
+  --color-primary-700: #f9a8d4;
 
-  /* Graphite dark gradients */
-  --gradient-primary: linear-gradient(135deg, #808080 0%, #a0a0a0 100%);
-  --avatar-gradient: linear-gradient(135deg, #606060 0%, #808080 50%, #a0a0a0 100%);
+  /* Bubblegum dark gradients */
+  --gradient-primary: linear-gradient(135deg, #db2777 0%, #f472b6 100%);
+  --avatar-gradient: linear-gradient(135deg, #be185d 0%, #ec4899 50%, #f472b6 100%);
 }
 
 /* Tailwind CSS 4 Theme Bridge - Maps CSS variables to Tailwind tokens */

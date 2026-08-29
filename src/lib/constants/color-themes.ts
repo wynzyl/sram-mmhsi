@@ -5,7 +5,7 @@
  * Each theme works with both light and dark modes.
  */
 
-export const COLOR_THEMES = ["default", "cosmic", "slate", "graphite"] as const;
+export const COLOR_THEMES = ["default", "cosmic", "slate", "bubblegum"] as const;
 
 export type ColorTheme = (typeof COLOR_THEMES)[number];
 
@@ -16,7 +16,7 @@ export const COLOR_THEME_LABELS: Record<ColorTheme, string> = {
   default: "Crimson",
   cosmic: "Cosmic",
   slate: "Slate",
-  graphite: "Graphite",
+  bubblegum: "Bubblegum",
 };
 
 /**
@@ -26,7 +26,7 @@ export const COLOR_THEME_COLORS: Record<ColorTheme, string> = {
   default: "#db0000",
   cosmic: "#6e56cf",
   slate: "#6366f1",
-  graphite: "#909090",
+  bubblegum: "#ec4899",
 };
 
 /**
