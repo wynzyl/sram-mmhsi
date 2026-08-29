@@ -4,6 +4,7 @@ import {
   students,
   parentsGuardians,
   studentGuardianLinks,
+  studentDiscounts,
   enrollments,
   schoolYears,
   gradeLevels,
@@ -11,7 +12,7 @@ import {
   assessments,
   invoices,
 } from "@/lib/db/schema";
-import { eq, desc, and, isNull } from "drizzle-orm";
+import { eq, desc, and, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { isArchivedStatus, type StudentStatus } from "@/lib/constants/student-status";
@@ -52,33 +53,42 @@ export async function InternalStudentProfilePage(props: {
   const canCancelEnrollment = hasPermission(session.role, "enrollments:cancel");
   const canManagePortalAccounts = hasPermission(session.role, "portal_accounts:manage");
 
-  const studentRow = await db.query.students.findFirst({
-    where: eq(students.id, id),
-    columns: {
-      id: true,
-      referenceNumber: true,
-      firstName: true,
-      middleName: true,
-      lastName: true,
-      suffix: true,
-      dateOfBirth: true,
-      gender: true,
-      address: true,
-      lrn: true,
-      mobileNumber: true,
-      email: true,
-      nationality: true,
-      bloodType: true,
-      religion: true,
-      previousSchool: true,
-      submittedDocumentsNotes: true,
-      photoUrl: true,
-      isActive: true,
-      isSpecialEducation: true,
-      status: true,
-      createdAt: true,
-    },
-  });
+  const [studentRow] = await db
+    .select({
+      id: students.id,
+      referenceNumber: students.referenceNumber,
+      firstName: students.firstName,
+      middleName: students.middleName,
+      lastName: students.lastName,
+      suffix: students.suffix,
+      dateOfBirth: students.dateOfBirth,
+      gender: students.gender,
+      address: students.address,
+      lrn: students.lrn,
+      mobileNumber: students.mobileNumber,
+      email: students.email,
+      nationality: students.nationality,
+      bloodType: students.bloodType,
+      religion: students.religion,
+      previousSchool: students.previousSchool,
+      submittedDocumentsNotes: students.submittedDocumentsNotes,
+      photoUrl: students.photoUrl,
+      isActive: students.isActive,
+      isSpecialEducation: students.isSpecialEducation,
+      status: students.status,
+      createdAt: students.createdAt,
+      hasEscDiscount: sql<boolean>`EXISTS(
+        SELECT 1 FROM "discount_requests" dr
+        INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+        INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+        WHERE e2.student_id = "students".id
+          AND dt.code LIKE 'ESC_%'
+          AND dr.status = 'approved'
+      )`.as("has_esc_discount"),
+    })
+    .from(students)
+    .where(eq(students.id, id))
+    .limit(1);
 
   if (!studentRow) notFound();
 

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import {
   assessments,
   students,
+  studentDiscounts,
   schoolYears,
   enrollments,
   gradeLevels,
@@ -26,6 +27,7 @@ export type AssessmentListItem = {
   id: string;
   studentName: string;
   isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   gradeLevel: string;
   schoolYear: string;
   totalAmount: number;
@@ -191,6 +193,14 @@ export async function getAssessmentsList(
         studentLastName: students.lastName,
         studentFirstName: students.firstName,
         isSpecialEducation: students.isSpecialEducation,
+        hasEscDiscount: sql<boolean>`EXISTS(
+          SELECT 1 FROM "discount_requests" dr
+          INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+          INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+          WHERE e2.student_id = "students".id
+            AND dt.code LIKE 'ESC_%'
+            AND dr.status = 'approved'
+        )`.as("has_esc_discount"),
         schoolYear: schoolYears.label,
         gradeLevel: gradeLevels.name,
       })
@@ -212,6 +222,7 @@ export async function getAssessmentsList(
       id: r.id,
       studentName: `${r.studentLastName}, ${r.studentFirstName}`,
       isSpecialEducation: r.isSpecialEducation,
+      hasEscDiscount: r.hasEscDiscount,
       gradeLevel: r.gradeLevel,
       schoolYear: r.schoolYear,
       totalAmount: Number(r.totalAmount),
