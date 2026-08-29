@@ -28,6 +28,7 @@ export function buildCreateStudentFormSnapshot(
     religion: String(formData.get("religion") ?? ""),
     previousSchool: String(formData.get("previousSchool") ?? ""),
     submittedDocumentsNotes: String(formData.get("submittedDocumentsNotes") ?? ""),
+    isSpecialEducation: formData.get("isSpecialEducation") === "on" || formData.get("isSpecialEducation") === "true",
     gradeLevelId: String(formData.get("gradeLevelId") ?? ""),
     intakeForm138: snap("intakeForm138"),
     intakeBirthCertificatePsa: snap("intakeBirthCertificatePsa"),

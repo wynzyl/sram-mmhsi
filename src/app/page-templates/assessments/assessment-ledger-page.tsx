@@ -9,6 +9,7 @@ import {
   users,
   feeItemTypes,
   enrollments,
+  paymentAllocations,
 } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { requireStaffSession } from "@/lib/auth/session";
@@ -23,6 +24,9 @@ import {
 import { getStudentDiscountsByAssessment } from "@/features/discounts";
 import { isArchivedStatus } from "@/lib/constants/student-status";
 import { hasActiveEnrollmentForSchoolYear } from "@/lib/utils/enrollment-payment";
+import SpecialEducationFeeManagement from "@/features/assessments/components/SpecialEducationFeeManagement";
+import { SPED_FEE_CODE, isEffectivelySpecialEducation } from "@/lib/utils/special-education";
+import { getSpedFeeAmount } from "@/features/settings/system-settings.actions";
 
 export async function InternalAssessmentLedgerPage(props: {
   assessmentId: string;
@@ -51,8 +55,10 @@ export async function InternalAssessmentLedgerPage(props: {
       studentName: students.lastName,
       studentFirstName: students.firstName,
       studentStatus: students.status,
+      studentIsSpecialEducation: students.isSpecialEducation,
       schoolYear: schoolYears.label,
       enrollmentStatus: enrollments.status,
+      enrollmentSpedOverride: enrollments.specialEducationOverride,
     })
     .from(assessments)
     .innerJoin(students, eq(assessments.studentId, students.id))
@@ -89,6 +95,7 @@ export async function InternalAssessmentLedgerPage(props: {
   // Previously had 3 sequential stages; now parallelized via assessmentId-based void query
   const [
     balanceForwardType,
+    spedFeeType,
     items,
     paymentRecords,
     pendingVoidMap,
@@ -96,10 +103,16 @@ export async function InternalAssessmentLedgerPage(props: {
     bookletRows,
     cashierDefaultBookletId,
     suggestions,
+    defaultSpedFeeAmount,
   ] = await Promise.all([
     // Query 1: Get BALANCE_FORWARD fee type ID for visual indicators
     db.query.feeItemTypes.findFirst({
       where: eq(feeItemTypes.code, "BALANCE_FORWARD"),
+      columns: { id: true },
+    }),
+    // Query 1b: Get SPED_FEE type ID for SPED fee management
+    db.query.feeItemTypes.findFirst({
+      where: eq(feeItemTypes.code, SPED_FEE_CODE),
       columns: { id: true },
     }),
     // Query 2: Fetch assessment line items
@@ -144,6 +157,8 @@ export async function InternalAssessmentLedgerPage(props: {
     canPost ? getCashierDefaultBookletId(session.userId) : Promise.resolve(null),
     // Query 8: Manual entry suggestions (conditional)
     canPost ? getManualEntrySuggestions(session.userId) : Promise.resolve(null),
+    // Query 9: SPED fee amount from system settings
+    getSpedFeeAmount(),
   ]);
 
   // Convert map to record for serialization
@@ -163,6 +178,33 @@ export async function InternalAssessmentLedgerPage(props: {
   const activeBooklets = bookletRows;
   const defaultBookletId = cashierDefaultBookletId;
   const manualSuggestions = suggestions;
+
+  // Find existing SPED fee item and check for allocated payments
+  const existingSpedItem = spedFeeType
+    ? items.find((item) => item.feeItemTypeId === spedFeeType.id)
+    : null;
+
+  let hasSpedAllocatedPayments = false;
+  if (existingSpedItem) {
+    const spedAllocation = await db.query.paymentAllocations.findFirst({
+      where: eq(paymentAllocations.assessmentItemId, existingSpedItem.id),
+    });
+    hasSpedAllocatedPayments = !!spedAllocation;
+  }
+
+  // Permission to modify assessments (add/remove SPED fee)
+  const canModifyAssessment = hasPermission(session.role, "assessments:update") && !isStudentArchived;
+  const isTransferred = assessment.transferredAt != null;
+  const isAssessmentLocked =
+    assessment.billingStatus === "cancelled" ||
+    assessment.billingStatus === "fully_paid" ||
+    isTransferred;
+
+  // Check if this student is effectively a SPED student
+  const isSpedStudent = isEffectivelySpecialEducation(
+    { isSpecialEducation: assessment.studentIsSpecialEducation },
+    { specialEducationOverride: assessment.enrollmentSpedOverride }
+  );
 
   const ledgerPayments = paymentRecords.map((p) => ({
     id: p.id,
@@ -189,6 +231,21 @@ export async function InternalAssessmentLedgerPage(props: {
   return (
     <div className="page-container--full">
       <AssessmentLedgerRegister
+        spedFeeSlot={
+          <SpecialEducationFeeManagement
+            assessmentId={id}
+            existingSpedItem={
+              existingSpedItem
+                ? { id: existingSpedItem.id, amount: existingSpedItem.amount }
+                : null
+            }
+            hasAllocatedPayments={hasSpedAllocatedPayments}
+            canModify={canModifyAssessment}
+            isLocked={isAssessmentLocked}
+            defaultSpedFeeAmount={defaultSpedFeeAmount}
+            isSpedStudent={isSpedStudent}
+          />
+        }
         {...(studentRecordsBasePath != null ? { studentRecordsBasePath } : {})}
         assessment={{
           id: assessment.id,

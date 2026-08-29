@@ -40,6 +40,7 @@ export async function InternalEditStudentPage(props: {
       photoUrl: true,
 
       isActive: true,
+      isSpecialEducation: true,
       status: true,
     },
   });

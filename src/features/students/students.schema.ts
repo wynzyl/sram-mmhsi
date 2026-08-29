@@ -57,6 +57,9 @@ export const CreateStudentSchema = z.object({
   previousSchool: z.string().trim().max(500, "Too long.").optional(),
   submittedDocumentsNotes: z.string().trim().max(2000, "Too long.").optional(),
 
+  // Special Education
+  isSpecialEducation: z.boolean().default(false),
+
   // Guardians
   guardians: z.array(GuardianSchema).min(1, "At least one guardian is required."),
 });
@@ -80,6 +83,7 @@ export type CreateStudentFormFieldSnapshot = {
   religion: string;
   previousSchool: string;
   submittedDocumentsNotes: string;
+  isSpecialEducation: boolean;
   gradeLevelId: string;
   intakeForm138: IntakeDocumentStatus | "";
   intakeBirthCertificatePsa: IntakeDocumentStatus | "";
@@ -119,6 +123,8 @@ export const UpdateStudentSchema = z.object({
   submittedDocumentsNotes: z.string().trim().max(2000, "Too long.").optional(),
 
   isActive: z.boolean().optional(),
+  // Special Education
+  isSpecialEducation: z.boolean().optional(),
   // Guardians
   guardians: z.array(GuardianSchema).min(1, "At least one guardian is required."),
 });

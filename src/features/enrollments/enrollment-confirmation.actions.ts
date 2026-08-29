@@ -61,8 +61,16 @@ export async function confirmEnrollmentAction(
     return { errors: result.errors };
   }
 
-  const { studentId, schoolYearId, gradeLevelId, sectionId, studentType, registrationId, previousSchool } =
-    result.data;
+  const {
+    studentId,
+    schoolYearId,
+    gradeLevelId,
+    sectionId,
+    studentType,
+    registrationId,
+    previousSchool,
+    specialEducationOverride,
+  } = result.data;
 
   // Validate school year is active
   const schoolYear = await db.query.schoolYears.findFirst({
@@ -266,6 +274,7 @@ export async function confirmEnrollmentAction(
           sectionId: sectionId ?? null,
           registrationId: registrationId ?? null,
           studentType,
+          specialEducationOverride: specialEducationOverride ?? null,
           intakeDocuments,
           status: "pending",
           createdBy: session.userId,

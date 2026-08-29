@@ -91,6 +91,7 @@ export async function createEnrollmentAction(
     intakeQualifiedVoucher,
     intakeEscCertificate,
     previousSchool,
+    specialEducationOverride,
   } = parsed.data;
 
   // Check if student is archived (blocked action - cannot create enrollment for archived student)
@@ -301,6 +302,7 @@ export async function createEnrollmentAction(
           sectionId: sectionId ?? null,
           registrationId: registrationId ?? null,
           studentType: studentType satisfies CreateEnrollmentInput["studentType"],
+          specialEducationOverride: specialEducationOverride ?? null,
           intakeDocuments,
           status: "pending",
           createdBy: session.userId,
