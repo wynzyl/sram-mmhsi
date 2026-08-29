@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { SpedBadge } from "@/components/shared/SpedBadge";
@@ -180,6 +181,25 @@ export function RegistrationDetailView({
                     {fullName}
                     <SpedBadge isSped={student.isSpecialEducation} />
                   </h1>
+                  {student.hasEscDiscount && (
+                    <span className="inline-flex items-center gap-1">
+                      <Image
+                        src="/ESC-Logo.png"
+                        alt="ESC Grantee"
+                        width={48}
+                        height={48}
+                        className="inline-block"
+                        unoptimized
+                      />
+                    </span>
+                  )}
+                </div>
+                <p className="flex flex-wrap items-center gap-2 text-secondary sm:text-base">
+                  <span>
+                    <span className="font-mono text-foreground">{student.referenceNumber}</span>
+                    <span className="mx-2 text-gray-300 dark:text-gray-700">·</span>
+                    {placementSubtitle}
+                  </span>
                   <span
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide",
@@ -206,11 +226,6 @@ export function RegistrationDetailView({
                   ) : (
                     <StatusIndicator status="pending" label="Placement pending" size="sm" pulse />
                   )}
-                </div>
-                <p className="text-secondary sm:text-base">
-                  <span className="font-mono text-foreground">{student.referenceNumber}</span>
-                  <span className="mx-2 text-gray-300 dark:text-gray-700">·</span>
-                  {placementSubtitle}
                 </p>
                 {student.lrn || age != null ? (
                   <p className="text-helper sm:text-sm">

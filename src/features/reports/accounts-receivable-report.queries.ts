@@ -6,6 +6,7 @@ import {
   schoolYears,
   enrollments,
   payments,
+  studentDiscounts,
 } from "@/lib/db/schema";
 import { eq, and, asc, desc, isNull, sql } from "drizzle-orm";
 import { calculateOffset } from "@/lib/types/pagination";
@@ -17,6 +18,7 @@ export type AccountsReceivableRow = {
   studentRef: string; // user-facing 7-digit Student ID
   studentName: string; // "DELA CRUZ, Juan Miguel" (Lastname, Firstname Middlename)
   isSpecialEducation: boolean;
+  hasEscDiscount: boolean; // ESC grantee indicator
   schoolYearLabel: string; // e.g. "2025-2026"
   balance: number; // outstanding balance (assessments.balance)
   lastPaymentDate: Date | null; // most recent posted payment, null if none
@@ -83,6 +85,14 @@ const SELECT_SHAPE = (lastPayment: ReturnType<typeof lastPaymentSubquery>) => ({
   studentMiddleName: students.middleName,
   studentLastName: students.lastName,
   isSpecialEducation: students.isSpecialEducation,
+  hasEscDiscount: sql<boolean>`EXISTS(
+    SELECT 1 FROM "discount_requests" dr
+    INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+    INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+    WHERE e2.student_id = "students".id
+      AND dt.code LIKE 'ESC_%'
+      AND dr.status = 'approved'
+  )`.as("has_esc_discount"),
   schoolYearLabel: schoolYears.label,
   balance: assessments.balance,
   assessmentCreatedAt: assessments.createdAt,
@@ -103,6 +113,7 @@ function mapRow(row: {
   studentMiddleName: string | null;
   studentLastName: string;
   isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   schoolYearLabel: string;
   balance: string;
   assessmentCreatedAt: Date;
@@ -128,6 +139,7 @@ function mapRow(row: {
     studentRef: row.studentRef,
     studentName: `${row.studentLastName}, ${firstAndMiddle}`,
     isSpecialEducation: row.isSpecialEducation,
+    hasEscDiscount: row.hasEscDiscount,
     schoolYearLabel: row.schoolYearLabel,
     balance: Number(row.balance),
     lastPaymentDate,

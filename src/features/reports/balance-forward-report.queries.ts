@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { payments, students, assessments, schoolYears, users } from "@/lib/db/schema";
+import { payments, students, assessments, schoolYears, users, studentDiscounts, enrollments } from "@/lib/db/schema";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { calculateOffset } from "@/lib/types/pagination";
 
@@ -11,6 +11,7 @@ export type BfxTransferRow = {
   studentName: string;
   studentRef: string;
   isSpecialEducation: boolean;
+  hasEscDiscount: boolean; // ESC grantee indicator
   sourceSchoolYearId: string;
   sourceSchoolYearLabel: string;
   amount: string;
@@ -76,6 +77,14 @@ export async function getBfxTransfersReport(
         studentLastName: students.lastName,
         studentRef: students.referenceNumber,
         isSpecialEducation: students.isSpecialEducation,
+        hasEscDiscount: sql<boolean>`EXISTS(
+          SELECT 1 FROM "discount_requests" dr
+          INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+          INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+          WHERE e2.student_id = "students".id
+            AND dt.code LIKE 'ESC_%'
+            AND dr.status = 'approved'
+        )`.as("has_esc_discount"),
         sourceSchoolYearId: assessments.schoolYearId,
         sourceSchoolYearLabel: schoolYears.label,
         amount: payments.amount,
@@ -108,6 +117,7 @@ export async function getBfxTransfersReport(
     studentName: `${row.studentLastName}, ${row.studentFirstName}`,
     studentRef: row.studentRef,
     isSpecialEducation: row.isSpecialEducation,
+    hasEscDiscount: row.hasEscDiscount,
     sourceSchoolYearId: row.sourceSchoolYearId,
     sourceSchoolYearLabel: row.sourceSchoolYearLabel,
     amount: row.amount,
@@ -156,6 +166,14 @@ export async function getAllBfxData(params: {
       studentLastName: students.lastName,
       studentRef: students.referenceNumber,
       isSpecialEducation: students.isSpecialEducation,
+      hasEscDiscount: sql<boolean>`EXISTS(
+        SELECT 1 FROM "discount_requests" dr
+        INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+        INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+        WHERE e2.student_id = "students".id
+          AND dt.code LIKE 'ESC_%'
+          AND dr.status = 'approved'
+      )`.as("has_esc_discount"),
       sourceSchoolYearId: assessments.schoolYearId,
       sourceSchoolYearLabel: schoolYears.label,
       amount: payments.amount,
@@ -179,6 +197,7 @@ export async function getAllBfxData(params: {
     studentName: `${row.studentLastName}, ${row.studentFirstName}`,
     studentRef: row.studentRef,
     isSpecialEducation: row.isSpecialEducation,
+    hasEscDiscount: row.hasEscDiscount,
     sourceSchoolYearId: row.sourceSchoolYearId,
     sourceSchoolYearLabel: row.sourceSchoolYearLabel,
     amount: row.amount,
