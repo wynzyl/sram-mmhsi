@@ -31,7 +31,12 @@ function buildSubtitle(meta: StudentListReportMeta): string {
 // ─── PDF (Track 1) ─────────────────────────────────────────────────────────────
 
 function formatStudentName(r: StudentListRow): string {
-  return r.isSpecialEducation ? `${r.studentName} (SPED)` : r.studentName;
+  const suffixes: string[] = [];
+  if (r.hasEscDiscount) suffixes.push("ESC");
+  if (r.isSpecialEducation) suffixes.push("SPED");
+  return suffixes.length > 0
+    ? `${r.studentName} (${suffixes.join(", ")})`
+    : r.studentName;
 }
 
 const pdfColumns: ReportColumn<StudentListRow>[] = [

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
@@ -37,9 +38,21 @@ export function ArchiveDirectoryTable({
           const data = row.original;
           return (
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                {getInitials(`${data.firstName} ${data.lastName}`)}
-              </div>
+              {data.hasEscDiscount ? (
+                <Image
+                  src="/ESC-Logo.png"
+                  alt="ESC Grantee"
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 shrink-0 rounded-full object-cover"
+                  title="ESC Grantee"
+                  unoptimized
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                  {getInitials(`${data.firstName} ${data.lastName}`)}
+                </div>
+              )}
               <div>
                 <span className="flex items-center">
                   <Link
