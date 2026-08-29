@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Merriweather, Inter, JetBrains_Mono } from "next/font/google";
 import { RootProviders } from "@/components/providers/RootProviders";
 import "./globals.css";
 
@@ -29,6 +30,25 @@ const ibmPlexMono = localFont({
   ],
 });
 
+const merriweather = Merriweather({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: {
     default: "SRAMS — School Registration & Accounts Monitoring System",
@@ -55,7 +75,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${crimsonPro.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
+        className={`${crimsonPro.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} ${merriweather.variable} ${inter.variable} ${jetbrainsMono.variable}`}
       >
         <RootProviders>{children}</RootProviders>
       </body>

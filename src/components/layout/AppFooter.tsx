@@ -127,7 +127,7 @@ export function AppFooter({ schoolYear }: AppFooterProps) {
                 height={28}
               />
               <div>
-                <p className="font-bold text-foreground text-sm tracking-wide">
+                <p className="font-[family-name:var(--font-crimson)] font-bold text-foreground text-sm tracking-wide">
                   MERRYLAND MONTESSORI AND HIGH SCHOOL, Inc.
                 </p>
                 <p className="text-[0.65rem] text-muted-foreground">

@@ -199,7 +199,7 @@ export function AppHeader({ username, role, schoolYear }: AppHeaderProps) {
           className="shrink-0"
         />
         <div className="flex items-center gap-2">
-          <span className="font-extrabold text-lg text-primary tracking-wide">MERRYLAND</span>
+          <span className="font-[family-name:var(--font-crimson)] font-bold text-lg text-primary tracking-wide">MERRYLAND</span>
           <span
             className={cn(
               "px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider",
