@@ -1,0 +1,141 @@
+# Standalone LOCAL production stack for SRAMS.
+#
+# This is a COMPLETE compose file -- run it on its own, do NOT combine it with
+# docker-compose.prod.yml via multiple -f flags.
+#
+# Difference from docker-compose.prod.yml (the Ubuntu server file):
+#   - Ships its own nginx on host :80, so the stack is reachable from a browser.
+#     The server file publishes NO host ports because Nginx Proxy Manager fronts
+#     it there (Internet -> Cloudflare -> NPM -> app:3000, see nginx.conf header).
+#   - Drops the external `proxy-network` -- nothing to join without NPM running.
+#   - Forces SESSION_COOKIE_SECURE=false: nginx here serves plain HTTP, and
+#     browsers drop `Secure` cookies on every origin except localhost, which
+#     breaks login from other LAN machines (CLAUDE.md gotcha #8).
+#
+# Usage:
+#   docker compose -f docker-compose.prod.local.yml up -d --build
+#   docker compose -f docker-compose.prod.local.yml run --rm migrate npm run db:seed
+#   docker compose -f docker-compose.prod.local.yml down
+#
+# `name:` matches docker-compose.prod.yml on purpose so both files address the
+# same project and the SAME data volumes (sram-mmhsi_db-data, sram-mmhsi_uploads_data).
+# Because they describe the same project, switching between the two files recreates
+# containers, and the server file will report nginx_proxy as an orphan -- expected.
+
+name: sram-mmhsi
+
+networks:
+  srams-network:
+    driver: bridge
+
+services:
+  srams_db:
+    image: postgres:15-alpine
+    container_name: srams_db
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1'
+        reservations:
+          memory: 512M
+    env_file:
+      - .env.production
+    ports:
+      # Expose on 5433 (Production) — 5432 is taken by a native host Postgres
+      # and 5434 by the dev stack's db, so prod can run side-by-side with both.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - srams-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    image: sram-mmhsi-app:runner
+    # Image is built locally by the `app` service — never try to pull it from a
+    # registry (a parallel pull races the first `up --build` and fails the stack).
+    pull_policy: never
+    # DATABASE_URL comes from .env.production and must use the INTERNAL port
+    # (srams_db:5432) — the 5433 mapping only exists on the host side of "5433:5432".
+    env_file:
+      - .env.production
+    depends_on:
+      srams_db:
+        condition: service_healthy
+    command: ["npx", "tsx", "scripts/migrate.ts"]
+    restart: "no"
+    networks:
+      - srams-network
+
+  app:
+    image: sram-mmhsi-app:runner
+    build:
+      context: .
+      target: runner
+    container_name: srams_app
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: '2'
+        reservations:
+          memory: 512M
+    # DATABASE_URL comes from .env.production (internal port — see migrate note).
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      # Next.js standalone must bind to 0.0.0.0 so the localhost health check works
+      # and nginx can reach it across the network.
+      HOSTNAME: "0.0.0.0"
+      # Plain HTTP on :80 via the nginx service below — see the header note.
+      # `environment:` beats `env_file:`, so this is what actually reaches the app.
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+    volumes:
+      # Persist uploaded photos across container restarts
+      - uploads_data:/app/public/uploads
+    depends_on:
+      srams_db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - srams-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    ports:
+      # Host :80 — reachable at http://localhost and http://<this-machine-ip>
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # nginx.conf serves /uploads/ straight off the volume (bypasses Next.js)
+      - uploads_data:/app/public/uploads:ro
+    depends_on:
+      # Plain start-order dependency, NOT service_healthy: nginx resolves the
+      # `app` upstream at config-load time and dies with "host not found in
+      # upstream" if the container does not exist yet. Waiting for healthy would
+      # add ~60s (app HEALTHCHECK start-period) for no benefit — nginx just
+      # returns 502 until the app answers.
+      - app
+    networks:
+      - srams-network
+
+volumes:
+  db-data:
+  uploads_data:
+    driver: local

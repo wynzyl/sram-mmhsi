@@ -17,6 +17,13 @@ LICENSE
 .env.*
 !.env.example
 
+# Local development files — never build inputs
+  .env.local
+  .env.development.local
+  .env.test.local
+  .env.production.local
+  docker-compose.prod.local.yml
+
  # Dev DB bind-mount and runtime uploads — never build inputs
   .postgres_data
   public/uploads
