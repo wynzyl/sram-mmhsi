@@ -181,7 +181,7 @@ export function PaymentCollectionReportView({
       aria-labelledby="report-heading"
     >
       {/* Card Header with gradient - ALL controls in one row */}
-      <div className="card-header-gradient border-b border-border px-4 py-3 no-print">
+      <div className="bg-muted border-b border-border px-4 py-3 no-print">
         <div className="flex items-center gap-3">
           {/* Title + Count Badge */}
           <h2

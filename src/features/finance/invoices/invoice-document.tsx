@@ -26,7 +26,9 @@ import { pesoText, reportLongDate } from "@/features/reports/shared/report-forma
  * template (`generateAssessmentLetterHtml`) — email clients need HTML.
  */
 
-const BRAND_RED = "#c70000";
+import { BRAND_MARK, PRINT } from "@/lib/brand";
+
+const BRAND_RED = BRAND_MARK; // letterhead accents only
 const INK = "#1a1a1a";
 const MUTED = "#666666";
 
@@ -96,7 +98,8 @@ const styles = StyleSheet.create({
   },
   amountLabel: { width: 150, fontSize: 10, color: MUTED },
   amountBilled: { fontSize: 14, fontWeight: "bold", color: INK },
-  balanceDue: { fontSize: 20, fontWeight: "bold", color: BRAND_RED },
+  // Ink, not brand red - an amount a parent owes is status, not identity.
+  balanceDue: { fontSize: 20, fontWeight: "bold", color: PRINT.emphasis },
   balancePaid: { fontSize: 20, fontWeight: "bold", color: "#16a34a" },
   signature: { fontSize: 11, lineHeight: 1.6, marginTop: 24 },
   signatureName: { fontWeight: "bold", color: INK },

@@ -13,10 +13,12 @@ import { reportDateTime } from "./report-format";
 
 // ─── Brand ───────────────────────────────────────────────────────────────────
 
-const BRAND_RED = "#c70000";
-const INK = "#1a1a1a";
-const MUTED = "#666666";
-const LINE = "#e0dbd4";
+import { BRAND_MARK, PRINT } from "@/lib/brand";
+
+const BRAND_RED = BRAND_MARK; // letterhead only - see src/lib/brand.ts
+const INK = PRINT.ink;
+const MUTED = PRINT.muted;
+const LINE = PRINT.line;
 
 export const SCHOOL_NAME = "Merryland Montessori and High School Inc.";
 export const SCHOOL_ADDRESS = "San Vicente, Urdaneta, Pangasinan";
@@ -101,7 +103,9 @@ const styles = StyleSheet.create({
   summaryItem: { width: "25%", marginBottom: 6, paddingRight: 8 },
   summaryLabel: { fontSize: 8, color: MUTED, marginBottom: 2 },
   summaryValue: { fontSize: 11, fontWeight: "bold", color: INK },
-  summaryValueEmphasis: { fontSize: 11, fontWeight: "bold", color: BRAND_RED },
+  // Ink, not brand red: a money total is not a brand moment, and red on a
+  // figure reads as an error.
+  summaryValueEmphasis: { fontSize: 11, fontWeight: "bold", color: PRINT.emphasis },
 
   tableHeader: {
     flexDirection: "row",

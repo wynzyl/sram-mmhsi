@@ -1,74 +1,86 @@
 /**
- * Financial & Status Color Utilities
- * Provides semantic color classes for balance displays and status indicators
- * Uses shadcn/ui semantic colors for theme consistency
+ * Financial & status colour utilities.
+ *
+ * Emits semantic token classes only - never stock Tailwind palette classes.
+ * Tokens resolve per theme, so no `dark:` variants are needed.
+ *
+ * Guideline semantics ("the red budget"): an unpaid balance is a normal
+ * state, not a failure. On day one of a term every student owes the full
+ * assessment. Outstanding renders in the hold/warning tier; red starts at
+ * the due date.
  */
 
-/**
- * Returns Tailwind classes for balance display based on amount
- * - Zero balance: Success (emerald)
- * - Positive balance (owed): Destructive (red)
- * - Negative balance: Muted
- */
-export function getBalanceColor(balance: number): string {
-  if (balance === 0) return "text-emerald-600 dark:text-emerald-400";
-  if (balance > 0) return "text-destructive font-semibold";
-  return "text-muted-foreground";
+/** Pill classes: tinted background + matching text, one pair for both themes. */
+export const STATUS_PILL = {
+  ok: "bg-success-tint text-success",
+  hold: "bg-warning-tint text-warning",
+  bad: "bg-destructive-tint text-destructive",
+  note: "bg-info-tint text-info",
+  idle: "bg-muted text-muted-foreground",
+} as const;
+
+interface BalanceColorOptions {
+  /** When known, drives the hold -> bad transition. */
+  dueDate?: Date | null;
+  /** Injectable clock for tests. */
+  asOf?: Date;
 }
 
 /**
- * Returns Tailwind classes for payment status badges
- * Maps payment status to appropriate badge styling
+ * Balance text colour.
+ *
+ * - settled (zero or credit): ok
+ * - outstanding: hold - "no red for ordinary unpaid balances"
+ * - past due (requires a due date): bad, emphasised
  */
+export function getBalanceColor(
+  balance: number,
+  { dueDate, asOf = new Date() }: BalanceColorOptions = {},
+): string {
+  if (balance <= 0) return "text-success";
+  const pastDue = dueDate != null && asOf > dueDate;
+  return pastDue ? "text-destructive font-semibold" : "text-warning";
+}
+
 export function getPaymentStatusColor(status: string): string {
-  const statusMap: Record<string, string> = {
-    paid: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-    partial: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-    unpaid: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  const map: Record<string, string> = {
+    paid: STATUS_PILL.ok,
+    partial: STATUS_PILL.hold,
+    unpaid: STATUS_PILL.hold, // unpaid is not overdue; see getBalanceColor
+    past_due: STATUS_PILL.bad,
+    voided: STATUS_PILL.idle,
   };
-
-  return statusMap[status.toLowerCase()] || "bg-muted text-muted-foreground";
+  return map[status.toLowerCase()] ?? STATUS_PILL.idle;
 }
 
-/**
- * Returns Tailwind classes for enrollment status badges
- */
 export function getEnrollmentStatusColor(status: string): string {
-  const statusMap: Record<string, string> = {
-    pending: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-    assessed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-    enrolled: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-    withdrawn: "bg-muted text-muted-foreground",
+  const map: Record<string, string> = {
+    pending: STATUS_PILL.hold,
+    assessed: STATUS_PILL.hold,
+    enrolled: STATUS_PILL.ok,
+    cancelled: STATUS_PILL.bad,
+    withdrawn: STATUS_PILL.idle,
   };
-
-  return statusMap[status.toLowerCase()] || "bg-muted text-muted-foreground";
+  return map[status.toLowerCase()] ?? STATUS_PILL.idle;
 }
 
-/**
- * Returns Tailwind classes for billing status badges
- */
 export function getBillingStatusColor(status: string): string {
-  const statusMap: Record<string, string> = {
-    outstanding: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-    fully_paid: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-    balance_forwarded: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  const map: Record<string, string> = {
+    outstanding: STATUS_PILL.hold,
+    fully_paid: STATUS_PILL.ok,
+    past_due: STATUS_PILL.bad,
+    balance_forwarded: STATUS_PILL.note,
+    cancelled: STATUS_PILL.idle,
   };
-
-  return statusMap[status.toLowerCase()] || "bg-muted text-muted-foreground";
+  return map[status.toLowerCase()] ?? STATUS_PILL.idle;
 }
 
-/**
- * Returns Tailwind classes for OR (Official Receipt) status badges
- */
 export function getORStatusColor(status: string): string {
-  const statusMap: Record<string, string> = {
-    issued: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-    voided: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-    not_issued: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+  const map: Record<string, string> = {
+    issued: STATUS_PILL.ok,
+    cancelled: STATUS_PILL.bad,
+    voided: STATUS_PILL.bad,
+    not_issued: STATUS_PILL.hold,
   };
-
-  return statusMap[status.toLowerCase()] || "bg-muted text-muted-foreground";
+  return map[status.toLowerCase()] ?? STATUS_PILL.idle;
 }

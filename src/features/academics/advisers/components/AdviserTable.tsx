@@ -127,7 +127,7 @@ export default function AdviserTable({
   return (
     <div>
       {/* Card Header with gradient effect */}
-      <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="bg-muted flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Left: Title + Badge */}
         <div className="flex items-center gap-3">
           <h2 className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary">

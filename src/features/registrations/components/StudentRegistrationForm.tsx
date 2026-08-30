@@ -310,7 +310,7 @@ export default function StudentRegistrationForm({
           <span className="font-mono text-muted-foreground">Step {currentStep} of 4</span>
           <span className="font-medium text-foreground">{STEP_TITLES[currentStep]}</span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+        <div className="h-2 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full bg-primary transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
@@ -327,7 +327,7 @@ export default function StudentRegistrationForm({
       >
         {!currentSchoolYear && (
           <div
-            className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
+            className="mb-4 rounded-lg border border-destructive/40 bg-destructive-tint px-4 py-3 text-sm text-destructive"
             role="alert"
           >
             No <strong>active</strong> school year is configured. Add or activate the current school
@@ -503,9 +503,9 @@ export default function StudentRegistrationForm({
                 <div className="grid grid-cols-1 gap-4 border-t border-border pt-6 md:grid-cols-2">
                   <div>
                     <span className="mb-1.5 block text-sm font-medium text-foreground">
-                      School year <span className="text-red-600">*</span>
+                      School year <span className="text-destructive">*</span>
                     </span>
-                    <div className={editorialFieldClass({ className: "bg-gray-200 text-muted-foreground dark:bg-gray-800" })}>
+                    <div className={editorialFieldClass({ className: "bg-muted text-muted-foreground" })}>
                       <strong className="text-foreground">{currentSchoolYear.label}</strong>
                       <span className="ml-2 text-sm">(active year only)</span>
                     </div>
@@ -525,7 +525,7 @@ export default function StudentRegistrationForm({
                   />
                   <div className="md:col-span-2">
                     <span className="mb-1.5 block text-sm font-medium text-foreground">Enrollment type</span>
-                    <div className={editorialFieldClass({ className: "bg-gray-200 text-foreground dark:bg-gray-800" })}>
+                    <div className={editorialFieldClass({ className: "bg-muted text-foreground" })}>
                       <strong className="text-foreground">
                         {lockedRegistrationType === "transferee" ? "Transferee" : "New student"}
                       </strong>
@@ -550,7 +550,7 @@ export default function StudentRegistrationForm({
                   const arrayErr = fieldError(arrayField.state.meta.errors);
                   return (
                     <div className="space-y-4">
-                      {arrayErr && <p className="text-sm text-red-600">{arrayErr}</p>}
+                      {arrayErr && <p className="text-sm text-destructive">{arrayErr}</p>}
 
                       <div className="flex justify-end">
                         <button
@@ -587,7 +587,7 @@ export default function StudentRegistrationForm({
                                 <button
                                   type="button"
                                   onClick={() => removeGuardian(i)}
-                                  className="rounded-lg border border-red-200 bg-card px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/50"
+                                  className="rounded-lg border border-destructive/40 bg-card px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive-tint"
                                 >
                                   Remove
                                 </button>
@@ -679,7 +679,7 @@ export default function StudentRegistrationForm({
                             </span>
                             <div className="flex flex-wrap gap-x-6 gap-y-2">
                               {(["received", "not_applicable", "to_follow"] as const).map((opt) => (
-                                <label key={opt} className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                <label key={opt} className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
                                   <input
                                     type="radio"
                                     name={String(row.name)}
@@ -785,7 +785,7 @@ function TextField({
   return (
     <div>
       <label htmlFor={field.name} className="mb-1.5 block text-sm font-medium text-foreground">
-        {label} {required && <span className="text-red-600">*</span>}
+        {label} {required && <span className="text-destructive">*</span>}
       </label>
       <input
         id={field.name}
@@ -799,7 +799,7 @@ function TextField({
         onBlur={field.handleBlur}
         className={editorialFieldClass({ invalid: !!err, className: mono ? "font-mono" : undefined })}
       />
-      {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
+      {err && <p className="mt-1 text-sm text-destructive">{err}</p>}
     </div>
   );
 }
@@ -819,7 +819,7 @@ function PhoneField({
   return (
     <div>
       <label htmlFor={field.name} className="mb-1.5 block text-sm font-medium text-foreground">
-        {label} {required && <span className="text-red-600">*</span>}
+        {label} {required && <span className="text-destructive">*</span>}
       </label>
       <input
         id={field.name}
@@ -832,7 +832,7 @@ function PhoneField({
         onBlur={field.handleBlur}
         className={editorialFieldClass({ invalid: !!err, className: "font-mono" })}
       />
-      {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
+      {err && <p className="mt-1 text-sm text-destructive">{err}</p>}
     </div>
   );
 }
@@ -856,7 +856,7 @@ function TextAreaField({
   return (
     <div>
       <label htmlFor={field.name} className="mb-1.5 block text-sm font-medium text-foreground">
-        {label} {required && <span className="text-red-600">*</span>}
+        {label} {required && <span className="text-destructive">*</span>}
       </label>
       <textarea
         id={field.name}
@@ -868,7 +868,7 @@ function TextAreaField({
         onBlur={field.handleBlur}
         className={editorialFieldClass({ invalid: !!err })}
       />
-      {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
+      {err && <p className="mt-1 text-sm text-destructive">{err}</p>}
     </div>
   );
 }
@@ -890,7 +890,7 @@ function SelectField({
   return (
     <div>
       <label htmlFor={field.name} className="mb-1.5 block text-sm font-medium text-foreground">
-        {label} {required && <span className="text-red-600">*</span>}
+        {label} {required && <span className="text-destructive">*</span>}
       </label>
       <select
         id={field.name}
@@ -906,7 +906,7 @@ function SelectField({
           </option>
         ))}
       </select>
-      {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
+      {err && <p className="mt-1 text-sm text-destructive">{err}</p>}
     </div>
   );
 }

@@ -40,7 +40,9 @@ interface BuildWorkbookParams<T> {
 }
 
 const HEADER_FILL = "FF333333";
-const BRAND_RED = "FFC70000";
+import { BRAND_MARK_ARGB } from "@/lib/brand";
+
+const BRAND_RED = BRAND_MARK_ARGB; // title row only
 
 export async function buildReportWorkbook<T>({
   sheetName,

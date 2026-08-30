@@ -7,13 +7,13 @@ const badgeVariants = cva(
     variants: {
       variant: {
         success:
-          "bg-success/15 text-success border-success/25",
+          "bg-success-tint text-success border-success/25",
         danger:
-          "bg-destructive/15 text-destructive border-destructive/25",
+          "bg-destructive-tint text-destructive border-destructive/25",
         warning:
-          "bg-warning/15 text-warning border-warning/25",
+          "bg-warning-tint text-warning border-warning/25",
         info:
-          "bg-info/15 text-info border-info/25",
+          "bg-info-tint text-info border-info/25",
         secondary:
           "bg-muted text-muted-foreground border-border",
       },

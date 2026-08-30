@@ -39,7 +39,9 @@ import { DOCUMENT_REQUEST_TYPE_LABELS } from "@/lib/constants/document-requests"
 
 // ─── Brand Colors ─────────────────────────────────────────────────────────────
 
-const BRAND_RED = "#c70000";
+import { BRAND_MARK } from "@/lib/brand";
+
+const BRAND_RED = BRAND_MARK; // letterhead accents only
 const INK = "#1a1a1a";
 const MUTED = "#666666";
 

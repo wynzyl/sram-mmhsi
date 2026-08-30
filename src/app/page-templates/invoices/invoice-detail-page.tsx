@@ -13,15 +13,14 @@ import { formatDate as formatDateHelper } from "@/lib/utils/date";
 type InvoiceDetailRoute = "/staff/finance/invoices";
 type AssessmentsBase = "/staff/assessments";
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; color: string; bg: string; border: string }
-> = {
-  draft:    { label: "Draft",    color: "#8a98bc", bg: "rgba(138,152,188,0.12)", border: "rgba(138,152,188,0.3)" },
-  sent:     { label: "Sent",     color: "#1d4ed8", bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)"  },
-  viewed:   { label: "Viewed",   color: "#d97706", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)"  },
-  settled:  { label: "Settled",  color: "#16a34a", bg: "rgba(22,163,74,0.12)",  border: "rgba(22,163,74,0.3)"   },
-  overdue:  { label: "Overdue",  color: "#c70000", bg: "rgba(199,0,0,0.10)",    border: "rgba(199,0,0,0.3)"     },
+// Tier classes resolve per theme; overdue is --destructive (red-text), which
+// is the licensed red for money past its due date - never the brand mark.
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  draft:   { label: "Draft",   className: "bg-muted text-muted-foreground border-border" },
+  sent:    { label: "Sent",    className: "bg-info-tint text-info border-info/25" },
+  viewed:  { label: "Viewed",  className: "bg-warning-tint text-warning border-warning/25" },
+  settled: { label: "Settled", className: "bg-success-tint text-success border-success/25" },
+  overdue: { label: "Overdue", className: "bg-destructive-tint text-destructive border-destructive/25" },
 };
 
 /** Format date with time using timezone-safe helper */
@@ -138,12 +137,7 @@ export async function InternalInvoiceDetailPage(props: {
             {invoice.invoiceNumber}
           </h1>
           <span
-            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.72rem] font-semibold uppercase tracking-wide"
-            style={{
-              color: status.color,
-              background: status.bg,
-              border: `1px solid ${status.border}`,
-            }}
+            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.72rem] font-semibold uppercase tracking-wide ${status.className}`}
           >
             {status.label}
           </span>
@@ -158,14 +152,14 @@ export async function InternalInvoiceDetailPage(props: {
       <div id="invoice-document" className="bg-card border border-border rounded-lg overflow-hidden shadow-sm max-w-[820px] mx-auto">
 
         {/* Red accent bar */}
-        <div className="h-[5px] bg-[#c70000]" />
+        <div className="h-[5px] brand-mark-bg" aria-hidden="true" />
 
         {/* Document body */}
         <div className="p-12">
 
           {/* LETTERHEAD */}
           <div className="text-center mb-7">
-            <div className="text-[1.05rem] font-bold text-[#c70000] tracking-wide uppercase leading-snug">
+            <div className="text-[1.05rem] font-bold brand-mark tracking-wide uppercase leading-snug">
               Merryland Montesorri and High School Inc.
             </div>
             <div className="text-[0.8rem] text-muted-foreground mt-1">
@@ -174,10 +168,10 @@ export async function InternalInvoiceDetailPage(props: {
           </div>
 
           {/* Red rule */}
-          <div className="border-b-[1.5px] border-[#c70000] mb-5" />
+          <div className="brand-mark-bg h-[1.5px] mb-5" aria-hidden="true" />
 
           {/* INVOICE No. (left) / Date (right) */}
-          <div className="flex justify-between items-start mb-6 text-[0.82rem] text-gray-600 dark:text-gray-400">
+          <div className="flex justify-between items-start mb-6 text-[0.82rem] text-muted-foreground">
             <div>
               <span className="text-muted-foreground">Invoice No.&nbsp;</span>
               <strong className="text-foreground tracking-wide">{invoiceDisplay}</strong>
@@ -202,7 +196,7 @@ export async function InternalInvoiceDetailPage(props: {
           </p>
 
           {/* STUDENT DETAILS BOX */}
-          <div className="border-l-[3px] border-[#c70000] bg-muted rounded-r-md p-4 pl-5 mb-6">
+          <div className="border-l-[3px] brand-mark-border bg-muted rounded-r-md p-4 pl-5 mb-6">
             <div className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1.5 text-[0.85rem]">
               <span className="text-muted-foreground font-medium">Student Name</span>
               <span className="text-foreground font-semibold">{studentName}</span>
@@ -215,7 +209,7 @@ export async function InternalInvoiceDetailPage(props: {
                   <span className="text-muted-foreground font-medium">Assessment</span>
                   <Link
                     href={`${assessmentsBasePath}/${invoice.assessmentId}`}
-                    className="text-[#c70000] text-[0.82rem] underline"
+                    className="text-info text-[0.82rem] underline"
                   >
                     View Assessment →
                   </Link>
@@ -239,10 +233,15 @@ export async function InternalInvoiceDetailPage(props: {
                 Current Balance
               </span>
               <span
-                className="text-[2rem] font-bold leading-none"
-                style={{
-                  color: invoice.currentBalance && Number(invoice.currentBalance) > 0 ? "#c70000" : "#16a34a",
-                }}
+                className={`text-[2rem] font-bold leading-none ${
+                  invoice.currentBalance && Number(invoice.currentBalance) > 0
+                    ? // Red starts at the due date: the server computes
+                      // "overdue" from it. An outstanding balance is hold.
+                      invoice.status === "overdue"
+                      ? "text-destructive"
+                      : "text-warning"
+                    : "text-success"
+                }`}
               >
                 {invoice.currentBalance != null
                   ? formatCurrency(Number(invoice.currentBalance))
@@ -287,8 +286,9 @@ export async function InternalInvoiceDetailPage(props: {
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center text-[0.7rem] font-bold shrink-0"
                     style={{
-                      background: step.done ? "#c70000" : "var(--border)",
-                      color: step.done ? "#fff" : "var(--muted-foreground)",
+                      // Done steps are emphasis, not alarm: ink, per the red budget.
+                      background: step.done ? "var(--primary)" : "var(--border)",
+                      color: step.done ? "var(--primary-foreground)" : "var(--muted-foreground)",
                     }}
                   >
                     {step.done ? (
@@ -315,7 +315,7 @@ export async function InternalInvoiceDetailPage(props: {
                   <div
                     className="w-12 h-0.5 mx-1.5 shrink-0"
                     style={{
-                      background: timeline[i + 1].done ? "#c70000" : "var(--border)",
+                      background: timeline[i + 1].done ? "var(--primary)" : "var(--border)",
                       marginBottom: "24px",
                     }}
                   />
@@ -324,13 +324,13 @@ export async function InternalInvoiceDetailPage(props: {
             ))}
           </div>
 
-          <div className="text-[0.72rem] text-gray-400 text-right">
+          <div className="text-[0.72rem] text-muted-foreground text-right">
             SRAMS · Official Assessment Invoice
           </div>
         </div>
 
         {/* Bottom accent bar */}
-        <div className="h-1 bg-[#c70000]" />
+        <div className="h-1 brand-mark-bg" aria-hidden="true" />
       </div>
     </div>
   );

@@ -111,7 +111,7 @@ function UserMenu({ username, role }: UserMenuProps) {
           <div
             className={cn(
               "w-8 h-8 rounded-full flex items-center justify-center",
-              "bg-gradient-to-br from-primary to-primary/80",
+              "bg-primary",
               "text-white text-sm font-bold"
             )}
           >
@@ -199,7 +199,7 @@ export function AppHeader({ username, role, schoolYear }: AppHeaderProps) {
           className="shrink-0"
         />
         <div className="flex items-center gap-2">
-          <span className="font-[family-name:var(--font-crimson)] font-bold text-lg text-primary tracking-wide">MERRYLAND</span>
+          <span className="font-[family-name:var(--font-crimson)] font-bold text-lg brand-mark tracking-wide">MERRYLAND</span>
           <span
             className={cn(
               "px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider",

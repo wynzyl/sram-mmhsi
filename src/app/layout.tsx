@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Merriweather, Inter, JetBrains_Mono } from "next/font/google";
+import { Schibsted_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import { RootProviders } from "@/components/providers/RootProviders";
 import { COLOR_THEMES } from "@/lib/constants/color-themes";
 import "./globals.css";
@@ -31,10 +31,10 @@ const ibmPlexMono = localFont({
   ],
 });
 
-const merriweather = Merriweather({
-  variable: "--font-serif",
+// Titles and figures per the brand guideline (replaces the Merriweather serif).
+const schibstedGrotesk = Schibsted_Grotesk({
+  variable: "--font-schibsted",
   subsets: ["latin"],
-  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -97,7 +97,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${crimsonPro.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} ${merriweather.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+        className={`${crimsonPro.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} ${schibstedGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
       >
         <RootProviders>{children}</RootProviders>
       </body>

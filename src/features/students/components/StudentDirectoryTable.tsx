@@ -153,7 +153,7 @@ export function StudentDirectoryTable({
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
                         s.isActive
-                          ? "bg-success/15 text-success badge-glow-success"
+                          ? "bg-success/15 text-success"
                           : "bg-gray-200 dark:bg-gray-800 text-muted-foreground"
                       }`}
                     >

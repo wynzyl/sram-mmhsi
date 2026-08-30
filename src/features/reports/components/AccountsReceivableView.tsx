@@ -162,7 +162,7 @@ export function AccountsReceivableView({
   return (
     <div className="flex flex-col">
       {/* Card Header with Filters */}
-      <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="bg-muted flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
         {/* Left: Title + Stats Badges */}
         {headerContent && (
           <div className="flex items-center gap-3 flex-wrap">

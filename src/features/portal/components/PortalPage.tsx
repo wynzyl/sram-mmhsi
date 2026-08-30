@@ -37,7 +37,7 @@ export function PortalPage({
       <header className="space-y-2">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-serif text-2xl font-bold italic tracking-tight text-foreground sm:text-3xl">
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-figure sm:text-3xl">
               {title}
             </h1>
             {description ? (

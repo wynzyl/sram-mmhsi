@@ -3,6 +3,7 @@
 import { memo } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { getBalanceColor } from "@/lib/utils/financial-colors";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { StudentAvatarCell } from "@/components/shared/StudentAvatarCell";
 import { TableEmptyState } from "@/components/shared/TableEmptyState";
@@ -70,10 +71,10 @@ function AssessmentsTableComponent({
                 <td className="align-middle py-3 pr-4 text-right text-foreground">
                   <CurrencyDisplay amount={assessment.totalAmount} />
                 </td>
-                <td className="align-middle py-3 pr-4 text-right text-emerald-600">
+                <td className="align-middle py-3 pr-4 text-right text-success">
                   <CurrencyDisplay amount={assessment.totalPaid} />
                 </td>
-                <td className={`align-middle py-3 pr-4 text-right font-bold ${assessment.balance > 0 ? "text-destructive" : "text-foreground"}`}>
+                <td className={`align-middle py-3 pr-4 text-right font-bold ${getBalanceColor(assessment.balance)}`}>
                   <CurrencyDisplay amount={assessment.balance} />
                 </td>
                 <td className="align-middle py-3">

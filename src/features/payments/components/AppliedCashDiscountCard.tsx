@@ -63,23 +63,23 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
   // If discount is expired, show error state
   if (isExpired) {
     return (
-      <div className="rounded-xl border-2 border-red-400 bg-red-50 p-4 dark:border-red-700 dark:bg-red-950/30">
+      <div className="rounded-xl border-2 border-destructive/40 bg-destructive-tint p-4">
         {/* Header */}
         <div className="mb-3 flex items-center gap-2">
-          <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-          <h3 className="font-display text-sm font-bold uppercase tracking-wider text-red-700 dark:text-red-300">
+          <XCircle className="h-5 w-5 text-destructive" />
+          <h3 className="font-display text-sm font-bold uppercase tracking-wider text-destructive">
             Cash Discount Expired
           </h3>
         </div>
 
         {/* Expired warning */}
-        <div className="mb-3 flex items-start gap-2 rounded-lg bg-red-100 px-3 py-2 dark:bg-red-900/50">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-          <div className="text-sm text-red-700 dark:text-red-300">
+        <div className="mb-3 flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          <div className="text-sm text-destructive">
             <p className="font-medium">
               This cash discount has expired and must be reversed before processing payment.
             </p>
-            <p className="mt-1 text-red-600 dark:text-red-400">
+            <p className="mt-1 text-destructive">
               The cutoff date was {details.cutoffDate ? formatDate(details.cutoffDate) : "N/A"}.
               No payment was received by the deadline.
             </p>
@@ -88,11 +88,11 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
 
         {/* Discount amount (crossed out) */}
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between rounded-lg bg-red-100/50 px-3 py-2 dark:bg-red-900/30">
-            <span className="font-medium text-red-700 line-through dark:text-red-300">
+          <div className="flex justify-between rounded-lg bg-destructive/10 px-3 py-2">
+            <span className="font-medium text-destructive line-through">
               Cash discount (expired):
             </span>
-            <span className="font-mono font-bold text-red-700 line-through dark:text-red-300">
+            <span className="font-mono font-bold text-destructive line-through">
               -<CurrencyDisplay amount={details.discountAmount} />
             </span>
           </div>
@@ -104,7 +104,7 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
             type="button"
             onClick={handleReverse}
             disabled={isPending}
-            className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+            className="w-full bg-destructive hover:bg-destructive"
           >
             {isPending ? (
               <>
@@ -118,24 +118,24 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
               </>
             )}
           </Button>
-          <p className="text-xs text-red-600 dark:text-red-400">
+          <p className="text-xs text-destructive">
             This will add ₱{details.discountAmount.toLocaleString("en-PH", { minimumFractionDigits: 2 })} back to the balance.
             {hasCascadeAdjustments && " Cascade adjustments will also be reversed."}
           </p>
 
           {/* Error message */}
           {state.message && !state.success && (
-            <p className="text-sm font-medium text-red-700 dark:text-red-300">{state.message}</p>
+            <p className="text-sm font-medium text-destructive">{state.message}</p>
           )}
 
           {/* Success message (brief flash before refresh) */}
           {state.success && (
-            <p className="text-sm font-medium text-green-600 dark:text-green-400">{state.message}</p>
+            <p className="text-sm font-medium text-success">{state.message}</p>
           )}
         </div>
 
         {/* Applied by / when info */}
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-red-600 dark:text-red-400">
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-destructive">
           <span className="flex items-center gap-1">
             <User className="h-3.5 w-3.5" />
             Applied by {details.appliedByName}
@@ -150,19 +150,19 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
   }
 
   return (
-    <div className="rounded-xl border-2 border-blue-300 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-950/30">
+    <div className="rounded-xl border-2 border-info/25 bg-info-tint p-4">
       {/* Header */}
       <div className="mb-3 flex items-center gap-2">
-        <BadgeCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-        <h3 className="font-display text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+        <BadgeCheck className="h-5 w-5 text-info" />
+        <h3 className="font-display text-sm font-bold uppercase tracking-wider text-info">
           Cash Discount Applied
         </h3>
       </div>
 
       {/* Applied status badge */}
-      <div className="mb-3 flex items-center gap-2 rounded-lg bg-blue-100 px-3 py-2 dark:bg-blue-900/50">
-        <Info className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
-        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+      <div className="mb-3 flex items-center gap-2 rounded-lg bg-info/10 px-3 py-2">
+        <Info className="h-4 w-4 shrink-0 text-info" />
+        <span className="text-sm font-medium text-info">
           {hasRelatedDiscounts || hasCascadeAdjustments
             ? "Cash discount applied. Other tuition-based discounts are calculated on the discounted tuition."
             : "This discount was applied via the approval workflow. Balance has been adjusted."}
@@ -171,25 +171,25 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
 
       {/* Discount amount */}
       <div className="space-y-2 text-sm">
-        <div className="flex justify-between rounded-lg bg-blue-100 px-3 py-2 dark:bg-blue-900/50">
-          <span className="font-medium text-blue-700 dark:text-blue-300">
+        <div className="flex justify-between rounded-lg bg-info/10 px-3 py-2">
+          <span className="font-medium text-info">
             Cash discount applied:
           </span>
-          <span className="font-mono font-bold text-blue-700 dark:text-blue-300">
+          <span className="font-mono font-bold text-info">
             -<CurrencyDisplay amount={details.discountAmount} />
           </span>
         </div>
 
         {/* Related discounts (correctly applied on discounted base) */}
         {hasRelatedDiscounts && (
-          <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30">
+          <div className="mt-3 rounded-lg border border-success/25 bg-success-tint p-3">
             <div className="mb-2 flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-green-300">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-success">
                   Related Discounts (on discounted tuition)
                 </h4>
-                <p className="mt-0.5 text-xs text-green-600 dark:text-green-400">
+                <p className="mt-0.5 text-xs text-success">
                   These discounts were correctly applied on the reduced tuition base.
                 </p>
               </div>
@@ -200,15 +200,15 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
               {details.relatedDiscounts.map((rel, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between rounded bg-green-100/50 px-2 py-1.5 text-xs dark:bg-green-900/30"
+                  className="flex items-center justify-between rounded bg-success/10 px-2 py-1.5 text-xs"
                 >
-                  <span className="font-medium text-green-800 dark:text-green-200">
+                  <span className="font-medium text-success">
                     {rel.discountTypeName}
-                    <span className="ml-1 font-normal text-green-600 dark:text-green-400">
+                    <span className="ml-1 font-normal text-success">
                       (on {formatCurrency(rel.baseAmount)} tuition)
                     </span>
                   </span>
-                  <span className="font-mono font-bold text-green-700 dark:text-green-300">
+                  <span className="font-mono font-bold text-success">
                     -<CurrencyDisplay amount={rel.discountAmount} />
                   </span>
                 </div>
@@ -219,14 +219,14 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
 
         {/* Cascade adjustments (existing discounts that were recalculated) */}
         {hasCascadeAdjustments && (
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+          <div className="mt-3 rounded-lg border border-warning/25 bg-warning-tint p-3">
             <div className="mb-2 flex items-start gap-2">
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-warning">
                   Scholarship Recalculations Applied
                 </h4>
-                <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
+                <p className="mt-0.5 text-xs text-warning">
                   Existing scholarships were recalculated based on the discounted tuition.
                 </p>
               </div>
@@ -237,19 +237,19 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
               {details.cascadeAdjustments.map((adj, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-2 rounded bg-amber-100/50 px-2 py-1.5 text-xs dark:bg-amber-900/30"
+                  className="flex items-center gap-2 rounded bg-warning/10 px-2 py-1.5 text-xs"
                 >
-                  <span className="font-medium text-amber-800 dark:text-amber-200">
+                  <span className="font-medium text-warning">
                     {adj.discountTypeName}:
                   </span>
-                  <span className="font-mono text-amber-700 dark:text-amber-300">
+                  <span className="font-mono text-warning">
                     <CurrencyDisplay amount={adj.originalAmount} />
                   </span>
-                  <ArrowRight className="h-3 w-3 text-amber-500" />
-                  <span className="font-mono text-amber-700 dark:text-amber-300">
+                  <ArrowRight className="h-3 w-3 text-warning" />
+                  <span className="font-mono text-warning">
                     <CurrencyDisplay amount={adj.originalAmount - adj.adjustmentAmount} />
                   </span>
-                  <span className="ml-auto font-mono text-amber-600 dark:text-amber-400">
+                  <span className="ml-auto font-mono text-warning">
                     (+<CurrencyDisplay amount={adj.adjustmentAmount} />)
                   </span>
                 </div>
@@ -257,11 +257,11 @@ export function AppliedCashDiscountCard({ details, assessmentId }: AppliedCashDi
             </div>
 
             {/* Total adjustment */}
-            <div className="mt-2 flex items-center justify-between border-t border-amber-200 pt-2 dark:border-amber-800">
-              <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+            <div className="mt-2 flex items-center justify-between border-t border-warning/25 pt-2">
+              <span className="text-xs font-medium text-warning">
                 Total adjustment:
               </span>
-              <span className="font-mono text-xs font-bold text-amber-700 dark:text-amber-300">
+              <span className="font-mono text-xs font-bold text-warning">
                 +<CurrencyDisplay amount={details.totalCascadeAdjustment} />
               </span>
             </div>

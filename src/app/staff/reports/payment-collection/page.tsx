@@ -104,7 +104,7 @@ export default async function PaymentCollectionReportPage({
     <div className="page-container--full space-y-6">
       {/* Clean Page Header */}
       <div className="space-y-1 no-print">
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-figure">
           Payment Collection Report
         </h1>
         <p className="text-sm text-muted-foreground">

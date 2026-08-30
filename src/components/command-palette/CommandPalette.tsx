@@ -139,7 +139,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/50"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"

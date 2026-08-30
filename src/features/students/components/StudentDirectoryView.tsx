@@ -151,7 +151,7 @@ export function StudentDirectoryView({
     <div className="page-container--full space-y-6">
       {/* Clean Page Header - Title + Subtitle Only */}
       <div className="space-y-1">
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-figure">
           {title}
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -165,7 +165,7 @@ export function StudentDirectoryView({
         aria-labelledby="roster-heading"
       >
         {/* Card Header with gradient effect - ALL controls here */}
-        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="bg-muted flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           {/* Left: Title + Count Badge + Refresh indicator */}
           <div className="flex items-center gap-3">
             <h2

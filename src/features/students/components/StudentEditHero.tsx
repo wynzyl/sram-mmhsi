@@ -44,9 +44,9 @@ export function StudentEditHero({
         ← {backLabel}
       </Link>
 
-      <header className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-md print:shadow-none">
+      <header className="relative overflow-hidden rounded-xl border border-border bg-card">
         <div
-          className="h-28 bg-gradient-to-br from-primary via-primary/80 to-muted sm:h-32 print:h-16 print:bg-gray-200"
+          className="h-24 border-b border-border bg-muted sm:h-28 print:h-16"
           aria-hidden
         />
         <div className="relative px-4 pb-4 pt-0 sm:px-8">

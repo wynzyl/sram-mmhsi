@@ -130,10 +130,10 @@ export default function EnrollmentCard({
         aria-hidden="true"
         className={cn(
           "absolute left-0 top-0 h-full w-1",
-          en.status === "pending" && "bg-amber-500",
-          en.status === "assessed" && "bg-slate-500",
-          en.status === "enrolled" && "bg-emerald-500",
-          en.status === "cancelled" && "bg-gray-300"
+          en.status === "pending" && "bg-warning",
+          en.status === "assessed" && "bg-info",
+          en.status === "enrolled" && "bg-success",
+          en.status === "cancelled" && "bg-border"
         )}
       />
 
@@ -154,7 +154,7 @@ export default function EnrollmentCard({
             </div>
 
             <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
-              <code className="rounded bg-gray-200 px-2 py-0.5 font-mono text-[12px] text-foreground dark:bg-gray-800">
+              <code className="rounded bg-muted px-2 py-0.5 font-mono text-[12px] text-foreground">
                 {en.referenceNumber}
               </code>
               <span className="text-muted-foreground">·</span>
@@ -199,7 +199,7 @@ export default function EnrollmentCard({
             <PrimaryAction enrollment={en} canManage={canManage} />
             <Link
               href={`/staff/students/${en.studentId}`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-gray-100"
+              className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
             >
               <User className="h-3.5 w-3.5" />
               Student profile
@@ -208,7 +208,7 @@ export default function EnrollmentCard({
               <button
                 type="button"
                 onClick={() => setActionsOpen((o) => !o)}
-                className="inline-flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground"
+                className="inline-flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 aria-expanded={actionsOpen}
               >
                 {actionsOpen ? (
@@ -229,7 +229,7 @@ export default function EnrollmentCard({
 
         {/* Disclosed action surface: cancel + admin override */}
         {actionsOpen && en.status !== "cancelled" && (
-          <div className="mt-5 grid grid-cols-1 gap-4 border-t border-gray-100 pt-5 md:grid-cols-2">
+          <div className="mt-5 grid grid-cols-1 gap-4 border-t border-border pt-5 md:grid-cols-2">
             {en.status === "assessed" && canOverrideEnrolled && (
               <OverrideEnrollBlock enrollmentId={en.id} sections={sections} />
             )}
@@ -350,7 +350,7 @@ function FinanceProgress({ paid, total }: { paid: number; total: number }) {
 
 function CancelledBlock() {
   return (
-    <div className="flex-row-2 rounded-md border border-dashed border-gray-200 px-3 py-2 text-xs text-muted-foreground">
+    <div className="flex-row-2 rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
       <X className="h-3.5 w-3.5" />
       Enrollment cancelled
     </div>
@@ -371,15 +371,15 @@ function OverrideEnrollBlock({
 
   if (state.success) {
     return (
-      <p className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-500">
+      <p className="rounded-md border border-success/25 bg-success/5 px-3 py-2 text-xs text-success">
         ✓ {state.message}
       </p>
     );
   }
 
   return (
-    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-      <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-500">
+    <div className="rounded-lg border border-warning/25 bg-warning/5 p-3">
+      <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-warning">
         <ShieldCheck className="h-3 w-3" />
         Admin override
       </p>
@@ -387,7 +387,7 @@ function OverrideEnrollBlock({
         <button
           type="button"
           onClick={() => setShow(true)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-white px-3 py-1.5 text-xs font-medium text-amber-500 transition-colors hover:bg-amber-500/10"
+          className="inline-flex items-center gap-1.5 rounded-md border border-warning/40 bg-card px-3 py-1.5 text-xs font-medium text-warning transition-colors hover:bg-warning/10"
         >
           Mark enrolled (no payment)
         </button>
@@ -397,7 +397,7 @@ function OverrideEnrollBlock({
           <input type="hidden" name="action" value="override_enroll" />
           <select
             name="sectionId"
-            className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-foreground outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-primary/15"
+            className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-xs text-foreground outline-none transition focus:border-input focus:ring-2 focus:ring-primary/15"
           >
             <option value="">Section (optional)…</option>
             {sections.map((s) => (
@@ -408,7 +408,7 @@ function OverrideEnrollBlock({
           </select>
 
           {state.message && !state.success && (
-            <p className="text-[11px] text-red-700">{state.message}</p>
+            <p className="text-[11px] text-destructive">{state.message}</p>
           )}
 
           <div className="flex-row-2">

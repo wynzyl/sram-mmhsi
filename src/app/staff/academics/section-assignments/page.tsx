@@ -67,7 +67,7 @@ export default async function SectionAssignmentsPage({ searchParams }: PageProps
     <div className="page-container--full space-y-6">
       {/* Page Header */}
       <div className="space-y-1">
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-figure">
           Section Assignments
         </h1>
         <p className="text-sm text-muted-foreground">

@@ -237,7 +237,7 @@ export default function AssessmentLedgerRegister({
   return (
     <div className="flex flex-col gap-6 max-w-[1180px] mx-auto px-6 pt-6 pb-12 text-foreground">
       {/* ── Header card ── */}
-      <header className="relative grid grid-cols-[1fr_auto] gap-x-8 gap-y-6 p-7 bg-card border border-border rounded-lg overflow-hidden [grid-template-areas:'identity_actions''tiles_tiles'] before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-gradient-to-r before:from-primary before:via-primary/60 before:to-transparent max-md:grid-cols-1 max-md:[grid-template-areas:'identity''actions''tiles'] max-md:p-5">
+      <header className="relative grid grid-cols-[1fr_auto] gap-x-8 gap-y-6 p-7 bg-card border border-border rounded-lg overflow-hidden [grid-template-areas:'identity_actions''tiles_tiles'] before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-primary max-md:grid-cols-1 max-md:[grid-template-areas:'identity''actions''tiles'] max-md:p-5">
         {/* Left: identity */}
         <div className="[grid-area:identity] flex flex-col gap-1.5 min-w-0">
           <p className="m-0 text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground">Billing ledger · Cashier view</p>
@@ -709,7 +709,7 @@ export default function AssessmentLedgerRegister({
       {/* ── Payment modal ── */}
       {payOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-5 pb-8 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 no-print"
+          className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-5 pb-8 bg-black/60 animate-in fade-in duration-200 no-print"
           role="presentation"
           onClick={(e) => e.target === e.currentTarget && closePayment()}
         >

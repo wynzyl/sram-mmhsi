@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
+import { getBalanceColor } from "@/lib/utils/financial-colors";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import { TablePagination } from "@/components/ui/TablePagination";
@@ -245,7 +246,7 @@ export function AssessedEnrollmentsTable({
           return (
             <span
               className={`font-mono text-sm font-semibold ${
-                balance > 0.01 ? "text-amber-600" : "text-emerald-600"
+                getBalanceColor(balance)
               }`}
             >
               {formatCurrency(balance)}

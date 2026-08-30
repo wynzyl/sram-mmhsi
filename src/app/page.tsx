@@ -20,12 +20,14 @@ export default function LandingPage() {
         />
 
         {/* Gradient Overlay for text readability */}
+        {/* Photo-legibility scrim: licensed exception to the no-gradient
+            rule - it protects text over an image, it is not decoration. */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
 
         {/* Branding Content */}
         <div className="absolute inset-0 flex flex-col justify-end p-10">
           {/* Bottom - Tagline */}
-          <h1 className="font-serif text-3xl font-semibold leading-tight text-white drop-shadow-lg xl:text-4xl">
+          <h1 className="font-display text-3xl font-semibold leading-tight text-white xl:text-4xl">
             School Registration &<br />
             Account Monitoring System
           </h1>

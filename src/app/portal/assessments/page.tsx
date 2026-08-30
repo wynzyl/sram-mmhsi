@@ -96,7 +96,7 @@ export default async function PortalAssessmentsPage() {
             <PortalMetric
               label="Balance"
               size="lg"
-              tone={balance <= 0 ? "positive" : "critical"}
+              tone={balance <= 0 ? "positive" : "attention"}
               value={
                 <CurrencyDisplay amount={balance} srLabel="Remaining balance" />
               }

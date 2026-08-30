@@ -50,7 +50,7 @@ function PortalUserMenu({ displayName, roleLabel }: UserMenuProps) {
             <div
               className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center",
-                "bg-gradient-to-br from-primary to-primary/80",
+                "bg-primary",
                 "text-white text-sm font-bold"
               )}
             >
@@ -148,7 +148,7 @@ export function PortalHeader({
           className="shrink-0"
         />
         <div className="flex items-center gap-2">
-          <span className="font-extrabold text-base sm:text-lg text-primary tracking-wide">
+          <span className="font-[family-name:var(--font-crimson)] font-bold text-base sm:text-lg brand-mark tracking-wide">
             MERRYLAND
           </span>
           <span

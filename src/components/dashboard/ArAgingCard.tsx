@@ -2,14 +2,15 @@ import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import type { ArAgingBucketKey, ArAgingResult } from "@/lib/queries/finance-dashboard";
 
 /**
- * AR aging severity scale: escalates through deep-red as buckets age —
- * keeps the brand palette, signals risk.
+ * AR aging severity scale: hold ages into bad. Under an ink --primary the
+ * old primary-alpha ramp would signal nothing; risk belongs to the status
+ * tiers, and only 90+ days earns full red.
  */
 const BUCKET_BAR_COLOR: Record<ArAgingBucketKey, string> = {
-  d1_30: "bg-primary/40",
-  d31_60: "bg-primary/60",
-  d61_90: "bg-primary/80",
-  d90_plus: "bg-primary",
+  d1_30: "bg-warning/50",
+  d31_60: "bg-warning",
+  d61_90: "bg-destructive/70",
+  d90_plus: "bg-destructive",
 };
 
 interface ArAgingCardProps {

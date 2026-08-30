@@ -17,7 +17,7 @@ export default function PortalNotFound() {
         strokeWidth={1.5}
         aria-hidden="true"
       />
-      <h1 className="mt-4 font-serif text-2xl font-bold italic tracking-tight text-foreground">
+      <h1 className="mt-4 font-display text-2xl font-semibold tracking-tight text-figure">
         Page not found
       </h1>
       <p className="mt-2 max-w-prose text-sm text-muted-foreground">

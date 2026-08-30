@@ -118,7 +118,7 @@ export default function EnrollmentsListView({
     <div className="page-container--full space-y-6">
       {/* Clean Page Header - Title + Subtitle Only */}
       <div className="space-y-1">
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-figure">
           Enrollments
         </h1>
         <p className="text-sm text-muted-foreground">

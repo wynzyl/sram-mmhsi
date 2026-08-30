@@ -5,31 +5,41 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #faf9f7;  /* Tailwind stone-50 - warm paper tone */
-  --foreground: #262626;
-  --card: #fff0f0;
-  --card-foreground: #790202;
-  --popover: #faf9f7;
-  --popover-foreground: #262626;
-  --primary: #db0000;
-  --primary-foreground: #000000;
-  --secondary: #f1e9e9;
-  --secondary-foreground: #085403;
-  --muted: #f9fafb;
-  --muted-foreground: #4b5563;  /* gray-600 - better contrast */
-  --accent: #fffbeb;
-  --accent-foreground: #92400e;
-  --destructive: #b91c1c; /* red-700: #ef4444 was 3.4:1 on light cards, below AA */
+  /* Chalk light - values from school-brand-guideline.html section 14.
+     Primary action is INK, not red: red is the identity and the alarm,
+     spent per the "red budget" (brand mark, focus ring, blocking errors,
+     overdue money, destructive confirm) and nowhere else. */
+  --background: #f8f7f5;           /* canvas */
+  --foreground: #2a2825;           /* text-heading */
+  --figure: #171614;               /* text-figure: amounts, IDs, page titles */
+  --card: #ffffff;                 /* surface */
+  --card-foreground: #2a2825;
+  --popover: #ffffff;              /* surface-raised */
+  --popover-foreground: #2a2825;
+  --primary: #171614;              /* action-fill: ink, never red */
+  --primary-foreground: #ffffff;   /* action-label */
+  --secondary: #f1efec;
+  --secondary-foreground: #403d39; /* text-strong */
+  --muted: #f1efec;                /* surface-sunk */
+  --muted-foreground: #6e6963;     /* text-muted, 5.1:1 on canvas */
+  --accent: #f1efec;               /* hover tint = surface-sunk */
+  --accent-foreground: #2a2825;
+  --destructive: #c9241c;          /* red-text; "bad and red-text are the same
+                                      value - that is deliberate" */
   --destructive-foreground: #ffffff;
-  --success: #047857; /* emerald-700: #16a34a was ~3:1 on light cards, below AA */
+  --destructive-tint: #fcebe9;     /* red-tint / bad-tint */
+  --success: #16794d;              /* ok */
   --success-foreground: #ffffff;
-  --warning: #b45309;
+  --success-tint: #e6f2eb;
+  --warning: #96620a;              /* hold: unpaid is hold until the due date */
   --warning-foreground: #ffffff;
-  --info: #1d4ed8;
+  --warning-tint: #fbf2e0;
+  --info: #35618c;                 /* note */
   --info-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #f59e0b;
+  --info-tint: #e8eff7;
+  --border: #e5e2dd;               /* hairlines */
+  --input: #d2cdc6;                /* border-strong */
+  --ring: #e5322d;                 /* red-mark: the focus ring IS the red budget */
 
   /* Layout dimensions */
   --header-height: 64px;
@@ -43,29 +53,29 @@
   --page-width-standard: 80rem;
   --page-width-wide: 96rem;
   --space-section-gap: 1.5rem;
-  --chart-1: #f59e0b;
-  --chart-2: #d97706;
-  --chart-3: #b45309;
-  --chart-4: #92400e;
-  --chart-5: #78350f;
-  --sidebar: #f9fafb;
-  --sidebar-foreground: #262626;
-  --sidebar-primary: #f59e0b;
+  /* Viz: series 1 is reserved for the alarming category; neutral
+     comparisons start at series 2 (note blue). */
+  --chart-1: #c9241c;
+  --chart-2: #35618c;
+  --chart-3: #16794d;
+  --chart-4: #96620a;
+  --chart-5: #6b4ea8;
+  --sidebar: #f1efec;
+  --sidebar-foreground: #403d39;
+  --sidebar-primary: #171614;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #fffbeb;
-  --sidebar-accent-foreground: #92400e;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #f59e0b;
+  --sidebar-accent: #e5e2dd;
+  --sidebar-accent-foreground: #171614;
+  --sidebar-border: #e5e2dd;
+  --sidebar-ring: #e5322d;
   --font-sans: var(--font-inter, Inter), sans-serif;
-  --font-serif: Merriweather, serif;
+  --font-serif: Georgia, serif; /* page titles moved to --font-display */
   --font-mono: var(--font-jetbrains, 'JetBrains Mono'), monospace;
-  /* Aliased to the sans stack on purpose, NOT to a display serif.
-     `font-display` reads like a heading font, but 29 of its ~112 call sites
-     are small-caps labels (text-xs font-bold uppercase tracking-[0.14em]),
-     where a serif at 12px is muddy and reads as a bug. Crimson Pro is also
-     600-900 only. Retarget per call site before changing this. */
-  --font-display: var(--font-sans);
-  --radius: 0.375rem;
+  /* Schibsted Grotesk: titles and figures per the brand guideline.
+     A grotesk is safe at the ~29 small-caps label call sites where a
+     display serif would read as a bug. */
+  --font-display: var(--font-schibsted, "Schibsted Grotesk"), system-ui, sans-serif;
+  --radius: 0.5rem;
   --shadow-x: 0px;
   --shadow-y: 4px;
   --shadow-blur: 8px;
@@ -83,85 +93,66 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
-  /* ═══════════════════════════════════════════════════════════════
-     GRADIENT & GLOW EFFECTS (Light Theme)
-     Theme-aware gradient variables for visual polish
-     ═══════════════════════════════════════════════════════════════ */
-
-  /* Primary button gradient & glow */
-  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 70%, #ff6b6b) 100%);
-  --gradient-primary-hover: linear-gradient(135deg, color-mix(in srgb, var(--primary) 85%, #000) 0%, var(--primary) 100%);
-  --glow-primary: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
-  --glow-primary-strong: 0 0 30px color-mix(in srgb, var(--primary) 50%, transparent);
-
-  /* Card header gradient (subtle) */
-  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, color-mix(in srgb, var(--card) 95%, var(--primary)) 100%);
-
-  /* Avatar gradient */
-  --avatar-gradient: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 60%, #9333ea) 100%);
-
-  /* Success badge glow */
-  --glow-success: 0 0 12px color-mix(in srgb, var(--success) 30%, transparent);
 
   /* Link accent - for reference codes (darker in light mode) */
   --link-accent: #0891b2;
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-     LEGACY COMPATIBILITY ALIASES (Light Theme)
-     Maps old variable names to new theme tokens
-     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-
 }
 
 .dark {
-  --background: #171717;
-  --foreground: #e5e5e5;
-  --card: #262626;
-  --card-foreground: #e5e5e5;
-  --popover: #262626;
-  --popover-foreground: #e5e5e5;
-  --primary: #fd3e1c;
-  --primary-foreground: #000000;
-  --secondary: #262626;
-  --secondary-foreground: #e5e5e5;
-  --muted: #1f1f1f;
-  --muted-foreground: #a3a3a3;
-  --accent: #92400e;
-  --accent-foreground: #fde68a;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --success: #4ade80;
-  --success-foreground: #052e16;
-  --warning: #fbbf24;
-  --warning-foreground: #422006;
-  --info: #60a5fa;
-  --info-foreground: #0c1222;
-  --border: #404040;
-  --input: #404040;
-  --ring: #f59e0b;
-  --chart-1: #fbbf24;
-  --chart-2: #d97706;
-  --chart-3: #92400e;
-  --chart-4: #b45309;
-  --chart-5: #92400e;
-  --sidebar: #0f0f0f;
-  --sidebar-foreground: #e5e5e5;
-  --sidebar-primary: #f59e0b;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #92400e;
-  --sidebar-accent-foreground: #fde68a;
-  --sidebar-border: #404040;
-  --sidebar-ring: #f59e0b;
+  /* Chalk dark - lightness rises with elevation, never inverted.
+     Canvas bottoms out at #131211; cards are LIGHTER than the canvas. */
+  --background: #131211;           /* canvas */
+  --foreground: #e3ded7;           /* text-heading */
+  --figure: #faf8f5;               /* text-figure */
+  --card: #1b1a18;                 /* surface */
+  --card-foreground: #e3ded7;
+  --popover: #232220;              /* surface-raised: lighter, not darker */
+  --popover-foreground: #e3ded7;
+  --primary: #faf8f5;              /* action-fill: ink flips with the theme */
+  --primary-foreground: #131211;
+  --secondary: #232220;
+  --secondary-foreground: #d6d1ca; /* text-strong */
+  --muted: #100f0e;                /* surface-sunk: hover fill, skeletons */
+  --muted-foreground: #a39d95;     /* text-muted, 6.9:1 */
+  --accent: #232220;
+  --accent-foreground: #e3ded7;
+  --destructive: #ff6b60;          /* red-text, re-tuned for the background */
+  --destructive-foreground: #131211;
+  --destructive-tint: #2c1614;
+  --success: #54c08a;
+  --success-foreground: #131211;
+  --success-tint: #16291f;
+  --warning: #e0a83c;
+  --warning-foreground: #131211;
+  --warning-tint: #2a2113;
+  --info: #7fb0e8;
+  --info-foreground: #131211;
+  --info-tint: #16212e;
+  --border: #302e2b;
+  --input: #423f3b;                /* border-strong */
+  --ring: #ff6b60;
+  --chart-1: #ff6b60;
+  --chart-2: #7fb0e8;
+  --chart-3: #54c08a;
+  --chart-4: #e0a83c;
+  --chart-5: #a98ce8;
+  --sidebar: #100f0e;
+  --sidebar-foreground: #c4beb6;
+  --sidebar-primary: #faf8f5;
+  --sidebar-primary-foreground: #131211;
+  --sidebar-accent: #232220;
+  --sidebar-accent-foreground: #e3ded7;
+  --sidebar-border: #302e2b;
+  --sidebar-ring: #ff6b60;
   --font-sans: var(--font-inter, Inter), sans-serif;
-  --font-serif: Merriweather, serif;
+  --font-serif: Georgia, serif; /* page titles moved to --font-display */
   --font-mono: var(--font-jetbrains, 'JetBrains Mono'), monospace;
-  /* Aliased to the sans stack on purpose, NOT to a display serif.
-     `font-display` reads like a heading font, but 29 of its ~112 call sites
-     are small-caps labels (text-xs font-bold uppercase tracking-[0.14em]),
-     where a serif at 12px is muddy and reads as a bug. Crimson Pro is also
-     600-900 only. Retarget per call site before changing this. */
-  --font-display: var(--font-sans);
-  --radius: 0.375rem;
+  /* Schibsted Grotesk: titles and figures per the brand guideline.
+     A grotesk is safe at the ~29 small-caps label call sites where a
+     display serif would read as a bug. */
+  --font-display: var(--font-schibsted, "Schibsted Grotesk"), system-ui, sans-serif;
+  --radius: 0.5rem;
   --shadow-x: 0px;
   --shadow-y: 4px;
   --shadow-blur: 8px;
@@ -177,30 +168,6 @@
   --shadow-xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 8px 10px -2px hsl(0 0% 0% / 0.10);
   --shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-     LEGACY COMPATIBILITY ALIASES (Dark Theme)
-     Maps old variable names to new theme tokens
-     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-
-  /* ═══════════════════════════════════════════════════════════════
-     GRADIENT & GLOW EFFECTS (Dark Theme)
-     Enhanced gradients for dark mode (more vibrant)
-     ═══════════════════════════════════════════════════════════════ */
-
-  /* Primary button gradient & glow - vibrant purple in dark mode */
-  --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
-  --gradient-primary-hover: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a855f7 100%);
-  --glow-primary: 0 0 20px rgba(139, 92, 246, 0.5);
-  --glow-primary-strong: 0 0 35px rgba(139, 92, 246, 0.7);
-
-  /* Card header gradient - subtle purple tint */
-  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, color-mix(in srgb, var(--card) 85%, var(--primary)) 100%);
-
-  /* Avatar gradient - rich saturated purple tones */
-  --avatar-gradient: linear-gradient(145deg, #7c3aed 0%, #8b5cf6 40%, #a855f7 100%);
-
-  /* Success badge glow - vibrant green */
-  --glow-success: 0 0 12px rgba(74, 222, 128, 0.5);
 
   /* Link accent - cyan/teal for student IDs */
   --link-accent: #22d3ee;
@@ -243,7 +210,6 @@
   --secondary-foreground: #4a4080;
   --foreground: #1e1b4b;        /* indigo-950 - deep purple-black */
   --muted-foreground: #4c4680;  /* muted purple - matches theme */
-  --success: #047857; /* emerald-700: #10b981 was ~2.3:1 on the cosmic card */
   --success-foreground: #ffffff;
   --chart-1: #6e56cf;
   --chart-2: #8b7dd8;
@@ -258,8 +224,6 @@
   --auth-gradient-3: rgba(110, 86, 207, 0.06);
 
   /* Cosmic theme gradients */
-  --gradient-primary: linear-gradient(135deg, #6e56cf 0%, #a48fff 100%);
-  --avatar-gradient: linear-gradient(135deg, #6e56cf 0%, #9f7aea 50%, #c4b5fd 100%);
 }
 
 /* Cosmic Dark - Colors extracted from reference design */
@@ -297,7 +261,6 @@
   --input: #2a2438;
 
   /* Success - vibrant green */
-  --success: #22c55e;
   --success-foreground: #052e16;
 
   /* Charts */
@@ -316,14 +279,6 @@
   --auth-gradient-2: rgba(99, 102, 241, 0.12);
   --auth-gradient-3: transparent;
 
-  /* Cosmic dark gradients - vibrant purple avatars, indigo buttons */
-  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-  --gradient-primary-hover: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-  --glow-primary: 0 0 20px rgba(99, 102, 241, 0.5);
-  --glow-primary-strong: 0 0 35px rgba(99, 102, 241, 0.7);
-  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, #1a1528 100%);
-  --avatar-gradient: linear-gradient(145deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%);
-  --glow-success: 0 0 12px rgba(34, 197, 94, 0.5);
 
   /* Student ID link color - cyan/teal */
   --link-accent: #22d3ee;
@@ -350,7 +305,6 @@
   --foreground: #0f172a;        /* slate-900 - near black */
   --muted: #f1f5f9;
   --muted-foreground: #475569;  /* slate-600 - better contrast */
-  --success: #047857; /* emerald-700, AA on the slate card */
   --success-foreground: #ffffff;
   --chart-1: #6366f1;
   --chart-2: #818cf8;
@@ -365,8 +319,6 @@
   --auth-gradient-3: rgba(99, 102, 241, 0.06);
 
   /* Slate theme gradients */
-  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-  --avatar-gradient: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%);
 }
 
 /* Slate Dark */
@@ -395,7 +347,6 @@
   --muted-foreground: #94a3b8;
   --border: #334155;
   --input: #334155;
-  --success: #34d399;
   --success-foreground: #064e3b;
   --chart-1: #818cf8;
   --chart-2: #a5b4fc;
@@ -412,9 +363,6 @@
   --auth-gradient-2: rgba(129, 140, 248, 0.12);
   --auth-gradient-3: transparent;
 
-  /* Slate dark gradients */
-  --gradient-primary: linear-gradient(135deg, #818cf8 0%, #a5b4fc 100%);
-  --avatar-gradient: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #a5b4fc 100%);
 }
 
 /* ───────────────────────────────────────────────────────────────
@@ -438,7 +386,6 @@
   --foreground: #500724;        /* pink-950 - deep pink-black */
   --muted: #fce7f3;
   --muted-foreground: #9d174d;  /* pink-800 - darker pink muted */
-  --success: #047857; /* emerald-700, AA on the bubblegum card */
   --success-foreground: #ffffff;
   --chart-1: #db2777;
   --chart-2: #ec4899;
@@ -453,8 +400,6 @@
   --auth-gradient-3: rgba(219, 39, 119, 0.06);
 
   /* Bubblegum theme gradients */
-  --gradient-primary: linear-gradient(135deg, #db2777 0%, #ec4899 100%);
-  --avatar-gradient: linear-gradient(135deg, #be185d 0%, #ec4899 100%);
 }
 
 /* Bubblegum Dark */
@@ -483,7 +428,6 @@
   --muted-foreground: #f9a8d4;
   --border: #4a1d32;
   --input: #4a1d32;
-  --success: #34d399;
   --success-foreground: #064e3b;
   --chart-1: #f472b6;
   --chart-2: #f9a8d4;
@@ -500,9 +444,6 @@
   --auth-gradient-2: rgba(244, 114, 182, 0.12);
   --auth-gradient-3: transparent;
 
-  /* Bubblegum dark gradients */
-  --gradient-primary: linear-gradient(135deg, #db2777 0%, #f472b6 100%);
-  --avatar-gradient: linear-gradient(135deg, #be185d 0%, #ec4899 50%, #f472b6 100%);
 }
 
 /* Tailwind CSS 4 Theme Bridge - Maps CSS variables to Tailwind tokens */
@@ -530,6 +471,11 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-figure: var(--figure);
+  --color-success-tint: var(--success-tint);
+  --color-warning-tint: var(--warning-tint);
+  --color-info-tint: var(--info-tint);
+  --color-destructive-tint: var(--destructive-tint);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -1080,28 +1026,42 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CARD SURFACE UTILITIES
-   Recovered from src/styles/base.css, which was never imported by
-   anything and has now been deleted. .card-header-gradient is
-   referenced by 19 staff views and .hover-elevate by
-   ui/editorial/DataCard; until now both rendered as no-ops.
+   BRAND MARK - the only DOM route to vermilion
+   Licensed uses (the "red budget"): logo, wordmark lockups, the 2px
+   active-module indicator, sign-in lockup. There is deliberately no
+   bg-brand / text-brand Tailwind utility: a brand red one utility
+   away ends up on a balance column. Print/XLSX use src/lib/brand.ts.
    ═══════════════════════════════════════════════════════════════ */
 
-.card-header-gradient {
-  background: var(--card-header-gradient);
+.brand-mark {
+  color: #e5322d; /* red-mark, same value in both themes */
+}
+
+.brand-mark-bg {
+  background-color: #e5322d;
+  color: #ffffff;
+}
+
+.brand-mark-border {
+  border-color: #e5322d;
+}
+
+/* The 2px active-module indicator: one per screen, on the selected item in
+   the module rail. Part of the red budget; the active fill itself stays
+   neutral (surface-sunk) with an ink label. */
+[data-sidebar="menu-button"][data-active="true"] {
   position: relative;
 }
 
-.card-header-gradient::before {
+[data-sidebar="menu-button"][data-active="true"]::before {
   content: "";
   position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    color-mix(in srgb, var(--primary) 8%, transparent) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 999px;
+  background: #e5322d;
 }
 
 .hover-elevate:hover {
@@ -1244,7 +1204,7 @@
 
 /* Main title */
 .auth-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1.625rem;
   font-weight: 600;
   letter-spacing: -0.025em;
@@ -1606,60 +1566,6 @@
   color: var(--foreground);
   background-color: var(--background);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   STAT CARD VARIANTS
-   Additional stat card styles for different contexts
-   ═══════════════════════════════════════════════════════════════ */
-
-.stat-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem 1.25rem;
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.stat-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  background-color: var(--muted);
-  border-radius: var(--radius);
-  flex-shrink: 0;
-}
-
-.stat-card-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.stat-card-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted-foreground);
-  margin: 0;
-}
-
-.stat-card-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--foreground);
-  margin: 0.25rem 0 0;
-  line-height: 1;
-}
-
-.stat-card-badge {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--muted-foreground);
 }
 
 /* ═══════════════════════════════════════════════════════════════

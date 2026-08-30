@@ -13,7 +13,7 @@ export type ColorTheme = (typeof COLOR_THEMES)[number];
  * Human-readable labels for each color theme
  */
 export const COLOR_THEME_LABELS: Record<ColorTheme, string> = {
-  default: "Crimson",
+  default: "Merryland",
   cosmic: "Cosmic",
   slate: "Slate",
   bubblegum: "Bubblegum",
@@ -23,7 +23,7 @@ export const COLOR_THEME_LABELS: Record<ColorTheme, string> = {
  * Preview colors for the theme picker UI (primary color of each theme)
  */
 export const COLOR_THEME_COLORS: Record<ColorTheme, string> = {
-  default: "#db0000",
+  default: "#e5322d", // red-mark: the brand accent of the chalk default theme
   cosmic: "#6e56cf",
   slate: "#6366f1",
   bubblegum: "#ec4899",

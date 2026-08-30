@@ -23,7 +23,7 @@ export default async function CurriculumsPage() {
     <div className="page-container--full space-y-6">
       {/* Page Header */}
       <div className="space-y-1">
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground italic">
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-figure">
           Curriculums
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -37,7 +37,7 @@ export default async function CurriculumsPage() {
         aria-labelledby="curriculum-heading"
       >
         {/* Card Header with gradient effect */}
-        <div className="card-header-gradient flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="bg-muted flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           {/* Left: Title + Stats Badges */}
           <div className="flex items-center gap-3 flex-wrap">
             <h2
