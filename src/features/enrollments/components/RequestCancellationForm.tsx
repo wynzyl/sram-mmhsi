@@ -114,7 +114,7 @@ export default function RequestCancellationForm({
             type="submit"
             disabled={pending || !reasonType}
             className={cn(
-              "inline-flex items-center gap-1 rounded-md bg-warning px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all",
+              "inline-flex items-center gap-1 rounded-md bg-warning px-4 py-2 text-xs font-semibold text-warning-foreground shadow-sm transition-all",
               "hover:bg-warning disabled:cursor-not-allowed disabled:opacity-50"
             )}
           >

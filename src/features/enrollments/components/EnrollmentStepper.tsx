@@ -117,9 +117,9 @@ function StepCircle({
         "relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
         "transition-all duration-200",
         status === "complete" &&
-          "bg-success text-white shadow-[0_0_0_4px_rgba(16,185,129,0.12)]",
+          "bg-success text-success-foreground shadow-[0_0_0_4px_rgba(16,185,129,0.12)]",
         status === "active" &&
-          "bg-primary text-white shadow-[0_0_0_4px_rgba(199,0,0,0.12)]",
+          "bg-primary text-primary-foreground shadow-[0_0_0_4px_rgba(199,0,0,0.12)]",
         status === "upcoming" &&
           "border border-border bg-white text-muted-foreground"
       )}

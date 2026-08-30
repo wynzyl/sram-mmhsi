@@ -159,7 +159,7 @@ export function CurriculumDetailClient({
           <button
             type="button"
             onClick={() => setShowPublishDialog(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-success rounded-md shadow-lg hover:bg-success flex items-center gap-2"
+            className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md shadow-lg hover:bg-success flex items-center gap-2"
           >
             <svg
               className="w-4 h-4"

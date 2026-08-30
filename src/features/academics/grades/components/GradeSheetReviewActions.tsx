@@ -165,7 +165,7 @@ export function GradeSheetReviewActions({
             <AlertDialogAction
               onClick={handleReturn}
               disabled={isReturning || !returnRemarks.trim()}
-              className="bg-warning hover:bg-warning text-white"
+              className="bg-warning hover:bg-warning text-warning-foreground"
             >
               {isReturning ? "Returning..." : "Return for Revision"}
             </AlertDialogAction>

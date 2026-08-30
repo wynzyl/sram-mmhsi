@@ -101,7 +101,7 @@ export default function EnrollmentQueueTabs({ counts, currentTab, basePath }: En
                 className={cn(
                   "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 font-mono text-[10px] font-bold transition-colors duration-150",
                   isActive
-                    ? "bg-primary text-white"
+                    ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground group-hover:bg-border group-hover:text-foreground"
                 )}
               >

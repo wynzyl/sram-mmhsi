@@ -236,7 +236,7 @@ export default function EnrollmentsListView({
             {canCreate && filterStatus === "all" && !debouncedSearch && (
               <Link
                 href={newEnrollmentHref}
-                className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive"
+                className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-destructive"
               >
                 <Plus className="h-4 w-4" />
                 Enroll Student

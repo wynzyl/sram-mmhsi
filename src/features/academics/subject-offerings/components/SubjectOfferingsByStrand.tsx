@@ -247,7 +247,7 @@ function FilterButton({
         variant="secondary"
         className={cn(
           "ml-1 px-1.5 py-0 text-xs font-normal",
-          active && "bg-white/20 text-white border-white/30"
+          active && "bg-current/15 text-current border-current/30"
         )}
       >
         {count}

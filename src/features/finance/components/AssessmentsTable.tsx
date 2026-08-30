@@ -84,7 +84,7 @@ function AssessmentsTableComponent({
                   <Link
                     href={`${assessmentsBasePath}/${assessment.id}`}
                     prefetch={false}
-                    className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1 text-xs font-semibold text-white hover:opacity-95 transition-opacity"
+                    className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:opacity-95 transition-opacity"
                   >
                     Ledger
                   </Link>

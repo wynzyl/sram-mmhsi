@@ -125,7 +125,7 @@ export function ArchiveCurriculumDialog({
               <button
                 type="submit"
                 disabled={isPending || !nameMatches}
-                className="px-4 py-2 text-sm font-medium text-white bg-destructive rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-destructive-foreground bg-destructive rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isPending ? "Archiving..." : "Archive Curriculum"}
               </button>

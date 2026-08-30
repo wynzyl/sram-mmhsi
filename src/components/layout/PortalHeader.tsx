@@ -51,7 +51,7 @@ function PortalUserMenu({ displayName, roleLabel }: UserMenuProps) {
               className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center",
                 "bg-primary",
-                "text-white text-sm font-bold"
+                "text-primary-foreground text-sm font-bold"
               )}
             >
               {initials}

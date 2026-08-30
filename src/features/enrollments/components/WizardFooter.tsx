@@ -57,8 +57,8 @@ export default function WizardFooter({
           type="submit"
           disabled={disableSubmit}
           className={cn(
-            "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
-            "bg-primary hover:bg-destructive hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
+            "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all",
+            "bg-primary hover:bg-primary/90 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
             "disabled:cursor-not-allowed disabled:opacity-60"
           )}
         >
@@ -83,8 +83,8 @@ export default function WizardFooter({
           onClick={onContinue}
           disabled={!canContinue || pending}
           className={cn(
-            "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
-            "bg-primary hover:bg-destructive hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
+            "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all",
+            "bg-primary hover:bg-primary/90 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
             "disabled:cursor-not-allowed disabled:opacity-60"
           )}
         >

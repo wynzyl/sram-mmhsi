@@ -268,7 +268,7 @@ export default function AssessmentLedgerRegister({
           {canOpenPay && (
             <button
               type="button"
-              className="inline-flex items-center gap-[0.45rem] h-[38px] px-4 bg-primary text-white text-[13px] font-semibold tracking-[0.005em] border border-primary/80 rounded-md cursor-pointer shadow-sm transition-colors hover:bg-primary/90 active:translate-y-px focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+              className="inline-flex items-center gap-[0.45rem] h-[38px] px-4 bg-primary text-primary-foreground text-[13px] font-semibold tracking-[0.005em] border border-primary/80 rounded-md cursor-pointer shadow-sm transition-colors hover:bg-primary/90 active:translate-y-px focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
               onClick={openPayment}
             >
               {/* Receipt icon */}
@@ -290,7 +290,7 @@ export default function AssessmentLedgerRegister({
           {canShowCancelButton && !cancelOpen && (
             <button
               type="button"
-              className="inline-flex items-center gap-[0.45rem] h-[38px] px-4 bg-transparent text-destructive text-[13px] font-semibold tracking-[0.005em] border border-destructive rounded-md cursor-pointer transition-colors hover:bg-destructive hover:text-white active:translate-y-px focus-visible:outline-2 focus-visible:outline-destructive focus-visible:outline-offset-2"
+              className="inline-flex items-center gap-[0.45rem] h-[38px] px-4 bg-transparent text-destructive text-[13px] font-semibold tracking-[0.005em] border border-destructive rounded-md cursor-pointer transition-colors hover:bg-destructive hover:text-destructive-foreground active:translate-y-px focus-visible:outline-2 focus-visible:outline-destructive focus-visible:outline-offset-2"
               onClick={() => setCancelOpen(true)}
             >
               {/* X icon */}
@@ -538,7 +538,7 @@ export default function AssessmentLedgerRegister({
                   <button
                     type="submit"
                     disabled={cancelPending}
-                    className="px-4 py-2 rounded-md text-sm font-semibold text-white bg-destructive border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
+                    className="px-4 py-2 rounded-md text-sm font-semibold text-destructive-foreground bg-destructive border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
                   >
                     {cancelPending ? "Cancelling..." : "Confirm Cancellation"}
                   </button>

@@ -506,7 +506,7 @@ export function SHSGradeEntryTabs({
                     ? `${totalCompletion.missingCount} grade${totalCompletion.missingCount > 1 ? "s" : ""} missing`
                     : undefined
                 }
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>
@@ -545,7 +545,7 @@ export function SHSGradeEntryTabs({
                 variant="secondary"
                 className={cn(
                   "ml-1 px-1.5 py-0 text-xs font-normal",
-                  activeTab === tab.key && "bg-white/20 text-white border-white/30"
+                  activeTab === tab.key && "bg-current/15 text-current border-current/30"
                 )}
               >
                 {tab.count}

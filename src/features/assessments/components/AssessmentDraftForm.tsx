@@ -583,7 +583,7 @@ export default function AssessmentDraftForm({
               <button
                 type="submit"
                 form={formId}
-                className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
+                className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-95 disabled:opacity-50"
                 disabled={pending || blocked || rows.length === 0 || !hydrated}
               >
                 {pending ? "Saving…" : "Save assessment"}

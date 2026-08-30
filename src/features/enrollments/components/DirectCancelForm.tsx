@@ -141,7 +141,7 @@ export default function DirectCancelForm({
             type="submit"
             disabled={pending || !reasonType}
             className={cn(
-              "inline-flex items-center gap-1 rounded-md bg-destructive px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all",
+              "inline-flex items-center gap-1 rounded-md bg-destructive px-4 py-2 text-xs font-semibold text-destructive-foreground shadow-sm transition-all",
               "hover:bg-destructive disabled:cursor-not-allowed disabled:opacity-50"
             )}
           >

@@ -231,7 +231,7 @@ export function GradeSheetPublishActions({
             <AlertDialogAction
               onClick={handleUnlock}
               disabled={isUnlocking || !unlockReason.trim()}
-              className="bg-warning hover:bg-warning text-white"
+              className="bg-warning hover:bg-warning text-warning-foreground"
             >
               {isUnlocking ? "Unlocking..." : "Unlock Grade Sheet"}
             </AlertDialogAction>

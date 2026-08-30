@@ -131,7 +131,7 @@ export function CashDiscountPreviewCard({
         </div>
 
         {/* Amount to collect (emphasized) */}
-        <div className="flex justify-between rounded-lg bg-success px-3 py-2 text-white">
+        <div className="flex justify-between rounded-lg bg-success px-3 py-2 text-success-foreground">
           <span className="font-semibold">Collect from student:</span>
           <span className="font-mono font-bold">
             <CurrencyDisplay amount={paymentRequired} />

@@ -194,7 +194,7 @@ export default function StudentPicker({
                           className={cn(
                           "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
                           isSelected
-                            ? "bg-primary text-white"
+                            ? "bg-primary text-primary-foreground"
                             : "border border-border bg-card"
                         )}
                       >

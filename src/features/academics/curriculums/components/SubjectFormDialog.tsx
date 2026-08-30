@@ -391,7 +391,7 @@ export function SubjectFormDialog({
             <button
               type="submit"
               disabled={isPending}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
             >
               {isPending ? "Saving..." : mode === "add" ? "Add Subject" : "Save Changes"}
             </button>

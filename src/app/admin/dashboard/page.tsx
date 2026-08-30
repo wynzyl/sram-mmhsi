@@ -17,6 +17,30 @@ function formatDelta(value: number): string {
   return `${value}`;
 }
 
+// Each quick action gets its own semantic tint so the three destinations
+// read apart at a glance. Tokens resolve per light/dark mode and stay
+// stable across all four color themes.
+const QUICK_ACTIONS = [
+  {
+    href: "/admin/users",
+    label: "Manage Users",
+    className:
+      "border-primary/25 bg-primary/10 text-primary hover:border-primary/40 hover:bg-primary/15",
+  },
+  {
+    href: "/staff/school-years",
+    label: "Manage School Years",
+    className:
+      "border-info/25 bg-info-tint text-info hover:border-info/40 hover:bg-info/20",
+  },
+  {
+    href: "/staff/dashboard",
+    label: "Open Staff Operations",
+    className:
+      "border-success/25 bg-success-tint text-success hover:border-success/40 hover:bg-success/20",
+  },
+] as const;
+
 export default async function AdminDashboardPage() {
   const metrics = await getAdminDashboardMetrics();
 
@@ -135,24 +159,15 @@ export default async function AdminDashboardPage() {
             Quick Actions
           </h2>
           <div className="flex flex-col gap-2">
-            <Link
-              href="/admin/users"
-              className="block rounded-md border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-muted hover:text-primary"
-            >
-              Manage Users
-            </Link>
-            <Link
-              href="/staff/school-years"
-              className="block rounded-md border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-muted hover:text-primary"
-            >
-              Manage School Years
-            </Link>
-            <Link
-              href="/staff/dashboard"
-              className="block rounded-md border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-muted hover:text-primary"
-            >
-              Open Staff Operations
-            </Link>
+            {QUICK_ACTIONS.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className={`block rounded-md border px-3 py-2 text-sm font-medium transition-colors ${action.className}`}
+              >
+                {action.label}
+              </Link>
+            ))}
           </div>
         </section>
       </div>
