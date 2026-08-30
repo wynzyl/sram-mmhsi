@@ -69,9 +69,9 @@ export async function InternalInvoicesListPage(props: InvoicesIndexPageProps) {
   if (!activeSchoolYear) {
     return (
       <div className="page-container">
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-6">
-          <h2 className="text-lg font-semibold text-amber-900">No Active School Year</h2>
-          <p className="mt-2 text-sm text-amber-800">
+        <div className="rounded-lg border border-warning/25 bg-warning-tint p-6">
+          <h2 className="text-lg font-semibold text-warning">No Active School Year</h2>
+          <p className="mt-2 text-sm text-warning">
             An active school year must be configured before you can manage invoices. Please contact your
             system administrator or activate a school year in the system settings.
           </p>

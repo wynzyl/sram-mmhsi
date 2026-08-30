@@ -79,7 +79,7 @@ export function CreateTemplateModal() {
                   <div className="form-group">
                     <label htmlFor="description" className="form-label">
                       Description{" "}
-                      <span className="text-gray-400 dark:text-gray-500 font-normal">
+                      <span className="text-muted-foreground font-normal">
                         (optional)
                       </span>
                     </label>

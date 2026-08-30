@@ -49,11 +49,11 @@ export function ProcessDocumentRequestForm({
   // Show block message if processing is not allowed
   if (!canProcess) {
     return (
-      <div className="rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
-        <h4 className="font-medium text-amber-800 dark:text-amber-200">
+      <div className="rounded-md border border-warning/25 bg-warning-tint p-4">
+        <h4 className="font-medium text-warning">
           Cannot Process Document
         </h4>
-        <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+        <p className="mt-1 text-sm text-warning">
           {processBlockReason}
         </p>
       </div>
@@ -193,11 +193,11 @@ export function ReleaseDocumentRequestForm({
 
   if (!canRelease) {
     return (
-      <div className="rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
-        <h4 className="font-medium text-amber-800 dark:text-amber-200">
+      <div className="rounded-md border border-warning/25 bg-warning-tint p-4">
+        <h4 className="font-medium text-warning">
           Cannot Release Document
         </h4>
-        <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+        <p className="mt-1 text-sm text-warning">
           {releaseBlockReason}
         </p>
       </div>
@@ -404,7 +404,7 @@ export function PrintDocumentButton({
         )}
       </button>
       {disabled && disabledReason && (
-        <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+        <p className="mt-1 text-xs text-warning">
           {disabledReason}
         </p>
       )}
@@ -485,7 +485,7 @@ export function DownloadDocumentButton({
         )}
       </button>
       {disabled && disabledReason && (
-        <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+        <p className="mt-1 text-xs text-warning">
           {disabledReason}
         </p>
       )}

@@ -168,7 +168,7 @@ export function TemplateAssignmentForm({
         <div className="form-group">
           <label htmlFor="expiryDate" className="form-label">
             Expiry Date{" "}
-            <span className="text-gray-400 dark:text-gray-500 font-normal">
+            <span className="text-muted-foreground font-normal">
               (optional)
             </span>
           </label>

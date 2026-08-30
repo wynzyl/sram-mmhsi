@@ -35,7 +35,7 @@ export default function WizardStepStudent({
           htmlFor="studentId"
           className="mb-1.5 block text-sm font-medium text-foreground"
         >
-          Student <span className="text-red-600">*</span>
+          Student <span className="text-destructive">*</span>
         </label>
         <StudentPicker
           students={students}

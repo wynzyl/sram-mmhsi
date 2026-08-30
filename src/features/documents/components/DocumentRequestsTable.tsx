@@ -8,7 +8,7 @@ import { DOCUMENT_REQUEST_TYPE_LABELS } from "@/lib/constants/document-requests"
 import type { DocumentRequestListItem } from "../document-requests.queries";
 
 const headClass =
-  "font-semibold tracking-wide text-gray-600 dark:text-gray-400";
+  "font-semibold tracking-wide text-muted-foreground";
 
 export function DocumentRequestsTable({
   rows,

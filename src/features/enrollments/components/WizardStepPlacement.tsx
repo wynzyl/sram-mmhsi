@@ -77,12 +77,12 @@ export default function WizardStepPlacement({
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <span className="mb-1.5 block text-sm font-medium text-foreground">
-            School Year <span className="text-red-600">*</span>
+            School Year <span className="text-destructive">*</span>
           </span>
           <div
             className={editorialFieldClass({
               invalid: Boolean(errors?.schoolYearId),
-              className: "bg-gray-100",
+              className: "bg-muted",
             })}
             aria-live="polite"
           >
@@ -96,7 +96,7 @@ export default function WizardStepPlacement({
             )}
           </div>
           {errors?.schoolYearId && (
-            <p className="mt-1 text-sm text-red-600">{errors.schoolYearId[0]}</p>
+            <p className="mt-1 text-sm text-destructive">{errors.schoolYearId[0]}</p>
           )}
         </div>
 
@@ -105,7 +105,7 @@ export default function WizardStepPlacement({
             htmlFor="gradeLevelIdSelect"
             className="mb-1.5 block text-sm font-medium text-foreground"
           >
-            Grade Level <span className="text-red-600">*</span>
+            Grade Level <span className="text-destructive">*</span>
           </label>
           <select
             id="gradeLevelIdSelect"
@@ -122,7 +122,7 @@ export default function WizardStepPlacement({
             ))}
           </select>
           {errors?.gradeLevelId && (
-            <p className="mt-1 text-sm text-red-600">{errors.gradeLevelId[0]}</p>
+            <p className="mt-1 text-sm text-destructive">{errors.gradeLevelId[0]}</p>
           )}
           {promotionMessage && (
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{promotionMessage}</p>
@@ -132,14 +132,14 @@ export default function WizardStepPlacement({
 
       <div className="space-y-2">
         <span className="mb-1.5 block text-sm font-medium text-foreground">
-          Enrollment Type <span className="text-red-600">*</span>
+          Enrollment Type <span className="text-destructive">*</span>
         </span>
 
         {lockedToOldStudent ? (
           <div
             className={editorialFieldClass({
               invalid: Boolean(errors?.studentType),
-              className: "bg-gray-100",
+              className: "bg-muted",
             })}
           >
             <strong className="text-foreground">Returning</strong>
@@ -164,7 +164,7 @@ export default function WizardStepPlacement({
           </div>
         )}
         {errors?.studentType && (
-          <p className="mt-1 text-sm text-red-600">{errors.studentType[0]}</p>
+          <p className="mt-1 text-sm text-destructive">{errors.studentType[0]}</p>
         )}
       </div>
 
@@ -174,7 +174,7 @@ export default function WizardStepPlacement({
             htmlFor="previousSchoolInput"
             className="mb-1.5 block text-sm font-medium text-foreground"
           >
-            Previous school <span className="text-red-600">*</span>
+            Previous school <span className="text-destructive">*</span>
           </label>
           <input
             id="previousSchoolInput"
@@ -186,7 +186,7 @@ export default function WizardStepPlacement({
             className={editorialFieldClass({ invalid: Boolean(errors?.previousSchool) })}
           />
           {errors?.previousSchool && (
-            <p className="mt-1 text-sm text-red-600">{errors.previousSchool[0]}</p>
+            <p className="mt-1 text-sm text-destructive">{errors.previousSchool[0]}</p>
           )}
         </div>
       )}
@@ -221,7 +221,7 @@ function TypeRadioCard({
         "focus:outline-none focus:ring-2 focus:ring-primary/15",
         checked
           ? "border-primary bg-primary/[0.04] shadow-sm"
-          : "border-border bg-card hover:border-gray-300 hover:bg-muted dark:hover:border-gray-700"
+          : "border-border bg-card hover:border-border hover:bg-muted"
       )}
     >
       <div className="flex w-full items-center justify-between">
@@ -234,7 +234,7 @@ function TypeRadioCard({
           {label}
         </span>
         {suggested && (
-          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-amber-500">
+          <span className="rounded-full bg-warning/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-warning">
             Suggested
           </span>
         )}

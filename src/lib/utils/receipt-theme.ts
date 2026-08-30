@@ -3,11 +3,11 @@ export type ReceiptBookletStatus = "active" | "exhausted" | "voided" | string;
 export function getReceiptStatusClasses(status: ReceiptBookletStatus): string {
   switch (status) {
     case "active":
-      return "border-emerald-500/35 bg-emerald-500/15 text-emerald-300";
+      return "border-success/35 bg-success/15 text-success";
     case "exhausted":
       return "border-[var(--color-ops-line)] bg-[var(--color-ops-panel-muted)] text-[var(--color-ops-muted)]";
     case "voided":
-      return "border-rose-500/35 bg-rose-500/15 text-rose-300";
+      return "border-destructive/35 bg-destructive/15 text-destructive";
     default:
       return "border-[var(--color-ops-line)] bg-[var(--color-ops-panel-muted)] text-[var(--color-ops-muted)]";
   }

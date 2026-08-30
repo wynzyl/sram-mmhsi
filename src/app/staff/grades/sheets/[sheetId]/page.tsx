@@ -303,11 +303,11 @@ export default async function GradeSheetReviewPage({ params }: PageProps) {
 
       {/* Return remarks if returned */}
       {gradeSheet.status === "returned" && gradeSheet.returnRemarks && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-          <h3 className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1">
+        <div className="bg-warning-tint border border-warning/25 rounded-xl p-4">
+          <h3 className="text-sm font-medium text-warning mb-1">
             Return Remarks
           </h3>
-          <p className="text-sm text-amber-700 dark:text-amber-400">
+          <p className="text-sm text-warning">
             {gradeSheet.returnRemarks}
           </p>
         </div>

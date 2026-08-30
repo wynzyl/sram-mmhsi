@@ -30,19 +30,19 @@ export function LastPaymentCard({ lastPayment }: LastPaymentCardProps) {
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-muted-foreground">Method</span>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              <span className="text-sm font-medium text-muted-foreground">
                 {lastPayment.paymentMethod}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-muted-foreground">Date</span>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              <span className="text-sm font-medium text-muted-foreground">
                 {lastPayment.paymentDateLabel}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-muted-foreground">OR</span>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              <span className="text-sm font-medium text-muted-foreground">
                 {lastPayment.orNumber ? (
                   <ReferenceCode code={lastPayment.orNumber} />
                 ) : (

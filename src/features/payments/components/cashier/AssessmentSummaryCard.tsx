@@ -28,7 +28,7 @@ export function AssessmentSummaryCard({
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm text-muted-foreground">Paid to date</span>
-          <span className="font-semibold text-emerald-600">
+          <span className="font-semibold text-success">
             <CurrencyDisplay amount={totalPaid} />
           </span>
         </div>

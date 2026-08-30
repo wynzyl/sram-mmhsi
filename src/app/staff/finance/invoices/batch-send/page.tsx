@@ -35,9 +35,9 @@ export default async function BatchSendInvoicePage() {
             Send invoices via email to guardians
           </p>
         </div>
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-6">
-          <h2 className="text-lg font-semibold text-amber-900">No Active School Year</h2>
-          <p className="mt-2 text-sm text-amber-800">
+        <div className="rounded-lg border border-warning/25 bg-warning-tint p-6">
+          <h2 className="text-lg font-semibold text-warning">No Active School Year</h2>
+          <p className="mt-2 text-sm text-warning">
             No active school year found. Please set an active school year before sending invoices.
           </p>
         </div>

@@ -204,7 +204,7 @@ export default function AssessmentDraftForm({
     <div className="space-y-8">
       {submitBlockedReason && (
         <div
-          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          className="rounded-lg border border-warning/25 bg-warning-tint px-4 py-3 text-sm text-warning"
           role="alert"
         >
           <p>{submitBlockedReason}</p>
@@ -403,8 +403,8 @@ export default function AssessmentDraftForm({
                               <span
                                 className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
                                   req.baseType === "tuition_only"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-purple-100 text-purple-700"
+                                    ? "bg-info-tint text-info"
+                                    : "bg-info-tint text-info"
                                 }`}
                               >
                                 {req.baseType === "tuition_only" ? "Tuition" : "Full"}
@@ -461,36 +461,36 @@ export default function AssessmentDraftForm({
               {/* Approved discounts - will be applied */}
               {approvedRequests.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-success">
                     Approved (will be applied)
                   </p>
                   <ul className="space-y-1.5">
                     {expectedDiscounts.items.map((discountPreview) => (
                       <li
                         key={discountPreview.discountRequestId}
-                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800"
+                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-success-tint border-success/25"
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-foreground">
                             {discountPreview.discountTypeName}
                           </span>
-                          <span className="rounded px-1.5 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+                          <span className="rounded px-1.5 py-0.5 text-xs font-medium bg-success-tint text-success">
                             {formatDiscountValue(discountPreview.calculationType, discountPreview.displayValue)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-emerald-600">
+                        <div className="flex items-center gap-2 text-success">
                           <CurrencyDisplay
                             amount={-discountPreview.calculatedAmount}
                             className="font-semibold"
                           />
-                          <span className="rounded px-2 py-0.5 text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+                          <span className="rounded px-2 py-0.5 text-xs font-semibold bg-success-tint text-success">
                             Approved
                           </span>
                         </div>
                       </li>
                     ))}
                   </ul>
-                  <p className="text-xs text-emerald-600">
+                  <p className="text-xs text-success">
                     ✓ These discounts will be applied as negative line items when the assessment is saved.
                   </p>
                 </div>
@@ -511,7 +511,7 @@ export default function AssessmentDraftForm({
                         <span className="font-medium text-foreground line-through">
                           {req.discountTypeName}
                         </span>
-                        <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                        <span className="rounded bg-destructive-tint px-2 py-0.5 text-xs font-semibold text-destructive">
                           Rejected
                         </span>
                       </li>
@@ -557,7 +557,7 @@ export default function AssessmentDraftForm({
                   <span className="text-muted-foreground">Discount lines</span>
                   <CurrencyDisplay
                     amount={-discountSum}
-                    className={discountSum > 0 ? "text-blue-700" : undefined}
+                    className={discountSum > 0 ? "text-info" : undefined}
                   />
                 </li>
                 <li className="flex justify-between gap-4 border-t border-dashed border-border pt-3">

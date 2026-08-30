@@ -13,7 +13,7 @@ function subtitle(row: StudentDirectoryRow): string {
   return parts.length > 0 ? parts.join(" · ") : "—";
 }
 
-const headClass = "font-semibold tracking-wide text-gray-600 dark:text-gray-400";
+const headClass = "font-semibold tracking-wide text-muted-foreground";
 
 function SortChevron({ state }: { state: "asc" | "desc" | "none" }) {
   // Active direction uses primary; inactive uses a muted double-arrow.
@@ -102,7 +102,7 @@ export function StudentDirectoryTable({
               activeSort={activeSort}
               sortHref={sortHref}
             />
-            <th className="w-px text-right font-semibold tracking-wide text-gray-600 dark:text-gray-400" aria-label="Actions" />
+            <th className="w-px text-right font-semibold tracking-wide text-muted-foreground" aria-label="Actions" />
           </tr>
         </thead>
         <tbody>
@@ -154,7 +154,7 @@ export function StudentDirectoryTable({
                       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
                         s.isActive
                           ? "bg-success/15 text-success"
-                          : "bg-gray-200 dark:bg-gray-800 text-muted-foreground"
+                          : "bg-muted text-muted-foreground"
                       }`}
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-current opacity-90" aria-hidden />

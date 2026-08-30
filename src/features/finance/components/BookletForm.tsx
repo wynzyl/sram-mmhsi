@@ -182,14 +182,14 @@ export default function BookletForm({
       </div>
 
       {state.errors?._form && (
-        <div className="mb-4 rounded-lg border border-rose-500/35 bg-rose-500/15 px-3 py-2 text-sm text-rose-200">
+        <div className="mb-4 rounded-lg border border-destructive/35 bg-destructive/15 px-3 py-2 text-sm text-destructive">
           {state.errors._form.map((err, i) => (
             <p key={i}>{err}</p>
           ))}
         </div>
       )}
       {state.message && !state.success && (
-        <div className="mb-4 rounded-lg border border-rose-500/35 bg-rose-500/15 px-3 py-2 text-sm text-rose-200">
+        <div className="mb-4 rounded-lg border border-destructive/35 bg-destructive/15 px-3 py-2 text-sm text-destructive">
           {state.message}
         </div>
       )}
@@ -209,7 +209,7 @@ export default function BookletForm({
             onChange={(event) => setSeriesInput(event.target.value.toUpperCase())}
             required
           />
-          {state.errors?.series && <p className="mt-1 text-xs text-rose-300">{state.errors.series[0]}</p>}
+          {state.errors?.series && <p className="mt-1 text-xs text-destructive">{state.errors.series[0]}</p>}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -229,7 +229,7 @@ export default function BookletForm({
               value={derivedFields?.prefix ?? ""}
               readOnly
             />
-            {state.errors?.prefix && <p className="mt-1 text-xs text-rose-300">{state.errors.prefix[0]}</p>}
+            {state.errors?.prefix && <p className="mt-1 text-xs text-destructive">{state.errors.prefix[0]}</p>}
           </div>
 
           <div>
@@ -238,7 +238,7 @@ export default function BookletForm({
             </label>
             <div className="relative">
               <input id="dateIssued" type="date" className={cn(inputBaseClasses, "pr-10")} />
-              <CalendarDays className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-500" />
+              <CalendarDays className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-muted-foreground" />
             </div>
           </div>
         </div>
@@ -257,7 +257,7 @@ export default function BookletForm({
               value={derivedFields?.startNumber ?? ""}
               readOnly
             />
-            {state.errors?.startNumber && <p className="mt-1 text-xs text-rose-300">{state.errors.startNumber[0]}</p>}
+            {state.errors?.startNumber && <p className="mt-1 text-xs text-destructive">{state.errors.startNumber[0]}</p>}
           </div>
 
           <div>
@@ -273,7 +273,7 @@ export default function BookletForm({
               value={derivedFields?.endNumber ?? ""}
               readOnly
             />
-            {state.errors?.endNumber && <p className="mt-1 text-xs text-rose-300">{state.errors.endNumber[0]}</p>}
+            {state.errors?.endNumber && <p className="mt-1 text-xs text-destructive">{state.errors.endNumber[0]}</p>}
           </div>
         </div>
 

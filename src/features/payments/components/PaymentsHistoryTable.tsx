@@ -237,7 +237,7 @@ export default function PaymentsHistoryTable({
 
           if (isBalanceForward) {
             return (
-              <Badge variant="info" className="bg-blue-100 text-blue-800 border-blue-200">
+              <Badge variant="info" className="bg-info-tint text-info border-info/25">
                 BFX
               </Badge>
             );
@@ -247,7 +247,7 @@ export default function PaymentsHistoryTable({
             <span className="inline-flex items-center gap-2">
               <ReferenceCode code={payment.orNumber} />
               {payment.isManualEntry && (
-                <Badge variant="warning" className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] px-1.5 h-5">
+                <Badge variant="warning" className="bg-warning-tint text-warning border-warning/25 text-[10px] px-1.5 h-5">
                   Manual
                 </Badge>
               )}
@@ -300,7 +300,7 @@ export default function PaymentsHistoryTable({
           const isNegative = displayAmount < 0;
 
           return (
-            <span className={isNegative ? "text-red-600" : ""}>
+            <span className={isNegative ? "text-destructive" : ""}>
               {isNegative && "-"}
               <CurrencyDisplay
                 amount={Math.abs(displayAmount)}
@@ -322,7 +322,7 @@ export default function PaymentsHistoryTable({
           // Balance Forward entry
           if (isBalanceForward || payment.status === "balance_forward") {
             return (
-              <Badge variant="info" className="bg-blue-100 text-blue-800 border-blue-200">
+              <Badge variant="info" className="bg-info-tint text-info border-info/25">
                 TRANSFERRED
               </Badge>
             );
@@ -331,7 +331,7 @@ export default function PaymentsHistoryTable({
           // Reversal entry
           if (isReversal || payment.status === "reversal") {
             return (
-              <Badge variant="danger" className="bg-red-100 text-red-800 border-red-200">
+              <Badge variant="danger" className="bg-destructive-tint text-destructive border-destructive/25">
                 REVERSAL
               </Badge>
             );
@@ -340,7 +340,7 @@ export default function PaymentsHistoryTable({
           // Original payment that was reversed
           if (payment.status === "reversed") {
             return (
-              <Badge variant="warning" className="bg-amber-100 text-amber-800 border-amber-200">
+              <Badge variant="warning" className="bg-warning-tint text-warning border-warning/25">
                 REVERSED
               </Badge>
             );
@@ -354,7 +354,7 @@ export default function PaymentsHistoryTable({
           // Pending void request
           if (pendingRequest) {
             return (
-              <Badge variant="warning" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+              <Badge variant="warning" className="bg-warning-tint text-warning border-warning/25">
                 PENDING APPROVAL
               </Badge>
             );

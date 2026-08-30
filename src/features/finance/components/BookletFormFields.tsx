@@ -64,7 +64,7 @@ export function UsageModeField({
           {options}
         </select>
         {error && (
-          <p id={errorId} className="mt-1 text-xs text-rose-300">
+          <p id={errorId} className="mt-1 text-xs text-destructive">
             {error[0]}
           </p>
         )}
@@ -148,10 +148,10 @@ export function AssignedCashierField({
           >
             {options}
           </select>
-          <UserRound className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-500" />
+          <UserRound className="pointer-events-none absolute right-3 top-3 h-5 w-5 text-muted-foreground" />
         </div>
         {error && (
-          <p id={errorId} className="mt-1 text-xs text-rose-300">
+          <p id={errorId} className="mt-1 text-xs text-destructive">
             {error[0]}
           </p>
         )}

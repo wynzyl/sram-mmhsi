@@ -34,13 +34,13 @@ const statusConfig: Record<
     label: "Approved",
   },
   declined: {
-    color: "text-red-600",
-    bgColor: "bg-red-50",
+    color: "text-destructive",
+    bgColor: "bg-destructive-tint",
     label: "Declined",
   },
   "n/a": {
-    color: "text-gray-400",
-    bgColor: "bg-gray-50",
+    color: "text-muted-foreground",
+    bgColor: "bg-muted",
     label: "N/A",
   },
 };
@@ -82,8 +82,8 @@ export function StatusIndicator({
           status === "complete" && "bg-accent-emerald",
           status === "to-follow" && "bg-accent-slate",
           status === "approved" && "bg-accent-emerald",
-          status === "declined" && "bg-red-600",
-          status === "n/a" && "bg-gray-400"
+          status === "declined" && "bg-destructive",
+          status === "n/a" && "bg-border"
         )}
       />
       {displayLabel}

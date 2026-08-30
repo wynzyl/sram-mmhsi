@@ -388,7 +388,7 @@ export default function EditStudentForm({
                   checked={isActiveLocked ? student.isActive : field.state.value}
                   disabled={isActiveLocked}
                   onChange={(e) => field.handleChange(e.target.checked as never)}
-                  className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-primary focus:ring-primary/30 disabled:cursor-not-allowed dark:border-gray-700"
+                  className="mt-1 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary/30 disabled:cursor-not-allowed"
                 />
               )}
             />

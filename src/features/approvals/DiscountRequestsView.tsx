@@ -99,7 +99,7 @@ export default async function DiscountRequestsView({
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className={counts.pending > 0 ? "border-amber-500" : ""}>
+        <Card className={counts.pending > 0 ? "border-warning" : ""}>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{counts.pending}</div>
             <p className="text-xs text-muted-foreground">Pending Requests</p>
@@ -107,7 +107,7 @@ export default async function DiscountRequestsView({
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{counts.approved}</div>
+            <div className="text-2xl font-bold text-success">{counts.approved}</div>
             <p className="text-xs text-muted-foreground">Approved</p>
           </CardContent>
         </Card>
@@ -125,7 +125,7 @@ export default async function DiscountRequestsView({
           <Link href="/staff/approvals?section=discount&tab=pending" className={tabClass(tab === "pending")}>
             Pending
             {counts.pending > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
+              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-warning-tint text-warning">
                 {counts.pending}
               </span>
             )}
@@ -138,7 +138,7 @@ export default async function DiscountRequestsView({
           </Link>
           <Link href="/staff/approvals?section=discount&tab=rejected" className={tabClass(tab === "rejected")}>
             Rejected
-            <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-gray-100 text-gray-800">
+            <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-muted text-foreground">
               {counts.rejected}
             </span>
           </Link>

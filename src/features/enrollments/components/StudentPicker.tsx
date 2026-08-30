@@ -150,7 +150,7 @@ export default function StudentPicker({
             type="button"
             aria-label="Clear selection"
             onClick={handleClear}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:bg-gray-200 hover:text-foreground dark:hover:bg-gray-800"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -195,7 +195,7 @@ export default function StudentPicker({
                           "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
                           isSelected
                             ? "bg-primary text-white"
-                            : "border border-gray-300 bg-card dark:border-gray-700"
+                            : "border border-border bg-card"
                         )}
                       >
                         {isSelected && <Check className="h-3 w-3" strokeWidth={3} />}
@@ -205,12 +205,12 @@ export default function StudentPicker({
                           {s.lastName}, {s.firstName}
                         </span>
                         <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                          <code className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-foreground dark:bg-gray-800">
+                          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
                             {s.referenceNumber}
                           </code>
                           <span aria-hidden="true">·</span>
                           <span>
-                            <span className="font-medium text-gray-600 dark:text-gray-400">{s.typeLabel}</span>
+                            <span className="font-medium text-muted-foreground">{s.typeLabel}</span>
                             {s.contextLabel ? ` · ${s.contextLabel}` : null}
                           </span>
                         </span>
@@ -230,7 +230,7 @@ export default function StudentPicker({
       )}
 
       {errorMessage && (
-        <p className="mt-1 text-sm text-red-600">{errorMessage}</p>
+        <p className="mt-1 text-sm text-destructive">{errorMessage}</p>
       )}
     </div>
   );

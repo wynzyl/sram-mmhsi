@@ -130,7 +130,7 @@ export function BulkStrandAssignDialog({
             <Button
               type="submit"
               disabled={isPending}
-              className="bg-amber-600 hover:bg-amber-700"
+              className="bg-warning hover:bg-warning"
             >
               {isPending
                 ? "Assigning..."

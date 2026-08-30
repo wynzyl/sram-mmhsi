@@ -23,7 +23,7 @@ export default function StudentClearanceCard({
 
   return (
     <Card className={cn(
-      hasPending && "border-amber-200 bg-amber-50/20"
+      hasPending && "border-warning/25 bg-warning/10"
     )}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
@@ -32,7 +32,7 @@ export default function StudentClearanceCard({
             Clearances
           </CardTitle>
           {hasPending && (
-            <div className="flex items-center gap-1 text-amber-600">
+            <div className="flex items-center gap-1 text-warning">
               <AlertTriangle className="h-4 w-4" />
               <span className="text-xs font-medium">
                 {summary.pendingCount} pending
@@ -56,30 +56,30 @@ export default function StudentClearanceCard({
                 </p>
                 <p className="text-xs text-success">Cleared</p>
               </div>
-              <div className="rounded-md bg-amber-50 p-2">
-                <p className="text-lg font-semibold text-amber-600">
+              <div className="rounded-md bg-warning-tint p-2">
+                <p className="text-lg font-semibold text-warning">
                   {summary.pendingCount}
                 </p>
-                <p className="text-xs text-amber-700">Pending</p>
+                <p className="text-xs text-warning">Pending</p>
               </div>
-              <div className="rounded-md bg-blue-50 p-2">
-                <p className="text-lg font-semibold text-blue-600">
+              <div className="rounded-md bg-info-tint p-2">
+                <p className="text-lg font-semibold text-info">
                   {summary.waivedCount}
                 </p>
-                <p className="text-xs text-blue-700">Waived</p>
+                <p className="text-xs text-info">Waived</p>
               </div>
             </div>
 
             {/* Outstanding Amount */}
             {summary.totalOutstanding > 0 && (
-              <div className="rounded-md border border-amber-200 bg-amber-50/50 p-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-amber-700">
+              <div className="rounded-md border border-warning/25 bg-warning/10 p-3">
+                <p className="text-xs font-medium uppercase tracking-wider text-warning">
                   Total Outstanding
                 </p>
-                <p className="mt-1 text-xl font-bold text-amber-600">
+                <p className="mt-1 text-xl font-bold text-warning">
                   <CurrencyDisplay amount={summary.totalOutstanding} />
                 </p>
-                <p className="mt-1 text-xs text-amber-600">
+                <p className="mt-1 text-xs text-warning">
                   Document release blocked until cleared
                 </p>
               </div>

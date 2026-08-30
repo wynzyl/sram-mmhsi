@@ -316,7 +316,7 @@ export default function AssessmentLedgerRegister({
             aria-label={`${Math.round(percent)}% of assessed fees paid`}
           >
             <div
-              className={`h-full rounded-full transition-[width] duration-500 ease-out ${isFullyPaid ? "bg-emerald-500" : "bg-primary"}`}
+              className={`h-full rounded-full transition-[width] duration-500 ease-out ${isFullyPaid ? "bg-success" : "bg-primary"}`}
               style={{ width: `${percent}%` }}
             />
           </div>
@@ -333,7 +333,7 @@ export default function AssessmentLedgerRegister({
             {/* Total paid */}
             <div className="flex flex-col gap-1 p-[0.875rem_1.05rem] bg-muted/55 border border-border rounded-lg min-w-0">
               <span className="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">Total paid</span>
-              <span className="text-[22px] font-semibold leading-tight tracking-tight tabular-nums text-emerald-500 inline-flex items-baseline gap-1.5">
+              <span className="text-[22px] font-semibold leading-tight tracking-tight tabular-nums text-success inline-flex items-baseline gap-1.5">
                 <CurrencyDisplay amount={paidNum} />
               </span>
               {totalNum > 0 && (
@@ -531,7 +531,7 @@ export default function AssessmentLedgerRegister({
                   error={cancelState.errors?.remarks}
                   rows={3}
                   placeholder="Enter reason for cancellation (required)..."
-                  className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition focus:border-gray-400"
+                  className="w-full rounded-md border border-border bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition focus:border-border"
                 />
 
                 <div className="flex gap-2 mt-3">
@@ -602,24 +602,24 @@ export default function AssessmentLedgerRegister({
                         key={item.id}
                         className={cn(
                           "hover:bg-primary/5",
-                          isBalanceForward && "bg-amber-500/5 border-l-4 border-l-amber-500/50"
+                          isBalanceForward && "bg-warning/5 border-l-4 border-l-amber-500/50"
                         )}
                       >
                         <td className="px-5 py-2.5 border-b border-border/60 text-foreground align-middle">
                           {item.isDiscount && (
-                            <span className="text-[10px] font-bold tracking-[0.08em] uppercase text-emerald-500 mr-1.5">
+                            <span className="text-[10px] font-bold tracking-[0.08em] uppercase text-success mr-1.5">
                               DISC
                             </span>
                           )}
                           {isBalanceForward && (
-                            <span className="inline-block text-[10px] font-bold tracking-[0.08em] uppercase text-amber-700 bg-amber-500/15 px-1.5 py-0.5 rounded mr-2">
+                            <span className="inline-block text-[10px] font-bold tracking-[0.08em] uppercase text-warning bg-warning/15 px-1.5 py-0.5 rounded mr-2">
                               PREVIOUS YEAR
                             </span>
                           )}
                           {item.description}
                         </td>
                         <td className="text-right px-5 py-2.5 border-b border-border/60 tabular-nums whitespace-nowrap align-middle">
-                          <span className={item.isDiscount ? "text-emerald-500 font-medium" : ""}>
+                          <span className={item.isDiscount ? "text-success font-medium" : ""}>
                             {item.isDiscount ? "−" : ""}
                             <CurrencyDisplay amount={Number(item.amount)} />
                           </span>
@@ -637,8 +637,8 @@ export default function AssessmentLedgerRegister({
                   </td>
                 </tr>
                 {Math.abs(feesRunning - totalNum) > 0.005 ? (
-                  <tr className="bg-amber-500/10">
-                    <td colSpan={2} className="px-5 py-2 text-[11.5px] font-medium text-amber-600">
+                  <tr className="bg-warning/10">
+                    <td colSpan={2} className="px-5 py-2 text-[11.5px] font-medium text-warning">
                       ⚠ Stored total differs from line sum — stored{" "}
                       <CurrencyDisplay className="font-medium" amount={totalNum} />
                     </td>
@@ -672,7 +672,7 @@ export default function AssessmentLedgerRegister({
           <div className="flex items-center justify-between flex-wrap gap-y-2 gap-x-4 px-5 py-4 border-t border-border bg-muted/25">
             <div className="inline-flex items-baseline gap-2.5">
               <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-muted-foreground">Payments posted</span>
-              <span className="text-base font-semibold tabular-nums text-emerald-500">
+              <span className="text-base font-semibold tabular-nums text-success">
                 <CurrencyDisplay amount={paymentsRecorded} />
               </span>
             </div>

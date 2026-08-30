@@ -212,7 +212,7 @@ export default async function CurriculumDetailPage({ params }: PageProps) {
                     {adoption.schoolYearLabel}
                   </span>
                   {adoption.isActiveYear && (
-                    <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] rounded">
+                    <span className="px-1.5 py-0.5 bg-success-tint text-success text-[10px] rounded">
                       Active Year
                     </span>
                   )}

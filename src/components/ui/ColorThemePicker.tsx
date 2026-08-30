@@ -30,7 +30,7 @@ export function ColorThemePicker() {
             ${
               colorTheme === theme
                 ? "border-foreground scale-110 ring-2 ring-foreground/20"
-                : "border-white/30 dark:border-white/20 hover:scale-105 hover:border-foreground/50"
+                : "border-white/25 hover:scale-105 hover:border-foreground/50"
             }
           `}
           style={{ backgroundColor: COLOR_THEME_COLORS[theme] }}

@@ -37,14 +37,14 @@ function AssessmentsTableComponent({
       <table className="data-table w-full text-left text-sm" id="assessments-ledger-table">
         <thead>
           <tr className="border-b border-border bg-muted">
-            <th className="pl-4 font-semibold tracking-wide text-gray-600 dark:text-gray-400">Student</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Grade Level</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">School Year</th>
-            <th className="pr-4 text-right font-semibold tracking-wide text-gray-600 dark:text-gray-400">Total Assessed</th>
-            <th className="pr-4 text-right font-semibold tracking-wide text-gray-600 dark:text-gray-400">Total Paid</th>
-            <th className="pr-4 text-right font-semibold tracking-wide text-gray-600 dark:text-gray-400">Balance</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Status</th>
-            <th className="w-px text-right font-semibold tracking-wide text-gray-600 dark:text-gray-400" aria-label="Actions" />
+            <th className="pl-4 font-semibold tracking-wide text-muted-foreground">Student</th>
+            <th className="font-semibold tracking-wide text-muted-foreground">Grade Level</th>
+            <th className="font-semibold tracking-wide text-muted-foreground">School Year</th>
+            <th className="pr-4 text-right font-semibold tracking-wide text-muted-foreground">Total Assessed</th>
+            <th className="pr-4 text-right font-semibold tracking-wide text-muted-foreground">Total Paid</th>
+            <th className="pr-4 text-right font-semibold tracking-wide text-muted-foreground">Balance</th>
+            <th className="font-semibold tracking-wide text-muted-foreground">Status</th>
+            <th className="w-px text-right font-semibold tracking-wide text-muted-foreground" aria-label="Actions" />
           </tr>
         </thead>
         <tbody>

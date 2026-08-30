@@ -157,7 +157,7 @@ export function ManualSubjectEnrollDialog({
                               <span className="flex items-center gap-1">
                                 {offering.subjectCode} - {offering.subjectName}
                                 {isCrossStrand && (
-                                  <AlertTriangle className="h-3 w-3 text-amber-500" />
+                                  <AlertTriangle className="h-3 w-3 text-warning" />
                                 )}
                               </span>
                               <span className="text-xs text-muted-foreground">

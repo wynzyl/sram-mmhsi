@@ -62,7 +62,7 @@ export default function VoidRequestsHistoryTable({
               return <Badge variant="danger">REJECTED</Badge>;
             case "cancelled":
               return (
-                <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                <Badge variant="secondary" className="bg-muted text-muted-foreground">
                   CANCELLED
                 </Badge>
               );

@@ -23,7 +23,7 @@ export function BfxReportTable({ data }: BfxReportTableProps) {
         cell: ({ row }) => (
           <Badge
             variant="info"
-            className="bg-blue-100 text-blue-800 border-blue-200 font-mono"
+            className="bg-info-tint text-info border-info/25 font-mono"
           >
             {row.original.bfxNumber}
           </Badge>

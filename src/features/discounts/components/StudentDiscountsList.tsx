@@ -135,7 +135,7 @@ export default function StudentDiscountsList({
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-semibold text-emerald-600">
+                  <div className="text-lg font-semibold text-success">
                     {isReversalCounter(discount) ? "+" : "−"}
                     <CurrencyDisplay
                       amount={Math.abs(Number(discount.discountAmount))}
@@ -210,13 +210,13 @@ export default function StudentDiscountsList({
                     </div>
                   )}
                   {discount.hasReplacement && (
-                    <div className="mt-2 text-xs text-emerald-600">
+                    <div className="mt-2 text-xs text-success">
                       Replacement request issued.
                     </div>
                   )}
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-semibold text-emerald-600 line-through">
+                  <div className="text-lg font-semibold text-success line-through">
                     −
                     <CurrencyDisplay
                       amount={Math.abs(Number(discount.discountAmount))}
@@ -272,7 +272,7 @@ export default function StudentDiscountsList({
           )}
           <div className="flex justify-between items-center pt-1 border-t border-border">
             <span className="font-medium">Total Discounts</span>
-            <span className="text-lg font-semibold text-emerald-600">
+            <span className="text-lg font-semibold text-success">
               −
               <CurrencyDisplay
                 amount={discountTotals.effectiveTotal}

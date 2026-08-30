@@ -43,10 +43,10 @@ export function CascadeFixCard({ assessmentId, fixData }: CascadeFixCardProps) {
   }, [assessmentId, action]);
 
   return (
-    <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-4 dark:border-amber-600 dark:bg-amber-950/30">
+    <div className="rounded-xl border-2 border-warning bg-warning-tint p-4">
       <div className="mb-3 flex items-center gap-2">
-        <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-        <h3 className="font-display text-sm font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+        <AlertTriangle className="h-5 w-5 text-warning" />
+        <h3 className="font-display text-sm font-bold uppercase tracking-wider text-warning">
           Cascade Adjustment Required
         </h3>
       </div>
@@ -61,18 +61,20 @@ export function CascadeFixCard({ assessmentId, fixData }: CascadeFixCardProps) {
         {fixData.adjustments.map((adj, idx) => (
           <div
             key={idx}
+            // dark: kept deliberately: an alpha overlay whose direction flips per
+            // theme (lighten on light, darken on dark) cannot be one token.
             className="flex flex-col gap-1 rounded bg-white/50 p-2 dark:bg-black/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <span className="font-medium">{adj.discountTypeName}</span>
             <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
-              <span className="text-red-600 dark:text-red-400">
+              <span className="text-destructive">
                 <CurrencyDisplay amount={adj.originalAmount} />
               </span>
               <ArrowRight className="h-3 w-3 text-muted-foreground" />
-              <span className="text-green-600 dark:text-green-400">
+              <span className="text-success">
                 <CurrencyDisplay amount={adj.correctAmount} />
               </span>
-              <span className="ml-1 rounded bg-amber-200 px-1.5 py-0.5 text-amber-800 dark:bg-amber-800 dark:text-amber-200">
+              <span className="ml-1 rounded bg-warning/20 px-1.5 py-0.5 text-warning">
                 +<CurrencyDisplay amount={adj.adjustmentNeeded} />
               </span>
             </div>
@@ -81,10 +83,10 @@ export function CascadeFixCard({ assessmentId, fixData }: CascadeFixCardProps) {
       </div>
 
       {/* Total and action */}
-      <div className="mt-3 flex flex-col gap-3 border-t border-amber-300 pt-3 dark:border-amber-700 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-3 flex flex-col gap-3 border-t border-warning/25 pt-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm">
           <span className="text-muted-foreground">Total balance adjustment:</span>
-          <span className="ml-2 font-mono font-bold text-amber-700 dark:text-amber-300">
+          <span className="ml-2 font-mono font-bold text-warning">
             +<CurrencyDisplay amount={fixData.totalAdjustment} />
           </span>
         </div>
@@ -92,7 +94,7 @@ export function CascadeFixCard({ assessmentId, fixData }: CascadeFixCardProps) {
           type="button"
           onClick={handleSubmit}
           disabled={isPending}
-          className="bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600"
+          className="bg-warning hover:bg-warning"
         >
           <Calculator className="mr-2 h-4 w-4" />
           {isPending ? "Applying..." : "Apply Cascade Fix"}
@@ -101,12 +103,12 @@ export function CascadeFixCard({ assessmentId, fixData }: CascadeFixCardProps) {
 
       {/* Error message */}
       {state.message && !state.success && (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{state.message}</p>
+        <p className="mt-2 text-sm text-destructive">{state.message}</p>
       )}
 
       {/* Success message (brief flash before refresh) */}
       {state.success && (
-        <p className="mt-2 text-sm text-green-600 dark:text-green-400">{state.message}</p>
+        <p className="mt-2 text-sm text-success">{state.message}</p>
       )}
     </div>
   );

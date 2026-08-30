@@ -15,7 +15,7 @@ export default async function GradesDashboardPage() {
 
   if (!activeSY) {
     return (
-      <div className="p-6 bg-yellow-50 rounded-lg text-yellow-800">
+      <div className="p-6 bg-warning-tint rounded-lg text-warning">
         No active school year found. Please contact the administrator.
       </div>
     );

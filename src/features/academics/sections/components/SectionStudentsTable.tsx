@@ -216,7 +216,7 @@ export default function SectionStudentsTable({
             <Button
               variant="secondary"
               size="sm"
-              className="h-7 text-xs border-amber-500 text-amber-600 hover:bg-amber-50 dark:border-amber-400 dark:text-amber-400 dark:hover:bg-amber-950"
+              className="h-7 text-xs border-warning text-warning hover:bg-warning-tint"
               onClick={() => handleOpenChangeStrand(row.original)}
             >
               <GitBranch className="mr-1 h-3 w-3" />
@@ -242,7 +242,7 @@ export default function SectionStudentsTable({
             <Badge
               variant={isComplete ? "success" : "secondary"}
               className={cn(
-                !isComplete && subjectCount > 0 && "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+                !isComplete && subjectCount > 0 && "bg-warning-tint text-warning"
               )}
             >
               {subjectCount}/{subjectTotal}
@@ -294,10 +294,10 @@ export default function SectionStudentsTable({
     <div className="space-y-4">
       {/* Warning banner for SHS sections with students missing strand */}
       {isShs && missingStrandCount > 0 && (
-        <Alert variant="warning" className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
-          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        <Alert variant="warning" className="border-warning/25 bg-warning-tint">
+          <AlertTriangle className="h-4 w-4 text-warning" />
           <AlertDescription className="flex items-center justify-between">
-            <span className="text-amber-800 dark:text-amber-200">
+            <span className="text-warning">
               <strong>{missingStrandCount}</strong> student{missingStrandCount !== 1 ? "s" : ""} need{missingStrandCount === 1 ? "s" : ""} strand assignment.
               Students without a strand will not be enrolled in strand-specific elective subjects.
             </span>
@@ -317,7 +317,7 @@ export default function SectionStudentsTable({
           <Button
             size="sm"
             onClick={() => setShowBulkAssignDialog(true)}
-            className="bg-amber-600 hover:bg-amber-700"
+            className="bg-warning hover:bg-warning"
           >
             <GitBranch className="mr-2 h-4 w-4" />
             Assign Strand to Selected
@@ -346,7 +346,7 @@ export default function SectionStudentsTable({
             isShs
               ? (row) =>
                   !row.original.strandCode
-                    ? "bg-amber-50/50 dark:bg-amber-950/30"
+                    ? "bg-warning/10"
                     : ""
               : undefined
           }

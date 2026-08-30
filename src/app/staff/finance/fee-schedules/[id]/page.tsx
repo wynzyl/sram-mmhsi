@@ -77,7 +77,7 @@ export default async function FeeScheduleDetailPage({ params }: PageProps) {
               <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground">Inactive</span>
             )}
             {hasOverrides && (
-              <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-amber-500/15 text-amber-500">
+              <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-warning/15 text-warning">
                 {overrides.length} override{overrides.length !== 1 ? "s" : ""}
               </span>
             )}
@@ -130,7 +130,7 @@ export default async function FeeScheduleDetailPage({ params }: PageProps) {
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-4 px-6 py-5">
           <div>
-            <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
+            <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-muted-foreground mb-1">
               Effective From
             </p>
             <p className="text-sm font-semibold text-foreground">
@@ -138,7 +138,7 @@ export default async function FeeScheduleDetailPage({ params }: PageProps) {
             </p>
           </div>
           <div>
-            <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
+            <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-muted-foreground mb-1">
               Expiry Date
             </p>
             <p className="text-sm font-semibold text-foreground">
@@ -146,7 +146,7 @@ export default async function FeeScheduleDetailPage({ params }: PageProps) {
             </p>
           </div>
           <div>
-            <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
+            <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-muted-foreground mb-1">
               Status
             </p>
             <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded ${schedule.isActive ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
@@ -154,7 +154,7 @@ export default async function FeeScheduleDetailPage({ params }: PageProps) {
             </span>
           </div>
           <div>
-            <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
+            <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-muted-foreground mb-1">
               Base Template
             </p>
             <Link
@@ -209,21 +209,21 @@ export default async function FeeScheduleDetailPage({ params }: PageProps) {
                         )}
                       </td>
                       <td className="px-4 py-2.5 text-[0.8125rem] text-muted-foreground capitalize">{item.feeItemType.category}</td>
-                      <td className={`px-4 py-2.5 text-[0.8125rem] text-right tabular-nums ${override ? "text-gray-400 dark:text-gray-500 line-through" : "text-foreground"}`}>
+                      <td className={`px-4 py-2.5 text-[0.8125rem] text-right tabular-nums ${override ? "text-muted-foreground line-through" : "text-foreground"}`}>
                         {item.feeItemType.isDiscount && <span className="mr-0.5">−</span>}
                         {formatPHP(defaultAmount)}
                       </td>
                       {hasOverrides && (
                         <td className="px-4 py-2.5 text-[0.8125rem] text-right">
                           {override ? (
-                            <span className="text-amber-500 font-semibold text-[0.8rem]">
+                            <span className="text-warning font-semibold text-[0.8rem]">
                               {formatPHP(Number(override.overrideAmount))}
                               {override.reason && (
                                 <span title={override.reason} className="ml-1 cursor-help">ⓘ</span>
                               )}
                             </span>
                           ) : (
-                            <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>
+                            <span className="text-muted-foreground text-xs">—</span>
                           )}
                         </td>
                       )}

@@ -106,7 +106,7 @@ export default async function ArchiveDirectoryPage({ searchParams }: PageProps) 
               </span>
             )}
             {summary.byStatus.transferred > 0 && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-info/10 text-info border border-info/30">
                 {summary.byStatus.transferred} Transferred
               </span>
             )}

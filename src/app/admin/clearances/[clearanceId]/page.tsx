@@ -97,7 +97,7 @@ export default async function ClearanceDetailPage({ params }: PageProps) {
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Outstanding Amount (at creation)
                   </p>
-                  <p className="mt-1 text-2xl font-bold text-amber-600">
+                  <p className="mt-1 text-2xl font-bold text-warning">
                     <CurrencyDisplay amount={Number(clearance.outstandingAmount)} />
                   </p>
                 </div>

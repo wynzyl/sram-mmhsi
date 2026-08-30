@@ -55,7 +55,7 @@ export function AdoptionSchoolYearSelector({
             <SelectItem key={sy.id} value={sy.id}>
               {sy.label}
               {sy.isActive && (
-                <span className="ml-2 text-xs text-emerald-600 dark:text-emerald-400">
+                <span className="ml-2 text-xs text-success">
                   (Active)
                 </span>
               )}

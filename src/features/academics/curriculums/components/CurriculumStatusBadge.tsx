@@ -10,9 +10,9 @@ interface CurriculumStatusBadgeProps {
 }
 
 const STATUS_STYLES: Record<CurriculumStatus, string> = {
-  draft: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-  published: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-  archived: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+  draft: "bg-warning-tint text-warning",
+  published: "bg-success-tint text-success",
+  archived: "bg-muted text-muted-foreground",
 };
 
 export function CurriculumStatusBadge({ status, className }: CurriculumStatusBadgeProps) {

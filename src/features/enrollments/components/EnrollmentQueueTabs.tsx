@@ -88,7 +88,7 @@ export default function EnrollmentQueueTabs({ counts, currentTab, basePath }: En
                 "group relative inline-flex items-center gap-2 border-b-2 px-4 py-3 font-mono text-xs font-semibold uppercase tracking-wide transition-all duration-150",
                 isActive
                   ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground dark:hover:border-gray-700",
+                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 isPending && "cursor-wait"
               )}
               aria-current={isActive ? "page" : undefined}
@@ -102,7 +102,7 @@ export default function EnrollmentQueueTabs({ counts, currentTab, basePath }: En
                   "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 font-mono text-[10px] font-bold transition-colors duration-150",
                   isActive
                     ? "bg-primary text-white"
-                    : "bg-gray-200 text-muted-foreground group-hover:bg-gray-300 group-hover:text-foreground dark:bg-gray-800 dark:group-hover:bg-gray-700"
+                    : "bg-muted text-muted-foreground group-hover:bg-border group-hover:text-foreground"
                 )}
               >
                 {count}

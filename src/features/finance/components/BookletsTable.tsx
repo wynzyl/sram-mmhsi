@@ -200,8 +200,8 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
             <span
               className={`inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium ${
                 isAuto
-                  ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                  ? "border-info/30 bg-info/10 text-info"
+                  : "border-warning/30 bg-warning/10 text-warning"
               }`}
             >
               {isAuto ? "Auto" : "Manual"}
@@ -219,7 +219,7 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
             return <span className="text-secondary">—</span>;
           }
           return (
-            <span className="inline-flex items-center rounded-md border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-300">
+            <span className="inline-flex items-center rounded-md border border-info/30 bg-info/10 px-3 py-1 text-xs font-medium text-info">
               {username}
             </span>
           );

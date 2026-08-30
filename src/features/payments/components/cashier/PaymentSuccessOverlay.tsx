@@ -16,7 +16,7 @@ export function PaymentSuccessOverlay({
           Payment posted
         </p>
         {message && (
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             {message}
           </p>
         )}

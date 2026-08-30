@@ -14,7 +14,7 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
 
     return (
       <div ref={ref} className={cn("flex flex-col gap-1.5", className)} {...props}>
-        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+        <label className="text-sm font-medium text-muted-foreground">
           {label}
           {required && <span className="ml-1 text-destructive">*</span>}
         </label>

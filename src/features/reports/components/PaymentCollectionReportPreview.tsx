@@ -83,31 +83,31 @@ export function PaymentCollectionReportContent({
             Breakdown by Payment Method
           </p>
           <div className="grid grid-cols-5 gap-2">
-            <div className="bg-background px-3 py-2 rounded border border-border print:border-gray-300">
+            <div className="bg-background px-3 py-2 rounded border border-border print:border-border">
               <p className="text-[10px] text-muted-foreground">Cash</p>
               <p className="text-sm font-semibold text-foreground">
                 {formatAmount(summary.byMethod.cash)}
               </p>
             </div>
-            <div className="bg-background px-3 py-2 rounded border border-border print:border-gray-300">
+            <div className="bg-background px-3 py-2 rounded border border-border print:border-border">
               <p className="text-[10px] text-muted-foreground">GCash</p>
               <p className="text-sm font-semibold text-foreground">
                 {formatAmount(summary.byMethod.gcash)}
               </p>
             </div>
-            <div className="bg-background px-3 py-2 rounded border border-border print:border-gray-300">
+            <div className="bg-background px-3 py-2 rounded border border-border print:border-border">
               <p className="text-[10px] text-muted-foreground">Bank Transfer</p>
               <p className="text-sm font-semibold text-foreground">
                 {formatAmount(summary.byMethod.bank_transfer)}
               </p>
             </div>
-            <div className="bg-background px-3 py-2 rounded border border-border print:border-gray-300">
+            <div className="bg-background px-3 py-2 rounded border border-border print:border-border">
               <p className="text-[10px] text-muted-foreground">Check</p>
               <p className="text-sm font-semibold text-foreground">
                 {formatAmount(summary.byMethod.check)}
               </p>
             </div>
-            <div className="bg-background px-3 py-2 rounded border border-border print:border-gray-300">
+            <div className="bg-background px-3 py-2 rounded border border-border print:border-border">
               <p className="text-[10px] text-muted-foreground">Other</p>
               <p className="text-sm font-semibold text-foreground">
                 {formatAmount(summary.byMethod.other)}
@@ -131,7 +131,7 @@ export function PaymentCollectionReportContent({
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-muted print:bg-gray-200">
+                <tr className="bg-muted print:bg-muted">
                   <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-b border-border">
                     OR #
                   </th>
@@ -202,8 +202,8 @@ export function PaymentCollectionReportContent({
                       <span
                         className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
                           row.usageMode === "manual_only"
-                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-                            : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                            ? "bg-warning-tint text-warning"
+                            : "bg-success-tint text-success"
                         }`}
                       >
                         {row.usageMode
@@ -221,7 +221,7 @@ export function PaymentCollectionReportContent({
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-muted font-semibold print:bg-gray-200">
+                <tr className="bg-muted font-semibold print:bg-muted">
                   <td
                     colSpan={4}
                     className="px-3 py-2 border-t-2 border-border text-right"

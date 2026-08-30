@@ -30,13 +30,13 @@ export default function WizardFooter({
   const isFinalStep = currentStep === 3;
 
   return (
-    <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
+    <div className="mt-8 flex items-center justify-between border-t border-border pt-6">
       {currentStep > 1 ? (
         <button
           type="button"
           onClick={onBack}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -46,7 +46,7 @@ export default function WizardFooter({
           type="button"
           onClick={onCancel}
           disabled={pending}
-          className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground disabled:opacity-50"
+          className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
         >
           Cancel
         </button>
@@ -58,7 +58,7 @@ export default function WizardFooter({
           disabled={disableSubmit}
           className={cn(
             "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
-            "bg-primary hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
+            "bg-primary hover:bg-destructive hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
             "disabled:cursor-not-allowed disabled:opacity-60"
           )}
         >
@@ -84,7 +84,7 @@ export default function WizardFooter({
           disabled={!canContinue || pending}
           className={cn(
             "inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all",
-            "bg-primary hover:bg-red-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
+            "bg-primary hover:bg-destructive hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30",
             "disabled:cursor-not-allowed disabled:opacity-60"
           )}
         >

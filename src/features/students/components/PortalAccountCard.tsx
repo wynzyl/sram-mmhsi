@@ -218,7 +218,7 @@ export function PortalAccountCard({
                 </div>
 
                 {account.forcePasswordChange && (
-                  <div className="mt-2 flex items-center gap-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-700">
+                  <div className="mt-2 flex items-center gap-2 rounded bg-warning-tint px-2 py-1 text-xs text-warning">
                     <AlertCircle className="h-3 w-3" />
                     Password change required on next login
                   </div>

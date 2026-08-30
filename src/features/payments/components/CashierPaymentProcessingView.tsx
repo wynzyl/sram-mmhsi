@@ -303,7 +303,7 @@ export function CashierPaymentProcessingView({
                             title="Copy amount"
                           >
                             {copied ? (
-                              <Check className="h-4 w-4 text-emerald-500" />
+                              <Check className="h-4 w-4 text-success" />
                             ) : (
                               <Copy className="h-4 w-4" />
                             )}
@@ -323,7 +323,7 @@ export function CashierPaymentProcessingView({
                           onChange={(e) =>
                             form.handleManualEntryToggle(e.target.checked)
                           }
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
                         />
                         <label htmlFor="isManualEntryToggle" className="text-sm">
                           Manual entry
@@ -332,8 +332,8 @@ export function CashierPaymentProcessingView({
 
                       {/* Manual Entry Fields */}
                       {form.isManualEntry && (
-                        <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                        <div className="space-y-3 rounded-lg border border-warning/25 bg-warning-tint p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-warning">
                             Offline Payment
                           </p>
                           <FormField
@@ -491,7 +491,7 @@ export function CashierPaymentProcessingView({
                             <span className="text-destructive"> *</span>
                           </span>
                           {(form.applyCashDiscount || hasAppliedCashDiscount) && (
-                            <Lock className="h-4 w-4 text-amber-600" />
+                            <Lock className="h-4 w-4 text-warning" />
                           )}
                         </label>
                         <div className="relative">
@@ -499,8 +499,8 @@ export function CashierPaymentProcessingView({
                             className={cn(
                               "absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-black",
                               form.applyCashDiscount || hasAppliedCashDiscount
-                                ? "text-amber-600"
-                                : "text-emerald-600"
+                                ? "text-warning"
+                                : "text-success"
                             )}
                           >
                             ₱
@@ -527,8 +527,8 @@ export function CashierPaymentProcessingView({
                             className={cn(
                               "h-14 pl-10 font-mono text-3xl font-black",
                               form.applyCashDiscount || hasAppliedCashDiscount
-                                ? "text-amber-600 bg-amber-50 dark:bg-amber-950/30 cursor-not-allowed"
-                                : "text-emerald-600"
+                                ? "text-warning bg-warning-tint cursor-not-allowed"
+                                : "text-success"
                             )}
                             placeholder="0.00"
                             autoComplete="off"
@@ -537,7 +537,7 @@ export function CashierPaymentProcessingView({
                           />
                         </div>
                         {form.applyCashDiscount || hasAppliedCashDiscount ? (
-                          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                          <p className="mt-1 text-xs text-warning">
                             Full payment is required to receive the cash discount.
                           </p>
                         ) : (
@@ -562,7 +562,7 @@ export function CashierPaymentProcessingView({
                             Amount tendered <span className="text-destructive">*</span>
                           </label>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-black text-emerald-600">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-black text-success">
                               ₱
                             </span>
                             <Input
@@ -581,7 +581,7 @@ export function CashierPaymentProcessingView({
                               }
                               onFocus={() => setAmountTenderedFocused(true)}
                               onBlur={() => setAmountTenderedFocused(false)}
-                              className="h-14 pl-10 font-mono text-3xl font-black text-emerald-600"
+                              className="h-14 pl-10 font-mono text-3xl font-black text-success"
                               placeholder="0.00"
                             />
                           </div>

@@ -109,7 +109,7 @@ export default function ReadyToEnrollTable({
               <span className="text-xs font-medium">Complete</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-amber-600">
+            <div className="flex items-center gap-1.5 text-warning">
               <FileText className="h-4 w-4" />
               <span className="text-xs font-medium">Incomplete</span>
             </div>
@@ -129,7 +129,7 @@ export default function ReadyToEnrollTable({
 
           return student.hasOutstandingBalance ? (
             <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-1.5 text-amber-600">
+              <div className="flex items-center gap-1.5 text-warning">
                 <AlertCircle className="h-4 w-4" />
                 <span className="text-xs font-semibold">Outstanding</span>
               </div>
@@ -171,20 +171,20 @@ export default function ReadyToEnrollTable({
     <div className="space-y-4">
       {/* Info Banner */}
       <div
-        className="rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950"
+        className="rounded-md border border-success/25 bg-success-tint p-4"
       >
         <div className="flex items-start gap-3">
           <FileText
-            className="mt-0.5 h-5 w-5 text-emerald-600"
+            className="mt-0.5 h-5 w-5 text-success"
           />
           <div className="flex-1">
             <h3
-              className="text-sm font-semibold text-emerald-600"
+              className="text-sm font-semibold text-success"
             >
               Ready to Enroll Queue
             </h3>
             <p
-              className="mt-1 text-sm text-emerald-600"
+              className="mt-1 text-sm text-success"
             >
               Students in this list are eligible for enrollment confirmation. Review their details and click{" "}
               <strong>Enroll</strong> or <strong>Re-Enroll</strong> to create a pending enrollment record.

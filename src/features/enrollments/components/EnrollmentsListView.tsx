@@ -25,11 +25,11 @@ const STATUS_TABS: Array<{
   label: string;
   hintColour: string;
 }> = [
-  { key: "all", label: "All", hintColour: "bg-gray-800" },
-  { key: "pending", label: "Pending", hintColour: "bg-amber-500" },
-  { key: "assessed", label: "Assessed", hintColour: "bg-slate-500" },
-  { key: "enrolled", label: "Enrolled", hintColour: "bg-emerald-500" },
-  { key: "cancelled", label: "Cancelled", hintColour: "bg-gray-300" },
+  { key: "all", label: "All", hintColour: "bg-foreground" },
+  { key: "pending", label: "Pending", hintColour: "bg-warning" },
+  { key: "assessed", label: "Assessed", hintColour: "bg-info" },
+  { key: "enrolled", label: "Enrolled", hintColour: "bg-success" },
+  { key: "cancelled", label: "Cancelled", hintColour: "bg-border" },
 ];
 
 interface EnrollmentsListViewProps {
@@ -236,7 +236,7 @@ export default function EnrollmentsListView({
             {canCreate && filterStatus === "all" && !debouncedSearch && (
               <Link
                 href={newEnrollmentHref}
-                className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive"
               >
                 <Plus className="h-4 w-4" />
                 Enroll Student

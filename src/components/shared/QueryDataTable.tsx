@@ -197,7 +197,7 @@ export function QueryDataTable<TData>({
       errorComponent ?? (
         <div className={cn("flex items-center justify-center py-12", className)}>
           <div className="flex flex-col items-center gap-3 text-center">
-            <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/30">
+            <div className="rounded-full bg-destructive-tint p-3">
               <svg
                 width="24"
                 height="24"

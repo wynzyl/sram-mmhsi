@@ -24,8 +24,8 @@ interface ToggleSwitchProps {
 const colorClasses = {
   primary: "bg-primary border-primary",
   success: "bg-success border-success",
-  blue: "bg-blue-500 border-blue-500",
-  amber: "bg-amber-500 border-amber-500",
+  blue: "bg-info border-info",
+  amber: "bg-warning border-warning",
 } as const;
 
 /**

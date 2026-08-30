@@ -65,20 +65,20 @@ export function CashDiscountPreviewCard({
   );
 
   return (
-    <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-700 dark:bg-emerald-950/30">
+    <div className="rounded-xl border-2 border-success/25 bg-success-tint p-4">
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
-        <BadgePercent className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-        <h3 className="font-display text-sm font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+        <BadgePercent className="h-5 w-5 text-success" />
+        <h3 className="font-display text-sm font-bold uppercase tracking-wider text-success">
           Full Payment Cash Discount Available
         </h3>
       </div>
 
       {/* Confirmation status */}
       {isConfirmed && (
-        <div className="mb-3 flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-2 dark:bg-emerald-900/50">
-          <CircleCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+        <div className="mb-3 flex items-center gap-2 rounded-lg bg-success-tint px-3 py-2">
+          <CircleCheck className="h-4 w-4 text-success" />
+          <span className="text-sm font-medium text-success">
             Discount confirmed - will be applied when payment is posted
           </span>
         </div>
@@ -105,11 +105,11 @@ export function CashDiscountPreviewCard({
         </div>
 
         {/* Discount amount (highlighted) */}
-        <div className="flex justify-between rounded-lg bg-emerald-100 px-2 py-1.5 dark:bg-emerald-900/50">
-          <span className="font-medium text-emerald-700 dark:text-emerald-300">
+        <div className="flex justify-between rounded-lg bg-success-tint px-2 py-1.5">
+          <span className="font-medium text-success">
             Cash discount ({discountLabel}):
           </span>
-          <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300">
+          <span className="font-mono font-bold text-success">
             -<CurrencyDisplay amount={cashDiscountAmount} />
           </span>
         </div>
@@ -120,7 +120,7 @@ export function CashDiscountPreviewCard({
         )}
 
         {/* Divider */}
-        <div className="my-2 border-t border-emerald-200 dark:border-emerald-800" />
+        <div className="my-2 border-t border-success/25" />
 
         {/* New balance */}
         <div className="flex justify-between">
@@ -131,7 +131,7 @@ export function CashDiscountPreviewCard({
         </div>
 
         {/* Amount to collect (emphasized) */}
-        <div className="flex justify-between rounded-lg bg-emerald-600 px-3 py-2 text-white dark:bg-emerald-700">
+        <div className="flex justify-between rounded-lg bg-success px-3 py-2 text-white">
           <span className="font-semibold">Collect from student:</span>
           <span className="font-mono font-bold">
             <CurrencyDisplay amount={paymentRequired} />

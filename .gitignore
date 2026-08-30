@@ -69,3 +69,9 @@ docs/PROJECT*.md
 # Student photo uploads (keep .gitkeep only)
 public/uploads/students/*
 !public/uploads/students/.gitkeep
+
+# Agent skill packages (installed via `npx skills add`). Not app code - and
+# Tailwind v4 auto-source-detection would otherwise scan their markdown,
+# compiling the very example classes the design guideline bans.
+.agents/
+skills-lock.json

@@ -55,11 +55,11 @@ export function RefundCutoffSettingsForm({ initialStartDate, initialCutoffDays }
       <CardContent>
         <form action={action} className="space-y-6">
           {/* Info Box */}
-          <div className="flex gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-800">
+          <div className="flex gap-3 p-4 bg-info-tint border border-info/25 rounded-lg">
+            <Info className="h-5 w-5 text-info shrink-0 mt-0.5" />
+            <div className="text-sm text-info">
               <p className="font-medium">How refund cutoff works</p>
-              <p className="mt-1 text-blue-700">
+              <p className="mt-1 text-info">
                 When an enrollment is cancelled, the system checks if the cancellation date
                 is before the cutoff date. If yes, payments for fee items marked as &quot;refundable&quot;
                 can be refunded. Non-refundable fees (like registration) are always kept.
@@ -115,12 +115,12 @@ export function RefundCutoffSettingsForm({ initialStartDate, initialCutoffDays }
 
           {/* Cutoff Date Preview */}
           {cutoffDate && (
-            <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <Clock className="h-5 w-5 text-amber-600 shrink-0" />
+            <div className="flex items-center gap-3 p-4 bg-warning-tint border border-warning/25 rounded-lg">
+              <Clock className="h-5 w-5 text-warning shrink-0" />
               <div>
-                <p className="text-sm font-medium text-amber-800">Refund Cutoff Date</p>
-                <p className="text-sm text-amber-700">{cutoffDate}</p>
-                <p className="text-xs text-amber-600 mt-1">
+                <p className="text-sm font-medium text-warning">Refund Cutoff Date</p>
+                <p className="text-sm text-warning">{cutoffDate}</p>
+                <p className="text-xs text-warning mt-1">
                   Cancellations after this date will not be eligible for refunds on refundable items.
                 </p>
               </div>

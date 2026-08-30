@@ -207,7 +207,7 @@ export function RegistrationDetailView({
                 </div>
                 <p className="text-secondary sm:text-base">
                   <span className="font-mono text-foreground">{student.referenceNumber}</span>
-                  <span className="mx-2 text-gray-300 dark:text-gray-700">·</span>
+                  <span className="mx-2 text-muted-foreground">·</span>
                   {placementSubtitle}
                 </p>
                 {student.lrn || age != null ? (
@@ -496,8 +496,8 @@ export function RegistrationDetailView({
             </DataCard>
 
             {student.bloodType ? (
-              <DataCard className="border-amber-400/45 bg-amber-500/10 p-4">
-                <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-600 dark:text-amber-300">
+              <DataCard className="border-warning/45 bg-warning/10 p-4">
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-warning">
                   Health note
                 </h3>
                 <p className="text-sm text-foreground">

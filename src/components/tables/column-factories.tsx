@@ -319,7 +319,7 @@ interface TextColumnOptions {
  * ```tsx
  * createTextColumn<MyRowType>("gradeLevel", {
  *   header: "Grade Level",
- *   className: "text-gray-600 dark:text-gray-400",
+ *   className: "text-muted-foreground",
  * })
  * ```
  */
@@ -624,10 +624,10 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 /** Badge styling for payment methods */
 const PAYMENT_METHOD_STYLES: Record<PaymentMethod, string> = {
   cash: "bg-success/15 text-success",
-  gcash: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  bank_transfer: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  check: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  other: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
+  gcash: "bg-info-tint text-info",
+  bank_transfer: "bg-info-tint text-info",
+  check: "bg-warning-tint text-warning",
+  other: "bg-muted text-muted-foreground",
 };
 
 interface PaymentMethodColumnOptions {

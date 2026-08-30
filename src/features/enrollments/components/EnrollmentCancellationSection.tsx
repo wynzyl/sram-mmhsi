@@ -60,11 +60,11 @@ export default function EnrollmentCancellationSection({
       pendingRequest.reasonType;
 
     return (
-      <Card id="enrollment-cancellation-section" className="border-amber-200 bg-amber-50/30">
+      <Card id="enrollment-cancellation-section" className="border-warning/25 bg-warning/10">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Clock className="h-4 w-4 text-amber-600" />
+              <Clock className="h-4 w-4 text-warning" />
               Pending Cancellation Request
             </CardTitle>
             <Badge variant="warning">Awaiting Review</Badge>
@@ -88,9 +88,9 @@ export default function EnrollmentCancellationSection({
             </div>
           </div>
 
-          <div className="rounded-md bg-amber-100/50 p-2.5 text-xs text-amber-800">
+          <div className="rounded-md bg-warning/10 p-2.5 text-xs text-warning">
             <p className="font-medium">Transactions are blocked</p>
-            <p className="mt-0.5 text-amber-700">
+            <p className="mt-0.5 text-warning">
               Payments, voids, and discounts cannot be processed while this request is pending.
             </p>
           </div>
@@ -172,7 +172,7 @@ export default function EnrollmentCancellationSection({
       <Card id="enrollment-cancellation-section">
         <CardContent className="flex items-center justify-between pt-6">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
             <div>
               <p className="text-sm font-medium">Request Cancellation</p>
               <p className="text-xs text-muted-foreground">

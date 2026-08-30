@@ -191,7 +191,7 @@ export async function InternalInvoiceDetailPage(props: {
           <p className="text-[0.875rem] leading-7 mb-2 text-foreground">
             Dear Parent/Guardian,
           </p>
-          <p className="text-[0.875rem] leading-7 mb-6 text-gray-600 dark:text-gray-400">
+          <p className="text-[0.875rem] leading-7 mb-6 text-muted-foreground">
             This is to inform you that the following student has been assessed for the amount due stated below:
           </p>
 
@@ -256,12 +256,12 @@ export async function InternalInvoiceDetailPage(props: {
           </div>
 
           {/* PAYMENT INSTRUCTION */}
-          <p className="text-[0.875rem] leading-7 mb-5 text-gray-600 dark:text-gray-400">
+          <p className="text-[0.875rem] leading-7 mb-5 text-muted-foreground">
             Please settle the above amount at the cashier&#39;s office. Kindly present this assessment
             invoice upon payment for proper verification and issuance of official receipt.
           </p>
 
-          <p className="text-[0.875rem] leading-7 mb-8 text-gray-600 dark:text-gray-400">
+          <p className="text-[0.875rem] leading-7 mb-8 text-muted-foreground">
             Thank you.
           </p>
 

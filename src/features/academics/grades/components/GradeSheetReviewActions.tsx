@@ -95,7 +95,7 @@ export function GradeSheetReviewActions({
           className={`mb-4 p-3 rounded-lg text-sm ${
             approveState.success || returnState.success
               ? "bg-success/10 text-success"
-              : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300"
+              : "bg-destructive-tint text-destructive"
           }`}
         >
           {approveState.message || returnState.message}
@@ -165,7 +165,7 @@ export function GradeSheetReviewActions({
             <AlertDialogAction
               onClick={handleReturn}
               disabled={isReturning || !returnRemarks.trim()}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-warning hover:bg-warning text-white"
             >
               {isReturning ? "Returning..." : "Return for Revision"}
             </AlertDialogAction>

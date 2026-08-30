@@ -58,7 +58,7 @@ export default function WizardStepIntakeAndReview({
           }
         />
       ) : (
-        <div className="rounded-lg border border-gray-200 bg-gray-100/50 p-5">
+        <div className="rounded-lg border border-border bg-muted/50 p-5">
           <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">Returning learners</strong> reuse intake records from
             their original registration — no new checklist required.
@@ -75,8 +75,8 @@ export default function WizardStepIntakeAndReview({
         previousSchool={previousSchool}
       />
 
-      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-4 text-sm">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+      <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/[0.06] p-4 text-sm">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <p className="text-foreground">
           The enrollment will be created as <strong>Pending</strong>. The next step in the workflow is
           building the assessment — fees and the official receipt are recorded separately by the
@@ -118,14 +118,14 @@ function ReviewSummary({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white">
-      <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
-        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+    <div className="rounded-lg border border-border bg-white">
+      <div className="flex items-center gap-2 border-b border-border px-5 py-3">
+        <CheckCircle2 className="h-4 w-4 text-success" />
         <h3 className="font-display text-base font-bold text-foreground">
           Confirm placement before saving
         </h3>
       </div>
-      <dl className="divide-y divide-gray-100">
+      <dl className="divide-y divide-border">
         {rows.map((row) => (
           <div
             key={row.label}

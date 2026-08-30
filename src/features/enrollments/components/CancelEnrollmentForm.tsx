@@ -98,7 +98,7 @@ export default function CancelEnrollmentForm({
                   "m-0 text-[11px]",
                   cancelBlockedByPayments
                     ? "text-destructive"
-                    : "text-amber-600"
+                    : "text-warning"
                 )}
               >
                 {cancelBlockedByPayments ? (
@@ -157,8 +157,8 @@ export default function CancelEnrollmentForm({
 
   // Card variant (editorial design)
   return (
-    <div className="rounded-lg border border-red-100 bg-red-50/40 p-3">
-      <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-red-700">
+    <div className="rounded-lg border border-destructive/25 bg-destructive/10 p-3">
+      <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-destructive">
         Cancel enrollment
       </p>
       {!show ? (
@@ -168,7 +168,7 @@ export default function CancelEnrollmentForm({
           className={buttonVariants({
             variant: "ghost",
             size: "sm",
-            className: "border-red-200 bg-white text-red-700 hover:bg-red-50",
+            className: "border-destructive/25 bg-white text-destructive hover:bg-destructive-tint",
           })}
         >
           <X className="h-3.5 w-3.5" />
@@ -193,8 +193,8 @@ export default function CancelEnrollmentForm({
               className={cn(
                 "rounded-md p-2 text-[11px] leading-relaxed",
                 cancelBlockedByPayments
-                  ? "bg-red-100/60 text-red-800"
-                  : "bg-amber-100 text-amber-600"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-warning-tint text-warning"
               )}
             >
               {cancelBlockedByPayments ? (
@@ -224,7 +224,7 @@ export default function CancelEnrollmentForm({
                 ? "Detailed audit reason (\u226515 characters)..."
                 : "Reason for cancellation..."
             }
-            className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-red-500/15"
+            className="w-full rounded-md border border-border bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition focus:border-border focus:ring-2 focus:ring-destructive/15"
           />
 
           <div className="flex items-center gap-2">
@@ -232,8 +232,8 @@ export default function CancelEnrollmentForm({
               type="submit"
               disabled={pending || cancelBlockedByPayments}
               className={cn(
-                "inline-flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all",
-                "hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                "inline-flex items-center gap-1 rounded-md bg-destructive px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all",
+                "hover:bg-destructive disabled:cursor-not-allowed disabled:opacity-50"
               )}
             >
               {pending ? "Cancelling..." : "Confirm cancellation"}

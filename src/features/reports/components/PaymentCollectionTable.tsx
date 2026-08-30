@@ -23,13 +23,13 @@ function getMethodBadgeClass(method: string): string {
     case "cash":
       return "bg-success/15 text-success border-success/30";
     case "gcash":
-      return "bg-blue-100 text-blue-800 border-blue-200";
+      return "bg-info-tint text-info border-info/25";
     case "bank_transfer":
-      return "bg-purple-100 text-purple-800 border-purple-200";
+      return "bg-info-tint text-info border-info/25";
     case "check":
-      return "bg-amber-100 text-amber-800 border-amber-200";
+      return "bg-warning-tint text-warning border-warning/25";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
+      return "bg-muted text-foreground border-border";
   }
 }
 
@@ -38,12 +38,12 @@ function getStatusBadgeClass(status: string): string {
     case "posted":
       return "bg-success/15 text-success border-success/30";
     case "pending_confirmation":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      return "bg-warning-tint text-warning border-warning/25";
     case "reversal":
     case "reversed":
       return "bg-destructive/15 text-destructive border-destructive/30";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
+      return "bg-muted text-foreground border-border";
   }
 }
 
@@ -56,7 +56,7 @@ export function PaymentCollectionTable({ data }: PaymentCollectionTableProps) {
         cell: ({ row }) => (
           <Badge
             variant="info"
-            className="bg-blue-100 text-blue-800 border-blue-200 font-mono text-xs"
+            className="bg-info-tint text-info border-info/25 font-mono text-xs"
           >
             {row.original.orNumber || "—"}
           </Badge>

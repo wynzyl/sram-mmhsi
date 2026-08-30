@@ -57,7 +57,7 @@ export function FeeTemplateItemsManager({
 
       {items.length === 0 ? (
         <div className="p-8 text-center">
-          <div className="w-10 h-10 rounded-full bg-border/60 flex items-center justify-center text-lg text-gray-400 dark:text-gray-500 mx-auto mb-3" aria-hidden>
+          <div className="w-10 h-10 rounded-full bg-border/60 flex items-center justify-center text-lg text-muted-foreground mx-auto mb-3" aria-hidden>
             ₱
           </div>
           <p className="text-sm text-muted-foreground mb-2">No items yet.</p>

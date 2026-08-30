@@ -82,7 +82,7 @@ export function SelectField({
       >
         {label}
         {required && (
-          <span className={isEditorial ? "text-red-600" : "required"}>*</span>
+          <span className={isEditorial ? "text-destructive" : "required"}>*</span>
         )}
       </label>
       <select
@@ -107,7 +107,7 @@ export function SelectField({
         ))}
       </select>
       {error && (
-        <p className={isEditorial ? "mt-1 text-sm text-red-600" : "form-error"}>{error[0]}</p>
+        <p className={isEditorial ? "mt-1 text-sm text-destructive" : "form-error"}>{error[0]}</p>
       )}
     </div>
   );
@@ -176,7 +176,7 @@ export function SelectFieldGrouped({
       >
         {label}
         {required && (
-          <span className={isEditorial ? "text-red-600" : "required"}>*</span>
+          <span className={isEditorial ? "text-destructive" : "required"}>*</span>
         )}
       </label>
       <select
@@ -205,7 +205,7 @@ export function SelectFieldGrouped({
         ))}
       </select>
       {error && (
-        <p className={isEditorial ? "mt-1 text-sm text-red-600" : "form-error"}>{error[0]}</p>
+        <p className={isEditorial ? "mt-1 text-sm text-destructive" : "form-error"}>{error[0]}</p>
       )}
     </div>
   );

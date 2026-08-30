@@ -137,8 +137,8 @@ export function PendingEnrollmentsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border p-4 bg-amber-500/10 border-amber-500/30">
-        <p className="text-sm text-amber-600">
+      <div className="rounded-md border p-4 bg-warning/10 border-warning/30">
+        <p className="text-sm text-warning">
           <strong>Pending Enrollments:</strong> These students have been enrolled but are awaiting fee
           assessment. Finance officers should create assessments to move them to the next stage.
         </p>
@@ -233,7 +233,7 @@ export function AssessedEnrollmentsTable({
         accessorKey: "totalPaid",
         header: "Paid",
         cell: ({ row }) => (
-          <span className="font-mono text-sm text-emerald-600">
+          <span className="font-mono text-sm text-success">
             {formatCurrency(Number(row.original.totalPaid))}
           </span>
         ),
@@ -407,8 +407,8 @@ export function EnrolledStudentsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border p-4 bg-emerald-500/10 border-emerald-500/30">
-        <p className="text-sm text-emerald-600">
+      <div className="rounded-md border p-4 bg-success/10 border-success/30">
+        <p className="text-sm text-success">
           <strong>Enrolled Students:</strong> Fully enrolled students for the current school year.
         </p>
       </div>

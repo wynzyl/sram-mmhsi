@@ -8,7 +8,7 @@ export default function PrivacyPolicyPage() {
       <section className="mt-8 space-y-6">
         <div className="rounded-lg border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Information we process</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
             SRAMS processes account identity, role-based access information, and
             operational audit context for business continuity, security, and
             compliance. Audit records may include a hashed request IP digest in the
@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
 
         <div className="rounded-lg border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Legal basis</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
             We process this information as part of the system’s legitimate
             operational and security obligations for access-control monitoring,
             workflow accountability, and financial-operation auditability.
@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
 
         <div className="rounded-lg border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Retention</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
             Audit records are retained only for the period required for finance,
             security, and compliance operations. The system’s current retention
             target is 365 days, after which older records should be purged by a
@@ -38,7 +38,7 @@ export default function PrivacyPolicyPage() {
 
         <div className="rounded-lg border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Consent & notices</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
             Users are informed through the school’s operational privacy notices that
             account access, workflow actions, and security event metadata may be
             logged for accountability. No direct consent banner is required for a

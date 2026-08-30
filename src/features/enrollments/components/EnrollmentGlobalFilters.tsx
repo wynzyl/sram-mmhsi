@@ -130,12 +130,12 @@ export default function EnrollmentGlobalFilters({ gradeLevels, basePath }: Enrol
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Active filters:</span>
           {currentSearch && (
-            <span className="rounded bg-gray-200 px-2 py-1 font-medium dark:bg-gray-800">
+            <span className="rounded bg-muted px-2 py-1 font-medium">
               Search: &quot;{currentSearch}&quot;
             </span>
           )}
           {currentGradeLevel && currentGradeLevel !== "all" && (
-            <span className="rounded bg-gray-200 px-2 py-1 font-medium dark:bg-gray-800">
+            <span className="rounded bg-muted px-2 py-1 font-medium">
               Grade: {gradeLevels.find((g) => g.id === currentGradeLevel)?.name}
             </span>
           )}

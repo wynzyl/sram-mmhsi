@@ -157,8 +157,8 @@ export default async function SectionDetailPage({
 
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-full bg-blue-500/10 p-3">
-              <BookOpen className="h-6 w-6 text-blue-500" />
+            <div className="rounded-full bg-info/10 p-3">
+              <BookOpen className="h-6 w-6 text-info" />
             </div>
             <div>
               <div className="text-2xl font-bold">{offerings.length}</div>
@@ -171,8 +171,8 @@ export default async function SectionDetailPage({
 
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-full bg-purple-500/10 p-3">
-              <UserCheck className="h-6 w-6 text-purple-500" />
+            <div className="rounded-full bg-info/10 p-3">
+              <UserCheck className="h-6 w-6 text-info" />
             </div>
             <div>
               <div className="text-lg font-semibold truncate">

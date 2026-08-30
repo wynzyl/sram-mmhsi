@@ -68,14 +68,14 @@ export default function RegistrationsTable({
       <table className="data-table w-full text-left text-sm" id="registrations-table">
         <thead>
           <tr className="border-b border-border bg-muted">
-            <th className="pl-4 font-semibold tracking-wide text-gray-600 dark:text-gray-400">Student</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Student ID</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Grade Level</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">School Year</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Type</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Documents</th>
-            <th className="font-semibold tracking-wide text-gray-600 dark:text-gray-400">Registered</th>
-            <th className="w-px text-right font-semibold tracking-wide text-gray-600 dark:text-gray-400" aria-label="Actions" />
+            <th className="pl-4 font-semibold tracking-wide text-muted-foreground">Student</th>
+            <th className="font-semibold tracking-wide text-muted-foreground">Student ID</th>
+            <th className="font-semibold tracking-wide text-muted-foreground">Grade Level</th>
+            <th className="font-semibold tracking-wide text-muted-foreground">School Year</th>
+            <th className="font-semibold tracking-wide text-muted-foreground">Type</th>
+            <th className="font-semibold tracking-wide text-muted-foreground">Documents</th>
+            <th className="font-semibold tracking-wide text-muted-foreground">Registered</th>
+            <th className="w-px text-right font-semibold tracking-wide text-muted-foreground" aria-label="Actions" />
           </tr>
         </thead>
         <tbody>
@@ -130,10 +130,10 @@ export default function RegistrationsTable({
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
                         isComplete
-                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          ? "bg-success/15 text-success"
                           : docProgress.completed > 0
-                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                            : "bg-gray-200 text-muted-foreground dark:bg-gray-800"
+                            ? "bg-warning/15 text-warning"
+                            : "bg-muted text-muted-foreground"
                       }`}
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-current opacity-90" aria-hidden />

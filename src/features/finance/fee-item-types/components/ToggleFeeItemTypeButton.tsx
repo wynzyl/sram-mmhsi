@@ -25,7 +25,7 @@ export function ToggleFeeItemTypeButton({ id, isActive }: Props) {
         className={cn(
           "inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium bg-transparent border-none rounded cursor-pointer transition-colors",
           isActive
-            ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-amber-950"
+            ? "text-warning hover:text-warning hover:bg-warning-tint"
             : "text-success hover:text-success/80 hover:bg-success/10"
         )}
         title={isActive ? "Deactivate" : "Activate"}

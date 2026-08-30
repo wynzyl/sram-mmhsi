@@ -47,7 +47,7 @@ export function GuardianCard({
       className={cn(
         "rounded-lg border border-border bg-card p-4",
         "transition-all duration-150",
-        onEdit && "hover:border-gray-300 hover:shadow-md dark:hover:border-gray-700",
+        onEdit && "hover:border-border hover:shadow-md",
         className
       )}
     >
@@ -55,7 +55,7 @@ export function GuardianCard({
         <div className="flex-1 min-w-0">
           {/* Primary indicator */}
           {guardian.isPrimary && (
-            <div className="flex items-center gap-1.5 text-amber-500 mb-2">
+            <div className="flex items-center gap-1.5 text-warning mb-2">
               <Star className="w-4 h-4 fill-current" />
               <span className="text-xs font-mono font-medium uppercase tracking-wide">
                 Primary Guardian

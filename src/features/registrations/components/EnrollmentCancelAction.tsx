@@ -36,7 +36,7 @@ export default function EnrollmentCancelAction({
   if (hasPendingCancellation) {
     return (
       <span
-        className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium"
+        className="inline-flex items-center gap-1 text-warning text-xs font-medium"
         title="Cancellation request is pending review"
       >
         <Clock className="h-3.5 w-3.5" />

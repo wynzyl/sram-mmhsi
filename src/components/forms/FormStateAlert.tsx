@@ -63,13 +63,13 @@ export function FormStateAlert<T>({ state }: { state: BaseFormState<T> }) {
 
   return (
     <div
-      className="rounded-md bg-red-50 border border-red-200 p-4 mb-4"
+      className="rounded-md bg-destructive-tint border border-destructive/25 p-4 mb-4"
       role="alert"
       aria-live="assertive"
     >
       <div className="flex items-start gap-3">
         <svg
-          className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0"
+          className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
@@ -83,10 +83,10 @@ export function FormStateAlert<T>({ state }: { state: BaseFormState<T> }) {
         </svg>
         <div className="flex-1">
           {state.message && (
-            <p className="text-sm font-medium text-red-800">{state.message}</p>
+            <p className="text-sm font-medium text-destructive">{state.message}</p>
           )}
           {formErrors && (
-            <p className="text-sm font-medium text-red-800">
+            <p className="text-sm font-medium text-destructive">
               {formErrors.join(" ")}
             </p>
           )}

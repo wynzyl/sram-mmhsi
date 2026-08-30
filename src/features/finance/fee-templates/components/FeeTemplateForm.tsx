@@ -50,7 +50,7 @@ export function FeeTemplateForm() {
 
         <div className="space-y-2">
           <label htmlFor="description" className="block text-sm font-medium">
-            Description <span className="text-gray-500">(optional)</span>
+            Description <span className="text-muted-foreground">(optional)</span>
           </label>
           <textarea
             id="description"
@@ -58,11 +58,11 @@ export function FeeTemplateForm() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="Add any notes about this template..."
           />
           {state.errors?.description && (
-            <p className="text-sm text-red-600">{state.errors.description[0]}</p>
+            <p className="text-sm text-destructive">{state.errors.description[0]}</p>
           )}
         </div>
       </div>

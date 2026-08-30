@@ -107,11 +107,11 @@ export function CashierQueueTable({
     createStudentColumn<CashierQueueRow>({ refKey: "referenceNumber" }),
     createTextColumn<CashierQueueRow>("gradeLevel", {
       header: "Grade Level",
-      className: "text-gray-600 dark:text-gray-400",
+      className: "text-muted-foreground",
     }),
     createTextColumn<CashierQueueRow>("schoolYear", {
       header: "School Year",
-      className: "text-gray-600 dark:text-gray-400",
+      className: "text-muted-foreground",
     }),
     createStatusColumn<CashierQueueRow>("billingStatus", {
       header: "Status",
@@ -155,7 +155,7 @@ export function CashierQueueTable({
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
                 Today: <CurrencyDisplay amount={stats.totalCollectedToday} />
               </span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-info/10 text-info border border-info/30">
                 Collectibles: <CurrencyDisplay amount={stats.totalCollectibles} />
               </span>
             </>

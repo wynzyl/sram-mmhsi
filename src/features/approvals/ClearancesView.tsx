@@ -53,13 +53,13 @@ export default async function ClearancesView() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card className={pendingCount > 0 ? "border-amber-200 bg-amber-50/30" : ""}>
+        <Card className={pendingCount > 0 ? "border-warning/25 bg-warning/10" : ""}>
           <CardContent className="flex items-center gap-3 pt-6">
-            <div className="rounded-full bg-amber-100 p-2">
-              <Clock className="h-5 w-5 text-amber-600" />
+            <div className="rounded-full bg-warning-tint p-2">
+              <Clock className="h-5 w-5 text-warning" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-amber-600">
+              <p className="text-2xl font-bold text-warning">
                 {pendingCount}
               </p>
               <p className="text-xs text-muted-foreground">Pending</p>
@@ -81,11 +81,11 @@ export default async function ClearancesView() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <div className="rounded-full bg-blue-100 p-2">
-              <FileText className="h-5 w-5 text-blue-600" />
+            <div className="rounded-full bg-info-tint p-2">
+              <FileText className="h-5 w-5 text-info" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-2xl font-bold text-info">
                 {waivedCount}
               </p>
               <p className="text-xs text-muted-foreground">Waived</p>
@@ -94,11 +94,11 @@ export default async function ClearancesView() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-6">
-            <div className="rounded-full bg-red-100 p-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+            <div className="rounded-full bg-destructive-tint p-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
             </div>
             <div>
-              <p className="text-lg font-bold text-red-600">
+              <p className="text-lg font-bold text-destructive">
                 <CurrencyDisplay amount={totalOutstanding} />
               </p>
               <p className="text-xs text-muted-foreground">Outstanding</p>
@@ -109,14 +109,14 @@ export default async function ClearancesView() {
 
       {/* Pending Clearances Alert */}
       {pendingCount > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+        <div className="rounded-lg border border-warning/25 bg-warning/10 p-4">
           <div className="flex items-start gap-3">
-            <Clock className="mt-0.5 h-5 w-5 text-amber-600" />
+            <Clock className="mt-0.5 h-5 w-5 text-warning" />
             <div>
-              <p className="font-medium text-amber-800">
+              <p className="font-medium text-warning">
                 {pendingCount} student{pendingCount > 1 ? "s have" : " has"} pending clearances
               </p>
-              <p className="mt-1 text-sm text-amber-700">
+              <p className="mt-1 text-sm text-warning">
                 Total outstanding: <CurrencyDisplay amount={totalOutstanding} className="font-semibold" />.
                 Document requests are blocked until clearances are resolved.
               </p>

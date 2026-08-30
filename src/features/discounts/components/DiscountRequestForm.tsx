@@ -148,7 +148,7 @@ export default function DiscountRequestForm({
             <span>{selectedType.isStackable ? "Yes" : "No"}</span>
           </div>
           {selectedType.requiresDocumentation && (
-            <div className="text-xs text-amber-600 mt-2">
+            <div className="text-xs text-warning mt-2">
               Note: This discount requires supporting documentation.
             </div>
           )}

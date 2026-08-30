@@ -32,7 +32,7 @@ export default async function PublishedGradesPage() {
         <h1 className="text-2xl font-semibold tracking-tight mb-4 text-foreground">
           Published Grades
         </h1>
-        <div className="p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-yellow-800 dark:text-yellow-300">
+        <div className="p-6 bg-warning-tint rounded-lg text-warning">
           No active school year found. Please contact the administrator.
         </div>
       </div>
@@ -85,7 +85,7 @@ export default async function PublishedGradesPage() {
               href={`/staff/grades/sheets/${sheet.id}`}
               className="block group"
             >
-              <Card className="hover:shadow-md hover:border-blue-500/30 transition-all h-full border-blue-200 dark:border-blue-800">
+              <Card className="hover:shadow-md hover:border-info/30 transition-all h-full border-info/25">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <Badge variant="info" className="text-xs">
@@ -96,7 +96,7 @@ export default async function PublishedGradesPage() {
                     </span>
                   </div>
 
-                  <h3 className="text-sm font-bold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  <h3 className="text-sm font-bold text-foreground group-hover:text-info transition-colors">
                     {sheet.gradeLevelName}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -118,7 +118,7 @@ export default async function PublishedGradesPage() {
                     )}
                   </div>
 
-                  <div className="mt-3 pt-2 border-t border-border flex items-center text-xs text-blue-600 dark:text-blue-400 font-medium">
+                  <div className="mt-3 pt-2 border-t border-border flex items-center text-xs text-info font-medium">
                     Lock Grades
                     <svg
                       className="ml-1 h-3 w-3"

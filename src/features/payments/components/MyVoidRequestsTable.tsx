@@ -62,7 +62,7 @@ export default function MyVoidRequestsTable({
         header: "Status",
         id: "status",
         cell: () => (
-          <Badge variant="warning" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+          <Badge variant="warning" className="bg-warning-tint text-warning border-warning/25">
             AWAITING APPROVAL
           </Badge>
         ),

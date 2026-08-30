@@ -448,7 +448,7 @@ export function SHSGradeEntryTabs({
             </span>
           )}
           {hasUnsavedChanges && canEdit && (
-            <span className="text-sm text-amber-600 flex-row-1">
+            <span className="text-sm text-warning flex-row-1">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
@@ -537,7 +537,7 @@ export function SHSGradeEntryTabs({
               onClick={() => setActiveTab(tab.key)}
               className={cn(
                 "gap-2 transition-colors",
-                activeTab === tab.key && tab.key === "all" && "bg-blue-600 hover:bg-blue-700 border-blue-600"
+                activeTab === tab.key && tab.key === "all" && "bg-info hover:bg-info border-info"
               )}
             >
               {tab.label}

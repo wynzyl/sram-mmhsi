@@ -119,7 +119,7 @@ function NameplateBlock({
         {studentName}
       </h3>
       {referenceNumber ? (
-        <code className="inline-block rounded-sm bg-gray-200 px-2 py-0.5 font-mono text-xs text-foreground shadow-sm ring-1 ring-gray-200 dark:bg-gray-800">
+        <code className="inline-block rounded-sm bg-muted px-2 py-0.5 font-mono text-xs text-foreground shadow-sm ring-1 ring-border">
           {referenceNumber}
         </code>
       ) : (

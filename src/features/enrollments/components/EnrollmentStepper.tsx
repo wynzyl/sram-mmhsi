@@ -55,8 +55,8 @@ export default function EnrollmentStepper({
                 className={cn(
                   "absolute left-[19px] top-10 h-[calc(100%-1.25rem)] w-px",
                   status === "complete"
-                    ? "bg-emerald-500/50"
-                    : "bg-gray-200"
+                    ? "bg-success/50"
+                    : "bg-muted"
                 )}
               />
             )}
@@ -78,7 +78,7 @@ export default function EnrollmentStepper({
                 className={cn(
                   "font-mono text-[10px] font-semibold uppercase tracking-[0.18em]",
                   status === "active" && "text-primary",
-                  status === "complete" && "text-emerald-500",
+                  status === "complete" && "text-success",
                   status === "upcoming" && "text-muted-foreground"
                 )}
               >
@@ -117,11 +117,11 @@ function StepCircle({
         "relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
         "transition-all duration-200",
         status === "complete" &&
-          "bg-emerald-500 text-white shadow-[0_0_0_4px_rgba(16,185,129,0.12)]",
+          "bg-success text-white shadow-[0_0_0_4px_rgba(16,185,129,0.12)]",
         status === "active" &&
           "bg-primary text-white shadow-[0_0_0_4px_rgba(199,0,0,0.12)]",
         status === "upcoming" &&
-          "border border-gray-300 bg-white text-muted-foreground"
+          "border border-border bg-white text-muted-foreground"
       )}
     >
       {status === "complete" ? (

@@ -292,7 +292,7 @@ export function AdviserGradeEntryGrid({
             </span>
           )}
           {hasUnsavedChanges && canEdit && (
-            <span className="text-sm text-amber-600 flex-row-1">
+            <span className="text-sm text-warning flex-row-1">
               <svg
                 className="h-4 w-4"
                 fill="none"

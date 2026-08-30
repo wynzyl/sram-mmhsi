@@ -35,9 +35,9 @@ function TriRadios({
 }) {
   const v = preserved === "" ? undefined : preserved;
   const optionClass =
-    "flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-sm text-gray-600 transition-colors hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-800";
+    "flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-sm text-muted-foreground transition-colors hover:bg-muted";
   const inputClass =
-    "h-4 w-4 shrink-0 border-gray-300 text-primary focus:ring-primary/25 dark:border-gray-700";
+    "h-4 w-4 shrink-0 border-border text-primary focus:ring-primary/25";
 
   return (
     <div className="flex flex-wrap gap-x-6 gap-y-2 pl-0.5">

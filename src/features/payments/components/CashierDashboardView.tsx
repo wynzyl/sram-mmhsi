@@ -77,7 +77,7 @@ export function CashierDashboardView() {
             <h3 className="font-display text-2xl font-extrabold text-foreground">
               Daily Reconciliation Reminder
             </h3>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-400">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
               All cash and check transactions must be reconciled and closed before 4:30 PM. Ensure
               physical receipts match the digital ledger entries to avoid audit discrepancies. Contact
               your supervisor for partial-payment overrides and exception handling.
@@ -96,7 +96,7 @@ export function CashierDashboardView() {
               <ul className="max-h-48 space-y-2 overflow-y-auto pr-1">
                 {recentCollections.map((p) => {
                   const rowClassName =
-                    "flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-3 py-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 hover:border-primary";
+                    "flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-3 py-2 transition-colors hover:bg-muted hover:border-primary";
                   const rowContent = (
                     <>
                       <div className="min-w-0">
@@ -113,7 +113,7 @@ export function CashierDashboardView() {
                           })}
                         </p>
                       </div>
-                      <div className="shrink-0 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                      <div className="shrink-0 text-sm font-semibold text-success">
                         <CurrencyDisplay amount={Number(p.amount)} />
                       </div>
                     </>

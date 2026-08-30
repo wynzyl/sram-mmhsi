@@ -51,8 +51,8 @@ export default function WithdrawRequestButton({
           type="submit"
           disabled={pending}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm transition-all",
-            "hover:border-gray-300 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            "inline-flex items-center gap-1.5 rounded-md border border-border bg-white px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm transition-all",
+            "hover:border-border hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
           )}
         >
           <XCircle className="h-3.5 w-3.5" />

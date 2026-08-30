@@ -39,7 +39,7 @@ export default async function GradeApprovalsPage({ searchParams }: PageProps) {
         <h1 className="text-2xl font-semibold tracking-tight mb-4 text-foreground">
           Pending Approvals
         </h1>
-        <div className="p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-yellow-800 dark:text-yellow-300">
+        <div className="p-6 bg-warning-tint rounded-lg text-warning">
           No active school year found. Please contact the administrator.
         </div>
       </div>

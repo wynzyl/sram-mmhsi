@@ -229,7 +229,7 @@ export async function InternalEnrollmentDetailPage(props: {
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">Discounts</div>
-                <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                <div className="text-lg font-semibold text-success">
                   -<CurrencyDisplay
                     amount={Number(assessment.totalDiscounts)}
                     className="inline"

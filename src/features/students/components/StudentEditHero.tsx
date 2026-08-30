@@ -71,7 +71,7 @@ export function StudentEditHero({
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide",
                       isActive
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-400"
+                        ? "border-success/25 bg-success-tint text-success"
                         : "border-border bg-muted text-muted-foreground"
                     )}
                   >
@@ -81,7 +81,7 @@ export function StudentEditHero({
                 </div>
                 <p className="text-sm text-muted-foreground sm:text-base">
                   <span className="font-mono text-foreground">{referenceNumber}</span>
-                  <span className="mx-2 text-gray-300 dark:text-gray-700">·</span>
+                  <span className="mx-2 text-muted-foreground">·</span>
                   Update personal information and guardian details
                 </p>
               </div>

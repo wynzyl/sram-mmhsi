@@ -73,7 +73,7 @@ export function AddFeeItemForm({
       <div className="form-group">
         <label htmlFor="add-item-order" className="form-label">
           Display Order{" "}
-          <span className="text-gray-400 dark:text-gray-500 font-normal">
+          <span className="text-muted-foreground font-normal">
             (optional)
           </span>
         </label>

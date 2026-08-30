@@ -325,7 +325,7 @@ export default function EnrollmentWizardForm({
           {!currentSchoolYear && (
             <div
               role="alert"
-              className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+              className="flex items-start gap-3 rounded-lg border border-destructive/25 bg-destructive-tint p-4 text-sm text-destructive"
             >
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>

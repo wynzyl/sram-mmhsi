@@ -20,7 +20,7 @@ export default function AdminError({
     <div className="flex min-h-[50vh] flex-col items-center justify-center px-4">
       <div className="mx-auto max-w-md text-center">
         <div className="mb-6 flex justify-center">
-          <div className="rounded-full bg-red-100 dark:bg-red-950 p-4">
+          <div className="rounded-full bg-destructive-tint p-4">
             <svg
               width="40"
               height="40"

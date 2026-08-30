@@ -22,9 +22,9 @@ export const GRADE_SHEET_STATUS_LABELS: Record<GradeSheetStatus, string> = {
  */
 export const GRADE_SHEET_STATUS_COLORS: Record<GradeSheetStatus, string> = {
   draft: "bg-muted text-muted-foreground",
-  submitted: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  returned: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  principal_approved: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+  submitted: "bg-info-tint text-info",
+  returned: "bg-warning-tint text-warning",
+  principal_approved: "bg-info-tint text-info",
   published: "bg-success/15 text-success",
   locked: "bg-muted text-muted-foreground",
 };

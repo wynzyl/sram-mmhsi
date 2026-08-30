@@ -34,7 +34,7 @@ export default async function LockedGradesPage() {
         <h1 className="text-2xl font-semibold tracking-tight mb-4 text-foreground">
           Locked Grades
         </h1>
-        <div className="p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-yellow-800 dark:text-yellow-300">
+        <div className="p-6 bg-warning-tint rounded-lg text-warning">
           No active school year found. Please contact the administrator.
         </div>
       </div>
@@ -88,7 +88,7 @@ export default async function LockedGradesPage() {
               href={`/staff/grades/sheets/${sheet.id}`}
               className="block group"
             >
-              <Card className="hover:shadow-md hover:border-gray-500/30 transition-all h-full border-gray-300 dark:border-gray-700">
+              <Card className="hover:shadow-md hover:border-border transition-all h-full border-border">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <Badge variant="secondary" className="text-xs">
@@ -122,7 +122,7 @@ export default async function LockedGradesPage() {
                   </div>
 
                   {canUnlock && (
-                    <div className="mt-3 pt-2 border-t border-border flex items-center text-xs text-amber-600 dark:text-amber-400 font-medium">
+                    <div className="mt-3 pt-2 border-t border-border flex items-center text-xs text-warning font-medium">
                       Unlock for Editing
                       <svg
                         className="ml-1 h-3 w-3"

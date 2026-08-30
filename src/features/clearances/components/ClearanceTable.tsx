@@ -63,7 +63,7 @@ export default function ClearanceTable({
         cell: ({ row }) => (
           <CurrencyDisplay
             amount={Number(row.original.outstandingAmount)}
-            className={Number(row.original.outstandingAmount) > 0 ? "font-medium text-amber-600" : "text-success"}
+            className={Number(row.original.outstandingAmount) > 0 ? "font-medium text-warning" : "text-success"}
           />
         ),
       },

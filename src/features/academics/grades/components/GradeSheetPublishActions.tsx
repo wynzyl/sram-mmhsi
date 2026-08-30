@@ -130,7 +130,7 @@ export function GradeSheetPublishActions({
       </h3>
 
       {hasError && (
-        <div className="mb-4 p-3 rounded-lg text-sm bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300">
+        <div className="mb-4 p-3 rounded-lg text-sm bg-destructive-tint text-destructive">
           {errorMessage}
         </div>
       )}
@@ -231,7 +231,7 @@ export function GradeSheetPublishActions({
             <AlertDialogAction
               onClick={handleUnlock}
               disabled={isUnlocking || !unlockReason.trim()}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-warning hover:bg-warning text-white"
             >
               {isUnlocking ? "Unlocking..." : "Unlock Grade Sheet"}
             </AlertDialogAction>

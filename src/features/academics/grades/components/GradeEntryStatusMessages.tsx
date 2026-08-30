@@ -16,7 +16,7 @@ export function GradeEntryStatusMessage({ message, isSuccess }: StatusMessagePro
       className={`p-4 border-b ${
         isSuccess
           ? "bg-success/10 text-success border-success/30"
-          : "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
+          : "bg-destructive-tint text-destructive border-destructive/25"
       }`}
     >
       {message}
@@ -35,7 +35,7 @@ export function GradeEntryErrorBanner({ error }: ErrorBannerProps) {
   if (!error) return null;
 
   return (
-    <div className="p-4 border-b bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800">
+    <div className="p-4 border-b bg-destructive-tint text-destructive border-destructive/25">
       {error}
     </div>
   );

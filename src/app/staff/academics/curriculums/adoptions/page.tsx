@@ -31,8 +31,8 @@ export default async function CurriculumAdoptionsPage({
   if (schoolYears.length === 0) {
     return (
       <div className="p-6">
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-6 text-center">
-          <p className="text-amber-800 dark:text-amber-200">
+        <div className="bg-warning-tint border border-warning/25 rounded-lg p-6 text-center">
+          <p className="text-warning">
             No school years configured. Please create a school year first.
           </p>
         </div>

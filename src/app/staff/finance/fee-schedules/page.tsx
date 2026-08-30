@@ -174,7 +174,7 @@ async function FeeSchedulesByYear() {
                               {schedule.feeTemplate.items.length} item{schedule.feeTemplate.items.length !== 1 ? "s" : ""}
                             </span>
                             {schedule.overrides.length > 0 && (
-                              <span className="text-amber-500">
+                              <span className="text-warning">
                                 {schedule.overrides.length} override{schedule.overrides.length !== 1 ? "s" : ""}
                               </span>
                             )}

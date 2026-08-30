@@ -81,8 +81,8 @@ export function EditFeeItemTypeModal({ feeType }: Props) {
                   <input type="hidden" name="id" value={feeType.id} />
 
                   {state.message && (
-                    <div className="flex gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-md">
-                      <span className="shrink-0 flex items-center justify-center text-amber-500">!</span>
+                    <div className="flex gap-3 p-4 bg-warning/10 border border-warning/30 rounded-md">
+                      <span className="shrink-0 flex items-center justify-center text-warning">!</span>
                       <p className="text-sm text-foreground m-0">{state.message}</p>
                     </div>
                   )}

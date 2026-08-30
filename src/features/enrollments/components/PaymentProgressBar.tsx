@@ -30,7 +30,7 @@ export default function PaymentProgressBar({
   return (
     <div className={cn("w-full space-y-1.5", className)}>
       <div
-        className="relative h-1.5 w-full overflow-hidden rounded-full bg-gray-100"
+        className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted"
         role="progressbar"
         aria-valuenow={Math.round(percentage)}
         aria-valuemin={0}
@@ -41,10 +41,10 @@ export default function PaymentProgressBar({
           className={cn(
             "h-full rounded-full transition-all duration-500 ease-out",
             isComplete
-              ? "bg-emerald-500"
+              ? "bg-success"
               : hasAnyPayment
               ? "bg-primary"
-              : "bg-gray-300"
+              : "bg-border"
           )}
           style={{ width: `${percentage}%` }}
         />
@@ -57,7 +57,7 @@ export default function PaymentProgressBar({
               className={cn(
                 "font-semibold",
                 isComplete
-                  ? "text-emerald-500"
+                  ? "text-success"
                   : "text-foreground"
               )}
             >
@@ -69,7 +69,7 @@ export default function PaymentProgressBar({
           <span
             className={cn(
               "tabular-nums",
-              isComplete && "text-emerald-500"
+              isComplete && "text-success"
             )}
           >
             {Math.round(percentage)}%

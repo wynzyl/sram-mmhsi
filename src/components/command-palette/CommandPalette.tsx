@@ -167,7 +167,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="rounded p-1 text-muted-foreground hover:bg-gray-200 hover:text-foreground dark:hover:bg-gray-800"
+              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Clear search"
             >
               <X className="h-4 w-4" />
@@ -228,7 +228,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                               "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
                               isActive
                                 ? "bg-primary/10"
-                                : "hover:bg-gray-200 dark:hover:bg-gray-800"
+                                : "hover:bg-muted"
                             )}
                           >
                             <div className="flex-1 min-w-0">
@@ -237,7 +237,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                                   {item.title}
                                 </span>
                                 {item.badge && (
-                                  <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium uppercase text-muted-foreground dark:bg-gray-800">
+                                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
                                     {item.badge}
                                   </span>
                                 )}
@@ -264,19 +264,19 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-border bg-gray-200 px-1.5 py-0.5 font-mono text-[10px] dark:bg-gray-800">
+              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
                 ↑↓
               </kbd>
               <span>Navigate</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-border bg-gray-200 px-1.5 py-0.5 font-mono text-[10px] dark:bg-gray-800">
+              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
                 Enter
               </kbd>
               <span>Open</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-border bg-gray-200 px-1.5 py-0.5 font-mono text-[10px] dark:bg-gray-800">
+              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
                 Esc
               </kbd>
               <span>Close</span>

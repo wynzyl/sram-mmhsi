@@ -77,7 +77,7 @@ export default async function VoidRequestsView({
           >
             {isAdminView ? "Pending" : "Awaiting Approval"}
             {pendingResult.pagination.totalRecords > 0 && tab === "pending" && (
-              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
+              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-warning-tint text-warning">
                 {pendingResult.pagination.totalRecords}
               </span>
             )}

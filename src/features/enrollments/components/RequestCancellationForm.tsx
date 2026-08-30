@@ -51,11 +51,11 @@ export default function RequestCancellationForm({
   }
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
+    <div className="rounded-lg border border-warning/25 bg-warning/10 p-4">
       <div className="mb-3 flex items-start gap-2">
-        <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+        <AlertTriangle className="h-5 w-5 shrink-0 text-warning" />
         <div>
-          <p className="font-mono text-xs font-semibold uppercase tracking-wider text-amber-700">
+          <p className="font-mono text-xs font-semibold uppercase tracking-wider text-warning">
             Request Enrollment Cancellation
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -114,8 +114,8 @@ export default function RequestCancellationForm({
             type="submit"
             disabled={pending || !reasonType}
             className={cn(
-              "inline-flex items-center gap-1 rounded-md bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all",
-              "hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+              "inline-flex items-center gap-1 rounded-md bg-warning px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all",
+              "hover:bg-warning disabled:cursor-not-allowed disabled:opacity-50"
             )}
           >
             {pending ? "Submitting..." : "Submit Request"}

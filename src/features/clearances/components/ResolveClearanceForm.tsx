@@ -64,7 +64,7 @@ export default function ResolveClearanceForm({
       <CardContent>
         <div className="mb-4 rounded-lg border bg-muted/30 p-3">
           <p className="text-sm text-muted-foreground">Outstanding Amount</p>
-          <p className="text-2xl font-bold text-amber-600">
+          <p className="text-2xl font-bold text-warning">
             <CurrencyDisplay amount={outstandingAmount} />
           </p>
         </div>
@@ -87,8 +87,8 @@ export default function ResolveClearanceForm({
             <div className={cn(
               "rounded-md p-3 text-sm",
               resolutionType === "paid" ? "bg-success/10 text-success" :
-              resolutionType === "waived" ? "bg-blue-50 text-blue-700" :
-              "bg-amber-50 text-amber-700"
+              resolutionType === "waived" ? "bg-info-tint text-info" :
+              "bg-warning-tint text-warning"
             )}>
               {resolutionType === "paid" && (
                 <p>

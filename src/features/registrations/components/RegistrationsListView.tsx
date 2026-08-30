@@ -209,7 +209,7 @@ export default function RegistrationsListView({
 
                         {/* Metadata row */}
                         <div className="mb-4 flex flex-wrap items-center gap-3 text-secondary">
-                          <code className="rounded bg-gray-200 px-2 py-0.5 font-mono text-foreground dark:bg-gray-800">
+                          <code className="rounded bg-muted px-2 py-0.5 font-mono text-foreground">
                             {reg.referenceNumber}
                           </code>
                           <span>•</span>
@@ -264,7 +264,7 @@ export default function RegistrationsListView({
                           href={`${studentBasePath}/${reg.studentId}`}
                           className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium
                                      text-primary hover:bg-muted
-                                     transition-colors group"
+                                    transition-colors group"
                         >
                           View
                           <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

@@ -71,9 +71,9 @@ export default function DirectCancelForm({
   }
 
   return (
-    <div className="rounded-lg border border-red-100 bg-red-50/40 p-4">
+    <div className="rounded-lg border border-destructive/25 bg-destructive/10 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <p className="font-mono text-xs font-semibold uppercase tracking-wider text-red-700">
+        <p className="font-mono text-xs font-semibold uppercase tracking-wider text-destructive">
           Cancel Enrollment
         </p>
         {onCancel && (
@@ -88,11 +88,11 @@ export default function DirectCancelForm({
       </div>
 
       {hasPaidAmount && (
-        <div className="mb-3 rounded-md bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-800">
+        <div className="mb-3 rounded-md bg-warning-tint border border-warning/25 p-2.5 text-xs text-warning">
           <p className="font-medium">
             This enrollment has <CurrencyDisplay amount={assessmentTotalPaid!} /> in payments.
           </p>
-          <p className="mt-1 text-amber-700">
+          <p className="mt-1 text-warning">
             Refund policy will be applied based on the system cutoff date configuration.
             Refundable items may be reversed within the cutoff period.
           </p>
@@ -141,8 +141,8 @@ export default function DirectCancelForm({
             type="submit"
             disabled={pending || !reasonType}
             className={cn(
-              "inline-flex items-center gap-1 rounded-md bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all",
-              "hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              "inline-flex items-center gap-1 rounded-md bg-destructive px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all",
+              "hover:bg-destructive disabled:cursor-not-allowed disabled:opacity-50"
             )}
           >
             {pending ? "Cancelling..." : "Confirm Cancellation"}

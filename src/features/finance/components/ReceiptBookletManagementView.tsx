@@ -91,7 +91,7 @@ export function ReceiptBookletManagementView({
             <p className="mt-1 text-3xl font-semibold text-success">
               {averageUsage}%
             </p>
-            <div className="mt-3 h-2 rounded-full bg-muted dark:bg-[#1f2328]">
+            <div className="mt-3 h-2 rounded-full bg-muted">
               <div
                 className="h-2 rounded-full bg-primary"
                 style={{ width: `${progress}%` }}
@@ -102,9 +102,9 @@ export function ReceiptBookletManagementView({
           <div className="bg-card border border-border rounded-md p-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Low Stock Alert</p>
-              <TriangleAlert className="h-4 w-4 text-red-500 dark:text-red-400" />
+              <TriangleAlert className="h-4 w-4 text-destructive" />
             </div>
-            <p className="mt-1 text-3xl font-semibold text-red-500 dark:text-red-400">
+            <p className="mt-1 text-3xl font-semibold text-destructive">
               {lowStockCount.toString().padStart(2, "0")}
             </p>
             <p className="text-helper">
@@ -113,7 +113,7 @@ export function ReceiptBookletManagementView({
           </div>
         </div>
 
-        <div className="hidden items-center gap-2 text-xs text-gray-400 dark:text-gray-500 md:flex">
+        <div className="hidden items-center gap-2 text-xs text-muted-foreground md:flex">
           <ClipboardList className="h-3.5 w-3.5" />
           {footerNote}
         </div>

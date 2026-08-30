@@ -84,7 +84,7 @@ export default function PostPaymentForm({
         <p className="font-display text-xl font-extrabold text-foreground">
           Payment posted
         </p>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           {form.state.message}
         </p>
         {onCancel && (
@@ -147,7 +147,7 @@ export default function PostPaymentForm({
 
       {/* Amount due display */}
       <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted px-4 py-3">
-        <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+        <span className="text-sm font-semibold text-muted-foreground">
           Amount due (balance)
         </span>
         <span className="font-display text-lg font-black text-primary">
@@ -193,7 +193,7 @@ export default function PostPaymentForm({
           id="isManualEntryToggle"
           checked={form.isManualEntry}
           onChange={(e) => form.handleManualEntryToggle(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
         />
         <label htmlFor="isManualEntryToggle" className="text-sm font-medium">
           Manual entry (offline payment)
@@ -202,8 +202,8 @@ export default function PostPaymentForm({
 
       {/* Manual Entry Fields */}
       {form.isManualEntry && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+        <div className="rounded-xl border border-warning/25 bg-warning-tint p-4">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-warning">
             Offline Payment Details
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -285,7 +285,7 @@ export default function PostPaymentForm({
                   "(full payment required)"}
               </span>
               {(form.applyCashDiscount || hasAppliedCashDiscount) && (
-                <Lock className="h-3.5 w-3.5 text-amber-600" />
+                <Lock className="h-3.5 w-3.5 text-warning" />
               )}
             </span>
           }
@@ -319,7 +319,7 @@ export default function PostPaymentForm({
             tabIndex={form.applyCashDiscount || hasAppliedCashDiscount ? -1 : undefined}
             className={`font-mono text-base ${
               form.applyCashDiscount || hasAppliedCashDiscount
-                ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 cursor-not-allowed pointer-events-none"
+                ? "bg-warning-tint text-warning cursor-not-allowed pointer-events-none"
                 : ""
             }`}
           />

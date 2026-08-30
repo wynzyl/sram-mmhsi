@@ -67,15 +67,15 @@ export default function DiscountReversalModal({
               <span className="text-muted-foreground">
                 Discount Amount:
               </span>
-              <span className="font-medium text-emerald-600">
+              <span className="font-medium text-success">
                 -<CurrencyDisplay amount={Number(discount.discountAmount)} className="inline" />
               </span>
             </div>
           </div>
 
           {/* Warning */}
-          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-500 rounded-lg">
-            <p className="text-sm text-amber-700 dark:text-amber-400">
+          <div className="p-3 bg-warning-tint border border-warning rounded-lg">
+            <p className="text-sm text-warning">
               <strong>Warning:</strong> Reversing this discount will add{" "}
               <CurrencyDisplay amount={Number(discount.discountAmount)} className="inline font-medium" />{" "}
               back to the student&apos;s assessment balance. This action cannot be undone.

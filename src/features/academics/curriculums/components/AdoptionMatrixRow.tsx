@@ -97,7 +97,7 @@ export function AdoptionMatrixRow({
           <span className="font-medium">{cell.gradeLevelName}</span>
           {isLocked && (
             <svg
-              className="w-4 h-4 text-amber-600 dark:text-amber-400"
+              className="w-4 h-4 text-warning"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

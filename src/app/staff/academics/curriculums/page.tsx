@@ -52,7 +52,7 @@ export default async function CurriculumsPage() {
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/30">
               {publishedCount} Published
             </span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-warning/10 text-warning border border-warning/30">
               {draftCount} Draft{draftCount !== 1 ? "s" : ""}
             </span>
             {archivedCount > 0 && (

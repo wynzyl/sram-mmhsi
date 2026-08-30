@@ -137,7 +137,7 @@ export function BatchArchiveDialog({
                   {schoolYearOptions.map((sy) => (
                     <SelectItem key={sy.id} value={sy.id}>
                       {sy.label}
-                      {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+                      {sy.isActive && <span className="text-success ml-1">(Active)</span>}
                     </SelectItem>
                   ))}
                 </SelectContent>

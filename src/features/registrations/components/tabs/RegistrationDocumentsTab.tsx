@@ -119,7 +119,7 @@ export function RegistrationDocumentsTab({
                 </ul>
               )}
               {complete ? (
-                <p className="mt-4 text-sm font-medium text-emerald-500">Checklist complete</p>
+                <p className="mt-4 text-sm font-medium text-success">Checklist complete</p>
               ) : null}
             </DataCard>
           );

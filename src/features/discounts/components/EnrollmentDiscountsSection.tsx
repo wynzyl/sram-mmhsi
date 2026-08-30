@@ -140,14 +140,14 @@ export default function EnrollmentDiscountsSection({
         {/* Pending Requests */}
         {pendingRequests.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-amber-600 mb-2">
+            <h4 className="text-sm font-medium text-warning mb-2">
               Pending Approval ({pendingRequests.length})
             </h4>
             <div className="space-y-2">
               {pendingRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-500 rounded-lg"
+                  className="p-3 bg-warning-tint border border-warning rounded-lg"
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -175,7 +175,7 @@ export default function EnrollmentDiscountsSection({
         {/* Approved Requests */}
         {approvedRequests.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-emerald-600 mb-2">
+            <h4 className="text-sm font-medium text-success mb-2">
               Approved ({approvedRequests.length})
             </h4>
             <div className="space-y-2">
@@ -187,7 +187,7 @@ export default function EnrollmentDiscountsSection({
                 return (
                   <div
                     key={request.id}
-                    className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-500 rounded-lg"
+                    className="p-3 bg-success-tint border border-success rounded-lg"
                   >
                     <div className="flex justify-between items-start">
                       <div>

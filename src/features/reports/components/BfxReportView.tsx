@@ -114,7 +114,7 @@ export function BfxReportView({
         cell: ({ row }) => (
           <Badge
             variant="info"
-            className="bg-blue-100 text-blue-800 border-blue-200 font-mono"
+            className="bg-info-tint text-info border-info/25 font-mono"
           >
             {row.original.bfxNumber}
           </Badge>
@@ -248,7 +248,7 @@ export function BfxReportView({
               {schoolYears.map((sy) => (
                 <SelectItem key={sy.id} value={sy.id}>
                   {sy.label}
-                  {sy.isActive && <span className="text-emerald-500 ml-1">(Active)</span>}
+                  {sy.isActive && <span className="text-success ml-1">(Active)</span>}
                 </SelectItem>
               ))}
             </SelectContent>

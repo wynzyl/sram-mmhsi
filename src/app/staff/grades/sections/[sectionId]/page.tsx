@@ -92,7 +92,7 @@ export default async function AdviserGradeEntryPage({
         {/* No Adviser Empty State */}
         <div className="p-12 text-center bg-card rounded-xl border border-border shadow-sm">
           <svg
-            className="mx-auto h-12 w-12 text-amber-400"
+            className="mx-auto h-12 w-12 text-warning"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -199,7 +199,7 @@ export default async function AdviserGradeEntryPage({
                   {section.schoolYearLabel}
                 </span>
                 {" "}&bull;{" "}
-                <span className="text-blue-600 dark:text-blue-400">
+                <span className="text-info">
                   Strand-based grade entry
                 </span>
               </p>
@@ -217,10 +217,10 @@ export default async function AdviserGradeEntryPage({
 
         {/* Return Remarks Alert */}
         {isReturnedForRevision && gradeSheetData?.returnRemarks && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+          <div className="bg-warning-tint border border-warning/25 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <svg
-                className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
+                className="h-5 w-5 text-warning mt-0.5 flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -233,10 +233,10 @@ export default async function AdviserGradeEntryPage({
                 />
               </svg>
               <div>
-                <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                <h3 className="text-sm font-semibold text-warning">
                   Returned for Revision
                 </h3>
-                <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                <p className="text-sm text-warning mt-1">
                   {gradeSheetData.returnRemarks}
                 </p>
               </div>
@@ -293,7 +293,7 @@ export default async function AdviserGradeEntryPage({
         ) : !canEditSelectedPeriod ? (
           <div className="p-12 text-center bg-card rounded-xl border border-border shadow-sm">
             <svg
-              className="mx-auto h-12 w-12 text-amber-400"
+              className="mx-auto h-12 w-12 text-warning"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -404,10 +404,10 @@ export default async function AdviserGradeEntryPage({
 
       {/* Return Remarks Alert */}
       {isReturnedForRevision && gradeSheetData?.returnRemarks && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+        <div className="bg-warning-tint border border-warning/25 rounded-xl p-4">
           <div className="flex items-start gap-3">
             <svg
-              className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
+              className="h-5 w-5 text-warning mt-0.5 flex-shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -420,10 +420,10 @@ export default async function AdviserGradeEntryPage({
               />
             </svg>
             <div>
-              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              <h3 className="text-sm font-semibold text-warning">
                 Returned for Revision
               </h3>
-              <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+              <p className="text-sm text-warning mt-1">
                 {gradeSheetData.returnRemarks}
               </p>
             </div>
@@ -480,7 +480,7 @@ export default async function AdviserGradeEntryPage({
       ) : !canEditSelectedPeriod ? (
         <div className="p-12 text-center bg-card rounded-xl border border-border shadow-sm">
           <svg
-            className="mx-auto h-12 w-12 text-amber-400"
+            className="mx-auto h-12 w-12 text-warning"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

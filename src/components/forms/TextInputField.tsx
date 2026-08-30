@@ -83,7 +83,7 @@ export function TextInputField({
       >
         {label}
         {required && (
-          <span className={isEditorial ? "text-red-600" : "required"}>*</span>
+          <span className={isEditorial ? "text-destructive" : "required"}>*</span>
         )}
       </label>
       <input
@@ -100,7 +100,7 @@ export function TextInputField({
         aria-invalid={Boolean(error?.length)}
       />
       {error && (
-        <p className={isEditorial ? "mt-1 text-sm text-red-600" : "form-error"}>{error[0]}</p>
+        <p className={isEditorial ? "mt-1 text-sm text-destructive" : "form-error"}>{error[0]}</p>
       )}
     </div>
   );
@@ -151,7 +151,7 @@ export function TextAreaField({
       >
         {label}
         {required && (
-          <span className={isEditorial ? "text-red-600" : "required"}>*</span>
+          <span className={isEditorial ? "text-destructive" : "required"}>*</span>
         )}
       </label>
       <textarea
@@ -167,7 +167,7 @@ export function TextAreaField({
         aria-invalid={Boolean(error?.length)}
       />
       {error && (
-        <p className={isEditorial ? "mt-1 text-sm text-red-600" : "form-error"}>{error[0]}</p>
+        <p className={isEditorial ? "mt-1 text-sm text-destructive" : "form-error"}>{error[0]}</p>
       )}
     </div>
   );

@@ -122,7 +122,7 @@ export function PublishCurriculumDialog({
             <div className="bg-muted/50 border border-border rounded-md p-3 space-y-2">
               {preflight.canPublish ? (
                 <>
-                  <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+                  <div className="flex items-center gap-2 text-sm text-success">
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -141,7 +141,7 @@ export function PublishCurriculumDialog({
                       {preflight.subjectsByGrade.length} grade levels
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+                  <div className="flex items-center gap-2 text-sm text-success">
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -184,7 +184,7 @@ export function PublishCurriculumDialog({
               {preflight.warnings.map((warning, idx) => (
                 <div
                   key={`warn-${idx}`}
-                  className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400"
+                  className="flex items-center gap-2 text-sm text-warning"
                 >
                   <svg
                     className="w-4 h-4 shrink-0"
@@ -282,7 +282,7 @@ export function PublishCurriculumDialog({
               <button
                 type="submit"
                 disabled={isPending || !preflight.canPublish}
-                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-white bg-success rounded-md hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isPending ? "Publishing..." : "Publish Curriculum"}
               </button>

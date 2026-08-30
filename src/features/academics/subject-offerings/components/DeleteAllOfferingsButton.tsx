@@ -70,7 +70,7 @@ export function DeleteAllOfferingsButton({
             This will delete all <strong>{offeringsCount}</strong> subject offering(s) for this section.
             This action cannot be undone.
             <br /><br />
-            <span className="text-amber-600 dark:text-amber-400">
+            <span className="text-warning">
               Note: This will fail if any students are enrolled in these subjects.
             </span>
           </AlertDialogDescription>

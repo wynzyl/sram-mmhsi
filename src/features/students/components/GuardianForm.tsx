@@ -52,7 +52,7 @@ export default function GuardianForm({
           {canRemove && (
             <button
               type="button"
-              className="rounded-lg border border-red-200 bg-card px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/50"
+              className="rounded-lg border border-destructive/25 bg-card px-3 py-1.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive-tint"
               onClick={() => onRemove(index)}
             >
               Remove

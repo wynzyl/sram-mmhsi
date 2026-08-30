@@ -274,8 +274,8 @@ export function RegistrationDiscountsTab({
 
       {/* No eligible enrollment warning */}
       {flags.canRequestDiscounts && !activeEnrollmentId && (
-        <DataCard className="p-6 border-amber-500/30 bg-amber-500/5">
-          <p className="text-sm text-amber-600">
+        <DataCard className="p-6 border-warning/30 bg-warning/5">
+          <p className="text-sm text-warning">
             Discount requests are only allowed for pending enrollments before an assessment is created.
             Once enrolled or assessed, discounts cannot be requested.
           </p>
