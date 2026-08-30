@@ -33,15 +33,18 @@ async function PortalLayoutContent({ children }: { children: React.ReactNode }) 
   return (
     <ActiveSchoolYearProvider activeSchoolYearId={activeSchoolYear?.id ?? null}>
       <IdleLogoutProvider>
-        <SidebarProvider defaultOpen={false}>
+        <SidebarProvider defaultOpen>
           <AppSidebar role={user.role as Role} />
           <SidebarInset>
             <PortalHeader
               displayName={displayName}
               schoolYear={activeSchoolYear?.label}
+              role={user.role as Role}
             />
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-4 sm:p-6">{children}</div>
+            {/* Page padding is owned by PortalPage. flex-1 on the content
+                column keeps the footer at the bottom on short pages. */}
+            <div className="flex flex-1 flex-col overflow-y-auto">
+              <div className="flex-1">{children}</div>
               <PortalFooter schoolYear={activeSchoolYear?.label} />
             </div>
           </SidebarInset>
@@ -77,21 +80,13 @@ export default function PortalLayout({
               <Skeleton className="h-5 w-32" />
             </div>
             {/* Content placeholder */}
-            <main className="flex-1 p-4 sm:p-6 bg-background">
-              {/* Page header skeleton */}
-              <div className="mb-6">
-                <Skeleton className="h-7 w-48 mb-2" />
-                <Skeleton className="h-4 w-64" />
-              </div>
-              {/* Cards skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-6 rounded-xl border border-border bg-card">
-                    <Skeleton className="h-5 w-24 mb-2" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4 mt-1" />
-                  </div>
-                ))}
+            <main className="flex-1 bg-background">
+              <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-4 sm:px-6 sm:py-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-56" />
+                  <Skeleton className="h-4 w-72" />
+                </div>
+                <Skeleton className="h-40 w-full rounded-lg" />
               </div>
             </main>
           </div>

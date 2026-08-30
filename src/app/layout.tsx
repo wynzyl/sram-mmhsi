@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Merriweather, Inter, JetBrains_Mono } from "next/font/google";
 import { RootProviders } from "@/components/providers/RootProviders";
+import { COLOR_THEMES } from "@/lib/constants/color-themes";
 import "./globals.css";
 
 const crimsonPro = localFont({
@@ -59,6 +60,28 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }, // Internal system — not for indexing
 };
 
+/**
+ * Pre-hydration theme bootstrap. Runs before paint to avoid a flash of the
+ * wrong theme.
+ *
+ * The stale-class list is derived from COLOR_THEMES rather than hardcoded:
+ * the previous literal still removed 'theme-graphite' (deleted) and never
+ * removed 'theme-bubblegum' (added), so a leftover class could survive a
+ * theme switch until ThemeProvider caught up.
+ */
+const THEME_BOOTSTRAP_SCRIPT = `(function(){try{` +
+  `var m=localStorage.getItem('theme');` +
+  `var r=m;if(!m||m==='system'){r=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}` +
+  `var c=localStorage.getItem('colorTheme');` +
+  `var root=document.documentElement;` +
+  `root.classList.remove('light','dark',${COLOR_THEMES.filter((t) => t !== "default")
+    .map((t) => `'theme-${t}'`)
+    .join(",")});` +
+  `root.classList.add(r);root.style.colorScheme=r;` +
+  `if(c&&c!=='default'){root.classList.add('theme-'+c);}` +
+  `root.classList.add('hydrated');` +
+  `}catch(_){}})();`;
+
 export default function RootLayout({
   children,
 }: {
@@ -69,8 +92,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html:
-              "(function(){try{var m=localStorage.getItem('theme');var r=m;if(!m||m==='system'){r=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var c=localStorage.getItem('colorTheme');var root=document.documentElement;root.classList.remove('light','dark','theme-cosmic','theme-slate','theme-graphite');root.classList.add(r);root.style.colorScheme=r;if(c&&c!=='default'){root.classList.add('theme-'+c);}root.classList.add('hydrated');}catch(_){}})();",
+            __html: THEME_BOOTSTRAP_SCRIPT,
           }}
         />
       </head>

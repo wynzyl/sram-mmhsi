@@ -51,7 +51,7 @@ export default async function BatchInvoicePage() {
         <p className="text-secondary mt-1 mb-6">
           Generate invoices for multiple assessments
         </p>
-        <div className="rounded-md border border-warning/30 bg-warning/10 px-4 py-3 text-warning-foreground">
+        <div className="rounded-md border border-warning/30 bg-warning/10 px-4 py-3 text-warning">
           No active school year found. Please set an active school year before generating invoices.
         </div>
       </div>

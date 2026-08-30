@@ -77,7 +77,7 @@ export default async function ApprovalsPage({
     visibleSections[0].key;
 
   return (
-    <PageContainer>
+    <PageContainer width="full">
       <PageHeader
         title="Approvals"
         description="Review and process the requests that need a decision before transactions can proceed."

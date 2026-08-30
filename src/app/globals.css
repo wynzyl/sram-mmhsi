@@ -19,10 +19,14 @@
   --muted-foreground: #4b5563;  /* gray-600 - better contrast */
   --accent: #fffbeb;
   --accent-foreground: #92400e;
-  --destructive: #ef4444;
+  --destructive: #b91c1c; /* red-700: #ef4444 was 3.4:1 on light cards, below AA */
   --destructive-foreground: #ffffff;
-  --success: #16a34a;
+  --success: #047857; /* emerald-700: #16a34a was ~3:1 on light cards, below AA */
   --success-foreground: #ffffff;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+  --info: #1d4ed8;
+  --info-foreground: #ffffff;
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: #f59e0b;
@@ -30,6 +34,15 @@
   /* Layout dimensions */
   --header-height: 64px;
   --sidebar-width: 220px;
+
+  /* Page width scale - consumed by PageContainer via max-w-[var(...)].
+     Values match the docstring in src/components/layout/PageContainer.tsx.
+     Page padding is deliberately NOT a token: the route shells
+     (staff/layout.tsx, portal/layout.tsx) own it. */
+  --page-width-narrow: 64rem;
+  --page-width-standard: 80rem;
+  --page-width-wide: 96rem;
+  --space-section-gap: 1.5rem;
   --chart-1: #f59e0b;
   --chart-2: #d97706;
   --chart-3: #b45309;
@@ -46,6 +59,12 @@
   --font-sans: var(--font-inter, Inter), sans-serif;
   --font-serif: Merriweather, serif;
   --font-mono: var(--font-jetbrains, 'JetBrains Mono'), monospace;
+  /* Aliased to the sans stack on purpose, NOT to a display serif.
+     `font-display` reads like a heading font, but 29 of its ~112 call sites
+     are small-caps labels (text-xs font-bold uppercase tracking-[0.14em]),
+     where a serif at 12px is muddy and reads as a bug. Crimson Pro is also
+     600-900 only. Retarget per call site before changing this. */
+  --font-display: var(--font-sans);
   --radius: 0.375rem;
   --shadow-x: 0px;
   --shadow-y: 4px;
@@ -113,6 +132,10 @@
   --destructive-foreground: #ffffff;
   --success: #4ade80;
   --success-foreground: #052e16;
+  --warning: #fbbf24;
+  --warning-foreground: #422006;
+  --info: #60a5fa;
+  --info-foreground: #0c1222;
   --border: #404040;
   --input: #404040;
   --ring: #f59e0b;
@@ -132,6 +155,12 @@
   --font-sans: var(--font-inter, Inter), sans-serif;
   --font-serif: Merriweather, serif;
   --font-mono: var(--font-jetbrains, 'JetBrains Mono'), monospace;
+  /* Aliased to the sans stack on purpose, NOT to a display serif.
+     `font-display` reads like a heading font, but 29 of its ~112 call sites
+     are small-caps labels (text-xs font-bold uppercase tracking-[0.14em]),
+     where a serif at 12px is muddy and reads as a bug. Crimson Pro is also
+     600-900 only. Retarget per call site before changing this. */
+  --font-display: var(--font-sans);
   --radius: 0.375rem;
   --shadow-x: 0px;
   --shadow-y: 4px;
@@ -165,7 +194,7 @@
   --glow-primary-strong: 0 0 35px rgba(139, 92, 246, 0.7);
 
   /* Card header gradient - subtle purple tint */
-  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, color-mix(in srgb, var(--card) 85%, #7c3aed) 100%);
+  --card-header-gradient: linear-gradient(180deg, var(--card) 0%, color-mix(in srgb, var(--card) 85%, var(--primary)) 100%);
 
   /* Avatar gradient - rich saturated purple tones */
   --avatar-gradient: linear-gradient(145deg, #7c3aed 0%, #8b5cf6 40%, #a855f7 100%);
@@ -175,55 +204,6 @@
 
   /* Link accent - cyan/teal for student IDs */
   --link-accent: #22d3ee;
-
-  /* Surface variants */
-  --color-surface: var(--card);
-  --color-surface-2: #1F2328;
-  --color-surface-3: var(--muted);
-  --color-surface-elevated: #252931;
-
-  /* Text variants */
-  --color-text: var(--foreground);
-  --color-text-2: #D1D5DB;
-  --color-text-muted: var(--muted-foreground);
-  --color-text-subtle: #6B7280;
-
-  /* Border variants */
-  --color-border-2: #3F4451;
-
-  /* Error/semantic aliases (brighter for dark mode) */
-  --color-error: var(--destructive);
-  --color-error-surface: #3B1A1A;
-  --color-error-foreground: #FCA5A5;
-  --color-error-foreground-dark: #FCA5A5;
-  --color-error-surface-dark: #3B1A1A;
-  --color-error-100: #5C2626;
-  --color-error-200: #7F2D2D;
-  --color-error-700: #F87171;
-
-  /* Warning shades */
-  --color-warning-100: #422006;
-  --color-warning-200: #713F12;
-  --color-warning-700: #FBBF24;
-
-  /* Info shades */
-  --color-info-100: #1E3A5F;
-  --color-info-200: #1E40AF;
-  --color-info-700: #60A5FA;
-
-  /* Accent shades */
-  --color-accent-100: #3D1F26;
-  --color-accent-200: #5C2E3A;
-  --color-accent-700: #fbbf24;
-
-  /* Primary shade */
-  --color-primary-700: #fb7185;
-
-  /* Sidebar */
-  --color-sidebar-elevated: #1F2328;
-
-  /* Success color alias */
-  --color-success: #4ade80;
 
   /* Operations panel colors */
   --color-ops-positive: #4ade80;
@@ -235,7 +215,6 @@
   --color-ops-field-text: var(--foreground);
   --color-ops-panel: var(--card);
   --color-ops-panel-muted: color-mix(in srgb, var(--primary) 20%, #1f2328);
-  --color-primary-300: color-mix(in srgb, var(--primary) 80%, white);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -264,7 +243,7 @@
   --secondary-foreground: #4a4080;
   --foreground: #1e1b4b;        /* indigo-950 - deep purple-black */
   --muted-foreground: #4c4680;  /* muted purple - matches theme */
-  --success: #10b981;
+  --success: #047857; /* emerald-700: #10b981 was ~2.3:1 on the cosmic card */
   --success-foreground: #ffffff;
   --chart-1: #6e56cf;
   --chart-2: #8b7dd8;
@@ -337,10 +316,6 @@
   --auth-gradient-2: rgba(99, 102, 241, 0.12);
   --auth-gradient-3: transparent;
 
-  /* Override dark-mode specific aliases */
-  --color-success: #22c55e;
-  --color-primary-700: #818cf8;
-
   /* Cosmic dark gradients - vibrant purple avatars, indigo buttons */
   --gradient-primary: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
   --gradient-primary-hover: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
@@ -375,7 +350,7 @@
   --foreground: #0f172a;        /* slate-900 - near black */
   --muted: #f1f5f9;
   --muted-foreground: #475569;  /* slate-600 - better contrast */
-  --success: #10b981;
+  --success: #047857; /* emerald-700, AA on the slate card */
   --success-foreground: #ffffff;
   --chart-1: #6366f1;
   --chart-2: #818cf8;
@@ -437,10 +412,6 @@
   --auth-gradient-2: rgba(129, 140, 248, 0.12);
   --auth-gradient-3: transparent;
 
-  /* Override dark-mode specific aliases */
-  --color-success: #34d399;
-  --color-primary-700: #a5b4fc;
-
   /* Slate dark gradients */
   --gradient-primary: linear-gradient(135deg, #818cf8 0%, #a5b4fc 100%);
   --avatar-gradient: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #a5b4fc 100%);
@@ -467,7 +438,7 @@
   --foreground: #500724;        /* pink-950 - deep pink-black */
   --muted: #fce7f3;
   --muted-foreground: #9d174d;  /* pink-800 - darker pink muted */
-  --success: #10b981;
+  --success: #047857; /* emerald-700, AA on the bubblegum card */
   --success-foreground: #ffffff;
   --chart-1: #db2777;
   --chart-2: #ec4899;
@@ -529,10 +500,6 @@
   --auth-gradient-2: rgba(244, 114, 182, 0.12);
   --auth-gradient-3: transparent;
 
-  /* Override dark-mode specific aliases */
-  --color-success: #34d399;
-  --color-primary-700: #f9a8d4;
-
   /* Bubblegum dark gradients */
   --gradient-primary: linear-gradient(135deg, #db2777 0%, #f472b6 100%);
   --avatar-gradient: linear-gradient(135deg, #be185d 0%, #ec4899 50%, #f472b6 100%);
@@ -559,6 +526,10 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -580,6 +551,7 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
+  --font-display: var(--font-display);
 
   /* Border radius scale */
   --radius-sm: calc(var(--radius) - 4px);
@@ -1088,6 +1060,54 @@
 .stagger-delay-3 { animation-delay: 150ms; }
 .stagger-delay-4 { animation-delay: 200ms; }
 .stagger-delay-5 { animation-delay: 250ms; }
+
+/* Honor the OS "reduce motion" preference. Collapses fadeUp, fadeIn,
+   reveal-stagger, slideInFromBottom, skeleton pulse, Radix enter/exit
+   transitions and smooth scrolling to effectively instant. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CARD SURFACE UTILITIES
+   Recovered from src/styles/base.css, which was never imported by
+   anything and has now been deleted. .card-header-gradient is
+   referenced by 19 staff views and .hover-elevate by
+   ui/editorial/DataCard; until now both rendered as no-ops.
+   ═══════════════════════════════════════════════════════════════ */
+
+.card-header-gradient {
+  background: var(--card-header-gradient);
+  position: relative;
+}
+
+.card-header-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    color-mix(in srgb, var(--primary) 8%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.hover-elevate:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
 
 /* ═══════════════════════════════════════════════════════════════
    AUTH PAGE UTILITIES

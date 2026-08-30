@@ -17,9 +17,7 @@ import {
 import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, ne, notInArray, sql } from "drizzle-orm";
 import { parseOrNumber } from "@/lib/utils/or-number";
 import type { DbExecutor } from "@/lib/utils/tx-helpers";
-import type { Role } from "@/lib/constants/roles";
 import { FULL_PAYMENT_DISCOUNT_CODE } from "@/lib/constants/discount-codes";
-import { getPortalStudentIds, getPortalStudentLabels } from "@/lib/queries/portal-student";
 import { calculateOffset } from "@/lib/types/pagination";
 import { roundToTwoDecimals } from "@/lib/utils/currency";
 import {
@@ -254,68 +252,8 @@ export async function fetchCashierQueueData(
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Portal payments (student / parent read-only history)
+// Portal payments (student read-only history)
 // ─────────────────────────────────────────────────────────────────
-
-/**
- * Read-only payment history for a portal user (student or parent/guardian).
- * Not cached — financial data must always be current.
- */
-export async function getPortalPayments(
-  userId: string,
-  role: Role
-): Promise<PortalPaymentsData> {
-  const studentIds = await getPortalStudentIds(userId, role);
-  if (studentIds.length === 0) {
-    return { rows: [], showStudentColumn: false, hasLinkedStudents: false };
-  }
-
-  const labels = await getPortalStudentLabels(studentIds);
-  const labelMap = new Map(labels.map((s) => [s.id, s]));
-
-  const paymentRows = await db
-    .select({
-      id: payments.id,
-      studentId: payments.studentId,
-      orNumber: payments.orNumber,
-      amount: payments.amount,
-      paymentMethod: payments.paymentMethod,
-      paymentDate: payments.paymentDate,
-      status: payments.status,
-      referenceNumber: payments.referenceNumber,
-      schoolYearId: assessments.schoolYearId,
-      schoolYearLabel: schoolYears.label,
-      gradeLevelName: gradeLevels.name,
-    })
-    .from(payments)
-    .leftJoin(assessments, eq(payments.assessmentId, assessments.id))
-    .leftJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
-    .leftJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
-    .leftJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .where(inArray(payments.studentId, studentIds))
-    .orderBy(desc(schoolYears.startDate), desc(payments.paymentDate));
-
-  const rows: PortalPaymentRow[] = paymentRows.map((r) => {
-    const who = labelMap.get(r.studentId);
-    return {
-      id: r.id,
-      studentId: r.studentId,
-      studentName: who ? `${who.lastName}, ${who.firstName}` : "—",
-      studentReference: who?.referenceNumber ?? null,
-      orNumber: r.orNumber,
-      amount: Number(r.amount),
-      paymentMethod: r.paymentMethod,
-      paymentDate: r.paymentDate.toISOString(),
-      status: r.status,
-      paymentReference: r.referenceNumber,
-      schoolYearId: r.schoolYearId,
-      schoolYearLabel: r.schoolYearLabel,
-      gradeLevelName: r.gradeLevelName,
-    };
-  });
-
-  return { rows, showStudentColumn: studentIds.length > 1, hasLinkedStudents: true };
-}
 
 /**
  * Read-only payment history for a single student (direct studentId access).

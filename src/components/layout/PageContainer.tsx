@@ -32,7 +32,9 @@ export function PageContainer({
   return (
     <main
       className={cn(
-        "mx-auto w-full space-y-[var(--space-section-gap)] p-[var(--space-page-padding)]",
+        // Page padding is owned by the route shell (staff/layout.tsx,
+        // portal/layout.tsx). This component sets width and rhythm only.
+        "mx-auto w-full space-y-[var(--space-section-gap)]",
         widthVariants[width],
         className
       )}

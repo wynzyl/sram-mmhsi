@@ -198,7 +198,7 @@ export default function BatchInvoiceForm({
                 )}
               </div>
               {eligibleCount === 0 && (
-                <p className="mt-2 text-xs text-warning-foreground">
+                <p className="mt-2 text-xs text-warning">
                   No eligible assessments found. All assessments may already have invoices
                   or have zero balance.
                 </p>

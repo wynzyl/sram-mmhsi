@@ -94,7 +94,7 @@ export function ColorThemePickerCompact() {
     <button
       type="button"
       onClick={cycleTheme}
-      className="flex items-center gap-2 bg-muted border border-border px-2.5 py-1.5 rounded-md cursor-pointer text-gray-600 dark:text-gray-400 text-xs font-medium transition-colors whitespace-nowrap hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-primary hover:border-border"
+      className="flex items-center gap-2 bg-muted border border-border px-2.5 py-1.5 rounded-md cursor-pointer text-muted-foreground text-xs font-medium transition-colors whitespace-nowrap hover:bg-muted/70 hover:text-primary hover:border-border"
       title={mounted ? `Current theme: ${COLOR_THEME_LABELS[colorTheme]} (click to cycle)` : undefined}
       aria-label={mounted ? `Color theme: ${COLOR_THEME_LABELS[colorTheme]}` : "Color theme"}
       suppressHydrationWarning

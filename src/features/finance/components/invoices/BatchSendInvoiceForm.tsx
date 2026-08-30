@@ -276,7 +276,7 @@ export default function BatchSendInvoiceForm({
         ) : sendableInvoices.length === 0 ? (
           <div className="mx-4 my-4 rounded-md border border-warning/30 bg-warning/10 px-4 py-6 text-center">
             <AlertTriangle className="mx-auto h-8 w-8 text-warning mb-2" />
-            <p className="text-sm text-warning-foreground">
+            <p className="text-sm text-warning">
               No invoices with guardian emails found. Make sure students have primary guardians with email addresses.
             </p>
           </div>
@@ -371,10 +371,10 @@ export default function BatchSendInvoiceForm({
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <div>
-                <p className="text-sm font-medium text-warning-foreground">
+                <p className="text-sm font-medium text-warning">
                   {noEmailInvoices.length} invoice(s) cannot be sent
                 </p>
-                <p className="text-xs text-warning-foreground/80 mt-1">
+                <p className="text-xs text-warning/80 mt-1">
                   These students do not have a primary guardian with an email address on file.
                 </p>
               </div>
@@ -396,10 +396,10 @@ export default function BatchSendInvoiceForm({
         {/* Partial Failures List - show detailed failures for user action */}
         {state.success && state.failures && state.failures.length > 0 && (
           <div className="mx-4 mt-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2">
-            <p className="text-sm font-medium text-warning-foreground mb-2">
+            <p className="text-sm font-medium text-warning mb-2">
               {state.failedCount} invoice(s) failed to send:
             </p>
-            <ul className="text-xs text-warning-foreground/80 space-y-1">
+            <ul className="text-xs text-warning/80 space-y-1">
               {state.failures.map((f, i) => (
                 <li key={i}>
                   {f.invoiceNumber}: {f.reason}

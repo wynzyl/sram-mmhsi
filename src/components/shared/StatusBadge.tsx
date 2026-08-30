@@ -1,6 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 
 type PaymentStatus = "paid" | "partial" | "unpaid";
+/** Mirrors paymentStatusEnum in src/lib/db/schema.ts (the payments table). */
+type PaymentRecordStatus =
+  | "pending_confirmation"
+  | "posted"
+  | "voided"
+  | "reversed"
+  | "reversal"
+  | "balance_forward";
 type EnrollmentStatus =
   | "pending"
   | "assessed"
@@ -19,6 +27,7 @@ type DocumentRequestStatus = "requested" | "processing" | "ready" | "released" |
 interface StatusBadgeProps {
   status:
     | PaymentStatus
+    | PaymentRecordStatus
     | EnrollmentStatus
     | ORStatus
     | BillingStatus
@@ -31,6 +40,7 @@ interface StatusBadgeProps {
     | string;
   type?:
     | "payment"
+    | "paymentRecord"
     | "enrollment"
     | "or"
     | "billing"
@@ -48,6 +58,16 @@ const statusConfig = {
     paid: { variant: "success" as const, label: "Paid" },
     partial: { variant: "warning" as const, label: "Partial" },
     unpaid: { variant: "danger" as const, label: "Unpaid" },
+  },
+  // Status of an individual payment record (a receipt), as opposed to the
+  // paid/partial/unpaid rollup above.
+  paymentRecord: {
+    posted: { variant: "success" as const, label: "Posted" },
+    pending_confirmation: { variant: "warning" as const, label: "Pending" },
+    voided: { variant: "danger" as const, label: "Voided" },
+    reversed: { variant: "danger" as const, label: "Reversed" },
+    reversal: { variant: "secondary" as const, label: "Reversal" },
+    balance_forward: { variant: "info" as const, label: "Balance Forward" },
   },
   enrollment: {
     pending: { variant: "warning" as const, label: "Pending" },
@@ -136,7 +156,9 @@ export function StatusBadge({ status, type = "payment" }: StatusBadgeProps) {
   const config: BadgeConfig =
     table?.[normalizedStatus] ?? {
       variant: "secondary",
-      label: status.charAt(0).toUpperCase() + status.slice(1),
+      label: normalizedStatus
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
     };
 
   return <Badge variant={config.variant}>{config.label}</Badge>;

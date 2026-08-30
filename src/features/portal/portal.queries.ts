@@ -8,7 +8,7 @@ import "server-only";
  */
 
 import { db } from "@/lib/db";
-import { and, asc, desc, eq, inArray, isNull, ne, sql, count } from "drizzle-orm";
+import { and, asc, avg, desc, eq, inArray, isNull, ne, sql, count } from "drizzle-orm";
 import {
   assessments,
   enrollments,
@@ -20,7 +20,10 @@ import {
   sections,
   subjects,
 } from "@/lib/db/schema";
-import type { GradeSheetStatus } from "@/lib/constants/grading-periods";
+import {
+  GRADING_PERIODS,
+  type GradeSheetStatus,
+} from "@/lib/constants/grading-periods";
 import { calculateOffset } from "@/lib/types/pagination";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -72,8 +75,15 @@ export type PortalGradesResult = {
 /** Only show grades from published or locked grade sheets */
 const VISIBLE_GRADE_STATUSES: GradeSheetStatus[] = ["published", "locked"];
 
-/** Default page size for portal grades */
-export const PORTAL_GRADES_PAGE_SIZE = 100;
+/**
+ * Sections per page on the portal grades view.
+ *
+ * One section is a full period-by-subject matrix, so this is a page-weight
+ * limit, not a row count. It was 100, which made PaginationControls
+ * unreachable in practice and allowed a K-12 student with a long history to
+ * render every year at once.
+ */
+export const PORTAL_GRADES_PAGE_SIZE = 5;
 
 // ─── Assessment Queries ───────────────────────────────────────────────────────
 
@@ -292,6 +302,8 @@ export type PortalDashboardSummary = {
   totalPaidThisYear: number;
   /** Latest grading period with published grades */
   latestGradePeriod: string | null;
+  /** Mean grade across the latest published period (null when no grades) */
+  latestPeriodAverage: number | null;
   /** Count of published grade entries */
   publishedGradeCount: number;
 };
@@ -359,13 +371,41 @@ export async function getPortalDashboardSummary(
   const assessment = assessmentData[0];
   const payment = paymentData[0];
   const grade = gradeData[0];
+  const latestGradePeriod = grade?.latestPeriod ?? null;
+
+  // Second step rather than a correlated subquery in the aggregate above:
+  // the mean is scoped to the latest period, which is only known once that
+  // aggregate resolves. Runs at most once, and only for students who
+  // actually have published grades.
+  // MAX() over the enum column comes back as a plain string; narrow it to
+  // the enum union so the eq() below stays type-checked against the column.
+  const latestPeriodTyped = GRADING_PERIODS.find((p) => p === latestGradePeriod);
+
+  let latestPeriodAverage: number | null = null;
+  if (latestPeriodTyped) {
+    const [averageRow] = await db
+      .select({ value: avg(gradeSheetEntries.grade) })
+      .from(gradeSheetEntries)
+      .innerJoin(gradeSheets, eq(gradeSheetEntries.gradeSheetId, gradeSheets.id))
+      .where(
+        and(
+          eq(gradeSheetEntries.studentId, studentId),
+          inArray(gradeSheets.status, VISIBLE_GRADE_STATUSES),
+          eq(gradeSheets.gradingPeriod, latestPeriodTyped)
+        )
+      );
+
+    const parsed = averageRow?.value == null ? NaN : Number(averageRow.value);
+    latestPeriodAverage = Number.isFinite(parsed) ? parsed : null;
+  }
 
   return {
     assessmentBalance: assessment ? Number(assessment.balance) : null,
     billingStatus: assessment?.billingStatus ?? null,
     lastPaymentDate: payment?.lastPaymentDate ?? null,
     totalPaidThisYear: Number(payment?.totalPaidThisYear ?? 0),
-    latestGradePeriod: grade?.latestPeriod ?? null,
+    latestGradePeriod,
+    latestPeriodAverage,
     publishedGradeCount: Number(grade?.publishedCount ?? 0),
   };
 }
