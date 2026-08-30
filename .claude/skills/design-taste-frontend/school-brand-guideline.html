@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand &amp; UI Guideline — School registration &amp; accounts system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   TOKENS — semantic names only. Every colour resolves per theme.
+   ========================================================================== */
+:root, [data-theme="light"]{
+  /* Chalk — warm neutral ramp (light) */
+  --c-0:#FFFFFF;   --c-50:#F8F7F5;  --c-100:#F1EFEC; --c-200:#E5E2DD;
+  --c-300:#D2CDC6; --c-400:#A8A29A; --c-500:#6E6963; --c-600:#58544F;
+  --c-700:#403D39; --c-800:#2A2825; --c-900:#171614;
+
+  --canvas:var(--c-50);
+  --surface:var(--c-0);
+  --surface-sunk:var(--c-100);
+  --surface-raised:var(--c-0);
+  --border:var(--c-200);
+  --border-strong:var(--c-300);
+  --text-disabled:var(--c-400);
+  --text-muted:var(--c-500);
+  --text-body:var(--c-600);
+  --text-strong:var(--c-700);
+  --text-heading:var(--c-800);
+  --text-figure:var(--c-900);
+
+  /* Vermilion — the touch of red */
+  --red-tint:#FCEBE9; --red-quiet:#F6C9C4;
+  --red-mark:#E5322D;   /* brand mark, indicators, focus ring, charts */
+  --red-text:#C9241C;   /* red type and icons on light surfaces */
+  --red-press:#A11B15;
+
+  /* Primary action = ink, not red */
+  --action-fill:var(--c-900);
+  --action-label:var(--c-0);
+  --action-fill-hover:var(--c-800);
+
+  /* Semantic */
+  --ok:#16794D;    --ok-tint:#E6F2EB;
+  --hold:#96620A;  --hold-tint:#FBF2E0;
+  --note:#35618C;  --note-tint:#E8EFF7;
+  --bad:#C9241C;   --bad-tint:#FCEBE9;
+
+  /* Data */
+  --viz-1:#C9241C; --viz-2:#35618C; --viz-3:#16794D;
+  --viz-4:#96620A; --viz-5:#6B4EA8; --viz-6:#0F6E78;
+  --viz-track:var(--c-200);
+
+  --e-1:0 1px 2px rgba(23,22,20,.06);
+  --e-2:0 1px 2px rgba(23,22,20,.05), 0 4px 12px rgba(23,22,20,.06);
+  --e-3:0 2px 4px rgba(23,22,20,.04), 0 12px 32px rgba(23,22,20,.09);
+  --scrim:rgba(23,22,20,.34);
+  --focus:var(--red-mark);
+}
+
+[data-theme="dark"]{
+  --c-0:#131211;   --c-50:#1B1A18;  --c-100:#232220; --c-200:#302E2B;
+  --c-300:#423F3B; --c-400:#6B665F; --c-500:#A39D95; --c-600:#C4BEB6;
+  --c-700:#D6D1CA; --c-800:#E3DED7; --c-900:#FAF8F5;
+
+  --canvas:#131211;
+  --surface:#1B1A18;
+  --surface-sunk:#100F0E;
+  --surface-raised:#232220;
+  --border:#302E2B;
+  --border-strong:#423F3B;
+  --text-disabled:#6B665F;
+  --text-muted:#A39D95;
+  --text-body:#C4BEB6;
+  --text-strong:#D6D1CA;
+  --text-heading:#E3DED7;
+  --text-figure:#FAF8F5;
+
+  --red-tint:#2C1614; --red-quiet:#5C241F;
+  --red-mark:#E5322D;
+  --red-text:#FF6B60;
+  --red-press:#FF9A91;
+
+  --action-fill:#FAF8F5;
+  --action-label:#131211;
+  --action-fill-hover:#E3DED7;
+
+  --ok:#54C08A;    --ok-tint:#16291F;
+  --hold:#E0A83C;  --hold-tint:#2A2113;
+  --note:#7FB0E8;  --note-tint:#16212E;
+  --bad:#FF6B60;   --bad-tint:#2C1614;
+
+  --viz-1:#FF6B60; --viz-2:#7FB0E8; --viz-3:#54C08A;
+  --viz-4:#E0A83C; --viz-5:#A98CE8; --viz-6:#4FBECB;
+  --viz-track:#302E2B;
+
+  --e-1:0 1px 2px rgba(0,0,0,.4);
+  --e-2:0 1px 2px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.4);
+  --e-3:0 2px 4px rgba(0,0,0,.35), 0 12px 32px rgba(0,0,0,.5);
+  --scrim:rgba(0,0,0,.6);
+  --focus:#FF6B60;
+}
+
+:root{
+  --font-display:"Schibsted Grotesk","Inter","Carlito",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-body:"Inter","Carlito",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:"JetBrains Mono","DejaVu Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px;
+  --s-8:32px;--s-10:40px;--s-12:48px;--s-16:64px;--s-20:80px;--s-24:96px;
+
+  --r-xs:6px; --r-sm:8px; --r-md:12px; --r-lg:16px; --r-pill:999px;
+  --t-fast:120ms; --t-base:180ms; --t-slow:240ms;
+  --ease-out:cubic-bezier(.2,0,0,1);
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  overflow-x:hidden; margin:0;
+  background:var(--canvas); color:var(--text-heading);
+  font-family:var(--font-body); font-size:15px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  transition:background var(--t-base) var(--ease-out), color var(--t-base) var(--ease-out);
+}
+h1,h2,h3,h4{font-family:var(--font-display); font-weight:600; margin:0; color:var(--text-figure); letter-spacing:-.015em}
+p{margin:0 0 var(--s-4)}
+p:last-child{margin-bottom:0}
+a{color:var(--text-heading); text-decoration:none; border-bottom:1px solid var(--border-strong)}
+a:hover{border-bottom-color:var(--red-mark)}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:var(--r-xs)}
+.mono{font-family:var(--font-mono); font-size:.86em; font-variant-numeric:tabular-nums}
+.muted{color:var(--text-muted)}
+main{min-width:0}
+
+/* ==========================================================================
+   MASTHEAD
+   ========================================================================== */
+.masthead{background:var(--surface); border-bottom:1px solid var(--border)}
+.masthead-in{max-width:1180px; margin:0 auto; padding:var(--s-16) var(--s-8) var(--s-10); position:relative}
+.eyebrow{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--text-muted); margin:0 0 var(--s-6)
+}
+.eyebrow i{display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--red-mark); margin-right:8px; vertical-align:1px}
+.masthead h1{font-size:clamp(30px,4.6vw,50px); line-height:1.07; letter-spacing:-.03em; max-width:22ch}
+.masthead h1 em{font-style:normal; color:var(--red-text)}
+.lede{margin-top:var(--s-5); max-width:62ch; font-size:17px; line-height:1.62; color:var(--text-body)}
+
+.toggle{
+  position:absolute; top:var(--s-8); right:var(--s-8);
+  display:inline-flex; align-items:center; gap:var(--s-2);
+  background:var(--surface); color:var(--text-strong);
+  border:1px solid var(--border-strong); border-radius:var(--r-pill);
+  padding:9px 14px; font:500 13px/1 var(--font-body); cursor:pointer;
+  transition:border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out)
+}
+.toggle:hover{border-color:var(--text-muted)}
+.toggle b{width:8px; height:8px; border-radius:50%; background:var(--red-mark); display:inline-block}
+
+.statement{margin-top:var(--s-10); border-top:1px solid var(--text-figure)}
+.statement .row{display:grid; grid-template-columns:1fr auto; gap:var(--s-4); padding:var(--s-3) 0; border-bottom:1px solid var(--border); align-items:baseline}
+.statement .row dt{font-size:13px; color:var(--text-muted)}
+.statement .row dd{margin:0; font-family:var(--font-mono); font-size:13px; font-variant-numeric:tabular-nums; color:var(--text-strong)}
+
+.band{display:flex; height:8px; margin-top:var(--s-10)}
+.band span{flex:1}
+
+/* ==========================================================================
+   SHELL / INDEX
+   ========================================================================== */
+.shell{max-width:1180px; margin:0 auto; padding:var(--s-16) var(--s-8) var(--s-24); display:grid; grid-template-columns:200px 1fr; gap:var(--s-16)}
+.index{position:sticky; top:var(--s-8); align-self:start; font-size:13px; min-width:0}
+.index p{font-family:var(--font-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-disabled); margin-bottom:var(--s-3)}
+.index ol{list-style:none; margin:0; padding:0}
+.index li{border-top:1px solid var(--border)}
+.index a{display:grid; grid-template-columns:26px 1fr; gap:var(--s-2); padding:var(--s-2) 0; color:var(--text-body); border:0; line-height:1.35}
+.index a span{font-family:var(--font-mono); font-size:11px; color:var(--text-disabled); padding-top:1px}
+.index a:hover{color:var(--text-figure)}
+.index a[aria-current="true"]{color:var(--text-figure); font-weight:500; box-shadow:inset 2px 0 0 var(--red-mark); padding-left:8px; margin-left:-10px}
+
+/* ==========================================================================
+   SECTIONS
+   ========================================================================== */
+section{margin-bottom:var(--s-24); scroll-margin-top:var(--s-8)}
+section:last-of-type{margin-bottom:0}
+.sec-head{border-top:1px solid var(--text-figure); padding-top:var(--s-3); margin-bottom:var(--s-8)}
+.sec-head .no{font-family:var(--font-mono); font-size:11px; letter-spacing:.12em; color:var(--text-muted)}
+.sec-head h2{font-size:28px; line-height:1.15; letter-spacing:-.025em; margin-top:var(--s-2)}
+.sec-head .sub{margin-top:var(--s-3); max-width:70ch; color:var(--text-body)}
+h3.blk{font-size:16px; letter-spacing:-.005em; margin:var(--s-12) 0 var(--s-4)}
+h3.blk:first-of-type{margin-top:var(--s-8)}
+h4.mini{font-family:var(--font-mono); font-weight:500; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); margin:var(--s-8) 0 var(--s-3)}
+.prose{max-width:70ch}
+
+/* ledger — one spec, both themes */
+.ledger{border-top:1px solid var(--border-strong)}
+.lhead{display:grid; grid-template-columns:38px 1fr 250px; gap:var(--s-4); padding:var(--s-2) 0; border-bottom:1px solid var(--border)}
+.lhead span{font-family:var(--font-mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-disabled)}
+.lhead span:last-child{text-align:right}
+.lrow{display:grid; grid-template-columns:38px 1fr 250px; gap:var(--s-4); align-items:baseline; padding:var(--s-3) 0; border-bottom:1px solid var(--border)}
+.lrow.no-chip{grid-template-columns:1fr 250px}
+.chips{display:flex; gap:3px; align-self:center}
+.chips i{width:16px; height:16px; border-radius:4px; box-shadow:inset 0 0 0 1px rgba(128,128,128,.28)}
+.lrow .name{font-size:14px; color:var(--text-heading)}
+.lrow .name small{display:block; color:var(--text-muted); font-size:12.5px; line-height:1.45}
+.lrow .val{font-family:var(--font-mono); font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--text-muted); text-align:right}
+.lrow .val b{color:var(--text-figure); font-weight:500}
+.lrow .val em{font-style:normal; color:var(--text-muted)}
+
+/* ramps */
+.ramp{display:flex; height:40px; border-radius:var(--r-sm); overflow:hidden; margin-bottom:var(--s-2); box-shadow:inset 0 0 0 1px rgba(128,128,128,.25)}
+.ramp span{flex:1}
+.ramp-label{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-disabled); margin-bottom:var(--s-2)}
+
+/* panels */
+.demo{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-8); margin:var(--s-4) 0 var(--s-6)}
+.demo-label{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-disabled); margin-bottom:var(--s-5)}
+.row-wrap{display:flex; flex-wrap:wrap; gap:var(--s-3); align-items:center}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:var(--s-6)}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-6)}
+.card h4{font-size:14px; margin-bottom:var(--s-2)}
+.card p{font-size:13.5px; color:var(--text-body)}
+
+/* side-by-side theme pair */
+.pair{display:grid; grid-template-columns:1fr 1fr; gap:var(--s-4); margin:var(--s-4) 0 var(--s-6)}
+.pane{background:var(--canvas); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-6); color:var(--text-heading)}
+.pane .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-disabled); margin-bottom:var(--s-4)}
+
+/* do / don't */
+.dd{border-left:2px solid var(--border-strong); padding-left:var(--s-4)}
+.dd.do{border-left-color:var(--ok)}
+.dd.dont{border-left-color:var(--bad)}
+.dd .tag{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; margin-bottom:var(--s-2)}
+.dd.do .tag{color:var(--ok)}
+.dd.dont .tag{color:var(--bad)}
+.dd q{font-size:14px; color:var(--text-heading); quotes:none}
+.dd p{font-size:13px; color:var(--text-muted); margin:var(--s-2) 0 0}
+
+/* controls */
+.btn{
+  font-family:var(--font-body); font-size:14px; font-weight:500; line-height:1;
+  padding:12px 18px; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer;
+  min-height:44px;
+  transition:background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out)
+}
+.btn-primary{background:var(--action-fill); color:var(--action-label); box-shadow:var(--e-1)}
+.btn-primary:hover{background:var(--action-fill-hover)}
+.btn-secondary{background:var(--surface); color:var(--text-heading); border-color:var(--border-strong)}
+.btn-secondary:hover{border-color:var(--text-muted)}
+.btn-quiet{background:transparent; color:var(--text-body)}
+.btn-quiet:hover{background:var(--surface-sunk)}
+.btn-danger{background:transparent; color:var(--red-text); border-color:var(--red-quiet)}
+.btn-danger:hover{background:var(--red-tint)}
+.btn:disabled{background:var(--surface-sunk); color:var(--text-disabled); border-color:transparent; box-shadow:none; cursor:not-allowed}
+
+.field{max-width:320px}
+.field label{display:block; font-size:13px; font-weight:500; color:var(--text-strong); margin-bottom:6px}
+.field label i{color:var(--red-text); font-style:normal}
+.field .input{
+  width:100%; font-family:var(--font-body); font-size:15px; color:var(--text-figure);
+  padding:11px 14px; background:var(--surface); border:1px solid var(--border-strong);
+  border-radius:var(--r-sm)
+}
+.field .input::placeholder{color:var(--text-disabled)}
+.field .input:focus{outline:none; border-color:var(--focus); box-shadow:0 0 0 3px var(--red-tint)}
+.field .help{font-size:12.5px; color:var(--text-muted); margin-top:6px}
+.field .err{font-size:12.5px; color:var(--red-text); margin-top:6px}
+.field.invalid .input{border-color:var(--red-text)}
+
+.badge{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:500; padding:4px 9px; border-radius:var(--r-pill)}
+.badge::before{content:""; width:5px; height:5px; border-radius:50%; background:currentColor}
+.b-ok{background:var(--ok-tint); color:var(--ok)}
+.b-hold{background:var(--hold-tint); color:var(--hold)}
+.b-bad{background:var(--bad-tint); color:var(--bad)}
+.b-note{background:var(--note-tint); color:var(--note)}
+.b-idle{background:var(--surface-sunk); color:var(--text-body)}
+
+table.rec{width:100%; border-collapse:collapse; font-size:14px}
+table.rec th{
+  text-align:left; font-family:var(--font-mono); font-weight:500; font-size:10.5px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted);
+  padding:0 var(--s-3) var(--s-3); border-bottom:1px solid var(--border-strong)
+}
+table.rec td{padding:13px var(--s-3); border-bottom:1px solid var(--border); color:var(--text-heading)}
+table.rec th:first-child,table.rec td:first-child{padding-left:0}
+table.rec th:last-child,table.rec td:last-child{padding-right:0; text-align:right}
+table.rec td.n{font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+table.rec td small{display:block; color:var(--text-muted); font-size:12.5px}
+table.rec tr:last-child td{border-bottom:0}
+.rowact{font-size:13px; font-weight:500; color:var(--text-heading); border-bottom:1px solid var(--border-strong); padding-bottom:1px}
+
+.figure{font-family:var(--font-display); font-size:32px; line-height:1.1; letter-spacing:-.025em; font-variant-numeric:tabular-nums; color:var(--text-figure)}
+.figure-label{font-size:13px; color:var(--text-muted); margin-bottom:var(--s-2)}
+.delta{font-size:13.5px; font-variant-numeric:tabular-nums; margin-top:var(--s-2); color:var(--text-muted)}
+
+.empty{text-align:center; padding:var(--s-12) var(--s-6); border:1px dashed var(--border-strong); border-radius:var(--r-md)}
+.empty h4{font-size:16px; margin-bottom:var(--s-2)}
+.empty p{font-size:13.5px; color:var(--text-muted); max-width:46ch; margin:0 auto var(--s-5)}
+
+.spec{border-bottom:1px solid var(--border); padding:var(--s-4) 0; display:grid; grid-template-columns:1fr 210px; gap:var(--s-6); align-items:baseline}
+.spec .sample{color:var(--text-figure); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.spec .meta{font-family:var(--font-mono); font-size:11.5px; font-variant-numeric:tabular-nums; color:var(--text-muted); text-align:right}
+
+pre{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md);
+  padding:var(--s-5); overflow-x:auto; font-family:var(--font-mono); font-size:12.5px;
+  line-height:1.7; color:var(--text-body); margin:var(--s-4) 0 0
+}
+pre b{color:var(--text-figure); font-weight:500}
+pre i{color:var(--red-text); font-style:normal}
+
+.bars{display:flex; align-items:flex-end; gap:10px; height:110px; margin-bottom:var(--s-4)}
+.bars i{flex:1; border-radius:4px 4px 0 0; display:block}
+.legend{display:flex; flex-wrap:wrap; gap:var(--s-4); font-size:12.5px; color:var(--text-body)}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.legend b{width:9px; height:9px; border-radius:2px; display:inline-block}
+
+ul.plain{margin:0; padding-left:18px}
+ul.plain li{margin-bottom:var(--s-2); font-size:14.5px}
+ul.plain li:last-child{margin-bottom:0}
+ul.plain li b{color:var(--text-figure)}
+
+footer.doc{border-top:1px solid var(--border); background:var(--surface)}
+footer.doc div{max-width:1180px; margin:0 auto; padding:var(--s-8); font-size:12.5px; color:var(--text-muted); display:flex; justify-content:space-between; gap:var(--s-6); flex-wrap:wrap}
+
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr; gap:var(--s-10); padding:var(--s-10) var(--s-5) var(--s-16)}
+  .index{position:static}
+  .masthead-in{padding:var(--s-12) var(--s-5) var(--s-8)}
+  .toggle{position:static; margin-bottom:var(--s-6)}
+  .two,.pair{grid-template-columns:1fr}
+  .spec{grid-template-columns:1fr; gap:var(--s-1)}
+  .spec .meta{text-align:left}
+  section{margin-bottom:var(--s-16)}
+}
+@media (max-width:640px){
+  .demo{padding:var(--s-5); overflow-x:auto}
+  .field{max-width:none; flex:1 1 100%}
+  .lhead,.lrow{grid-template-columns:38px 1fr; }
+  .lhead span:last-child,.lrow .val{grid-column:1 / -1; text-align:left; white-space:normal}
+  .lrow.no-chip{grid-template-columns:1fr}
+  .figure{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+
+/* ==========================================================================
+   PRINT — always the light theme; the dark specimens stay dark
+   ========================================================================== */
+@media print{
+  @page{size:A4; margin:16mm 14mm}
+  html[data-theme="dark"]{
+    --c-0:#FFFFFF;--c-50:#F8F7F5;--c-100:#F1EFEC;--c-200:#E5E2DD;--c-300:#D2CDC6;
+    --c-400:#A8A29A;--c-500:#6E6963;--c-600:#58544F;--c-700:#403D39;--c-800:#2A2825;--c-900:#171614;
+    --canvas:#F8F7F5;--surface:#FFFFFF;--surface-sunk:#F1EFEC;--surface-raised:#FFFFFF;
+    --border:#E5E2DD;--border-strong:#D2CDC6;--text-disabled:#A8A29A;--text-muted:#6E6963;
+    --text-body:#58544F;--text-strong:#403D39;--text-heading:#2A2825;--text-figure:#171614;
+    --red-tint:#FCEBE9;--red-quiet:#F6C9C4;--red-text:#C9241C;
+    --action-fill:#171614;--action-label:#FFFFFF;
+    --ok:#16794D;--ok-tint:#E6F2EB;--hold:#96620A;--hold-tint:#FBF2E0;
+    --note:#35618C;--note-tint:#E8EFF7;--bad:#C9241C;--bad-tint:#FCEBE9;
+    --viz-1:#C9241C;--viz-2:#35618C;--viz-3:#16794D;--viz-4:#96620A;--viz-5:#6B4EA8;--viz-6:#0F6E78;
+  }
+  body{background:#fff; font-size:9.6pt; line-height:1.55}
+  .index,.toggle{display:none}
+  .shell{display:block; max-width:none; padding:0; margin:0}
+  .masthead{border-bottom:0}
+  .masthead-in{padding:0 0 8mm; max-width:none}
+  .masthead h1{font-size:29pt}
+  .lede{font-size:11pt}
+  section{margin-bottom:10mm}
+  .sec-head{break-after:avoid; break-inside:avoid}
+  h3.blk,h4.mini,.ramp-label{break-after:avoid}
+  .sec-head h2{font-size:17pt}
+  .demo,.card,.spec,.lrow,.dd,.empty,pre,table.rec,.ramp,.bars,.legend,.two,.pair,.pane,.statement .row{break-inside:avoid}
+  .ledger{break-inside:auto}
+  .lrow,.spec,.statement .row{padding:2.1mm 0}
+  .lhead,.lrow{grid-template-columns:38px 1fr 200px}
+  .lrow.no-chip{grid-template-columns:1fr 200px}
+  .lrow .name small{line-height:1.4}
+  .demo{box-shadow:none; padding:5mm}
+  .two,.pair{grid-template-columns:1fr 1fr; gap:5mm}
+  .spec{grid-template-columns:1fr 190px; gap:5mm}
+  .spec .meta{text-align:right}
+  .prose ul.plain li{margin-bottom:1.2mm}
+  a{border-bottom:0}
+  footer.doc div{padding:6mm 0 0}
+  .figure{font-size:21pt}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <button class="toggle" id="themeBtn" aria-pressed="false"><b></b><span id="themeLabel">Dark theme</span></button>
+    <p class="eyebrow"><i></i>Brand &amp; UI Guideline · v1.0 · Light + dark</p>
+    <h1>A school system is a <em>record</em> before it is a screen.</h1>
+    <p class="lede">This is the working guideline for a registration, enrollment, assessment and payment portal used by admins, registrars and cashiers. Two themes, one set of semantic tokens, and exactly one chromatic accent — a bright red that is spent on almost nothing, so that when it appears, it means something.</p>
+
+    <dl class="statement">
+      <div class="row"><dt>Product</dt><dd>SRAMS</dd></div>
+      <div class="row"><dt>Modules</dt><dd>Registration · Enrollment · Assessment · Payment</dd></div>
+      <div class="row"><dt>Roles</dt><dd>Admin · Registrar · Cashier</dd></div>
+      <div class="row"><dt>Appearance</dt><dd>Light and dark, equal citizens</dd></div>
+      <div class="row"><dt>Palette</dt><dd>Chalk neutrals + Vermilion #E5322D</dd></div>
+      <div class="row"><dt>Type</dt><dd>Schibsted Grotesk / Inter / JetBrains Mono</dd></div>
+      <div class="row"><dt>Grid</dt><dd>4 pt base · 1440 px admin frame</dd></div>
+      <div class="row"><dt>Accessibility target</dt><dd>WCAG 2.2 AA in both themes</dd></div>
+    </dl>
+
+    <div class="band" aria-hidden="true">
+      <span style="background:#F8F7F5"></span><span style="background:#E5E2DD"></span>
+      <span style="background:#D2CDC6"></span><span style="background:#A8A29A"></span>
+      <span style="background:#6E6963"></span><span style="background:#403D39"></span>
+      <span style="background:#171614"></span><span style="background:#131211"></span>
+      <span style="background:#302E2B"></span><span style="background:#A39D95"></span>
+      <span style="background:#E3DED7"></span><span style="background:#E5322D"></span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="index" aria-label="Contents">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#overview"><span>00</span>Overview</a></li>
+      <li><a href="#principles"><span>01</span>Principles</a></li>
+      <li><a href="#themes"><span>02</span>Two themes</a></li>
+      <li><a href="#color"><span>03</span>Color</a></li>
+      <li><a href="#red"><span>04</span>The red budget</a></li>
+      <li><a href="#type"><span>05</span>Typography</a></li>
+      <li><a href="#records"><span>06</span>Records &amp; numbers</a></li>
+      <li><a href="#voice"><span>07</span>Voice &amp; copy</a></li>
+      <li><a href="#space"><span>08</span>Space &amp; layout</a></li>
+      <li><a href="#surface"><span>09</span>Surface &amp; depth</a></li>
+      <li><a href="#components"><span>10</span>Components</a></li>
+      <li><a href="#charts"><span>11</span>Data visualisation</a></li>
+      <li><a href="#motion"><span>12</span>Motion</a></li>
+      <li><a href="#a11y"><span>13</span>Accessibility</a></li>
+      <li><a href="#tokens"><span>14</span>Tokens</a></li>
+      <li><a href="#donts"><span>15</span>Don'ts</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+  <!-- 00 -->
+  <section id="overview">
+    <div class="sec-head">
+      <div class="no">00</div>
+      <h2>Overview</h2>
+      <p class="sub">What the system is for, who is holding the mouse, and where the colour goes.</p>
+    </div>
+
+    <div class="prose">
+      <p><b>The job.</b> Three staff roles spend their whole shift in this product. A registrar opens it to find one student among thousands and correct a field. A cashier opens it to post a payment against an assessment and hand back a receipt. An admin opens it to see which records are stuck. Nobody is browsing. Every screen is a search, a form, or a table — and the interface's job is to make the record legible and the next action obvious.</p>
+      <p><b>The look.</b> Warm neutral surfaces, hairline rules, records set in tabular figures, and a primary action in solid ink rather than colour. Red is the identity — a single bright vermilion that marks the brand, the active module, and things that are genuinely wrong. Nothing else is coloured.</p>
+      <p><b>Why ink, not red, for the primary button.</b> A red accent in a records system tends to spread: red buttons, red delete icons, red required markers, red overdue balances, red validation, red active tabs. By the time a registrar sees it all at once, red has stopped meaning anything. So the primary action takes ink (near-black in light, near-white in dark) and red is held back for alarm and identity. §04 is the enforceable version of that rule.</p>
+    </div>
+
+    <h3 class="blk">The 92 / 6 / 2 rule</h3>
+    <div class="ledger">
+      <div class="lrow no-chip"><span class="name">Neutral<small>Canvas, surfaces, rules, all text, all icons, primary and secondary buttons</small></span><span class="val"><b>92%</b> of pixels</span></div>
+      <div class="lrow no-chip"><span class="name">Semantic<small>Enrolled, pending, overdue, incomplete — status only, never decoration</small></span><span class="val"><b>6%</b></span></div>
+      <div class="lrow no-chip"><span class="name">Vermilion<small>Brand mark, active module indicator, focus ring, blocking errors, destructive confirm</small></span><span class="val"><b>2%</b></span></div>
+    </div>
+  </section>
+
+  <!-- 01 -->
+  <section id="principles">
+    <div class="sec-head">
+      <div class="no">01</div>
+      <h2>Principles</h2>
+      <p class="sub">Four tests that settle an argument without a meeting.</p>
+    </div>
+    <div class="two">
+      <div class="card"><h4>The record is the interface</h4><p>Names, IDs, terms and amounts are the content. Chrome shrinks before content does, and a record is never truncated where the truncation could be mistaken for the value.</p></div>
+      <div class="card"><h4>Red is a warning, not a colour</h4><p>If red appears twice on a screen for two different reasons, one of them is wrong. Ink carries emphasis; red carries alarm.</p></div>
+      <div class="card"><h4>Name every action</h4><p>Row actions are words. An icon-only pencil or trash in a roster costs a registrar a guess on every row and is a compliance risk on destructive paths.</p></div>
+      <div class="card"><h4>Both themes ship together</h4><p>Dark is not a skin applied later. A component is not done until it has been read in both themes at AA, including its charts and its empty state.</p></div>
+    </div>
+  </section>
+
+  <!-- 02 -->
+  <section id="themes">
+    <div class="sec-head">
+      <div class="no">02</div>
+      <h2>Two themes</h2>
+      <p class="sub">One token layer, two value sets. Use the toggle at the top of this page — every specimen below is live in both.</p>
+    </div>
+
+    <div class="prose">
+      <ul class="plain">
+        <li><b>Semantic names only.</b> Components reference <span class="mono">--surface</span>, <span class="mono">--text-muted</span>, <span class="mono">--bad</span>. A component that names a hex or a ramp step (<span class="mono">chalk-200</span>) will break in one of the two themes.</li>
+        <li><b>Dark is not inverted.</b> Light goes canvas → white cards. Dark goes near-black canvas → <em>lighter</em> cards. Lightness rises with elevation; it does not flip.</li>
+        <li><b>Dark drops shadow, uses surface.</b> Shadows are nearly invisible on #131211. Separate layers with a lighter surface plus a 1 px border instead.</li>
+        <li><b>Never pure black or pure white.</b> Canvas bottoms out at #131211 and tops out at #F8F7F5. Full-contrast pairs cause halation on long table sessions.</li>
+        <li><b>Chromatic values change per theme.</b> Vermilion text goes from #C9241C to #FF6B60; success from #16794D to #54C08A. Same meaning, re-tuned for the background.</li>
+        <li><b>Follow the OS on first load,</b> then let the user override, and persist the choice per user, not per device.</li>
+        <li><b>One copy deck.</b> No theme-specific wording, no "dark mode" easter eggs, no illustration that only works on one background.</li>
+      </ul>
+    </div>
+
+    <h4 class="mini">Same card, both themes</h4>
+    <div class="pair">
+      <div class="pane" data-theme="light">
+        <div class="tag">Light</div>
+        <div class="figure-label">Outstanding balance · 2nd Sem 2026–2027</div>
+        <div class="figure">₱18,450.00</div>
+        <div class="delta">Due 22 Aug 2026 · Assessment ASM-20261-0043</div>
+        <div class="row-wrap" style="margin-top:var(--s-5)">
+          <button class="btn btn-primary">Post payment</button>
+          <span class="badge b-bad">Overdue</span>
+        </div>
+      </div>
+      <div class="pane" data-theme="dark">
+        <div class="tag">Dark</div>
+        <div class="figure-label">Outstanding balance · 2nd Sem 2026–2027</div>
+        <div class="figure">₱18,450.00</div>
+        <div class="delta">Due 22 Aug 2026 · Assessment ASM-20261-0043</div>
+        <div class="row-wrap" style="margin-top:var(--s-5)">
+          <button class="btn btn-primary">Post payment</button>
+          <span class="badge b-bad">Overdue</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section id="color">
+    <div class="sec-head">
+      <div class="no">03</div>
+      <h2>Color</h2>
+      <p class="sub">Chalk is a warm neutral, which keeps a red accent from reading as an alert siren. Every row lists the light value then the dark value. Ratios are measured against that theme's canvas.</p>
+    </div>
+
+    <div class="ramp-label">Chalk · light</div>
+    <div class="ramp" aria-hidden="true">
+      <span style="background:#FFFFFF"></span><span style="background:#F8F7F5"></span><span style="background:#F1EFEC"></span>
+      <span style="background:#E5E2DD"></span><span style="background:#D2CDC6"></span><span style="background:#A8A29A"></span>
+      <span style="background:#6E6963"></span><span style="background:#58544F"></span><span style="background:#403D39"></span>
+      <span style="background:#2A2825"></span><span style="background:#171614"></span>
+    </div>
+    <div class="ramp-label" style="margin-top:var(--s-4)">Chalk · dark</div>
+    <div class="ramp" aria-hidden="true">
+      <span style="background:#131211"></span><span style="background:#1B1A18"></span><span style="background:#232220"></span>
+      <span style="background:#302E2B"></span><span style="background:#423F3B"></span><span style="background:#6B665F"></span>
+      <span style="background:#A39D95"></span><span style="background:#C4BEB6"></span><span style="background:#D6D1CA"></span>
+      <span style="background:#E3DED7"></span><span style="background:#FAF8F5"></span>
+    </div>
+
+    <div class="ledger" style="margin-top:var(--s-6)">
+      <div class="lhead"><span>L / D</span><span>Token</span><span>Light · Dark</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#F8F7F5"></i><i style="background:#131211"></i></span><span class="name">canvas<small>App background</small></span><span class="val"><b>#F8F7F5</b> <em>·</em> <b>#131211</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#FFFFFF"></i><i style="background:#1B1A18"></i></span><span class="name">surface<small>Cards, panels, table body, inputs</small></span><span class="val"><b>#FFFFFF</b> <em>·</em> <b>#1B1A18</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#F1EFEC"></i><i style="background:#232220"></i></span><span class="name">surface-raised<small>Menus, popovers, sticky header — in dark this is <em>lighter</em>, not darker</small></span><span class="val"><b>#FFFFFF</b> <em>·</em> <b>#232220</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#F1EFEC"></i><i style="background:#100F0E"></i></span><span class="name">surface-sunk<small>Hover fill, skeletons, quiet button hover</small></span><span class="val"><b>#F1EFEC</b> <em>·</em> <b>#100F0E</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#E5E2DD"></i><i style="background:#302E2B"></i></span><span class="name">border<small>Hairlines, card edges, row dividers</small></span><span class="val"><b>#E5E2DD</b> <em>·</em> <b>#302E2B</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#D2CDC6"></i><i style="background:#423F3B"></i></span><span class="name">border-strong<small>Input borders, chart gridlines, table header rule</small></span><span class="val"><b>#D2CDC6</b> <em>·</em> <b>#423F3B</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#A8A29A"></i><i style="background:#6B665F"></i></span><span class="name">text-disabled<small>Placeholders and disabled labels only — under 3:1, never real content</small></span><span class="val"><b>#A8A29A</b> <em>·</em> <b>#6B665F</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#6E6963"></i><i style="background:#A39D95"></i></span><span class="name">text-muted<small>Captions, table headers, secondary lines</small></span><span class="val"><b>#6E6963</b> 5.1:1 <em>·</em> <b>#A39D95</b> 6.9:1</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#58544F"></i><i style="background:#C4BEB6"></i></span><span class="name">text-body<small>Paragraphs, help text</small></span><span class="val"><b>#58544F</b> 7.0:1 <em>·</em> <b>#C4BEB6</b> 10.2:1</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#403D39"></i><i style="background:#D6D1CA"></i></span><span class="name">text-strong<small>Field labels, icons</small></span><span class="val"><b>#403D39</b> 10.1:1 <em>·</em> <b>#D6D1CA</b> 12.1:1</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#2A2825"></i><i style="background:#E3DED7"></i></span><span class="name">text-heading<small>Headings, cell values</small></span><span class="val"><b>#2A2825</b> 13.7:1 <em>·</em> <b>#E3DED7</b> 14.0:1</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#171614"></i><i style="background:#FAF8F5"></i></span><span class="name">text-figure<small>Amounts, IDs, page titles</small></span><span class="val"><b>#171614</b> 16.9:1 <em>·</em> <b>#FAF8F5</b> 17.7:1</span></div>
+    </div>
+
+    <h3 class="blk">Vermilion</h3>
+    <div class="ledger">
+      <div class="lhead"><span>L / D</span><span>Token</span><span>Light · Dark</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#E5322D"></i><i style="background:#E5322D"></i></span><span class="name">red-mark<small>Brand mark, 2 px active-module indicator, focus ring, chart series 1. Non-text only in light — 4.35:1.</small></span><span class="val"><b>#E5322D</b> <em>·</em> <b>#E5322D</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#C9241C"></i><i style="background:#FF6B60"></i></span><span class="name">red-text<small>Error copy, overdue amounts, destructive labels and icons</small></span><span class="val"><b>#C9241C</b> 5.2:1 <em>·</em> <b>#FF6B60</b> 6.7:1</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#A11B15"></i><i style="background:#FF9A91"></i></span><span class="name">red-press<small>Hover and pressed states on red-bearing controls</small></span><span class="val"><b>#A11B15</b> <em>·</em> <b>#FF9A91</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#F6C9C4"></i><i style="background:#5C241F"></i></span><span class="name">red-quiet<small>Borders on destructive outline buttons and error fields</small></span><span class="val"><b>#F6C9C4</b> <em>·</em> <b>#5C241F</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#FCEBE9"></i><i style="background:#2C1614"></i></span><span class="name">red-tint<small>Error banner and badge background, focus halo</small></span><span class="val"><b>#FCEBE9</b> <em>·</em> <b>#2C1614</b></span></div>
+    </div>
+
+    <h3 class="blk">Status</h3>
+    <div class="ledger">
+      <div class="lhead"><span>L / D</span><span>Meaning in this product</span><span>Light · Dark</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#16794D"></i><i style="background:#54C08A"></i></span><span class="name">ok<small>Enrolled · Cleared · Paid · Passed</small></span><span class="val"><b>#16794D</b> 5.4:1 <em>·</em> <b>#54C08A</b> 7.7:1</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#96620A"></i><i style="background:#E0A83C"></i></span><span class="name">hold<small>Pending · Partial payment · Incomplete grade · For review</small></span><span class="val"><b>#96620A</b> 5.2:1 <em>·</em> <b>#E0A83C</b> 8.2:1</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#35618C"></i><i style="background:#7FB0E8"></i></span><span class="name">note<small>Scheduled · Informational · Role and term chips</small></span><span class="val"><b>#35618C</b> 6.5:1 <em>·</em> <b>#7FB0E8</b> 7.7:1</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#C9241C"></i><i style="background:#FF6B60"></i></span><span class="name">bad<small>Overdue · Dropped · Failed · Blocking validation</small></span><span class="val"><b>#C9241C</b> <em>·</em> <b>#FF6B60</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#F1EFEC"></i><i style="background:#232220"></i></span><span class="name">idle<small>Draft · Not started · Archived — neutral, on purpose</small></span><span class="val"><b>#F1EFEC</b> <em>·</em> <b>#232220</b></span></div>
+    </div>
+    <p class="prose muted" style="margin-top:var(--s-4); font-size:13.5px">Note that <b style="color:var(--text-figure)">bad</b> and <b style="color:var(--text-figure)">red-text</b> are the same value. That is deliberate: the product has exactly one red, and §04 governs who may use it.</p>
+  </section>
+
+  <!-- 04 -->
+  <section id="red">
+    <div class="sec-head">
+      <div class="no">04</div>
+      <h2>The red budget</h2>
+      <p class="sub">A single bright accent only works if its licence is written down. This is the licence. It is the section to cite in review.</p>
+    </div>
+
+    <h4 class="mini">Red is allowed here</h4>
+    <div class="ledger">
+      <div class="lrow no-chip"><span class="name">Brand mark<small>Logo, favicon, sign-in screen, printed header rule</small></span><span class="val">red-mark</span></div>
+      <div class="lrow no-chip"><span class="name">Active module indicator<small>2 px bar on the selected item in the module rail — one per screen</small></span><span class="val">red-mark</span></div>
+      <div class="lrow no-chip"><span class="name">Focus ring<small>Keyboard focus, every theme, never removed</small></span><span class="val">red-mark / #FF6B60</span></div>
+      <div class="lrow no-chip"><span class="name">Blocking validation<small>Field border, message text, and the summary count at the top of a form</small></span><span class="val">red-text</span></div>
+      <div class="lrow no-chip"><span class="name">Overdue money<small>Amount past its due date, in the Payment module only</small></span><span class="val">red-text</span></div>
+      <div class="lrow no-chip"><span class="name">Destructive confirmation<small>The confirm button inside a delete or drop dialog</small></span><span class="val">red-text on red-quiet</span></div>
+      <div class="lrow no-chip"><span class="name">Required marker<small>A single asterisk in the label — or, better, mark the optional fields instead</small></span><span class="val">red-text</span></div>
+      <div class="lrow no-chip"><span class="name">Chart series 1<small>Only when the series is the alarming one; otherwise start at series 2</small></span><span class="val">viz-1</span></div>
+    </div>
+
+    <h4 class="mini">Red is forbidden here</h4>
+    <div class="prose">
+      <ul class="plain">
+        <li><b>Primary buttons.</b> Save, Enroll, Post payment, Submit — all ink.</li>
+        <li><b>Row action icons.</b> A red trash icon on every roster row spends the whole budget before the registrar has done anything.</li>
+        <li><b>Column headers, tabs, breadcrumbs, table rules, links in body copy.</b></li>
+        <li><b>Ordinary debits and fees.</b> A tuition line that is simply unpaid is <span class="mono">hold</span>, not <span class="mono">bad</span>. Red starts at the due date.</li>
+        <li><b>Empty states, onboarding, illustrations, section dividers, icons that mean nothing.</b></li>
+        <li><b>Two red things at once.</b> If a form has an error banner, the focus ring is the only other red element permitted on that view.</li>
+      </ul>
+    </div>
+
+    <div class="two" style="margin-top:var(--s-6)">
+      <div class="dd dont"><div class="tag">Don't</div><q>Red "Delete", red trash icons, red required stars, red active tab, red overdue column — all on one roster.</q><p>Five meanings, one colour. The registrar now scans past all of them, including the one that mattered.</p></div>
+      <div class="dd do"><div class="tag">Do</div><q>Ink "Save changes". Named row actions in ink. Red only on the overdue amount and the focus ring.</q><p>Two red pixels on the screen, both of them load-bearing.</p></div>
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section id="type">
+    <div class="sec-head">
+      <div class="no">05</div>
+      <h2>Typography</h2>
+      <p class="sub">Three roles. Schibsted Grotesk sets titles and figures; Inter carries every interface string; JetBrains Mono is for identifiers, never for prose.</p>
+    </div>
+
+    <div class="ledger">
+      <div class="lrow no-chip"><span class="name">Schibsted Grotesk<small>Page titles, section headings, amounts and large figures. 600, tight tracking.</small></span><span class="val">Google Fonts</span></div>
+      <div class="lrow no-chip"><span class="name">Inter<small>Body, labels, table content, all UI strings. 400 / 450 / 500 / 600.</small></span><span class="val">Google Fonts</span></div>
+      <div class="lrow no-chip"><span class="name">JetBrains Mono<small>Student and reference numbers, assessment codes, token names. Unambiguous 0 / O and 1 / l.</small></span><span class="val">Google Fonts</span></div>
+      <div class="lrow no-chip"><span class="name">Fallback<small>system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial</small></span><span class="val">—</span></div>
+      <div class="lrow no-chip"><span class="name">Dark-theme weight<small>Light type on dark looks heavier; drop one step where a heading feels bold</small></span><span class="val">600 → 500</span></div>
+    </div>
+
+    <h3 class="blk">Scale</h3>
+    <div>
+      <div class="spec"><div class="sample" style="font-family:var(--font-display);font-size:32px;font-weight:600;letter-spacing:-.025em;line-height:1.1">₱18,450.00</div><div class="meta">Figure L · 32/36 · 600 · tabular</div></div>
+      <div class="spec"><div class="sample" style="font-family:var(--font-display);font-size:26px;font-weight:600;letter-spacing:-.025em">Student directory</div><div class="meta">Page title · 26/32 · 600</div></div>
+      <div class="spec"><div class="sample" style="font-family:var(--font-display);font-size:21px;font-weight:600;letter-spacing:-.02em">Enrollment · 1st Sem 2026–2027</div><div class="meta">Heading 1 · 21/28 · 600</div></div>
+      <div class="spec"><div class="sample" style="font-family:var(--font-display);font-size:17px;font-weight:600">Assessment breakdown</div><div class="meta">Heading 2 · 17/24 · 600</div></div>
+      <div class="spec"><div class="sample" style="font-size:15px;font-weight:600">Guardian details</div><div class="meta">Heading 3 · 15/22 · 600</div></div>
+      <div class="spec"><div class="sample" style="font-size:15px">Records locked after the registrar signs off on the term.</div><div class="meta">Body · 15/24 · 400 · default</div></div>
+      <div class="spec"><div class="sample" style="font-size:14px">Records locked after the registrar signs off on the term.</div><div class="meta">Body S · 14/22 · 400 · tables</div></div>
+      <div class="spec"><div class="sample" style="font-size:13px;color:var(--text-muted)">Changes are logged with your account and the time.</div><div class="meta">Caption · 13/18 · 400 · muted</div></div>
+      <div class="spec"><div class="sample" style="font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)">Student no.</div><div class="meta">Label · 11/16 · 500 · +12% · caps</div></div>
+      <div class="spec"><div class="sample mono" style="font-size:13px">2026-00184 · ASM-20261-0043</div><div class="meta">Mono · 13/20 · 400 · tabular</div></div>
+    </div>
+
+    <div class="prose" style="margin-top:var(--s-6)">
+      <ul class="plain">
+        <li>Measure caps at 70 characters; policy and consent text at 60.</li>
+        <li>Two weights per screen. A third means one of the first two was wrong.</li>
+        <li>No italics, no all-caps beyond the 11 px label, no letterspaced lowercase.</li>
+        <li>Never centre a paragraph. Centre only a single-line empty state.</li>
+        <li>Truncate at the end of a string, never mid-word, and keep the full value in a tooltip. Never truncate a student number.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section id="records">
+    <div class="sec-head">
+      <div class="no">06</div>
+      <h2>Records &amp; numbers</h2>
+      <p class="sub">The formats a school system argues about. Decide them once, here, and stop re-deciding them per screen.</p>
+    </div>
+
+    <div class="ledger">
+      <div class="lrow no-chip"><span class="name">Tabular figures<small>Every number, everywhere — <span class="mono">font-variant-numeric: tabular-nums</span></small></span><span class="val">always on</span></div>
+      <div class="lrow no-chip"><span class="name">Student number<small>Admission year + sequence, mono, never truncated, never re-formatted on display</small></span><span class="val">2026-00184</span></div>
+      <div class="lrow no-chip"><span class="name">Person name<small>Sortable form in tables; natural form in headers and letters</small></span><span class="val">DELA CRUZ, Juan M.</span></div>
+      <div class="lrow no-chip"><span class="name">Term<small>Ordinal semester + school year, en dash, never "SY26"</small></span><span class="val">1st Sem 2026–2027</span></div>
+      <div class="lrow no-chip"><span class="name">Date<small>Unambiguous across staff; ISO only in exports and logs</small></span><span class="val">22 Aug 2026</span></div>
+      <div class="lrow no-chip"><span class="name">Time stamp<small>Audit trails carry a 24-hour time and the acting account</small></span><span class="val">22 Aug 2026 14:05</span></div>
+      <div class="lrow no-chip"><span class="name">Money<small>Symbol leading, no space, two decimals, minus sign for reversals</small></span><span class="val">₱18,450.00</span></div>
+      <div class="lrow no-chip"><span class="name">Units<small>Right-aligned in tables; label the column, not the cell</small></span><span class="val">3.0 units</span></div>
+      <div class="lrow no-chip"><span class="name">Grade<small>Institution scale, two decimals, with the remark spelled out</small></span><span class="val">1.75 · Passed</span></div>
+      <div class="lrow no-chip"><span class="name">Missing grade<small>An em dash plus a status badge — never 0.00, never blank</small></span><span class="val">— · Incomplete</span></div>
+      <div class="lrow no-chip"><span class="name">Attendance<small>Whole percent plus the raw count, so the denominator is visible</small></span><span class="val">94% (47/50)</span></div>
+      <div class="lrow no-chip"><span class="name">Counts<small>Grouped past four digits; never abbreviated in a record view</small></span><span class="val">1,248 students</span></div>
+      <div class="lrow no-chip"><span class="name">Zero vs unknown<small>0 is a fact, — is an absence, and they must not look alike</small></span><span class="val">0 / —</span></div>
+      <div class="lrow no-chip"><span class="name">Formatting layer<small><span class="mono">Intl.NumberFormat</span> and <span class="mono">Intl.DateTimeFormat</span> at render; store raw</small></span><span class="val">locale-aware</span></div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">Figure treatment</div>
+      <div class="two">
+        <div>
+          <div class="figure-label">Assessed · 1st Sem 2026–2027</div>
+          <div class="figure">₱42,000.00</div>
+          <div class="delta">Paid ₱23,550.00 · 3 installments</div>
+        </div>
+        <div>
+          <div class="figure-label">Balance</div>
+          <div class="figure" style="color:var(--red-text)">₱18,450.00</div>
+          <div class="delta">Overdue since 22 Aug 2026</div>
+        </div>
+      </div>
+    </div>
+    <p class="prose muted" style="font-size:13.5px">The assessed total stays in figure ink. Only the overdue balance earns red — and only after the due date has passed.</p>
+  </section>
+
+  <!-- 07 -->
+  <section id="voice">
+    <div class="sec-head">
+      <div class="no">07</div>
+      <h2>Voice &amp; copy</h2>
+      <p class="sub">Plain, exact, accountable. The product speaks like a competent registrar: it tells you what happened to the record and who it was logged against.</p>
+    </div>
+
+    <div class="prose">
+      <ul class="plain">
+        <li>Sentence case everywhere, including buttons and column headers.</li>
+        <li>Name the action, not the mechanism: <span class="mono">Enroll student</span>, not <span class="mono">Submit enrollment request</span>.</li>
+        <li>A verb keeps its name through the flow: <span class="mono">Post payment</span> → posting → <span class="mono">Payment posted</span>.</li>
+        <li>Say what the system will do to the record, and whether it can be undone.</li>
+        <li>Errors name the field, the rule, and the fix. They do not apologise.</li>
+        <li>Never blame the student or the staff member. The subject of the sentence is the record.</li>
+      </ul>
+    </div>
+
+    <h4 class="mini">Rewrites</h4>
+    <div class="two">
+      <div class="dd dont"><div class="tag">Don't</div><q>Error: invalid input.</q><p>Which field, which rule, what now?</p></div>
+      <div class="dd do"><div class="tag">Do</div><q>Student number must be 10 digits in the form 2026-00184. This one has 9.</q><p>Field, rule, and the exact defect.</p></div>
+      <div class="dd dont"><div class="tag">Don't</div><q>Are you sure you want to delete this?</q><p>No object, no consequence, no scope.</p></div>
+      <div class="dd do"><div class="tag">Do</div><q>Drop Juan M. Dela Cruz from ENG-101? Their grade record for this term is removed and the slot returns to the section. This is logged and cannot be undone here.</q><p>Names the person, the scope, the side effect, and the audit.</p></div>
+      <div class="dd dont"><div class="tag">Don't</div><q>No records found!</q><p>Dead end with an exclamation mark.</p></div>
+      <div class="dd do"><div class="tag">Do</div><q>No students match "dela cruz" in 1st Sem 2026–2027. Try another term or clear the filters.</q><p>Repeats the query, names the filter that is probably to blame.</p></div>
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section id="space">
+    <div class="sec-head">
+      <div class="no">08</div>
+      <h2>Space &amp; layout</h2>
+      <p class="sub">4 pt base unit. This is a desktop-first admin tool: the frame is wide, the tables are dense, and the forms are not.</p>
+    </div>
+
+    <div class="ledger">
+      <div class="lrow no-chip"><span class="name">space-1 <small>Icon to label, badge padding</small></span><span class="val">4 px</span></div>
+      <div class="lrow no-chip"><span class="name">space-2 <small>Inside compact controls</small></span><span class="val">8 px</span></div>
+      <div class="lrow no-chip"><span class="name">space-3 <small>Label to field, table cell padding</small></span><span class="val">12 px</span></div>
+      <div class="lrow no-chip"><span class="name">space-4 <small>Between fields in a group</small></span><span class="val">16 px</span></div>
+      <div class="lrow no-chip"><span class="name">space-6 <small>Between field groups, card padding</small></span><span class="val">24 px</span></div>
+      <div class="lrow no-chip"><span class="name">space-8 <small>Panel padding, page gutter</small></span><span class="val">32 px</span></div>
+      <div class="lrow no-chip"><span class="name">space-12 <small>Between blocks on a page</small></span><span class="val">48 px</span></div>
+      <div class="lrow no-chip"><span class="name">space-16 <small>Between major sections</small></span><span class="val">64 px</span></div>
+    </div>
+
+    <h3 class="blk">Frame</h3>
+    <div class="ledger">
+      <div class="lrow no-chip"><span class="name">Admin frame<small>Content area max; tables may run full width</small></span><span class="val">1440 px</span></div>
+      <div class="lrow no-chip"><span class="name">Module rail<small>Expanded / collapsed to icons + labels on hover</small></span><span class="val">248 / 64 px</span></div>
+      <div class="lrow no-chip"><span class="name">Form column<small>Single column; two columns only for paired fields such as city and postal code</small></span><span class="val">640 px</span></div>
+      <div class="lrow no-chip"><span class="name">Reading column<small>Policies, consent, help</small></span><span class="val">70ch</span></div>
+      <div class="lrow no-chip"><span class="name">Breakpoints<small>Tablet is the floor for staff screens; parent and student views go to 360 px</small></span><span class="val">768 / 1024 / 1280 / 1440</span></div>
+      <div class="lrow no-chip"><span class="name">Table density<small>comfortable / default / compact — one choice per screen, remembered per user</small></span><span class="val">56 / 48 / 40 px</span></div>
+      <div class="lrow no-chip"><span class="name">Sticky regions<small>Table header, the first column of a roster, and the form's action bar</small></span><span class="val">header + col 1</span></div>
+    </div>
+
+    <h4 class="mini">Discipline</h4>
+    <div class="prose">
+      <ul class="plain">
+        <li>Vertical rhythm between blocks is 48 px; between sections 64 px. Do not tune it per screen.</li>
+        <li>Prefer a hairline or a gap over a border; prefer a gap over a hairline. Nested cards are not allowed.</li>
+        <li>One primary action per view, bottom-right of the form's action bar, with the cancel to its left.</li>
+        <li>Every table screen owns its filter bar: search, term, and status — in that order, on every module.</li>
+        <li>A dense table earns its density by having quiet chrome around it. Do not crowd a compact table with tinted cells and badges in every column.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 09 -->
+  <section id="surface">
+    <div class="sec-head">
+      <div class="no">09</div>
+      <h2>Surface &amp; depth</h2>
+      <p class="sub">Light separates layers with soft shadow. Dark separates them with lightness and a border. Same tokens, different mechanics.</p>
+    </div>
+
+    <div class="ledger">
+      <div class="lrow no-chip"><span class="name">radius-xs <small>Badges, chips, chart marks</small></span><span class="val">6 px</span></div>
+      <div class="lrow no-chip"><span class="name">radius-sm <small>Buttons, inputs, selects</small></span><span class="val">8 px</span></div>
+      <div class="lrow no-chip"><span class="name">radius-md <small>Cards, panels, menus</small></span><span class="val">12 px</span></div>
+      <div class="lrow no-chip"><span class="name">radius-lg <small>Modals, drawers</small></span><span class="val">16 px</span></div>
+      <div class="lrow no-chip"><span class="name">radius-pill <small>Toggles, avatars, status</small></span><span class="val">999 px</span></div>
+      <div class="lrow no-chip"><span class="name">elevation-0 <small>Cards on canvas — border only, both themes</small></span><span class="val">border</span></div>
+      <div class="lrow no-chip"><span class="name">elevation-1 <small>Resting buttons, sticky table header</small></span><span class="val">light: 0 1 2 · dark: border</span></div>
+      <div class="lrow no-chip"><span class="name">elevation-2 <small>Dropdowns, popovers, tooltips</small></span><span class="val">light: 0 4 12 · dark: surface-raised</span></div>
+      <div class="lrow no-chip"><span class="name">elevation-3 <small>Modals, drawers</small></span><span class="val">light: 0 12 32 · dark: raised + 1 px</span></div>
+      <div class="lrow no-chip"><span class="name">scrim <small>Behind modals</small></span><span class="val">34% ink · 60% black</span></div>
+    </div>
+
+    <div class="pair">
+      <div class="pane" data-theme="light">
+        <div class="tag">Light · shadow does the work</div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-4); font-size:13px; color:var(--text-muted); margin-bottom:var(--s-3)">elevation-0 · card</div>
+        <div style="background:var(--surface-raised); border-radius:var(--r-md); padding:var(--s-4); font-size:13px; color:var(--text-muted); box-shadow:var(--e-3)">elevation-3 · modal</div>
+      </div>
+      <div class="pane" data-theme="dark">
+        <div class="tag">Dark · lightness does the work</div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-4); font-size:13px; color:var(--text-muted); margin-bottom:var(--s-3)">elevation-0 · card</div>
+        <div style="background:var(--surface-raised); border:1px solid var(--border-strong); border-radius:var(--r-md); padding:var(--s-4); font-size:13px; color:var(--text-muted); box-shadow:var(--e-3)">elevation-3 · modal</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section id="components">
+    <div class="sec-head">
+      <div class="no">10</div>
+      <h2>Components</h2>
+      <p class="sub">Live specimens — flip the theme and read them again. Every control is 44 px tall or taller and reaches AA in both themes.</p>
+    </div>
+
+    <h3 class="blk">Buttons</h3>
+    <div class="demo">
+      <div class="demo-label">Hierarchy — primary is ink, never red</div>
+      <div class="row-wrap">
+        <button class="btn btn-primary">Enroll student</button>
+        <button class="btn btn-secondary">Save as draft</button>
+        <button class="btn btn-quiet">Cancel</button>
+        <button class="btn btn-danger">Drop from section</button>
+        <button class="btn btn-primary" disabled>Enroll student</button>
+      </div>
+      <div class="ledger" style="margin-top:var(--s-6)">
+        <div class="lrow no-chip"><span class="name">Height / padding<small>Default; 36 px compact allowed inside dense table rows</small></span><span class="val">44 px · 12/18</span></div>
+        <div class="lrow no-chip"><span class="name">Primary<small>Ink fill, inverted label — flips with the theme automatically</small></span><span class="val">18.1:1 · 17.1:1</span></div>
+        <div class="lrow no-chip"><span class="name">Destructive<small>Outline only. The filled red button lives inside the confirm dialog and nowhere else.</small></span><span class="val">outline</span></div>
+        <div class="lrow no-chip"><span class="name">Loading<small>Label becomes the present participle, width locked to prevent reflow</small></span><span class="val">Enrolling…</span></div>
+      </div>
+    </div>
+
+    <h3 class="blk">Inputs</h3>
+    <div class="demo">
+      <div class="demo-label">Required, default, error</div>
+      <div class="row-wrap" style="gap:var(--s-8); align-items:flex-start">
+        <div class="field">
+          <label for="sn">Student number <i>*</i></label>
+          <input class="input mono" id="sn" value="2026-00184">
+          <div class="help">Admission year and sequence.</div>
+        </div>
+        <div class="field">
+          <label for="sec">Section</label>
+          <input class="input" id="sec" placeholder="Search by code or adviser">
+          <div class="help">Only sections with open slots appear.</div>
+        </div>
+        <div class="field invalid">
+          <label for="gr">Final grade <i>*</i></label>
+          <input class="input" id="gr" value="6.00">
+          <div class="err">Grades run from 1.00 to 5.00. Use "INC" for an incomplete.</div>
+        </div>
+      </div>
+      <div class="ledger" style="margin-top:var(--s-6)">
+        <div class="lrow no-chip"><span class="name">Label<small>Always visible above the field. Placeholder-only labels are never acceptable in a records form.</small></span><span class="val">13 px · 500</span></div>
+        <div class="lrow no-chip"><span class="name">Validation<small>On blur, not per keystroke; the message replaces the help text in place</small></span><span class="val">on blur</span></div>
+        <div class="lrow no-chip"><span class="name">Focus<small>Vermilion border plus a 3 px tint halo, in both themes</small></span><span class="val">visible</span></div>
+        <div class="lrow no-chip"><span class="name">Identifiers<small>Mono face, no auto-capitalise, no autocorrect, paste allowed</small></span><span class="val">mono</span></div>
+      </div>
+    </div>
+
+    <h3 class="blk">Status</h3>
+    <div class="demo">
+      <div class="demo-label">Word first, colour second</div>
+      <div class="row-wrap">
+        <span class="badge b-ok">Enrolled</span>
+        <span class="badge b-ok">Paid</span>
+        <span class="badge b-hold">Pending</span>
+        <span class="badge b-hold">Partial</span>
+        <span class="badge b-hold">Incomplete</span>
+        <span class="badge b-bad">Overdue</span>
+        <span class="badge b-bad">Dropped</span>
+        <span class="badge b-note">Scheduled</span>
+        <span class="badge b-idle">Draft</span>
+      </div>
+    </div>
+
+    <h3 class="blk">Roster table</h3>
+    <div class="demo">
+      <div class="demo-label">Default density · 48 px rows · named row actions</div>
+      <table class="rec">
+        <thead><tr><th>Student no.</th><th>Name</th><th>Status</th><th>Balance</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">2026-00184</td><td>DELA CRUZ, Juan M.<small>BSIT · 2nd year</small></td><td><span class="badge b-ok">Enrolled</span></td><td class="n" style="color:var(--red-text)">₱18,450.00</td><td><span class="rowact">Open record</span></td></tr>
+          <tr><td class="mono">2026-00185</td><td>REYES, Ana L.<small>BSEd · 1st year</small></td><td><span class="badge b-hold">Pending</span></td><td class="n">₱42,000.00</td><td><span class="rowact">Open record</span></td></tr>
+          <tr><td class="mono">2025-00931</td><td>SANTOS, Miguel A.<small>BSA · 3rd year</small></td><td><span class="badge b-ok">Paid</span></td><td class="n">₱0.00</td><td><span class="rowact">Open record</span></td></tr>
+          <tr><td class="mono">2025-00742</td><td>GARCIA, Liza P.<small>BSIT · 3rd year</small></td><td><span class="badge b-bad">Dropped</span></td><td class="n">—</td><td><span class="rowact">Open record</span></td></tr>
+        </tbody>
+      </table>
+      <div class="ledger" style="margin-top:var(--s-6)">
+        <div class="lrow no-chip"><span class="name">Row actions<small>One named primary action per row; the rest go in a labelled "More" menu. No icon-only rows.</small></span><span class="val">text link</span></div>
+        <div class="lrow no-chip"><span class="name">Rules<small>1 px border between rows, border-strong under the header. No zebra striping in either theme.</small></span><span class="val">hairline</span></div>
+        <div class="lrow no-chip"><span class="name">Column order<small>Identifier, person, status, money, action — same order in every module</small></span><span class="val">fixed</span></div>
+        <div class="lrow no-chip"><span class="name">Row hover<small>surface-sunk fill; the whole row is the hit area when it navigates</small></span><span class="val">sunk</span></div>
+        <div class="lrow no-chip"><span class="name">Selection<small>Checkbox column plus a count in the bulk bar; selected row uses sunk, not red</small></span><span class="val">sunk + count</span></div>
+      </div>
+    </div>
+
+    <h3 class="blk">Empty state</h3>
+    <div class="demo">
+      <div class="demo-label">No illustration, no mascot</div>
+      <div class="empty">
+        <h4>No students match these filters</h4>
+        <p>You are looking at 1st Sem 2026–2027 with status "Dropped". Clear the status filter to see the full roster.</p>
+        <button class="btn btn-secondary">Clear filters</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section id="charts">
+    <div class="sec-head">
+      <div class="no">11</div>
+      <h2>Data visualisation</h2>
+      <p class="sub">Charts here answer administrative questions: who is unpaid, who is absent, how many are still pending. They are read, not admired.</p>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">Enrollment by week · one series, one emphasis</div>
+      <div class="bars" aria-hidden="true">
+        <i style="height:38%;background:var(--viz-track)"></i><i style="height:52%;background:var(--viz-track)"></i>
+        <i style="height:47%;background:var(--viz-track)"></i><i style="height:68%;background:var(--viz-track)"></i>
+        <i style="height:81%;background:var(--viz-track)"></i><i style="height:29%;background:var(--viz-1)"></i>
+      </div>
+      <div class="legend"><span><b style="background:var(--viz-track)"></b>Weeks 1–5</span><span><b style="background:var(--viz-1)"></b>Week 6 · below target</span></div>
+      <p class="muted" style="font-size:13px; margin-top:var(--s-4)">Emphasis by weight, not by adding hues: the neutral track carries the history and red marks the one bar that needs an explanation. If no bar is alarming, the emphasis colour is ink, not red.</p>
+    </div>
+
+    <h4 class="mini">Categorical sequence</h4>
+    <div class="ledger">
+      <div class="lhead"><span>L / D</span><span>Series</span><span>Light · Dark</span></div>
+      <div class="lrow"><span class="chips"><i style="background:#C9241C"></i><i style="background:#FF6B60"></i></span><span class="name">Series 1<small>Reserved for the alarming category — overdue, absent, failed</small></span><span class="val"><b>#C9241C</b> <em>·</em> <b>#FF6B60</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#35618C"></i><i style="background:#7FB0E8"></i></span><span class="name">Series 2<small>The default first series for neutral comparisons</small></span><span class="val"><b>#35618C</b> <em>·</em> <b>#7FB0E8</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#16794D"></i><i style="background:#54C08A"></i></span><span class="name">Series 3</span><span class="val"><b>#16794D</b> <em>·</em> <b>#54C08A</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#96620A"></i><i style="background:#E0A83C"></i></span><span class="name">Series 4</span><span class="val"><b>#96620A</b> <em>·</em> <b>#E0A83C</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#6B4EA8"></i><i style="background:#A98CE8"></i></span><span class="name">Series 5</span><span class="val"><b>#6B4EA8</b> <em>·</em> <b>#A98CE8</b></span></div>
+      <div class="lrow"><span class="chips"><i style="background:#0F6E78"></i><i style="background:#4FBECB"></i></span><span class="name">Series 6<small>Past six categories, group the tail as "Other" in the neutral track colour</small></span><span class="val"><b>#0F6E78</b> <em>·</em> <b>#4FBECB</b></span></div>
+    </div>
+
+    <div class="prose" style="margin-top:var(--s-6)">
+      <ul class="plain">
+        <li>Gridlines on <span class="mono">border</span>, horizontal only, no plot frame, no axis lines.</li>
+        <li>Axis labels 12 px muted. Money abbreviated on the axis, exact in the tooltip.</li>
+        <li>Bars: 6 px top radius, 40–60% of the slot. Lines: 2 px, dots only on the hovered point.</li>
+        <li>Zero baseline on every bar chart, without exception.</li>
+        <li>No pie chart above four slices, and never for values that must be compared precisely.</li>
+        <li>Every chart carries a table equivalent, one keypress away. In a records system the table is the source of truth.</li>
+        <li>Re-check series colours after a theme flip — a palette tuned on white turns to mud on #131211.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 12 -->
+  <section id="motion">
+    <div class="sec-head">
+      <div class="no">12</div>
+      <h2>Motion</h2>
+      <p class="sub">Motion confirms causality. Staff run the same flow two hundred times a shift; anything decorative becomes an obstacle by lunch.</p>
+    </div>
+    <div class="ledger">
+      <div class="lrow no-chip"><span class="name">fast<small>Hover, focus, colour and border changes</small></span><span class="val">120 ms</span></div>
+      <div class="lrow no-chip"><span class="name">base<small>Menus, tooltips, inline expand, rail collapse</small></span><span class="val">180 ms</span></div>
+      <div class="lrow no-chip"><span class="name">slow<small>Modals, drawers, route changes — the ceiling</small></span><span class="val">240 ms</span></div>
+      <div class="lrow no-chip"><span class="name">Easing<small>Everything entering or leaving</small></span><span class="val">cubic-bezier(.2,0,0,1)</span></div>
+      <div class="lrow no-chip"><span class="name">Theme switch<small>Cross-fade background and text; do not animate individual components</small></span><span class="val">180 ms</span></div>
+      <div class="lrow no-chip"><span class="name">Loading<small>Skeletons on surface-sunk; spinners only past 400 ms</small></span><span class="val">skeleton</span></div>
+      <div class="lrow no-chip"><span class="name">Saved state<small>Inline confirmation next to the action; no toast that outlives the glance</small></span><span class="val">inline</span></div>
+      <div class="lrow no-chip"><span class="name">Reduced motion<small><span class="mono">prefers-reduced-motion</span>: opacity only, 80 ms</small></span><span class="val">required</span></div>
+    </div>
+  </section>
+
+  <!-- 13 -->
+  <section id="a11y">
+    <div class="sec-head">
+      <div class="no">13</div>
+      <h2>Accessibility</h2>
+      <p class="sub">AA is the floor, and it has to hold in both themes. A pass in light says nothing about dark.</p>
+    </div>
+    <div class="ledger">
+      <div class="lrow no-chip"><span class="name">Body text<small>text-muted and darker on canvas or surface, in either theme</small></span><span class="val">≥ 4.5:1</span></div>
+      <div class="lrow no-chip"><span class="name">Large text<small>≥ 24 px, or ≥ 19 px semibold</small></span><span class="val">≥ 3:1</span></div>
+      <div class="lrow no-chip"><span class="name">Controls, icons, focus ring<small>red-mark clears 3:1 on both canvases — that is why it can be the ring</small></span><span class="val">≥ 3:1</span></div>
+      <div class="lrow no-chip"><span class="name">red-mark as text<small>4.35:1 on white — do not set small copy in it; use red-text</small></span><span class="val">non-text only</span></div>
+      <div class="lrow no-chip"><span class="name">Touch target<small>36 px allowed in dense rows with 8 px spacing</small></span><span class="val">44 × 44 px</span></div>
+      <div class="lrow no-chip"><span class="name">Colour independence<small>Status carries a word; overdue carries a date; charts carry a table</small></span><span class="val">required</span></div>
+      <div class="lrow no-chip"><span class="name">Errors<small>Announced, tied to the field with <span class="mono">aria-describedby</span>, focus moved to the first error</small></span><span class="val">announced</span></div>
+      <div class="lrow no-chip"><span class="name">Tables<small>Header cells scoped, sort state announced, row count announced after filtering</small></span><span class="val">semantic</span></div>
+      <div class="lrow no-chip"><span class="name">Keyboard<small>Every flow completable without a pointer, including bulk actions and modals</small></span><span class="val">complete</span></div>
+      <div class="lrow no-chip"><span class="name">Zoom<small>No loss of content at 200%; staff screens reflow at 1024 px, parent views at 320 px</small></span><span class="val">200%</span></div>
+      <div class="lrow no-chip"><span class="name">Theme switch<small>Reachable by keyboard, labelled, announced, and remembered per account</small></span><span class="val">labelled</span></div>
+    </div>
+
+    <h4 class="mini">Colour-blind check</h4>
+    <p class="prose" style="font-size:14px">Red and green sit side by side in every payment table, which is precisely the pair that fails for the most common form of colour blindness. The badge word is what carries the meaning; the colour only speeds up a reader who can see it. Screenshot any payment or grade screen, desaturate it, and confirm every state is still identifiable — in both themes.</p>
+  </section>
+
+  <!-- 14 -->
+  <section id="tokens">
+    <div class="sec-head">
+      <div class="no">14</div>
+      <h2>Tokens</h2>
+      <p class="sub">Copy this in as the single source of truth. Components consume the semantic names; only this block knows a hex.</p>
+    </div>
+
+<pre><b>:root, [data-theme="light"]</b> {
+  --canvas:#F8F7F5;         --surface:#FFFFFF;
+  --surface-raised:#FFFFFF; --surface-sunk:#F1EFEC;
+  --border:#E5E2DD;         --border-strong:#D2CDC6;
+  --text-disabled:#A8A29A;  --text-muted:#6E6963;
+  --text-body:#58544F;      --text-strong:#403D39;
+  --text-heading:#2A2825;   --text-figure:#171614;
+
+  <i>/* the touch of red */</i>
+  --red-mark:#E5322D;  --red-text:#C9241C;
+  --red-press:#A11B15; --red-quiet:#F6C9C4; --red-tint:#FCEBE9;
+
+  <i>/* primary action is ink, not red */</i>
+  --action-fill:#171614; --action-label:#FFFFFF; --action-fill-hover:#2A2825;
+
+  --ok:#16794D;   --ok-tint:#E6F2EB;
+  --hold:#96620A; --hold-tint:#FBF2E0;
+  --note:#35618C; --note-tint:#E8EFF7;
+  --bad:#C9241C;  --bad-tint:#FCEBE9;
+
+  --viz-1:#C9241C; --viz-2:#35618C; --viz-3:#16794D;
+  --viz-4:#96620A; --viz-5:#6B4EA8; --viz-6:#0F6E78;
+  --viz-track:#E5E2DD;
+
+  --elevation-1:0 1px 2px rgba(23,22,20,.06);
+  --elevation-2:0 1px 2px rgba(23,22,20,.05), 0 4px 12px rgba(23,22,20,.06);
+  --elevation-3:0 2px 4px rgba(23,22,20,.04), 0 12px 32px rgba(23,22,20,.09);
+  --scrim:rgba(23,22,20,.34);
+  --focus:#E5322D;
+}
+
+<b>[data-theme="dark"]</b> {
+  --canvas:#131211;         --surface:#1B1A18;
+  --surface-raised:#232220; --surface-sunk:#100F0E;
+  --border:#302E2B;         --border-strong:#423F3B;
+  --text-disabled:#6B665F;  --text-muted:#A39D95;
+  --text-body:#C4BEB6;      --text-strong:#D6D1CA;
+  --text-heading:#E3DED7;   --text-figure:#FAF8F5;
+
+  --red-mark:#E5322D;  --red-text:#FF6B60;
+  --red-press:#FF9A91; --red-quiet:#5C241F; --red-tint:#2C1614;
+
+  --action-fill:#FAF8F5; --action-label:#131211; --action-fill-hover:#E3DED7;
+
+  --ok:#54C08A;   --ok-tint:#16291F;
+  --hold:#E0A83C; --hold-tint:#2A2113;
+  --note:#7FB0E8; --note-tint:#16212E;
+  --bad:#FF6B60;  --bad-tint:#2C1614;
+
+  --viz-1:#FF6B60; --viz-2:#7FB0E8; --viz-3:#54C08A;
+  --viz-4:#E0A83C; --viz-5:#A98CE8; --viz-6:#4FBECB;
+  --viz-track:#302E2B;
+
+  --elevation-1:0 1px 2px rgba(0,0,0,.4);
+  --elevation-2:0 1px 2px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.4);
+  --elevation-3:0 2px 4px rgba(0,0,0,.35), 0 12px 32px rgba(0,0,0,.5);
+  --scrim:rgba(0,0,0,.6);
+  --focus:#FF6B60;
+}</pre>
+
+    <h4 class="mini">Shared scales</h4>
+<pre>--font-display:"Schibsted Grotesk", system-ui, sans-serif;
+--font-body:"Inter", system-ui, sans-serif;
+--font-mono:"JetBrains Mono", ui-monospace, monospace;
+
+--space-1:4px;  --space-2:8px;  --space-3:12px; --space-4:16px;
+--space-6:24px; --space-8:32px; --space-12:48px; --space-16:64px;
+
+--radius-xs:6px; --radius-sm:8px; --radius-md:12px;
+--radius-lg:16px; --radius-pill:999px;
+
+--duration-fast:120ms; --duration-base:180ms; --duration-slow:240ms;
+--ease-out:cubic-bezier(.2,0,0,1);</pre>
+
+    <h4 class="mini">Theme switching</h4>
+<pre><i>// 1. Follow the OS, then let the account override.</i>
+<b>const</b> saved = user.preferences.theme;               <i>// 'light' | 'dark' | null</i>
+<b>const</b> osDark = matchMedia('(prefers-color-scheme: dark)').matches;
+document.documentElement.dataset.theme = saved ?? (osDark ? 'dark' : 'light');
+
+<i>// 2. Set it before first paint to avoid a flash of the wrong theme.</i>
+<i>// 3. Persist on the account, not the device — staff share workstations.</i>
+<i>// 4. Never read a hex in a component. Read a token.</i>
+.balance--overdue { color: <b>var(--red-text)</b>; }      <i>// correct</i>
+.balance--overdue { color: #C9241C; }             <i>// breaks in dark</i></pre>
+  </section>
+
+  <!-- 15 -->
+  <section id="donts">
+    <div class="sec-head">
+      <div class="no">15</div>
+      <h2>Don'ts</h2>
+      <p class="sub">Use this list to audit an existing screen. Most of the findings in a records portal are on it.</p>
+    </div>
+    <div class="prose">
+      <ul class="plain">
+        <li><b>No red primary buttons.</b> Ink carries emphasis; red carries alarm. Pick one meaning per colour and this is it.</li>
+        <li><b>No icon-only row actions.</b> A pencil, an eye and a trash in a 12-column roster is three guesses per row and no audit trail in the UI.</li>
+        <li><b>No red for ordinary unpaid balances.</b> Unpaid is <span class="mono">hold</span> until the due date passes.</li>
+        <li><b>No inverted dark theme.</b> Cards get lighter than the canvas, not darker, and pure black is never the canvas.</li>
+        <li><b>No hardcoded hex in a component.</b> If a value is not a token, one theme is already broken.</li>
+        <li><b>No proportional figures.</b> Non-tabular digits make a balance column visibly wobble.</li>
+        <li><b>No blank cell for a missing grade.</b> An em dash plus a badge; blank reads as a bug or a zero.</li>
+        <li><b>No truncated identifiers.</b> A student number cut mid-string is a wrong number.</li>
+        <li><b>No status conveyed by colour alone,</b> anywhere, in either theme.</li>
+        <li><b>No mascots or illustrations in empty states.</b> A sentence naming the active filter and one action.</li>
+        <li><b>No more than two type weights or three hues per screen.</b> Count them before you ship.</li>
+      </ul>
+    </div>
+
+    <h4 class="mini">Ship checklist</h4>
+    <div class="prose">
+      <ul class="plain">
+        <li>Read in both themes, at AA, including charts, badges and disabled states.</li>
+        <li>Red audited: every red element on the screen appears in the §04 allow-list.</li>
+        <li>Greyscale test passed — no meaning lost.</li>
+        <li>Exactly one primary action visible, in ink.</li>
+        <li>Every row action has a word.</li>
+        <li>Empty, loading, error, long-name and no-permission states designed, not improvised.</li>
+        <li>Keyboard-only pass completed, focus ring visible at every stop in both themes.</li>
+        <li>All figures tabular; identifiers in mono; nothing truncated that identifies a person.</li>
+      </ul>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<footer class="doc">
+  <div>
+    <span>Brand &amp; UI Guideline · v1.0 · Light + dark</span>
+    <span class="mono">Chalk neutrals · Vermilion #E5322D · 4 pt grid · WCAG 2.2 AA</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var root = document.documentElement, btn = document.getElementById('themeBtn'),
+      lbl = document.getElementById('themeLabel');
+  try{
+    if(!root.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches) root.dataset.theme='dark';
+  }catch(e){}
+  function sync(){
+    var dark = root.dataset.theme === 'dark';
+    lbl.textContent = dark ? 'Light theme' : 'Dark theme';
+    btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+  }
+  btn.addEventListener('click', function(){
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    sync();
+  });
+  sync();
+
+  var links = Array.prototype.slice.call(document.querySelectorAll('.index a')), map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if(!('IntersectionObserver' in window)) return;
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){ a.removeAttribute('aria-current'); });
+        var a = map[e.target.id]; if(a) a.setAttribute('aria-current','true');
+      }
+    });
+  }, { rootMargin:'-10% 0px -80% 0px', threshold:0 });
+  document.querySelectorAll('main section').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>
