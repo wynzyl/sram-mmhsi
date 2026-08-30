@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { LogOut, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { LogOut, ChevronDown, KeyRound } from "lucide-react";
 import { logoutAction } from "@/features/auth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ColorThemePickerCompact } from "@/components/ui/ColorThemePicker";
@@ -89,6 +90,17 @@ function PortalUserMenu({ displayName, roleLabel }: UserMenuProps) {
           </div>
         </div>
         <DropdownMenuSeparator className="sm:hidden" />
+
+        <DropdownMenuItem asChild>
+          <Link
+            href="/portal/change-password"
+            className="flex w-full items-center gap-2"
+          >
+            <KeyRound className="size-4" aria-hidden="true" />
+            Change Password
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
 
         <DropdownMenuItem asChild variant="destructive">
           <form action={logoutAction} className="w-full">

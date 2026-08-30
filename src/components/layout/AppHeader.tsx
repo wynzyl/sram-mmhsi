@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { logoutAction } from "@/features/auth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ColorThemePickerCompact } from "@/components/ui/ColorThemePicker";
@@ -62,6 +63,24 @@ function LogoutIcon({ className }: { className?: string }) {
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <polyline points="16 17 21 12 16 7" />
       <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
+function KeyIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z" />
+      <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
     </svg>
   );
 }
@@ -143,6 +162,17 @@ function UserMenu({ username, role }: UserMenuProps) {
           <p className="text-sm font-medium text-foreground">{displayName}</p>
           <p className="text-xs text-muted-foreground">{ROLE_LABELS[role]}</p>
         </div>
+        <Link
+          href="/change-password"
+          className={cn(
+            "w-full flex items-center gap-2 px-3 py-2 text-sm text-left",
+            "text-muted-foreground hover:text-foreground hover:bg-muted",
+            "transition-colors"
+          )}
+        >
+          <KeyIcon />
+          Change Password
+        </Link>
         <form action={logoutAction}>
           <button
             type="submit"

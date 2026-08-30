@@ -6,7 +6,16 @@ import type { ChangePortalPasswordFormState } from "../portal-accounts.schema";
 import { Button } from "@/components/ui/button";
 import { PasswordField } from "@/components/forms/PasswordField";
 
-export function PortalChangePasswordForm() {
+interface PortalChangePasswordFormProps {
+  /**
+   * True when the user was redirected here by the force-password-change gate
+   * (first login). Their current password is still the DOB default, so the
+   * hint only makes sense in that flow.
+   */
+  forced?: boolean;
+}
+
+export function PortalChangePasswordForm({ forced = false }: PortalChangePasswordFormProps) {
   const [state, action, pending] = useActionState<
     ChangePortalPasswordFormState,
     FormData
@@ -35,7 +44,11 @@ export function PortalChangePasswordForm() {
         placeholder="Enter your current password"
         disabled={pending}
         errors={state?.errors?.currentPassword}
-        hint="Your date of birth in YYYYMMDD format (for example, 20100315)"
+        hint={
+          forced
+            ? "Your date of birth in YYYYMMDD format (for example, 20100315)"
+            : undefined
+        }
       />
 
       <PasswordField
