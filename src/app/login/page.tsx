@@ -10,8 +10,6 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <main className="auth-page-bg">
-      {/* Grain texture overlay */}
-      <div className="auth-grain-overlay" aria-hidden="true" />
 
       <section className="auth-card" aria-labelledby="login-title">
         <header className="auth-header">

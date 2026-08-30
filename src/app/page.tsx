@@ -36,8 +36,6 @@ export default function LandingPage() {
 
       {/* Right Panel - Login Section (theme-aware via auth-page-bg) */}
       <main className="auth-page-bg w-full lg:w-[55%] !min-h-screen">
-        {/* Grain texture overlay */}
-        <div className="auth-grain-overlay" aria-hidden="true" />
 
         <section className="auth-card !border-0 !bg-transparent !shadow-none" aria-labelledby="login-title">
           <header className="auth-header">

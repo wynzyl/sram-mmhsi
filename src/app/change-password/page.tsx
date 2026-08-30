@@ -11,8 +11,6 @@ export const metadata: Metadata = {
 export default function ChangePasswordPage() {
   return (
     <main className="auth-page-bg">
-      {/* Grain texture overlay */}
-      <div className="auth-grain-overlay" aria-hidden="true" />
 
       <section className="auth-card" aria-labelledby="change-password-title">
         <header className="auth-header">
