@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { studentClearances, assessments, enrollments } from "@/lib/db/schema";
+import { studentClearances, assessments, enrollments, students } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -128,8 +128,16 @@ export async function generateClearanceAction(
       actorId: session.userId,
     });
 
+    // Get student reference number for revalidation path
+    const student = await db.query.students.findFirst({
+      where: eq(students.id, studentId),
+      columns: { referenceNumber: true },
+    });
+
     revalidatePath("/staff/approvals");
-    revalidatePath(`/staff/students/${studentId}/clearances`);
+    if (student) {
+      revalidatePath(`/staff/students/${student.referenceNumber}/clearances`);
+    }
 
     return {
       success: true,

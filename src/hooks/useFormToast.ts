@@ -30,7 +30,7 @@ type UseFormToastOptions = {
  *
  * useFormToast(state, {
  *   successMessage: "Student created successfully",
- *   onSuccess: () => router.push(`/staff/students/${state.studentId}`)
+ *   onSuccess: () => router.push(`/staff/students/${state.studentRef}`)
  * });
  * ```
  */

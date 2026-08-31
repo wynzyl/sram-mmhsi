@@ -821,6 +821,11 @@ export async function cancelAssessmentAction(
           id: true,
           status: true,
         },
+        with: {
+          student: {
+            columns: { referenceNumber: true },
+          },
+        },
       },
     },
   });
@@ -1006,7 +1011,7 @@ export async function cancelAssessmentAction(
 
     revalidatePath("/staff/assessments");
     revalidatePath(`/staff/assessments/${assessmentId}`);
-    revalidatePath(`/staff/students/${assessment.studentId}`);
+    revalidatePath(`/staff/students/${assessment.enrollment.student.referenceNumber}`);
     revalidatePath("/staff/enrollments");
     if (assessment.enrollmentId) {
       revalidatePath(`/staff/enrollments/${assessment.enrollmentId}`);

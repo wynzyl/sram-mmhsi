@@ -179,7 +179,7 @@ export function StudentDirectoryTable({
                     </span>
                   </td>
                   <td className="align-middle py-3 text-right pr-2">
-                    <StudentDirectoryRowActions studentId={s.id} />
+                    <StudentDirectoryRowActions studentRef={s.referenceNumber} studentId={s.id} />
                   </td>
                 </tr>
               );

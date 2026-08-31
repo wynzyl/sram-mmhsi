@@ -337,7 +337,7 @@ export async function createEnrollmentAction(
     });
 
     revalidatePath("/staff/enrollments");
-    revalidatePath(`/staff/students/${studentId}`);
+    revalidatePath(`/staff/students/${student.referenceNumber}`);
     invalidateTag(CACHE_TAGS.ENROLLMENTS); // PERFORMANCE: Invalidate enrollment counts cache
     return { success: true, enrollmentId: newEnrollmentId };
   } catch (err) {
@@ -400,6 +400,11 @@ export async function updateEnrollmentStatusAction(
       studentId: true,
       schoolYearId: true,
       gradeLevelId: true,
+    },
+    with: {
+      student: {
+        columns: { referenceNumber: true },
+      },
     },
   });
 
@@ -512,7 +517,7 @@ export async function updateEnrollmentStatusAction(
 
     revalidatePath("/staff/enrollments");
     revalidatePath("/staff/assessments");
-    revalidatePath(`/staff/students/${enrollment.studentId}`);
+    revalidatePath(`/staff/students/${enrollment.student.referenceNumber}`);
     invalidateTag(CACHE_TAGS.ENROLLMENTS); // PERFORMANCE: Invalidate enrollment counts cache
 
     return {
@@ -571,6 +576,11 @@ export async function updateIntakeDocumentsAction(
       status: true,
       intakeDocuments: true,
     },
+    with: {
+      student: {
+        columns: { referenceNumber: true },
+      },
+    },
   });
 
   if (!enrollment) {
@@ -619,7 +629,7 @@ export async function updateIntakeDocumentsAction(
     });
 
     revalidatePath("/staff/enrollments");
-    revalidatePath(`/staff/students/${enrollment.studentId}`);
+    revalidatePath(`/staff/students/${enrollment.student.referenceNumber}`);
 
     return { success: true, message: "Intake documents updated successfully." };
   } catch (err) {

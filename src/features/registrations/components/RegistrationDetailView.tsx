@@ -243,7 +243,7 @@ export function RegistrationDetailView({
             <div className="flex shrink-0 flex-wrap items-center gap-2 pb-1 md:pb-3 print:hidden">
               {flags.canEditStudent ? (
                 <Link
-                  href={`/staff/students/${student.id}/edit`}
+                  href={`/staff/students/${student.referenceNumber}/edit`}
                   className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-primary bg-card px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
                 >
                   <Pencil className="h-4 w-4" aria-hidden />

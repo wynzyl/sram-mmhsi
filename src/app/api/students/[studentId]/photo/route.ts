@@ -187,8 +187,8 @@ export async function POST(
     );
 
     // 13. Revalidate paths
-    revalidatePath(`/staff/students/${studentId}`);
-    revalidatePath(`/staff/students/${studentId}/edit`);
+    revalidatePath(`/staff/students/${student.referenceNumber}`);
+    revalidatePath(`/staff/students/${student.referenceNumber}/edit`);
 
     return NextResponse.json({
       success: true,
@@ -234,6 +234,7 @@ export async function DELETE(
       where: and(eq(students.id, studentId), isNull(students.deletedAt)),
       columns: {
         id: true,
+        referenceNumber: true,
         photoUrl: true,
       },
     });
@@ -279,8 +280,8 @@ export async function DELETE(
     );
 
     // 7. Revalidate paths
-    revalidatePath(`/staff/students/${studentId}`);
-    revalidatePath(`/staff/students/${studentId}/edit`);
+    revalidatePath(`/staff/students/${student.referenceNumber}`);
+    revalidatePath(`/staff/students/${student.referenceNumber}/edit`);
 
     return NextResponse.json({
       success: true,

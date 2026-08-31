@@ -1,33 +1,33 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { students } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { notFound, redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { InternalEditStudentPage } from "@/app/page-templates/students/edit-student-page";
+import { getStudentByRef, resolveStudentRef } from "@/features/students/students.queries";
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ studentRef: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  const student = await db.query.students.findFirst({
-    where: eq(students.id, id),
-    columns: { firstName: true, lastName: true },
-  });
+  const { studentRef } = await params;
+  const student = await getStudentByRef(studentRef);
   if (!student) return { title: "Student Not Found" };
   return { title: `Edit ${student.lastName}, ${student.firstName}` };
 }
 
 export default async function StaffEditStudentPage({ params }: PageProps) {
-  const { id } = await params;
+  const { studentRef } = await params;
   const session = await requireSession();
 
-  if (!hasPermission(session.role, "students:update")) {
-    redirect(`/staff/students/${id}`);
+  const studentId = await resolveStudentRef(studentRef);
+  if (!studentId) {
+    notFound();
   }
 
-  return <InternalEditStudentPage studentId={id} studentsBasePrefix="/staff/students" />;
+  if (!hasPermission(session.role, "students:update")) {
+    redirect(`/staff/students/${studentRef}`);
+  }
+
+  return <InternalEditStudentPage studentId={studentId} studentsBasePrefix="/staff/students" />;
 }

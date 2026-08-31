@@ -198,7 +198,7 @@ export default function EnrollmentCard({
           <div className="flex shrink-0 flex-col items-stretch gap-2 lg:w-44">
             <PrimaryAction enrollment={en} canManage={canManage} />
             <Link
-              href={`/staff/students/${en.studentId}`}
+              href={`/staff/students/${en.referenceNumber}`}
               className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
             >
               <User className="h-3.5 w-3.5" />

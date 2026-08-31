@@ -717,7 +717,7 @@ export function StudentRecordProfile({
             )}
             {flags.canEditStudent && (
               <Link
-                href={`/staff/students/${student.id}/edit`}
+                href={`/staff/students/${student.referenceNumber}/edit`}
                 className="student-record-btn student-record-btn-secondary"
                 id="edit-student-btn"
               >

@@ -148,7 +148,7 @@ export default function SectionStudentsTable({
         accessorKey: "studentRef",
         cell: ({ row }) => (
           <Link
-            href={`/staff/students/${row.original.studentId}`}
+            href={`/staff/students/${row.original.studentRef}`}
             className="font-mono text-sm text-primary hover:underline"
           >
             {row.original.studentRef}

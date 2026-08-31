@@ -137,7 +137,7 @@ export function BfxReportView({
         cell: ({ row }) => (
           <div className="flex flex-col">
             <Link
-              href={`/staff/students/${row.original.studentId}`}
+              href={`/staff/students/${row.original.studentRef}`}
               className="text-primary hover:underline font-medium"
             >
               {row.original.studentName}

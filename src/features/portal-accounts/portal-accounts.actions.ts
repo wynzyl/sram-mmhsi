@@ -119,7 +119,7 @@ export async function createPortalAccountAction(
       username: student.referenceNumber,
     });
 
-    revalidatePath(`/staff/students/${studentId}`);
+    revalidatePath(`/staff/students/${student.referenceNumber}`);
 
     return {
       success: true,
@@ -204,7 +204,7 @@ export async function resetPortalPasswordAction(
       passwordReset: true,
     });
 
-    revalidatePath(`/staff/students/${account.studentId}`);
+    revalidatePath(`/staff/students/${account.student.referenceNumber}`);
 
     return {
       success: true,
@@ -250,6 +250,11 @@ export async function togglePortalAccountStatusAction(
       isNull(portalAccounts.deletedAt)
     ),
     columns: { id: true, studentId: true, isActive: true },
+    with: {
+      student: {
+        columns: { referenceNumber: true },
+      },
+    },
   });
 
   if (!account) {
@@ -274,7 +279,7 @@ export async function togglePortalAccountStatusAction(
       isActive,
     });
 
-    revalidatePath(`/staff/students/${account.studentId}`);
+    revalidatePath(`/staff/students/${account.student.referenceNumber}`);
 
     return { success: true };
   } catch (error) {

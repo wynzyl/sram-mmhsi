@@ -21,7 +21,7 @@ export function StudentListTable({ data }: StudentListTableProps) {
         cell: ({ row }) => (
           <span className="flex items-center">
             <Link
-              href={`/staff/students/${row.original.studentId}`}
+              href={`/staff/students/${row.original.studentRef}`}
               className="text-primary hover:underline font-medium"
             >
               {row.original.studentName}

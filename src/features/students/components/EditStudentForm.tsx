@@ -157,7 +157,7 @@ export default function EditStudentForm({
 
   useFormToast(state, {
     successMessage: "Student updated successfully",
-    onSuccess: () => router.push(afterSaveRedirect ?? `/staff/students/${student.id}`),
+    onSuccess: () => router.push(afterSaveRedirect ?? `/staff/students/${student.referenceNumber}`),
   });
 
   const form = useForm({

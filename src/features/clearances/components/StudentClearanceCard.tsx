@@ -12,12 +12,13 @@ import { AlertTriangle, FileText } from "lucide-react";
 
 interface StudentClearanceCardProps {
   summary: StudentClearanceSummary;
-  studentId: string;
+  /** Student reference number for URL generation (e.g., "0000001") */
+  studentRef: string;
 }
 
 export default function StudentClearanceCard({
   summary,
-  studentId,
+  studentRef,
 }: StudentClearanceCardProps) {
   const hasPending = summary.pendingCount > 0;
 
@@ -121,7 +122,7 @@ export default function StudentClearanceCard({
             )}
 
             {/* View All Link */}
-            <Link href={`/staff/students/${studentId}/clearances`}>
+            <Link href={`/staff/students/${studentRef}/clearances`}>
               <Button variant="secondary" size="sm" className="w-full">
                 View All Clearances
               </Button>

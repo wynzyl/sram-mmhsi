@@ -48,7 +48,7 @@ export function BfxReportTable({ data }: BfxReportTableProps) {
           <div className="flex flex-col">
             <span className="flex items-center">
               <Link
-                href={`/staff/students/${row.original.studentId}`}
+                href={`/staff/students/${row.original.studentRef}`}
                 className="text-primary hover:underline font-medium"
               >
                 {row.original.studentName}

@@ -107,7 +107,7 @@ export function AccountsReceivableView({
         accessorKey: "studentName",
         cell: ({ row }) => (
           <Link
-            href={`/staff/students/${row.original.studentId}`}
+            href={`/staff/students/${row.original.studentRef}`}
             className="text-primary hover:underline font-medium"
           >
             {row.original.studentName}

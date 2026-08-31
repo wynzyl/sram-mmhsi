@@ -4,9 +4,13 @@ const iconClass =
   "inline-flex h-9 w-9 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary";
 
 export function StudentDirectoryRowActions({
+  studentRef,
   studentId,
   studentBasePath = "/staff/students",
 }: {
+  /** Student reference number for URL generation (e.g., "0000001") */
+  studentRef: string;
+  /** Student UUID for enrollment link (passed as query param) */
   studentId: string;
   studentBasePath?: "/staff/students";
 }) {
@@ -15,7 +19,7 @@ export function StudentDirectoryRowActions({
   return (
     <div className="flex items-center justify-end gap-0.5">
       <Link
-        href={`${studentBasePath}/${studentId}`}
+        href={`${studentBasePath}/${studentRef}`}
         prefetch={false}
         className={iconClass}
         aria-label="View profile"
@@ -31,7 +35,7 @@ export function StudentDirectoryRowActions({
         </svg>
       </Link>
       <Link
-        href={`${studentBasePath}/${studentId}/edit`}
+        href={`${studentBasePath}/${studentRef}/edit`}
         prefetch={false}
         className={iconClass}
         aria-label="Edit student"

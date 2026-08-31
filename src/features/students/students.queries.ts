@@ -14,6 +14,53 @@ import { buildStudentSearchCondition } from "@/lib/utils/query-conditions";
 export { STUDENT_DIRECTORY_PAGE_SIZE };
 
 /**
+ * Resolves a student reference number to a student ID.
+ *
+ * Used by route handlers to convert the URL slug (referenceNumber)
+ * to the internal UUID for database queries.
+ *
+ * @param studentRef - The 7-digit student reference number (e.g., "0000001")
+ * @returns The student UUID if found, null otherwise
+ */
+export async function resolveStudentRef(studentRef: string): Promise<string | null> {
+  const result = await db.query.students.findFirst({
+    where: and(
+      eq(students.referenceNumber, studentRef),
+      isNull(students.deletedAt)
+    ),
+    columns: { id: true },
+  });
+  return result?.id ?? null;
+}
+
+/**
+ * Resolves a student reference number to full student data for metadata generation.
+ *
+ * @param studentRef - The 7-digit student reference number
+ * @returns Basic student info for page metadata, or null if not found
+ */
+export async function getStudentByRef(studentRef: string): Promise<{
+  id: string;
+  referenceNumber: string;
+  firstName: string;
+  lastName: string;
+} | null> {
+  const result = await db.query.students.findFirst({
+    where: and(
+      eq(students.referenceNumber, studentRef),
+      isNull(students.deletedAt)
+    ),
+    columns: {
+      id: true,
+      referenceNumber: true,
+      firstName: true,
+      lastName: true,
+    },
+  });
+  return result ?? null;
+}
+
+/**
  * @deprecated Use getActiveSchoolYearId from @/lib/queries/schoolYears instead.
  * Returns undefined instead of null for backwards compatibility.
  */

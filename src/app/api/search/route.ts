@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
         id: s.id,
         title: `${s.lastName}, ${s.firstName}`,
         subtitle: s.referenceNumber,
-        href: `${basePath}/students/${s.id}`,
+        href: `${basePath}/students/${s.referenceNumber}`,
       })),
       enrollments: enrollmentResults.map((e): SearchResultItem => ({
         id: e.id,

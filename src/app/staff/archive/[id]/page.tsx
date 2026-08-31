@@ -51,7 +51,7 @@ export default async function ArchivedStudentPage({ params }: PageProps) {
 
   // If student is active, redirect to the regular student page
   if (!isArchivedStatus(student.status)) {
-    redirect(`/staff/students/${id}`);
+    redirect(`/staff/students/${student.referenceNumber}`);
   }
 
   // Fetch related data

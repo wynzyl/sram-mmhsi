@@ -605,7 +605,7 @@ export async function updateStudentAction(
     });
 
     revalidatePath("/staff/students");
-    revalidatePath(`/staff/students/${studentId}`);
+    revalidatePath(`/staff/students/${existingStudent.referenceNumber}`);
     return { success: true };
   } catch (err) {
     // Handle archive exception thrown from inside transaction
@@ -694,6 +694,7 @@ export async function updateSpecialEducationStatusAction(
     where: eq(students.id, studentId),
     columns: {
       id: true,
+      referenceNumber: true,
       isSpecialEducation: true,
       firstName: true,
       lastName: true,
@@ -744,7 +745,7 @@ export async function updateSpecialEducationStatusAction(
       actorId: session.userId,
     });
 
-    revalidatePath(`/staff/students/${studentId}`);
+    revalidatePath(`/staff/students/${student.referenceNumber}`);
 
     return { success: true };
   } catch (err) {

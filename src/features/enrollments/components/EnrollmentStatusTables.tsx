@@ -98,7 +98,7 @@ export function PendingEnrollmentsTable({
               )}
               <span className="flex items-center">
                 <Link
-                  href={`${basePath}/students/${data.studentId}`}
+                  href={`${basePath}/students/${data.studentRef}`}
                   className="font-semibold text-primary hover:underline"
                 >
                   {data.lastName}, {data.firstName}
@@ -257,7 +257,7 @@ export function AssessedEnrollmentsTable({
               )}
               <span className="flex items-center">
                 <Link
-                  href={`${basePath}/students/${data.studentId}`}
+                  href={`${basePath}/students/${data.studentRef}`}
                   className="font-semibold text-primary hover:underline"
                 >
                   {data.lastName}, {data.firstName}
@@ -432,7 +432,7 @@ export function EnrolledStudentsTable({
               )}
               <span className="flex items-center">
                 <Link
-                  href={`${basePath}/students/${data.studentId}`}
+                  href={`${basePath}/students/${data.studentRef}`}
                   className="font-semibold text-primary hover:underline"
                 >
                   {data.lastName}, {data.firstName}
@@ -578,7 +578,7 @@ export function CancelledEnrollmentsTable({
               )}
               <span className="flex items-center">
                 <Link
-                  href={`${basePath}/students/${data.studentId}`}
+                  href={`${basePath}/students/${data.studentRef}`}
                   className="font-semibold text-muted-foreground hover:underline"
                 >
                   {data.lastName}, {data.firstName}

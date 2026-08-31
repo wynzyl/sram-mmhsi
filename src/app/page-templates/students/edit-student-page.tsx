@@ -49,7 +49,7 @@ export async function InternalEditStudentPage(props: {
 
   // Block editing for archived students - redirect back to profile with a message
   if (isArchivedStatus(student.status as StudentStatus)) {
-    redirect(`${studentsBasePrefix}/${id}?archived=true`);
+    redirect(`${studentsBasePrefix}/${student.referenceNumber}?archived=true`);
   }
 
   const guardians = await db
@@ -90,7 +90,7 @@ export async function InternalEditStudentPage(props: {
     columns: { id: true },
   });
 
-  const profileHref = `${studentsBasePrefix}/${id}`;
+  const profileHref = `${studentsBasePrefix}/${student.referenceNumber}`;
   const fullName = [student.firstName, student.middleName, student.lastName, student.suffix]
     .filter(Boolean)
     .join(" ");
