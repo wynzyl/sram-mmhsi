@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useState, useRef } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import type { NewAssessmentFeeCatalogEntry, ExpectedDiscountsSummary } from "../
 import { useFormToast } from "@/hooks/useFormToast";
 import { TextAreaField } from "@/components/forms/TextInputField";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { CurrencyInputField } from "@/components/forms/CurrencyInputField";
 import { formatDate } from "@/lib/utils/date";
 import { generateUuid } from "@/lib/utils/uuid";
 import {
@@ -21,6 +22,16 @@ import {
   DataCardFooter,
 } from "@/components/ui/editorial/DataCard";
 import { StatusIndicator } from "@/components/ui/editorial/StatusIndicator";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import type { DiscountRequestView } from "@/features/discounts/discounts.schema";
 
 export type FeeCatalogEntry = NewAssessmentFeeCatalogEntry;
@@ -58,6 +69,10 @@ interface AssessmentDraftFormProps {
   canReviewDiscounts: boolean;
   /** Pre-calculated expected discounts (calculated on server) */
   expectedDiscounts: ExpectedDiscountsSummary;
+  /** True if student is effectively a SPED student for this enrollment */
+  isSpedStudent: boolean;
+  /** Default SPED fee amount from system settings (PHP) */
+  defaultSpedFeeAmount: number;
 }
 
 const initialAssessmentState: AssessmentFormState = {};
@@ -100,9 +115,12 @@ export default function AssessmentDraftForm({
   existingDiscountRequests,
   canReviewDiscounts,
   expectedDiscounts,
+  isSpedStudent,
+  defaultSpedFeeAmount,
 }: AssessmentDraftFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState(
     createAssessmentFromEnrollmentAction,
     initialAssessmentState
@@ -114,6 +132,11 @@ export default function AssessmentDraftForm({
   );
 
   const [remarks, setRemarks] = useState("");
+
+  // SPED fee dialog state
+  const [spedDialogOpen, setSpedDialogOpen] = useState(false);
+  const [spedFeeAmount, setSpedFeeAmount] = useState(defaultSpedFeeAmount);
+  const [spedConfirmed, setSpedConfirmed] = useState(false);
 
   // Memoize discount request filtering to avoid O(n) on every render
   const { pendingRequests, approvedRequests, rejectedRequests } = useMemo(() => {
@@ -167,8 +190,13 @@ export default function AssessmentDraftForm({
       amount: Number.isFinite(r.amount) && r.amount >= 0 ? r.amount : 0,
       isDiscount: r.isDiscount,
     }));
-    const gross = safe.filter((r) => !r.isDiscount).reduce((a, r) => a + r.amount, 0);
+    let gross = safe.filter((r) => !r.isDiscount).reduce((a, r) => a + r.amount, 0);
     const catalogDisc = safe.filter((r) => r.isDiscount).reduce((a, r) => a + r.amount, 0);
+
+    // Include SPED fee in gross charges if applicable
+    if (isSpedStudent) {
+      gross += spedFeeAmount;
+    }
 
     // Use pre-calculated expected discounts from server
     const totalDisc = catalogDisc + expectedDiscounts.totalExpectedDiscounts;
@@ -179,7 +207,7 @@ export default function AssessmentDraftForm({
       discountSum: totalDisc,
       netAssessed: net,
     };
-  }, [rows, expectedDiscounts.totalExpectedDiscounts]);
+  }, [rows, expectedDiscounts.totalExpectedDiscounts, isSpedStudent, spedFeeAmount]);
 
   useFormToast(state, {
     successMessage: "Assessment created successfully",
@@ -216,9 +244,26 @@ export default function AssessmentDraftForm({
         </div>
       )}
 
-      <form id={formId} action={action} className="space-y-6">
+      <form
+        id={formId}
+        ref={formRef}
+        action={action}
+        className="space-y-6"
+        onSubmit={(e) => {
+          // If SPED student and not yet confirmed via dialog, intercept form submission
+          if (isSpedStudent && !spedConfirmed) {
+            e.preventDefault();
+            setSpedDialogOpen(true);
+            return;
+          }
+        }}
+      >
         <input type="hidden" name="enrollmentId" value={enrollmentId} />
         <input type="hidden" name="items" value={itemsJson} />
+        {/* Include custom SPED fee amount when applicable */}
+        {isSpedStudent && (
+          <input type="hidden" name="spedFeeAmount" value={spedFeeAmount} />
+        )}
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Student context */}
@@ -328,6 +373,27 @@ export default function AssessmentDraftForm({
                           </tr>
                         );
                       })}
+                      {/* SPED Fee row (shown when student is SPED) */}
+                      {isSpedStudent && (
+                        <tr className="border-b border-border last:border-b-0 bg-blue-50 dark:bg-blue-900/10">
+                          <td className="px-3 py-2 align-middle font-medium text-foreground">
+                            <div className="flex items-center gap-2">
+                              <span>Special Education Fee</span>
+                              <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                SPED
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-right align-middle tabular-nums text-foreground">
+                            <CurrencyDisplay amount={spedFeeAmount} />
+                          </td>
+                          <td className="px-3 py-2 text-center align-middle">
+                            <span className="inline-block rounded bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
+                              Charge
+                            </span>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -611,6 +677,71 @@ export default function AssessmentDraftForm({
           Further payment activity is tracked on the ledger, not by re-running this screen.
         </p>
       </section>
+
+      {/* SPED Fee Confirmation Dialog */}
+      <AlertDialog open={spedDialogOpen} onOpenChange={setSpedDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+                <svg
+                  className="h-4 w-4 text-blue-600 dark:text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </span>
+              Special Education Fee
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  This student is enrolled in the <strong>SPED program</strong>. A Special Education
+                  fee will be added to this assessment.
+                </p>
+                <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4">
+                  <CurrencyInputField
+                    label="SPED Fee Amount"
+                    name="spedFeeAmountDialog"
+                    required
+                    value={spedFeeAmount}
+                    onChange={setSpedFeeAmount}
+                    min={0}
+                    placeholder="Enter amount"
+                  />
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Default: <CurrencyDisplay amount={defaultSpedFeeAmount} />. Adjust if needed.
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                // Mark SPED as confirmed, close dialog, and trigger form submission
+                setSpedConfirmed(true);
+                setSpedDialogOpen(false);
+                // Use requestSubmit to trigger form submission with proper validation
+                requestAnimationFrame(() => {
+                  formRef.current?.requestSubmit();
+                });
+              }}
+              disabled={spedFeeAmount <= 0}
+            >
+              Confirm & Create Assessment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

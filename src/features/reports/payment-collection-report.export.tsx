@@ -59,13 +59,22 @@ function buildSummaryItems(
 
 // ─── PDF (Track 1) ─────────────────────────────────────────────────────────────
 
+function formatStudentName(r: PaymentCollectionRow): string {
+  const suffixes: string[] = [];
+  if (r.hasEscDiscount) suffixes.push("ESC");
+  if (r.isSpecialEducation) suffixes.push("SPED");
+  return suffixes.length > 0
+    ? `${r.studentName} (${suffixes.join(", ")})`
+    : r.studentName;
+}
+
 const pdfColumns: ReportColumn<PaymentCollectionRow>[] = [
   { header: "OR #", width: "12%", mono: true, cell: (r) => r.orNumber || "—" },
   { header: "Date", width: "11%", cell: (r) => reportDate(r.collectionDate) },
   {
     header: "Student",
     width: "24%",
-    cell: (r) => r.studentName,
+    cell: formatStudentName,
     subCell: (r) => r.studentRef,
   },
   { header: "Grade", width: "10%", cell: (r) => r.gradeLevel },
@@ -108,7 +117,7 @@ export function PaymentCollectionPdfDocument({
 const xlsxColumns: XlsxColumn<PaymentCollectionRow>[] = [
   { header: "OR #", width: 14, value: (r) => r.orNumber || "" },
   { header: "Date", width: 14, value: (r) => reportDate(r.collectionDate) },
-  { header: "Student", width: 28, value: (r) => r.studentName },
+  { header: "Student", width: 28, value: formatStudentName },
   { header: "Student ID", width: 18, value: (r) => r.studentRef },
   { header: "Grade", width: 12, value: (r) => r.gradeLevel },
   { header: "School Year", width: 12, value: (r) => r.schoolYear },

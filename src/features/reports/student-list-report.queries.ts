@@ -5,6 +5,8 @@ import {
   gradeLevels,
   studentGuardianLinks,
   parentsGuardians,
+  studentDiscounts,
+  assessments,
 } from "@/lib/db/schema";
 import { eq, and, asc, isNull, sql } from "drizzle-orm";
 import { calculateOffset } from "@/lib/types/pagination";
@@ -15,6 +17,8 @@ export type StudentListRow = {
   studentId: string;
   studentRef: string; // 7-digit Student ID (e.g. "0000001")
   studentName: string; // "DELA CRUZ, Juan Miguel" (Lastname, Firstname Middlename)
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean; // ESC grantee indicator
   gradeLevel: string;
   address: string; // student address
   guardianName: string; // primary guardian "Juan Dela Cruz"
@@ -82,6 +86,8 @@ function mapRow(row: {
   studentFirstName: string;
   studentMiddleName: string | null;
   studentLastName: string;
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   gradeLevel: string;
   studentAddress: string | null;
   guardianFirstName: string | null;
@@ -103,6 +109,8 @@ function mapRow(row: {
     studentId: row.studentId,
     studentRef: row.referenceNumber,
     studentName: `${row.studentLastName}, ${firstAndMiddle}`,
+    isSpecialEducation: row.isSpecialEducation,
+    hasEscDiscount: row.hasEscDiscount,
     gradeLevel: row.gradeLevel,
     address: row.studentAddress ?? "",
     guardianName,
@@ -117,6 +125,15 @@ const SELECT_SHAPE = (guardian: ReturnType<typeof primaryGuardianSubquery>) => (
   studentFirstName: students.firstName,
   studentMiddleName: students.middleName,
   studentLastName: students.lastName,
+  isSpecialEducation: students.isSpecialEducation,
+  hasEscDiscount: sql<boolean>`EXISTS(
+    SELECT 1 FROM "discount_requests" dr
+    INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+    INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+    WHERE e2.student_id = "students".id
+      AND dt.code LIKE 'ESC_%'
+      AND dr.status = 'approved'
+  )`.as("has_esc_discount"),
   gradeLevel: gradeLevels.name,
   studentAddress: students.address,
   guardianFirstName: guardian.firstName,

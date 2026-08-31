@@ -69,6 +69,7 @@ type FormValues = {
   religion: string;
   previousSchool: string;
   submittedDocumentsNotes: string;
+  isSpecialEducation: boolean;
   gradeLevelId: string;
   guardians: GuardianValues[];
   intakeForm138: IntakeStatus;
@@ -232,6 +233,7 @@ export default function StudentRegistrationForm({
       religion: "",
       previousSchool: "",
       submittedDocumentsNotes: "",
+      isSpecialEducation: false,
       gradeLevelId: "",
       guardians: [emptyGuardian(true)],
       intakeForm138: "",
@@ -250,6 +252,8 @@ export default function StudentRegistrationForm({
         "intakeQualifiedVoucher", "intakeEscCertificate",
       ];
       for (const k of scalarKeys) fd.set(k, String(value[k] ?? ""));
+      // Boolean fields need special handling
+      fd.set("isSpecialEducation", value.isSpecialEducation ? "true" : "false");
       // Strip client-only `_clientId` so only server-expected fields are sent.
       const guardiansPayload = value.guardians.map((g) => {
         const { _clientId, ...guardian } = g;
@@ -531,6 +535,28 @@ export default function StudentRegistrationForm({
                       </strong>
                       <span className="ml-2 text-sm text-muted-foreground">(set by the page you opened)</span>
                     </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <form.Field
+                      name="isSpecialEducation"
+                      children={(field) => (
+                        <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted">
+                          <input
+                            type="checkbox"
+                            checked={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.checked)}
+                            onBlur={field.handleBlur}
+                            className="size-5 rounded border-gray-300 text-primary focus:ring-primary"
+                          />
+                          <div>
+                            <span className="block font-medium text-foreground">Special Education (SPED) Student</span>
+                            <span className="text-sm text-muted-foreground">
+                              Check if this student requires special education services. An additional SPED fee will be added to their assessment.
+                            </span>
+                          </div>
+                        </label>
+                      )}
+                    />
                   </div>
                 </div>
               )}

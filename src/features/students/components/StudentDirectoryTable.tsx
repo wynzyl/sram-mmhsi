@@ -1,6 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { StudentDirectoryRow } from "../students.queries";
 import { StudentDirectoryRowActions } from "@/features/students/components/StudentDirectoryRowActions";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { getInitials } from "@/lib/utils/name";
 import type { StudentSortBy, StudentSortDir } from "@/lib/utils/student-directory-href";
 
@@ -122,15 +124,30 @@ export function StudentDirectoryTable({
                 >
                   <td className="align-middle py-3 pl-4 pr-4">
                     <div className="flex items-center gap-3 min-w-0">
-                      {/* Avatar circle matching Registration Queue style */}
-                      <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary"
-                        aria-hidden
-                      >
-                        {getInitials(s.firstName, s.lastName)}
-                      </div>
+                      {/* Avatar: ESC logo for ESC grantees, initials for others */}
+                      {s.hasEscDiscount ? (
+                        <Image
+                          src="/ESC-Logo.png"
+                          alt="ESC Grantee"
+                          width={40}
+                          height={40}
+                          className="h-10 w-10 shrink-0 rounded-full object-cover"
+                          title="ESC Grantee"
+                          unoptimized
+                        />
+                      ) : (
+                        <div
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary"
+                          aria-hidden
+                        >
+                          {getInitials(s.firstName, s.lastName)}
+                        </div>
+                      )}
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-foreground">{displayName}</p>
+                        <p className="flex items-center truncate font-semibold text-foreground">
+                          {displayName}
+                          <SpedBadge isSped={s.isSpecialEducation} />
+                        </p>
                         <p className="truncate text-xs text-muted-foreground">{subtitle(s)}</p>
                       </div>
                     </div>

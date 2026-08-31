@@ -13,6 +13,8 @@ export const CreateAssessmentFromEnrollmentSchema = z
     items: z
       .array(AssessmentScheduleLineSubmissionSchema)
       .min(1, "Select at least one fee from the catalog."),
+    /** Custom SPED fee amount (optional - only for SPED students) */
+    spedFeeAmount: z.coerce.number().positive("SPED fee amount must be greater than zero.").optional(),
   })
   .superRefine((data, ctx) => {
     const seen = new Set<string>();
@@ -63,3 +65,32 @@ export type CancelAssessmentInput = z.infer<typeof CancelAssessmentSchema>;
 export type CancelAssessmentFormState = BaseFormState<CancelAssessmentInput> & {
   assessmentId?: string;
 };
+
+// ─── Special Education Fee Schemas ─────────────────────────────────────────────
+
+export const AddSpecialFeeSchema = z.object({
+  assessmentId: z.string().uuid(),
+  amount: z.coerce
+    .number()
+    .positive("Amount must be greater than zero."),
+  reason: z.string().trim().max(500, "Reason must be 500 characters or less.").optional(),
+});
+
+export type AddSpecialFeeInput = z.infer<typeof AddSpecialFeeSchema>;
+
+export type AddSpecialFeeFormState = BaseFormState<AddSpecialFeeInput> & {
+  assessmentItemId?: string;
+};
+
+export const RemoveSpecialFeeSchema = z.object({
+  assessmentItemId: z.string().uuid(),
+  reason: z
+    .string()
+    .trim()
+    .min(1, "Reason is required for removing special education fee.")
+    .max(500, "Reason must be 500 characters or less."),
+});
+
+export type RemoveSpecialFeeInput = z.infer<typeof RemoveSpecialFeeSchema>;
+
+export type RemoveSpecialFeeFormState = BaseFormState<RemoveSpecialFeeInput>;

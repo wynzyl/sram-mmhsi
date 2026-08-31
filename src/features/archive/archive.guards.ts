@@ -21,7 +21,9 @@ export type ArchiveBlockedAction =
   | "re_assess"
   | "create_enrollment"
   | "create_assessment"
-  | "edit_profile";
+  | "edit_profile"
+  | "add_special_fee"
+  | "remove_special_fee";
 
 export const ARCHIVE_BLOCKED_ACTION_LABELS: Record<ArchiveBlockedAction, string> = {
   void_or: "Void Official Receipt",
@@ -32,6 +34,8 @@ export const ARCHIVE_BLOCKED_ACTION_LABELS: Record<ArchiveBlockedAction, string>
   create_enrollment: "Create Enrollment",
   create_assessment: "Create Assessment",
   edit_profile: "Edit Student Profile",
+  add_special_fee: "Add Special Education Fee",
+  remove_special_fee: "Remove Special Education Fee",
 };
 
 export class StudentArchivedException extends Error {

@@ -1,7 +1,7 @@
 import 'server-only';
 import { db } from "@/lib/db";
-import { enrollments, gradeLevels, schoolYears, sections, students } from "@/lib/db/schema";
-import { and, asc, desc, eq, isNull, ne, sql, type SQL } from "drizzle-orm";
+import { assessments, enrollments, gradeLevels, schoolYears, sections, studentDiscounts, students } from "@/lib/db/schema";
+import { and, asc, desc, eq, exists, isNull, like, ne, sql, type SQL } from "drizzle-orm";
 import {
   STUDENT_DIRECTORY_PAGE_SIZE,
   type StudentSortBy,
@@ -32,6 +32,8 @@ export type StudentDirectoryRow = {
   address: string | null;
   telNumber: string | null;
   isActive: boolean;
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   schoolYearLabel: string | null;
   gradeLevelName: string | null;
   sectionName: string | null;
@@ -121,6 +123,15 @@ export async function fetchStudentDirectoryPage(params: {
         address: students.address,
         telNumber: students.mobileNumber,
         isActive: students.isActive,
+        isSpecialEducation: students.isSpecialEducation,
+        hasEscDiscount: sql<boolean>`EXISTS(
+          SELECT 1 FROM "discount_requests" dr
+          INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+          INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+          WHERE e2.student_id = "students".id
+            AND dt.code LIKE 'ESC_%'
+            AND dr.status = 'approved'
+        )`.as("has_esc_discount"),
         schoolYearLabel: schoolYears.label,
         gradeLevelName: gradeLevels.name,
         sectionName: sections.name,
@@ -155,6 +166,8 @@ export async function fetchStudentDirectoryPage(params: {
     address: r.address,
     telNumber: r.telNumber,
     isActive: r.isActive,
+    isSpecialEducation: r.isSpecialEducation,
+    hasEscDiscount: r.hasEscDiscount,
     schoolYearLabel: r.schoolYearLabel,
     gradeLevelName: r.gradeLevelName,
     sectionName: r.sectionName,

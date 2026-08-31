@@ -13,7 +13,7 @@ import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 // ─────────────────────────────────────────────────────────────────
 
 /**
- * Lean DTO for table display (13 fields)
+ * Lean DTO for table display (15 fields)
  * Used by ReadyToEnrollTable - excludes heavy fields like intakeDocuments
  */
 export type ReadyToEnrollListRow = {
@@ -21,6 +21,8 @@ export type ReadyToEnrollListRow = {
   studentRef: string;
   firstName: string;
   lastName: string;
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   studentType: "new_student" | "transferee" | "old_student";
 
   // For new/transferee students
@@ -93,6 +95,8 @@ export type PendingEnrollment = {
   studentRef: string;
   firstName: string;
   lastName: string;
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   gradeLevelId: string;
   gradeName: string;
   sectionId: string | null;
@@ -113,6 +117,8 @@ export type AssessedEnrollment = {
   studentRef: string;
   firstName: string;
   lastName: string;
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   gradeLevelId: string;
   gradeName: string;
   sectionId: string | null;
@@ -134,6 +140,8 @@ export type EnrolledStudent = {
   studentRef: string;
   firstName: string;
   lastName: string;
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   gradeLevelId: string;
   gradeName: string;
   sectionId: string | null;
@@ -152,6 +160,8 @@ export type CancelledEnrollment = {
   studentRef: string;
   firstName: string;
   lastName: string;
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   gradeLevelId: string;
   gradeName: string;
   studentType: "new_student" | "transferee" | "old_student";

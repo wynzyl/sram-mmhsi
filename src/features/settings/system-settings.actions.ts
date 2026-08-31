@@ -10,9 +10,12 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import {
   RefundCutoffSettingsSchema,
+  SpedFeeSettingsSchema,
   SYSTEM_SETTING_KEYS,
   type RefundCutoffSettingsFormState,
+  type SpedFeeSettingsFormState,
 } from "./system-settings.schema";
+import { SPED_FEE_DEFAULT_AMOUNT } from "@/lib/utils/special-education";
 
 /**
  * Update refund cutoff settings.
@@ -124,4 +127,90 @@ export async function getRefundCutoffSettings(): Promise<{
     refundCutoffStartDate: startDateSetting?.value ?? null,
     refundCutoffDays: cutoffDaysSetting ? parseInt(cutoffDaysSetting.value, 10) : null,
   };
+}
+
+// ─── SPED Fee Settings ───────────────────────────────────────────────────────
+
+/**
+ * Update SPED fee amount setting.
+ * Only finance_officer, admin, and super_admin can modify.
+ */
+export async function updateSpedFeeSettingsAction(
+  _prevState: SpedFeeSettingsFormState,
+  formData: FormData
+): Promise<SpedFeeSettingsFormState> {
+  const session = await requireSession();
+
+  // Permission check - finance officers and admins can modify
+  if (!hasPermission(session.role, "fee_schedules:manage")) {
+    return { message: "You do not have permission to modify SPED fee settings." };
+  }
+
+  const result = parseFormData(SpedFeeSettingsSchema, formData);
+  if (!result.success) {
+    return { errors: result.errors };
+  }
+
+  const { spedFeeAmount } = result.data;
+
+  try {
+    const now = new Date();
+
+    await db
+      .insert(systemSettings)
+      .values({
+        key: SYSTEM_SETTING_KEYS.SPED_FEE_AMOUNT,
+        value: String(spedFeeAmount),
+        description: "Default Special Education (SPED) fee amount",
+        updatedAt: now,
+        updatedBy: session.userId,
+      })
+      .onConflictDoUpdate({
+        target: systemSettings.key,
+        set: {
+          value: String(spedFeeAmount),
+          updatedAt: now,
+          updatedBy: session.userId,
+        },
+      });
+
+    // Audit log
+    await logAudit({
+      actor: session.userId,
+      actorRole: session.role,
+      action: "system_settings_updated",
+      targetEntity: "system_settings",
+      targetId: "sped_fee_amount",
+      newState: { spedFeeAmount },
+    });
+
+    revalidatePath("/staff/finance/setup");
+
+    return {
+      success: true,
+      savedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("[system-settings] Failed to update SPED fee settings:", error);
+    return { message: "Failed to save settings. Please try again." };
+  }
+}
+
+/**
+ * Get current SPED fee amount setting.
+ * Returns the configured amount or the default if not set.
+ */
+export async function getSpedFeeAmount(): Promise<number> {
+  const setting = await db.query.systemSettings.findFirst({
+    where: eq(systemSettings.key, SYSTEM_SETTING_KEYS.SPED_FEE_AMOUNT),
+  });
+
+  if (setting) {
+    const parsed = parseInt(setting.value, 10);
+    if (!isNaN(parsed) && parsed >= 0) {
+      return parsed;
+    }
+  }
+
+  return SPED_FEE_DEFAULT_AMOUNT;
 }

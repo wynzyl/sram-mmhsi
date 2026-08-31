@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
@@ -5,6 +6,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { StudentRecordTabShell, type StudentRecordTabDef } from "@/features/students/components/StudentRecordTabShell";
 import { StudentAvatar } from "@/features/students/components/StudentAvatar";
+import { SpedStatusToggle } from "./SpedStatusToggle";
 import type { EnrollmentIntakeDocuments } from "@/lib/db/schema";
 import type { StudentRequirementsSnapshot } from "@/features/registrations/registrations.queries";
 import {
@@ -35,6 +37,8 @@ export type StudentRecordStudent = {
   submittedDocumentsNotes: string | null;
   photoUrl: string | null;
   isActive: boolean;
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   createdAt: Date;
 };
 
@@ -631,6 +635,7 @@ export function StudentRecordProfile({
               photoUrl={student.photoUrl}
               initials={`${student.firstName[0]}${student.lastName[0]}`}
               size="lg"
+              hasEscDiscount={student.hasEscDiscount}
             />
             <div className="student-record-hero-copy-block">
               <p className="student-record-kicker">Student record</p>
@@ -642,6 +647,19 @@ export function StudentRecordProfile({
                     {placement.gradeLevel}
                     {placement.sectionName ? ` · ${placement.sectionName}` : ""} — {placement.schoolYear}
                   </span>
+                  {student.hasEscDiscount && (
+                    <span className="ml-2 inline-flex items-center gap-1">
+                      <Image
+                        src="/ESC-Logo.png"
+                        alt="ESC Grantee"
+                        width={48}
+                        height={48}
+                        className="inline-block"
+                        unoptimized
+                      />
+                      <span className="text-xs font-medium text-emerald-600">ESC Grantee</span>
+                    </span>
+                  )}
                 </p>
               ) : (
                 <p className="student-record-placement student-record-muted">
@@ -678,6 +696,11 @@ export function StudentRecordProfile({
                     </span>
                   </span>
                 </div>
+                <SpedStatusToggle
+                  studentId={student.id}
+                  isSpecialEducation={student.isSpecialEducation}
+                  canEdit={flags.canEditStudent}
+                />
               </div>
             </div>
           </div>

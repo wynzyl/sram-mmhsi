@@ -8,6 +8,7 @@ import {
   schoolYears,
   users,
   receiptBooklets,
+  studentDiscounts,
 } from "@/lib/db/schema";
 import { eq, and, gte, lte, sql, asc, desc, isNull, inArray } from "drizzle-orm";
 import { calculateOffset } from "@/lib/types/pagination";
@@ -75,6 +76,15 @@ export async function getPaymentCollectionReport(
         studentFirstName: students.firstName,
         studentLastName: students.lastName,
         studentRef: students.referenceNumber,
+        isSpecialEducation: students.isSpecialEducation,
+        hasEscDiscount: sql<boolean>`EXISTS(
+          SELECT 1 FROM "discount_requests" dr
+          INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+          INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+          WHERE e2.student_id = "students".id
+            AND dt.code LIKE 'ESC_%'
+            AND dr.status = 'approved'
+        )`.as("has_esc_discount"),
         gradeLevel: gradeLevels.name,
         schoolYear: schoolYears.label,
         amount: payments.amount,
@@ -119,6 +129,8 @@ export async function getPaymentCollectionReport(
     studentId: row.studentId,
     studentName: `${row.studentLastName}, ${row.studentFirstName}`,
     studentRef: row.studentRef,
+    isSpecialEducation: row.isSpecialEducation,
+    hasEscDiscount: row.hasEscDiscount,
     gradeLevel: row.gradeLevel,
     schoolYear: row.schoolYear,
     amount: row.amount,
@@ -244,6 +256,15 @@ export async function getAllPaymentCollectionData(params: {
       studentFirstName: students.firstName,
       studentLastName: students.lastName,
       studentRef: students.referenceNumber,
+      isSpecialEducation: students.isSpecialEducation,
+      hasEscDiscount: sql<boolean>`EXISTS(
+        SELECT 1 FROM "discount_requests" dr
+        INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+        INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+        WHERE e2.student_id = "students".id
+          AND dt.code LIKE 'ESC_%'
+          AND dr.status = 'approved'
+      )`.as("has_esc_discount"),
       gradeLevel: gradeLevels.name,
       schoolYear: schoolYears.label,
       amount: payments.amount,
@@ -275,6 +296,8 @@ export async function getAllPaymentCollectionData(params: {
     studentId: row.studentId,
     studentName: `${row.studentLastName}, ${row.studentFirstName}`,
     studentRef: row.studentRef,
+    isSpecialEducation: row.isSpecialEducation,
+    hasEscDiscount: row.hasEscDiscount,
     gradeLevel: row.gradeLevel,
     schoolYear: row.schoolYear,
     amount: row.amount,

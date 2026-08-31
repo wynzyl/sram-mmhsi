@@ -12,7 +12,14 @@ import {
   feeItemTypes,
   payments,
   discountRequests,
+  students,
+  paymentAllocations,
 } from "@/lib/db/schema";
+import {
+  isEffectivelySpecialEducation,
+  SPED_FEE_CODE,
+} from "@/lib/utils/special-education";
+import { getSpedFeeAmount } from "@/features/settings/system-settings.actions";
 import { eq, and, ne, isNotNull, isNull, asc, inArray } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "./assessments.queries";
 import { requireStaffSession } from "@/lib/auth/session";
@@ -20,9 +27,16 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import {
   CreateAssessmentFromEnrollmentSchema,
   CancelAssessmentSchema,
+  AddSpecialFeeSchema,
+  RemoveSpecialFeeSchema,
   computeAssessmentTotals,
 } from "./assessments.schema";
-import type { AssessmentFormState, CancelAssessmentFormState } from "./assessments.schema";
+import type {
+  AssessmentFormState,
+  CancelAssessmentFormState,
+  AddSpecialFeeFormState,
+  RemoveSpecialFeeFormState,
+} from "./assessments.schema";
 import { formatCurrency } from "@/lib/utils/currency";
 import { logger } from "@/lib/observability/logger";
 import { logAudit, logAuditBatch } from "@/lib/utils/audit-logger";
@@ -61,6 +75,7 @@ export async function createAssessmentFromEnrollmentAction(
     enrollmentId: formData.get("enrollmentId"),
     remarks: formData.get("remarks") || undefined,
     items: itemsRaw,
+    spedFeeAmount: formData.get("spedFeeAmount") || undefined,
   });
 
   if (!parsed.success) {
@@ -71,9 +86,9 @@ export async function createAssessmentFromEnrollmentAction(
     };
   }
 
-  const { enrollmentId, remarks, items } = parsed.data;
+  const { enrollmentId, remarks, items, spedFeeAmount: customSpedFeeAmount } = parsed.data;
 
-  // Fetch enrollment with school year label for readable remarks
+  // Fetch enrollment with school year label and SPED status for readable remarks
   const enrollmentResult = await db
     .select({
       id: enrollments.id,
@@ -82,10 +97,13 @@ export async function createAssessmentFromEnrollmentAction(
       gradeLevelId: enrollments.gradeLevelId,
       studentType: enrollments.studentType,
       status: enrollments.status,
+      specialEducationOverride: enrollments.specialEducationOverride,
       schoolYearLabel: schoolYears.label,
+      studentIsSpecialEducation: students.isSpecialEducation,
     })
     .from(enrollments)
     .innerJoin(schoolYears, eq(enrollments.schoolYearId, schoolYears.id))
+    .innerJoin(students, eq(enrollments.studentId, students.id))
     .where(eq(enrollments.id, enrollmentId))
     .limit(1);
 
@@ -292,6 +310,41 @@ export async function createAssessmentFromEnrollmentAction(
         sourceAssessmentId: bfItem.sourceAssessmentId, // Link to source assessment
       });
     }
+  }
+
+  // ─── Add Special Education Fee (if applicable) ──────────────────────────────
+  const isSpedStudent = isEffectivelySpecialEducation(
+    { isSpecialEducation: enrollmentRow.studentIsSpecialEducation },
+    { specialEducationOverride: enrollmentRow.specialEducationOverride }
+  );
+
+  if (isSpedStudent) {
+    // Get SPED_FEE fee item type (must exist in seed data)
+    const spedFeeType = await db.query.feeItemTypes.findFirst({
+      where: eq(feeItemTypes.code, SPED_FEE_CODE),
+      columns: { id: true, isRefundable: true },
+    });
+
+    if (!spedFeeType) {
+      return {
+        message:
+          "Special Education Fee type not found in system. Run: npx tsx scripts/seed-fee-item-types.ts",
+      };
+    }
+
+    // Use custom SPED fee amount if provided (from confirmation dialog), otherwise use system default
+    const spedFeeAmount = customSpedFeeAmount ?? await getSpedFeeAmount();
+
+    // Add SPED fee to resolved lines (after regular fees, before discounts)
+    resolvedLines.push({
+      feeTemplateItemId: null, // Not from template
+      feeItemTypeId: spedFeeType.id,
+      feeItemTypeCode: SPED_FEE_CODE,
+      description: "Special Education Fee",
+      amount: spedFeeAmount,
+      isDiscount: false,
+      isRefundable: spedFeeType.isRefundable,
+    });
   }
 
   const assessmentTotalAmount = computeAssessmentTotals(resolvedLines);
@@ -979,5 +1032,362 @@ export async function cancelAssessmentAction(
       message:
         "An unexpected error occurred while cancelling the assessment. Please try again.",
     };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Special Education Fee Actions
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Adds a Special Education (SPED) fee to an existing assessment.
+ *
+ * Validation rules:
+ * 1. User has `assessments:update` permission
+ * 2. Assessment exists and is not cancelled
+ * 3. No existing SPED_FEE item on this assessment
+ * 4. Amount must be positive
+ *
+ * Transaction steps:
+ * 1. Insert new assessment item with SPED_FEE type
+ * 2. Recalculate assessment totals (totalAmount, balance)
+ * 3. Audit log entry
+ */
+export async function addSpecialFeeAction(
+  _prevState: AddSpecialFeeFormState,
+  formData: FormData
+): Promise<AddSpecialFeeFormState> {
+  const session = await requireStaffSession();
+
+  if (!hasPermission(session.role, "assessments:update")) {
+    return { message: "You do not have permission to modify assessments." };
+  }
+
+  const parsed = AddSpecialFeeSchema.safeParse({
+    assessmentId: formData.get("assessmentId"),
+    amount: formData.get("amount"),
+    reason: formData.get("reason") || undefined,
+  });
+
+  if (!parsed.success) {
+    const flat = parsed.error.flatten();
+    return {
+      errors: flat.fieldErrors as AddSpecialFeeFormState["errors"],
+      message: flat.formErrors[0],
+    };
+  }
+
+  const { assessmentId, amount, reason } = parsed.data;
+
+  // Fetch assessment to validate
+  const assessment = await db.query.assessments.findFirst({
+    where: eq(assessments.id, assessmentId),
+    columns: {
+      id: true,
+      studentId: true,
+      enrollmentId: true,
+      billingStatus: true,
+      totalAmount: true,
+      totalPaid: true,
+      balance: true,
+      cancelledAt: true,
+    },
+  });
+
+  if (!assessment) {
+    return { message: "Assessment not found." };
+  }
+
+  if (assessment.cancelledAt || assessment.billingStatus === "cancelled") {
+    return { message: "Cannot add fees to a cancelled assessment." };
+  }
+
+  // Check if student is archived
+  try {
+    await assertStudentMutable(assessment.studentId, "add_special_fee");
+  } catch (error) {
+    if (error instanceof StudentArchivedException) {
+      return { message: formatArchiveError(error).error.message };
+    }
+    throw error;
+  }
+
+  // Check for existing SPED fee
+  const existingSpedItem = await db.query.assessmentItems.findFirst({
+    where: and(
+      eq(assessmentItems.assessmentId, assessmentId),
+      eq(assessmentItems.feeItemTypeId,
+        db
+          .select({ id: feeItemTypes.id })
+          .from(feeItemTypes)
+          .where(eq(feeItemTypes.code, SPED_FEE_CODE))
+          .limit(1)
+      )
+    ),
+  });
+
+  if (existingSpedItem) {
+    return {
+      message:
+        "A Special Education fee already exists on this assessment. Remove it first to add a new one with a different amount.",
+    };
+  }
+
+  // Get SPED fee type
+  const spedFeeType = await db.query.feeItemTypes.findFirst({
+    where: eq(feeItemTypes.code, SPED_FEE_CODE),
+    columns: { id: true, isRefundable: true },
+  });
+
+  if (!spedFeeType) {
+    return {
+      message:
+        "Special Education Fee type not found in system. Run: npx tsx scripts/seed-fee-item-types.ts",
+    };
+  }
+
+  let newItemId: string | undefined;
+
+  try {
+    await db.transaction(async (tx) => {
+      // Insert SPED fee item
+      const [newItem] = await tx
+        .insert(assessmentItems)
+        .values({
+          assessmentId,
+          feeTemplateItemId: null,
+          feeItemTypeId: spedFeeType.id,
+          description: "Special Education Fee",
+          amount: String(amount.toFixed(2)),
+          isDiscount: false,
+          isRefundable: spedFeeType.isRefundable,
+          createdBy: session.userId,
+          updatedBy: session.userId,
+        })
+        .returning({ id: assessmentItems.id });
+
+      newItemId = newItem.id;
+
+      // Recalculate assessment totals
+      const newTotalAmount = Number(assessment.totalAmount) + amount;
+      const newBalance = Number(assessment.balance) + amount;
+
+      await tx
+        .update(assessments)
+        .set({
+          totalAmount: String(newTotalAmount.toFixed(2)),
+          balance: String(newBalance.toFixed(2)),
+          updatedBy: session.userId,
+          updatedAt: new Date(),
+        })
+        .where(eq(assessments.id, assessmentId));
+
+      // Audit log
+      await logAudit(
+        {
+          actor: session.userId,
+          actorRole: session.role,
+          action: "assessments:add_special_fee",
+          targetEntity: "assessments",
+          targetId: assessmentId,
+          context: assessment.enrollmentId ?? undefined,
+          newState: {
+            assessmentItemId: newItem.id,
+            amount,
+            reason,
+            newTotalAmount,
+            newBalance,
+          },
+        },
+        { throwOnFail: true }
+      );
+    });
+
+    logger.info("[assessments] Added special education fee", {
+      assessmentId,
+      amount,
+      actorId: session.userId,
+    });
+
+    revalidatePath(`/staff/assessments/${assessmentId}`);
+    invalidateTag(CACHE_TAGS.DASHBOARD);
+
+    return { success: true, assessmentItemId: newItemId };
+  } catch (err) {
+    logger.error("[assessments] Failed to add special fee", {
+      assessmentId,
+      error: String(err),
+    });
+    return { message: "An unexpected error occurred. Please try again." };
+  }
+}
+
+/**
+ * Removes a Special Education (SPED) fee from an assessment.
+ *
+ * Validation rules:
+ * 1. User has `assessments:update` permission
+ * 2. Item exists and is a SPED_FEE type
+ * 3. No payments have been allocated to this item (check payment_allocations)
+ * 4. Reason is required for audit trail
+ *
+ * Transaction steps:
+ * 1. Soft-delete the assessment item
+ * 2. Recalculate assessment totals
+ * 3. Audit log entry
+ */
+export async function removeSpecialFeeAction(
+  _prevState: RemoveSpecialFeeFormState,
+  formData: FormData
+): Promise<RemoveSpecialFeeFormState> {
+  const session = await requireStaffSession();
+
+  if (!hasPermission(session.role, "assessments:update")) {
+    return { message: "You do not have permission to modify assessments." };
+  }
+
+  const parsed = RemoveSpecialFeeSchema.safeParse({
+    assessmentItemId: formData.get("assessmentItemId"),
+    reason: formData.get("reason"),
+  });
+
+  if (!parsed.success) {
+    const flat = parsed.error.flatten();
+    return {
+      errors: flat.fieldErrors as RemoveSpecialFeeFormState["errors"],
+      message: flat.formErrors[0],
+    };
+  }
+
+  const { assessmentItemId, reason } = parsed.data;
+
+  // Fetch the assessment item with its fee type
+  const item = await db.query.assessmentItems.findFirst({
+    where: eq(assessmentItems.id, assessmentItemId),
+    with: {
+      feeItemType: {
+        columns: { code: true },
+      },
+      assessment: {
+        columns: {
+          id: true,
+          studentId: true,
+          enrollmentId: true,
+          billingStatus: true,
+          totalAmount: true,
+          totalPaid: true,
+          balance: true,
+          cancelledAt: true,
+        },
+      },
+    },
+  });
+
+  if (!item) {
+    return { message: "Assessment item not found." };
+  }
+
+  if (item.feeItemType?.code !== SPED_FEE_CODE) {
+    return {
+      message:
+        "This action can only remove Special Education fees. Use the standard fee management for other items.",
+    };
+  }
+
+  const assessment = item.assessment;
+
+  if (!assessment) {
+    return { message: "Assessment not found." };
+  }
+
+  if (assessment.cancelledAt || assessment.billingStatus === "cancelled") {
+    return { message: "Cannot modify a cancelled assessment." };
+  }
+
+  // Check if student is archived
+  try {
+    await assertStudentMutable(assessment.studentId, "remove_special_fee");
+  } catch (error) {
+    if (error instanceof StudentArchivedException) {
+      return { message: formatArchiveError(error).error.message };
+    }
+    throw error;
+  }
+
+  // Check for payments allocated to this item
+  // Payment allocations link payments to specific assessment items
+  const allocatedPayments = await db.query.paymentAllocations.findFirst({
+    where: eq(paymentAllocations.assessmentItemId, assessmentItemId),
+  });
+
+  if (allocatedPayments) {
+    return {
+      message:
+        "Cannot remove: payments have already been allocated to this fee. Void the payments first.",
+    };
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      // Hard-delete the item (assessment items don't use soft delete)
+      await tx
+        .delete(assessmentItems)
+        .where(eq(assessmentItems.id, assessmentItemId));
+
+      // Recalculate assessment totals
+      const itemAmount = Number(item.amount);
+      const newTotalAmount = Number(assessment.totalAmount) - itemAmount;
+      const newBalance = Number(assessment.balance) - itemAmount;
+
+      await tx
+        .update(assessments)
+        .set({
+          totalAmount: String(Math.max(0, newTotalAmount).toFixed(2)),
+          balance: String(Math.max(0, newBalance).toFixed(2)),
+          updatedBy: session.userId,
+          updatedAt: new Date(),
+        })
+        .where(eq(assessments.id, assessment.id));
+
+      // Audit log
+      await logAudit(
+        {
+          actor: session.userId,
+          actorRole: session.role,
+          action: "assessments:remove_special_fee",
+          targetEntity: "assessments",
+          targetId: assessment.id,
+          context: assessment.enrollmentId ?? undefined,
+          previousState: {
+            assessmentItemId,
+            amount: item.amount,
+          },
+          newState: {
+            reason,
+            newTotalAmount: Math.max(0, newTotalAmount),
+            newBalance: Math.max(0, newBalance),
+          },
+        },
+        { throwOnFail: true }
+      );
+    });
+
+    logger.info("[assessments] Removed special education fee", {
+      assessmentId: assessment.id,
+      assessmentItemId,
+      reason,
+      actorId: session.userId,
+    });
+
+    revalidatePath(`/staff/assessments/${assessment.id}`);
+    invalidateTag(CACHE_TAGS.DASHBOARD);
+
+    return { success: true };
+  } catch (err) {
+    logger.error("[assessments] Failed to remove special fee", {
+      assessmentItemId,
+      error: String(err),
+    });
+    return { message: "An unexpected error occurred. Please try again." };
   }
 }

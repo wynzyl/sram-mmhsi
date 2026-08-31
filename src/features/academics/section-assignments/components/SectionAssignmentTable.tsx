@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, startTransition } from "react";
+import Image from "next/image";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   useReactTable,
@@ -18,7 +19,9 @@ import { cn } from "@/lib/utils/cn";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { ClientTablePagination } from "@/components/ui/ClientTablePagination";
+import { getInitials } from "@/lib/utils/name";
 import {
   Select,
   SelectContent,
@@ -180,13 +183,34 @@ export function SectionAssignmentTable({
         accessorFn: (row) =>
           `${row.lastName}, ${row.firstName}${row.middleName ? ` ${row.middleName.charAt(0)}.` : ""}${row.suffix ? ` ${row.suffix}` : ""}`,
         cell: ({ row }) => {
-          const { firstName, lastName, middleName, suffix } = row.original;
+          const { firstName, lastName, middleName, suffix, isSpecialEducation, hasEscDiscount } = row.original;
           return (
-            <span>
-              {lastName}, {firstName}
-              {middleName ? ` ${middleName.charAt(0)}.` : ""}
-              {suffix ? ` ${suffix}` : ""}
-            </span>
+            <div className="flex items-center gap-2">
+              {hasEscDiscount ? (
+                <Image
+                  src="/ESC-Logo.png"
+                  alt="ESC Grantee"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  title="ESC Grantee"
+                  unoptimized
+                />
+              ) : (
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-[10px] font-bold text-primary"
+                  aria-hidden
+                >
+                  {getInitials(`${firstName} ${lastName}`)}
+                </div>
+              )}
+              <span className="flex items-center">
+                {lastName}, {firstName}
+                {middleName ? ` ${middleName.charAt(0)}.` : ""}
+                {suffix ? ` ${suffix}` : ""}
+                <SpedBadge isSped={isSpecialEducation} />
+              </span>
+            </div>
           );
         },
       },

@@ -109,6 +109,7 @@ export async function createStudentAction(
     religion: formData.get("religion") || undefined,
     previousSchool: formData.get("previousSchool") || undefined,
     submittedDocumentsNotes: formData.get("submittedDocumentsNotes") || undefined,
+    isSpecialEducation: formData.get("isSpecialEducation") === "on" || formData.get("isSpecialEducation") === "true",
 
     guardians: guardiansParsed,
 
@@ -453,6 +454,7 @@ export async function updateStudentAction(
     religion: formData.get("religion") || undefined,
     previousSchool: formData.get("previousSchool") || undefined,
     submittedDocumentsNotes: formData.get("submittedDocumentsNotes") || undefined,
+    isSpecialEducation: formData.get("isSpecialEducation") === "on" || formData.get("isSpecialEducation") === "true",
 
     isActive: isActiveRaw === "on" || isActiveRaw === "true",
     guardians: guardiansParsed,
@@ -643,6 +645,110 @@ export async function updateStudentAction(
       };
     }
 
+    return { message: "An unexpected error occurred. Please try again." };
+  }
+}
+
+// ─── Update Special Education Status Action ───────────────────────────────────
+
+export type UpdateSpecialEducationStatusFormState = {
+  message?: string;
+  errors?: {
+    studentId?: string[];
+    isSpecialEducation?: string[];
+  };
+  success?: boolean;
+};
+
+/**
+ * Updates a student's Special Education (SPED) status.
+ *
+ * This action is separate from the main student update action to allow
+ * quick toggling of SPED status from the student profile page.
+ */
+export async function updateSpecialEducationStatusAction(
+  _prevState: UpdateSpecialEducationStatusFormState,
+  formData: FormData
+): Promise<UpdateSpecialEducationStatusFormState> {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "students:update")) {
+    return { message: "You do not have permission to update students." };
+  }
+
+  const studentId = formData.get("studentId");
+  const isSpecialEducation = formData.get("isSpecialEducation") === "on" || formData.get("isSpecialEducation") === "true";
+
+  if (!studentId || typeof studentId !== "string") {
+    return { errors: { studentId: ["Student ID is required."] } };
+  }
+
+  // Validate UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) {
+    return { errors: { studentId: ["Invalid student ID format."] } };
+  }
+
+  // Fetch student to check existence and current status
+  const student = await db.query.students.findFirst({
+    where: eq(students.id, studentId),
+    columns: {
+      id: true,
+      isSpecialEducation: true,
+      firstName: true,
+      lastName: true,
+    },
+  });
+
+  if (!student) {
+    return { message: "Student not found." };
+  }
+
+  // Check if student is archived
+  try {
+    await assertStudentMutable(studentId, "edit_profile");
+  } catch (error) {
+    if (error instanceof StudentArchivedException) {
+      return { message: formatArchiveError(error).error.message };
+    }
+    throw error;
+  }
+
+  // No change needed
+  if (student.isSpecialEducation === isSpecialEducation) {
+    return { success: true };
+  }
+
+  try {
+    await db
+      .update(students)
+      .set({
+        isSpecialEducation,
+        updatedBy: session.userId,
+        updatedAt: new Date(),
+      })
+      .where(eq(students.id, studentId));
+
+    await logUpdateAction(
+      session,
+      "students",
+      studentId,
+      { isSpecialEducation: student.isSpecialEducation },
+      { isSpecialEducation },
+      { throwOnFail: true }
+    );
+
+    logger.info("[students] Updated SPED status", {
+      studentId,
+      isSpecialEducation,
+      actorId: session.userId,
+    });
+
+    revalidatePath(`/staff/students/${studentId}`);
+
+    return { success: true };
+  } catch (err) {
+    logger.error("[students] Failed to update SPED status", { error: String(err) });
     return { message: "An unexpected error occurred. Please try again." };
   }
 }

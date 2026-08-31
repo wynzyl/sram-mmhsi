@@ -30,8 +30,17 @@ function buildSubtitle(meta: StudentListReportMeta): string {
 
 // ─── PDF (Track 1) ─────────────────────────────────────────────────────────────
 
+function formatStudentName(r: StudentListRow): string {
+  const suffixes: string[] = [];
+  if (r.hasEscDiscount) suffixes.push("ESC");
+  if (r.isSpecialEducation) suffixes.push("SPED");
+  return suffixes.length > 0
+    ? `${r.studentName} (${suffixes.join(", ")})`
+    : r.studentName;
+}
+
 const pdfColumns: ReportColumn<StudentListRow>[] = [
-  { header: "Student Name", width: "18%", cell: (r) => r.studentName },
+  { header: "Student Name", width: "18%", cell: formatStudentName },
   { header: "Student ID", width: "10%", mono: true, cell: (r) => r.studentRef },
   { header: "Grade", width: "9%", cell: (r) => r.gradeLevel },
   { header: "Address", width: "18%", cell: (r) => r.address },
@@ -69,7 +78,7 @@ export function StudentListPdfDocument({
 // ─── XLSX (Track 2) ────────────────────────────────────────────────────────────
 
 const xlsxColumns: XlsxColumn<StudentListRow>[] = [
-  { header: "Student Name", width: 28, value: (r) => r.studentName },
+  { header: "Student Name", width: 28, value: formatStudentName },
   { header: "Student ID", width: 14, value: (r) => r.studentRef },
   { header: "Grade", width: 12, value: (r) => r.gradeLevel },
   { header: "Address", width: 32, value: (r) => r.address },

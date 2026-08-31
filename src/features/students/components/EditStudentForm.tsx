@@ -48,6 +48,7 @@ interface StudentData {
   submittedDocumentsNotes: string | null;
 
   isActive: boolean;
+  isSpecialEducation: boolean;
 }
 
 interface EditStudentFormProps {
@@ -78,6 +79,7 @@ type FormValues = {
   previousSchool: string;
   submittedDocumentsNotes: string;
   isActive: boolean;
+  isSpecialEducation: boolean;
   guardians: GuardianInput[];
 };
 
@@ -178,6 +180,7 @@ export default function EditStudentForm({
       previousSchool: student.previousSchool ?? "",
       submittedDocumentsNotes: student.submittedDocumentsNotes ?? "",
       isActive: student.isActive,
+      isSpecialEducation: student.isSpecialEducation,
       guardians:
         initialGuardians.length > 0
           ? initialGuardians
@@ -194,6 +197,7 @@ export default function EditStudentForm({
       for (const k of scalarKeys) fd.set(k, String(value[k] ?? ""));
       const effectiveActive = isActiveLocked ? student.isActive : value.isActive;
       fd.set("isActive", effectiveActive ? "true" : "false");
+      fd.set("isSpecialEducation", value.isSpecialEducation ? "true" : "false");
       fd.set("guardians", JSON.stringify(value.guardians));
       updateStudent.mutate(fd);
     },
@@ -377,36 +381,68 @@ export default function EditStudentForm({
         <h2 className="mb-4 font-display text-lg font-bold tracking-tight text-foreground sm:text-xl">
           Record status
         </h2>
-        <div className="rounded-xl border border-border bg-muted p-4">
-          <div className="flex flex-row items-start gap-3">
-            <form.Field
-              name="isActive"
-              children={(field) => (
-                <input
-                  id="isActive"
-                  type="checkbox"
-                  checked={isActiveLocked ? student.isActive : field.state.value}
-                  disabled={isActiveLocked}
-                  onChange={(e) => field.handleChange(e.target.checked as never)}
-                  className="mt-1 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary/30 disabled:cursor-not-allowed"
-                />
-              )}
-            />
-            <div className="min-w-0">
-              <label className="form-label m-0 cursor-pointer" htmlFor="isActive">
-                Active student
-              </label>
-              {isActiveLocked ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-border bg-muted p-4">
+            <div className="flex flex-row items-start gap-3">
+              <form.Field
+                name="isActive"
+                children={(field) => (
+                  <input
+                    id="isActive"
+                    type="checkbox"
+                    checked={isActiveLocked ? student.isActive : field.state.value}
+                    disabled={isActiveLocked}
+                    onChange={(e) => field.handleChange(e.target.checked as never)}
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary/30 disabled:cursor-not-allowed"
+                  />
+                )}
+              />
+              <div className="min-w-0">
+                <label className="form-label m-0 cursor-pointer" htmlFor="isActive">
+                  Active student
+                </label>
+                {isActiveLocked ? (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Active cannot be changed while this student has an enrollment in{" "}
+                    <strong className="text-foreground">Enrolled</strong> status.
+                  </p>
+                ) : null}
+                {serverErrors?.isActive?.[0] && (
+                  <p className="form-error mt-1" role="alert">
+                    {serverErrors.isActive[0]}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-info/30 bg-info/5 p-4">
+            <div className="flex flex-row items-start gap-3">
+              <form.Field
+                name="isSpecialEducation"
+                children={(field) => (
+                  <input
+                    id="isSpecialEducation"
+                    type="checkbox"
+                    checked={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.checked as never)}
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-info/50 text-info focus:ring-info/30 dark:border-info/30"
+                  />
+                )}
+              />
+              <div className="min-w-0">
+                <label className="form-label m-0 cursor-pointer" htmlFor="isSpecialEducation">
+                  Special Education (SPED) Student
+                </label>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Active cannot be changed while this student has an enrollment in{" "}
-                  <strong className="text-foreground">Enrolled</strong> status.
+                  SPED fee will be auto-included in future assessments.
                 </p>
-              ) : null}
-              {serverErrors?.isActive?.[0] && (
-                <p className="form-error mt-1" role="alert">
-                  {serverErrors.isActive[0]}
-                </p>
-              )}
+                {serverErrors?.isSpecialEducation?.[0] && (
+                  <p className="form-error mt-1" role="alert">
+                    {serverErrors.isSpecialEducation[0]}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>

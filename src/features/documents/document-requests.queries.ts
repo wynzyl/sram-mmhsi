@@ -10,10 +10,17 @@ import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   documentRequests,
+  enrollments,
   students,
+  studentDiscounts,
   schoolYears,
   users,
   assessments,
+  gradeLevels,
+  sections,
+  gradeRecords,
+  teacherAssignments,
+  subjects,
 } from "@/lib/db/schema";
 import {
   and,
@@ -56,6 +63,8 @@ export type DocumentRequestListItem = {
   studentId: string;
   studentRef: string;
   studentName: string;
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   documentType: DocumentRequestType;
   purpose: string | null;
   copies: number;
@@ -268,6 +277,15 @@ export async function fetchDocumentRequestsPage(
         studentRef: students.referenceNumber,
         firstName: students.firstName,
         lastName: students.lastName,
+        isSpecialEducation: students.isSpecialEducation,
+        hasEscDiscount: sql<boolean>`EXISTS(
+          SELECT 1 FROM "discount_requests" dr
+          INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+          INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+          WHERE e2.student_id = "students".id
+            AND dt.code LIKE 'ESC_%'
+            AND dr.status = 'approved'
+        )`.as("has_esc_discount"),
         documentType: documentRequests.documentType,
         purpose: documentRequests.purpose,
         copies: documentRequests.copies,
@@ -311,6 +329,8 @@ export async function fetchDocumentRequestsPage(
       studentId: r.studentId,
       studentRef: r.studentRef,
       studentName: `${r.lastName}, ${r.firstName}`,
+      isSpecialEducation: r.isSpecialEducation,
+      hasEscDiscount: r.hasEscDiscount,
       documentType: r.documentType as DocumentRequestType,
       purpose: r.purpose,
       copies: r.copies,
@@ -349,6 +369,15 @@ export async function getDocumentRequestById(
       studentRef: students.referenceNumber,
       firstName: students.firstName,
       lastName: students.lastName,
+      isSpecialEducation: students.isSpecialEducation,
+      hasEscDiscount: sql<boolean>`EXISTS(
+        SELECT 1 FROM "discount_requests" dr
+        INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+        INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+        WHERE e2.student_id = "students".id
+          AND dt.code LIKE 'ESC_%'
+          AND dr.status = 'approved'
+      )`.as("has_esc_discount"),
       schoolYearId: documentRequests.schoolYearId,
       documentType: documentRequests.documentType,
       purpose: documentRequests.purpose,
@@ -408,6 +437,8 @@ export async function getDocumentRequestById(
     studentId: row.studentId,
     studentRef: row.studentRef,
     studentName: `${row.lastName}, ${row.firstName}`,
+    isSpecialEducation: row.isSpecialEducation,
+    hasEscDiscount: row.hasEscDiscount,
     schoolYearId: row.schoolYearId,
     schoolYearLabel,
     documentType: row.documentType as DocumentRequestType,
@@ -611,14 +642,6 @@ export async function getSchoolYearOptions(): Promise<
 
 // ─── Document Export Data ─────────────────────────────────────────────────────
 
-import {
-  enrollments,
-  gradeLevels,
-  sections,
-  gradeRecords,
-  teacherAssignments,
-  subjects,
-} from "@/lib/db/schema";
 import type { DocumentExportData } from "./document.export";
 
 /**

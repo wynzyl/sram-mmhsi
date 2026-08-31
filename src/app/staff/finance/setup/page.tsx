@@ -3,9 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { getSpedFeeAmount } from "@/features/settings/system-settings.actions";
+import { SpedFeeSettingsForm } from "@/features/settings/components/SpedFeeSettingsForm";
 
 export const metadata: Metadata = {
   title: "Billing Setup",
@@ -65,6 +67,9 @@ export default async function BillingSetupPage() {
     redirect("/staff");
   }
 
+  // Fetch SPED fee amount for the settings form
+  const currentSpedFeeAmount = canManageFees ? await getSpedFeeAmount() : 0;
+
   return (
     <PageContainer>
       <PageHeader
@@ -84,6 +89,23 @@ export default async function BillingSetupPage() {
           </Link>
         ))}
       </div>
+
+      {/* SPED Fee Configuration */}
+      {canManageFees && (
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Special Education (SPED) Fee</CardTitle>
+              <CardDescription>
+                Configure the default fee amount added to assessments for SPED students.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SpedFeeSettingsForm currentAmount={currentSpedFeeAmount} />
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </PageContainer>
   );
 }

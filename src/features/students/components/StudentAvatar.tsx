@@ -12,6 +12,8 @@ export type StudentAvatarProps = {
   initials: string;
   /** Avatar size: sm (48px), md (112px), lg (128px) */
   size?: AvatarSize;
+  /** Whether student has an active ESC discount (shows ESC logo instead of initials/photo) */
+  hasEscDiscount?: boolean;
   /** Additional CSS classes */
   className?: string;
 };
@@ -42,6 +44,7 @@ export function StudentAvatar({
   photoUrl,
   initials,
   size = "md",
+  hasEscDiscount = false,
   className,
 }: StudentAvatarProps) {
   const sizeClasses = SIZE_CLASSES[size];
@@ -54,6 +57,23 @@ export function StudentAvatar({
     sizeClasses,
     className
   );
+
+  // ESC grantees show ESC logo as avatar
+  if (hasEscDiscount) {
+    return (
+      <div className={baseClasses} title="ESC Grantee">
+        <Image
+          src="/ESC-Logo.png"
+          alt="ESC Grantee"
+          width={pixels}
+          height={pixels}
+          className="h-full w-full object-cover"
+          priority={size !== "sm"}
+          unoptimized
+        />
+      </div>
+    );
+  }
 
   if (photoUrl) {
     return (

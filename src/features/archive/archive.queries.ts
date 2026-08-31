@@ -12,6 +12,7 @@ import {
   gradeLevels,
   payments,
   schoolYears,
+  studentDiscounts,
   students,
 } from "@/lib/db/schema";
 import {
@@ -44,6 +45,8 @@ export type ArchivedStudentRow = {
   middleName: string | null;
   lastName: string;
   suffix: string | null;
+  isSpecialEducation: boolean;
+  hasEscDiscount: boolean;
   status: StudentStatus;
   archivedAt: Date | null;
   archiveReason: string | null;
@@ -154,6 +157,15 @@ export async function fetchArchivedStudentsPage(
         middleName: students.middleName,
         lastName: students.lastName,
         suffix: students.suffix,
+        isSpecialEducation: students.isSpecialEducation,
+        hasEscDiscount: sql<boolean>`EXISTS(
+          SELECT 1 FROM "discount_requests" dr
+          INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
+          INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
+          WHERE e2.student_id = "students".id
+            AND dt.code LIKE 'ESC_%'
+            AND dr.status = 'approved'
+        )`.as("has_esc_discount"),
         status: students.status,
         archivedAt: students.archivedAt,
         archiveReason: students.archiveReason,

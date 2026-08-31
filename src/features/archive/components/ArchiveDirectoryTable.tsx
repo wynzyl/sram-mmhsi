@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatDate } from "@/lib/utils/date";
 import { getInitials } from "@/lib/utils/name";
 import type { ArchivedStudentRow } from "../archive.queries";
@@ -36,17 +38,32 @@ export function ArchiveDirectoryTable({
           const data = row.original;
           return (
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                {getInitials(`${data.firstName} ${data.lastName}`)}
-              </div>
+              {data.hasEscDiscount ? (
+                <Image
+                  src="/ESC-Logo.png"
+                  alt="ESC Grantee"
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 shrink-0 rounded-full object-cover"
+                  title="ESC Grantee"
+                  unoptimized
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                  {getInitials(`${data.firstName} ${data.lastName}`)}
+                </div>
+              )}
               <div>
-                <Link
-                  href={`/staff/archive/${data.id}`}
-                  prefetch={false}
-                  className="font-medium text-foreground hover:text-primary hover:underline"
-                >
-                  {formatStudentName(data)}
-                </Link>
+                <span className="flex items-center">
+                  <Link
+                    href={`/staff/archive/${data.id}`}
+                    prefetch={false}
+                    className="font-medium text-foreground hover:text-primary hover:underline"
+                  >
+                    {formatStudentName(data)}
+                  </Link>
+                  <SpedBadge isSped={data.isSpecialEducation} />
+                </span>
                 {data.lastEnrollmentSchoolYear && (
                   <p className="text-xs text-muted-foreground">
                     {data.lastEnrollmentSchoolYear}

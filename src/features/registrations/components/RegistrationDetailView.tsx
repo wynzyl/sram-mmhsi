@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
+import { SpedBadge } from "@/components/shared/SpedBadge";
 import { DataCard } from "@/components/ui/editorial/DataCard";
 import { GuardianCard } from "@/features/registrations/components/GuardianCard";
 import { StatusIndicator } from "@/components/ui/editorial/StatusIndicator";
@@ -175,9 +177,29 @@ export function RegistrationDetailView({
               </div>
               <div className="min-w-0 space-y-2 pb-1 sm:pb-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+                  <h1 className="flex items-center font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
                     {fullName}
+                    <SpedBadge isSped={student.isSpecialEducation} />
                   </h1>
+                  {student.hasEscDiscount && (
+                    <span className="inline-flex items-center gap-1">
+                      <Image
+                        src="/ESC-Logo.png"
+                        alt="ESC Grantee"
+                        width={48}
+                        height={48}
+                        className="inline-block"
+                        unoptimized
+                      />
+                    </span>
+                  )}
+                </div>
+                <p className="flex flex-wrap items-center gap-2 text-secondary sm:text-base">
+                  <span>
+                    <span className="font-mono text-foreground">{student.referenceNumber}</span>
+                    <span className="mx-2 text-muted-foreground">·</span>
+                    {placementSubtitle}
+                  </span>
                   <span
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide",
@@ -204,11 +226,6 @@ export function RegistrationDetailView({
                   ) : (
                     <StatusIndicator status="pending" label="Placement pending" size="sm" pulse />
                   )}
-                </div>
-                <p className="text-secondary sm:text-base">
-                  <span className="font-mono text-foreground">{student.referenceNumber}</span>
-                  <span className="mx-2 text-muted-foreground">·</span>
-                  {placementSubtitle}
                 </p>
                 {student.lrn || age != null ? (
                   <p className="text-helper sm:text-sm">

@@ -40,13 +40,22 @@ function buildSummaryItems(summary: BfxReportSummary): ReportSummaryItem[] {
 
 // ─── PDF (Track 1) ─────────────────────────────────────────────────────────────
 
+function formatStudentName(r: BfxTransferRow): string {
+  const suffixes: string[] = [];
+  if (r.hasEscDiscount) suffixes.push("ESC");
+  if (r.isSpecialEducation) suffixes.push("SPED");
+  return suffixes.length > 0
+    ? `${r.studentName} (${suffixes.join(", ")})`
+    : r.studentName;
+}
+
 const pdfColumns: ReportColumn<BfxTransferRow>[] = [
   { header: "BFX #", width: "15%", mono: true, cell: (r) => r.bfxNumber || "—" },
   { header: "Date", width: "13%", cell: (r) => reportDate(r.transferDate) },
   {
     header: "Student",
     width: "28%",
-    cell: (r) => r.studentName,
+    cell: formatStudentName,
     subCell: (r) => r.studentRef,
   },
   { header: "Source SY", width: "13%", cell: (r) => r.sourceSchoolYearLabel },
@@ -88,7 +97,7 @@ export function BalanceForwardPdfDocument({
 const xlsxColumns: XlsxColumn<BfxTransferRow>[] = [
   { header: "BFX #", width: 16, value: (r) => r.bfxNumber || "" },
   { header: "Date", width: 14, value: (r) => reportDate(r.transferDate) },
-  { header: "Student", width: 28, value: (r) => r.studentName },
+  { header: "Student", width: 28, value: formatStudentName },
   { header: "Student ID", width: 18, value: (r) => r.studentRef },
   { header: "Source School Year", width: 16, value: (r) => r.sourceSchoolYearLabel },
   {
