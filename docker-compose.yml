@@ -41,6 +41,9 @@ services:
   # One-shot: apply Drizzle migrations before the app starts
   migrate:
     image: sram-mmhsi-app:dev
+    build:
+      context: .
+      target: dev
     env_file:
       - .env.local
     environment:

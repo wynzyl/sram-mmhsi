@@ -47,8 +47,11 @@ services:
 
   migrate:
     image: sram-mmhsi-app:runner
-    # Image is built locally by the `app` service — never try to pull it from a
-    # registry (a parallel pull races the first `up --build` and fails the stack).
+    build:
+      context: .
+      target: runner
+    # Image is built locally — never try to pull it from a registry (a parallel
+    # pull races the first `up --build` and fails the stack).
     pull_policy: never
     # DATABASE_URL comes from .env.production and must use the INTERNAL port
     # (srams_db:5432) — the 5433 mapping only exists on the host side of "5433:5432".
