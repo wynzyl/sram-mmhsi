@@ -113,6 +113,8 @@ COPY --from=builder /app/node_modules/esbuild ./node_modules/esbuild
 COPY --from=builder /app/node_modules/@esbuild ./node_modules/@esbuild
 COPY --from=builder /app/node_modules/dotenv ./node_modules/dotenv
 COPY --from=builder /app/node_modules/dotenv-expand ./node_modules/dotenv-expand
+# bcryptjs needed for seed scripts (password hashing)
+COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
 # Add node_modules/.bin to PATH for CLI tools
 ENV PATH="/app/node_modules/.bin:$PATH"
