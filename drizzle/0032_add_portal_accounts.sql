@@ -21,22 +21,35 @@ CREATE TABLE IF NOT EXISTS "portal_accounts" (
 
 -- Indexes for portal_accounts
 -- One portal account per student (active records only)
-CREATE UNIQUE INDEX "portal_accounts_student_uidx" ON "portal_accounts" ("student_id") WHERE "deleted_at" IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "portal_accounts_student_uidx" ON "portal_accounts" ("student_id") WHERE "deleted_at" IS NULL;
 -- Username must be globally unique
-CREATE UNIQUE INDEX "portal_accounts_username_uidx" ON "portal_accounts" ("username");
+CREATE UNIQUE INDEX IF NOT EXISTS "portal_accounts_username_uidx" ON "portal_accounts" ("username");
 -- Active accounts lookup (for login queries)
-CREATE INDEX "portal_accounts_active_idx" ON "portal_accounts" ("is_active") WHERE "is_active" = true AND "deleted_at" IS NULL;
+CREATE INDEX IF NOT EXISTS "portal_accounts_active_idx" ON "portal_accounts" ("is_active") WHERE "is_active" = true AND "deleted_at" IS NULL;
 
 -- Modify sessions table to support portal accounts
--- Add portal_account_id column
-ALTER TABLE "sessions" ADD COLUMN "portal_account_id" uuid REFERENCES "portal_accounts"("id") ON DELETE CASCADE;
+-- Add portal_account_id column (idempotent: check if column exists)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name = 'sessions' AND column_name = 'portal_account_id') THEN
+    ALTER TABLE "sessions" ADD COLUMN "portal_account_id" uuid REFERENCES "portal_accounts"("id") ON DELETE CASCADE;
+  END IF;
+END $$;
 
 -- Make user_id nullable (either userId OR portalAccountId must be set)
 ALTER TABLE "sessions" ALTER COLUMN "user_id" DROP NOT NULL;
 
 -- Add index for portal account sessions
-CREATE INDEX "sessions_portal_account_idx" ON "sessions" ("portal_account_id");
+CREATE INDEX IF NOT EXISTS "sessions_portal_account_idx" ON "sessions" ("portal_account_id");
 
 -- Add constraint: exactly one of userId or portalAccountId must be set (XOR)
-ALTER TABLE "sessions" ADD CONSTRAINT "sessions_account_type_chk"
-  CHECK (("user_id" IS NOT NULL AND "portal_account_id" IS NULL) OR ("user_id" IS NULL AND "portal_account_id" IS NOT NULL));
+-- Drop first if exists (for idempotency), then recreate
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.check_constraints
+                 WHERE constraint_name = 'sessions_account_type_chk') THEN
+    ALTER TABLE "sessions" ADD CONSTRAINT "sessions_account_type_chk"
+      CHECK (("user_id" IS NOT NULL AND "portal_account_id" IS NULL) OR ("user_id" IS NULL AND "portal_account_id" IS NOT NULL));
+  END IF;
+END $$;
