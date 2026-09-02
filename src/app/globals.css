@@ -529,6 +529,12 @@
   background-color: var(--muted);
 }
 
+/* Ensure select elements have adequate height for text */
+select.form-control {
+  min-height: 2.75rem;
+  padding-right: 1rem;
+}
+
 .form-control-error {
   border-color: var(--destructive);
 }

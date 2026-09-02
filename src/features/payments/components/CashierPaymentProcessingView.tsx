@@ -286,9 +286,9 @@ export function CashierPaymentProcessingView({
               {/* Left Column */}
               <div className="space-y-3 md:space-y-4 lg:col-span-8">
                 {/* Top Row: Two side-by-side cards */}
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-12 md:gap-4">
                   {/* Payment Info Card */}
-                  <Card>
+                  <Card className="md:col-span-7">
                     <CardContent className="space-y-4 p-4">
                       {/* Amount Due */}
                       <div>
@@ -394,7 +394,7 @@ export function CashierPaymentProcessingView({
                             <select
                               id="bookletId"
                               name="bookletId"
-                              className="form-control h-9 w-full"
+                              className="form-control w-full"
                               required
                               disabled={activeBooklets.length === 0}
                               value={form.selectedBookletId}
@@ -476,7 +476,7 @@ export function CashierPaymentProcessingView({
                   </Card>
 
                   {/* Amount Entry Card */}
-                  <Card>
+                  <Card className="md:col-span-5">
                     <CardContent className="p-4">
                       {/* Amount to Pay */}
                       <div className="mb-3">

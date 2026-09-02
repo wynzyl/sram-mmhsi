@@ -785,6 +785,17 @@ Seeds: students, enrollments, assessments (for testing).
     ```
     The client component should still call `router.refresh()` in `onSuccess`. This pattern was validated in sections CRUD actions (2026-08-06).
 13. **Turbopack Performance Measurement Bug (Next.js 16):** During development, you may see `Failed to execute 'measure' on 'Performance': '[PageName] [Prerender]' cannot have a negative time stamp`. This is a **harmless internal Turbopack bug** where the performance timing API calculates negative durations during prerendering. It does **not** affect functionality — pages render and work correctly. The `dynamic = "force-dynamic"` workaround is incompatible with `cacheComponents`, so simply ignore these console errors. This affects redirect-only pages like `StaffDashboardPage` most frequently. (Documented 2026-08-19.)
+14. **Drizzle Migrations Must Use `generate` Command:** **NEVER manually create migration SQL files.** Always use Drizzle Kit's `generate` command, which creates both the SQL file AND updates `drizzle/meta/_journal.json`. Manually created SQL files without journal entries are ignored by `db:migrate`. Pattern:
+    ```bash
+    # 1. Modify src/lib/db/schema.ts
+    # 2. Generate migration (creates SQL + updates journal automatically)
+    npm run db:generate -- --name=descriptive_migration_name
+
+    # 3. Review generated SQL in drizzle/*.sql
+    # 4. Apply migration
+    npm run db:migrate
+    ```
+    If `generate` fails due to TTY/interactive prompt issues in non-interactive shells, run it in a proper terminal (not through Claude Code or CI). The journal entry is critical — without it, Drizzle considers the schema "up to date" and skips the migration. (Diagnosed 2026-09-02 when `inactive` booklet status migration was created manually but not tracked.)
 
 ### Integration Points (Future)
 

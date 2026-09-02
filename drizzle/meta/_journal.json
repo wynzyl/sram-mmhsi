@@ -253,6 +253,13 @@
       "when": 1787769600000,
       "tag": "0035_add_special_education_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1788374400000,
+      "tag": "0036_add_inactive_booklet_status",
+      "breakpoints": true
     }
   ]
 }
