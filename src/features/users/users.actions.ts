@@ -22,6 +22,7 @@ import type {
 import { logger } from "@/lib/observability/logger";
 import { isAdminActionRateLimited, getAdminActionResetSeconds } from "@/lib/security/rateLimit";
 import { ROLES, type Role } from "@/lib/constants/roles";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import bcrypt from "bcryptjs";
 
 // SECURITY (A-6): bcrypt cost factor - matches auth.actions.ts
@@ -60,7 +61,7 @@ export async function createUserAction(
   // 1. Auth check
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "users:manage")) {
-    return { message: "You do not have permission to create users." };
+    return { message: PERMISSION_ERRORS.USERS_CREATE };
   }
 
   // 1.1 Rate limit check (prevent abuse)
@@ -175,7 +176,7 @@ export async function updateUserAction(
   // 1. Auth check
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "users:manage")) {
-    return { message: "You do not have permission to update users." };
+    return { message: PERMISSION_ERRORS.USERS_UPDATE };
   }
 
   // 2. Validate
@@ -355,7 +356,7 @@ export async function resetPasswordAction(
   // 1. Auth check
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "users:manage")) {
-    return { message: "You do not have permission to reset passwords." };
+    return { message: PERMISSION_ERRORS.USERS_RESET_PASSWORD };
   }
 
   // 2. Validate
@@ -441,7 +442,7 @@ export async function toggleUserStatusAction(
   // 1. Auth check
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "users:manage")) {
-    return { message: "You do not have permission to change user status." };
+    return { message: PERMISSION_ERRORS.USERS_CHANGE_STATUS };
   }
 
   // 2. Validate

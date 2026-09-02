@@ -13,6 +13,7 @@ import {
 import { eq, and, ne, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { validateGradeProgression } from "@/lib/utils/enrollment-grade";
@@ -52,7 +53,7 @@ export async function confirmEnrollmentAction(
 
   // Check permission (use create permission for now, could add specific confirm permission later)
   if (!hasPermission(session.role, "enrollments:create")) {
-    return { message: "You do not have permission to confirm enrollments." };
+    return { message: PERMISSION_ERRORS.ENROLLMENTS_CONFIRM };
   }
 
   // Parse and validate input
@@ -363,7 +364,7 @@ export async function quickConfirmEnrollmentAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "enrollments:create")) {
-    return { message: "You do not have permission to confirm enrollments." };
+    return { message: PERMISSION_ERRORS.ENROLLMENTS_CONFIRM };
   }
 
   const parseResult = parseFormData(QuickConfirmEnrollmentSchema, formData);
@@ -409,7 +410,7 @@ export async function fetchReadyToEnrollDetailAction(
     const session = await requireSession();
 
     if (!hasPermission(session.role, "enrollments:read")) {
-      return { success: false, error: "You do not have permission to view enrollment details." };
+      return { success: false, error: PERMISSION_ERRORS.ENROLLMENTS_VIEW };
     }
 
     const activeSchoolYearId = await getActiveSchoolYearId();

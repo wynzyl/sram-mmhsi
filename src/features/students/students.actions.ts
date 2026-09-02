@@ -17,6 +17,7 @@ import { eq, ne, ilike, and, sql } from "drizzle-orm";
 import { hash } from "bcryptjs";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
 // parseFormData is not used in this file - form parsing is done manually for complex wizard forms
 import { extractConstraintName } from "@/lib/errors";
@@ -65,7 +66,7 @@ export async function createStudentAction(
   const session = await requireSession();
   if (!hasPermission(session.role, "students:create")) {
     return {
-      message: "You do not have permission to create students.",
+      message: PERMISSION_ERRORS.STUDENTS_CREATE,
       fieldValues: buildCreateStudentFormSnapshot(formData, []),
     };
   }
@@ -415,7 +416,7 @@ export async function updateStudentAction(
   // 1. Auth check
   const session = await requireSession();
   if (!hasPermission(session.role, "students:update")) {
-    return { message: "You do not have permission to update students." };
+    return { message: PERMISSION_ERRORS.STUDENTS_UPDATE };
   }
 
   // 2. Parse raw form data — guardians come in as JSON string from the client
@@ -673,7 +674,7 @@ export async function updateSpecialEducationStatusAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "students:update")) {
-    return { message: "You do not have permission to update students." };
+    return { message: PERMISSION_ERRORS.STUDENTS_UPDATE };
   }
 
   const studentId = formData.get("studentId");

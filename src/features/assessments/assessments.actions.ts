@@ -23,6 +23,7 @@ import { eq, and, ne, isNotNull, isNull, asc, inArray } from "drizzle-orm";
 import { resolveFeeScheduleForAssessment } from "./assessments.queries";
 import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import {
   CreateAssessmentFromEnrollmentSchema,
   CancelAssessmentSchema,
@@ -60,7 +61,7 @@ export async function createAssessmentFromEnrollmentAction(
 ): Promise<AssessmentFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "assessments:create")) {
-    return { message: "You do not have permission to create assessments." };
+    return { message: PERMISSION_ERRORS.ASSESSMENTS_CREATE };
   }
 
   let itemsRaw: unknown;
@@ -620,7 +621,7 @@ export async function reverseBalanceTransferAction(
   // Permission check
   if (!hasPermission(session.role, "assessments:reverse_transfer")) {
     return {
-      message: "You do not have permission to reverse balance transfers. This action is restricted to administrators.",
+      message: PERMISSION_ERRORS.ASSESSMENTS_REVERSE_TRANSFER,
     };
   }
 
@@ -786,7 +787,7 @@ export async function cancelAssessmentAction(
   // 1. Permission check
   if (!hasPermission(session.role, "assessments:cancel")) {
     return {
-      message: "You do not have permission to cancel assessments.",
+      message: PERMISSION_ERRORS.ASSESSMENTS_CANCEL,
     };
   }
 
@@ -1056,7 +1057,7 @@ export async function addSpecialFeeAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "assessments:update")) {
-    return { message: "You do not have permission to modify assessments." };
+    return { message: PERMISSION_ERRORS.ASSESSMENTS_MODIFY };
   }
 
   const parsed = AddSpecialFeeSchema.safeParse({
@@ -1240,7 +1241,7 @@ export async function removeSpecialFeeAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "assessments:update")) {
-    return { message: "You do not have permission to modify assessments." };
+    return { message: PERMISSION_ERRORS.ASSESSMENTS_MODIFY };
   }
 
   const parsed = RemoveSpecialFeeSchema.safeParse({

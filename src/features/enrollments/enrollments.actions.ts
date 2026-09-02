@@ -15,6 +15,7 @@ import {
 import { eq, and, ne, desc } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { logAudit, logUpdateAction } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
 import { extractConstraintName } from "@/lib/errors";
@@ -52,7 +53,7 @@ export async function createEnrollmentAction(
 ): Promise<EnrollmentFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "enrollments:create")) {
-    return { message: "You do not have permission to create enrollments." };
+    return { message: PERMISSION_ERRORS.ENROLLMENTS_CREATE };
   }
 
   const studentTypeRaw = formData.get("studentType");
@@ -389,7 +390,7 @@ export async function updateEnrollmentStatusAction(
   } as const;
 
   if (!hasPermission(session.role, permissionMap[action])) {
-    return { message: `You do not have permission to perform this enrollment action.` };
+    return { message: PERMISSION_ERRORS.ENROLLMENTS_ACTION };
   }
 
   const enrollment = await db.query.enrollments.findFirst({
@@ -542,7 +543,7 @@ export async function updateIntakeDocumentsAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "enrollments:update")) {
-    return { message: "You do not have permission to update enrollment documents." };
+    return { message: PERMISSION_ERRORS.ENROLLMENTS_UPDATE_DOCUMENTS };
   }
 
   const parsed = UpdateIntakeDocumentsSchema.safeParse({

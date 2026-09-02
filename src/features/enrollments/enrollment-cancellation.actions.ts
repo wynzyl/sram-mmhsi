@@ -14,6 +14,7 @@ import {
 import { eq, and, isNull } from "drizzle-orm";
 import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
 import { logger } from "@/lib/observability/logger";
@@ -82,7 +83,7 @@ export async function requestEnrollmentCancellationAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "enrollments:cancel")) {
-    return { message: "You do not have permission to request enrollment cancellations." };
+    return { message: PERMISSION_ERRORS.ENROLLMENTS_REQUEST_CANCELLATION };
   }
 
   const result = parseFormData(RequestEnrollmentCancellationSchema, formData);
@@ -195,7 +196,7 @@ export async function directCancelEnrollmentAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "enrollments:cancel")) {
-    return { message: "You do not have permission to cancel enrollments." };
+    return { message: PERMISSION_ERRORS.ENROLLMENTS_CANCEL };
   }
 
   const result = parseFormData(DirectCancelEnrollmentSchema, formData);
@@ -672,7 +673,7 @@ export async function withdrawCancellationRequestAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "enrollments:cancel")) {
-    return { message: "You do not have permission to withdraw cancellation requests." };
+    return { message: PERMISSION_ERRORS.ENROLLMENTS_WITHDRAW_CANCELLATION };
   }
 
   const result = parseFormData(WithdrawCancellationRequestSchema, formData);
