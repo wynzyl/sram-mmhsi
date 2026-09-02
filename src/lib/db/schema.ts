@@ -747,8 +747,6 @@ export const registrations = pgTable(
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     updatedBy: uuid("updated_by").references(() => users.id),
-    deletedAt: timestamp("deleted_at"),
-    deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
     index("reg_student_sy_idx").on(t.studentId, t.schoolYearId),
@@ -756,9 +754,6 @@ export const registrations = pgTable(
     index("reg_sy_status_idx").on(t.schoolYearId, t.status), // MEMORY OPTIMIZATION: Composite index for enrollment queue
     // NOTE: Additional constraint created via migration 0010:
     // - registrations_student_sy_active_uidx: UNIQUE(student_id, school_year_id) WHERE status != 'rejected'
-    index("reg_active_idx")
-      .on(t.status)
-      .where(sql`${t.deletedAt} IS NULL`), // SOFT DELETE: Active registrations filter
   ]
 );
 
@@ -840,14 +835,7 @@ export const feeScheduleItems = pgTable("fee_schedule_items", {
   createdBy: uuid("created_by").references(() => users.id),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: uuid("updated_by").references(() => users.id),
-  deletedAt: timestamp("deleted_at"),
-  deletedBy: uuid("deleted_by").references(() => users.id),
-}, (t) => [
-  index("fsi_fee_schedule_idx").on(t.feeScheduleId),
-  index("fsi_active_idx")
-    .on(t.feeScheduleId)
-    .where(sql`${t.deletedAt} IS NULL`), // SOFT DELETE: Active fee schedule items filter
-]);
+});
 
 // ─── Fee Templates (Reusable Fee Structures) ─────────────────────────────
 
@@ -1070,8 +1058,6 @@ export const assessmentItems = pgTable(
     createdBy: uuid("created_by").references(() => users.id),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     updatedBy: uuid("updated_by").references(() => users.id),
-    deletedAt: timestamp("deleted_at"),
-    deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
     index("ai_assessment_idx").on(t.assessmentId),
@@ -1082,9 +1068,6 @@ export const assessmentItems = pgTable(
     index("ai_cascade_adjustment_idx")
       .on(t.adjustsItemId)
       .where(sql`${t.isCascadeAdjustment} = true`), // PERFORMANCE: Cascade adjustment lookup
-    index("ai_active_idx")
-      .on(t.assessmentId)
-      .where(sql`${t.deletedAt} IS NULL`), // SOFT DELETE: Active assessment items filter
   ]
 );
 

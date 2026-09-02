@@ -2,7 +2,7 @@
 
 **Created:** 2026-09-02
 **Priority:** Production stability first
-**Status:** Phases 1-3 code complete (Phase 3 migration pending manual generation), Phase 4 pending
+**Status:** Phases 1-2 complete, Phases 3-4 pending
 
 ## Overview
 
@@ -250,20 +250,39 @@ Three tables violate the non-negotiable soft delete rule:
 
 **File:** `src/lib/db/schema.ts`
 
-- [x] Add `deletedAt` and `deletedBy` to `assessmentItems` table
-- [x] Add `deletedAt` and `deletedBy` to `feeScheduleItems` table
-- [x] Add `deletedAt` and `deletedBy` to `registrations` table
-- [x] Add partial indexes for soft delete queries
+- [ ] Add `deletedAt` and `deletedBy` to `assessmentItems` table
+- [ ] Add `deletedAt` and `deletedBy` to `feeScheduleItems` table
+- [ ] Add `deletedAt` and `deletedBy` to `registrations` table
+- [ ] Add partial indexes for soft delete queries
 
-**Indexes added:**
-- `ai_active_idx` on `assessmentItems(assessmentId)` where `deletedAt IS NULL`
-- `fsi_active_idx` on `feeScheduleItems(feeScheduleId)` where `deletedAt IS NULL`
-- `reg_active_idx` on `registrations(status)` where `deletedAt IS NULL`
+**Pattern:**
+```typescript
+// Add to each table definition
+deletedAt: timestamp("deleted_at"),
+deletedBy: uuid("deleted_by").references(() => users.id),
+```
+
+**Indexes to add:**
+```typescript
+// For assessmentItems
+index("assessment_items_active_idx")
+  .on(assessmentItems.assessmentId)
+  .where(sql`${assessmentItems.deletedAt} IS NULL`),
+
+// For feeScheduleItems
+index("fee_schedule_items_active_idx")
+  .on(feeScheduleItems.feeScheduleId)
+  .where(sql`${feeScheduleItems.deletedAt} IS NULL`),
+
+// For registrations
+index("registrations_active_idx")
+  .on(registrations.status)
+  .where(sql`${registrations.deletedAt} IS NULL`),
+```
 
 #### 3.2 Generate and apply migration
 
 - [ ] Run `npm run db:generate -- --name=add_soft_delete_to_assessment_items_fee_schedule_items_registrations`
-  - **Note:** Requires interactive terminal (TTY) — run manually in a proper terminal
 - [ ] Review generated SQL migration file
 - [ ] Run `npm run db:migrate` to apply
 
@@ -271,40 +290,40 @@ Three tables violate the non-negotiable soft delete rule:
 
 **File:** `src/features/assessments/assessments.actions.ts`
 
-- [x] `removeAssessmentItemAction` (line ~1332): Converted hard delete to soft delete
-- [x] `reverseBalanceTransferAction` (line ~683): Converted hard delete to soft delete
-- [x] `cancelAssessmentAction` (line ~926): Converted hard delete to soft delete
+- [ ] Line 1337: Replace hard delete with soft delete
 
-All 3 hard delete operations now use:
+**Before:**
 ```typescript
-.update(assessmentItems)
-.set({
-  deletedAt: new Date(),
-  deletedBy: session.userId,
-})
+await tx
+  .delete(assessmentItems)
+  .where(eq(assessmentItems.id, assessmentItemId));
+```
+
+**After:**
+```typescript
+await tx
+  .update(assessmentItems)
+  .set({
+    deletedAt: new Date(),
+    deletedBy: session.userId,
+  })
+  .where(eq(assessmentItems.id, assessmentItemId));
 ```
 
 #### 3.4 Update queries to filter soft-deleted records
 
-**Files updated:**
+**Files to check/update:**
 
-- [x] `assessments.actions.ts` — Added `isNull(assessmentItems.deletedAt)` filters to:
-  - Balance forward item queries in `reverseBalanceTransferAction` (line ~657)
-  - Remaining items query after soft delete (line ~696)
-  - Balance forward item queries in `cancelAssessmentAction` (line ~908)
-  - SPED fee existence check in `addSpecialEducationFeeAction` (line ~1124)
-- [ ] `fee-schedules.queries.ts` — Add `isNull(feeScheduleItems.deletedAt)` filters (deferred — no current hard deletes of fee schedule items)
-- [ ] `registrations.queries.ts` — Add `isNull(registrations.deletedAt)` filters (deferred — no current hard deletes of registrations)
+- [ ] `src/features/assessments/assessments.queries.ts` — Add `isNull(assessmentItems.deletedAt)` filters
+- [ ] `src/features/finance/fee-schedules/fee-schedules.queries.ts` — Add `isNull(feeScheduleItems.deletedAt)` filters
+- [ ] `src/features/registrations/registrations.queries.ts` — Add `isNull(registrations.deletedAt)` filters
 
 ### Verification
 
-- [ ] Generate and apply migration (manual step required)
 - [ ] Test deleting an assessment item — confirm row has `deletedAt` set, not removed
 - [ ] Test fee schedule item queries — confirm deleted items excluded
 - [ ] Test registration queries — confirm deleted registrations excluded
 - [ ] Check no orphaned data after deletion operations
-
-**Status:** ✅ Schema and action code changes complete. Migration generation requires interactive terminal.
 
 ---
 

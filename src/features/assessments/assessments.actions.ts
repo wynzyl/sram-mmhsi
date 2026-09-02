@@ -653,12 +653,11 @@ export async function reverseBalanceTransferAction(
         );
       }
 
-      // 4. Find all active balance forward items linked to source assessments
+      // 4. Find all balance forward items linked to source assessments
       const balanceForwardItems = await tx.query.assessmentItems.findMany({
         where: and(
           eq(assessmentItems.assessmentId, assessmentId),
-          isNotNull(assessmentItems.sourceAssessmentId),
-          isNull(assessmentItems.deletedAt)
+          isNotNull(assessmentItems.sourceAssessmentId)
         ),
       });
 
@@ -679,13 +678,9 @@ export async function reverseBalanceTransferAction(
         reason: "balance_transfer_reversed",
       });
 
-      // 6. Soft-delete balance forward items from target assessment
+      // 6. Delete balance forward items from target assessment
       await tx
-        .update(assessmentItems)
-        .set({
-          deletedAt: new Date(),
-          deletedBy: session.userId,
-        })
+        .delete(assessmentItems)
         .where(
           and(
             eq(assessmentItems.assessmentId, assessmentId),
@@ -693,12 +688,9 @@ export async function reverseBalanceTransferAction(
           )
         );
 
-      // 7. Recalculate target assessment totals (excluding soft-deleted balance forwards)
+      // 7. Recalculate target assessment totals (excluding deleted balance forwards)
       const remainingItems = await tx.query.assessmentItems.findMany({
-        where: and(
-          eq(assessmentItems.assessmentId, assessmentId),
-          isNull(assessmentItems.deletedAt)
-        ),
+        where: eq(assessmentItems.assessmentId, assessmentId),
       });
 
       const newTotal = remainingItems.reduce((sum, item) => {
@@ -909,8 +901,7 @@ export async function cancelAssessmentAction(
       const balanceForwardItems = await tx.query.assessmentItems.findMany({
         where: and(
           eq(assessmentItems.assessmentId, assessmentId),
-          isNotNull(assessmentItems.sourceAssessmentId),
-          isNull(assessmentItems.deletedAt)
+          isNotNull(assessmentItems.sourceAssessmentId)
         ),
       });
 
@@ -929,14 +920,10 @@ export async function cancelAssessmentAction(
         });
       }
 
-      // Soft-delete balance forward line items from this assessment
+      // Delete balance forward line items from this assessment
       if (balanceForwardItems.length > 0) {
         await tx
-          .update(assessmentItems)
-          .set({
-            deletedAt: new Date(),
-            deletedBy: session.userId,
-          })
+          .delete(assessmentItems)
           .where(
             and(
               eq(assessmentItems.assessmentId, assessmentId),
@@ -1122,7 +1109,7 @@ export async function addSpecialFeeAction(
     throw error;
   }
 
-  // Check for existing SPED fee (active only)
+  // Check for existing SPED fee
   const existingSpedItem = await db.query.assessmentItems.findFirst({
     where: and(
       eq(assessmentItems.assessmentId, assessmentId),
@@ -1132,8 +1119,7 @@ export async function addSpecialFeeAction(
           .from(feeItemTypes)
           .where(eq(feeItemTypes.code, SPED_FEE_CODE))
           .limit(1)
-      ),
-      isNull(assessmentItems.deletedAt)
+      )
     ),
   });
 
@@ -1341,13 +1327,9 @@ export async function removeSpecialFeeAction(
 
   try {
     await db.transaction(async (tx) => {
-      // Soft-delete the assessment item
+      // Hard-delete the item (assessment items don't use soft delete)
       await tx
-        .update(assessmentItems)
-        .set({
-          deletedAt: new Date(),
-          deletedBy: session.userId,
-        })
+        .delete(assessmentItems)
         .where(eq(assessmentItems.id, assessmentItemId));
 
       // Recalculate assessment totals
