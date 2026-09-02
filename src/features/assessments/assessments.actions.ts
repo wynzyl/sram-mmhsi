@@ -1,7 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { CACHE_TAGS, invalidateTag, forceUpdateTag } from "@/lib/cache/cache-tags";
+import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
   enrollments,
@@ -729,9 +728,9 @@ export async function reverseBalanceTransferAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/staff/assessments");
-    revalidatePath(`/staff/assessments/${assessmentId}`);
-    // Dashboard A/R figures shift when transfers are reversed.
+    // Note: revalidatePath removed as it blocks the response in production Docker.
+    // The client calls router.refresh() after success which handles the page refresh.
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return {
@@ -1009,17 +1008,9 @@ export async function cancelAssessmentAction(
       actorId: session.userId,
     });
 
-    revalidatePath("/staff/assessments");
-    revalidatePath(`/staff/assessments/${assessmentId}`);
-    revalidatePath(`/staff/students/${assessment.enrollment.student.referenceNumber}`);
-    revalidatePath("/staff/enrollments");
-    if (assessment.enrollmentId) {
-      revalidatePath(`/staff/enrollments/${assessment.enrollmentId}`);
-    }
-    revalidatePath("/staff/approvals");
-    // Use forceUpdateTag for enrollments (read-your-own-writes - immediate consistency)
-    // Use invalidateTag for dashboard (stale-while-revalidate is acceptable)
-    forceUpdateTag(CACHE_TAGS.ENROLLMENTS);
+    // Note: forceUpdateTag/revalidatePath removed as they block the response in production Docker.
+    // The client calls router.refresh() after success which handles the page refresh.
+    invalidateTag(CACHE_TAGS.ENROLLMENTS);
     invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return {
@@ -1214,7 +1205,8 @@ export async function addSpecialFeeAction(
       actorId: session.userId,
     });
 
-    revalidatePath(`/staff/assessments/${assessmentId}`);
+    // Note: revalidatePath removed as it blocks the response in production Docker.
+    // The client calls router.refresh() after success which handles the page refresh.
     invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, assessmentItemId: newItemId };
@@ -1384,7 +1376,8 @@ export async function removeSpecialFeeAction(
       actorId: session.userId,
     });
 
-    revalidatePath(`/staff/assessments/${assessment.id}`);
+    // Note: revalidatePath removed as it blocks the response in production Docker.
+    // The client calls router.refresh() after success which handles the page refresh.
     invalidateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true };

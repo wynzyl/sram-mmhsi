@@ -10,7 +10,6 @@
  * - actions/cash-discount.actions.ts: Cash discount reversal and cascade fixes
  */
 
-import { revalidatePath } from "next/cache";
 import { CACHE_TAGS, invalidateTag } from "@/lib/cache/cache-tags";
 import { db } from "@/lib/db";
 import {
@@ -595,9 +594,8 @@ export async function postPaymentAction(
       };
     }
 
-    revalidatePath(`/staff/assessments/${assessmentId}`);
-    revalidatePath("/staff/finance/invoices");
-    revalidatePath("/staff/finance/booklets");
+    // Note: revalidatePath removed as it blocks the response in production Docker.
+    // The client calls router.refresh() after success or uses TanStack Query invalidation.
     invalidateTag(CACHE_TAGS.DASHBOARD);
     invalidateTag(CACHE_TAGS.ENROLLMENTS);
 
