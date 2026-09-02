@@ -2,7 +2,7 @@
 
 **Created:** 2026-09-02
 **Priority:** Production stability first
-**Status:** Ready for implementation
+**Status:** Phase 1 complete, Phases 2-4 pending
 
 ## Overview
 
@@ -26,10 +26,10 @@ Four phases of improvements identified from the code quality assessment, ordered
 
 **File:** `src/features/assessments/assessments.actions.ts`
 
-- [ ] Line 1022: Replace `forceUpdateTag(CACHE_TAGS.ENROLLMENTS)` with `invalidateTag(CACHE_TAGS.ENROLLMENTS)`
-- [ ] Lines 1012-1019: Remove all 7 `revalidatePath()` calls in `cancelAssessmentAction()`
-- [ ] Add `invalidateTag(CACHE_TAGS.ASSESSMENTS)` if not present
-- [ ] Verify client component calls `router.refresh()` in `onSuccess` callback
+- [x] Line 1022: Replace `forceUpdateTag(CACHE_TAGS.ENROLLMENTS)` with `invalidateTag(CACHE_TAGS.ENROLLMENTS)`
+- [x] Lines 1012-1019: Remove all 7 `revalidatePath()` calls in `cancelAssessmentAction()`
+- [x] Also fixed: reverseBalanceTransferAction, addSpecialEducationFeeAction, removeSpecialEducationFeeAction
+- [x] Verify client component calls `router.refresh()` in `onSuccess` callback (AssessmentLedgerRegister.tsx:164)
 
 **Before:**
 ```typescript
@@ -56,9 +56,9 @@ invalidateTag(CACHE_TAGS.DASHBOARD);
 
 **File:** `src/features/payments/payments.actions.ts`
 
-- [ ] Lines 598-601: Remove `revalidatePath()` calls
-- [ ] Keep only `invalidateTag()` calls
-- [ ] Verify client handles refresh via `router.refresh()` or query invalidation
+- [x] Lines 598-601: Remove `revalidatePath()` calls
+- [x] Keep only `invalidateTag()` calls
+- [x] Verify client handles refresh via TanStack Query invalidation (use-cashier-queue.ts:201-214)
 
 **Before:**
 ```typescript
@@ -80,8 +80,10 @@ invalidateTag(CACHE_TAGS.DASHBOARD);
 
 - [ ] Test assessment cancellation in dev — confirm no hanging response
 - [ ] Test payment posting in dev — confirm immediate response
-- [ ] Verify UI updates after action completes (client refresh works)
+- [x] Verify UI updates after action completes (client refresh works) — confirmed in code review
 - [ ] Check no regressions in related workflows
+
+**Status:** ✅ Code changes complete (commit 96e0518). Manual testing pending.
 
 ---
 
