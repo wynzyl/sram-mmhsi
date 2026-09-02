@@ -20,6 +20,8 @@ export type {
   PaymentCollectionSummary,
   PaymentCollectionParams,
   PaymentCollectionResult,
+  ProcessedByOption,
+  BookletFilterOption,
 } from "./payment-collection-report.types";
 
 export {
@@ -33,6 +35,8 @@ import type {
   PaymentCollectionSummary,
   PaymentCollectionParams,
   PaymentCollectionResult,
+  ProcessedByOption,
+  BookletFilterOption,
 } from "./payment-collection-report.types";
 
 // ─── Query Functions ─────────────────────────────────────────────────────────
@@ -47,8 +51,16 @@ import type {
 export async function getPaymentCollectionReport(
   params: PaymentCollectionParams
 ): Promise<PaymentCollectionResult> {
-  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus, usageMode } =
-    params;
+  const {
+    startDate,
+    endDate,
+    schoolYearId,
+    paymentMethod,
+    paymentStatus,
+    usageMode,
+    processedByUserId,
+    bookletId,
+  } = params;
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
   const offset = calculateOffset(page, pageSize);
@@ -61,6 +73,8 @@ export async function getPaymentCollectionReport(
     paymentMethod,
     paymentStatus,
     usageMode,
+    processedByUserId,
+    bookletId,
   });
 
   // Alias for cashier user
@@ -160,9 +174,19 @@ export async function getPaymentCollectionSummary(params: {
   paymentMethod?: string;
   paymentStatus?: string;
   usageMode?: string;
+  processedByUserId?: string;
+  bookletId?: string;
 }): Promise<PaymentCollectionSummary> {
-  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus, usageMode } =
-    params;
+  const {
+    startDate,
+    endDate,
+    schoolYearId,
+    paymentMethod,
+    paymentStatus,
+    usageMode,
+    processedByUserId,
+    bookletId,
+  } = params;
 
   // Build WHERE conditions (same as report query)
   const conditions = buildWhereConditions({
@@ -172,6 +196,8 @@ export async function getPaymentCollectionSummary(params: {
     paymentMethod,
     paymentStatus,
     usageMode,
+    processedByUserId,
+    bookletId,
   });
 
   // Main aggregate query
@@ -230,11 +256,21 @@ export async function getAllPaymentCollectionData(params: {
   paymentMethod?: string;
   paymentStatus?: string;
   usageMode?: string;
+  processedByUserId?: string;
+  bookletId?: string;
 }): Promise<PaymentCollectionRow[]> {
   const MAX_PDF_ROWS = 5000;
 
-  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus, usageMode } =
-    params;
+  const {
+    startDate,
+    endDate,
+    schoolYearId,
+    paymentMethod,
+    paymentStatus,
+    usageMode,
+    processedByUserId,
+    bookletId,
+  } = params;
 
   const conditions = buildWhereConditions({
     startDate,
@@ -243,6 +279,8 @@ export async function getAllPaymentCollectionData(params: {
     paymentMethod,
     paymentStatus,
     usageMode,
+    processedByUserId,
+    bookletId,
   });
 
   const cashier = users;
@@ -328,6 +366,58 @@ export async function getSchoolYearsForPaymentReport(): Promise<
   return results;
 }
 
+/**
+ * Get users who have processed payments (for admin dropdown filter).
+ * Returns distinct users who have created payment records.
+ */
+export async function getUsersWhoProcessedPayments(): Promise<ProcessedByOption[]> {
+  const results = await db
+    .selectDistinct({
+      id: users.id,
+      username: users.username,
+    })
+    .from(payments)
+    .innerJoin(users, eq(payments.createdBy, users.id))
+    .where(inArray(payments.kind, ["payment", "reversal"]))
+    .orderBy(asc(users.username));
+
+  return results;
+}
+
+/**
+ * Get booklets that have been used for payments within a date range (for filter dropdown).
+ * Returns booklets with at least one payment record in the specified period.
+ */
+export async function getBookletsForPaymentFilter(params: {
+  startDate: Date;
+  endDate: Date;
+}): Promise<BookletFilterOption[]> {
+  const { startDate, endDate } = params;
+
+  const results = await db
+    .selectDistinct({
+      id: receiptBooklets.id,
+      series: receiptBooklets.series,
+      startNumber: receiptBooklets.startNumber,
+      endNumber: receiptBooklets.endNumber,
+    })
+    .from(payments)
+    .innerJoin(receiptBooklets, eq(payments.bookletId, receiptBooklets.id))
+    .where(
+      and(
+        inArray(payments.kind, ["payment", "reversal"]),
+        gte(payments.paymentDate, startDate),
+        lte(payments.paymentDate, endDate)
+      )
+    )
+    .orderBy(asc(receiptBooklets.series), asc(receiptBooklets.startNumber));
+
+  return results.map((row) => ({
+    id: row.id,
+    label: `${row.series} ${String(row.startNumber).padStart(5, "0")}-${String(row.endNumber).padStart(5, "0")}`,
+  }));
+}
+
 // ─── Helper Functions ────────────────────────────────────────────────────────
 
 function buildWhereConditions(params: {
@@ -337,9 +427,19 @@ function buildWhereConditions(params: {
   paymentMethod?: string;
   paymentStatus?: string;
   usageMode?: string;
+  processedByUserId?: string;
+  bookletId?: string;
 }) {
-  const { startDate, endDate, schoolYearId, paymentMethod, paymentStatus, usageMode } =
-    params;
+  const {
+    startDate,
+    endDate,
+    schoolYearId,
+    paymentMethod,
+    paymentStatus,
+    usageMode,
+    processedByUserId,
+    bookletId,
+  } = params;
 
   // Base conditions: include payments and reversals (exclude BFX), within date range
   const conditions = [
@@ -382,6 +482,16 @@ function buildWhereConditions(params: {
     if (validModes.includes(usageMode as UsageMode)) {
       conditions.push(eq(receiptBooklets.usageMode, usageMode as UsageMode));
     }
+  }
+
+  // Optional: filter by user who processed the payment
+  if (processedByUserId) {
+    conditions.push(eq(payments.createdBy, processedByUserId));
+  }
+
+  // Optional: filter by receipt booklet
+  if (bookletId) {
+    conditions.push(eq(payments.bookletId, bookletId));
   }
 
   return conditions;

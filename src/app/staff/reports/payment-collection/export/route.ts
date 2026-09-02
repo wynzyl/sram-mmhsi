@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { getCurrentUser } from "@/lib/auth/session";
 import { canAccessPaymentReports } from "@/lib/rbac/permissions";
+import { ROLES } from "@/lib/constants/roles";
 import {
   isReportExportRateLimited,
   getReportExportResetSeconds,
@@ -58,6 +59,13 @@ export async function GET(request: NextRequest) {
   const paymentMethod = searchParams.get("paymentMethod") || undefined;
   const paymentStatus = searchParams.get("paymentStatus") || undefined;
   const usageMode = searchParams.get("usageMode") || undefined;
+  const bookletId = searchParams.get("bookletId") || undefined;
+
+  // Role-based filtering: admin roles can view all, non-admin roles see only their own
+  const isAdmin = user.role === ROLES.SUPER_ADMIN || user.role === ROLES.ADMIN;
+  const processedByUserId = isAdmin
+    ? searchParams.get("processedBy") || undefined // Admin: use URL param or all
+    : user.id; // Non-admin: force own ID
 
   const filter = {
     startDate: range.startDate,
@@ -66,6 +74,8 @@ export async function GET(request: NextRequest) {
     paymentMethod,
     paymentStatus,
     usageMode,
+    processedByUserId,
+    bookletId,
   };
 
   try {

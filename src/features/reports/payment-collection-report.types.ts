@@ -44,6 +44,8 @@ export type PaymentCollectionParams = {
   paymentMethod?: string;
   paymentStatus?: string;
   usageMode?: string;
+  processedByUserId?: string;
+  bookletId?: string;
   page?: number;
   pageSize?: number;
 };
@@ -73,4 +75,16 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
 export const USAGE_MODE_LABELS: Record<string, string> = {
   auto_only: "Auto",
   manual_only: "Manual",
+};
+
+// ─── Filter dropdown option types ────────────────────────────────────────────
+
+export type ProcessedByOption = {
+  id: string;
+  username: string;
+};
+
+export type BookletFilterOption = {
+  id: string;
+  label: string;
 };

@@ -1,9 +1,12 @@
 import { requireSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { canAccessPaymentReports } from "@/lib/rbac/permissions";
+import { ROLES } from "@/lib/constants/roles";
 import {
   getPaymentCollectionReport,
   getPaymentCollectionSummary,
+  getUsersWhoProcessedPayments,
+  getBookletsForPaymentFilter,
 } from "@/features/reports/payment-collection-report.queries";
 import { PaymentCollectionReportView } from "@/features/reports/components/PaymentCollectionReportView";
 import { formatDate } from "@/lib/utils/date";
@@ -18,6 +21,8 @@ interface PageProps {
     paymentMethod?: string;
     paymentStatus?: string;
     usageMode?: string;
+    processedBy?: string;
+    bookletId?: string;
     page?: string;
   }>;
 }
@@ -73,29 +78,45 @@ export default async function PaymentCollectionReportPage({
   const paymentMethod = params.paymentMethod || undefined;
   const paymentStatus = params.paymentStatus || undefined;
   const usageMode = params.usageMode || undefined;
+  const bookletId = params.bookletId || undefined;
   const page = parseInt(params.page || "1", 10) || 1;
 
+  // Role-based filtering: admin roles can view all, non-admin roles see only their own
+  const isAdmin =
+    session.role === ROLES.SUPER_ADMIN || session.role === ROLES.ADMIN;
+  const processedByUserId = isAdmin
+    ? params.processedBy || undefined // Admin: use URL param or all
+    : session.userId; // Non-admin: force own ID
+
   // Fetch data in parallel
-  const [reportResult, summary] = await Promise.all([
-    getPaymentCollectionReport({
-      startDate,
-      endDate,
-      schoolYearId,
-      paymentMethod,
-      paymentStatus,
-      usageMode,
-      page,
-      pageSize: PAGE_SIZE,
-    }),
-    getPaymentCollectionSummary({
-      startDate,
-      endDate,
-      schoolYearId,
-      paymentMethod,
-      paymentStatus,
-      usageMode,
-    }),
-  ]);
+  const [reportResult, summary, processedByUsers, booklets] = await Promise.all(
+    [
+      getPaymentCollectionReport({
+        startDate,
+        endDate,
+        schoolYearId,
+        paymentMethod,
+        paymentStatus,
+        usageMode,
+        processedByUserId,
+        bookletId,
+        page,
+        pageSize: PAGE_SIZE,
+      }),
+      getPaymentCollectionSummary({
+        startDate,
+        endDate,
+        schoolYearId,
+        paymentMethod,
+        paymentStatus,
+        usageMode,
+        processedByUserId,
+        bookletId,
+      }),
+      isAdmin ? getUsersWhoProcessedPayments() : Promise.resolve([]),
+      getBookletsForPaymentFilter({ startDate, endDate }),
+    ]
+  );
 
   const { rows: payments, totalCount } = reportResult;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -128,7 +149,12 @@ export default async function PaymentCollectionReportPage({
           paymentMethod: params.paymentMethod,
           paymentStatus: params.paymentStatus,
           usageMode: params.usageMode,
+          processedBy: params.processedBy,
+          bookletId: params.bookletId,
         }}
+        isAdmin={isAdmin}
+        processedByUsers={processedByUsers}
+        booklets={booklets}
         exportPath="/staff/reports/payment-collection/export"
       />
 

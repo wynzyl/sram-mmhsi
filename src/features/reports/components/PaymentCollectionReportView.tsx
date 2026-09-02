@@ -10,6 +10,8 @@ import { TablePagination } from "@/components/ui/TablePagination";
 import type {
   PaymentCollectionRow,
   PaymentCollectionSummary,
+  ProcessedByOption,
+  BookletFilterOption,
 } from "../payment-collection-report.types";
 import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, USAGE_MODE_LABELS } from "../payment-collection-report.types";
 
@@ -27,7 +29,12 @@ interface PaymentCollectionReportViewProps {
     paymentMethod?: string;
     paymentStatus?: string;
     usageMode?: string;
+    processedBy?: string;
+    bookletId?: string;
   };
+  isAdmin: boolean;
+  processedByUsers: ProcessedByOption[];
+  booklets: BookletFilterOption[];
   exportPath: string;
 }
 
@@ -39,6 +46,9 @@ export function PaymentCollectionReportView({
   currentPage,
   pageSize,
   currentFilters,
+  isAdmin,
+  processedByUsers,
+  booklets,
   exportPath,
 }: PaymentCollectionReportViewProps) {
   const router = useRouter();
@@ -50,6 +60,8 @@ export function PaymentCollectionReportView({
   const [method, setMethod] = useState(currentFilters.paymentMethod ?? "");
   const [status, setStatus] = useState(currentFilters.paymentStatus ?? "");
   const [mode, setMode] = useState(currentFilters.usageMode ?? "");
+  const [processedBy, setProcessedBy] = useState(currentFilters.processedBy ?? "");
+  const [bookletId, setBookletId] = useState(currentFilters.bookletId ?? "");
   const [isExporting, setIsExporting] = useState<"pdf" | "xlsx" | null>(null);
 
   // Debounce date inputs
@@ -63,7 +75,9 @@ export function PaymentCollectionReportView({
     currentFilters.endDate !== syncedFilters.endDate ||
     currentFilters.paymentMethod !== syncedFilters.paymentMethod ||
     currentFilters.paymentStatus !== syncedFilters.paymentStatus ||
-    currentFilters.usageMode !== syncedFilters.usageMode
+    currentFilters.usageMode !== syncedFilters.usageMode ||
+    currentFilters.processedBy !== syncedFilters.processedBy ||
+    currentFilters.bookletId !== syncedFilters.bookletId
   ) {
     setSyncedFilters(currentFilters);
     setStartDate(currentFilters.startDate ?? "");
@@ -71,11 +85,19 @@ export function PaymentCollectionReportView({
     setMethod(currentFilters.paymentMethod ?? "");
     setStatus(currentFilters.paymentStatus ?? "");
     setMode(currentFilters.usageMode ?? "");
+    setProcessedBy(currentFilters.processedBy ?? "");
+    setBookletId(currentFilters.bookletId ?? "");
   }
 
   // Check if any filters are active
   const hasFilters =
-    startDate !== "" || endDate !== "" || method !== "" || status !== "" || mode !== "";
+    startDate !== "" ||
+    endDate !== "" ||
+    method !== "" ||
+    status !== "" ||
+    mode !== "" ||
+    processedBy !== "" ||
+    bookletId !== "";
 
   // Build URL from filters
   function buildFilterUrl(overrides: Partial<typeof currentFilters> = {}) {
@@ -85,12 +107,16 @@ export function PaymentCollectionReportView({
     const effectiveMethod = overrides.paymentMethod ?? method;
     const effectiveStatus = overrides.paymentStatus ?? status;
     const effectiveMode = overrides.usageMode ?? mode;
+    const effectiveProcessedBy = overrides.processedBy ?? processedBy;
+    const effectiveBookletId = overrides.bookletId ?? bookletId;
 
     if (effectiveStart) params.set("startDate", effectiveStart);
     if (effectiveEnd) params.set("endDate", effectiveEnd);
     if (effectiveMethod) params.set("paymentMethod", effectiveMethod);
     if (effectiveStatus) params.set("paymentStatus", effectiveStatus);
     if (effectiveMode) params.set("usageMode", effectiveMode);
+    if (effectiveProcessedBy) params.set("processedBy", effectiveProcessedBy);
+    if (effectiveBookletId) params.set("bookletId", effectiveBookletId);
 
     const query = params.toString();
     return query ? `${basePath}?${query}` : basePath;
@@ -129,6 +155,16 @@ export function PaymentCollectionReportView({
     router.push(buildFilterUrl({ usageMode: newMode || undefined }));
   }
 
+  function handleProcessedByChange(newProcessedBy: string) {
+    setProcessedBy(newProcessedBy);
+    router.push(buildFilterUrl({ processedBy: newProcessedBy || undefined }));
+  }
+
+  function handleBookletIdChange(newBookletId: string) {
+    setBookletId(newBookletId);
+    router.push(buildFilterUrl({ bookletId: newBookletId || undefined }));
+  }
+
   // Export handlers
   async function handleExport(format: "pdf" | "xlsx") {
     setIsExporting(format);
@@ -140,6 +176,8 @@ export function PaymentCollectionReportView({
       if (method) params.set("paymentMethod", method);
       if (status) params.set("paymentStatus", status);
       if (mode) params.set("usageMode", mode);
+      if (processedBy) params.set("processedBy", processedBy);
+      if (bookletId) params.set("bookletId", bookletId);
 
       const url = `${exportPath}?${params.toString()}`;
       const response = await fetch(url);
@@ -261,6 +299,40 @@ export function PaymentCollectionReportView({
               ))}
             </select>
 
+            {/* Booklet Filter (all users) */}
+            {booklets.length > 0 && (
+              <select
+                value={bookletId}
+                onChange={(e) => handleBookletIdChange(e.target.value)}
+                className="form-control h-9 w-[140px] bg-muted text-foreground text-xs px-2 [&>option]:bg-card [&>option]:text-foreground"
+                aria-label="Receipt booklet"
+              >
+                <option value="">All booklets</option>
+                {booklets.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.label}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Processed By Filter (admin only) */}
+            {isAdmin && processedByUsers.length > 0 && (
+              <select
+                value={processedBy}
+                onChange={(e) => handleProcessedByChange(e.target.value)}
+                className="form-control h-9 w-[120px] bg-muted text-foreground text-xs px-2 [&>option]:bg-card [&>option]:text-foreground"
+                aria-label="Processed by"
+              >
+                <option value="">All users</option>
+                {processedByUsers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.username}
+                  </option>
+                ))}
+              </select>
+            )}
+
             {/* Clear link (if any filter active) */}
             {hasFilters && (
               <Link
@@ -271,6 +343,8 @@ export function PaymentCollectionReportView({
                   setMethod("");
                   setStatus("");
                   setMode("");
+                  setProcessedBy("");
+                  setBookletId("");
                 }}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
               >
