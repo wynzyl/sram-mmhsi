@@ -117,6 +117,7 @@ export const bookletStatusEnum = pgEnum("booklet_status", [
   "active",
   "exhausted",
   "voided",
+  "inactive",
 ]);
 
 /** Booklet usage mode: auto_only for cashier auto-assign, manual_only for offline reconciliation */

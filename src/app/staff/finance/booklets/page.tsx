@@ -6,6 +6,7 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { receiptBooklets, users } from "@/lib/db/schema";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { ROLES } from "@/lib/constants/roles";
 import { getCashiersForBookletAssignment } from "@/features/payments/payments.queries";
 
 export const metadata: Metadata = {
@@ -19,6 +20,9 @@ export default async function StaffBookletsPage() {
   if (!hasPermission(session.role, "booklets:manage")) {
     redirect("/staff/finance");
   }
+
+  // Determine if user is admin
+  const isAdmin = session.role === ROLES.ADMIN || session.role === ROLES.SUPER_ADMIN;
 
   const [bookletRows, cashiers] = await Promise.all([
     // Left join to get assigned user for each booklet
@@ -34,6 +38,7 @@ export default async function StaffBookletsPage() {
         usageMode: receiptBooklets.usageMode,
         createdAt: receiptBooklets.createdAt,
         assignedToUsername: users.username,
+        assignedToCashierId: users.id,
       })
       .from(receiptBooklets)
       .leftJoin(
@@ -47,16 +52,18 @@ export default async function StaffBookletsPage() {
     getCashiersForBookletAssignment(),
   ]);
 
-  // Transform to expected shape (assignedToUsername may be null)
+  // Transform to expected shape
   const booklets = bookletRows.map((row) => ({
     ...row,
     assignedToUsername: row.assignedToUsername ?? null,
+    assignedToCashierId: row.assignedToCashierId ?? null,
   }));
 
   return (
     <ReceiptBookletManagementView
       booklets={booklets}
       cashiers={cashiers}
+      isAdmin={isAdmin}
       footerNote="Staff operations panel now matches the receipt booklet reference layout."
     />
   );

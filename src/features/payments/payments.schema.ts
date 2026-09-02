@@ -234,3 +234,29 @@ export const VoidPaymentSchema = z.object({
 export type VoidPaymentInput = z.infer<typeof VoidPaymentSchema>;
 
 export type VoidPaymentFormState = BaseFormState<VoidPaymentInput>;
+
+// ─── Update Booklet Validators ─────────────────────────────────────────────────
+
+/** Valid booklet statuses that can be set via edit (admin only) */
+export const EDITABLE_BOOKLET_STATUSES = ["active", "inactive"] as const;
+export type EditableBookletStatus = (typeof EDITABLE_BOOKLET_STATUSES)[number];
+
+export const UpdateBookletSchema = z.object({
+  bookletId: z.string().uuid("Booklet ID is required"),
+  usageMode: z.enum(BOOKLET_USAGE_MODES, {
+    message: "Usage mode must be 'auto_only' or 'manual_only'",
+  }),
+  assignedCashierId: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? null : v),
+    z.string().uuid("Invalid cashier").nullable()
+  ),
+  status: z.enum(EDITABLE_BOOKLET_STATUSES, {
+    message: "Status must be 'active' or 'inactive'",
+  }),
+});
+
+export type UpdateBookletInput = z.infer<typeof UpdateBookletSchema>;
+
+export type UpdateBookletFormState = BaseFormState<UpdateBookletInput> & {
+  bookletId?: string;
+};

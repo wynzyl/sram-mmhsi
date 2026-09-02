@@ -14,18 +14,23 @@ interface ReceiptBooklet {
   usageMode: "auto_only" | "manual_only";
   createdAt: Date;
   assignedToUsername: string | null;
+  /** Cashier ID for the assigned user (needed for edit modal) */
+  assignedToCashierId?: string | null;
 }
 
 interface ReceiptBookletManagementViewProps {
   booklets: ReceiptBooklet[];
   footerNote: string;
   cashiers?: { id: string; username: string; email: string }[];
+  /** Whether the current user is an admin (admin or super_admin) */
+  isAdmin?: boolean;
 }
 
 export function ReceiptBookletManagementView({
   booklets,
   footerNote,
   cashiers = [],
+  isAdmin = false,
 }: ReceiptBookletManagementViewProps) {
   const activeCount = booklets.filter((b) => b.status === "active").length;
   const lowStockCount = booklets.filter(
@@ -64,7 +69,12 @@ export function ReceiptBookletManagementView({
             redirectTo="/staff/finance/booklets"
             cashiers={cashiers}
           />
-          <BookletsTable booklets={booklets} variant="dashboard" />
+          <BookletsTable
+            booklets={booklets}
+            variant="dashboard"
+            isAdmin={isAdmin}
+            cashiers={cashiers}
+          />
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">

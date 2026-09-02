@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { Download, Pencil, SlidersHorizontal } from "lucide-react";
+import { Download, SlidersHorizontal } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import { formatStoredOrNumber, orNumberPadWidth } from "@/lib/utils/or-number";
 import { getReceiptStatusClasses } from "@/lib/utils/receipt-theme";
 import { formatDate } from "@/lib/utils/date";
+import { EditBookletModal } from "./EditBookletModal";
 
 interface ReceiptBooklet {
   id: string;
@@ -19,11 +20,23 @@ interface ReceiptBooklet {
   usageMode: "auto_only" | "manual_only";
   createdAt: Date;
   assignedToUsername: string | null;
+  /** Cashier ID for the assigned user (needed for edit modal) */
+  assignedToCashierId?: string | null;
+}
+
+interface Cashier {
+  id: string;
+  username: string;
+  email: string;
 }
 
 interface BookletsTableProps {
   booklets: ReceiptBooklet[];
   variant?: "default" | "dashboard";
+  /** Whether the current user is an admin (admin or super_admin) */
+  isAdmin?: boolean;
+  /** List of cashiers for edit modal assignment dropdown */
+  cashiers?: Cashier[];
 }
 
 /**
@@ -31,7 +44,12 @@ interface BookletsTableProps {
  * - "default": Full table for finance management pages
  * - "dashboard": Card-style with header for dashboard widgets
  */
-export default function BookletsTable({ booklets, variant = "default" }: BookletsTableProps) {
+export default function BookletsTable({
+  booklets,
+  variant = "default",
+  isAdmin = false,
+  cashiers = [],
+}: BookletsTableProps) {
   const w = orNumberPadWidth();
 
   // Default variant columns (full details)
@@ -254,19 +272,25 @@ export default function BookletsTable({ booklets, variant = "default" }: Booklet
       {
         header: "",
         id: "actions",
-        cell: () => (
-          <div className="text-right">
-            <button
-              type="button"
-              className="flex items-center justify-center w-8 h-8 text-muted-foreground bg-transparent border-none rounded-md cursor-pointer transition-colors hover:text-foreground hover:bg-muted"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const booklet = row.original;
+          // Only show edit button for admins on active booklets
+          if (!isAdmin || booklet.status !== "active") {
+            return null;
+          }
+          return (
+            <div className="text-right">
+              <EditBookletModal
+                booklet={booklet}
+                cashiers={cashiers}
+                currentCashierId={booklet.assignedToCashierId}
+              />
+            </div>
+          );
+        },
       },
     ],
-    [w]
+    [w, isAdmin, cashiers]
   );
 
   // Dashboard variant with card wrapper

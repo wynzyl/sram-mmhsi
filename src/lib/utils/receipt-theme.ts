@@ -1,4 +1,4 @@
-export type ReceiptBookletStatus = "active" | "exhausted" | "voided" | string;
+export type ReceiptBookletStatus = "active" | "exhausted" | "voided" | "inactive" | string;
 
 export function getReceiptStatusClasses(status: ReceiptBookletStatus): string {
   switch (status) {
@@ -8,6 +8,8 @@ export function getReceiptStatusClasses(status: ReceiptBookletStatus): string {
       return "border-[var(--color-ops-line)] bg-[var(--color-ops-panel-muted)] text-[var(--color-ops-muted)]";
     case "voided":
       return "border-destructive/35 bg-destructive/15 text-destructive";
+    case "inactive":
+      return "border-warning/35 bg-warning/15 text-warning";
     default:
       return "border-[var(--color-ops-line)] bg-[var(--color-ops-panel-muted)] text-[var(--color-ops-muted)]";
   }
