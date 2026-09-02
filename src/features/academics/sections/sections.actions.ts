@@ -20,6 +20,7 @@ import {
   type CopySectionsFormState,
 } from "./sections.schema";
 import { getSectionDependencyCounts } from "./sections.queries";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Create Section ───────────────────────────────────────────────────────────
 
@@ -30,7 +31,7 @@ export async function createSectionAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "sections:manage")) {
-    return { message: "You do not have permission to manage sections." };
+    return { message: PERMISSION_ERRORS.SECTIONS_MANAGE };
   }
 
   const result = parseFormData(createSectionSchema, formData);
@@ -115,7 +116,7 @@ export async function updateSectionAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "sections:manage")) {
-    return { message: "You do not have permission to manage sections." };
+    return { message: PERMISSION_ERRORS.SECTIONS_MANAGE };
   }
 
   const result = parseFormData(updateSectionSchema, formData);
@@ -210,7 +211,7 @@ export async function deleteSectionAction(
   if (!hasPermission(session.role, "sections:manage")) {
     return {
       success: false,
-      message: "You do not have permission to manage sections.",
+      message: PERMISSION_ERRORS.SECTIONS_MANAGE,
     };
   }
 
@@ -305,7 +306,7 @@ export async function copySectionsFromSchoolYearAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "sections:manage")) {
-    return { message: "You do not have permission to manage sections." };
+    return { message: PERMISSION_ERRORS.SECTIONS_MANAGE };
   }
 
   const sourceSchoolYearId = formData.get("sourceSchoolYearId");

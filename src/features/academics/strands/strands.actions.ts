@@ -16,6 +16,7 @@ import {
   type DeleteStrandFormState,
 } from "./strands.schema";
 import { strandCodeExists, shortCodeExists, getStrandById } from "./strands.queries";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 /**
  * Create a new track (strand).
@@ -28,7 +29,7 @@ export async function createStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "strands:manage")) {
-    return { message: "You do not have permission to manage tracks." };
+    return { message: PERMISSION_ERRORS.STRANDS_MANAGE };
   }
 
   const parsed = createStrandSchema.safeParse({
@@ -97,7 +98,7 @@ export async function updateStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "strands:manage")) {
-    return { message: "You do not have permission to manage tracks." };
+    return { message: PERMISSION_ERRORS.STRANDS_MANAGE };
   }
 
   const parsed = updateStrandSchema.safeParse({
@@ -197,7 +198,7 @@ export async function deleteStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "strands:manage")) {
-    return { message: "You do not have permission to manage tracks." };
+    return { message: PERMISSION_ERRORS.STRANDS_MANAGE };
   }
 
   const parsed = deleteStrandSchema.safeParse({

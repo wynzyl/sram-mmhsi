@@ -24,6 +24,7 @@ import {
   type UpdateAdoptionFormState,
 } from "./curriculums.schema";
 import { checkAdoptionChangeEligibility } from "./archive-guard";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Grade Record Check ─────────────────────────────────────────────────────
 
@@ -129,7 +130,7 @@ export async function updateAdoptionAction(
 ): Promise<UpdateAdoptionFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:adopt")) {
-    return { message: "You do not have permission to manage curriculum adoptions." };
+    return { message: PERMISSION_ERRORS.CURRICULUMS_MANAGE_ADOPTIONS };
   }
 
   const result = parseFormData(UpdateAdoptionSchema, formData);
@@ -262,7 +263,7 @@ export async function rollForwardAdoptionsFromPriorYear(
   if (!hasPermission(session.role, "curriculums:adopt")) {
     return {
       copied: 0,
-      errors: ["You do not have permission to manage curriculum adoptions."],
+      errors: [PERMISSION_ERRORS.CURRICULUMS_MANAGE_ADOPTIONS],
     };
   }
   const actorId = session.userId;
@@ -371,7 +372,7 @@ export async function removeAdoptionAction(
 ): Promise<{ success: boolean; message?: string }> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:adopt")) {
-    return { success: false, message: "You do not have permission to manage curriculum adoptions." };
+    return { success: false, message: PERMISSION_ERRORS.CURRICULUMS_MANAGE_ADOPTIONS };
   }
 
   // Validate the incoming ID (reject malformed UUIDs before hitting the DB)

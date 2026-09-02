@@ -2,6 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { getStaffUser, type SessionUser } from "@/lib/auth/session";
 import { hasPermission, type Permission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 /**
  * Requires authentication and a specific permission.
@@ -39,7 +40,7 @@ export async function requirePermission(
   if (!hasPermission(user.role, permission)) {
     return {
       error: "forbidden",
-      message: "You do not have permission to perform this action.",
+      message: PERMISSION_ERRORS.GENERIC,
     };
   }
 

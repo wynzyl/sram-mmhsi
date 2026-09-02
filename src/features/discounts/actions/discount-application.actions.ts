@@ -46,6 +46,7 @@ import {
   type ApplyApprovedDiscountFormState,
   type RecalculateCascadeDiscountsFormState,
 } from "../discounts.schema";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Discount Reversal ────────────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ export async function reverseDiscountAction(
 ): Promise<ReverseDiscountFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "discounts:manage")) {
-    return { message: "You do not have permission to reverse discounts." };
+    return { message: PERMISSION_ERRORS.DISCOUNTS_REVERSE };
   }
 
   const result = parseFormData(reverseDiscountSchema, formData);
@@ -294,7 +295,7 @@ export async function applyApprovedDiscountToExistingAssessment(
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "discounts:apply")) {
     return {
-      message: "You do not have permission to apply discounts to assessments.",
+      message: PERMISSION_ERRORS.DISCOUNTS_APPLY,
     };
   }
 
@@ -832,7 +833,7 @@ export async function recalculateCascadeDiscountsAction(
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "discounts:apply")) {
     return {
-      message: "You do not have permission to recalculate cascade discounts.",
+      message: PERMISSION_ERRORS.DISCOUNTS_RECALCULATE,
     };
   }
 

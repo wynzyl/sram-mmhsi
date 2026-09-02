@@ -18,6 +18,7 @@ import {
   type AssignCoordinatorFormState,
   type RemoveCoordinatorFormState,
 } from "./coordinators.schema";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Assign Coordinator Action ───────────────────────────────────────────────
 
@@ -34,7 +35,7 @@ export async function assignCoordinatorAction(
   // Only admin/super_admin can manage coordinator assignments
   if (!hasPermission(session.role, "assignments:manage")) {
     return {
-      message: "You do not have permission to assign coordinators.",
+      message: PERMISSION_ERRORS.COORDINATORS_ASSIGN,
     };
   }
 
@@ -156,7 +157,7 @@ export async function removeCoordinatorAction(
 
   if (!hasPermission(session.role, "assignments:manage")) {
     return {
-      message: "You do not have permission to remove coordinators.",
+      message: PERMISSION_ERRORS.COORDINATORS_REMOVE,
     };
   }
 

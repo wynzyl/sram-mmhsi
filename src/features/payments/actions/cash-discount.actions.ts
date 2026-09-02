@@ -23,6 +23,7 @@ import {
 } from "@/lib/utils/assessment-balance";
 import { checkCascadeFixNeeded } from "../payments.queries";
 import { FULL_PAYMENT_DISCOUNT_CODE } from "@/lib/constants/discount-codes";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import type { CascadeFixFormState } from "../payments.types";
 
 // ─────────────────────────────────────────────────────────────────
@@ -49,7 +50,7 @@ export async function reverseExpiredCashDiscountAction(
 ): Promise<CascadeFixFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "payments:post")) {
-    return { message: "You do not have permission to reverse discounts." };
+    return { message: PERMISSION_ERRORS.DISCOUNTS_REVERSE };
   }
 
   const assessmentId = formData.get("assessmentId") as string;
@@ -390,7 +391,7 @@ export async function applyCascadeFixAction(
 ): Promise<CascadeFixFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "payments:post")) {
-    return { message: "You do not have permission to apply cascade fixes." };
+    return { message: PERMISSION_ERRORS.DISCOUNTS_CASCADE_FIX };
   }
 
   const assessmentId = formData.get("assessmentId") as string;

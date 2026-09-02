@@ -17,6 +17,7 @@ import {
 import { parseFormData } from "@/lib/utils/form-validation";
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─────────────────────────────────────────────────────────────────
 // Receipt Booklet Management
@@ -41,7 +42,7 @@ export async function createBookletAction(
 ): Promise<BookletFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "booklets:manage")) {
-    return { message: "You do not have permission to manage OR booklets." };
+    return { message: PERMISSION_ERRORS.PAYMENTS_MANAGE_BOOKLETS };
   }
 
   const result = parseFormData(CreateBookletSchema, formData);

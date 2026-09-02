@@ -17,6 +17,7 @@ import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { logPermissionDenied } from "@/lib/errors/audit-failures";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import type { StudentStatus } from "@/lib/constants/student-status";
@@ -54,7 +55,7 @@ export async function archiveStudentAction(
       "students",
       String(formData.get("studentId") ?? "")
     );
-    return { message: "You do not have permission to archive students." };
+    return { message: PERMISSION_ERRORS.ARCHIVE_STUDENTS };
   }
 
   // Validate input
@@ -146,7 +147,7 @@ export async function unarchiveStudentAction(
       "students",
       String(formData.get("studentId") ?? "")
     );
-    return { message: "You do not have permission to unarchive students." };
+    return { message: PERMISSION_ERRORS.ARCHIVE_UNARCHIVE };
   }
 
   // Validate input
@@ -341,7 +342,7 @@ export async function batchArchiveGraduatesAction(
       "students",
       `school_year:${String(formData.get("schoolYearId") ?? "")}`
     );
-    return { message: "You do not have permission to batch archive students." };
+    return { message: PERMISSION_ERRORS.ARCHIVE_BATCH };
   }
 
   // Validate input
@@ -520,7 +521,7 @@ export async function batchCancelNoShowAction(
       `school_year:${String(formData.get("schoolYearId") ?? "")}`
     );
     return {
-      message: "You do not have permission to batch cancel enrollments.",
+      message: PERMISSION_ERRORS.ARCHIVE_BATCH_CANCEL,
     };
   }
 
@@ -657,7 +658,7 @@ export async function batchArchiveNonReturningAction(
       `school_year:${String(formData.get("previousSchoolYearId") ?? "")}`
     );
     return {
-      message: "You do not have permission to batch archive students.",
+      message: PERMISSION_ERRORS.ARCHIVE_BATCH,
     };
   }
 

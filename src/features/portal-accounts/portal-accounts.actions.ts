@@ -8,6 +8,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { requireStaffSession, getCurrentSession, deleteSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { logCreateAction, logUpdateAction } from "@/lib/utils/audit-logger";
 import { generatePortalPassword } from "@/features/students/students-portal.utils";
 import { logger } from "@/lib/observability/logger";
@@ -43,7 +44,7 @@ export async function createPortalAccountAction(
   // 1. Auth check (staff-only)
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "portal_accounts:manage")) {
-    return { message: "You do not have permission to create portal accounts." };
+    return { message: PERMISSION_ERRORS.PORTAL_CREATE };
   }
 
   // 2. Validate input
@@ -145,7 +146,7 @@ export async function resetPortalPasswordAction(
   // 1. Auth check (staff-only)
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "portal_accounts:reset_password")) {
-    return { message: "You do not have permission to reset portal passwords." };
+    return { message: PERMISSION_ERRORS.PORTAL_RESET_PASSWORD };
   }
 
   // 2. Validate input
@@ -228,7 +229,7 @@ export async function togglePortalAccountStatusAction(
   // 1. Auth check (staff-only)
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "portal_accounts:manage")) {
-    return { message: "You do not have permission to manage portal accounts." };
+    return { message: PERMISSION_ERRORS.PORTAL_MANAGE };
   }
 
   // 2. Validate input

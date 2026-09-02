@@ -29,6 +29,7 @@ import {
   type BulkApproveDiscountsFormState,
   type CancelDiscountRequestFormState,
 } from "../discounts.schema";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -80,7 +81,7 @@ export async function createDiscountRequestAction(
 ): Promise<CreateDiscountRequestFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "discounts:request")) {
-    return { message: "You do not have permission to request discounts." };
+    return { message: PERMISSION_ERRORS.DISCOUNTS_REQUEST };
   }
 
   // Debug logging
@@ -283,7 +284,7 @@ export async function approveDiscountRequestAction(
 ): Promise<ApproveDiscountRequestFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "discounts:review")) {
-    return { message: "You do not have permission to review discount requests." };
+    return { message: PERMISSION_ERRORS.DISCOUNTS_REVIEW };
   }
 
   const result = parseFormData(approveDiscountRequestSchema, formData);
@@ -368,7 +369,7 @@ export async function rejectDiscountRequestAction(
 ): Promise<RejectDiscountRequestFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "discounts:review")) {
-    return { message: "You do not have permission to review discount requests." };
+    return { message: PERMISSION_ERRORS.DISCOUNTS_REVIEW };
   }
 
   const result = parseFormData(rejectDiscountRequestSchema, formData);
@@ -443,7 +444,7 @@ export async function bulkApproveDiscountsAction(
 ): Promise<BulkApproveDiscountsFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "discounts:review")) {
-    return { message: "You do not have permission to review discount requests." };
+    return { message: PERMISSION_ERRORS.DISCOUNTS_REVIEW };
   }
 
   const result = parseFormData(bulkApproveDiscountsSchema, formData, {
@@ -568,7 +569,7 @@ export async function cancelDiscountRequestAction(
   const isAdmin = hasPermission(session.role, "discounts:review");
 
   if (!isRequester && !isAdmin) {
-    return { message: "You do not have permission to cancel this request." };
+    return { message: PERMISSION_ERRORS.DISCOUNTS_CANCEL_REQUEST };
   }
 
   // Allow cancelling:

@@ -50,6 +50,7 @@ import {
   StudentArchivedException,
   formatArchiveError,
 } from "@/features/archive/archive.guards";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Request Void Action ───────────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ export async function requestVoidAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "payments:void_request")) {
-    return { message: "You do not have permission to request payment voids." };
+    return { message: PERMISSION_ERRORS.PAYMENTS_REQUEST_VOID };
   }
 
   const result = parseFormData(RequestVoidSchema, formData);
@@ -194,7 +195,7 @@ export async function approveVoidRequestAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "payments:void_approve")) {
-    return { message: "You do not have permission to approve void requests." };
+    return { message: PERMISSION_ERRORS.PAYMENTS_APPROVE_VOID };
   }
 
   const result = parseFormData(ApproveVoidRequestSchema, formData);
@@ -422,7 +423,7 @@ export async function rejectVoidRequestAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "payments:void_approve")) {
-    return { message: "You do not have permission to reject void requests." };
+    return { message: PERMISSION_ERRORS.PAYMENTS_REJECT_VOID };
   }
 
   const result = parseFormData(RejectVoidRequestSchema, formData);
@@ -498,7 +499,7 @@ export async function cancelVoidRequestAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "payments:void_request")) {
-    return { message: "You do not have permission to cancel void requests." };
+    return { message: PERMISSION_ERRORS.PAYMENTS_CANCEL_VOID };
   }
 
   const result = parseFormData(CancelVoidRequestSchema, formData);

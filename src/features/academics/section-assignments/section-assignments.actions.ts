@@ -20,6 +20,7 @@ import {
   getSectionGradeLevelId,
 } from "./section-assignments.queries";
 import { generateStudentSubjectEnrollmentsAction } from "../student-subject-enrollments";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Assign Students to Section ───────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ export async function assignStudentsToSectionAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "sections:assign")) {
-    return { message: "You do not have permission to assign sections." };
+    return { message: PERMISSION_ERRORS.SECTIONS_ASSIGN };
   }
 
   // Parse enrollmentIds from form data (comes as JSON string)
@@ -156,7 +157,7 @@ export async function removeFromSectionAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "sections:assign")) {
-    return { message: "You do not have permission to manage section assignments." };
+    return { message: PERMISSION_ERRORS.SECTIONS_MANAGE_ASSIGNMENTS };
   }
 
   const result = parseFormData(removeFromSectionSchema, formData);

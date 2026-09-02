@@ -31,6 +31,7 @@ import {
   getNextVersion,
   generateDraftName,
 } from "./curriculum-clone";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { validatePublishPreflight } from "./curriculum-preflight";
 import { checkArchiveEligibility, type AdoptionTiming } from "./archive-guard";
 import {
@@ -47,7 +48,7 @@ export async function createCurriculumAction(
 ): Promise<CreateCurriculumFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:create")) {
-    return { message: "You do not have permission to create curriculums." };
+    return { message: PERMISSION_ERRORS.CURRICULUMS_CREATE };
   }
 
   const result = parseFormData(CreateCurriculumSchema, formData);
@@ -111,7 +112,7 @@ export async function updateCurriculumMetaAction(
 ): Promise<UpdateCurriculumMetaFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:edit")) {
-    return { message: "You do not have permission to edit curriculums." };
+    return { message: PERMISSION_ERRORS.CURRICULUMS_EDIT };
   }
 
   const result = parseFormData(UpdateCurriculumMetaSchema, formData);
@@ -177,7 +178,7 @@ export async function cloneCurriculumAction(
 ): Promise<CloneCurriculumFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:edit")) {
-    return { message: "You do not have permission to clone curriculums." };
+    return { message: PERMISSION_ERRORS.CURRICULUMS_CLONE };
   }
 
   const result = parseFormData(CloneCurriculumSchema, formData);
@@ -309,7 +310,7 @@ export async function publishCurriculumAction(
 ): Promise<PublishCurriculumFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:publish")) {
-    return { message: "You do not have permission to publish curriculums." };
+    return { message: PERMISSION_ERRORS.CURRICULUMS_PUBLISH };
   }
 
   const result = parseFormData(PublishCurriculumSchema, formData, {
@@ -472,7 +473,7 @@ export async function archiveCurriculumAction(
 ): Promise<ArchiveCurriculumFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "curriculums:archive")) {
-    return { message: "You do not have permission to archive curriculums." };
+    return { message: PERMISSION_ERRORS.CURRICULUMS_ARCHIVE };
   }
 
   const result = parseFormData(ArchiveCurriculumSchema, formData);

@@ -6,6 +6,7 @@ import { studentClearances, assessments, enrollments, students } from "@/lib/db/
 import { eq, and, isNull } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
 import { logger } from "@/lib/observability/logger";
@@ -40,7 +41,7 @@ export async function generateClearanceAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "clearances:create")) {
-    return { message: "You do not have permission to generate clearances." };
+    return { message: PERMISSION_ERRORS.CLEARANCES_GENERATE };
   }
 
   const result = parseFormData(GenerateClearanceSchema, formData);
@@ -163,7 +164,7 @@ export async function resolveClearanceAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "clearances:resolve")) {
-    return { message: "You do not have permission to resolve clearances." };
+    return { message: PERMISSION_ERRORS.CLEARANCES_RESOLVE };
   }
 
   const result = parseFormData(ResolveClearanceSchema, formData);

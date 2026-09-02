@@ -37,6 +37,7 @@ import {
   formatArchiveError,
 } from "@/features/archive/archive.guards";
 import { FULL_PAYMENT_DISCOUNT_CODE } from "@/lib/constants/discount-codes";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─────────────────────────────────────────────────────────────────
 // Void Payment
@@ -65,7 +66,7 @@ export async function voidPaymentAction(
 ): Promise<VoidPaymentFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "payments:void")) {
-    return { message: "You do not have permission to void payments." };
+    return { message: PERMISSION_ERRORS.PAYMENTS_VOID };
   }
 
   const result = parseFormData(VoidPaymentSchema, formData);

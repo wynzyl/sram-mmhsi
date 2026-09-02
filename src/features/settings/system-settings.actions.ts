@@ -2,6 +2,7 @@
 
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
 import { db } from "@/lib/db";
@@ -29,7 +30,7 @@ export async function updateRefundCutoffSettingsAction(
 
   // Permission check - only admins can modify system settings
   if (!hasPermission(session.role, "system:manage")) {
-    return { message: "You do not have permission to modify system settings." };
+    return { message: PERMISSION_ERRORS.SETTINGS_MODIFY };
   }
 
   const result = parseFormData(RefundCutoffSettingsSchema, formData);
@@ -143,7 +144,7 @@ export async function updateSpedFeeSettingsAction(
 
   // Permission check - finance officers and admins can modify
   if (!hasPermission(session.role, "fee_schedules:manage")) {
-    return { message: "You do not have permission to modify SPED fee settings." };
+    return { message: PERMISSION_ERRORS.SETTINGS_SPED_FEE };
   }
 
   const result = parseFormData(SpedFeeSettingsSchema, formData);

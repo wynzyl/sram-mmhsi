@@ -7,6 +7,7 @@ import { schoolYears, enrollments, registrations, gradingPeriodSystems } from "@
 import { eq, and, ilike, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { logCreateAction, logUpdateAction, logDeleteAction } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
 import {
@@ -32,7 +33,7 @@ export async function createSchoolYearAction(
   // 1. Auth check
   const session = await requireSession();
   if (!hasPermission(session.role, "school_years:manage")) {
-    return { message: "You do not have permission to create school years." };
+    return { message: PERMISSION_ERRORS.SCHOOL_YEARS_CREATE };
   }
 
   // 2. Validate
@@ -116,7 +117,7 @@ export async function updateSchoolYearAction(
   // 1. Auth check
   const session = await requireSession();
   if (!hasPermission(session.role, "school_years:manage")) {
-    return { message: "You do not have permission to update school years." };
+    return { message: PERMISSION_ERRORS.SCHOOL_YEARS_UPDATE };
   }
 
   // 2. Validate
@@ -257,7 +258,7 @@ export async function toggleSchoolYearStatusAction(
   const session = await requireSession();
   if (!hasPermission(session.role, "school_years:manage")) {
     return {
-      message: "You do not have permission to change school year status.",
+      message: PERMISSION_ERRORS.SCHOOL_YEARS_CHANGE_STATUS,
     };
   }
 
@@ -343,7 +344,7 @@ export async function deleteSchoolYearAction(
   // 1. Auth check
   const session = await requireSession();
   if (!hasPermission(session.role, "school_years:manage")) {
-    return { message: "You do not have permission to delete school years." };
+    return { message: PERMISSION_ERRORS.SCHOOL_YEARS_DELETE };
   }
 
   // 2. Validate

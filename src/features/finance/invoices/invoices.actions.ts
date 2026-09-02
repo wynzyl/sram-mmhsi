@@ -30,13 +30,14 @@ import { logger } from "@/lib/observability/logger";
 import { generateInvoiceNumber } from "@/lib/utils/reference";
 import { sendInvoiceEmail } from "@/lib/email/sender";
 import { generateAssessmentLetterHtml } from "@/lib/email/templates/assessment-letter";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 export async function generateInvoiceAction(
   assessmentId: string
 ): Promise<InvoiceActionState & { invoiceId?: string }> {
   const session = await requireSession();
   if (!hasPermission(session.role, "invoices:read")) {
-    return { message: "You do not have permission to manage invoices." };
+    return { message: PERMISSION_ERRORS.INVOICES_MANAGE };
   }
 
   const parsed = GenerateInvoiceSchema.safeParse({ assessmentId });
@@ -131,7 +132,7 @@ export async function sendInvoiceAction(
 ): Promise<InvoiceActionState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "invoices:send")) {
-    return { message: "You do not have permission to send invoices." };
+    return { message: PERMISSION_ERRORS.INVOICES_SEND };
   }
 
   // 1. Rate limit check
@@ -247,7 +248,7 @@ export async function batchGenerateInvoicesAction(
 
   // Permission check
   if (!hasPermission(session.role, "invoices:read")) {
-    return { message: "You do not have permission to generate invoices." };
+    return { message: PERMISSION_ERRORS.INVOICES_GENERATE };
   }
 
   // Rate limit check - batch operations are resource-intensive
@@ -399,7 +400,7 @@ export async function batchSendInvoicesAction(
 
   // Permission check
   if (!hasPermission(session.role, "invoices:send")) {
-    return { message: "You do not have permission to send invoices." };
+    return { message: PERMISSION_ERRORS.INVOICES_SEND };
   }
 
   // Parse invoice IDs from form data

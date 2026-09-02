@@ -16,6 +16,7 @@ import {
   type CreateDiscountTypeFormState,
   type UpdateDiscountTypeFormState,
 } from "../discounts.schema";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Discount Type Management ─────────────────────────────────────────────────
 
@@ -28,7 +29,7 @@ export async function createDiscountTypeAction(
 ): Promise<CreateDiscountTypeFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "discounts:manage")) {
-    return { message: "You do not have permission to manage discount types." };
+    return { message: PERMISSION_ERRORS.DISCOUNTS_MANAGE_TYPES };
   }
 
   const result = parseFormData(createDiscountTypeSchema, formData, {
@@ -102,7 +103,7 @@ export async function updateDiscountTypeAction(
 ): Promise<UpdateDiscountTypeFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "discounts:manage")) {
-    return { message: "You do not have permission to manage discount types." };
+    return { message: PERMISSION_ERRORS.DISCOUNTS_MANAGE_TYPES };
   }
 
   const result = parseFormData(updateDiscountTypeSchema, formData, {
@@ -176,7 +177,7 @@ export async function deleteDiscountTypeAction(
   if (!hasPermission(session.role, "discounts:manage")) {
     return {
       success: false,
-      message: "You do not have permission to manage discount types.",
+      message: PERMISSION_ERRORS.DISCOUNTS_MANAGE_TYPES,
     };
   }
 

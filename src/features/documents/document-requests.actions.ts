@@ -12,6 +12,7 @@ import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { logPermissionDenied } from "@/lib/errors/audit-failures";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import {
   isDocumentRequestRateLimited,
   getDocumentRequestResetSeconds,
@@ -78,7 +79,7 @@ export async function createDocumentRequestAction(
       "document_requests",
       String(formData.get("studentId") ?? "")
     );
-    return { message: "You do not have permission to create document requests." };
+    return { message: PERMISSION_ERRORS.DOCUMENTS_CREATE };
   }
 
   // Check eligibility for document request creation (archived students without valid enrollment)
@@ -155,7 +156,7 @@ export async function processDocumentRequestAction(
       "document_requests",
       String(formData.get("requestId") ?? "")
     );
-    return { message: "You do not have permission to process document requests." };
+    return { message: PERMISSION_ERRORS.DOCUMENTS_PROCESS };
   }
 
   // Parse and validate input
@@ -280,7 +281,7 @@ export async function readyDocumentRequestAction(
       "document_requests",
       String(formData.get("requestId") ?? "")
     );
-    return { message: "You do not have permission to process document requests." };
+    return { message: PERMISSION_ERRORS.DOCUMENTS_PROCESS };
   }
 
   // Parse and validate input
@@ -364,7 +365,7 @@ export async function releaseDocumentRequestAction(
       "document_requests",
       String(formData.get("requestId") ?? "")
     );
-    return { message: "You do not have permission to release documents." };
+    return { message: PERMISSION_ERRORS.DOCUMENTS_RELEASE };
   }
 
   // Parse and validate input
@@ -451,7 +452,7 @@ export async function rejectDocumentRequestAction(
       "document_requests",
       String(formData.get("requestId") ?? "")
     );
-    return { message: "You do not have permission to reject document requests." };
+    return { message: PERMISSION_ERRORS.DOCUMENTS_REJECT };
   }
 
   // Parse and validate input
@@ -552,7 +553,7 @@ export async function cancelDocumentRequestAction(
       "document_requests",
       request.id
     );
-    return { message: "You do not have permission to cancel document requests." };
+    return { message: PERMISSION_ERRORS.DOCUMENTS_CANCEL };
   }
 
   // Validate status transition

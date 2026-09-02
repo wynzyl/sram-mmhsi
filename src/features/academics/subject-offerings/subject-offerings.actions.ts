@@ -29,6 +29,7 @@ import {
 } from "./subject-offerings.queries";
 import type { SubjectForManualOffering } from "./subject-offerings.schema";
 import { curriculums, sections, gradeLevels } from "@/lib/db/schema";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 /**
  * Generate subject offerings for a section from the adopted curriculum.
@@ -41,7 +42,7 @@ export async function generateSubjectOfferingsAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "subject_offerings:generate")) {
-    return { message: "You do not have permission to generate subject offerings." };
+    return { message: PERMISSION_ERRORS.SUBJECT_OFFERINGS_GENERATE };
   }
 
   const parsed = generateSubjectOfferingsSchema.safeParse({
@@ -153,7 +154,7 @@ export async function assignTeacherAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "subject_offerings:assign_teacher")) {
-    return { message: "You do not have permission to assign teachers." };
+    return { message: PERMISSION_ERRORS.SUBJECT_OFFERINGS_ASSIGN_TEACHER };
   }
 
   const teacherIdRaw = formData.get("teacherId");
@@ -209,7 +210,7 @@ export async function deleteSubjectOfferingAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "subject_offerings:generate")) {
-    return { message: "You do not have permission to delete subject offerings." };
+    return { message: PERMISSION_ERRORS.SUBJECT_OFFERINGS_DELETE };
   }
 
   const parsed = deleteSubjectOfferingSchema.safeParse({
@@ -300,7 +301,7 @@ export async function deleteAllSubjectOfferingsAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "subject_offerings:generate")) {
-    return { message: "You do not have permission to delete subject offerings." };
+    return { message: PERMISSION_ERRORS.SUBJECT_OFFERINGS_DELETE };
   }
 
   const parsed = deleteAllSubjectOfferingsSchema.safeParse({
@@ -421,7 +422,7 @@ export async function addManualSubjectOfferingAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "subject_offerings:create")) {
-    return { message: "You do not have permission to add subject offerings." };
+    return { message: PERMISSION_ERRORS.SUBJECT_OFFERINGS_ADD };
   }
 
   const strandIdRaw = formData.get("strandId");
@@ -661,7 +662,7 @@ export async function updateOfferingTrackAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "subject_offerings:generate")) {
-    return { message: "You do not have permission to update track assignments." };
+    return { message: PERMISSION_ERRORS.SUBJECT_OFFERINGS_UPDATE_TRACK };
   }
 
   // Schema handles null conversion via preprocess (empty string, "null" → null)

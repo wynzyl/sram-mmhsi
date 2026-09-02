@@ -29,6 +29,7 @@ import {
 } from "./student-subject-enrollments.schema";
 import { canChangeStrand } from "./student-subject-enrollments.queries";
 import type { CanChangeStrandResult } from "./student-subject-enrollments.schema";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 /**
  * Build the "not eligible" result shape without hitting the database.
@@ -55,9 +56,7 @@ export async function canChangeStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "student_subject_enrollments:manage")) {
-    return ineligibleToChangeStrand(
-      "You do not have permission to manage student enrollments."
-    );
+    return ineligibleToChangeStrand(PERMISSION_ERRORS.STUDENT_ENROLLMENTS_MANAGE);
   }
 
   // enrollmentId arrives straight from the client. canChangeStrand compares it
@@ -98,7 +97,7 @@ export async function generateStudentSubjectEnrollmentsAction(
       success: false,
       createdCount: 0,
       skippedCount: 0,
-      error: "You do not have permission to manage student enrollments.",
+      error: PERMISSION_ERRORS.STUDENT_ENROLLMENTS_MANAGE,
     };
   }
 
@@ -243,7 +242,7 @@ export async function changeStudentStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "student_subject_enrollments:manage")) {
-    return { message: "You do not have permission to manage student enrollments." };
+    return { message: PERMISSION_ERRORS.STUDENT_ENROLLMENTS_MANAGE };
   }
 
   const parsed = changeStudentStrandSchema.safeParse({
@@ -378,7 +377,7 @@ export async function withdrawFromSubjectAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "student_subject_enrollments:manage")) {
-    return { message: "You do not have permission to manage student enrollments." };
+    return { message: PERMISSION_ERRORS.STUDENT_ENROLLMENTS_MANAGE };
   }
 
   const parsed = withdrawFromSubjectSchema.safeParse({
@@ -459,7 +458,7 @@ export async function bulkAssignStrandAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "student_subject_enrollments:manage")) {
-    return { message: "You do not have permission to manage student enrollments." };
+    return { message: PERMISSION_ERRORS.STUDENT_ENROLLMENTS_MANAGE };
   }
 
   // Parse enrollmentIds from JSON string (passed from form)
@@ -624,7 +623,7 @@ export async function manuallyEnrollStudentInSubjectAction(
   const session = await requireSession();
 
   if (!hasPermission(session.role, "student_subject_enrollments:manage")) {
-    return { message: "You do not have permission to manage student enrollments." };
+    return { message: PERMISSION_ERRORS.STUDENT_ENROLLMENTS_MANAGE };
   }
 
   const parsed = manualEnrollSubjectSchema.safeParse({

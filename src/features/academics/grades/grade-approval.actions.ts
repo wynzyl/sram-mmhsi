@@ -32,6 +32,7 @@ import {
   isUniqueViolationError,
   isForeignKeyViolationError,
 } from "@/lib/utils/pg-error";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Error Handling Helpers ─────────────────────────────────────────────────
 
@@ -74,7 +75,7 @@ export async function principalReturnAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:principal_review")) {
-    return { message: "You do not have permission to review grades." };
+    return { message: PERMISSION_ERRORS.GRADES_REVIEW };
   }
 
   const parsed = ReturnGradeSheetSchema.safeParse({
@@ -175,7 +176,7 @@ export async function principalApproveAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:principal_review")) {
-    return { message: "You do not have permission to approve grades." };
+    return { message: PERMISSION_ERRORS.GRADES_APPROVE };
   }
 
   const parsed = ApproveGradeSheetSchema.safeParse({
@@ -274,7 +275,7 @@ export async function publishGradesAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:publish")) {
-    return { message: "You do not have permission to publish grades." };
+    return { message: PERMISSION_ERRORS.GRADES_PUBLISH };
   }
 
   const parsed = PublishGradeSheetSchema.safeParse({
@@ -371,7 +372,7 @@ export async function lockGradesAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:lock")) {
-    return { message: "You do not have permission to lock grades." };
+    return { message: PERMISSION_ERRORS.GRADES_LOCK };
   }
 
   const parsed = LockGradeSheetSchema.safeParse({
@@ -468,7 +469,7 @@ export async function unlockGradesAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:unlock")) {
-    return { message: "You do not have permission to unlock grades." };
+    return { message: PERMISSION_ERRORS.GRADES_UNLOCK };
   }
 
   const parsed = UnlockGradeSheetSchema.safeParse({

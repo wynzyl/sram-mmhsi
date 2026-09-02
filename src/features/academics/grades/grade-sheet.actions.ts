@@ -61,6 +61,7 @@ import {
   getValidSubjectIdsForSection,
   validateGradeSheetCompleteness,
 } from "./grade-sheet-validation";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Grade Sheet CRUD Actions ────────────────────────────────────────────────
 
@@ -74,7 +75,7 @@ export async function createOrGetGradeSheetAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:encode")) {
-    return { message: "You do not have permission to create grade sheets." };
+    return { message: PERMISSION_ERRORS.GRADES_CREATE_SHEET };
   }
 
   const parsed = CreateGradeSheetSchema.safeParse({
@@ -164,7 +165,7 @@ export async function saveGradeSheetEntriesAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:encode")) {
-    return { message: "You do not have permission to encode grades." };
+    return { message: PERMISSION_ERRORS.GRADES_ENCODE };
   }
 
   const entriesJson = formData.get("entries");
@@ -351,7 +352,7 @@ export async function submitGradeSheetAction(
   const session = await requireStaffSession();
 
   if (!hasPermission(session.role, "grades:submit")) {
-    return { message: "You do not have permission to submit grades." };
+    return { message: PERMISSION_ERRORS.GRADES_SUBMIT };
   }
 
   const parsed = SubmitGradeSheetSchema.safeParse({

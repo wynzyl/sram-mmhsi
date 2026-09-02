@@ -16,6 +16,7 @@ import {
   type AssignAdviserFormState,
   type RemoveAdviserFormState,
 } from "./advisers.schema";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Assign Adviser Action ───────────────────────────────────────────────────
 
@@ -32,7 +33,7 @@ export async function assignAdviserAction(
   // 1. Permission check
   if (!hasPermission(session.role, "advisers:manage")) {
     return {
-      message: "You do not have permission to assign advisers.",
+      message: PERMISSION_ERRORS.ADVISERS_ASSIGN,
     };
   }
 
@@ -180,7 +181,7 @@ export async function removeAdviserAction(
   // 1. Permission check
   if (!hasPermission(session.role, "advisers:manage")) {
     return {
-      message: "You do not have permission to remove advisers.",
+      message: PERMISSION_ERRORS.ADVISERS_REMOVE,
     };
   }
 

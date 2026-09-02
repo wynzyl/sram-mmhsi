@@ -11,6 +11,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 import { db } from "@/lib/db";
 import { students } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
@@ -63,7 +64,7 @@ export async function POST(
     // 2. Permission check
     if (!hasPermission(user.role, "students:update")) {
       return NextResponse.json(
-        { success: false, error: "You do not have permission to update student photos" },
+        { success: false, error: PERMISSION_ERRORS.STUDENTS_UPDATE_PHOTO },
         { status: 403 }
       );
     }
@@ -224,7 +225,7 @@ export async function DELETE(
     // 2. Permission check
     if (!hasPermission(user.role, "students:update")) {
       return NextResponse.json(
-        { success: false, error: "You do not have permission to update student photos" },
+        { success: false, error: PERMISSION_ERRORS.STUDENTS_UPDATE_PHOTO },
         { status: 403 }
       );
     }

@@ -21,6 +21,7 @@ import type {
 import { logger } from "@/lib/observability/logger";
 import { logAudit } from "@/lib/utils/audit-logger";
 import { parseFormData } from "@/lib/utils/form-validation";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 function isGradeLevelIdNotNullDbError(error: unknown): boolean {
   let current: unknown = error;
@@ -50,7 +51,7 @@ export async function createFeeScheduleAction(
 ): Promise<FeeScheduleFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "fee_schedules:manage")) {
-    return { message: "You do not have permission to manage fee schedules." };
+    return { message: PERMISSION_ERRORS.FEE_SCHEDULES_MANAGE };
   }
 
   const result = parseFormData(FeeScheduleSchema, formData, { booleanFields: ["isActive"] });
@@ -124,7 +125,7 @@ export async function updateFeeScheduleAction(
 ): Promise<FeeScheduleFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "fee_schedules:manage")) {
-    return { message: "You do not have permission to manage fee schedules." };
+    return { message: PERMISSION_ERRORS.FEE_SCHEDULES_MANAGE };
   }
 
   const id = formData.get("id") as string;
@@ -204,7 +205,7 @@ export async function addFeeScheduleItemAction(
 ): Promise<FeeScheduleItemFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "fee_schedules:manage")) {
-    return { message: "You do not have permission to manage fee schedules." };
+    return { message: PERMISSION_ERRORS.FEE_SCHEDULES_MANAGE };
   }
 
   const result = parseFormData(FeeScheduleItemSchema, formData, { booleanFields: ["isDiscount"] });
@@ -249,7 +250,7 @@ export async function removeFeeScheduleItemAction(
 ): Promise<FeeScheduleItemFormState> {
   const session = await requireSession();
   if (!hasPermission(session.role, "fee_schedules:manage")) {
-    return { message: "You do not have permission to manage fee schedules." };
+    return { message: PERMISSION_ERRORS.FEE_SCHEDULES_MANAGE };
   }
 
   const id = formData.get("id") as string;

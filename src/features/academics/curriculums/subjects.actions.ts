@@ -24,6 +24,7 @@ import {
   type StrandAssociation,
 } from "./curriculums.schema";
 import type { SubjectStrandAssociation } from "./curriculums.types";
+import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
 
 // ─── Helper: Verify Draft Status ────────────────────────────────────────────
 
@@ -157,7 +158,7 @@ export async function addSubjectToCurriculumAction(
 ): Promise<AddSubjectToCurriculumFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "subjects:manage")) {
-    return { message: "You do not have permission to manage subjects." };
+    return { message: PERMISSION_ERRORS.SUBJECTS_MANAGE };
   }
 
   const result = parseFormData(AddSubjectToCurriculumSchema, formData);
@@ -279,7 +280,7 @@ export async function updateSubjectInCurriculumAction(
 ): Promise<UpdateSubjectInCurriculumFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "subjects:manage")) {
-    return { message: "You do not have permission to manage subjects." };
+    return { message: PERMISSION_ERRORS.SUBJECTS_MANAGE };
   }
 
   const result = parseFormData(UpdateSubjectInCurriculumSchema, formData);
@@ -421,7 +422,7 @@ export async function deleteSubjectFromCurriculumAction(
 ): Promise<DeleteSubjectFromCurriculumFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "subjects:manage")) {
-    return { message: "You do not have permission to manage subjects." };
+    return { message: PERMISSION_ERRORS.SUBJECTS_MANAGE };
   }
 
   const result = parseFormData(DeleteSubjectFromCurriculumSchema, formData);
@@ -481,7 +482,7 @@ export async function restoreSubjectInCurriculumAction(
 ): Promise<RestoreSubjectInCurriculumFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "subjects:manage")) {
-    return { message: "You do not have permission to manage subjects." };
+    return { message: PERMISSION_ERRORS.SUBJECTS_MANAGE };
   }
 
   const result = parseFormData(RestoreSubjectInCurriculumSchema, formData);
@@ -559,7 +560,7 @@ export async function reorderSubjectsAction(
 ): Promise<ReorderSubjectsFormState> {
   const session = await requireStaffSession();
   if (!hasPermission(session.role, "subjects:manage")) {
-    return { message: "You do not have permission to manage subjects." };
+    return { message: PERMISSION_ERRORS.SUBJECTS_MANAGE };
   }
 
   const result = parseFormData(ReorderSubjectsSchema, formData);
