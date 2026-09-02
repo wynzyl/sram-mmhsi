@@ -2,7 +2,7 @@
 
 **Created:** 2026-09-02
 **Priority:** Production stability first
-**Status:** Phase 1 complete, Phases 2-4 pending
+**Status:** Phases 1-2 complete, Phases 3-4 pending
 
 ## Overview
 
@@ -103,11 +103,11 @@ invalidateTag(CACHE_TAGS.DASHBOARD);
 
 **File to create:** `src/lib/constants/error-messages.ts`
 
-- [ ] Create file with `PERMISSION_ERRORS` object
-- [ ] Add all permission error strings (extract from existing actions)
-- [ ] Add `VALIDATION_ERRORS` for common validation messages
-- [ ] Add `SYSTEM_ERRORS` for generic fallback messages
-- [ ] Export as `const` for type safety
+- [x] Create file with `PERMISSION_ERRORS` object
+- [x] Add all permission error strings (extract from existing actions) — 89 constants defined
+- [ ] Add `VALIDATION_ERRORS` for common validation messages (deferred — lower priority)
+- [ ] Add `SYSTEM_ERRORS` for generic fallback messages (deferred — lower priority)
+- [x] Export as `const` for type safety
 
 **Template:**
 ```typescript
@@ -193,24 +193,18 @@ export type SystemErrorKey = keyof typeof SYSTEM_ERRORS;
 
 **Files to modify:**
 
-- [ ] `src/features/payments/payments.actions.ts`
-- [ ] `src/features/payments/void-requests.actions.ts`
-- [ ] `src/features/students/students.actions.ts`
-- [ ] `src/features/enrollments/enrollments.actions.ts`
-- [ ] `src/features/enrollments/enrollment-cancellation.actions.ts`
-- [ ] `src/features/assessments/assessments.actions.ts`
-- [ ] `src/features/finance/booklets/booklets.actions.ts`
-- [ ] `src/features/finance/invoices/invoices.actions.ts`
-- [ ] `src/features/finance/fee-templates/fee-templates.actions.ts`
-- [ ] `src/features/archive/archive.actions.ts`
-- [ ] `src/features/documents/document-requests.actions.ts`
-- [ ] `src/features/users/users.actions.ts`
-- [ ] `src/features/academics/grades/grades.actions.ts`
-- [ ] `src/features/academics/sections/sections.actions.ts`
-- [ ] `src/features/academics/curriculums/subjects.actions.ts`
-- [ ] `src/features/discounts/actions/discount-requests.actions.ts`
-- [ ] `src/features/clearances/clearances.actions.ts`
-- [ ] `src/features/reports/shared/report-actions.ts` (if exists)
+**37 files updated** (see commits 5d4b92d, 2934cb3 for full list)
+
+Key files updated:
+- [x] All payment actions (payments, void-requests, booklets, cash-discount)
+- [x] All enrollment actions (enrollments, cancellation, confirmation)
+- [x] All assessment actions
+- [x] All finance actions (invoices, fee-schedules, booklets)
+- [x] All discount actions (types, requests, application)
+- [x] All academics actions (curriculums, subjects, sections, grades, etc.)
+- [x] All other domain actions (archive, documents, clearances, users, etc.)
+- [x] API route (photo upload)
+- [x] Utility (action-guards.ts)
 
 **Pattern:**
 ```typescript
@@ -224,9 +218,16 @@ return { message: PERMISSION_ERRORS.PAYMENTS_POST };
 
 ### Verification
 
-- [ ] Run grep to confirm zero hardcoded "You do not have permission" strings remain
-- [ ] Verify TypeScript compilation passes
-- [ ] Spot-check 3-4 actions to confirm error messages display correctly
+- [x] Run grep to confirm zero hardcoded permission strings in actions — 127 → 3 remaining (special cases)
+- [x] Verify TypeScript compilation passes
+- [ ] Spot-check 3-4 actions to confirm error messages display correctly (manual testing)
+
+**Status:** ✅ Phase 2 complete (commits 5d4b92d, 2934cb3)
+
+**Remaining special cases (intentionally not converted):**
+- `lib/errors/messages.ts` — Part of error codes system
+- `lib/errors/transform.ts` — Dynamic template with `${action}` variable
+- `ClearancesView.tsx` — JSX display text
 
 ---
 
