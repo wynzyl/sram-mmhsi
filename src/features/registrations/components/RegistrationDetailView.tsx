@@ -423,14 +423,14 @@ export function RegistrationDetailView({
                   <li className="h-full">
                     <Link
                       href={`/staff/enrollments/new?studentId=${student.id}`}
-                      className="flex h-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/10"
+                      className="flex h-full items-center gap-3 rounded-xl border border-primary/25 bg-primary/10 px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/15"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                        <CalendarDays className="h-5 w-5 text-foreground" aria-hidden />
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
+                        <CalendarDays className="h-5 w-5 text-primary" aria-hidden />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-foreground">Enrollment</span>
-                        <span className="block text-helper">Start or continue enrollment</span>
+                        <span className="block text-sm font-semibold text-primary">Enrollment</span>
+                        <span className="block text-xs text-primary/70">Start or continue enrollment</span>
                       </span>
                     </Link>
                   </li>
@@ -439,20 +439,20 @@ export function RegistrationDetailView({
                   <li className="h-full">
                     <Link
                       href={`/staff/assessments/${assessmentIdForActions}`}
-                      className="flex h-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/10"
+                      className="flex h-full items-center gap-3 rounded-xl border border-info/25 bg-info-tint px-3 py-3 text-left transition-colors hover:border-info/40 hover:bg-info/20"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/15">
                         {flags.canPostPayments ? (
-                          <CreditCard className="h-5 w-5 text-foreground" aria-hidden />
+                          <CreditCard className="h-5 w-5 text-info" aria-hidden />
                         ) : (
-                          <FileText className="h-5 w-5 text-foreground" aria-hidden />
+                          <FileText className="h-5 w-5 text-info" aria-hidden />
                         )}
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-foreground">
+                        <span className="block text-sm font-semibold text-info">
                           {flags.canPostPayments ? "Billing & payments" : "Assessment ledger"}
                         </span>
-                        <span className="block text-helper">
+                        <span className="block text-xs text-info/70">
                           {flags.canPostPayments
                             ? "Ledger, allocations, and OR posting"
                             : "Fees, lines, and history"}
@@ -465,14 +465,14 @@ export function RegistrationDetailView({
                   <li className="h-full">
                     <a
                       href={guardianMail}
-                      className="flex h-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/10"
+                      className="flex h-full items-center gap-3 rounded-xl border border-warning/25 bg-warning/10 px-3 py-3 text-left transition-colors hover:border-warning/40 hover:bg-warning/15"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                        <Mail className="h-5 w-5 text-foreground" aria-hidden />
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/15">
+                        <Mail className="h-5 w-5 text-warning" aria-hidden />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-foreground">Email guardian</span>
-                        <span className="block text-helper">Opens your mail app</span>
+                        <span className="block text-sm font-semibold text-warning">Email guardian</span>
+                        <span className="block text-xs text-warning/70">Opens your mail app</span>
                       </span>
                     </a>
                   </li>
@@ -482,14 +482,14 @@ export function RegistrationDetailView({
                     <button
                       type="button"
                       onClick={() => setTab("invoices")}
-                      className="flex h-full w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/10"
+                      className="flex h-full w-full items-center gap-3 rounded-xl border border-info/25 bg-info-tint px-3 py-3 text-left transition-colors hover:border-info/40 hover:bg-info/20"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                        <FileText className="h-5 w-5 text-foreground" aria-hidden />
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/15">
+                        <FileText className="h-5 w-5 text-info" aria-hidden />
                       </span>
                       <span className="min-w-0 text-left">
-                        <span className="block text-sm font-semibold text-foreground">Invoices</span>
-                        <span className="block text-helper">Open the invoices tab</span>
+                        <span className="block text-sm font-semibold text-info">Invoices</span>
+                        <span className="block text-xs text-info/70">Open the invoices tab</span>
                       </span>
                     </button>
                   </li>
@@ -498,14 +498,14 @@ export function RegistrationDetailView({
                   <button
                     type="button"
                     onClick={() => setTab("documents")}
-                    className="flex h-full w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/10"
+                    className="flex h-full w-full items-center gap-3 rounded-xl border border-success/25 bg-success-tint px-3 py-3 text-left transition-colors hover:border-success/40 hover:bg-success/20"
                   >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                      <ClipboardList className="h-5 w-5 text-foreground" aria-hidden />
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/15">
+                      <ClipboardList className="h-5 w-5 text-success" aria-hidden />
                     </span>
                     <span className="min-w-0 text-left">
-                      <span className="block text-sm font-semibold text-foreground">Intake documents</span>
-                      <span className="block text-helper">Checklist & requirements</span>
+                      <span className="block text-sm font-semibold text-success">Intake documents</span>
+                      <span className="block text-xs text-success/70">Checklist & requirements</span>
                     </span>
                   </button>
                 </li>
