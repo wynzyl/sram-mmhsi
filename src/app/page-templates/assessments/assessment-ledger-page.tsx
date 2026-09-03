@@ -54,6 +54,7 @@ export async function InternalAssessmentLedgerPage(props: {
       transferredToAssessmentId: assessments.transferredToAssessmentId,
       studentName: students.lastName,
       studentFirstName: students.firstName,
+      studentRef: students.referenceNumber,
       studentStatus: students.status,
       studentIsSpecialEducation: students.isSpecialEducation,
       schoolYear: schoolYears.label,
@@ -250,6 +251,7 @@ export async function InternalAssessmentLedgerPage(props: {
         assessment={{
           id: assessment.id,
           studentId: assessment.studentId,
+          studentRef: assessment.studentRef,
           studentLastName: assessment.studentName,
           studentFirstName: assessment.studentFirstName,
           schoolYear: assessment.schoolYear,

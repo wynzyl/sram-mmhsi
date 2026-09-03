@@ -261,7 +261,7 @@ export default function RegistrationsListView({
                       {/* Right column: Actions */}
                       <div className="flex flex-col items-end gap-3 shrink-0">
                         <Link
-                          href={`${studentBasePath}/${reg.studentId}`}
+                          href={`${studentBasePath}/${reg.referenceNumber}`}
                           className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium
                                      text-primary hover:bg-muted
                                     transition-colors group"
@@ -271,6 +271,7 @@ export default function RegistrationsListView({
                         </Link>
 
                         <StudentRowActionsMenu
+                          studentRef={reg.referenceNumber}
                           studentId={reg.studentId}
                           studentBasePath={studentBasePath}
                         />

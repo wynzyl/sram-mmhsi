@@ -64,6 +64,7 @@ export type AssessmentLedgerRegisterProps = {
   assessment: {
     id: string;
     studentId: string;
+    studentRef: string;
     studentLastName: string;
     studentFirstName: string;
     schoolYear: string;
@@ -252,7 +253,7 @@ export default function AssessmentLedgerRegister({
             <span>School year {assessment.schoolYear}</span>
             <span className="opacity-55" aria-hidden>·</span>
             <Link
-              href={`${studentRecordsBasePath}/${assessment.studentId}`}
+              href={`${studentRecordsBasePath}/${assessment.studentRef}`}
               className="text-primary font-medium no-underline border-b border-dashed border-primary/45 transition-colors hover:border-current"
             >
               Open student record ↗

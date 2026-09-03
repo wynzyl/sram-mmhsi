@@ -153,7 +153,7 @@ export async function InternalEnrollmentDetailPage(props: {
         <div>
           <h1 className="text-2xl font-semibold">
             <Link
-              href={`${studentBasePath}/${enrollment.studentId}`}
+              href={`${studentBasePath}/${enrollment.studentRef}`}
               className="text-primary hover:underline"
             >
               {studentName}

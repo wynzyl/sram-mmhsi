@@ -105,7 +105,7 @@ export default function RegistrationsTable({
                       </div>
                       <div className="min-w-0">
                         <Link
-                          href={`${studentBasePath}/${reg.studentId}`}
+                          href={`${studentBasePath}/${reg.referenceNumber}`}
                           prefetch={false}
                           className="block truncate font-semibold text-foreground hover:text-primary transition-colors"
                         >
@@ -145,6 +145,7 @@ export default function RegistrationsTable({
                   </td>
                   <td className="align-middle py-3 text-right pr-2">
                     <StudentRowActionsMenu
+                      studentRef={reg.referenceNumber}
                       studentId={reg.studentId}
                       studentBasePath={studentBasePath}
                     />
