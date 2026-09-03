@@ -100,7 +100,7 @@ export default function ClearanceTable({
               header: "Actions",
               id: "actions",
               cell: ({ row }: { row: { original: ClearanceListItem } }) => (
-                <Link href={`/admin/clearances/${row.original.id}`}>
+                <Link href={`/staff/clearances/${row.original.id}`}>
                   <Button variant="ghost" size="sm" className="h-8 gap-1">
                     <Eye className="h-3.5 w-3.5" />
                     {row.original.status === "pending" ? "Resolve" : "View"}

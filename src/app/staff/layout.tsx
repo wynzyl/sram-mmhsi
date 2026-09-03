@@ -9,6 +9,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { CommandPaletteProvider } from "@/components/command-palette";
 import { ActiveSchoolYearProvider } from "@/components/providers/ActiveSchoolYearProvider";
+import { PermissionErrorToast } from "@/components/shared/PermissionErrorToast";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import type { Role } from "@/lib/constants/roles";
 
@@ -31,6 +32,9 @@ async function StaffLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <ActiveSchoolYearProvider activeSchoolYearId={activeSchoolYear?.id ?? null}>
       <CommandPaletteProvider>
+        <Suspense fallback={null}>
+          <PermissionErrorToast />
+        </Suspense>
         <SidebarProvider defaultOpen={true}>
           <AppSidebar role={user.role as Role} />
           <SidebarInset>
