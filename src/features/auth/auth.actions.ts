@@ -191,10 +191,16 @@ async function handlePortalLogin(
   }
 
   // 5. Update last login timestamp (fire-and-forget)
-  void db
-    .update(portalAccounts)
+  db.update(portalAccounts)
     .set({ lastLoginAt: new Date() })
-    .where(eq(portalAccounts.id, account.id));
+    .where(eq(portalAccounts.id, account.id))
+    .execute()
+    .catch((err) => {
+      logger.error("[auth] Failed to update lastLoginAt", {
+        portalAccountId: account.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 
   // 6. Reset rate limits on successful login
   resetLoginRateLimits(clientIp, username);
