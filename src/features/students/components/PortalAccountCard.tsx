@@ -207,12 +207,12 @@ export function PortalAccountCard({
                   </span>
                   <span className="text-sm">
                     {account.lastLoginAt ? (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 text-success">
                         <Clock className="h-3 w-3" />
                         {formatDateTime(account.lastLoginAt)}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">Never</span>
+                      <span className="text-warning">Never</span>
                     )}
                   </span>
                 </div>
