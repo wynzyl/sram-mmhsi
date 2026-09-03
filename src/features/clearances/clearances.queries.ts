@@ -265,6 +265,8 @@ export async function getPendingClearancesCount(): Promise<number> {
  * Get clearance by ID (for detail page)
  */
 export async function getClearanceById(clearanceId: string): Promise<ClearanceDetail | null> {
+  const startTime = Date.now();
+
   const [row] = await db
     .select({
       id: studentClearances.id,
@@ -293,10 +295,13 @@ export async function getClearanceById(clearanceId: string): Promise<ClearanceDe
 
   if (!row) return null;
 
+  const mainQueryTime = Date.now() - startTime;
+
   // Get enrollment info
   let gradeLevelName: string | null = null;
   let schoolYearLabel: string | null = null;
 
+  const enrollmentQueryStart = Date.now();
   if (row.enrollmentId) {
     const [enrollmentInfo] = await db
       .select({
@@ -324,8 +329,10 @@ export async function getClearanceById(clearanceId: string): Promise<ClearanceDe
       schoolYearLabel = sy.label;
     }
   }
+  const enrollmentQueryTime = Date.now() - enrollmentQueryStart;
 
   // Get user names
+  const usersQueryStart = Date.now();
   const userIds = [row.createdBy, row.resolvedBy].filter(Boolean) as string[];
   const userNames = new Map<string, string>();
 
@@ -337,6 +344,10 @@ export async function getClearanceById(clearanceId: string): Promise<ClearanceDe
 
     usersData.forEach((u) => userNames.set(u.id, u.username));
   }
+  const usersQueryTime = Date.now() - usersQueryStart;
+
+  const totalTime = Date.now() - startTime;
+  console.log(`[PERF] getClearanceById: total=${totalTime}ms (main=${mainQueryTime}ms, enrollment/sy=${enrollmentQueryTime}ms, users=${usersQueryTime}ms)`);
 
   return {
     id: row.id,
@@ -393,30 +404,45 @@ export async function getPendingClearancesForStudent(
 
 /**
  * Get clearance summary for a student
+ * Uses SQL aggregation for counts (faster than client-side filtering)
  */
 export async function getStudentClearanceSummary(
   studentId: string
 ): Promise<StudentClearanceSummary> {
-  // Get all clearances for the student
-  const allClearances = await getClearances(
-    { page: 1, pageSize: 1000 },
-    { studentId }
-  );
+  const startTime = Date.now();
 
-  const pendingCount = allClearances.data.filter((c) => c.status === "pending").length;
-  const clearedCount = allClearances.data.filter((c) => c.status === "cleared").length;
-  const waivedCount = allClearances.data.filter((c) => c.status === "waived").length;
+  // Run counts query and clearances fetch in parallel
+  const [countsResult, allClearances] = await Promise.all([
+    // SQL aggregation for counts and total outstanding
+    db
+      .select({
+        totalCount: sql<number>`COUNT(*)`.mapWith(Number),
+        pendingCount: sql<number>`COUNT(*) FILTER (WHERE ${studentClearances.status} = 'pending')`.mapWith(Number),
+        clearedCount: sql<number>`COUNT(*) FILTER (WHERE ${studentClearances.status} = 'cleared')`.mapWith(Number),
+        waivedCount: sql<number>`COUNT(*) FILTER (WHERE ${studentClearances.status} = 'waived')`.mapWith(Number),
+        totalOutstanding: sql<number>`COALESCE(SUM(${studentClearances.outstandingAmount}) FILTER (WHERE ${studentClearances.status} = 'pending'), 0)`.mapWith(Number),
+      })
+      .from(studentClearances)
+      .where(
+        and(
+          eq(studentClearances.studentId, studentId),
+          isNull(studentClearances.deletedAt)
+        )
+      ),
+    // Fetch clearances list
+    getClearances({ page: 1, pageSize: 1000 }, { studentId }),
+  ]);
 
-  const totalOutstanding = allClearances.data
-    .filter((c) => c.status === "pending")
-    .reduce((sum, c) => sum + Number(c.outstandingAmount), 0);
+  const counts = countsResult[0];
+  const totalTime = Date.now() - startTime;
+  console.log(`[PERF] getStudentClearanceSummary: total=${totalTime}ms (parallel queries, records=${allClearances.data.length})`);
 
   return {
-    totalClearances: allClearances.data.length,
-    pendingCount,
-    clearedCount,
-    waivedCount,
-    totalOutstanding,
+    totalClearances: counts?.totalCount ?? 0,
+    pendingCount: counts?.pendingCount ?? 0,
+    clearedCount: counts?.clearedCount ?? 0,
+    waivedCount: counts?.waivedCount ?? 0,
+    totalOutstanding: counts?.totalOutstanding ?? 0,
     clearances: allClearances.data,
   };
 }
