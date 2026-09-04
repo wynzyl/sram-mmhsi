@@ -56,11 +56,11 @@ vi.mock("@/features/archive/archive.guards", () => ({
   assertStudentMutable: vi.fn(),
   StudentArchivedException: class StudentArchivedException extends Error {
     constructor(
-      message: string,
       public readonly studentId: string,
-      public readonly status: string
+      public readonly studentStatus: "active" | "inactive" | "graduated" | "transferred" | "withdrawn" | "cancelled",
+      public readonly blockedAction: string
     ) {
-      super(message);
+      super(`Cannot perform action: Student is archived (status: ${studentStatus})`);
     }
   },
   formatArchiveError: vi.fn((err) => ({
@@ -312,9 +312,9 @@ describe("cancelAssessmentAction", () => {
       (db.query.assessments.findFirst as Mock).mockResolvedValue(createMockAssessment());
       (assertStudentMutable as Mock).mockRejectedValue(
         new StudentArchivedException(
-          "Student is archived",
           validUuids.student,
-          "graduated"
+          "graduated",
+          "cancel_assessment"
         )
       );
 

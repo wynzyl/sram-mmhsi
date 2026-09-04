@@ -9,6 +9,8 @@
  * H2 Finding: High-priority test for balance forward logic
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- Mocking complex Drizzle PgTransaction type */
+
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { reverseBalanceForwardItems } from "../balance-forward";
 

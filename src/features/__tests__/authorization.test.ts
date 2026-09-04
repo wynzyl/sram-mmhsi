@@ -107,11 +107,11 @@ vi.mock("@/features/archive/archive.guards", () => ({
   assertStudentMutable: vi.fn(),
   StudentArchivedException: class StudentArchivedException extends Error {
     constructor(
-      message: string,
       public readonly studentId: string,
-      public readonly status: string
+      public readonly studentStatus: "active" | "inactive" | "graduated" | "transferred" | "withdrawn" | "cancelled",
+      public readonly blockedAction: string
     ) {
-      super(message);
+      super(`Cannot perform action: Student is archived (status: ${studentStatus})`);
     }
   },
   formatArchiveError: vi.fn((err) => ({
@@ -220,8 +220,8 @@ describe("Assessment Authorization", () => {
     let createAssessmentFromEnrollmentAction: typeof import("@/features/assessments/assessments.actions").createAssessmentFromEnrollmentAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/assessments/assessments.actions");
-      createAssessmentFromEnrollmentAction = module.createAssessmentFromEnrollmentAction;
+      const { createAssessmentFromEnrollmentAction: action } = await import("@/features/assessments/assessments.actions");
+      createAssessmentFromEnrollmentAction = action;
     });
 
     it("should reject when user lacks assessments:create permission", async () => {
@@ -266,8 +266,8 @@ describe("Assessment Authorization", () => {
     let cancelAssessmentAction: typeof import("@/features/assessments/assessments.actions").cancelAssessmentAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/assessments/assessments.actions");
-      cancelAssessmentAction = module.cancelAssessmentAction;
+      const { cancelAssessmentAction: action } = await import("@/features/assessments/assessments.actions");
+      cancelAssessmentAction = action;
     });
 
     it("should reject when user lacks assessments:cancel permission", async () => {
@@ -304,19 +304,15 @@ describe("Assessment Authorization", () => {
     let reverseBalanceTransferAction: typeof import("@/features/assessments/assessments.actions").reverseBalanceTransferAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/assessments/assessments.actions");
-      reverseBalanceTransferAction = module.reverseBalanceTransferAction;
+      const { reverseBalanceTransferAction: action } = await import("@/features/assessments/assessments.actions");
+      reverseBalanceTransferAction = action;
     });
 
     it("should reject when user lacks assessments:reverse_transfer permission", async () => {
       (requireStaffSession as Mock).mockResolvedValue(createMockSession("registrar"));
       (hasPermission as Mock).mockReturnValue(false);
 
-      const formData = createFormData({
-        sourceAssessmentId: VALID_UUID,
-      });
-
-      const result = await reverseBalanceTransferAction({}, formData);
+      const result = await reverseBalanceTransferAction(VALID_UUID);
 
       expect(hasPermission).toHaveBeenCalledWith("registrar", "assessments:reverse_transfer");
       expect(result.message).toContain("permission");
@@ -326,9 +322,7 @@ describe("Assessment Authorization", () => {
       (requireStaffSession as Mock).mockResolvedValue(createMockSession("admin"));
       (hasPermission as Mock).mockReturnValue(true);
 
-      const formData = createFormData({});
-
-      const result = await reverseBalanceTransferAction({}, formData);
+      const result = await reverseBalanceTransferAction(VALID_UUID);
 
       expect(hasPermission).toHaveBeenCalledWith("admin", "assessments:reverse_transfer");
       // Permission was checked, so auth passed
@@ -339,8 +333,8 @@ describe("Assessment Authorization", () => {
     let addSpecialFeeAction: typeof import("@/features/assessments/assessments.actions").addSpecialFeeAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/assessments/assessments.actions");
-      addSpecialFeeAction = module.addSpecialFeeAction;
+      const { addSpecialFeeAction: action } = await import("@/features/assessments/assessments.actions");
+      addSpecialFeeAction = action;
     });
 
     it("should reject when user lacks assessments:update permission", async () => {
@@ -375,8 +369,8 @@ describe("Assessment Authorization", () => {
     let removeSpecialFeeAction: typeof import("@/features/assessments/assessments.actions").removeSpecialFeeAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/assessments/assessments.actions");
-      removeSpecialFeeAction = module.removeSpecialFeeAction;
+      const { removeSpecialFeeAction: action } = await import("@/features/assessments/assessments.actions");
+      removeSpecialFeeAction = action;
     });
 
     it("should reject when user lacks assessments:update permission", async () => {
@@ -408,8 +402,8 @@ describe("Payment Authorization", () => {
     let postPaymentAction: typeof import("@/features/payments/payments.actions").postPaymentAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/payments/payments.actions");
-      postPaymentAction = module.postPaymentAction;
+      const { postPaymentAction: action } = await import("@/features/payments/payments.actions");
+      postPaymentAction = action;
     });
 
     it("should reject when user lacks payments:post permission", async () => {
@@ -448,8 +442,8 @@ describe("Payment Authorization", () => {
     let voidPaymentAction: typeof import("@/features/payments/actions/void-payment.actions").voidPaymentAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/payments/actions/void-payment.actions");
-      voidPaymentAction = module.voidPaymentAction;
+      const { voidPaymentAction: action } = await import("@/features/payments/actions/void-payment.actions");
+      voidPaymentAction = action;
     });
 
     it("should reject when user lacks payments:void permission", async () => {
@@ -484,8 +478,8 @@ describe("Payment Authorization", () => {
     let requestVoidAction: typeof import("@/features/payments/void-requests.actions").requestVoidAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/payments/void-requests.actions");
-      requestVoidAction = module.requestVoidAction;
+      const { requestVoidAction: action } = await import("@/features/payments/void-requests.actions");
+      requestVoidAction = action;
     });
 
     it("should reject when user lacks payments:void_request permission", async () => {
@@ -508,8 +502,8 @@ describe("Payment Authorization", () => {
     let approveVoidRequestAction: typeof import("@/features/payments/void-requests.actions").approveVoidRequestAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/payments/void-requests.actions");
-      approveVoidRequestAction = module.approveVoidRequestAction;
+      const { approveVoidRequestAction: action } = await import("@/features/payments/void-requests.actions");
+      approveVoidRequestAction = action;
     });
 
     it("should reject when user lacks payments:void_approve permission", async () => {
@@ -531,8 +525,8 @@ describe("Payment Authorization", () => {
     let rejectVoidRequestAction: typeof import("@/features/payments/void-requests.actions").rejectVoidRequestAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/payments/void-requests.actions");
-      rejectVoidRequestAction = module.rejectVoidRequestAction;
+      const { rejectVoidRequestAction: action } = await import("@/features/payments/void-requests.actions");
+      rejectVoidRequestAction = action;
     });
 
     it("should reject when user lacks payments:void_approve permission", async () => {
@@ -565,8 +559,8 @@ describe("Booklet Authorization", () => {
     let createBookletAction: typeof import("@/features/payments/actions/booklets.actions").createBookletAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/payments/actions/booklets.actions");
-      createBookletAction = module.createBookletAction;
+      const { createBookletAction: action } = await import("@/features/payments/actions/booklets.actions");
+      createBookletAction = action;
     });
 
     it("should reject when user lacks booklets:manage permission", async () => {
@@ -619,8 +613,8 @@ describe("Discount Authorization", () => {
     let createDiscountTypeAction: typeof import("@/features/discounts/actions/discount-types.actions").createDiscountTypeAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/discounts/actions/discount-types.actions");
-      createDiscountTypeAction = module.createDiscountTypeAction;
+      const { createDiscountTypeAction: action } = await import("@/features/discounts/actions/discount-types.actions");
+      createDiscountTypeAction = action;
     });
 
     it("should reject when user lacks discounts:manage permission", async () => {
@@ -646,8 +640,8 @@ describe("Discount Authorization", () => {
     let updateDiscountTypeAction: typeof import("@/features/discounts/actions/discount-types.actions").updateDiscountTypeAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/discounts/actions/discount-types.actions");
-      updateDiscountTypeAction = module.updateDiscountTypeAction;
+      const { updateDiscountTypeAction: action } = await import("@/features/discounts/actions/discount-types.actions");
+      updateDiscountTypeAction = action;
     });
 
     it("should reject when user lacks discounts:manage permission", async () => {
@@ -670,19 +664,15 @@ describe("Discount Authorization", () => {
     let deleteDiscountTypeAction: typeof import("@/features/discounts/actions/discount-types.actions").deleteDiscountTypeAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/discounts/actions/discount-types.actions");
-      deleteDiscountTypeAction = module.deleteDiscountTypeAction;
+      const { deleteDiscountTypeAction: action } = await import("@/features/discounts/actions/discount-types.actions");
+      deleteDiscountTypeAction = action;
     });
 
     it("should reject when user lacks discounts:manage permission", async () => {
       (requireSession as Mock).mockResolvedValue(createMockSession("teacher"));
       (hasPermission as Mock).mockReturnValue(false);
 
-      const formData = createFormData({
-        discountTypeId: VALID_UUID,
-      });
-
-      const result = await deleteDiscountTypeAction({}, formData);
+      const result = await deleteDiscountTypeAction(VALID_UUID);
 
       expect(hasPermission).toHaveBeenCalledWith("teacher", "discounts:manage");
       expect(result.message).toContain("permission");
@@ -693,8 +683,8 @@ describe("Discount Authorization", () => {
     let createDiscountRequestAction: typeof import("@/features/discounts/actions/discount-requests.actions").createDiscountRequestAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/discounts/actions/discount-requests.actions");
-      createDiscountRequestAction = module.createDiscountRequestAction;
+      const { createDiscountRequestAction: action } = await import("@/features/discounts/actions/discount-requests.actions");
+      createDiscountRequestAction = action;
     });
 
     it("should reject when user lacks discounts:request permission", async () => {
@@ -718,8 +708,8 @@ describe("Discount Authorization", () => {
     let approveDiscountRequestAction: typeof import("@/features/discounts/actions/discount-requests.actions").approveDiscountRequestAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/discounts/actions/discount-requests.actions");
-      approveDiscountRequestAction = module.approveDiscountRequestAction;
+      const { approveDiscountRequestAction: action } = await import("@/features/discounts/actions/discount-requests.actions");
+      approveDiscountRequestAction = action;
     });
 
     it("should reject when user lacks discounts:review permission", async () => {
@@ -741,8 +731,8 @@ describe("Discount Authorization", () => {
     let rejectDiscountRequestAction: typeof import("@/features/discounts/actions/discount-requests.actions").rejectDiscountRequestAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/discounts/actions/discount-requests.actions");
-      rejectDiscountRequestAction = module.rejectDiscountRequestAction;
+      const { rejectDiscountRequestAction: action } = await import("@/features/discounts/actions/discount-requests.actions");
+      rejectDiscountRequestAction = action;
     });
 
     it("should reject when user lacks discounts:review permission", async () => {
@@ -765,8 +755,8 @@ describe("Discount Authorization", () => {
     let applyApprovedDiscountToExistingAssessment: typeof import("@/features/discounts/actions/discount-application.actions").applyApprovedDiscountToExistingAssessment;
 
     beforeEach(async () => {
-      const module = await import("@/features/discounts/actions/discount-application.actions");
-      applyApprovedDiscountToExistingAssessment = module.applyApprovedDiscountToExistingAssessment;
+      const { applyApprovedDiscountToExistingAssessment: action } = await import("@/features/discounts/actions/discount-application.actions");
+      applyApprovedDiscountToExistingAssessment = action;
     });
 
     it("should reject when user lacks discounts:apply permission", async () => {
@@ -788,8 +778,8 @@ describe("Discount Authorization", () => {
     let reverseDiscountAction: typeof import("@/features/discounts/actions/discount-application.actions").reverseDiscountAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/discounts/actions/discount-application.actions");
-      reverseDiscountAction = module.reverseDiscountAction;
+      const { reverseDiscountAction: action } = await import("@/features/discounts/actions/discount-application.actions");
+      reverseDiscountAction = action;
     });
 
     it("should reject when user lacks discounts:manage permission", async () => {
@@ -961,10 +951,7 @@ describe("RBAC Permission Matrix", () => {
         "@/features/assessments/assessments.actions"
       );
 
-      const result = await reverseBalanceTransferAction(
-        {},
-        createFormData({ sourceAssessmentId: VALID_UUID })
-      );
+      const result = await reverseBalanceTransferAction(VALID_UUID);
 
       expect(hasPermission).toHaveBeenCalledWith("registrar", "assessments:reverse_transfer");
       expect(result.message).toContain("permission");

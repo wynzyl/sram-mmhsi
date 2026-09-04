@@ -101,11 +101,11 @@ vi.mock("@/features/archive/archive.guards", () => ({
   assertStudentMutable: vi.fn(),
   StudentArchivedException: class StudentArchivedException extends Error {
     constructor(
-      message: string,
       public readonly studentId: string,
-      public readonly status: string
+      public readonly studentStatus: "active" | "inactive" | "graduated" | "transferred" | "withdrawn" | "cancelled",
+      public readonly blockedAction: string
     ) {
-      super(message);
+      super(`Cannot perform action: Student is archived (status: ${studentStatus})`);
     }
   },
   formatArchiveError: vi.fn((err) => ({
@@ -227,8 +227,8 @@ describe("Assessment Creation Rollback", () => {
     let createAssessmentFromEnrollmentAction: typeof import("@/features/assessments/assessments.actions").createAssessmentFromEnrollmentAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/assessments/assessments.actions");
-      createAssessmentFromEnrollmentAction = module.createAssessmentFromEnrollmentAction;
+      const { createAssessmentFromEnrollmentAction: action } = await import("@/features/assessments/assessments.actions");
+      createAssessmentFromEnrollmentAction = action;
     });
 
     it("should rollback when assessment item insertion fails", async () => {
@@ -374,8 +374,8 @@ describe("Payment Void Rollback", () => {
     let voidPaymentAction: typeof import("@/features/payments/actions/void-payment.actions").voidPaymentAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/payments/actions/void-payment.actions");
-      voidPaymentAction = module.voidPaymentAction;
+      const { voidPaymentAction: action } = await import("@/features/payments/actions/void-payment.actions");
+      voidPaymentAction = action;
     });
 
     it("should rollback when balance reversion fails", async () => {
@@ -596,8 +596,8 @@ describe("Payment Posting Rollback", () => {
     let postPaymentAction: typeof import("@/features/payments/payments.actions").postPaymentAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/payments/payments.actions");
-      postPaymentAction = module.postPaymentAction;
+      const { postPaymentAction: action } = await import("@/features/payments/payments.actions");
+      postPaymentAction = action;
     });
 
     it("should rollback when payment insertion fails", async () => {
@@ -830,8 +830,8 @@ describe("Assessment Cancellation Rollback", () => {
     let cancelAssessmentAction: typeof import("@/features/assessments/assessments.actions").cancelAssessmentAction;
 
     beforeEach(async () => {
-      const module = await import("@/features/assessments/assessments.actions");
-      cancelAssessmentAction = module.cancelAssessmentAction;
+      const { cancelAssessmentAction: action } = await import("@/features/assessments/assessments.actions");
+      cancelAssessmentAction = action;
     });
 
     it("should rollback when assessment item deletion fails", async () => {
