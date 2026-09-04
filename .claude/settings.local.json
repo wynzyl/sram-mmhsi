@@ -20,7 +20,8 @@
       "Bash(npx tsc *)",
       "Bash(tree:*)",
       "Bash(for:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm test:*)"
     ]
   }
 }

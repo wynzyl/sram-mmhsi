@@ -165,6 +165,7 @@ Supported roles
 - Super Admin
 - Principal
 - Coordinator
+- Finance Officer
 - Registrar
 - Adviser
 - Teacher
