@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getCurriculumById,
   getCurriculumVersionChain,
@@ -15,15 +17,77 @@ import { CurriculumVersionChain } from "@/features/academics/curriculums/compone
 import { CurriculumDetailClient } from "./CurriculumDetailClient";
 import { formatDate } from "@/lib/utils/date";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+/**
+ * Instant navigation - full curriculum detail skeleton shown while data loads.
+ */
 export default async function CurriculumDetailPage({ params }: PageProps) {
   const { id } = await params;
+
+  return (
+    <Suspense fallback={<CurriculumDetailSkeleton />}>
+      <CurriculumDetailContent id={id} />
+    </Suspense>
+  );
+}
+
+function CurriculumDetailSkeleton() {
+  return (
+    <div className="p-6 space-y-6">
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Skeleton className="h-4 w-24" />
+        <span>/</span>
+        <Skeleton className="h-4 w-40" />
+      </nav>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-56" />
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-4 w-8" />
+          </div>
+          <Skeleton className="h-4 w-96 mt-2" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="h-9 w-28" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="bg-card border border-border rounded-lg p-4">
+            <Skeleton className="h-8 w-12" />
+            <Skeleton className="h-4 w-20 mt-2" />
+          </div>
+        ))}
+      </div>
+      <div className="bg-card border border-border rounded-lg">
+        <div className="px-4 py-3 border-b border-border">
+          <Skeleton className="h-5 w-48" />
+        </div>
+        <div className="p-4 space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 2, 3].map((j) => (
+                  <Skeleton key={j} className="h-10 w-full" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function CurriculumDetailContent({ id }: { id: string }) {
   const session = await requireSession();
 
   if (!hasPermission(session.role, "curriculums:read")) {

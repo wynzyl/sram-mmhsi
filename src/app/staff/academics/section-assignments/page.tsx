@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { getSchoolYears, getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import {
@@ -9,8 +11,7 @@ import {
   SectionAssignmentTable,
 } from "@/features/academics/section-assignments";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata = {
   title: "Section Assignments | SRAMS",
@@ -25,14 +26,55 @@ interface PageProps {
   }>;
 }
 
-export default async function SectionAssignmentsPage({ searchParams }: PageProps) {
+/**
+ * Instant navigation - full section assignments skeleton shown while data loads.
+ */
+export default function SectionAssignmentsPage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<SectionAssignmentsSkeleton />}>
+      <SectionAssignmentsContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function SectionAssignmentsSkeleton() {
+  return (
+    <div className="page-container--full space-y-6">
+      <div className="space-y-1">
+        <Skeleton className="h-9 w-52" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <section className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        <div className="bg-muted flex items-center justify-between border-b border-border px-4 py-3">
+          <Skeleton className="h-4 w-32" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-36" />
+            <Skeleton className="h-9 w-32" />
+          </div>
+        </div>
+        <div className="divide-y divide-border">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3">
+              <Skeleton className="h-4 w-8" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-8 w-24 ml-auto" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+async function SectionAssignmentsContent({ searchParams }: PageProps) {
+  const params = await searchParams;
   const session = await requireSession();
 
   if (!hasPermission(session.role, "sections:assign")) {
     redirect("/staff/dashboard");
   }
-
-  const params = await searchParams;
 
   // Get school year - default to active if not specified
   const [schoolYears, activeSchoolYear, gradeLevels] = await Promise.all([

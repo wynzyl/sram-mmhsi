@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { requireStaffSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getSectionById,
   getStudentsInSection,
@@ -32,11 +34,75 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Users, BookOpen, Calendar, UserCheck, GraduationCap } from "lucide-react";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 interface SectionDetailPageProps {
   params: Promise<{ id: string }>;
+}
+
+/**
+ * Instant navigation - full section detail skeleton shown while data loads.
+ */
+export default async function SectionDetailPageWrapper({
+  params,
+}: SectionDetailPageProps) {
+  const { id } = await params;
+
+  return (
+    <Suspense fallback={<SectionDetailSkeleton />}>
+      <SectionDetailPage id={id} />
+    </Suspense>
+  );
+}
+
+function SectionDetailSkeleton() {
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-9 w-36" />
+      </div>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-6 w-24 rounded-full" />
+          </div>
+          <Skeleton className="h-4 w-48 mt-2" />
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i}>
+            <CardContent className="flex items-center gap-4 p-6">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y divide-border">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-8 w-24 ml-auto" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export async function generateMetadata({ params }: SectionDetailPageProps) {
@@ -53,11 +119,8 @@ export async function generateMetadata({ params }: SectionDetailPageProps) {
   };
 }
 
-export default async function SectionDetailPage({
-  params,
-}: SectionDetailPageProps) {
+async function SectionDetailPage({ id }: { id: string }) {
   const session = await requireStaffSession();
-  const { id } = await params;
 
   const section = await getSectionById(id);
 

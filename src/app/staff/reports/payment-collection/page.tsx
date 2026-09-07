@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { requireSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { canAccessPaymentReports } from "@/lib/rbac/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ROLES } from "@/lib/constants/roles";
 import {
   getPaymentCollectionReport,
@@ -11,8 +13,7 @@ import {
 import { PaymentCollectionReportView } from "@/features/reports/components/PaymentCollectionReportView";
 import { formatDate } from "@/lib/utils/date";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 const PAGE_SIZE = 30;
 
@@ -28,6 +29,56 @@ interface PageProps {
     bookletId?: string;
     page?: string;
   }>;
+}
+
+/**
+ * Instant navigation - full payment collection report skeleton shown while data loads.
+ */
+export default function PaymentCollectionReportPage({
+  searchParams,
+}: PageProps) {
+  return (
+    <Suspense fallback={<PaymentCollectionSkeleton />}>
+      <PaymentCollectionContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function PaymentCollectionSkeleton() {
+  return (
+    <div className="page-container--full space-y-6">
+      <div className="space-y-1 no-print">
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        <div className="bg-muted flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-5 w-24 rounded-full" />
+            <Skeleton className="h-5 w-32 rounded-full" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </div>
+        <div className="divide-y divide-border">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-6 w-16 rounded-full" />
+              <Skeleton className="h-4 w-24 ml-auto" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** Format amount as number without currency symbol */
@@ -49,7 +100,7 @@ function formatPeriodLabel(startDate: Date, endDate: Date): string {
   return `${start} – ${end}`;
 }
 
-export default async function PaymentCollectionReportPage({
+async function PaymentCollectionContent({
   searchParams,
 }: PageProps) {
   const session = await requireSession();

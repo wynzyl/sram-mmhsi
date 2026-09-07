@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getActiveSchoolYear,
   getLockedSheets,
@@ -11,15 +13,52 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/date";
 import { GRADING_PERIOD_LABELS } from "@/lib/constants/grading-periods";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata = {
   title: "Locked Grades | SRAMS",
   description: "Locked grade sheets (immutable)",
 };
 
-export default async function LockedGradesPage() {
+/**
+ * Instant navigation - full locked grades skeleton shown while data loads.
+ */
+export default function LockedGradesPage() {
+  return (
+    <Suspense fallback={<LockedGradesSkeleton />}>
+      <LockedGradesContent />
+    </Suspense>
+  );
+}
+
+function LockedGradesSkeleton() {
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-4 w-72 mt-2" />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-4 w-8" />
+            </div>
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-4 w-20" />
+            <div className="pt-2 border-t border-border space-y-2">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+async function LockedGradesContent() {
   const session = await requireSession();
 
   // Only users with unlock permission can access this page to manage locked sheets

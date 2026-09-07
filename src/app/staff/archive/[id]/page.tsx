@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
@@ -26,8 +28,7 @@ import {
 } from "@/features/documents/document-requests.queries";
 import { ArchivedStudentDocumentRequests } from "./ArchivedStudentDocumentRequests";
 
-// Disable instant navigation - page has multiple parallel DB queries
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata: Metadata = {
   title: "Archived Student",
@@ -38,7 +39,113 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function ArchivedStudentPage({ params }: PageProps) {
+/**
+ * Instant navigation - full archived student detail skeleton shown while data loads.
+ */
+export default function ArchivedStudentPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<ArchivedStudentSkeleton />}>
+      <ArchivedStudentContent params={params} />
+    </Suspense>
+  );
+}
+
+function ArchivedStudentSkeleton() {
+  return (
+    <div className="container mx-auto space-y-6 py-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-4 w-16" />
+            <span className="text-muted-foreground">/</span>
+            <Skeleton className="h-8 w-48" />
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-28" />
+        </div>
+      </div>
+
+      {/* Student Info + Archive Details grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="space-y-1">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-5 w-32" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="space-y-1">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-28" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Enrollment History */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-6 w-16 rounded-full" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Payments */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <Skeleton className="h-6 w-36" />
+          <Skeleton className="h-8 w-20" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+async function ArchivedStudentContent({ params }: PageProps) {
   const session = await requireSession();
 
   if (!hasPermission(session.role, "archive:read")) {

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
@@ -8,30 +9,19 @@ import { desc, isNull } from "drizzle-orm";
 import { getAllFeeTemplates } from "@/features/finance/fee-templates/fee-templates.queries";
 import { TemplateAssignmentForm } from "@/features/finance/fee-templates/components/TemplateAssignmentForm";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata = {
   title: "Assign Fee Template | SRAMS",
   description: "Assign a fee template to a school year and assessment band",
 };
 
-export default async function NewFeeSchedulePage() {
-  const session = await requireSession();
-
-  if (!hasPermission(session.role, "fee_schedules:manage")) {
-    redirect("/staff/dashboard");
-  }
-
-  const templates = await getAllFeeTemplates();
-  const activeTemplates = templates.filter((t) => t.isActive);
-
-  const allSchoolYears = await db.query.schoolYears.findMany({
-    where: isNull(schoolYears.deletedAt),
-    orderBy: [desc(schoolYears.startDate)],
-  });
-
+/**
+ * Static shell - header renders immediately.
+ */
+export default function NewFeeSchedulePage() {
   return (
     <div className="px-8 py-6 max-w-[800px] mx-auto">
       {/* Breadcrumb */}
@@ -55,49 +45,102 @@ export default async function NewFeeSchedulePage() {
         </div>
       </div>
 
-      {activeTemplates.length === 0 ? (
-        <div className="flex gap-3 p-4 bg-warning/10 border border-warning/30 rounded-md mb-6">
-          <div className="shrink-0 w-5 h-5 flex items-center justify-center text-warning" aria-hidden>⚠</div>
-          <div>
-            <p className="text-[0.8125rem] font-semibold text-foreground">No Templates Available</p>
-            <p className="text-[0.8125rem] text-muted-foreground m-0">
-              You need to create fee templates before you can assign them to school years.
-            </p>
-            <Link href="/staff/finance/fee-templates/new" className="mt-3 inline-block">
-              <Button size="sm">Create Fee Template</Button>
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-6">
-          {/* Form card */}
-          <div className="bg-card border border-border rounded-md">
-            <div className="flex justify-between items-center gap-4 px-5 py-4 border-b border-border">
-              <h2 className="text-base font-semibold text-foreground">Assignment Details</h2>
-            </div>
-            <div className="p-5">
-              <TemplateAssignmentForm
-                templates={activeTemplates}
-                schoolYears={allSchoolYears}
-              />
-            </div>
-          </div>
+      <Suspense fallback={<AssignmentFormSkeleton />}>
+        <AssignmentFormContent />
+      </Suspense>
+    </div>
+  );
+}
 
-          {/* Notes card */}
-          <div className="flex gap-3 p-4 bg-muted border border-border rounded-md">
-            <div className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground" aria-hidden>📋</div>
-            <div>
-              <p className="text-[0.8125rem] font-semibold text-foreground">Important Notes</p>
-              <ul className="m-0 pl-5 text-[0.8125rem] text-muted-foreground list-disc">
-                <li>Each assessment band can only have one active schedule per school year</li>
-                <li>If you need to change amounts for a specific year, add overrides instead of creating a new template</li>
-                <li>Deactivate the old schedule before creating a new one for the same band and year</li>
-                <li>The effective date is usually the school year start date</li>
-              </ul>
-            </div>
-          </div>
+function AssignmentFormSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="bg-card border border-border rounded-md">
+        <div className="flex justify-between items-center gap-4 px-5 py-4 border-b border-border">
+          <Skeleton className="h-5 w-40" />
         </div>
-      )}
+        <div className="p-5 space-y-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function AssignmentFormContent() {
+  const session = await requireSession();
+
+  if (!hasPermission(session.role, "fee_schedules:manage")) {
+    redirect("/staff/dashboard");
+  }
+
+  const [templates, allSchoolYears] = await Promise.all([
+    getAllFeeTemplates(),
+    db.query.schoolYears.findMany({
+      where: isNull(schoolYears.deletedAt),
+      orderBy: [desc(schoolYears.startDate)],
+    }),
+  ]);
+
+  const activeTemplates = templates.filter((t) => t.isActive);
+
+  if (activeTemplates.length === 0) {
+    return (
+      <div className="flex gap-3 p-4 bg-warning/10 border border-warning/30 rounded-md mb-6">
+        <div className="shrink-0 w-5 h-5 flex items-center justify-center text-warning" aria-hidden>⚠</div>
+        <div>
+          <p className="text-[0.8125rem] font-semibold text-foreground">No Templates Available</p>
+          <p className="text-[0.8125rem] text-muted-foreground m-0">
+            You need to create fee templates before you can assign them to school years.
+          </p>
+          <Link href="/staff/finance/fee-templates/new" className="mt-3 inline-block">
+            <Button size="sm">Create Fee Template</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Form card */}
+      <div className="bg-card border border-border rounded-md">
+        <div className="flex justify-between items-center gap-4 px-5 py-4 border-b border-border">
+          <h2 className="text-base font-semibold text-foreground">Assignment Details</h2>
+        </div>
+        <div className="p-5">
+          <TemplateAssignmentForm
+            templates={activeTemplates}
+            schoolYears={allSchoolYears}
+          />
+        </div>
+      </div>
+
+      {/* Notes card */}
+      <div className="flex gap-3 p-4 bg-muted border border-border rounded-md">
+        <div className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground" aria-hidden>📋</div>
+        <div>
+          <p className="text-[0.8125rem] font-semibold text-foreground">Important Notes</p>
+          <ul className="m-0 pl-5 text-[0.8125rem] text-muted-foreground list-disc">
+            <li>Each assessment band can only have one active schedule per school year</li>
+            <li>If you need to change amounts for a specific year, add overrides instead of creating a new template</li>
+            <li>Deactivate the old schedule before creating a new one for the same band and year</li>
+            <li>The effective date is usually the school year start date</li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }

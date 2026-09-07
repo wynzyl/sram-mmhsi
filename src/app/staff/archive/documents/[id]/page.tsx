@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDateTime } from "@/lib/utils/date";
@@ -21,8 +23,7 @@ import {
 } from "@/lib/constants/document-requests";
 import { DocumentRequestDetailActions } from "./DocumentRequestDetailActions";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata: Metadata = {
   title: "Document Request Details",
@@ -33,7 +34,117 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function DocumentRequestDetailPage({ params }: PageProps) {
+/**
+ * Instant navigation - full document request detail skeleton shown while data loads.
+ */
+export default function DocumentRequestDetailPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<DocumentRequestDetailSkeleton />}>
+      <DocumentRequestDetailContent params={params} />
+    </Suspense>
+  );
+}
+
+function DocumentRequestDetailSkeleton() {
+  return (
+    <div className="mx-auto max-w-4xl p-6">
+      {/* Breadcrumb */}
+      <nav className="mb-4 text-sm text-muted-foreground">
+        <Skeleton className="h-4 w-64 inline-block" />
+      </nav>
+
+      {/* Header */}
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <Skeleton className="h-8 w-56" />
+          <div className="mt-2 flex items-center gap-3">
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Main Content */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Student Information */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-40" />
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-1">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Request Details */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-36" />
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-1">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-28" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Workflow Timeline */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-40" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex gap-3">
+                    <Skeleton className="h-3 w-3 rounded-full" />
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-16" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-20" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function DocumentRequestDetailContent({ params }: PageProps) {
   // Force dynamic rendering - document requests are transactional data
   await connection();
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { desc, eq, and, isNull } from "drizzle-orm";
 import { ReceiptBookletManagementView } from "@/features/finance/components/ReceiptBookletManagementView";
@@ -8,16 +9,67 @@ import { receiptBooklets, users } from "@/lib/db/schema";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { ROLES } from "@/lib/constants/roles";
 import { getCashiersForBookletAssignment } from "@/features/payments/payments.queries";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata: Metadata = {
   title: "Receipt Booklet Management",
   description: "Register and oversee official receipt booklets.",
 };
 
-export default async function StaffBookletsPage() {
+/**
+ * Static shell - page wrapper renders immediately.
+ */
+export default function StaffBookletsPage() {
+  return (
+    <Suspense fallback={<BookletsPageSkeleton />}>
+      <BookletsPageContent />
+    </Suspense>
+  );
+}
+
+function BookletsPageSkeleton() {
+  return (
+    <div className="page-container">
+      <div className="page-header">
+        <div>
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <Skeleton className="h-10 w-32" />
+      </div>
+      <div className="table-wrapper">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Series</th>
+              <th>Range</th>
+              <th>Next OR</th>
+              <th>Status</th>
+              <th>Assigned To</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[1, 2, 3, 4].map((i) => (
+              <tr key={i}>
+                <td><Skeleton className="h-4 w-16" /></td>
+                <td><Skeleton className="h-4 w-32" /></td>
+                <td><Skeleton className="h-4 w-20" /></td>
+                <td><Skeleton className="h-4 w-16" /></td>
+                <td><Skeleton className="h-4 w-24" /></td>
+                <td><Skeleton className="h-4 w-16" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+async function BookletsPageContent() {
   const session = await requireSession();
 
   if (!hasPermission(session.role, "booklets:manage")) {

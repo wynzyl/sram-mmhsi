@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { requireSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { canAccessFinanceReports } from "@/lib/rbac/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getBfxTransfersReport,
   getBfxSummary,
@@ -10,8 +12,7 @@ import { BfxReportView } from "@/features/reports/components/BfxReportView";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 interface PageProps {
   searchParams: Promise<{
@@ -22,16 +23,64 @@ interface PageProps {
   }>;
 }
 
-export default async function BalanceForwardsReportPage({
+/**
+ * Instant navigation - full BFX report skeleton shown while data loads.
+ */
+export default function BalanceForwardsReportPage({
   searchParams,
 }: PageProps) {
+  return (
+    <Suspense fallback={<BalanceForwardsSkeleton />}>
+      <BalanceForwardsContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function BalanceForwardsSkeleton() {
+  return (
+    <div className="page-container--full space-y-6">
+      <div className="space-y-1">
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+      <section className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        <div className="bg-muted flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-5 w-24 rounded-full" />
+            <Skeleton className="h-5 w-28 rounded-full" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-36" />
+          </div>
+        </div>
+        <div className="divide-y divide-border">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-24 ml-auto" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+async function BalanceForwardsContent({
+  searchParams,
+}: PageProps) {
+  const params = await searchParams;
   const session = await requireSession();
 
   if (!canAccessFinanceReports(session.role)) {
     redirect("/staff/dashboard");
   }
-
-  const params = await searchParams;
 
   // Parse date filters with defaults (last 30 days)
   const today = new Date();

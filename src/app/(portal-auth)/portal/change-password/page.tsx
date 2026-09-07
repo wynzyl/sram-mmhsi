@@ -9,8 +9,7 @@ import { ChangePasswordFormSkeleton } from "@/features/auth";
 import { logoutAction } from "@/features/auth/auth.actions";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming session-dependent content
 
 export const metadata: Metadata = {
   title: "Change Password",

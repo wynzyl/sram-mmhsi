@@ -1,7 +1,9 @@
 import { z } from "zod";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getSchoolYears } from "@/lib/queries/schoolYears";
 import {
   getAdoptionMatrix,
@@ -10,23 +12,61 @@ import {
 } from "@/features/academics/curriculums/curriculums.queries";
 import { AdoptionMatrix } from "@/features/academics/curriculums/components";
 
-// Disable instant navigation - page has session/DB access
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming
 
 interface AdoptionsPageProps {
   searchParams: Promise<{ schoolYearId?: string }>;
 }
 
-export default async function CurriculumAdoptionsPage({
+/**
+ * Instant navigation - full adoptions matrix skeleton shown while data loads.
+ */
+export default function CurriculumAdoptionsPage({
   searchParams,
 }: AdoptionsPageProps) {
+  return (
+    <Suspense fallback={<AdoptionsSkeleton />}>
+      <AdoptionsContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function AdoptionsSkeleton() {
+  return (
+    <div className="page-container--full space-y-6">
+      <div className="space-y-1">
+        <Skeleton className="h-9 w-56" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+      <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        <div className="bg-muted flex items-center justify-between border-b border-border px-4 py-3">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-9 w-40" />
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function AdoptionsContent({
+  searchParams,
+}: AdoptionsPageProps) {
+  const params = await searchParams;
   const session = await requireSession();
 
   if (!hasPermission(session.role, "curriculums:adopt")) {
     redirect("/staff/dashboard");
   }
-
-  const params = await searchParams;
 
   // Fetch school years for selector
   const schoolYears = await getSchoolYears();

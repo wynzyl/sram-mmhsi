@@ -13,9 +13,7 @@ import { PermissionErrorToast } from "@/components/shared/PermissionErrorToast";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import type { Role } from "@/lib/constants/roles";
 
-// Disable instant navigation - this layout requires blocking session validation
-// before rendering. Without this, Next.js 16 throws "uncached data during navigation".
-export const instant = false;
+// Instant navigation enabled - uses Suspense for streaming session validation
 
 // Authenticated layout content - wrapped in Suspense at the page level
 async function StaffLayoutContent({ children }: { children: React.ReactNode }) {
