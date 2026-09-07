@@ -11,6 +11,9 @@ import { GRADING_SYSTEM_LABELS, type GradingSystemType } from "@/lib/constants/g
 import { isUndefinedTableError } from "@/lib/utils/pg-error";
 import { logger } from "@/lib/observability/logger";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "School Years",
   description: "Manage school years in SRAMS.",

@@ -7,6 +7,9 @@ import CancellationRequestDetailView from "@/features/enrollments/components/Can
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = { title: "Review Cancellation Request" };
 
 interface PageProps {

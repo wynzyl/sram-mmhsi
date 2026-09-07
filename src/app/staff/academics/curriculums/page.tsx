@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { listCurriculums } from "@/features/academics/curriculums";
 import { CurriculumsListTable } from "@/features/academics/curriculums/components/CurriculumsListTable";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export default async function CurriculumsPage() {
   const session = await requireSession();
 

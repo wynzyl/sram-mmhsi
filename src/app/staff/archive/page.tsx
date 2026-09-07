@@ -19,6 +19,9 @@ import {
 } from "@/features/archive/components";
 import type { StudentStatus } from "@/lib/constants/student-status";
 
+// Disable instant navigation - page has multiple DB queries
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Archive Directory",
   description: "View and manage archived students.",

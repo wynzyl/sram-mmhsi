@@ -15,6 +15,9 @@ import { CurriculumVersionChain } from "@/features/academics/curriculums/compone
 import { CurriculumDetailClient } from "./CurriculumDetailClient";
 import { formatDate } from "@/lib/utils/date";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

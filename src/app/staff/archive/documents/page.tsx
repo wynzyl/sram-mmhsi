@@ -14,6 +14,9 @@ import { TablePagination } from "@/components/ui/TablePagination";
 import type { DocumentRequestStatus, DocumentRequestType } from "@/lib/constants/document-requests";
 import Link from "next/link";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Document Requests | Archive",
 };

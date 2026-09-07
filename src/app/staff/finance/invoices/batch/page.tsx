@@ -8,6 +8,9 @@ import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import BatchInvoiceForm from "@/features/finance/components/invoices/BatchInvoiceForm";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Batch Invoice Generation | SRAMS",
   description: "Generate invoices for multiple assessments by grade level",

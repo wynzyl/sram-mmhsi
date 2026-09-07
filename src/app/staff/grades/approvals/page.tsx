@@ -12,6 +12,9 @@ import { formatDate } from "@/lib/utils/date";
 import { GRADING_PERIOD_LABELS } from "@/lib/constants/grading-periods";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Pending Approvals | SRAMS",
   description: "Review and approve grade sheets submitted by section advisers",

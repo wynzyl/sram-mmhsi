@@ -11,6 +11,9 @@ import {
 import { PaymentCollectionReportView } from "@/features/reports/components/PaymentCollectionReportView";
 import { formatDate } from "@/lib/utils/date";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 const PAGE_SIZE = 30;
 
 interface PageProps {

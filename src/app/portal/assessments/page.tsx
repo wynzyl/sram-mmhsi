@@ -13,6 +13,9 @@ import {
   type PortalRecordColumn,
 } from "@/features/portal/components";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = { title: "My Assessments" };
 
 type AssessmentRow = Awaited<ReturnType<typeof getStudentAssessments>>[number];

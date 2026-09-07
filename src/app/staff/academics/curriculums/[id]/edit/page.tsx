@@ -5,6 +5,9 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { getCurriculumById } from "@/features/academics/curriculums";
 import { CurriculumForm } from "@/features/academics/curriculums/components/CurriculumForm";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

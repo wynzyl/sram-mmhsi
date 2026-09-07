@@ -9,6 +9,9 @@ import { getAllFeeItemTypesAdmin } from "@/features/finance/fee-item-types/fee-i
 import { FeeItemTypesView } from "@/features/finance/fee-item-types/components/FeeItemTypesView";
 import { CreateFeeItemTypeModal } from "@/features/finance/fee-item-types/components/CreateFeeItemTypeModal";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Fee Item Types | SRAMS",
   description: "Manage reusable fee type definitions",

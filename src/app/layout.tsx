@@ -5,6 +5,11 @@ import { RootProviders } from "@/components/providers/RootProviders";
 import { COLOR_THEMES } from "@/lib/constants/color-themes";
 import "./globals.css";
 
+// Disable instant navigation globally. SRAMS pages have session checks and
+// database queries that require blocking data access. Without this, Next.js 16
+// throws "uncached data during navigation" errors.
+export const instant = false;
+
 const crimsonPro = localFont({
   variable: "--font-crimson",
   display: "swap",

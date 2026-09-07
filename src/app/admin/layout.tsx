@@ -12,6 +12,10 @@ import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import type { Role } from "@/lib/constants/roles";
 import { ROLES, normalizeRole } from "@/lib/constants/roles";
 
+// Disable instant navigation - this layout requires blocking session validation
+// before rendering. Without this, Next.js 16 throws "uncached data during navigation".
+export const instant = false;
+
 // Authenticated layout content - wrapped in Suspense at the page level
 async function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const session = await requireSession();

@@ -796,6 +796,20 @@ Seeds: students, enrollments, assessments (for testing).
     npm run db:migrate
     ```
     If `generate` fails due to TTY/interactive prompt issues in non-interactive shells, run it in a proper terminal (not through Claude Code or CI). The journal entry is critical — without it, Drizzle considers the schema "up to date" and skips the migration. (Diagnosed 2026-09-02 when `inactive` booklet status migration was created manually but not tracked.)
+15. **Next.js 16 Instant Navigation Errors:** Next.js 16 introduced "instant navigation" which attempts to prerender routes during client-side navigation. Pages with session checks (`requireSession`, `requireStaffSession`, `requirePortalSession`) or database queries cause "uncached data during navigation" errors. **Add `export const instant = false;` to ALL page.tsx and layout.tsx files that have session/DB access.** The root layout's `instant = false` does NOT propagate to child routes — each page needs its own export. Pattern:
+    ```typescript
+    // src/app/staff/finance/page.tsx
+    import { requireSession } from "@/lib/auth/session";
+
+    // Disable instant navigation - page has session/DB access
+    export const instant = false;
+
+    export default async function FinancePage() {
+      const session = await requireSession();
+      // ...
+    }
+    ```
+    All 79 pages/layouts with session or DB access have this export. When adding new pages with `requireSession()` or direct DB queries, always include this export. (Fixed 2026-09-05.)
 
 ### Integration Points (Future)
 

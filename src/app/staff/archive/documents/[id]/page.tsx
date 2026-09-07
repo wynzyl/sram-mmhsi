@@ -21,6 +21,9 @@ import {
 } from "@/lib/constants/document-requests";
 import { DocumentRequestDetailActions } from "./DocumentRequestDetailActions";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Document Request Details",
   description: "View and manage document request details.",

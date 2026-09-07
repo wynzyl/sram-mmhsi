@@ -11,6 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/date";
 import { GRADING_PERIOD_LABELS } from "@/lib/constants/grading-periods";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Ready to Publish | SRAMS",
   description: "Approved grade sheets ready to publish to the student portal",

@@ -10,6 +10,9 @@ import { db } from "@/lib/db";
 import { curriculums } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

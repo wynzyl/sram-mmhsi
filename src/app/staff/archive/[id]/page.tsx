@@ -26,6 +26,9 @@ import {
 } from "@/features/documents/document-requests.queries";
 import { ArchivedStudentDocumentRequests } from "./ArchivedStudentDocumentRequests";
 
+// Disable instant navigation - page has multiple parallel DB queries
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Archived Student",
   description: "View archived student details.",

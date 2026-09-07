@@ -7,6 +7,9 @@ import { getSubjectOfferingsForTeacher } from "@/features/academics/subject-offe
 import { AdviserSectionCards } from "@/features/academics/grades/components/AdviserSectionCards";
 import { TeacherClassesCards } from "@/features/academics/subject-offerings";
 
+// Disable instant navigation - requires session check
+export const instant = false;
+
 export default async function GradesDashboardPage() {
   const session = await requireStaffSession();
 

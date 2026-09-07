@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { EnrollmentQueuePage } from "@/app/page-templates/enrollments/enrollments-queue-page";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Enrollments",
   description: "Manage student enrollments (staff).",

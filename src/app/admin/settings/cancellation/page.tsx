@@ -5,6 +5,9 @@ import Link from "next/link";
 import { getRefundCutoffSettings, RefundCutoffSettingsForm } from "@/features/settings";
 import { ChevronLeft, Settings } from "lucide-react";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Cancellation Settings | SRAMS",
   description: "Configure enrollment cancellation and refund settings",

@@ -9,6 +9,9 @@ import {
 import { AccountsReceivableView } from "@/features/reports/components/AccountsReceivableView";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 const PAGE_SIZE = 50;
 
 interface PageProps {

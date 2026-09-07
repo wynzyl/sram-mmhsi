@@ -12,6 +12,9 @@ import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 import { formatDate } from "@/lib/utils/date";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

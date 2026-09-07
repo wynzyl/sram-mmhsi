@@ -9,6 +9,9 @@ import { getAllFeeTemplates } from "@/features/finance/fee-templates/fee-templat
 import { TemplateAssignmentForm } from "@/features/finance/fee-templates/components/TemplateAssignmentForm";
 import { Button } from "@/components/ui/button";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Assign Fee Template | SRAMS",
   description: "Assign a fee template to a school year and assessment band",

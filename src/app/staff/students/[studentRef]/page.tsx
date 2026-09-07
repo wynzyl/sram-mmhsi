@@ -7,6 +7,9 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { InternalStudentProfilePage } from "@/app/page-templates/students/student-profile-page";
 import { getStudentByRef, resolveStudentRef } from "@/features/students/students.queries";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   params: Promise<{ studentRef: string }>;
 }

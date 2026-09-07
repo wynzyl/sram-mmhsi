@@ -4,6 +4,9 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import { CurriculumForm } from "@/features/academics/curriculums/components/CurriculumForm";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export default async function NewCurriculumPage() {
   const session = await requireSession();
 

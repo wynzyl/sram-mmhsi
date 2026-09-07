@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { RegistrationQueuePage } from "@/app/page-templates/registrations/registration-queue-page";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Registrations",
   description: "View student registrations (staff).",

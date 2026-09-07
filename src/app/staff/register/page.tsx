@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { getCurrentUser, requireSession } from "@/lib/auth/session";
 import { STAFF_ROLES, normalizeRole } from "@/lib/constants/roles";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Register Student",
   description: "Choose how to register or enroll a learner.",

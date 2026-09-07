@@ -6,6 +6,9 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { StatCard } from "@/components/ui/stat-card";
 import { FinanceInsightsSection } from "@/components/dashboard/FinanceInsightsSection";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = { title: "Dashboard" };
 
 function formatPercent(value: number): string {

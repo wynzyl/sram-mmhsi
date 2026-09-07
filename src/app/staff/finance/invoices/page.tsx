@@ -1,6 +1,9 @@
 import { Metadata } from "next";
 import { InternalInvoicesListPage } from "@/app/page-templates/invoices/invoices-index-page";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Invoices | SRAMS",
 };

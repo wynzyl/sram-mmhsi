@@ -6,6 +6,9 @@ import { getSchoolYears, getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import { getSectionsBySchoolYear } from "@/features/academics/sections";
 import { SectionsTable } from "@/features/academics/sections";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Section Management | SRAMS",
   description: "Manage classroom sections for each grade level and school year",

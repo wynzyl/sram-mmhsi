@@ -8,6 +8,9 @@ import {
   ElectivesByStrandView,
 } from "@/features/academics/electives";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Elective Subjects | SRAMS",
   description: "View and manage SHS elective subjects by strand",

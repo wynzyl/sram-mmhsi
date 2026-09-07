@@ -32,6 +32,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Users, BookOpen, Calendar, UserCheck, GraduationCap } from "lucide-react";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface SectionDetailPageProps {
   params: Promise<{ id: string }>;
 }

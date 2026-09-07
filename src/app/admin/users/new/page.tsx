@@ -5,6 +5,9 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import UserForm from "@/features/users/components/UserForm";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Create User",
   description: "Create a new user account in SRAMS.",

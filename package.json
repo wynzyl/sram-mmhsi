@@ -27,7 +27,6 @@
     "db:fix-student-dob": "npx tsx scripts/fix-student-dob-gender.ts"
   },
   "dependencies": {
-    "@auth/drizzle-adapter": "^1.11.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-checkbox": "^1.3.11",
     "@radix-ui/react-collapsible": "^1.1.20",
@@ -53,8 +52,7 @@
     "jose": "^6.2.3",
     "lucide-react": "^1.14.0",
     "next": "^16.2.7",
-    "next-auth": "^4.24.14",
-    "nodemailer": "^7.0.13",
+    "nodemailer": "^10.0.0",
     "postcss": "^8.5.14",
     "postgres": "^3.4.9",
     "radix-ui": "^1.6.7",
@@ -62,7 +60,7 @@
     "react-dom": "19.2.4",
     "server-only": "^0.0.1",
     "shadcn": "^4.7.0",
-    "sharp": "^0.33.5",
+    "sharp": "^0.35.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "tw-animate-css": "^1.4.0",

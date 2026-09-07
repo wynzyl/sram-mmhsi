@@ -15,6 +15,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
 import { deactivateFeeScheduleAction } from "@/features/finance/fee-templates/fee-templates.actions";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Fee Schedules",
   description: "Manage fee schedule assignments per school year.",

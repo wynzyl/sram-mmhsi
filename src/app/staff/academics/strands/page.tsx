@@ -5,6 +5,9 @@ import { getAllStrands } from "@/features/academics/strands/strands.queries";
 import { StrandsTable } from "@/features/academics/strands";
 import { AddStrandButton } from "./AddStrandButton";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Strands Management | SRAMS",
   description: "Manage SHS academic strands",

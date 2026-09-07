@@ -1,6 +1,9 @@
 import { requirePortalSession } from "@/lib/auth/session";
 import { PortalPaymentsView } from "@/features/payments/components/PortalPaymentsView";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = { title: "My Payments" };
 
 /**

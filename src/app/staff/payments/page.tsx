@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { CashierDashboardView } from "@/features/payments/components/CashierDashboardView";
 
+// Disable instant navigation - requires session check
+export const instant = false;
+
 /**
  * Thin server shell: enforces auth + read permission, then renders the client
  * cashier dashboard. Stats, queue, and recent collections are fetched client-side

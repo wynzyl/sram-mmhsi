@@ -10,6 +10,9 @@ import {
 } from "@/features/academics/curriculums/curriculums.queries";
 import { AdoptionMatrix } from "@/features/academics/curriculums/components";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface AdoptionsPageProps {
   searchParams: Promise<{ schoolYearId?: string }>;
 }

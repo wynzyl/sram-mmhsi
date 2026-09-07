@@ -10,6 +10,9 @@ import DiscountRequestsView from "@/features/approvals/DiscountRequestsView";
 import CancellationRequestsView from "@/features/approvals/CancellationRequestsView";
 import ClearancesView from "@/features/approvals/ClearancesView";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Approvals",
   description: "Review void, discount, cancellation, and clearance requests in one place.",

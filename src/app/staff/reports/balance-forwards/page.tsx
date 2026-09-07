@@ -10,6 +10,9 @@ import { BfxReportView } from "@/features/reports/components/BfxReportView";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { formatDate } from "@/lib/utils/date";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   searchParams: Promise<{
     startDate?: string;

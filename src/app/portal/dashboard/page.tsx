@@ -13,6 +13,9 @@ import {
 
 export const metadata = { title: "Dashboard" };
 
+// Disable instant navigation - requires session check
+export const instant = false;
+
 export default async function PortalDashboardPage() {
   const session = await requirePortalSession();
 

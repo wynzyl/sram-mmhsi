@@ -4,6 +4,9 @@ import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import BookletForm from "@/features/finance/components/BookletForm";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Register Receipt Booklet",
 };

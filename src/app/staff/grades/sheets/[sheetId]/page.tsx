@@ -16,6 +16,9 @@ import { GradeSheetReviewActions } from "@/features/academics/grades/components/
 import { GradeSheetPublishActions } from "@/features/academics/grades/components/GradeSheetPublishActions";
 import { getGradeGroup } from "@/lib/constants/grade-groups";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Review Grade Sheet | SRAMS",
   description: "Review and approve submitted grade sheet",

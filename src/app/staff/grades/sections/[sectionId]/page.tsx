@@ -22,6 +22,9 @@ import { GradeSheetPublishActions } from "@/features/academics/grades/components
 import { QUARTERLY_PERIODS, TRIMESTER_PERIODS } from "@/lib/constants/grading-periods";
 import { requiresStrandSelection } from "@/lib/constants/strands";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   params: Promise<{ sectionId: string }>;
   searchParams: Promise<{ period?: string }>;

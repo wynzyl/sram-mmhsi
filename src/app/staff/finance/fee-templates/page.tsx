@@ -6,6 +6,9 @@ import { getAllFeeTemplates } from "@/features/finance/fee-templates/fee-templat
 import { FeeTemplatesTable } from "@/features/finance/fee-templates/components/FeeTemplatesTable";
 import { CreateTemplateModal } from "@/features/finance/fee-templates/components/CreateTemplateModal";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Fee Templates | SRAMS",
   description: "Manage reusable fee templates for assessment bands",

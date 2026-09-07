@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { InternalAssessmentLedgerPage } from "@/app/page-templates/assessments/assessment-ledger-page";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

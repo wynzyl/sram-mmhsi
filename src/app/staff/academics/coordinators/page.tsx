@@ -9,6 +9,9 @@ import {
 } from "@/features/academics/coordinators";
 import { Card, CardContent } from "@/components/ui/card";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Grade Group Coordinators | SRAMS",
   description: "Manage coordinator assignments for grade group reviews",

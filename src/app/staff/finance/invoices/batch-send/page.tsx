@@ -7,6 +7,9 @@ import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import BatchSendInvoiceForm from "@/features/finance/components/invoices/BatchSendInvoiceForm";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Batch Send Invoices | SRAMS",
   description: "Send invoices via email to multiple guardians",

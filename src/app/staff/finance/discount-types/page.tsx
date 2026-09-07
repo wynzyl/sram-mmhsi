@@ -6,6 +6,9 @@ import { getAllDiscountTypes } from "@/features/discounts";
 import DiscountTypesTable from "@/features/discounts/components/DiscountTypesTable";
 import { Card, CardContent } from "@/components/ui/card";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Discount Types",
   description: "Manage available discount types for student enrollments.",

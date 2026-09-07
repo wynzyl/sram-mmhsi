@@ -10,6 +10,9 @@ import { ROLE_LABELS } from "@/lib/constants/roles";
 import { formatDate } from "@/lib/utils/date";
 import ResetPasswordForm from "@/features/users/components/ResetPasswordForm";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

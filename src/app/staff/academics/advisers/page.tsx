@@ -9,6 +9,9 @@ import {
   AdviserTable,
 } from "@/features/academics/advisers";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Section Advisers | SRAMS",
   description: "Manage section adviser assignments for each school year",

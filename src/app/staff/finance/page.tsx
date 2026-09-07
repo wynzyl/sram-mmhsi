@@ -10,6 +10,9 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { StatCard } from "@/components/ui/stat-card";
 import { FinanceInsightsSection } from "@/components/dashboard/FinanceInsightsSection";
 
+// Disable instant navigation - requires session check
+export const instant = false;
+
 function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
 }

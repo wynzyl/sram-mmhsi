@@ -9,6 +9,9 @@ import { redirect } from "next/navigation";
 import { ROLE_LABELS, type Role } from "@/lib/constants/roles";
 import { formatDate } from "@/lib/utils/date";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "User Management",
   description: "Manage user accounts in SRAMS.",

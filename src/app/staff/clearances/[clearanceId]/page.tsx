@@ -19,6 +19,9 @@ import {
 } from "@/features/clearances/clearances.schema";
 import { ArrowLeft, CheckCircle, User, Calendar, FileText, Lock } from "lucide-react";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = { title: "Clearance Details" };
 
 interface PageProps {

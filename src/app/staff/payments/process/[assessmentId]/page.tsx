@@ -22,6 +22,9 @@ import {
   checkCascadeFixNeeded,
 } from "@/features/payments/payments.queries";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   params: Promise<{ assessmentId: string }>;
 }

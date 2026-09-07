@@ -9,6 +9,9 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { ROLES } from "@/lib/constants/roles";
 import { getCashiersForBookletAssignment } from "@/features/payments/payments.queries";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Receipt Booklet Management",
   description: "Register and oversee official receipt booklets.",

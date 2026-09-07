@@ -9,6 +9,9 @@ import {
   SectionAssignmentTable,
 } from "@/features/academics/section-assignments";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Section Assignments | SRAMS",
   description: "Assign students to sections within their grade level",

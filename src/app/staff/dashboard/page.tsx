@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { staffHomePathForRole } from "@/lib/utils/staff-home";
 import { normalizeRole, ROLES } from "@/lib/constants/roles";
 
+// Disable instant navigation - requires session check
+export const instant = false;
+
 /** Shared staff dashboard entry point redirects to role-specific staff homes. */
 export default async function StaffDashboardPage() {
   const session = await requireSession();

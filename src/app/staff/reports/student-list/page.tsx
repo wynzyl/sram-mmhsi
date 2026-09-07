@@ -6,6 +6,9 @@ import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { getStudentListReport } from "@/features/reports/student-list-report.queries";
 import { StudentListView } from "@/features/reports/components/StudentListView";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 interface PageProps {
   searchParams: Promise<{
     schoolYearId?: string;
