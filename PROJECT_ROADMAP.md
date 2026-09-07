@@ -1,267 +1,269 @@
 # PROJECT_ROADMAP.md — SRAMS
 
-> Per SRAMS Engineering spec §16 — Delivery Procedure
+> Last updated: 2026-09-07
 
-> Last sync: 2026-07-21
-
-### Current update highlights (2026-07-21)
-- **Academics Module Optimization complete** — Comprehensive review and optimization of Curriculum, Subjects, Teacher/Adviser Assignments, and Grades modules. All critical and high-priority performance issues resolved.
-- **Query Performance Improvements** — Fixed N+1 audit user queries (3 queries → 1 with LEFT JOINs), optimized period completion check (N queries → 1 aggregated query), added EXISTS subquery for grade level filtering (post-query → SQL-level), pagination support for teacher assignments.
-- **Grade Completion Validation** — Server-side `validateGradeSheetCompleteness()` prevents incomplete grade sheet submission; client-side validation disables submit button with "X missing" message.
-- **Sequential Period Locking** — `validatePreviousPeriodsSubmitted()` enforces Q1→Q2→Q3→Q4 order; grade sheets cannot be submitted until previous periods are approved.
-- **AlertDialog Accessibility** — Replaced browser `confirm()` with Shadcn/ui `AlertDialog` for WCAG compliance in grade submission confirmation.
-- **Form Pattern Consistency** — Removed redundant inline error displays in favor of `useFormToast` pattern across curriculum/adviser forms.
-- **Documentation** — Updated CLAUDE.md grade encoding workflow to document adviser-based grade sheets as primary system; teacher assignment workflow marked as legacy.
-
-### Previous highlights (2026-07-14)
-- **Full payment cash discount in CashierPaymentProcessingView** — Cash discount eligibility check and preview card integrated into the main cashier payment modal. When full balance is entered, API checks eligibility, `CashDiscountPreviewCard` displays discount breakdown (base amount, discount value, new balance, amount to collect), and cashier can apply with one click. Server processes via `applyCashDiscount` hidden field.
-
-### Previous highlights (2026-07-08)
-- **Void OR reverse-chronological enforcement** — Payments must be voided in reverse chronological order (most recent first). Server-side validation blocks out-of-order void requests with a clear error message. UI hides "Request Void" button on older payments. Helper functions in `src/features/payments/payments.queries.ts`. Maintains accounting integrity.
-
-### Previous highlights (2026-07-03)
-- **Student Archival & EOY Processing complete** — Status lifecycle (active → graduated/transferred/withdrawn/cancelled/inactive), batch archive operations, archive directory at `/staff/archive/`
-- **Document Requests complete** — Full workflow (request → processing → ready → released) with eligibility gates for archived/active students, routes at `/staff/archive/documents/`
-- **Production hardening** — Docker Compose resource limits (memory/CPU caps for all services), Nginx configuration enhancements (timeouts, compression, caching)
-- **Archive performance indexes** — Migration `0003_add_archive_indexes.sql` optimizes archive queries
-- **Registration form reset bug fix** — Fixed bfcache/soft navigation issue with `key={Date.now()}` + `form.reset()` in success handler
-- **Dark mode enhancements** — Cancellation Requests views updated with proper dark mode support
-
-### Previous highlights (2026-06-24)
-- **Student photo upload feature complete** — Profile photos now upload, optimize (sharp/WebP), and persist across container restarts. Three-layer fix for production Docker: nginx `client_max_body_size 5M` + Next.js `serverActions.bodySizeLimit: '3mb'` + volume permissions via `docker-entrypoint.sh` (runs `chown` before dropping to nextjs user). Nginx serves `/uploads/*` directly from the shared volume (Next.js doesn't serve runtime-uploaded files from `public/`). Documented in CLAUDE.md gotcha #9.
-
-### Previous highlights (2026-06-05)
-- **Production deployment stack live (Phase 12 kickoff)** — Dockerfile `runner` stage (app built against an ephemeral build-time Postgres), `docker-compose.prod.yml` (Postgres 15 → one-shot migrate job → app → **nginx reverse proxy on :80**), `.env.production`. DB data lives in the **named volume `db-data`** (2026-06-06 layout; the earlier `./.postgres_data` bind mount is superseded). Gotcha documented: database name is case-sensitive `SRAMS_DB`; `POSTGRES_DB` is ignored on an already-initialized data dir. Prod DB published on host port **5433** (internal `srams_db:5432`; 5432 = native host Postgres, 5434 = dev stack db). Run with `docker compose -f docker-compose.prod.yml up -d --build`.
-- **Phase 2 auth hardening closed** — login rate limiting wired (`checkLoginRateLimits`, per-IP + per-username); forced password-change gate live in `proxy.ts`; security headers (CSP, HSTS, X-Frame-Options) in `next.config.ts`; privilege-escalation fix in `users.actions.ts`.
-- **E2E suite committed** — Playwright specs (`role-redirects`, `enrollment-assessment-payment` with DB-level assertions) + deterministic provisioning (`e2e_*` users, E2E-CASA students, `ZZ` booklet) + CI workflow (`.github/workflows/ci.yml`).
-- **Idempotent payment posting** — client-generated `idempotencyKey` + unique index (migration `0015`); a retried submit returns the original payment instead of consuming a second OR.
-- **Misc** — DB-target banner in all DB scripts (`scripts/lib/db-target.ts`); soft-deleted guardian-link fix; gender options cleanup; student directory sorting; `RegistrationQueueToolbar`; `advance_casa` assessment band.
-
-### Previous highlights (2026-06-01)
-- **Report & Document Generation standard (Phase 10 kickoff)** — reusable two-track pipeline: **PDF via `@react-pdf/renderer`** for official documents, **XLSX via `exceljs`** for analytical reports. Shared foundation in `src/features/reports/shared/` (`TabularReportDocument`, `buildReportWorkbook`, response/request/audit helpers); one route convention `…/<name>/export?format=pdf|xlsx`, RBAC `reports:view`, audited `reports:export`. Documented in CLAUDE.md. Roboto embedded so **₱** renders.
-- **Four reports live** — Payment Collection (migrated; collapsed 3 legacy routes into 1, added Excel), Balance Forward (PDF + Excel added; was screen-only), Invoice (now a real server-rendered PDF instead of `window.print()`), and a **new Student List masterlist** (`/staff/reports/student-list`: enrolled students + primary guardian, grade filter, default active year, PDF + Excel).
-- **Shared PDF fixes** — column spacing for right-aligned amounts; `wrap={false}` so rows never split across page boundaries.
-- **Doc correction** — Phase 8 (Grade Encoding) status fixed below: it is implemented, not "not started".
-
-### Previous highlights (2026-05-28)
-- **TanStack Form — first in-place migration** — `StudentRegistrationForm` (4-step wizard + guardian field array) migrated from native `useActionState` to TanStack Form (`@tanstack/react-form`). Live per-field validation reuses the existing Zod schemas via a `zodCheck` adapter; server action + FormData contract unchanged.
-- **Migration bug fixes** — guardian single-primary toggle now works (whole-array `setFieldValue`), and submit redirect/toast fixed by wrapping the `useActionState` dispatch in `startTransition`. Both found via browser dogfood.
-- **Forms-stack cleanup** — phantom `react-hook-form` / `@hookform/resolvers` removed; prototype + `?form=tanstack` toggle retired. Per-form assessment and migration order documented in `docs/TANSTACK-MIGRATION/TANSTACK-FORM-CANDIDATES.md`.
-
-### Previous highlights (2026-05-23)
-- **Assessment cancellation & reassessment** — Fixed re-assessment blocking issue; students can now receive new assessments after cancellation.
-- **Discount auto-rejection** — Linked discount requests are automatically rejected when assessments are cancelled.
-- **Applied discounts in profile** — Student profile now shows discounts applied to current assessment.
-- **Client-side navigation fix** — Resolved blank screen on `/staff/students` by replacing redirect-to-add-default-param pattern with direct value usage. Audited 14 page templates; documented best practice for Next.js 16+ redirect patterns.
-
-### Previous highlights (2026-05-13)
-- **Enrollment queue query optimization** — `getReadyToEnrollStudents()` rewritten with SQL-level pagination using CTEs and UNION ALL. Memory usage reduced from ~47MB to ~50KB per page load (for 5000 students). Query execution time ~60-119ms.
-- **SQL-level document completeness** — Moved `areDocumentsComplete()` logic to SQL CASE expression, eliminating JavaScript post-processing.
-
-### Previous highlights (2026-05-11)
-- **Library migration completed** — All 58 files migrated from `lib/` to `src/lib/` for unified source structure. All application code now under `src/` directory with git history preserved via `git mv`.
-- **Architecture alignment** — Path alias `@/lib/*` updated in tsconfig.json; cleaner project structure aligned with modern Next.js conventions and monorepo best practices.
-
-### Previous highlights (2026-05-08)
-- **Enrollment queue system** now operational with list-first workflow — students automatically populate when eligible, global filters persist across tabs via URL params, and one-click confirmation replaces multi-step wizard.
-- Auto-population of old students with grade progression and balance warnings; new/transferee students flow from approved registrations.
-- Queue architecture includes 5-tab interface (Ready/Pending/Assessed/Enrolled/Cancelled) with parallel data loading and client-side filtering for instant response.
-- Near-term priority remains unchanged: close registration review workflow, portal detail pages, auth hardening, and E2E coverage.
+This document outlines completed phases, current work, and future feature roadmap for SRAMS.
 
 ---
 
-## Phase 1 — Project Initialization & Base Scaffold
-**Status: ✅ Complete**
+## Completed Phases
 
-- [x] Next.js scaffold and locked stack installation
-- [x] Folder structure per Engineering spec §7
-- [x] Docker Compose (PostgreSQL + pgAdmin)
-- [x] Database schema (all entities from §11)
-- [x] RBAC permission map (§10)
-- [x] Environment validation (§8.1)
-- [x] Structured logger (§14)
-- [x] Login page UI
-- [x] Auth session implementation (JWT `jose`, httpOnly cookie, `actions/auth.ts`)
-- [x] Route protection (`proxy.ts` — staff vs portal vs admin; Next.js 16 proxy convention replaces `middleware.ts`)
-- [x] DB migrations applied (`drizzle/0000` … `0008`+ as generated)
-- [x] `npm run dev` baseline
+### Phase 1 — Infrastructure & Scaffold ✅
 
----
+- Next.js 16 + TypeScript + Tailwind CSS 4 + App Router
+- PostgreSQL + Drizzle ORM + migrations
+- Docker Compose (dev + prod)
+- RBAC permission system
+- Structured logging
+- Environment validation
 
-## Phase 2 — Authentication & Session Layer
-**Status: ✅ Complete**
+### Phase 2 — Authentication ✅
 
-- [x] Login action: credential validation, bcrypt compare, session creation
-- [x] Session validation helper for server actions (`requireSession`, `src/lib/auth/session.ts`)
-- [x] Audit logging: user login success / failed login
-- [x] Login rate limiting — `checkLoginRateLimits` (per-IP + per-username, in-memory by design for this single-instance deployment) wired into the login server action (`src/features/auth/auth.actions.ts`), not `/api/auth/*` middleware
-- [x] Force-password-change flow — post-login gate enforced in `proxy.ts`: users with `forcePasswordChange` are redirected to `/change-password` everywhere except logout
-- [x] Role-based landing redirect after login (`auth.ts` + `proxy.ts`)
-- [x] Protected route behavior per role group (staff vs portal vs admin-only)
-- [x] Logout action (`logoutAction`)
+- JWT-based sessions (jose library)
+- Login/logout with bcrypt
+- Role-based route protection (`proxy.ts`)
+- Login rate limiting (per-IP + per-username)
+- Forced password change flow
+- Security headers (CSP, HSTS, X-Frame-Options)
+- Audit logging (login success/failure)
 
----
+### Phase 3 — Student Registration ✅
 
-## Phase 3 — Student Registration Module
-**Status: 🟡 Mostly complete**
+- Student CRUD with guardian linking
+- Multi-step registration wizard (TanStack Form)
+- Duplicate detection (name + DOB)
+- Photo upload with optimization (sharp/WebP)
+- Registration queue views
+- Student archival & EOY processing
+- Document requests workflow
 
-- [x] Student creation form (Registrar / permitted roles) — `admin/students/new`
-- [x] Multi-step registration wizard on TanStack Form — `StudentRegistrationForm` (live per-field validation + guardian field array; migrated in place 2026-05-28)
-- [x] Parent/Guardian linking — `createStudentAction` / `updateStudentAction`
-- [x] Registration submission during student onboarding — `createStudentAction` inserts approved `registrations` rows in same transaction
-- [ ] Dedicated registration intake action (separate from student-create flow)
-- [ ] Registration review (approve/reject) workflow (NOT Implemented)
-- [x] Duplicate student detection (name / optional DOB / LRN)
-- [x] Audit events: student created / updated
-- [x] Student list/search table (TanStack Table)
-- [x] Student profile + edit pages
-- [x] **Student photo upload** — API route (`/api/students/[studentId]/photo`) with sharp optimization (resize 400x400, WebP/PNG/JPEG selection), magic-byte validation, audit logging; `StudentPhotoUpload` component with drag-drop and crop preview; photos persist in Docker volume (`uploads_data`) served by nginx
-- [x] Registration queue pages for admin/staff (`/admin/registrations`, `/staff/registrations`) with school-year filtering + pagination
-- [x] **Student Archival & EOY Processing** — lifecycle statuses (active, graduated, transferred, withdrawn, cancelled, inactive), batch archive operations, archive directory at `/staff/archive/` (`src/features/archive/`)
-- [x] **Document Requests** — full workflow (request → processing → ready → released), eligibility gates for archived/active students, routes at `/staff/archive/documents/` (`src/features/archive/documents/`)
+### Phase 4 — Enrollment ✅
 
----
+- Queue-based enrollment workflow (5-tab interface)
+- Auto-population from previous year
+- Grade progression suggestions
+- Balance warnings (non-blocking)
+- One-click confirmation drawer
+- Global search & grade filters
+- Enrollment cancellation with cascade
 
-## Phase 4 — Enrollment Module
-**Status: ✅ Complete (Enhanced with queue-based workflow)**
+### Phase 5 — Assessment & Fees ✅
 
-- [x] **Queue-based enrollment workflow** with automatic student eligibility detection (`src/lib/queries/enrollment-queue.ts`)
-- [x] **Auto-population** of old students from previous year with grade progression and balance warnings
-- [x] **Global filters** with URL persistence — search by name/ID, filter by grade level across all tabs
-- [x] **5-tab interface** (Ready to Enroll, Pending, Assessed, Enrolled, Cancelled) with badge counts
-- [x] **EnrollmentConfirmationDrawer** for one-click enrollment with student type-aware layouts
-- [x] Enrollment workflow (pending → assessed → enrolled, plus cancellation rules)
-- [x] Re-enrollment from existing student record (new enrollment for active school year)
-- [x] Grade level and section assignment
-- [x] Enrollment status management (`actions/enrollment-confirmation.ts`)
-- [x] Audit events: enrollment created / status changes / cancellation
-- [x] Manual entry form preserved at `/staff/enrollments/new` for edge cases
+- Fee schedule configuration
+- Assessment generation per enrollment
+- Assessment items (tuition, fees, discounts)
+- Balance calculation
+- Assessment cancellation with re-assessment
+- Discount request workflow
+- Auto-reject discounts on assessment cancel
 
----
+### Phase 6 — Payments & OR Tracking ✅
 
-## Phase 5 — Assessment & Fee Schedule
-**Status: ✅ Complete**
+- OR booklet management
+- Payment posting with OR auto-assignment
+- Multiple active booklets support
+- Payment allocations
+- Void workflow (reverse-chronological)
+- Idempotent posting (UUID key)
+- Cash discount for full payment
+- Ledger balance tracking
 
-- [x] Fee schedule configuration (Admin/Finance Officer)
-- [x] Assessment generation per enrollment
-- [x] Assessment item CRUD (tuition, fees, discounts)
-- [x] Assessment balance calculation
-- [x] Assessment draft creation UX refresh (student context + fee-catalog line visibility + computed net summary)
-- [x] Assessment cancellation with re-assessment support (students can receive new assessment after cancellation)
-- [x] Discount request workflow with auto-rejection on assessment cancellation
-- [x] Applied discounts visibility in student profile
-- [x] Audit events: assessment created/revised; cancellation metadata (migration `0008`)
+### Phase 7 — Invoices ✅
 
----
+- Invoice generation from assessment
+- PDF export (@react-pdf/renderer)
+- Email sending (Gmail/Nodemailer)
+- Batch generation & send
+- Status tracking (draft → sent → viewed → settled)
 
-## Phase 6 — Payment Posting & OR Booklet
-**Status: 🟡 Mostly complete**
+### Phase 8 — Grade Encoding ✅
 
-- [x] Receipt booklet management (Admin/Finance Officer)
-- [x] OR number auto-assignment on payment post
-- [x] Payment posting UI (Cashier) — embedded on assessment ledger (`AssessmentLedgerRegister` / `PostPaymentForm`) and standalone modal (`CashierPaymentProcessingView`)
-- [x] Shared internal assessment-ledger composition to support consistent payment posting and RBAC checks
-- [x] Payment void workflow
-- [x] **Reverse-chronological void ordering** — payments must be voided in reverse order (most recent first); server-side validation in `requestVoidAction` + `approveVoidRequestAction`; UI hides void button on older payments (`isPaymentMostRecentVoidable` helper)
-- [x] OR status tracking (consumed, voided)
-- [x] Payment allocation to assessment items
-- [x] Ledger balance recalculation
-- [x] Idempotent payment posting — client-generated `idempotencyKey` per form mount + `payments_idempotency_key_uidx` (migration `0015`); retried submits return the original payment instead of consuming a second OR
-- [x] **Full payment cash discount** — eligibility check via `/api/cashier/cash-discount`, `CashDiscountPreviewCard` component with discount breakdown, one-click application in both `PostPaymentForm` and `CashierPaymentProcessingView`
-- [ ] Dedicated receipt generation/print view (button label references print; formal OR receipt layout TBD)
-- [x] Audit events: payment posted/voided, booklet consumed/exhausted
+- Adviser-based grade sheet workflow (primary)
+- Section grade entry grid
+- Completion validation (client + server)
+- Sequential period locking (Q1 → Q2 → Q3 → Q4)
+- Submit → Approve/Return workflow
+- Grade publishing
+- Legacy teacher assignment workflow
+- N+1 query optimizations
 
----
+### Phase 9 — Student Portal 🟡
 
-## Phase 7 — Invoice Management
-**Status: ✅ Complete**
+- ✅ Portal dashboard
+- ✅ Portal password change
+- ⏳ Assessments view
+- ⏳ Payments view
+- ⏳ Grades view
 
-- [x] Invoice generation from assessment
-- [x] Invoice send via Gmail integration
-- [x] Invoice status tracking (draft → sent → viewed → settled)
-- [x] Invoice list view (Finance Officer)
-- [x] Audit events: invoice sent
+### Phase 10 — Reports ✅
 
----
+- Report pipeline (PDF + Excel)
+- Payment Collection report
+- Balance Forwards report
+- Student List (masterlist)
+- Accounts Receivable report
+- Invoice PDF export
+- Admin/Finance dashboards
 
-## Phase 8 — Grade Encoding
-**Status: ✅ Complete (Enhanced with adviser-based workflow)**
+### Phase 11 — Testing 🟡
 
-**Primary Workflow: Adviser-Based Grade Sheets**
-- [x] Section adviser assignment management — `/staff/academics/advisers`
-- [x] Adviser grade entry grid — all subjects per student per period at `/staff/grades/adviser/sections/[sectionId]`
-- [x] Grade sheet workflow: `draft` → `submitted` → `approved`/`returned`
-- [x] Client-side completion validation — prevents submission of incomplete sheets (X/Y grades entered)
-- [x] Server-side completion validation — `validateGradeSheetCompleteness()` blocks incomplete submissions
-- [x] Sequential period locking — Q2 cannot be submitted until Q1 is approved (`validatePreviousPeriodsSubmitted()`)
-- [x] Principal review workflow — approve or return sheets for revision
-- [x] AlertDialog confirmation — WCAG-compliant submission confirmation (replaces browser `confirm()`)
-- [x] Audit events: grade sheet created/submitted/approved/returned
+- ✅ Vitest unit tests
+- ✅ Playwright E2E (auth, enrollment → payment flow)
+- ✅ CI workflow (GitHub Actions)
+- ⏳ Integration tests
+- ⏳ Security tests
+- ⏳ Grades E2E coverage
 
-**Legacy: Teacher Assignment Workflow**
-- [x] Teacher assignment management (Admin) — `actions/academics.ts`, assignment pages
-- [x] Grade entry per assigned class/subject/period (Teacher) — `/staff/grades`, `components/academics/GradeEncodingTable.tsx`
-- [x] Grade submission and lock workflow (draft → submitted → locked)
-- [x] Grade period locking (Admin-only unlock)
-- [x] Audit events: grade saved/submitted/locked
+### Phase 12 — Deployment ✅
 
-**Performance Optimizations (2026-07-21)**
-- [x] N+1 audit user queries fixed — 3 queries → 1 query with LEFT JOINs
-- [x] Period completion query optimized — N queries → 1 aggregated query
-- [x] Server-side pagination ready — `getPaginatedTeacherAssignments()`
-- [x] Grade level filtering moved to SQL — EXISTS subquery replaces post-query filter
+- Docker multi-stage build
+- Nginx reverse proxy
+- Static file serving for uploads
+- Resource limits (memory/CPU)
+- Production hardening
 
 ---
 
-## Phase 9 — Student/Parent Portal
-**Status: 🟡 In progress**
+## Current Sprint
 
-- [x] Portal route guard and role landing to `/portal/dashboard`
-- [x] Portal dashboard page scaffold (`/portal/dashboard`)
-- [ ] Balance and payment history view
-- [ ] Invoice view
-- [ ] Grade view (per student)
-- [ ] Responsive portal layout (mobile-friendly)
-
----
-
-## Phase 10 — Reporting & Management Dashboard
-**Status: 🟡 In progress (report/export pipeline done; dashboards pending)**
-
-- [x] **Report/export foundation** — two-track pipeline (`@react-pdf/renderer` + `exceljs`), shared `src/features/reports/shared/*`, `…/export?format=pdf|xlsx` route convention
-- [x] **Export to PDF/Excel (access-controlled, auditable)** — `reports:view` gate + `reports:export` audit on every export
-- [x] **Payment collection report** — PDF + Excel
-- [x] **Balance Forward (BFX) report** — PDF + Excel
-- [x] **Student List masterlist report** — enrolled students + primary guardian, grade filter, PDF + Excel
-- [x] **Invoice document** — server-rendered PDF (replaces browser print)
-- [x] Admin/Finance **dashboard** (collection summary, AR aging) — admin dashboard KPIs are live (`getAdminDashboardMetrics`); added a reusable collection-summary + AR-aging insights section (`FinanceInsightsSection`) on both `/admin/dashboard` and the now-real `/staff/finance` dashboard, backed by `getCollectionSummary` / `getArAging` (`src/lib/queries/finance-dashboard.ts`)
-- [ ] Enrollment summary report (per school year)
-- [ ] Grade summary report (per section/school year)
+| Item | Status | Priority |
+|------|--------|----------|
+| Portal assessments page | ⏳ Pending | High |
+| Portal payments page | ⏳ Pending | High |
+| Portal grades page | ⏳ Pending | High |
+| Printable OR receipt | ⏳ Pending | Medium |
+| Registration intake form | ⏳ Pending | Medium |
+| Registration approve/reject | ⏳ Pending | Medium |
+| Enrollment summary report | ⏳ Pending | Low |
+| Grade summary report | ⏳ Pending | Low |
 
 ---
 
-## Phase 11 — Testing & Hardening
-**Status: 🟡 In progress**
+## Future Roadmap
 
-- [x] Unit tests: validators (`assessment.test.ts`), enrollment helpers (`enrollment-grade.test.ts`, `enrollment-payment.test.ts`)
-- [ ] Integration tests: registration flow, payment posting, grade submission
-- [x] E2E tests — Playwright suite committed: `e2e/role-redirects.spec.ts` + `e2e/enrollment-assessment-payment.spec.ts` (full enroll → assess → pay scenario, DB-level assertions); deterministic provisioning via `ensure-test-users.ts` / `ensure-test-data.ts` (`e2e_*` users, E2E-CASA students, `ZZ` booklet); grades flow not yet covered
-- [x] CI workflow — `.github/workflows/ci.yml`
-- [ ] Security tests: route protection (partially covered by the role-redirects E2E spec), action-level permission, session expiry
-- [x] Performance optimization: enrollment queue query (`getReadyToEnrollStudents`) — SQL-level pagination with CTEs/UNION ALL (47MB → 50KB memory per page)
-- [x] **Client-side navigation audit** — Audited 14 page templates for redirect patterns; documented best practice for Next.js 16+ (avoid redirect-to-add-default-param; use direct value instead)
-- [ ] Performance tests: student search, ledger queries
+### Phase 13 — Online Payment Integration
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| Payment gateway integration | Stripe/PayMongo for credit card, GCash, Maya | High |
+| Online payment portal | Student/parent can pay online | High |
+| Payment confirmation webhooks | Auto-post payments on gateway confirmation | High |
+| Partial online payments | Support installments via gateway | Medium |
+| Payment receipt email | Auto-send receipt on successful payment | Medium |
+| Refund processing | Handle gateway refunds with ledger sync | Low |
+
+### Phase 14 — Mobile App / PWA
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| Progressive Web App | Installable mobile experience | High |
+| Push notifications | Payment reminders, grade releases | High |
+| Offline grade viewing | Cache grades for offline access | Medium |
+| Mobile payment flow | Streamlined mobile checkout | Medium |
+| Biometric login | Fingerprint/Face ID for portal | Low |
+
+### Phase 15 — Communication & Notifications
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| SMS notifications | Payment reminders, enrollment updates | High |
+| Email templates | Customizable email templates | High |
+| In-app notifications | Notification center in portal | Medium |
+| Announcement system | School-wide announcements | Medium |
+| Parent-teacher messaging | Direct messaging feature | Low |
+
+### Phase 16 — Advanced Academics
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| Class scheduling | Automated class schedule generation | High |
+| Attendance tracking | Daily attendance with reports | High |
+| Report card generation | Official report card PDF | High |
+| Transcript generation | Official transcript of records | Medium |
+| Learning management | Assignment posting, submissions | Medium |
+| Online exams | Quiz/exam module with grading | Low |
+
+### Phase 17 — Advanced Finance
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| Payment plans | Installment plan configuration | High |
+| Auto-late fees | Automatic late fee assessment | High |
+| Financial aid management | Scholarship tracking | Medium |
+| Budget tracking | School budget vs actual | Medium |
+| Bank reconciliation | Match bank statements to payments | Low |
+| Multi-currency support | For international students | Low |
+
+### Phase 18 — Analytics & BI
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| Enrollment analytics | Trends, projections, demographics | High |
+| Financial analytics | Revenue trends, collection rates | High |
+| Academic analytics | Grade distributions, pass rates | Medium |
+| Custom report builder | User-defined report creation | Medium |
+| Data export API | External BI tool integration | Low |
+| Predictive analytics | At-risk student identification | Low |
+
+### Phase 19 — Multi-Campus / SaaS
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| Multi-tenant architecture | Support multiple schools | High |
+| Campus-level admin | Per-campus user management | High |
+| Centralized reporting | Cross-campus consolidated reports | Medium |
+| White-labeling | Custom branding per school | Medium |
+| Subscription billing | SaaS pricing tiers | Low |
+
+### Phase 20 — Integrations
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| DepEd LIS integration | Learner Information System sync | High |
+| Google Workspace | SSO, Calendar, Classroom | Medium |
+| Microsoft 365 | SSO, Teams integration | Medium |
+| Accounting software | QuickBooks, Xero export | Medium |
+| Student ID printing | ID card generation with barcode | Low |
+| Library system | Book checkout integration | Low |
+
+### Phase 21 — Security & Compliance
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| Two-factor authentication | TOTP/SMS 2FA for staff | High |
+| Session management | View/revoke active sessions | High |
+| Data privacy compliance | GDPR/DPA audit tools | High |
+| Audit log export | Compliance reporting | Medium |
+| Data retention policies | Automated data archival | Medium |
+| Penetration testing | Security audit & fixes | Medium |
+
+### Phase 22 — Performance & Scale
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| Database read replicas | Scale read operations | Medium |
+| CDN for static assets | Faster global delivery | Medium |
+| Background job queue | Async processing (reports, emails) | Medium |
+| API rate limiting | Per-user API throttling | Low |
+| Horizontal scaling | Multi-instance deployment | Low |
 
 ---
 
-## Phase 12 — Deployment Preparation
-**Status: 🟡 Mostly complete**
+## Technical Debt
 
-- [x] Production Docker configuration — Dockerfile `runner` stage (ephemeral build-time Postgres so `next build` prerenders against a real schema) + `docker-compose.prod.yml` (db → one-shot migrate job → app); DB data in named volume `db-data` (2026-06-06 layout; old `./.postgres_data` bind mount superseded); DB published on host port 5433
-- [x] Reverse proxy setup (nginx) — `nginx.conf` + `nginx_proxy` service on :80 (LAN access)
-- [x] **Static file serving for uploads** — nginx serves `/uploads/*` directly from `uploads_data` volume (Next.js doesn't serve runtime-uploaded files); `docker-entrypoint.sh` fixes volume permissions at startup via `su-exec`
-- [x] Security headers (CSP, HSTS, X-Frame-Options) — `next.config.ts`
-- [x] **Docker resource limits** — Memory and CPU caps for all services in `docker-compose.prod.yml`
-- [x] **Nginx configuration hardening** — Timeouts, gzip compression, static file caching
-- [ ] Production environment checklist
-- [ ] Database backup strategy documentation (named volume copy exists; formal strategy + restore drill still to document)
+| Item | Description | Priority |
+|------|-------------|----------|
+| Legacy teacher workflow | Deprecate in favor of adviser workflow | Low |
+| Form pattern migration | Remaining forms to TanStack Form | Low |
+| Test coverage gaps | Integration + security tests | Medium |
+| API documentation | OpenAPI/Swagger spec | Low |
+| Code documentation | JSDoc for core functions | Low |
+
+---
+
+## Reference
+
+- `PROJECT_STATUS.md` — Current feature implementation status
+- `CLAUDE.md` — Development patterns and coding standards
+- `SRAMS_OR_WORKFLOW.md` — OR tracking workflow details
+- `memory.md` — Session decisions and debugging notes

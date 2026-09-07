@@ -1,99 +1,32 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with code in this repository.
 
 ## Project Overview
 
 **SRAMS (School Registration and Accounts Monitoring System)** — A production-grade K-12 school management system for managing student enrollment, fee assessments, Official Receipt (OR) tracking, payment processing, and grade encoding.
 
-**Stack:** Next.js 16 (App Router) · PostgreSQL · Drizzle ORM · Tailwind CSS 4 · Zod 4 · React 19 `useActionState` + Server Actions (forms) · JWT (jose)
+**Stack:** Next.js 16 (App Router) · PostgreSQL · Drizzle ORM · Tailwind CSS 4 · Zod 4 · React 19 `useActionState` + Server Actions · JWT (jose)
 
-> **Forms:** The default form pattern is native React 19 `<form action={action}>` + `useActionState`, with **server-side** Zod validation in the action (`schema.safeParse(formData)`) and errors returned via `state.errors`. React Hook Form is **not** used. **TanStack Form (`@tanstack/react-form`) is adopted for complex wizard / field-array forms only** — first migration is `src/features/registrations/components/StudentRegistrationForm.tsx` (4-step wizard + guardian field array, migrated in place 2026-05-28). When migrating a form to TanStack Form: reuse the existing Zod schemas via a small `zodCheck` adapter, render array-item flags (e.g. guardian `isPrimary`) as real subscribed fields or set them through whole-array `setFieldValue`, keep the existing server action + FormData contract unchanged, and dispatch the `useActionState` action inside `startTransition`. Simple single-submit forms stay native (progressive enhancement). See `docs/TANSTACK-MIGRATION/TANSTACK-FORM-CANDIDATES.md` for the per-form assessment and migration order.
-  
-  #Tanstack Query 
-  -Correct architecture:
+**Critical Business Feature:** Official Receipt (OR) booklet management — every payment must consume a serialized OR number from an active booklet.
 
-      Client Component
-        ↓
-      TanStack Query
-        ↓
-      API Route / Server Action / RPC function
-        ↓
-      Drizzle ORM
-        ↓
-      Database
+## Commands
 
-  -Wrong architecture:
-
-      Client Component
-        ↓
-      Drizzle ORM directly
-        ↓
-      Database
-
-     
-  TanStack Table  = table logic: columns, sorting, filtering, pagination
-  TanStack Query  = server data: fetch, cache, refetch, sync
-  shadcn/ui       = visual components: Table, Button, Card, Badge
-
-  #Rules
-    Drizzle ORM        = gets data from database
-    Server Action/API  = exposes data safely
-    TanStack Query     = fetches/caches data in client (Use TanStack Query for server state)
-    shadcn Table       = displays the data
-
-**Critical Business Feature:** Official Receipt (OR) booklet management is a first-class accounting control feature — every payment must consume a serialized OR number from an active booklet.
-
-### Current Delivery Snapshot (2026-09-07)
-
-**Core Features:**
-
-- Core operations (auth, students, registrations queue, enrollments, assessments, payments/OR, invoices, grades) are implemented and production-ready.
-- **Student Archival & EOY Processing** complete: lifecycle statuses (active, graduated, transferred, withdrawn, cancelled, inactive), batch archive operations, archive directory at `/staff/archive/`
-- **Document Requests** complete: full workflow (request → processing → ready → released) with eligibility gates for archived/active students
-- **Academics Module Optimization** complete: performance improvements, grade sheet workflow, theme support
-- Registration creation is integrated in student onboarding; dedicated intake/review actions are still pending.
-- Portal has `/portal/dashboard`; detail pages (`/portal/assessments`, `/portal/payments`, `/portal/grades`) pending.
-- Authentication hardening complete: login rate limiting and forced password-change gate are live.
-- E2E Playwright test suite committed with CI workflow.
-- **Instant Navigation** enabled: `cacheComponents` + `partialPrefetching` in next.config.ts; 22 pages refactored to Suspense pattern for streaming.
-
-**Recent Updates (2026-09-07):**
-
-- ✅ **Instant Navigation Refactoring** — Enabled `partialPrefetching` in next.config.ts; refactored 22 pages to use Suspense pattern for instant navigation (dashboards, school-years, users, fee-schedules, booklets, payments, curriculums, registrations, enrollments, assessments, approvals, archive, documents); updated documentation with new preferred pattern
-
-**Prior Updates (2026-07-21):**
-
-- ✅ **Academics Module Optimization** — Query performance (N+1 fixes, EXISTS filters, pagination), grade completion validation, sequential period locking, AlertDialog accessibility
-- ✅ **Form Pattern Consistency** — Removed redundant inline error displays in favor of `useFormToast` pattern
-- ✅ **Documentation** — Updated grade encoding workflow to document adviser-based sheets as primary
-
-**Prior Updates (2026-07-03):**
-
-- ✅ **Student Archival** — Status lifecycle (active, graduated, transferred, withdrawn, cancelled, inactive), batch operations, archive directory
-- ✅ **Document Requests** — Full workflow with eligibility/release gates, routes at `/staff/archive/documents/`
-- ✅ **Production Hardening** — Docker resource limits (memory/CPU caps), Nginx tuning (timeouts, compression, caching)
-- ✅ **Archive performance indexes** — Migration `0003_add_archive_indexes.sql`
-- ✅ **Bug Fix** — Registration form reset after submission (bfcache/soft navigation fix)
-
-**Prior Milestones:**
-
-- ✅ **Performance Optimization (2026-05-13):** Enrollment queue query with SQL-level pagination (47MB → 50KB memory)
-- ✅ **Folder Restructure (2026-05-09):** All features migrated to `src/features/` structure
-- ✅ **Library Migration (2026-05-11):** All 58 files moved to `src/lib/`
-
-## Important Documentation References
-
-- **AGENTS.md** — AI role definitions and system expectations
-- **SRAMS_MVP.md** — System requirements and feature specifications
-- **SRAMS_OR_WORKFLOW.md** — OR tracking workflow (MUST READ before modifying OR features)
-- **PROJECT_ROADMAP.md** — Development roadmap and phases
-- **PROJECT_STATUS.md** — Current implementation status and active gaps
+```bash
+npm run dev              # Development server
+npm run build            # Production build
+npm run lint             # ESLint check
+npm run test             # Unit tests (Vitest)
+npm run test:e2e         # E2E tests (Playwright)
+npm run db:generate      # Generate migration from schema
+npm run db:migrate       # Apply migrations
+npm run db:seed-config   # Seed system config
+npm run db:seed          # Seed sample data
+```
 
 ## Environment Variables
 
 Required in `.env.local`:
-
 ```
 DATABASE_URL="postgresql://user:password@localhost:5432/srams_db"
 AUTH_SECRET="your-secret-key"
@@ -102,866 +35,622 @@ NODE_ENV="development"
 
 ## Architecture
 
-### Core Design Principles
-
-1. **Feature-Based Architecture:** Code organized by domain feature in `src/features/` with actions, schemas, queries, and components co-located
-2. **Hybrid Schema Strategy:** Shared schemas (common-schemas, intake-documents) in `src/lib/validators/`, feature-specific schemas in `src/features/*/`
-3. **OR Tracking is Mandatory:** Every payment transaction must be linked to an OR number from an active booklet
-4. **Audit Everything Financial:** All payment posts, voids, and OR consumption must generate audit log entries
-5. **Role-Based Access Control (RBAC):** Enforce at 3 levels — route guard, server action validation, and audit logging
-6. **Soft Delete Only:** Use `deletedAt` / `deletedBy` fields — never hard delete records
-7. **Reusable Function - Always use resuable function and components, break code into smaller function for a readable and
-  maintainable code. 
-
 ### Layer Boundaries (Non-Negotiable)
 
-| Layer             | Location                                                  | Responsibility                                    | Rules                                                   |
-| ----------------- | --------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------- |
-| Server Actions    | `src/features/*/*.actions.ts`                             | ALL business logic and DB writes                  | Must use `"use server"` directive                       |
-| Zod Schemas       | `src/features/*/*.schema.ts` or `src/lib/validators/*.ts` | Data validation and type definitions              | Shared schemas in src/lib, feature-specific in features |
-| Server Queries    | `src/features/*/*.queries.ts`                             | ALL database reads                                | Server-only, passed as props to components              |
-| Utility Functions | `src/lib/utils/*.ts`                                      | Pure transformations only (format, compute, etc.) | No database calls, no business logic                    |
-| Client Components | `src/features/*/components/*.tsx`                         | UI state and form interactions only               | No direct DB access, no business logic                  |
-| Auth & Sessions   | `src/lib/auth/*.ts`                                       | JWT-based session management                      | Use `requireSession()` in server components & pages     |
-| Page Templates    | `src/app/page-templates/`                                 | Reusable page components for routes               | Server components that compose features                 |
+| Layer             | Location                                                  | Responsibility                               |
+| ----------------- | --------------------------------------------------------- | -------------------------------------------- |
+| Server Actions    | `src/features/*/*.actions.ts`                             | ALL business logic and DB writes             |
+| Zod Schemas       | `src/features/*/*.schema.ts` or `src/lib/validators/*.ts` | Data validation and type definitions         |
+| Server Queries    | `src/features/*/*.queries.ts`                             | ALL database reads                           |
+| Utility Functions | `src/lib/utils/*.ts`                                      | Pure transformations only                    |
+| Client Components | `src/features/*/components/*.tsx`                         | UI state and form interactions only          |
+| Auth & Sessions   | `src/lib/auth/*.ts`                                       | JWT-based session management                 |
 
-**Violations:** No business logic in `.tsx` files. No direct DB calls in components. No raw SQL outside queries/actions.
-* No HARD DELETE.
+**Violations:** No business logic in `.tsx` files. No direct DB calls in components. No raw SQL outside queries/actions. No HARD DELETE.
 
 ### Routing & Authentication
 
-Route structure (App Router):
-
+Route structure:
 - `/login` — Public login page
 - `/admin/*` — Admin portal (full access)
-- `/staff/*` — Internal operations portal for registrar/finance/cashier/teacher role flows
-- `/portal/*` — Student/parent portal (dashboard scaffold currently implemented)
+- `/staff/*` — Internal operations portal (registrar/finance/cashier/teacher)
+- `/portal/*` — Student/parent portal
 
-Authentication is JWT-based using `jose` library (NOT NextAuth). Session management in `src/lib/auth/session.ts`:
+Authentication is JWT-based using `jose` (NOT NextAuth). Session helpers in `src/lib/auth/session.ts`:
+- `requireSession()` — Throws redirect if unauthenticated
+- `getCurrentUser()` — Returns user + role or null
+- `createSession()` / `deleteSession()` — Login/logout
 
-- `requireSession()` — Throws redirect if unauthenticated (use in pages/layouts)
-- `getCurrentUser()` — Returns user + role or null (use in server components)
-- `createSession()` — Creates session on login
-- `deleteSession()` — Logout
+Route protection lives in `proxy.ts` (Next.js 16 renamed `middleware.ts` to `proxy.ts`).
 
-## NextJS Revalidate Tag Rule
+### User Roles
 
-1. https://nextjs.org/docs/messages/revalidate-tag-single-arg
+| Role            | Access                                           |
+| --------------- | ------------------------------------------------ |
+| `super_admin`   | System setup, users, database settings           |
+| `admin`         | All business operations and reports              |
+| `registrar`     | Student records & enrollment                     |
+| `finance_officer` | Fee schedules, assessments, invoices, OR booklets |
+| `cashier`       | Payment posting only                             |
+| `teacher`       | Grade encoding only                              |
+| `student`       | View own records                                 |
 
-2. Root route protection lives in `proxy.ts` (export `proxy`): unauthenticated redirects, staff vs portal separation, and `/admin` restrictions. **Next.js 16** renamed the former `middleware.ts` convention to `proxy.ts`; older writeups may still say “middleware.”
-
-### User Roles & Permissions
-
-**Roles (via `roleEnum` in schema):**
-
-- `super_admin` - Manages system setup, users, roles, database-related settings.
-- `admin` — Can view and access all business operations and reports
-- `registrar` — Student records & enrollment management
-- `finance_officer` — Fee schedules, assessments, invoices, OR booklet setup
-- `cashier` — Payment posting only
-- `teacher` — Grade encoding only
-- `student` — View own assessments, payments, grades
-
-**Permission checks:** Use `hasPermission(role, permission)` from `src/lib/rbac/permissions.ts` in server actions before executing sensitive operations.
+Use `hasPermission(role, permission)` from `src/lib/rbac/permissions.ts` in server actions.
 
 ### Database Schema Key Relationships
 
-**Students & Parents:**
+```
+users → students (optional portal account)
+students ↔ parentsGuardians (via studentGuardianLinks)
+schoolYears → sections → enrollments
+curriculums → subjects
+teacherAssignments → gradeRecords (Q1–Q4)
+gradeSheets → gradeSheetEntries (adviser workflow)
+registrations → enrollments → assessments → payments
+feeSchedules → assessmentItems
+receiptBooklets → payments (OR tracking)
+```
 
-- `users` → `students` (optional portal account via `userId`)
-- `students` ↔ `parentsGuardians` via `studentGuardianLinks` (many-to-many)
+## Next.js Patterns & Best Practices
 
-**Academic Workflow:**
+### Server vs Client Components
 
-- `schoolYears` (one active at a time)
-- `gradeLevels` (static: Kinder, Grade 1–12)
-- `sections` (per grade level + school year)
-- `curriculums` → `subjects` (per curriculum + grade level)
-- `teacherAssignments` (teacher + subject + section + school year)
-- `gradeRecords` (student + assignment + grading period: Q1–Q4)
+```typescript
+// ✅ Server Component (default) — runs on server, no "use client"
+// Use for: data fetching, accessing backend, sensitive logic
+async function StudentList() {
+  const students = await db.query.students.findMany();  // Direct DB access
+  return <ul>{students.map(s => <li key={s.id}>{s.name}</li>)}</ul>;
+}
 
-**Registration → Enrollment Flow:**
+// ✅ Client Component — runs in browser
+// Use for: interactivity, hooks, browser APIs, event handlers
+"use client";
+function SearchFilter({ onSearch }: { onSearch: (q: string) => void }) {
+  const [query, setQuery] = useState("");
+  return <input value={query} onChange={e => { setQuery(e.target.value); onSearch(e.target.value); }} />;
+}
+```
 
-1. `registrations` (approved records currently created during student onboarding)
-2. `enrollments` (status: pending → assessed → enrolled)
-3. `feeSchedules` + `feeScheduleItems` (schedule for every group level - (Casa, Lower Elem, Higher Elem, JHS, SHS))
-4. `assessments` + `assessmentItems` (copied from fee schedule on enrollment)
+**Rules:**
+- Default to Server Components — smaller bundles, direct backend access
+- Add `"use client"` only when needed (useState, useEffect, onClick, browser APIs)
+- Pass server data as props to client components (no prop drilling of functions)
+- Client components can import server components, but not vice versa
 
-**Payment & OR Tracking (Critical):**
+### Data Fetching Patterns
 
-1. `receiptBooklets` — OR booklet definition (series, start/end number, status)
-2. `payments` — Payment record (linked to `bookletId` + `orNumber`)
-3. `paymentAllocations` — Payment distribution across assessment items
-4. OR lifecycle: available → consumed (or voided if payment voided)
-5. Booklet status transitions: active → exhausted (when `nextNumber > endNumber`)
-6. GCash and bank transfer always require a reference number (not optional)
+```typescript
+// ✅ GOOD: Fetch in Server Component (parallel queries)
+async function DashboardPage() {
+  const [students, payments, enrollments] = await Promise.all([
+    getStudents(),
+    getRecentPayments(),
+    getPendingEnrollments(),
+  ]);
+  return <Dashboard students={students} payments={payments} enrollments={enrollments} />;
+}
 
-**Invoices:**
+// ✅ GOOD: Fetch in page, pass to components
+export default async function StudentsPage() {
+  const students = await getStudents();
+  return <StudentsTable data={students} />;  // Client component receives data
+}
 
-- `invoices` (status: draft → sent → viewed → settled/overdue)
-- Linked to `assessments` for tracking outstanding balances
-- Finance officers send via email integration
+// ❌ BAD: Fetching in client component without TanStack Query
+"use client";
+function BadComponent() {
+  const [data, setData] = useState(null);
+  useEffect(() => { fetch("/api/data").then(r => r.json()).then(setData); }, []);  // No caching, no error handling
+}
 
-### Official Receipt (OR) Tracking Workflow
+// ✅ GOOD: Client-side fetching with TanStack Query
+"use client";
+function GoodComponent() {
+  const { data, isLoading } = useQuery({ queryKey: ["data"], queryFn: fetchData });
+}
+```
 
-**CRITICAL: Read SRAMS_OR_WORKFLOW.md before modifying OR-related code.**
+### Caching Strategies
 
-**Critical Requirements:**
+```typescript
+// 1. Route Segment Cache (page-level)
+// next.config.ts enables: cacheComponents: true, partialPrefetching: true
 
-1. **Booklet Management:**
-   - Finance officers create booklets with series (e.g., "AP"), start/end numbers
-   - **Multiple booklets may be active at the same time** — the cashier chooses which receipt series to consume at posting time (owner-confirmed business rule, 2026-06-04; supersedes the old "one active booklet per cashier" wording)
-   - Booklet status: `active` | `exhausted` | `voided`
+// 2. Data Cache with "use cache" directive
+async function getCachedStudents() {
+  "use cache";
+  cacheTag("students");
+  cacheLife("hours");  // or "days", "weeks", "max"
+  return db.query.students.findMany();
+}
 
-2. **Payment Posting:**
-   - Cashier selects active booklet before posting
-   - System auto-assigns next sequential OR number (e.g., AP-00001)
-   - OR status: `available` → `consumed` (immutable)
-   - Payment status: `pending_confirmation` → `posted`
-   - **Idempotent posting:** the form sends a client-generated `idempotencyKey` (UUID per form mount); a retried submit with the same key returns the original payment instead of consuming a second OR (`payments_idempotency_key_uidx`)
-   - **Enrollment side effect (confirmed policy):** the FIRST posted payment — any amount, even partial — transitions the enrollment `assessed → enrolled`; the assessment ledger stays `outstanding` until the balance is settled
+// 3. Revalidation in Server Actions
+"use server";
+export async function createStudent(data: FormData) {
+  await db.insert(students).values(parsed);
+  revalidatePath("/staff/students");     // Revalidate specific path
+  invalidateTag("students");             // Invalidate cache tag (non-blocking)
+}
 
-3. **Validation Rules:**
-   - OR number must be unique (enforced by unique index)
-   - OR must be within booklet range
-   - OR cannot be reused even if payment is voided
-   - Voided payments mark OR as `voided` but do not return to pool
-   - OR number must be 5 digit number
-   - Each booklet should range 51pcs only ex: AK 00050-00100
-   - Prefix is 2 digit Letter Only ex: AK
+// 4. On-demand revalidation via Route Handler
+export async function GET(request: Request) {
+  revalidateTag("students");
+  return Response.json({ revalidated: true });
+}
+```
 
-4. **Audit Trail:**
-   - Every payment post, void, or booklet status change triggers audit log
-   - Capture: actor, timestamp, OR number, amount, student reference
+### Error Handling
 
-**Related Files:**
+```typescript
+// app/staff/students/error.tsx — Catches errors in segment
+"use client";
+export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <div className="error-container">
+      <h2>Something went wrong</h2>
+      <p>{error.message}</p>
+      <button onClick={reset}>Try again</button>
+    </div>
+  );
+}
 
-- Schema: `src/lib/db/schema.ts` (tables: `receiptBooklets`, `payments`)
-- Actions: `actions/cashier.ts` (payment posting logic)
-- Validators: `src/lib/validators/cashier.ts`
+// app/global-error.tsx — Root layout errors (rare)
+"use client";
+export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <html><body>
+      <h2>Critical error</h2>
+      <button onClick={reset}>Retry</button>
+    </body></html>
+  );
+}
 
-### Grade Encoding Workflow
+// Server Action error handling
+"use server";
+export async function riskyAction(): Promise<ActionResult> {
+  try {
+    await db.insert(records).values(data);
+    return { ok: true, data: result };
+  } catch (error) {
+    console.error("Action failed:", error);
+    return { ok: false, error: { code: "DB_ERROR", message: "Failed to save record" } };
+  }
+}
+```
 
-**Primary Workflow: Adviser-Based Grade Sheets**
+### Loading States
 
-The adviser-based grade sheet workflow is the primary system for grade management:
+```typescript
+// app/staff/students/loading.tsx — Auto loading UI for segment
+export default function Loading() {
+  return <TableSkeleton rows={10} />;
+}
 
-1. Section adviser accesses their assigned section at `/staff/grades/adviser/sections/[sectionId]`
-2. Adviser enters grades for all subjects per student per grading period (Q1–Q4 or T1–T3)
-3. Client-side validation prevents submission of incomplete sheets (X/Y grades entered)
-4. Sheet status: `draft` → `submitted` (for review) → `approved` (by principal) or `returned` (for revision)
-5. Sequential period locking: Q2 cannot be submitted until Q1 is approved
+// Streaming with Suspense (preferred for instant navigation)
+import { Suspense } from "react";
 
-**Grade Sheet Statuses:**
+export default function Page() {
+  return (
+    <>
+      <h1>Students</h1>  {/* Renders immediately */}
+      <Suspense fallback={<TableSkeleton />}>
+        <StudentsTable />  {/* Streams in when ready */}
+      </Suspense>
+      <Suspense fallback={<StatsSkeleton />}>
+        <StatsPanel />  {/* Streams independently */}
+      </Suspense>
+    </>
+  );
+}
 
-- `draft` — Editable by adviser
-- `submitted` — Awaiting principal review (read-only)
-- `approved` — Locked, published to student records
-- `returned` — Returned for revision (editable again)
+// Multiple Suspense boundaries = parallel streaming
+```
 
-**Grading Periods:** Q1, Q2, Q3, Q4 (quarterly) or T1, T2, T3 (trimester)
+### Route Handlers (API Routes)
 
-**Related Files (Adviser Workflow):**
+```typescript
+// app/api/students/route.ts
+import { NextRequest, NextResponse } from "next/server";
 
-- Schema: `gradeSheets`, `gradeSheetEntries`
-- Actions: `src/features/academics/grades/grades.actions.ts`
-- Queries: `src/features/academics/grades/grades.queries.ts`
-- Components: `src/features/academics/grades/components/AdviserGradeEntryGrid.tsx`, `AdviserSectionCards.tsx`
+export async function GET(request: NextRequest) {
+  const session = await getCurrentUser();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-**Legacy: Teacher Assignment Workflow**
+  const searchParams = request.nextUrl.searchParams;
+  const page = parseInt(searchParams.get("page") || "1");
 
-The teacher-based `teacherAssignments` + `gradeRecords` system is available but secondary:
+  const students = await getStudents({ page });
+  return NextResponse.json(students);
+}
 
-- Schema: `gradeRecords`, `teacherAssignments`
-- Actions: `actions/teacher.ts`
-- Components: `src/features/academics/grades/components/GradeEncodingTable.tsx` (deprecated in favor of adviser workflow)
+export async function POST(request: NextRequest) {
+  const session = await getCurrentUser();
+  if (!hasPermission(session.role, "students:create")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
-### Reusable Components
+  const body = await request.json();
+  const parsed = createStudentSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ errors: parsed.error.flatten() }, { status: 400 });
+  }
 
-**Data Display:**
+  const student = await createStudent(parsed.data);
+  return NextResponse.json(student, { status: 201 });
+}
 
-- `DataTable<t>` — tanstack table
-- `StatusBadge` — Maps DB status enums to styled badges
-- `CurrencyDisplay` — Formats amounts in PHP locale (en-PH)
-- `ReferenceCode` — Displays student reference numbers
+// Dynamic route: app/api/students/[id]/route.ts
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const student = await getStudent(id);
+  if (!student) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json(student);
+}
+```
 
-**Forms & Toast Notifications (Refactored - Phase 3.5):**
+### Metadata & SEO
 
-- `useFormToast` — **USE THIS** hook for form-level success/error messages (uses Sonner toasts)
-- `FormStateAlert` — **DEPRECATED** — Inline alert component, replaced by `useFormToast`
-- `TextInputField` — Controlled text input with inline field error display
-- `SelectField` — Controlled select dropdown with inline field error display
-- `CurrencyInputField` — Currency input with PHP formatting
-- `FormField` — Legacy form field wrapper (migrate to above)
-- `FormSection` — Form section with heading
-- `FormActions` — Form submit/cancel buttons
+```typescript
+// Static metadata
+export const metadata: Metadata = {
+  title: "Students | SRAMS",
+  description: "Manage student records",
+};
 
-**Toast Pattern (field vs form errors):**
-- **Field errors:** Keep inline below form fields (better UX for validation)
-- **Form-level errors/success:** Use toast notifications (non-blocking, bottom-right)
+// Dynamic metadata
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const student = await getStudent(id);
+  return {
+    title: `${student.name} | SRAMS`,
+    description: `Student profile for ${student.name}`,
+  };
+}
+```
 
-**Actions (Refactored - Phase 3.4):**
+### Performance Patterns
 
-- `ConfirmActionButton` — **USE THIS** for all confirmation actions (delete, lock, remove, etc.)
-- `InlineConfirmButton` — Inline variant (for table cells)
-- `BlockConfirmButton` — Full-width variant (for modals)
+```typescript
+// 1. Parallel data fetching (ALWAYS use for independent queries)
+const [a, b, c] = await Promise.all([fetchA(), fetchB(), fetchC()]);
 
-**Layout:**
+// 2. Preload pattern for waterfalls
+import { preload } from "react-dom";
+preload("/api/heavy-data", { as: "fetch" });
 
-- `PageHeader` — Page title + breadcrumb
-- `PageContainer` — Page wrapper with consistent padding
+// 3. Dynamic imports for heavy components
+const HeavyChart = dynamic(() => import("@/components/HeavyChart"), {
+  loading: () => <ChartSkeleton />,
+  ssr: false,  // Client-only if needed
+});
 
-**UI Primitives (Shadcn/ui-based):**
+// 4. Image optimization
+import Image from "next/image";
+<Image
+  src="/photo.jpg"
+  width={200}
+  height={200}
+  alt="Student"
+  placeholder="blur"
+  blurDataURL={blurPlaceholder}
+/>
+// For runtime uploads: add unoptimized prop
+<Image src={uploadedPhotoUrl} unoptimized alt="Uploaded" />
 
-- `Button`, `Input`, `Card`, `Badge`, `Spinner`, `ThemeToggle`
+// 5. Link prefetching (automatic, can disable)
+<Link href="/students" prefetch={false}>Students</Link>
+```
 
-### Rules (Non-Negotiable)
+### Security Patterns
+
+```typescript
+// 1. Validate ALL inputs in Server Actions (never trust client)
+"use server";
+export async function updateStudent(formData: FormData) {
+  const session = await requireSession();  // Auth first
+
+  const parsed = updateSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+
+  // Sanitize user input for XSS
+  const sanitizedName = DOMPurify.sanitize(parsed.data.name);
+}
+
+// 2. CSRF protection (built into Server Actions, verify origin in Route Handlers)
+export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  if (origin !== process.env.NEXT_PUBLIC_URL) {
+    return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
+  }
+}
+
+// 3. Rate limiting in proxy.ts
+const rateLimitMap = new Map<string, { count: number; timestamp: number }>();
+export function proxy(request: NextRequest) {
+  const ip = request.ip || "unknown";
+  // ... rate limit logic
+}
+
+// 4. Never expose sensitive data
+// ❌ BAD: return entire user object
+return { user };
+// ✅ GOOD: return only needed fields
+return { id: user.id, name: user.name, role: user.role };
+
+// 5. Environment variables
+// NEXT_PUBLIC_* = exposed to client (safe for public URLs)
+// Others = server-only (use for secrets)
+```
+
+### Component Organization
+
+```typescript
+// Page component (Server Component) — data fetching + composition
+// app/staff/students/page.tsx
+export default async function StudentsPage() {
+  const students = await getStudents();
+  return (
+    <PageContainer>
+      <PageHeader title="Students" action={<CreateButton />} />
+      <StudentsTable data={students} />
+    </PageContainer>
+  );
+}
+
+// Feature component (Client Component) — interactivity
+// src/features/students/components/StudentsTable.tsx
+"use client";
+export function StudentsTable({ data }: { data: Student[] }) {
+  const [filter, setFilter] = useState("");
+  // ... table logic with TanStack Table
+}
+
+// Shared UI component (can be either) — reusable primitives
+// src/components/ui/Button.tsx
+export function Button({ children, ...props }: ButtonProps) {
+  return <button className="btn" {...props}>{children}</button>;
+}
+```
+
+## Rules (Non-Negotiable)
 
 1. **Soft Delete Only:** Use `deletedAt` / `deletedBy` fields. Never hard delete.
-2. **No Dashboards Before Logic:** Do not build overview/dashboard pages until core CRUD operations exist.
-3. **RBAC at 3 Levels:** Route guard (`proxy.ts`) + server action validation + audit logging.
-4. **Always Use Reusable Components:** Do not create one-off table/form components.
-5. **Defensive Key Generation:** Use `key={item.id}` for DB records, never array index.
-6. **Zod for Runtime Validation:** Parse external input (forms, API responses) with Zod schemas.
-7. **Create TODO List First:** Before implementing multi-step features, create a task list using `TaskCreate` tool.
-8. **No Business Logic in UI:** Components render state only — all mutations via server actions.
-9. **Financial Actions Require Audit:** Every payment post/void/refund must write to `auditLogs`.
+2. **RBAC at 3 Levels:** Route guard (`proxy.ts`) + server action validation + audit logging.
+3. **Always Use Reusable Components:** `DataTable`, `StatusBadge`, `ConfirmActionButton`, etc.
+4. **No Business Logic in UI:** Components render state only — all mutations via server actions.
+5. **Financial Actions Require Audit:** Every payment post/void/refund must write to `auditLogs`.
+6. **Defensive Key Generation:** Use `key={item.id}` for DB records, never array index.
+7. **Zod for Runtime Validation:** Parse external input with Zod schemas.
+8. **OR Tracking is Mandatory:** Every payment must consume an OR number from an active booklet.
 
-### Common Patterns
+## Form Patterns
 
-**Instant Navigation Pattern (Next.js 16 — Preferred for new pages):**
-
-Pages with session/DB access should use `<Suspense>` to enable instant navigation. The static shell (header, breadcrumbs, layout) renders immediately; dynamic content streams in.
+### Default: React 19 `useActionState`
 
 ```typescript
-// src/app/staff/school-years/page.tsx
-import { Suspense } from "react";
-import Link from "next/link";
-import { requireSession } from "@/lib/auth/session";
-import { hasPermission } from "@/lib/rbac/permissions";
-import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { Skeleton } from "@/components/ui/skeleton";
-
-// Instant navigation enabled - uses Suspense for streaming
-// (no `instant = false` export needed)
-
-export default function SchoolYearsPage() {
-  return (
-    <div className="page-container">
-      {/* Static shell - renders immediately */}
-      <div className="page-header">
-        <h1 className="page-title">School Years</h1>
-        <Link href="/staff/school-years/new" className="btn-primary">
-          + Create School Year
-        </Link>
-      </div>
-
-      {/* Dynamic content - streams in via Suspense */}
-      <Suspense fallback={<TableSkeleton />}>
-        <SchoolYearsContent />
-      </Suspense>
-    </div>
-  );
-}
-
-// Skeleton component for loading state
-function TableSkeleton() {
-  return (
-    <div className="table-wrapper">
-      <table className="data-table">
-        <thead>
-          <tr><th>Label</th><th>Status</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-          {[1, 2, 3].map((i) => (
-            <tr key={i}>
-              <td><Skeleton className="h-4 w-24" /></td>
-              <td><Skeleton className="h-4 w-16" /></td>
-              <td><Skeleton className="h-4 w-10" /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// Async component with auth + DB access
-async function SchoolYearsContent() {
-  const session = await requireSession();
-  if (!hasPermission(session.role, "school_years:manage")) {
-    redirect("/staff/dashboard");
-  }
-
-  const rows = await db.query.schoolYears.findMany({
-    orderBy: (sy, { desc }) => [desc(sy.startDate)],
-  });
-
-  return (
-    <div className="table-wrapper">
-      {/* Actual table content */}
-    </div>
-  );
-}
-```
-
-**Structure:**
-```
-┌─────────────────────────────────────────────┐
-│ Page Component (sync function)              │ ← Renders instantly
-│ ├── Static header/breadcrumb/buttons        │
-│ └── <Suspense fallback={<Skeleton />}>      │
-│       └── AsyncContentComponent             │ ← Streams in after
-│           ├── requireSession()              │   auth + DB resolve
-│           ├── hasPermission() check         │
-│           ├── DB queries                    │
-│           └── Actual rendered content       │
-└─────────────────────────────────────────────┘
-```
-
-**Server Component Pattern (fetching data) — Legacy:**
-
-For pages that haven't been refactored to Suspense yet, use `instant = false`:
-
-```typescript
-// src/app/admin/students/page.tsx
-import { requireSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { students } from "@/lib/db/schema";
-
-// Disable instant navigation - page has session/DB access
-export const instant = false;
-
-export default async function StudentsPage() {
-  const session = await requireSession();
-
-  const studentsList = await db.query.students.findMany({
-    where: eq(students.deletedAt, null), // soft delete filter
-  });
-
-  return <StudentsTable data={studentsList} />;
-}
-```
-
-**Server Action Pattern (mutations) - REFACTORED:**
-
-```typescript
-// actions/students.ts
-"use server";
-import { requireSession } from "@/lib/auth/session";
-import { hasPermission } from "@/lib/rbac/permissions";
-import { logAudit } from "@/lib/utils/audit-logger"; // ✅ Phase 3.1: Use centralized audit
-import { db } from "@/lib/db";
-import { createStudentSchema } from "@/lib/validators/student";
-import type { CreateStudentFormState } from "@/lib/validators/student"; // ✅ Phase 3.2: BaseFormState
-
-export async function createStudent(
-  _prevState: CreateStudentFormState,
-  formData: FormData,
-): Promise<CreateStudentFormState> {
-  const session = await requireSession();
-
-  // 1. Permission check
-  if (!hasPermission(session.role, "students:create")) {
-    return { message: "You do not have permission to create students." };
-  }
-
-  // 2. Validate input
-  const parsed = createStudentSchema.safeParse({
-    firstName: formData.get("firstName"),
-    // ... other fields
-  });
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
-  }
-
-  // 3. Business logic + DB write
-  const [student] = await db
-    .insert(students)
-    .values({
-      ...parsed,
-      createdBy: session.userId,
-    })
-    .returning();
-
-  // 4. Audit log - ✅ Use centralized logger (Phase 3.1)
-  await logAudit({
-    actor: session.userId,
-    actorRole: session.role,
-    action: "students:create",
-    targetEntity: "students",
-    targetId: student.id,
-    newState: { studentRef: student.studentRef },
-  });
-
-  return { success: true, studentId: student.id };
-}
-```
-
-Enforce at **3 levels**: route guard → server action validation → audit logging. UI hiding is NOT security.
-
-### ActionResult Pattern (NON-NEGOTIABLE)
-
-All server actions must return this shape:
-
-```typescript
-type ActionResult<T> =
-  | { ok: true; data: T }
-  | {
-      ok: false;
-      error: {
-        code: string;
-        message: string;
-        fieldErrors?: Record<string, string[]>;
-      };
-    };
-```
-
-**Client Component Pattern (form submission) - REFACTORED (Phase 3.5):**
-
-```typescript
-// components/students/StudentForm.tsx
+// Simple forms use native pattern
 "use client";
-import { useActionState, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createStudent } from "@/actions/students";
-import { useFormToast } from "@/hooks/useFormToast";  // ✅ Phase 3.5: Toast notifications
-import { TextInputField } from "@/components/forms/TextInputField";
+import { useActionState } from "react";
+import { useFormToast } from "@/hooks/useFormToast";
 
-export function StudentForm() {
-  const router = useRouter();
-  const [state, action, isPending] = useActionState(createStudent, {});
-  const [firstName, setFirstName] = useState("");
-
-  // ✅ Show toast for form-level success/errors (replaces FormStateAlert)
-  useFormToast(state, {
-    successMessage: "Student created successfully",
-    onSuccess: () => router.push(`/staff/students/${state.studentId}`),
-  });
+export function SimpleForm() {
+  const [state, action, isPending] = useActionState(createAction, {});
+  useFormToast(state, { successMessage: "Created!" });
 
   return (
     <form action={action}>
-      {/* Field-level errors stay inline */}
-      <TextInputField
-        label="First Name"
-        name="firstName"
-        required
-        value={firstName}
-        onChange={setFirstName}
-        error={state.errors?.firstName}  // ✅ Inline field error
-      />
-
-      <button type="submit" disabled={isPending}>
-        {isPending ? "Creating..." : "Create"}
-      </button>
+      <input name="field" />
+      <button disabled={isPending}>Submit</button>
     </form>
   );
 }
 ```
 
-**Validator Pattern - REFACTORED (Phase 3.2):**
+### Complex Forms: TanStack Form
+
+For wizard / field-array forms only. See `src/features/registrations/components/StudentRegistrationForm.tsx`.
+
+### Data Fetching Architecture
+
+```
+Client Component → TanStack Query → API Route/Server Action → Drizzle ORM → Database
+```
+
+Never call Drizzle directly from client components.
+
+## Server Action Pattern
 
 ```typescript
-// src/lib/validators/student.ts
-import { z } from "zod";
-import {
-  nameSchema,
-  emailSchema,
-  phoneSchema,
-  type BaseFormState, // ✅ Use shared base type
-} from "./common-schemas";
+"use server";
+import { requireSession } from "@/lib/auth/session";
+import { hasPermission } from "@/lib/rbac/permissions";
+import { logAudit } from "@/lib/utils/audit-logger";
 
-export const CreateStudentSchema = z.object({
-  firstName: nameSchema, // ✅ Use common schemas
-  middleName: z.string().trim().optional(),
-  lastName: nameSchema.toUpperCase(),
-  email: emailSchema, // ✅ Reusable validation
-  mobileNumber: phoneSchema, // ✅ Reusable validation
-});
+export async function createStudent(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const session = await requireSession();
 
-export type CreateStudentInput = z.infer<typeof CreateStudentSchema>;
+  // 1. Permission check
+  if (!hasPermission(session.role, "students:create")) {
+    return { message: "Permission denied." };
+  }
 
-// ✅ Extend BaseFormState instead of redefining
-export type CreateStudentFormState = BaseFormState<CreateStudentInput> & {
-  studentId?: string; // Additional fields beyond base
+  // 2. Validate
+  const parsed = schema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { errors: parsed.error.flatten().fieldErrors };
+  }
+
+  // 3. DB write + audit
+  const [student] = await db.insert(students).values(parsed.data).returning();
+  await logAudit({ actor: session.userId, action: "students:create", targetId: student.id });
+
+  return { success: true, studentId: student.id };
+}
+```
+
+## Instant Navigation & Prefetching (Next.js 16)
+
+### Configuration (next.config.ts)
+
+```typescript
+const nextConfig: NextConfig = {
+  cacheComponents: true,      // Cache rendered component trees
+  partialPrefetching: true,   // Prefetch static shells on link hover
 };
 ```
 
-**Confirmation Button Pattern - REFACTORED (Phase 3.4):**
+### The Pattern: Sync Shell + Async Content
 
 ```typescript
-// Instead of creating custom button components, use ConfirmActionButton:
-import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
-import { deleteSubjectAction } from "@/actions/academics";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-<InlineConfirmButton
-  action={deleteSubjectAction}
-  confirmMessage="Are you sure you want to delete this subject?"
-  hiddenFields={{ subjectId: subject.id }}
-  label="Delete"
-  loadingLabel="Deleting..."
-  variant="danger"
-/>
+// ✅ Page component is SYNC — prefetchable, renders instantly
+export default function StudentsPage() {
+  return (
+    <div className="page-container">
+      <div className="page-header">
+        <h1 className="page-title">Students</h1>
+      </div>
+      <Suspense fallback={<TableSkeleton />}>
+        <StudentsContent />
+      </Suspense>
+    </div>
+  );
+}
+
+// ✅ Async component handles auth + data fetching
+async function StudentsContent() {
+  const session = await requireSession();
+  const students = await getStudents();
+  return <StudentsTable data={students} />;
+}
+
+// ✅ Skeleton matches content shape (no layout shift)
+function TableSkeleton() {
+  return (
+    <div className="space-y-2">
+      {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+    </div>
+  );
+}
 ```
 
-### System Constants Pattern
-
-**When to use constants vs database tables:**
-
-| Aspect               | Constants (recommended)                        | Database Tables            |
-| -------------------- | ---------------------------------------------- | -------------------------- |
-| **Use for**          | System configuration (roles, assessment bands) | User-managed data          |
-| **Change frequency** | Rarely (requires migrations)                   | Frequently (via UI)        |
-| **Type safety**      | Compile-time validation                        | Runtime only               |
-| **Performance**      | No queries needed                              | Requires DB queries        |
-| **Examples**         | Roles, assessment bands, grading periods       | Students, payments, grades |
-
-**Location:** `src/lib/constants/`
-
-**Pattern (Constants + PostgreSQL Enum):**
+### Multiple Suspense Boundaries (Parallel Streaming)
 
 ```typescript
-// File: src/lib/constants/system-values.ts
-
-// 1. Define constant array with const assertion
-export const SYSTEM_VALUES = ["value1", "value2"] as const;
-
-// 2. Derive TypeScript type
-export type SystemValue = (typeof SYSTEM_VALUES)[number];
-
-// 3. Provide human-readable labels
-export const SYSTEM_VALUE_LABELS: Record<SystemValue, string> = {
-  value1: "Label 1",
-  value2: "Label 2",
-};
+export default function DashboardPage() {
+  return (
+    <div className="grid">
+      <Suspense fallback={<StatsSkeleton />}><StatsPanel /></Suspense>
+      <Suspense fallback={<ChartSkeleton />}><RevenueChart /></Suspense>
+      <Suspense fallback={<TableSkeleton />}><RecentPayments /></Suspense>
+    </div>
+  );
+}
 ```
 
-**Usage in schema:**
+### Fallback: Opt-Out
 
 ```typescript
-// File: src/lib/db/schema.ts
-import { SYSTEM_VALUES } from "@/lib/constants/system-values";
+export const instant = false;  // Blocks navigation until fully rendered
 
-// Create PostgreSQL enum from constants (automatic sync)
-export const systemValueEnum = pgEnum("system_value", SYSTEM_VALUES);
-
-// Use in table definitions
-export const someTable = pgTable("some_table", {
-  systemValue: systemValueEnum("system_value").notNull(),
-});
+export default async function LegacyPage() {
+  const data = await fetchData();
+  return <Content data={data} />;
+}
 ```
 
-**Database Design (Normalized Storage):**
-
-Store the actual value **once** in a logical table, access via relationships:
+### Anti-Patterns
 
 ```typescript
-// ✅ GOOD: Single source of truth
-gradeLevels → has assessment_band field
-assessments → enrollment → gradeLevel.assessmentBand (access via relationship)
+// ❌ Async page component — blocks prefetching
+export default async function Page() {
+  const data = await fetchData();
+  return <Content data={data} />;
+}
 
-// ❌ BAD: Duplication
-gradeLevels → has assessment_band
-assessments → also has assessment_band (must keep in sync)
+// ❌ Single Suspense — no parallel streaming
+<Suspense fallback={<Spinner />}>
+  <SlowTable /><FastSidebar />  {/* Sidebar waits for table */}
+</Suspense>
+
+// ✅ Sync shell + multiple Suspense boundaries
+export default function Page() {
+  return (
+    <>
+      <Header />
+      <Suspense fallback={<TableSkeleton />}><SlowTable /></Suspense>
+      <Suspense fallback={<SidebarSkeleton />}><FastSidebar /></Suspense>
+    </>
+  );
+}
 ```
 
-**Access pattern:**
+## Official Receipt (OR) Workflow
 
-```typescript
-const assessment = await db.query.assessments.findFirst({
-  with: {
-    enrollment: {
-      with: {
-        gradeLevel: true, // Pull assessmentBand from here
-      },
-    },
-  },
-});
+**CRITICAL: Read `SRAMS_OR_WORKFLOW.md` before modifying OR-related code.**
 
-const band = assessment.enrollment.gradeLevel.assessmentBand;
-```
+- Finance officers create booklets with series prefix (e.g., "AP") and 51-receipt range
+- Multiple booklets may be active simultaneously
+- Cashier selects booklet → system auto-assigns next OR number
+- OR status: `available` → `consumed` (immutable, never reused)
+- Voided payments mark OR as `voided` but don't return to pool
+- Every payment post/void triggers audit log
 
-**When to use this pattern:**
+## Grade Encoding Workflow
 
-- ✅ Values are system configuration, not user data
-- ✅ Rarely change (require schema migrations)
-- ✅ Need TypeScript type safety
-- ✅ Used in forms/UI dropdowns (no DB query needed)
-- ✅ Part of business logic structure (like roles, assessment bands)
+**Primary: Adviser-Based Grade Sheets**
 
-### Reference Number Generation
+1. Adviser accesses section at `/staff/grades/adviser/sections/[sectionId]`
+2. Enters grades for all subjects per student per period (Q1–Q4)
+3. Sheet status: `draft` → `submitted` → `approved` or `returned`
+4. Sequential period locking: Q2 cannot submit until Q1 approved
 
-Student reference numbers use a 7-digit plain number format: `NNNNNNN`
-- e.g., `0000001`, `0000002`, `0000100`, `9999999`
+## Reusable Components
 
-The sequence is managed by PostgreSQL `student_ref_seq` for concurrency safety.
+**Data:** `DataTable<T>`, `StatusBadge`, `CurrencyDisplay`, `ReferenceCode`
+**Forms:** `useFormToast`, `TextInputField`, `SelectField`, `CurrencyInputField`
+**Actions:** `ConfirmActionButton`, `InlineConfirmButton`, `BlockConfirmButton`
+**Layout:** `PageHeader`, `PageContainer`
 
-```typescript
-import { generateStudentRef } from "@/lib/utils/reference";
+## Report Generation
 
-// In students.actions.ts:
-const seq = await getNextStudentSequence(); // Uses nextval('student_ref_seq')
-const referenceNumber = generateStudentRef(seq);
-// e.g., "0000001", "0000002", "0000100"
-```
+All reports use `src/features/reports/shared/`:
+- **PDF:** `@react-pdf/renderer` via `TabularReportDocument`, `pdfResponse`
+- **XLSX:** `exceljs` via `buildReportWorkbook`, `xlsxResponse`
 
-### Currency Formatting
+Route: `…/<name>/export?format=pdf|xlsx&<filters>`
 
-Always use `CurrencyDisplay` component or format manually with `en-PH` locale:
-
-```typescript
-// In component
-<CurrencyDisplay amount={1500.00} />
-
-// In utility
-new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(1500);
-```
-
-### Report & Document Generation (Standard — Non-Negotiable)
-
-All reports and printable documents follow **one two-track standard** built on the shared module
-`src/features/reports/shared/`. Do **not** invent a new per-report mechanism, and do **not** use
-browser `window.print()` for documents.
-
-**Track 1 — Official documents → `@react-pdf/renderer`.** Presentation-grade artifacts that must look
-identical for everyone and may be emailed/attached: invoices, receipts, official letters, and the
-"official" PDF of any report. Server-rendered via `renderToBuffer` in a route handler.
-
-**Track 2 — Analytical reports → XLSX via `exceljs`.** Tabular finance data officers pivot/total
-themselves: Payment Collection, Balance Forward, ledgers. Usually paired with a Track-1 PDF.
-
-**Route convention:** every export is a route handler at `…/<name>/export?format=pdf|xlsx&<filters>`
-that (1) checks `getCurrentUser()` + `hasPermission(role, "reports:view")` (or `invoices:read` for
-invoice docs), (2) returns via `pdfResponse` / `xlsxResponse`, and (3) calls `logReportExport(...)`
-(`reports:export` audit entry). See `src/app/staff/reports/payment-collection/export/route.ts` as the
-reference implementation.
-
-**Shared module (`src/features/reports/shared/`) — always reuse, never re-roll:**
-
-- `report-format.ts` — `pesoText` (real `₱`), `pesoNumber` + `PESO_NUMBER_FORMAT` (Excel), `reportDate`
-  / `reportDateTime` / `reportPeriodLabel`. Wraps `src/lib/utils/currency.ts` + `date.ts`
-  (Asia/Manila). **Never** hand-roll `Intl` or print the literal `"PHP "` in a report.
-- `pdf-fonts.ts` — `registerReportFonts()` embeds Roboto (`public/fonts/Roboto-*.ttf`) so `₱` (U+20B1)
-  renders; the PDF built-in Helvetica cannot. Call it before rendering (the primitives do this).
-- `pdf-primitives.tsx` — `TabularReportDocument<T>` (generic paginated report: header + summary +
-  repeating table header + page-numbered footer), `Letterhead`, `ReportColumn<T>`. Build a new tabular
-  report by supplying a `columns` config — do not duplicate `StyleSheet`/pagination.
-- `xlsx-report.ts` — `buildReportWorkbook({ columns, rows, summaryItems, … })` → `Buffer`.
-- `report-response.ts` — `pdfResponse` (supports `{ inline: true }` for print/preview), `xlsxResponse`,
-  `parseReportFormat`.
-- `report-request.ts` — `parseReportDateRange`, `reportFilename`.
-- `audit-report.ts` — `logReportExport({ actor, report, format, rowCount, filters })`.
-
-**Per-report wiring:** put the shared PDF document + XLSX builder for a report in a single
-`*-report.export.tsx` so the two formats never drift (e.g. `payment-collection-report.export.tsx`,
-`balance-forward-report.export.tsx`; invoices: `src/features/finance/invoices/invoice-document.tsx`).
-Client "Export PDF / Export Excel" buttons download via a temporary `<a>` (filename comes from the
-server's `Content-Disposition`).
-
-**Email stays HTML:** `generateAssessmentLetterHtml` is for the Gmail invoice path only — email clients
-need HTML. Only the print/download path uses react-pdf.
-
-### Testing
-
-**Unit Tests:** Use Vitest for utility functions and schema validation.
-
-**E2E Tests:** Playwright is configured as target tooling, but the committed end-to-end suite is still pending.
-
-**Test Commands:**
-
-- `npm run test` — Run all unit tests
-- `npm run test:watch` — Watch mode for TDD
-- `npm run test:e2e` — Run Playwright tests
-
-### Migrations
-
-**Workflow:**
-
-1. Modify `src/lib/db/schema.ts`
-2. Run `npm run db:generate --name=descriptive_migration_name` — Creates migration file in `drizzle/`
-3. Review generated SQL in `drizzle/*.sql`
-4. Run `npm run db:migrate` — Applies migration to database
-5. Commit both schema changes AND migration files
-
-**Migration Naming (Non-Negotiable):**
-
-- **ALWAYS** use clear, human-readable, descriptive names for migrations
-- Use snake_case format: `add_student_lrn_field`, `create_payment_allocations_table`, `fix_assessment_balance_constraint`
-- **NEVER** use auto-generated random names like `rich_gamora` or `fancy_unicorn`
-- Name should describe what the migration does
-
-**Important:** Never use `db:push` in production. Always use migrations for traceability.
-
-### Seeding
-
-**System Configuration Seed:**
+## Migrations
 
 ```bash
-npm run db:seed-config
+# 1. Modify src/lib/db/schema.ts
+# 2. Generate (NEVER manually create SQL files)
+npm run db:generate -- --name=descriptive_name
+# 3. Review drizzle/*.sql
+# 4. Apply
+npm run db:migrate
 ```
 
-Seeds: school years, grade levels, sections, default admin user.
+Use snake_case names: `add_student_lrn_field`, NOT auto-generated names.
 
-**Sample Data Seed:**
+## Common Gotchas
 
-```bash
-npm run db:seed
-```
+1. **Soft Delete:** Always filter `deletedAt IS NULL` in queries.
+2. **Date Formatting:** Use `formatDate`/`formatDateTime` from `src/lib/utils/date.ts` (pins Asia/Manila timezone). Never hand-roll `toLocaleDateString()`.
+3. **Parallel Queries:** Use `Promise.all()` for independent DB queries.
+4. **Cache Invalidation:** Use `invalidateTag()` (non-blocking) in actions, not `forceUpdateTag()`. Add `revalidatePath()` before `invalidateTag()` for `"use cache"` queries.
+5. **Photo Uploads:** Use `unoptimized` prop on `<Image>` for runtime-uploaded photos.
+6. **Session Cookie HTTP:** `.env.production` sets `SESSION_COOKIE_SECURE=false` for LAN deployments without TLS.
+7. **Turbopack Errors:** Ignore "negative time stamp" errors in dev — harmless bug.
 
-Seeds: students, enrollments, assessments (for testing).
+## Documentation References
 
-### Style Guidelines
-
-**CSS:** Use Tailwind utility classes for layout, CSS custom properties for theming.
-
-**Color Palette:**
-
-- Primary: Deep Red (`--color-primary`)
-- Accent: Green (`--color-success`)
-- Surface: Light gray backgrounds (`--color-surface`, `--color-surface-2`)
-
-**Design Principles:**
-
-- Clean, grid-aligned layouts
-- High information density for operational screens (cashier, registrar)
-- Professional academic feel
-- Prioritize readability over flashy UI
-
-### Common Gotchas
-
-1. **Session Renewal:** Use `renewSession()` sparingly — only on critical user actions.
-2. **Soft Delete Filters:** Always include `deletedAt IS NULL` in queries for active records.
-3. **OR Number Immutability:** Once consumed, OR numbers cannot be reused even if payment is voided.
-4. **Grade Locking:** Locked grades can only be unlocked by admin role.
-5. **Booklet Exhaustion:** When booklet reaches end number, auto-mark as `exhausted` and require new booklet selection.
-6. **Unique Constraints:** Respect unique indexes (student reference, OR number, invoice number, etc.).
-7. **Date Hydration Mismatch (Timezone):** NEVER hand-roll `new Date(x).toLocaleDateString("en-PH")` / `toLocaleString(...)` in components. With no fixed `timeZone`, the server (UTC) and client (Asia/Manila, UTC+8) format the same timestamp as **different calendar dates**, causing a React hydration mismatch ("server rendered text didn't match the client") that regenerates the subtree on the client — observed as instability/"infinite re-render"/freeze. **Always format dates via `formatDate` / `formatDateTime` from `src/lib/utils/date.ts`**, which pin `SCHOOL_TIME_ZONE = "Asia/Manila"`. Do not mask the symptom with `suppressHydrationWarning`. When a "freeze / re-render loop" is reported, check the browser console for a hydration mismatch first. (Regressed in the enrollment-cancellation feature, fixed 2026-05-29.)
-8. **Session Cookie over HTTP (LAN prod):** The session cookie's `Secure` flag is env-driven via `SESSION_COOKIE_SECURE` (`src/lib/auth/session.ts`). The Ubuntu prod deployment serves plain HTTP through nginx on :80, and browsers drop `Secure` cookies on non-HTTPS origins (except localhost) — login from another machine silently fails with a login → change-password redirect loop. `.env.production` sets `SESSION_COOKIE_SECURE=false`; flip to `true` when TLS is added at nginx. (Diagnosed 2026-06-05.)
-9. **Photo Upload in Docker (Volume Permissions + Static Serving):** Four layers must align for photo uploads to work in production Docker:
-   - **Nginx body size:** `client_max_body_size 5M` in `nginx.conf` (default 1MB blocks uploads)
-   - **Next.js body size:** `experimental.serverActions.bodySizeLimit: '3mb'` in `next.config.ts`
-   - **Volume permissions:** Docker named volumes are owned by root; `docker-entrypoint.sh` runs `chown -R nextjs:nextjs /app/public/uploads` at container start before dropping to nextjs user via `su-exec`
-   - **Static file serving:** Next.js does NOT serve runtime-uploaded files from `public/` in production; nginx serves `/uploads/*` directly from the shared volume (`uploads_data:/app/public/uploads:ro` in docker-compose). If photos upload but don't display, check nginx has the volume mounted and the `/uploads/` location block exists.
-   - **Next.js Image `unoptimized` prop:** Next.js Image Optimization (`/_next/image`) only works for images present at build time. Runtime-uploaded photos return 400 errors. **Always use `unoptimized` prop** on `<Image>` components displaying uploaded photos (see `StudentAvatar.tsx`, `StudentPhotoUpload.tsx`). (Fixed 2026-06-24.)
-10. **Parallel DB Queries in Server Components:** When a page needs multiple pieces of data, **always use `Promise.all`** to parallelize independent queries. Sequential `await` calls add latency (each round-trip is ~10-50ms). Pattern:
-    ```typescript
-    // ❌ BAD: Sequential queries (200ms+ total)
-    const request = await getRequest(id);
-    const eligibility = await checkEligibility(request.studentId);
-    const balance = await getBalance(request.studentId);
-
-    // ✅ GOOD: Parallel queries (50ms total)
-    const request = await getRequest(id);
-    const [eligibility, balance] = await Promise.all([
-      checkEligibility(request.studentId),
-      getBalance(request.studentId),
-    ]);
-    ```
-    This applies to page components, query functions with multiple sub-queries, and anywhere multiple independent DB calls occur. The document detail page (`/staff/archive/documents/[id]`) was fixed for this pattern (2026-06-29).
-11. **Blocking Cache Invalidation in Server Actions (Production Freeze):** Next.js 16's `updateTag()` (used by `forceUpdateTag` in `src/lib/cache/cache-tags.ts`) is a **BLOCKING operation** that can cause server actions to hang indefinitely in production Docker, leaving forms stuck on "Creating..." / "Marking Ready..." etc. The server action completes (DB writes succeed) but the response never reaches the client. **Use `invalidateTag()` (stale-while-revalidate, non-blocking) instead of `forceUpdateTag()` for server actions where the client handles page refresh via `router.refresh()`.** Similarly, avoid `revalidatePath()` in actions that need fast response times. Pattern:
-    ```typescript
-    // ❌ BAD: Blocks response (causes "Creating..." freeze)
-    forceUpdateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
-    revalidatePath("/staff/archive/documents");
-    return { success: true };
-
-    // ✅ GOOD: Non-blocking (client calls router.refresh())
-    invalidateTag(CACHE_TAGS.DOCUMENT_REQUESTS);
-    return { success: true };
-    ```
-    All document request actions (`createDocumentRequestAction`, `processDocumentRequestAction`, `readyDocumentRequestAction`, `releaseDocumentRequestAction`, `rejectDocumentRequestAction`, `cancelDocumentRequestAction`) were fixed for this pattern (2026-06-29).
-12. **Cache Revalidation for `"use cache"` Queries:** When queries use the `"use cache"` directive with `cacheTag()`, calling only `invalidateTag()` may not update the UI instantly — users may need a hard refresh. **Add `revalidatePath()` before `invalidateTag()` for instant UI updates.** Pattern:
-    ```typescript
-    // ❌ BAD: UI doesn't update instantly (needs hard refresh)
-    invalidateTag(CACHE_TAGS.SECTIONS);
-    return { success: true };
-
-    // ✅ GOOD: UI updates instantly (matches Fee Templates pattern)
-    revalidatePath("/staff/academics/sections");
-    invalidateTag(CACHE_TAGS.SECTIONS);
-    return { success: true };
-    ```
-    The client component should still call `router.refresh()` in `onSuccess`. This pattern was validated in sections CRUD actions (2026-08-06).
-13. **Turbopack Performance Measurement Bug (Next.js 16):** During development, you may see `Failed to execute 'measure' on 'Performance': '[PageName] [Prerender]' cannot have a negative time stamp`. This is a **harmless internal Turbopack bug** where the performance timing API calculates negative durations during prerendering. It does **not** affect functionality — pages render and work correctly. The `dynamic = "force-dynamic"` workaround is incompatible with `cacheComponents`, so simply ignore these console errors. This affects redirect-only pages like `StaffDashboardPage` most frequently. (Documented 2026-08-19.)
-14. **Drizzle Migrations Must Use `generate` Command:** **NEVER manually create migration SQL files.** Always use Drizzle Kit's `generate` command, which creates both the SQL file AND updates `drizzle/meta/_journal.json`. Manually created SQL files without journal entries are ignored by `db:migrate`. Pattern:
-    ```bash
-    # 1. Modify src/lib/db/schema.ts
-    # 2. Generate migration (creates SQL + updates journal automatically)
-    npm run db:generate -- --name=descriptive_migration_name
-
-    # 3. Review generated SQL in drizzle/*.sql
-    # 4. Apply migration
-    npm run db:migrate
-    ```
-    If `generate` fails due to TTY/interactive prompt issues in non-interactive shells, run it in a proper terminal (not through Claude Code or CI). The journal entry is critical — without it, Drizzle considers the schema "up to date" and skips the migration. (Diagnosed 2026-09-02 when `inactive` booklet status migration was created manually but not tracked.)
-15. **Next.js 16 Instant Navigation:** Next.js 16 introduced "instant navigation" with `cacheComponents` and `partialPrefetching` enabled in `next.config.ts`. The **preferred pattern** is to use `<Suspense>` boundaries to enable streaming — the static shell renders instantly while auth + DB content streams in. **Use `instant = false` only as a fallback** for pages where refactoring isn't worth the effort.
-
-    **Preferred: Suspense Pattern (enables instant navigation)**
-    ```typescript
-    // src/app/staff/school-years/page.tsx
-    import { Suspense } from "react";
-    import { Skeleton } from "@/components/ui/skeleton";
-
-    // Static shell - renders immediately during navigation
-    export default function SchoolYearsPage() {
-      return (
-        <div className="page-container">
-          <div className="page-header">
-            <h1 className="page-title">School Years</h1>
-          </div>
-          <Suspense fallback={<TableSkeleton />}>
-            <SchoolYearsContent />
-          </Suspense>
-        </div>
-      );
-    }
-
-    // Auth + DB access inside Suspense - streams in
-    async function SchoolYearsContent() {
-      const session = await requireSession();
-      const data = await db.query.schoolYears.findMany();
-      return <SchoolYearsTable data={data} />;
-    }
-    ```
-
-    **Fallback: Opt-out Pattern (blocks navigation)**
-    ```typescript
-    // Use only when Suspense refactoring isn't practical
-    export const instant = false;
-
-    export default async function SimplePage() {
-      const session = await requireSession();
-      // ...
-    }
-    ```
-
-    **Config requirements** (`next.config.ts`):
-    ```typescript
-    const nextConfig: NextConfig = {
-      cacheComponents: true,
-      partialPrefetching: true,
-    };
-    ```
-
-    16 pages have been refactored to the Suspense pattern:
-    - Dashboards: admin, portal
-    - School years: list, edit
-    - Users: list, detail, edit
-    - Fee schedules: list, new
-    - Booklets: list
-    - Payments: process
-    - Curriculums: clone
-    - Registrations: queue
-    - Enrollments: queue, detail
-    - Assessments: ledger
-
-    Remaining pages use `instant = false` fallback. When creating new pages, prefer the Suspense pattern for better UX. (Refactored 2026-09-07.)
-
-### Integration Points (Future)
-
-- **Stripe:** Optional for online tuition payments (not yet implemented)
-- **Google Sheets:** Backup/export only (not main database)
-- **Gmail (Nodemailer):** Invoice sending via `src/lib/email/` (implementation in progress)
+- `SRAMS_MVP.md` — System requirements
+- `SRAMS_OR_WORKFLOW.md` — OR tracking (MUST READ before modifying OR features)
+- `PROJECT_STATUS.md` — Current implementation status
