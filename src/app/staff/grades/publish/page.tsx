@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getActiveSchoolYear,
   getReadyToPublishSheets,
@@ -11,12 +13,52 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/date";
 import { GRADING_PERIOD_LABELS } from "@/lib/constants/grading-periods";
 
+// Instant navigation enabled - uses Suspense for streaming
+
 export const metadata = {
   title: "Ready to Publish | SRAMS",
   description: "Approved grade sheets ready to publish to the student portal",
 };
 
-export default async function ReadyToPublishPage() {
+/**
+ * Instant navigation - full publish page skeleton shown while data loads.
+ */
+export default function ReadyToPublishPage() {
+  return (
+    <Suspense fallback={<ReadyToPublishSkeleton />}>
+      <ReadyToPublishContent />
+    </Suspense>
+  );
+}
+
+function ReadyToPublishSkeleton() {
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <Skeleton className="h-8 w-44" />
+        <Skeleton className="h-4 w-80 mt-2" />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div key={i} className="rounded-xl border border-success/25 bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="h-4 w-8" />
+            </div>
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-4 w-20" />
+            <div className="pt-2 border-t border-border space-y-2">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+async function ReadyToPublishContent() {
   const session = await requireSession();
 
   // Only users with publish permission can access

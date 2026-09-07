@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { schoolYears, gradingPeriodSystems } from "@/lib/db/schema";
@@ -10,6 +11,9 @@ import EditSchoolYearForm from "@/features/school-years/components/EditSchoolYea
 import type { GradingSystemType } from "@/lib/constants/grading-systems";
 import { isUndefinedTableError } from "@/lib/utils/pg-error";
 import { logger } from "@/lib/observability/logger";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -25,8 +29,54 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: `Edit ${schoolYear.label}` };
 }
 
+/**
+ * Static shell - renders immediately during navigation.
+ */
 export default async function EditStaffSchoolYearPage({ params }: PageProps) {
   const { id } = await params;
+
+  return (
+    <div className="page-container">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Edit School Year</h1>
+          <p className="page-subtitle">Loading...</p>
+        </div>
+        <Link href="/staff/school-years" className="btn-ghost">
+          ← Back to School Years
+        </Link>
+      </div>
+
+      <Suspense fallback={<EditFormSkeleton />}>
+        <EditSchoolYearContent id={id} />
+      </Suspense>
+    </div>
+  );
+}
+
+function EditFormSkeleton() {
+  return (
+    <div className="form-card space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+      <Skeleton className="h-10 w-32" />
+    </div>
+  );
+}
+
+async function EditSchoolYearContent({ id }: { id: string }) {
   const session = await requireSession();
   if (!hasPermission(session.role, "school_years:manage")) redirect("/staff/dashboard");
 
@@ -55,9 +105,6 @@ export default async function EditStaffSchoolYearPage({ params }: PageProps) {
       gradingSystemType = gradingSystem.systemType as GradingSystemType;
     }
   } catch (error) {
-    // Only the "table not created yet" case is expected (migrations not applied) —
-    // keep the quarterly default silently. Connection, timeout, and permission
-    // failures must stay visible instead of hiding behind the fallback.
     if (!isUndefinedTableError(error)) {
       logger.error("[school-years] Failed to load grading system type", {
         schoolYearId: id,
@@ -67,22 +114,10 @@ export default async function EditStaffSchoolYearPage({ params }: PageProps) {
   }
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Edit School Year</h1>
-          <p className="page-subtitle">{schoolYear.label}</p>
-        </div>
-        <Link href="/staff/school-years" className="btn-ghost">
-          ← Back to School Years
-        </Link>
-      </div>
-
-      <EditSchoolYearForm
-        schoolYear={schoolYear}
-        gradingSystemType={gradingSystemType}
-        redirectPath="/staff/school-years"
-      />
-    </div>
+    <EditSchoolYearForm
+      schoolYear={schoolYear}
+      gradingSystemType={gradingSystemType}
+      redirectPath="/staff/school-years"
+    />
   );
 }

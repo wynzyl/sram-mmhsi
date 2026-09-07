@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import {
   getElectiveSubjects,
@@ -8,12 +10,55 @@ import {
   ElectivesByStrandView,
 } from "@/features/academics/electives";
 
+// Instant navigation enabled - uses Suspense for streaming
+
 export const metadata = {
   title: "Elective Subjects | SRAMS",
   description: "View and manage SHS elective subjects by strand",
 };
 
-export default async function ElectivesPage() {
+/**
+ * Instant navigation - full electives page skeleton shown while data loads.
+ */
+export default function ElectivesPage() {
+  return (
+    <Suspense fallback={<ElectivesSkeleton />}>
+      <ElectivesContent />
+    </Suspense>
+  );
+}
+
+function ElectivesSkeleton() {
+  return (
+    <div className="page-container--full space-y-6">
+      <div className="space-y-1">
+        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <section className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        <div className="bg-muted flex items-center gap-3 border-b border-border px-4 py-3">
+          <Skeleton className="h-4 w-36" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+        <div className="p-4 space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="border border-border rounded-lg p-4">
+              <Skeleton className="h-5 w-32 mb-3" />
+              <div className="grid grid-cols-3 gap-3">
+                {[1, 2, 3].map((j) => (
+                  <Skeleton key={j} className="h-10 w-full" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+async function ElectivesContent() {
   const session = await requireSession();
 
   if (!hasPermission(session.role, "curriculums:read")) {

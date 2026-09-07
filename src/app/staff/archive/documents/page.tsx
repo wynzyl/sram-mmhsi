@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
@@ -11,24 +12,91 @@ import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import { DocumentRequestsTable } from "@/features/documents/components/DocumentRequestsTable";
 import { DocumentRequestFilters } from "@/features/documents/components/DocumentRequestFilters";
 import { TablePagination } from "@/components/ui/TablePagination";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { DocumentRequestStatus, DocumentRequestType } from "@/lib/constants/document-requests";
 import Link from "next/link";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata = {
   title: "Document Requests | Archive",
 };
 
-export default async function DocumentRequestsPage({
+type SearchParams = {
+  page?: string;
+  status?: string;
+  type?: string;
+  sy?: string;
+  q?: string;
+  studentId?: string;
+};
+
+/**
+ * Instant navigation - full document requests skeleton shown while data loads.
+ */
+export default function DocumentRequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    page?: string;
-    status?: string;
-    type?: string;
-    sy?: string;
-    q?: string;
-    studentId?: string;
-  }>;
+  searchParams: Promise<SearchParams>;
+}) {
+  return (
+    <Suspense fallback={<DocumentRequestsSkeleton />}>
+      <DocumentRequestsContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function DocumentRequestsSkeleton() {
+  return (
+    <div className="page-container--full space-y-6">
+      {/* Breadcrumb */}
+      <nav className="text-sm text-muted-foreground">
+        <Skeleton className="h-4 w-48 inline-block" />
+      </nav>
+
+      {/* Header */}
+      <div className="space-y-1">
+        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+
+      {/* Card */}
+      <section className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        {/* Card header with filters */}
+        <div className="bg-muted flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </div>
+
+        {/* Table rows */}
+        <div className="divide-y divide-border">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-8 w-16 ml-auto" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+async function DocumentRequestsContent({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
 }) {
   // Force dynamic rendering - document requests are transactional data
   await connection();

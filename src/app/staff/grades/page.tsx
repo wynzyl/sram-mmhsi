@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { requireStaffSession } from "@/lib/auth/session";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getActiveSchoolYear,
   getAdviserSections,
@@ -7,7 +9,41 @@ import { getSubjectOfferingsForTeacher } from "@/features/academics/subject-offe
 import { AdviserSectionCards } from "@/features/academics/grades/components/AdviserSectionCards";
 import { TeacherClassesCards } from "@/features/academics/subject-offerings";
 
-export default async function GradesDashboardPage() {
+// Instant navigation enabled - uses Suspense for streaming
+
+/**
+ * Instant navigation - full grades dashboard skeleton shown while data loads.
+ */
+export default function GradesDashboardPage() {
+  return (
+    <Suspense fallback={<GradesDashboardSkeleton />}>
+      <GradesDashboardContent />
+    </Suspense>
+  );
+}
+
+function GradesDashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div>
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-4 w-40 mt-2" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-3">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-9 w-full mt-2" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+async function GradesDashboardContent() {
   const session = await requireStaffSession();
 
   // Find active school year

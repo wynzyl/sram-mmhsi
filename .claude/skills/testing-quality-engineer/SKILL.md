@@ -5,6 +5,8 @@ description: Senior QA and Test Engineering skill for SRAMS. Designs, reviews, i
 version: 1.0.0
 author: Wenzel
 --------------
+trigger: "test performance"
+
 
 # SRAMS Test Quality Engineer
 

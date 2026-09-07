@@ -5,6 +5,9 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import SchoolYearForm from "@/features/school-years/components/SchoolYearForm";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Create School Year",
   description: "Create a new school year in SRAMS.",

@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getGradeSheetById,
   getGradeSheetEntries,
@@ -16,6 +18,8 @@ import { GradeSheetReviewActions } from "@/features/academics/grades/components/
 import { GradeSheetPublishActions } from "@/features/academics/grades/components/GradeSheetPublishActions";
 import { getGradeGroup } from "@/lib/constants/grade-groups";
 
+// Instant navigation enabled - uses Suspense for streaming
+
 export const metadata = {
   title: "Review Grade Sheet | SRAMS",
   description: "Review and approve submitted grade sheet",
@@ -23,6 +27,68 @@ export const metadata = {
 
 interface PageProps {
   params: Promise<{ sheetId: string }>;
+}
+
+/**
+ * Instant navigation - full grade sheet review skeleton shown while data loads.
+ */
+export default async function GradeSheetReviewPageWrapper({ params }: PageProps) {
+  const { sheetId } = await params;
+
+  return (
+    <Suspense fallback={<GradeSheetReviewSkeleton />}>
+      <GradeSheetReviewContent sheetId={sheetId} />
+    </Suspense>
+  );
+}
+
+function GradeSheetReviewSkeleton() {
+  return (
+    <div className="p-6 space-y-6">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <Skeleton className="h-4 w-32" />
+              <span>/</span>
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <Skeleton className="h-8 w-72" />
+            <div className="flex items-center gap-2 mt-2">
+              <Skeleton className="h-4 w-24" />
+              <span>|</span>
+              <Skeleton className="h-4 w-16" />
+            </div>
+          </div>
+          <Skeleton className="h-6 w-24 rounded-full" />
+        </div>
+        <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="space-y-1">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-5 w-24" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <div className="p-4">
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-40" />
+                  {[1, 2, 3, 4, 5, 6].map((j) => (
+                    <Skeleton key={j} className="h-6 w-12" />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function getStatusBadgeVariant(status: string): "secondary" | "info" | "success" | "warning" {
@@ -49,9 +115,8 @@ function getStatusLabel(status: string): string {
   return labels[status] || status;
 }
 
-export default async function GradeSheetReviewPage({ params }: PageProps) {
+async function GradeSheetReviewContent({ sheetId }: { sheetId: string }) {
   const session = await requireSession();
-  const { sheetId } = await params;
 
   // Only principals can review
   if (!hasPermission(session.role, "grades:principal_review")) {

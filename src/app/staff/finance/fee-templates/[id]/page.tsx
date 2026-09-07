@@ -9,6 +9,9 @@ import {
 import { FeeTemplateItemsManager } from "@/features/finance/fee-templates/components/FeeTemplateItemsManager";
 import { FEE_ASSESSMENT_BAND_LABELS } from "@/lib/constants/assessment-bands";
 
+// Disable instant navigation - page has session/DB access
+export const instant = false;
+
 export const metadata = {
   title: "Fee Template Details | SRAMS",
   description: "View and manage fee template items",

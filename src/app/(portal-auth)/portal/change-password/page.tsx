@@ -9,6 +9,8 @@ import { ChangePasswordFormSkeleton } from "@/features/auth";
 import { logoutAction } from "@/features/auth/auth.actions";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Instant navigation enabled - uses Suspense for streaming session-dependent content
+
 export const metadata: Metadata = {
   title: "Change Password",
   description: "Change your Student Portal password.",

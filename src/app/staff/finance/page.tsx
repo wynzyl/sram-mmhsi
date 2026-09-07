@@ -9,6 +9,9 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { FinanceInsightsSection } from "@/components/dashboard/FinanceInsightsSection";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
@@ -37,7 +40,61 @@ const QUICK_LINKS = [
   },
 ];
 
-export default async function FinanceOfficerDashboardPage() {
+/**
+ * Instant navigation - full finance dashboard skeleton shown while data loads.
+ */
+export default function FinanceOfficerDashboardPage() {
+  return (
+    <Suspense fallback={<FinanceDashboardSkeleton />}>
+      <FinanceDashboardContent />
+    </Suspense>
+  );
+}
+
+function FinanceDashboardSkeleton() {
+  return (
+    <PageContainer>
+      <div className="space-y-1 mb-6">
+        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-5">
+            <Skeleton className="h-4 w-32 mb-2" />
+            <Skeleton className="h-8 w-24" />
+          </div>
+        ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-6">
+        <div className="h-64 rounded-xl border border-border bg-card p-4">
+          <Skeleton className="h-5 w-40 mb-4" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+        <div className="h-64 rounded-xl border border-border bg-card p-4">
+          <Skeleton className="h-5 w-36 mb-4" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-4">
+            <Skeleton className="h-5 w-28 mb-2" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+        ))}
+      </div>
+    </PageContainer>
+  );
+}
+
+async function FinanceDashboardContent() {
   const session = await requireSession();
 
   if (session.role !== "finance_officer") {

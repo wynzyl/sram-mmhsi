@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -7,6 +8,9 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import BatchInvoiceForm from "@/features/finance/components/invoices/BatchInvoiceForm";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata: Metadata = {
   title: "Batch Invoice Generation | SRAMS",
@@ -29,7 +33,53 @@ function Breadcrumbs() {
   );
 }
 
-export default async function BatchInvoicePage() {
+/**
+ * Instant navigation - full batch invoice form skeleton shown while data loads.
+ */
+export default function BatchInvoicePage() {
+  return (
+    <Suspense fallback={<BatchInvoiceSkeleton />}>
+      <BatchInvoiceContent />
+    </Suspense>
+  );
+}
+
+function BatchInvoiceSkeleton() {
+  return (
+    <div className="container mx-auto p-6">
+      {/* Breadcrumbs */}
+      <div className="flex items-center gap-1 mb-4">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-4" />
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-4" />
+        <Skeleton className="h-4 w-28" />
+      </div>
+
+      <Skeleton className="h-7 w-56 mb-1" />
+      <Skeleton className="h-4 w-80 mb-6" />
+
+      {/* Form */}
+      <div className="max-w-2xl space-y-4">
+        <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+          <div>
+            <Skeleton className="h-4 w-24 mb-1" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div>
+            <Skeleton className="h-4 w-20 mb-1" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="pt-2">
+            <Skeleton className="h-10 w-36" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function BatchInvoiceContent() {
   const session = await requireSession();
 
   if (!hasPermission(session.role, "invoices:read")) {

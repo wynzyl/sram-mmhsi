@@ -131,6 +131,7 @@ Roles include:
 - Super Admin
 - Principal
 - Coordinator
+- Finance
 - Registrar
 - Adviser
 - Teacher

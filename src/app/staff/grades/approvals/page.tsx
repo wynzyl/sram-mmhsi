@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
@@ -8,9 +9,12 @@ import {
 } from "@/features/academics/grades/grades.queries";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/utils/date";
 import { GRADING_PERIOD_LABELS } from "@/lib/constants/grading-periods";
 import { PaginationControls } from "@/components/shared/PaginationControls";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata = {
   title: "Pending Approvals | SRAMS",
@@ -21,7 +25,47 @@ interface PageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
-export default async function GradeApprovalsPage({ searchParams }: PageProps) {
+/**
+ * Instant navigation - full grade approvals skeleton shown while data loads.
+ */
+export default function GradeApprovalsPage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<GradeApprovalsSkeleton />}>
+      <GradeApprovalsContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function GradeApprovalsSkeleton() {
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-64 mt-2" />
+      </div>
+
+      {/* Grid of card skeletons */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-4 w-8" />
+            </div>
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-4 w-20" />
+            <div className="pt-2 border-t border-border space-y-2">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+async function GradeApprovalsContent({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
   const session = await requireSession();

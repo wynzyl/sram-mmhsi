@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { schoolYears, gradingPeriodSystems } from "@/lib/db/schema";
 import { desc, isNull } from "drizzle-orm";
@@ -10,13 +11,82 @@ import { formatDate } from "@/lib/utils/date";
 import { GRADING_SYSTEM_LABELS, type GradingSystemType } from "@/lib/constants/grading-systems";
 import { isUndefinedTableError } from "@/lib/utils/pg-error";
 import { logger } from "@/lib/observability/logger";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Instant navigation enabled - uses Suspense for streaming
+// (removed instant = false)
 
 export const metadata: Metadata = {
   title: "School Years",
   description: "Manage school years in SRAMS.",
 };
 
-export default async function StaffSchoolYearsPage() {
+/**
+ * Static shell - renders immediately during navigation.
+ * The header and action button are static; the table streams in via Suspense.
+ */
+export default function StaffSchoolYearsPage() {
+  return (
+    <div className="page-container">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">School Years</h1>
+          <p className="page-subtitle">Manage school year configurations</p>
+        </div>
+        <Link href="/staff/school-years/new" className="btn-primary" id="create-school-year-btn">
+          + Create School Year
+        </Link>
+      </div>
+
+      <Suspense fallback={<SchoolYearsTableSkeleton />}>
+        <SchoolYearsTableContent />
+      </Suspense>
+    </div>
+  );
+}
+
+/**
+ * Loading skeleton for the table - shown during streaming.
+ */
+function SchoolYearsTableSkeleton() {
+  return (
+    <div className="table-wrapper">
+      <table className="data-table" id="school-years-table">
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Grading System</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[1, 2, 3].map((i) => (
+            <tr key={i}>
+              <td><Skeleton className="h-4 w-24" /></td>
+              <td><Skeleton className="h-4 w-20" /></td>
+              <td><Skeleton className="h-4 w-20" /></td>
+              <td><Skeleton className="h-4 w-16" /></td>
+              <td><Skeleton className="h-4 w-14" /></td>
+              <td><Skeleton className="h-4 w-20" /></td>
+              <td><Skeleton className="h-4 w-10" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/**
+ * Async component that handles auth + data fetching.
+ * Wrapped in Suspense, streams into the static shell.
+ */
+async function SchoolYearsTableContent() {
+  // Auth check - redirects if unauthenticated or unauthorized
   const session = await requireSession();
   if (!hasPermission(session.role, "school_years:manage")) redirect("/staff/dashboard");
 
@@ -67,92 +137,78 @@ export default async function StaffSchoolYearsPage() {
   }));
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">School Years</h1>
-          <p className="page-subtitle">
-            {rows.length.toLocaleString()} school year{rows.length !== 1 ? "s" : ""} configured
-          </p>
-        </div>
-        <Link href="/staff/school-years/new" className="btn-primary" id="create-school-year-btn">
-          + Create School Year
-        </Link>
-      </div>
-
-      <div className="table-wrapper">
-        <table className="data-table" id="school-years-table">
-          <thead>
+    <div className="table-wrapper">
+      <table className="data-table" id="school-years-table">
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Grading System</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
             <tr>
-              <th>Label</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Grading System</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Actions</th>
+              <td colSpan={7} className="table-empty">
+                No school years configured yet.
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="table-empty">
-                  No school years configured yet.
+          ) : (
+            rows.map((sy) => (
+              <tr key={sy.id} className="table-row-hover">
+                <td>
+                  <strong>{sy.label}</strong>
+                  {sy.isActive && <span className="badge badge-success ml-2">Active</span>}
+                </td>
+                <td>
+                  {formatDate(sy.startDate, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </td>
+                <td>
+                  {formatDate(sy.endDate, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </td>
+                <td>
+                  <span className="text-sm">
+                    {GRADING_SYSTEM_LABELS[sy.gradingSystemType ?? "quarterly"]}
+                  </span>
+                </td>
+                <td>
+                  <span className={`badge ${sy.isActive ? "badge-success" : "badge-warning"}`}>
+                    {sy.isActive ? "Active" : "Inactive"}
+                  </span>
+                </td>
+                <td className="text-muted">
+                  {formatDate(sy.createdAt, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </td>
+                <td>
+                  <Link
+                    href={`/staff/school-years/${sy.id}/edit`}
+                    className="table-action-link"
+                    id={`edit-school-year-${sy.id}`}
+                  >
+                    Edit
+                  </Link>
                 </td>
               </tr>
-            ) : (
-              rows.map((sy) => (
-                <tr key={sy.id} className="table-row-hover">
-                  <td>
-                    <strong>{sy.label}</strong>
-                    {sy.isActive && <span className="badge badge-success ml-2">Active</span>}
-                  </td>
-                  <td>
-                    {formatDate(sy.startDate, {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </td>
-                  <td>
-                    {formatDate(sy.endDate, {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </td>
-                  <td>
-                    <span className="text-sm">
-                      {GRADING_SYSTEM_LABELS[sy.gradingSystemType ?? "quarterly"]}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`badge ${sy.isActive ? "badge-success" : "badge-warning"}`}>
-                      {sy.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="text-muted">
-                    {formatDate(sy.createdAt, {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </td>
-                  <td>
-                    <Link
-                      href={`/staff/school-years/${sy.id}/edit`}
-                      className="table-action-link"
-                      id={`edit-school-year-${sy.id}`}
-                    >
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }

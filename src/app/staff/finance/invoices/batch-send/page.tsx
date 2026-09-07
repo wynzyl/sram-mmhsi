@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -6,13 +7,72 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import BatchSendInvoiceForm from "@/features/finance/components/invoices/BatchSendInvoiceForm";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata: Metadata = {
   title: "Batch Send Invoices | SRAMS",
   description: "Send invoices via email to multiple guardians",
 };
 
-export default async function BatchSendInvoicePage() {
+/**
+ * Instant navigation - full batch send skeleton shown while data loads.
+ */
+export default function BatchSendInvoicePage() {
+  return (
+    <Suspense fallback={<BatchSendSkeleton />}>
+      <BatchSendContent />
+    </Suspense>
+  );
+}
+
+function BatchSendSkeleton() {
+  return (
+    <div className="page-container--full space-y-6">
+      <div className="space-y-1">
+        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+
+      <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        <div className="bg-muted border-b border-border px-4 py-3">
+          <Skeleton className="h-5 w-32" />
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Skeleton className="h-4 w-24 mb-1" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div>
+              <Skeleton className="h-4 w-20 mb-1" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+          <div>
+            <Skeleton className="h-4 w-28 mb-2" />
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="pt-2">
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+      </div>
+
+      <Skeleton className="h-3 w-80 mx-auto" />
+    </div>
+  );
+}
+
+async function BatchSendContent() {
   const session = await requireSession();
 
   if (!hasPermission(session.role, "invoices:send")) {

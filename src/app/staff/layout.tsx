@@ -13,6 +13,8 @@ import { PermissionErrorToast } from "@/components/shared/PermissionErrorToast";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import type { Role } from "@/lib/constants/roles";
 
+// Instant navigation enabled - uses Suspense for streaming session validation
+
 // Authenticated layout content - wrapped in Suspense at the page level
 async function StaffLayoutContent({ children }: { children: React.ReactNode }) {
   const session = await requireSession();

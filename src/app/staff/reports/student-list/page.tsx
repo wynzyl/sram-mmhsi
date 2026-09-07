@@ -1,10 +1,14 @@
+import { Suspense } from "react";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getActiveSchoolYear, getSchoolYears } from "@/lib/queries/schoolYears";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { getStudentListReport } from "@/features/reports/student-list-report.queries";
 import { StudentListView } from "@/features/reports/components/StudentListView";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 interface PageProps {
   searchParams: Promise<{
@@ -16,14 +20,60 @@ interface PageProps {
 
 const PAGE_SIZE = 50;
 
-export default async function StudentListReportPage({ searchParams }: PageProps) {
+/**
+ * Instant navigation - full student list report skeleton shown while data loads.
+ */
+export default function StudentListReportPage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<StudentListSkeleton />}>
+      <StudentListContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function StudentListSkeleton() {
+  return (
+    <div className="page-container--full space-y-6">
+      <div className="space-y-1">
+        <Skeleton className="h-9 w-36" />
+        <Skeleton className="h-4 w-56" />
+      </div>
+      <section className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        <div className="bg-muted flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-36" />
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </div>
+        <div className="divide-y divide-border">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3">
+              <Skeleton className="h-4 w-8" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-28 ml-auto" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+async function StudentListContent({ searchParams }: PageProps) {
+  const params = await searchParams;
   const session = await requireSession();
 
   if (!hasPermission(session.role, "reports:view")) {
     redirect("/staff/dashboard");
   }
-
-  const params = await searchParams;
 
   const [schoolYears, gradeLevels, activeYear] = await Promise.all([
     getSchoolYears(),

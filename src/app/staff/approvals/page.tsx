@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { Skeleton } from "@/components/ui/skeleton";
 import VoidRequestsView from "@/features/approvals/VoidRequestsView";
 import DiscountRequestsView from "@/features/approvals/DiscountRequestsView";
 import CancellationRequestsView from "@/features/approvals/CancellationRequestsView";
 import ClearancesView from "@/features/approvals/ClearancesView";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata: Metadata = {
   title: "Approvals",
@@ -27,12 +31,57 @@ type ApprovalsSearchParams = {
 };
 
 /**
- * Approvals hub — a single staff entry point that consolidates the previously
- * separate review queues (void requests, discount requests, enrollment
- * cancellations, clearances) into permission-gated section tabs. Each section
- * renders its existing queue view verbatim; only the sidebar/nav surface changed.
+ * Instant navigation - full approvals hub skeleton shown while data loads.
  */
-export default async function ApprovalsPage({
+export default function ApprovalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<ApprovalsSearchParams>;
+}) {
+  return (
+    <Suspense fallback={<ApprovalsSkeleton />}>
+      <ApprovalsContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function ApprovalsSkeleton() {
+  return (
+    <PageContainer width="full">
+      <div className="space-y-1 mb-6">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+
+      {/* Section tabs skeleton */}
+      <div className="flex flex-wrap gap-1 border-b border-border pb-2">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-8 w-28" />
+        ))}
+      </div>
+
+      {/* Content skeleton */}
+      <div className="mt-6 space-y-4">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <Skeleton className="h-5 w-40 mb-4" />
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-4 w-8" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-20 ml-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </PageContainer>
+  );
+}
+
+async function ApprovalsContent({
   searchParams,
 }: {
   searchParams: Promise<ApprovalsSearchParams>;

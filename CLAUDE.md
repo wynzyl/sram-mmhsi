@@ -44,7 +44,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Critical Business Feature:** Official Receipt (OR) booklet management is a first-class accounting control feature — every payment must consume a serialized OR number from an active booklet.
 
-### Current Delivery Snapshot (2026-07-21)
+### Current Delivery Snapshot (2026-09-07)
 
 **Core Features:**
 
@@ -56,8 +56,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Portal has `/portal/dashboard`; detail pages (`/portal/assessments`, `/portal/payments`, `/portal/grades`) pending.
 - Authentication hardening complete: login rate limiting and forced password-change gate are live.
 - E2E Playwright test suite committed with CI workflow.
+- **Instant Navigation** enabled: `cacheComponents` + `partialPrefetching` in next.config.ts; 22 pages refactored to Suspense pattern for streaming.
 
-**Recent Updates (2026-07-21):**
+**Recent Updates (2026-09-07):**
+
+- ✅ **Instant Navigation Refactoring** — Enabled `partialPrefetching` in next.config.ts; refactored 22 pages to use Suspense pattern for instant navigation (dashboards, school-years, users, fee-schedules, booklets, payments, curriculums, registrations, enrollments, assessments, approvals, archive, documents); updated documentation with new preferred pattern
+
+**Prior Updates (2026-07-21):**
 
 - ✅ **Academics Module Optimization** — Query performance (N+1 fixes, EXISTS filters, pagination), grade completion validation, sequential period locking, AlertDialog accessibility
 - ✅ **Form Pattern Consistency** — Removed redundant inline error displays in favor of `useFormToast` pattern
@@ -324,7 +329,100 @@ The teacher-based `teacherAssignments` + `gradeRecords` system is available but 
 
 ### Common Patterns
 
-**Server Component Pattern (fetching data):**
+**Instant Navigation Pattern (Next.js 16 — Preferred for new pages):**
+
+Pages with session/DB access should use `<Suspense>` to enable instant navigation. The static shell (header, breadcrumbs, layout) renders immediately; dynamic content streams in.
+
+```typescript
+// src/app/staff/school-years/page.tsx
+import { Suspense } from "react";
+import Link from "next/link";
+import { requireSession } from "@/lib/auth/session";
+import { hasPermission } from "@/lib/rbac/permissions";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Instant navigation enabled - uses Suspense for streaming
+// (no `instant = false` export needed)
+
+export default function SchoolYearsPage() {
+  return (
+    <div className="page-container">
+      {/* Static shell - renders immediately */}
+      <div className="page-header">
+        <h1 className="page-title">School Years</h1>
+        <Link href="/staff/school-years/new" className="btn-primary">
+          + Create School Year
+        </Link>
+      </div>
+
+      {/* Dynamic content - streams in via Suspense */}
+      <Suspense fallback={<TableSkeleton />}>
+        <SchoolYearsContent />
+      </Suspense>
+    </div>
+  );
+}
+
+// Skeleton component for loading state
+function TableSkeleton() {
+  return (
+    <div className="table-wrapper">
+      <table className="data-table">
+        <thead>
+          <tr><th>Label</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {[1, 2, 3].map((i) => (
+            <tr key={i}>
+              <td><Skeleton className="h-4 w-24" /></td>
+              <td><Skeleton className="h-4 w-16" /></td>
+              <td><Skeleton className="h-4 w-10" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// Async component with auth + DB access
+async function SchoolYearsContent() {
+  const session = await requireSession();
+  if (!hasPermission(session.role, "school_years:manage")) {
+    redirect("/staff/dashboard");
+  }
+
+  const rows = await db.query.schoolYears.findMany({
+    orderBy: (sy, { desc }) => [desc(sy.startDate)],
+  });
+
+  return (
+    <div className="table-wrapper">
+      {/* Actual table content */}
+    </div>
+  );
+}
+```
+
+**Structure:**
+```
+┌─────────────────────────────────────────────┐
+│ Page Component (sync function)              │ ← Renders instantly
+│ ├── Static header/breadcrumb/buttons        │
+│ └── <Suspense fallback={<Skeleton />}>      │
+│       └── AsyncContentComponent             │ ← Streams in after
+│           ├── requireSession()              │   auth + DB resolve
+│           ├── hasPermission() check         │
+│           ├── DB queries                    │
+│           └── Actual rendered content       │
+└─────────────────────────────────────────────┘
+```
+
+**Server Component Pattern (fetching data) — Legacy:**
+
+For pages that haven't been refactored to Suspense yet, use `instant = false`:
 
 ```typescript
 // src/app/admin/students/page.tsx
@@ -332,6 +430,9 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { students } from "@/lib/db/schema";
+
+// Disable instant navigation - page has session/DB access
+export const instant = false;
 
 export default async function StudentsPage() {
   const session = await requireSession();
@@ -796,6 +897,68 @@ Seeds: students, enrollments, assessments (for testing).
     npm run db:migrate
     ```
     If `generate` fails due to TTY/interactive prompt issues in non-interactive shells, run it in a proper terminal (not through Claude Code or CI). The journal entry is critical — without it, Drizzle considers the schema "up to date" and skips the migration. (Diagnosed 2026-09-02 when `inactive` booklet status migration was created manually but not tracked.)
+15. **Next.js 16 Instant Navigation:** Next.js 16 introduced "instant navigation" with `cacheComponents` and `partialPrefetching` enabled in `next.config.ts`. The **preferred pattern** is to use `<Suspense>` boundaries to enable streaming — the static shell renders instantly while auth + DB content streams in. **Use `instant = false` only as a fallback** for pages where refactoring isn't worth the effort.
+
+    **Preferred: Suspense Pattern (enables instant navigation)**
+    ```typescript
+    // src/app/staff/school-years/page.tsx
+    import { Suspense } from "react";
+    import { Skeleton } from "@/components/ui/skeleton";
+
+    // Static shell - renders immediately during navigation
+    export default function SchoolYearsPage() {
+      return (
+        <div className="page-container">
+          <div className="page-header">
+            <h1 className="page-title">School Years</h1>
+          </div>
+          <Suspense fallback={<TableSkeleton />}>
+            <SchoolYearsContent />
+          </Suspense>
+        </div>
+      );
+    }
+
+    // Auth + DB access inside Suspense - streams in
+    async function SchoolYearsContent() {
+      const session = await requireSession();
+      const data = await db.query.schoolYears.findMany();
+      return <SchoolYearsTable data={data} />;
+    }
+    ```
+
+    **Fallback: Opt-out Pattern (blocks navigation)**
+    ```typescript
+    // Use only when Suspense refactoring isn't practical
+    export const instant = false;
+
+    export default async function SimplePage() {
+      const session = await requireSession();
+      // ...
+    }
+    ```
+
+    **Config requirements** (`next.config.ts`):
+    ```typescript
+    const nextConfig: NextConfig = {
+      cacheComponents: true,
+      partialPrefetching: true,
+    };
+    ```
+
+    16 pages have been refactored to the Suspense pattern:
+    - Dashboards: admin, portal
+    - School years: list, edit
+    - Users: list, detail, edit
+    - Fee schedules: list, new
+    - Booklets: list
+    - Payments: process
+    - Curriculums: clone
+    - Registrations: queue
+    - Enrollments: queue, detail
+    - Assessments: ledger
+
+    Remaining pages use `instant = false` fallback. When creating new pages, prefer the Suspense pattern for better UX. (Refactored 2026-09-07.)
 
 ### Integration Points (Future)
 

@@ -9,6 +9,9 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { getSpedFeeAmount } from "@/features/settings/system-settings.actions";
 import { SpedFeeSettingsForm } from "@/features/settings/components/SpedFeeSettingsForm";
 
+// Disable instant navigation - requires session check
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Billing Setup",
   description: "Configure fee templates, schedules, item types, discounts, and OR booklets.",

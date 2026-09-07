@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import { requireStaffSession } from "@/lib/auth/session";
 import { notFound, redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac/permissions";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getSectionDetails,
   isAdviserForSection,
@@ -22,18 +24,81 @@ import { GradeSheetPublishActions } from "@/features/academics/grades/components
 import { QUARTERLY_PERIODS, TRIMESTER_PERIODS } from "@/lib/constants/grading-periods";
 import { requiresStrandSelection } from "@/lib/constants/strands";
 
+// Instant navigation enabled - uses Suspense for streaming
+
 interface PageProps {
   params: Promise<{ sectionId: string }>;
   searchParams: Promise<{ period?: string }>;
 }
 
-export default async function AdviserGradeEntryPage({
+/**
+ * Instant navigation - full grade entry page skeleton shown while data loads.
+ */
+export default async function AdviserGradeEntryPageWrapper({
   params,
   searchParams,
 }: PageProps) {
-  const session = await requireStaffSession();
   const { sectionId } = await params;
   const { period } = await searchParams;
+
+  return (
+    <Suspense fallback={<GradeEntrySkeleton />}>
+      <AdviserGradeEntryContent sectionId={sectionId} period={period} />
+    </Suspense>
+  );
+}
+
+function GradeEntrySkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+          <Skeleton className="h-4 w-16" />
+          <span>/</span>
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <Skeleton className="h-8 w-64" />
+        <div className="flex items-center gap-2 mt-2">
+          <Skeleton className="h-4 w-24" />
+          <span>|</span>
+          <Skeleton className="h-4 w-20" />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-10 w-20" />
+        ))}
+      </div>
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </div>
+        <div className="divide-y divide-border">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="flex items-center gap-2 px-4 py-3">
+              <Skeleton className="h-4 w-40" />
+              {[1, 2, 3, 4, 5, 6].map((j) => (
+                <Skeleton key={j} className="h-8 w-16" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function AdviserGradeEntryContent({
+  sectionId,
+  period,
+}: {
+  sectionId: string;
+  period?: string;
+}) {
+  const session = await requireStaffSession();
 
   // Verify permission
   if (!hasPermission(session.role, "grades:encode")) {

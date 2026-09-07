@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { desc, ilike, or, and, isNull, eq, sql } from "drizzle-orm";
@@ -8,6 +9,9 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import { ROLE_LABELS, type Role } from "@/lib/constants/roles";
 import { formatDate } from "@/lib/utils/date";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata: Metadata = {
   title: "User Management",
@@ -20,7 +24,67 @@ interface PageProps {
 
 const PAGE_SIZE = 20;
 
-export default async function UsersPage({ searchParams }: PageProps) {
+/**
+ * Instant navigation - full users page skeleton shown while data loads.
+ */
+export default function UsersPage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<UsersPageSkeleton />}>
+      <UsersPageContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function UsersPageSkeleton() {
+  return (
+    <div className="page-container">
+      <div className="page-header">
+        <div>
+          <Skeleton className="h-8 w-44" />
+          <Skeleton className="h-4 w-36 mt-2" />
+        </div>
+        <Skeleton className="h-10 w-32" />
+      </div>
+
+      {/* Search and Filter skeleton */}
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-[var(--shadow-sm)]">
+        <Skeleton className="h-10 flex-1 min-w-[18rem]" />
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-10 w-20" />
+      </div>
+
+      {/* Table skeleton */}
+      <div className="table-wrapper">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Created</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <tr key={i}>
+                <td><Skeleton className="h-4 w-40" /></td>
+                <td><Skeleton className="h-4 w-20" /></td>
+                <td><Skeleton className="h-4 w-16" /></td>
+                <td><Skeleton className="h-4 w-24" /></td>
+                <td><Skeleton className="h-4 w-14" /></td>
+                <td><Skeleton className="h-4 w-10" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+async function UsersPageContent({ searchParams }: PageProps) {
   const session = await requireSession();
   if (!hasPermission(session.role, "users:manage")) redirect("/admin/dashboard");
 
@@ -76,9 +140,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
       <div className="page-header">
         <div>
           <h1 className="page-title">User Management</h1>
-          <p className="page-subtitle">
-            {totalCount.toLocaleString()} user{totalCount !== 1 ? "s" : ""} registered
-          </p>
+          <p className="page-subtitle">Manage user accounts</p>
         </div>
         <Link href="/admin/users/new" className="btn-primary" id="create-user-btn">
           + Create User

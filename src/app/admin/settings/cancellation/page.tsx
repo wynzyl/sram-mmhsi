@@ -1,16 +1,75 @@
+import { Suspense } from "react";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getRefundCutoffSettings, RefundCutoffSettingsForm } from "@/features/settings";
 import { ChevronLeft, Settings } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata = {
   title: "Cancellation Settings | SRAMS",
   description: "Configure enrollment cancellation and refund settings",
 };
 
-export default async function CancellationSettingsPage() {
+/**
+ * Instant navigation - full settings form skeleton shown while data loads.
+ */
+export default function CancellationSettingsPage() {
+  return (
+    <Suspense fallback={<CancellationSettingsSkeleton />}>
+      <CancellationSettingsContent />
+    </Suspense>
+  );
+}
+
+function CancellationSettingsSkeleton() {
+  return (
+    <div className="px-8 py-6 max-w-[800px] mx-auto flex flex-col gap-6">
+      {/* Back link */}
+      <Skeleton className="h-5 w-48" />
+
+      {/* Header */}
+      <div>
+        <Skeleton className="h-3 w-36 mb-1" />
+        <Skeleton className="h-7 w-52" />
+        <Skeleton className="h-4 w-80 mt-1" />
+      </div>
+
+      {/* Settings Form */}
+      <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+        <Skeleton className="h-5 w-40" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Skeleton className="h-4 w-32 mb-1" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div>
+            <Skeleton className="h-4 w-28 mb-1" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <div className="pt-2">
+          <Skeleton className="h-10 w-32" />
+        </div>
+      </div>
+
+      {/* Additional Info */}
+      <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+        <Skeleton className="h-5 w-36" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+    </div>
+  );
+}
+
+async function CancellationSettingsContent() {
   const session = await requireSession();
 
   // Only admins can access system settings

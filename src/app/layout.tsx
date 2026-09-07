@@ -5,6 +5,8 @@ import { RootProviders } from "@/components/providers/RootProviders";
 import { COLOR_THEMES } from "@/lib/constants/color-themes";
 import "./globals.css";
 
+// Instant navigation enabled globally - individual pages use Suspense for streaming
+
 const crimsonPro = localFont({
   variable: "--font-crimson",
   display: "swap",

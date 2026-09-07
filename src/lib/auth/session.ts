@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { cookies, headers } from "next/headers";
+import { connection } from "next/server";
 import { db } from "@/lib/db";
 import { sessions, users, portalAccounts, students } from "@/lib/db/schema";
 import { eq, and, gt, isNull } from "drizzle-orm";
@@ -202,6 +203,11 @@ export async function createPortalSession(
 // without dedup that is two sequential sessions-table queries (plus a
 // duplicate UA/IP binding check) on every server render.
 export const getCurrentSession = cache(async (): Promise<SessionPayload | null> => {
+  // Signal dynamic data access to Next.js 16+ before any JWT verification.
+  // Without this, instant navigation attempts may fail because jwtVerify()
+  // doesn't call connection() internally.
+  await connection();
+
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TablePagination } from "@/components/ui/TablePagination";
 import {
   fetchArchivedStudentsPage,
@@ -19,6 +21,8 @@ import {
 } from "@/features/archive/components";
 import type { StudentStatus } from "@/lib/constants/student-status";
 
+// Instant navigation enabled - uses Suspense for streaming
+
 export const metadata: Metadata = {
   title: "Archive Directory",
   description: "View and manage archived students.",
@@ -33,7 +37,60 @@ interface PageProps {
   }>;
 }
 
-export default async function ArchiveDirectoryPage({ searchParams }: PageProps) {
+/**
+ * Instant navigation - full archive directory skeleton shown while data loads.
+ */
+export default function ArchiveDirectoryPage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<ArchiveDirectorySkeleton />}>
+      <ArchiveDirectoryContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function ArchiveDirectorySkeleton() {
+  return (
+    <div className="page-container--full space-y-6">
+      {/* Header */}
+      <div className="space-y-1">
+        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+
+      {/* Card */}
+      <section className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        {/* Card header with filters */}
+        <div className="bg-muted flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+            <Skeleton className="h-5 w-24 rounded-full" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </div>
+
+        {/* Table rows */}
+        <div className="divide-y divide-border">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-16 ml-auto" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+async function ArchiveDirectoryContent({ searchParams }: PageProps) {
   const session = await requireSession();
 
   // Permission check

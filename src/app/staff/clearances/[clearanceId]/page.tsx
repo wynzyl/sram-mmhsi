@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -11,6 +12,7 @@ import { formatDate, formatDateTime } from "@/lib/utils/date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CLEARANCE_TYPE_LABELS,
   RESOLUTION_TYPE_LABELS,
@@ -19,13 +21,93 @@ import {
 } from "@/features/clearances/clearances.schema";
 import { ArrowLeft, CheckCircle, User, Calendar, FileText, Lock } from "lucide-react";
 
+// Instant navigation enabled - uses Suspense for streaming
+
 export const metadata: Metadata = { title: "Clearance Details" };
 
 interface PageProps {
   params: Promise<{ clearanceId: string }>;
 }
 
-export default async function StaffClearanceDetailPage({ params }: PageProps) {
+/**
+ * Instant navigation - full clearance detail skeleton shown while data loads.
+ */
+export default function StaffClearanceDetailPageWrapper({ params }: PageProps) {
+  return (
+    <Suspense fallback={<ClearanceDetailSkeleton />}>
+      <ClearanceDetailContent params={params} />
+    </Suspense>
+  );
+}
+
+function ClearanceDetailSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <header className="flex items-center gap-4">
+        <Skeleton className="h-9 w-28" />
+      </header>
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-4 w-48 mt-1" />
+            </div>
+            <Skeleton className="h-6 w-20 rounded-full" />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Skeleton className="h-3 w-16 mb-1" />
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-3 w-24 mt-1" />
+            </div>
+            <div>
+              <Skeleton className="h-3 w-20 mb-1" />
+              <Skeleton className="h-5 w-28" />
+            </div>
+          </div>
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-2">
+                <Skeleton className="h-4 w-4 mt-0.5" />
+                <div>
+                  <Skeleton className="h-3 w-40 mb-1" />
+                  <Skeleton className="h-8 w-28" />
+                </div>
+              </div>
+              <div className="text-right">
+                <Skeleton className="h-3 w-16 mb-1" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-3">
+          <Skeleton className="h-5 w-36" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-start gap-2">
+                <Skeleton className="h-4 w-4 mt-0.5" />
+                <div>
+                  <Skeleton className="h-3 w-24 mb-1" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+async function ClearanceDetailContent({ params }: PageProps) {
   const session = await requireSession();
 
   // Check read permission - redirect with error if missing

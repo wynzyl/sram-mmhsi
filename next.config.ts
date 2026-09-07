@@ -40,6 +40,8 @@ const nextConfig: NextConfig = {
   output: 'standalone',
 
   cacheComponents: true,
+  // Enable partial prefetching for instant navigation App Shell
+  partialPrefetching: true,
   // Exclude @react-pdf/renderer from bundling (has native dependencies)
   serverExternalPackages: ["@react-pdf/renderer"],
   cacheLife: {

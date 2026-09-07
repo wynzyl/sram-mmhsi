@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { requirePortalSession, getPortalUser } from "@/lib/auth/session";
 import { getPortalDashboardSummary } from "@/features/portal/portal.queries";
@@ -10,10 +11,62 @@ import {
   PortalMetric,
   PortalMetricGroup,
 } from "@/features/portal/components";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata = { title: "Dashboard" };
 
-export default async function PortalDashboardPage() {
+// Instant navigation enabled - uses Suspense for streaming
+
+/**
+ * Instant navigation - full portal dashboard skeleton shown while data loads.
+ */
+export default function PortalDashboardPage() {
+  return (
+    <Suspense fallback={<PortalDashboardSkeleton />}>
+      <PortalDashboardContent />
+    </Suspense>
+  );
+}
+
+function PortalDashboardSkeleton() {
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header skeleton */}
+      <div className="space-y-1">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+
+      {/* Balance and grades cards */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-10 w-40" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <Skeleton className="h-5 w-36" />
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+      </div>
+
+      {/* Metrics row */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-6 w-24" />
+        </div>
+        <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-6 w-20" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function PortalDashboardContent() {
   const session = await requirePortalSession();
 
   const [user, summary] = await Promise.all([

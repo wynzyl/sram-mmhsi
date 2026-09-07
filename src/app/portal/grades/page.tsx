@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { requirePortalSession } from "@/lib/auth/session";
 import {
@@ -8,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import { calculatePagination } from "@/lib/types/pagination";
 import {
   GRADING_PERIOD_LABELS,
@@ -21,6 +23,8 @@ import {
   PORTAL_GRADE_BANDS,
   gradeRemarkInk,
 } from "@/features/portal/components";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata = { title: "My Grades" };
 
@@ -64,7 +68,66 @@ function GradingScaleLegend() {
   );
 }
 
-export default async function PortalGradesPage({ searchParams }: PageProps) {
+/**
+ * Instant navigation - full grades skeleton shown while data loads.
+ */
+export default function PortalGradesPageWrapper({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<GradesSkeleton />}>
+      <PortalGradesContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+function GradesSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-4 sm:px-6 sm:py-6">
+      <div className="space-y-1">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-4 w-56" />
+      </div>
+
+      {/* Grade section */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <div>
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-3 w-40 mt-1" />
+          </div>
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+        {/* Grade table */}
+        <div className="overflow-x-auto">
+          <div className="min-w-full">
+            <div className="bg-muted/50 flex border-b border-border">
+              <Skeleton className="h-4 w-16 m-3" />
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="h-4 w-12 m-3" />
+              ))}
+            </div>
+            {[1, 2, 3, 4].map((row) => (
+              <div key={row} className="flex border-b border-border">
+                <Skeleton className="h-4 w-20 m-3" />
+                {[1, 2, 3, 4, 5, 6].map((col) => (
+                  <Skeleton key={col} className="h-5 w-10 m-3" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="px-6 py-3 border-t border-border">
+          <div className="flex gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-3 w-24" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function PortalGradesContent({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
 

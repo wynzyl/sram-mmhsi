@@ -15,18 +15,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { InlineConfirmButton } from "@/components/shared/ConfirmActionButton";
 import { deactivateFeeScheduleAction } from "@/features/finance/fee-templates/fee-templates.actions";
 
+// Instant navigation enabled - already uses Suspense for streaming
+
 export const metadata: Metadata = {
   title: "Fee Schedules",
   description: "Manage fee schedule assignments per school year.",
 };
 
-export default async function StaffFeeSchedulesPage() {
-  const session = await requireSession();
-
-  if (!hasPermission(session.role, "fee_schedules:manage")) {
-    redirect("/staff/dashboard");
-  }
-
+/**
+ * Static shell - header renders immediately.
+ * Auth check moved into Suspense boundary for streaming.
+ */
+export default function StaffFeeSchedulesPage() {
   return (
     <div className="px-8 py-6 max-w-[1200px] mx-auto">
       {/* Page header */}
@@ -74,6 +74,12 @@ export default async function StaffFeeSchedulesPage() {
 }
 
 async function FeeSchedulesByYear() {
+  // Auth check inside Suspense boundary
+  const session = await requireSession();
+  if (!hasPermission(session.role, "fee_schedules:manage")) {
+    redirect("/staff/dashboard");
+  }
+
   const allSchoolYears = await db.query.schoolYears.findMany({
     where: isNull(schoolYears.deletedAt),
     orderBy: [desc(schoolYears.startDate)],

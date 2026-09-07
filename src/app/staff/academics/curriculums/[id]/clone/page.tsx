@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -9,13 +10,76 @@ import { CloneCurriculumForm } from "@/features/academics/curriculums/components
 import { db } from "@/lib/db";
 import { curriculums } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+/**
+ * Static shell - breadcrumb and header render immediately.
+ */
 export default async function CloneCurriculumPage({ params }: PageProps) {
   const { id } = await params;
+
+  return (
+    <div className="p-6 max-w-2xl mx-auto">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+        <Link href="/staff/academics/curriculums" className="hover:text-primary">
+          Curriculums
+        </Link>
+        <span>/</span>
+        <span className="text-foreground">Clone to Draft</span>
+      </nav>
+
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight">Clone Curriculum</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Create a new draft version based on an existing curriculum. All subjects will be copied.
+        </p>
+      </div>
+
+      <Suspense fallback={<CloneFormSkeleton />}>
+        <CloneCurriculumContent id={id} />
+      </Suspense>
+    </div>
+  );
+}
+
+function CloneFormSkeleton() {
+  return (
+    <>
+      {/* Source Curriculum Info skeleton */}
+      <div className="bg-muted/30 border border-border rounded-lg p-4 mb-6">
+        <Skeleton className="h-4 w-32 mb-2" />
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-5 w-16" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+        <div className="mt-3 flex items-center gap-4">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+
+      {/* Form skeleton */}
+      <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <Skeleton className="h-10 w-32" />
+      </div>
+    </>
+  );
+}
+
+async function CloneCurriculumContent({ id }: { id: string }) {
   const session = await requireSession();
 
   if (!hasPermission(session.role, "curriculums:edit")) {
@@ -68,31 +132,7 @@ export default async function CloneCurriculumPage({ params }: PageProps) {
     .sort((a, b) => a.gradeLevelName.localeCompare(b.gradeLevelName));
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/staff/academics/curriculums" className="hover:text-primary">
-          Curriculums
-        </Link>
-        <span>/</span>
-        <Link
-          href={`/staff/academics/curriculums/${id}`}
-          className="hover:text-primary"
-        >
-          {curriculum.name}
-        </Link>
-        <span>/</span>
-        <span className="text-foreground">Clone to Draft</span>
-      </nav>
-
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Clone Curriculum</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Create a new draft version based on an existing curriculum. All subjects will be copied.
-        </p>
-      </div>
-
+    <>
       {/* Source Curriculum Info */}
       <div className="bg-muted/30 border border-border rounded-lg p-4 mb-6">
         <p className="text-sm text-muted-foreground mb-2">Source Curriculum</p>
@@ -123,6 +163,6 @@ export default async function CloneCurriculumPage({ params }: PageProps) {
           gradeLevelSummary={gradeLevelSummary}
         />
       </div>
-    </div>
+    </>
   );
 }

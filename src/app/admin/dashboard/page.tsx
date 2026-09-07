@@ -5,6 +5,9 @@ import { getAdminDashboardMetrics } from "@/lib/queries/admin-dashboard";
 import { formatCurrency } from "@/lib/utils/currency";
 import { StatCard } from "@/components/ui/stat-card";
 import { FinanceInsightsSection } from "@/components/dashboard/FinanceInsightsSection";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Instant navigation enabled - uses Suspense for streaming
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -41,7 +44,65 @@ const QUICK_ACTIONS = [
   },
 ] as const;
 
-export default async function AdminDashboardPage() {
+/**
+ * Instant navigation - full dashboard skeleton shown while metrics load.
+ */
+export default function AdminDashboardPage() {
+  return (
+    <Suspense fallback={<AdminDashboardSkeleton />}>
+      <AdminDashboardContent />
+    </Suspense>
+  );
+}
+
+function AdminDashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <header className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="mt-1 h-4 w-64" />
+        </div>
+      </header>
+
+      {/* Stat cards grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-5 space-y-3">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-3 w-40" />
+          </div>
+        ))}
+      </div>
+
+      {/* Finance insights placeholder */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="h-64 rounded-xl border border-border bg-card animate-pulse" />
+        <div className="h-64 rounded-xl border border-border bg-card animate-pulse" />
+      </div>
+
+      {/* Bottom cards */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <Skeleton className="h-4 w-28" />
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function AdminDashboardContent() {
   const metrics = await getAdminDashboardMetrics();
 
   if (!metrics.activeSchoolYear) {
