@@ -477,7 +477,7 @@ export default function DiscountRequestsTable({
         </div>
       )}
 
-      <DataTable columns={columns} data={requests} searchable={false} />
+      <DataTable columns={columns} data={requests} searchable={false} enablePagination={false} />
     </div>
   );
 }
