@@ -6,6 +6,7 @@
  */
 
 import type { CurriculumStatus } from "./curriculums.schema";
+import type { TermOffering } from "@/lib/constants/term-offerings";
 
 export type CurriculumListRow = {
   id: string;
@@ -47,6 +48,8 @@ export type SubjectListRow = {
   description: string | null;
   gradeLevelId: string | null;
   gradeLevelName: string | null;
+  strandId: string | null;
+  termOffered: TermOffering;
   units: string;
   sequenceOrder: number;
   isCore: boolean;

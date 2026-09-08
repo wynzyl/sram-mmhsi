@@ -259,11 +259,11 @@ export function SubjectFormDialog({
                 <select
                   id="strandId"
                   name="strandId"
-                  value={selectedTrackId}
-                  onChange={(e) => setSelectedTrackId(e.target.value)}
+                  value={selectedTrackId || CLEAR_STRAND_ID}
+                  onChange={(e) => setSelectedTrackId(e.target.value === CLEAR_STRAND_ID ? "" : e.target.value)}
                   className={inputClass}
                 >
-                  <option value="">All Tracks (Core)</option>
+                  <option value={CLEAR_STRAND_ID}>All Tracks (Core)</option>
                   {availableStrands.map((strand) => (
                     <option key={strand.id} value={strand.id}>
                       {strand.shortCode} - {strand.name}
