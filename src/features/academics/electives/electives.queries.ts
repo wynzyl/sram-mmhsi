@@ -51,7 +51,7 @@ export async function getElectiveSubjects(
     conditions.push(eq(subjects.gradeLevelId, gradeLevelId));
   }
 
-  // Phase 1: Get elective subjects
+  // Phase 1: Get elective subjects (including direct strandId for new ownership model)
   const subjectRows = await db
     .select({
       id: subjects.id,
@@ -62,6 +62,8 @@ export async function getElectiveSubjects(
       curriculumName: curriculums.name,
       gradeLevelId: subjects.gradeLevelId,
       gradeLevelName: gradeLevels.name,
+      // Direct track ownership (new model)
+      strandId: subjects.strandId,
     })
     .from(subjects)
     .innerJoin(curriculums, eq(subjects.curriculumId, curriculums.id))
@@ -75,33 +77,120 @@ export async function getElectiveSubjects(
 
   const subjectIds = subjectRows.map((s) => s.id);
 
-  // Phase 2: Get strand associations (needed to filter by strandId)
-  const strandAssociations = await db
-    .select({
-      subjectId: subjectStrands.subjectId,
-      strandId: subjectStrands.strandId,
-      strandCode: strands.code,
-      strandName: strands.name,
-      isStrandCore: subjectStrands.isStrandCore,
-    })
-    .from(subjectStrands)
-    .innerJoin(strands, eq(subjectStrands.strandId, strands.id))
-    .where(
-      and(
-        inArray(subjectStrands.subjectId, subjectIds),
-        isNull(subjectStrands.deletedAt),
-        isNull(strands.deletedAt)
+  // Phase 2: Get strand associations from BOTH sources:
+  // - Direct ownership: subjects.strandId (new model)
+  // - Legacy junction table: subjectStrands (deprecated)
+
+  // Get direct strand IDs from subjects
+  const directStrandIds = subjectRows
+    .map((s) => s.strandId)
+    .filter((id): id is string => id !== null);
+
+  // Fetch strand details for direct ownership and junction table associations in parallel
+  const [directStrandDetails, legacyStrandAssociations] = await Promise.all([
+    // Direct ownership strand details
+    directStrandIds.length > 0
+      ? db
+          .select({
+            id: strands.id,
+            code: strands.code,
+            name: strands.name,
+          })
+          .from(strands)
+          .where(
+            and(
+              inArray(strands.id, directStrandIds),
+              isNull(strands.deletedAt)
+            )
+          )
+      : Promise.resolve([]),
+
+    // Legacy junction table associations
+    db
+      .select({
+        subjectId: subjectStrands.subjectId,
+        strandId: subjectStrands.strandId,
+        strandCode: strands.code,
+        strandName: strands.name,
+        isStrandCore: subjectStrands.isStrandCore,
+      })
+      .from(subjectStrands)
+      .innerJoin(strands, eq(subjectStrands.strandId, strands.id))
+      .where(
+        and(
+          inArray(subjectStrands.subjectId, subjectIds),
+          isNull(subjectStrands.deletedAt),
+          isNull(strands.deletedAt)
+        )
       )
-    )
-    .orderBy(asc(strands.displayOrder));
+      .orderBy(asc(strands.displayOrder)),
+  ]);
+
+  // Build direct strand lookup map
+  const directStrandMap = new Map(
+    directStrandDetails.map((s) => [s.id, { code: s.code, name: s.name }])
+  );
+
+  // Build combined strand associations including direct ownership
+  type StrandAssocRow = {
+    subjectId: string;
+    strandId: string;
+    strandCode: string;
+    strandName: string;
+    isStrandCore: boolean;
+  };
+
+  const strandAssociations: StrandAssocRow[] = [];
+
+  // Add direct ownership associations first
+  for (const subject of subjectRows) {
+    if (subject.strandId) {
+      const strandInfo = directStrandMap.get(subject.strandId);
+      if (strandInfo) {
+        strandAssociations.push({
+          subjectId: subject.id,
+          strandId: subject.strandId,
+          strandCode: strandInfo.code,
+          strandName: strandInfo.name,
+          isStrandCore: false, // Direct ownership doesn't have this flag
+        });
+      }
+    }
+  }
+
+  // Add legacy associations (avoiding duplicates)
+  const existingPairs = new Set(
+    strandAssociations.map((a) => `${a.subjectId}:${a.strandId}`)
+  );
+  for (const assoc of legacyStrandAssociations) {
+    const key = `${assoc.subjectId}:${assoc.strandId}`;
+    if (!existingPairs.has(key)) {
+      strandAssociations.push(assoc);
+      existingPairs.add(key);
+    }
+  }
 
   // Compute filtered subject IDs based on strand filter
   let filteredSubjectIds = new Set(subjectIds);
   if (strandId) {
-    const matchingSubjectIds = strandAssociations
-      .filter((a) => a.strandId === strandId)
-      .map((a) => a.subjectId);
-    filteredSubjectIds = new Set(matchingSubjectIds);
+    // Include subjects with direct strandId match OR junction table match
+    const matchingSubjectIds = new Set<string>();
+
+    // Check direct ownership
+    for (const subject of subjectRows) {
+      if (subject.strandId === strandId) {
+        matchingSubjectIds.add(subject.id);
+      }
+    }
+
+    // Check junction table associations
+    for (const assoc of strandAssociations) {
+      if (assoc.strandId === strandId) {
+        matchingSubjectIds.add(assoc.subjectId);
+      }
+    }
+
+    filteredSubjectIds = matchingSubjectIds;
   }
 
   // Early return if no subjects match the strand filter
