@@ -214,6 +214,8 @@ export async function getSubjectsForOfferingGeneration(
 
 /**
  * Get teachers available for assignment.
+ * Includes both "teacher" and "coordinator" roles since coordinators
+ * can also encode and submit grades when assigned to subjects.
  */
 export async function getTeachersForAssignment(): Promise<TeacherOption[]> {
   const rows = await db
@@ -225,7 +227,7 @@ export async function getTeachersForAssignment(): Promise<TeacherOption[]> {
     .from(users)
     .where(
       and(
-        eq(users.role, "teacher"),
+        inArray(users.role, ["teacher", "coordinator"]),
         eq(users.isActive, true),
         isNull(users.deletedAt)
       )

@@ -2,7 +2,7 @@ import "server-only";
 
 import { db } from "@/lib/db";
 import { users, roleEnum } from "@/lib/db/schema";
-import { eq, and, isNull, asc } from "drizzle-orm";
+import { eq, and, isNull, asc, inArray } from "drizzle-orm";
 
 /**
  * User role type derived from the roleEnum.
@@ -65,10 +65,27 @@ export async function getAvailableUsersByRole(
 
 /**
  * Get available teachers for adviser assignment.
- * Convenience wrapper around getAvailableUsersByRole.
+ * Includes both "teacher" and "coordinator" roles since coordinators
+ * can also encode and submit grades when assigned as advisers.
  */
 export async function getAvailableTeachers(): Promise<UserOption[]> {
-  return getAvailableUsersByRole("teacher");
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.username,
+      email: users.email,
+    })
+    .from(users)
+    .where(
+      and(
+        inArray(users.role, ["teacher", "coordinator"]),
+        eq(users.isActive, true),
+        isNull(users.deletedAt)
+      )
+    )
+    .orderBy(asc(users.username));
+
+  return rows;
 }
 
 /**

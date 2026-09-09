@@ -260,7 +260,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   coordinator: [
     "students:read",
     "curriculums:read",
-    "grades:read",
+    "grades:read", "grades:encode", "grades:submit",
     "advisers:read", "advisers:manage",
     "sections:manage", "sections:assign",
     "strands:read",

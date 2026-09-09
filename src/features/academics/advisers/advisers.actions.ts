@@ -99,9 +99,9 @@ export async function assignAdviserAction(
     };
   }
 
-  if (user.role !== "teacher") {
+  if (user.role !== "teacher" && user.role !== "coordinator") {
     return {
-      message: "Only teachers can be assigned as advisers.",
+      message: "Only teachers or coordinators can be assigned as advisers.",
     };
   }
 
