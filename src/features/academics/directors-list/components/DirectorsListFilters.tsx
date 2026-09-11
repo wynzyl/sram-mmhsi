@@ -75,14 +75,8 @@ export function DirectorsListFilters({
   const [gradeLevelId, setGradeLevelId] = useState(defaults.gradeLevelId ?? "");
   const [sectionId, setSectionId] = useState(defaults.sectionId ?? "");
 
-  // Filter sections by selected grade level
-  const filteredSections = gradeLevelId
-    ? sections.filter((s) => {
-        // This requires section data to include gradeLevelId
-        // For now, show all sections if not filtered
-        return true;
-      })
-    : sections;
+  // TODO: Filter sections by gradeLevelId when section data includes it
+  const filteredSections = sections;
 
   const applyFilters = useCallback(() => {
     startTransition(() => {

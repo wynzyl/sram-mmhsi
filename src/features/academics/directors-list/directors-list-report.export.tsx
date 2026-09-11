@@ -18,6 +18,19 @@ import type { DirectorsListEntry, DirectorsListReportMeta } from "./directors-li
 const REPORT_TITLE = "Director's List";
 const SHEET_NAME = "Directors List";
 
+/**
+ * Calculate group counts for summary statistics.
+ */
+function getGroupCounts(rows: DirectorsListEntry[]) {
+  return {
+    elemCount: rows.filter((r) =>
+      ["casa", "lower_elem", "higher_elem"].includes(r.gradeGroup)
+    ).length,
+    jhsCount: rows.filter((r) => r.gradeGroup === "jhs").length,
+    shsCount: rows.filter((r) => r.gradeGroup === "shs").length,
+  };
+}
+
 function buildSubtitle(meta: DirectorsListReportMeta): string {
   const parts = [
     `School Year ${meta.schoolYearLabel}`,
@@ -89,12 +102,7 @@ export function DirectorsListPdfDocument({
   meta: DirectorsListReportMeta;
   generatedAt: Date;
 }): ReactElement<DocumentProps> {
-  // Group counts for summary
-  const elemCount = rows.filter((r) =>
-    ["casa", "lower_elem", "higher_elem"].includes(r.gradeGroup)
-  ).length;
-  const jhsCount = rows.filter((r) => r.gradeGroup === "jhs").length;
-  const shsCount = rows.filter((r) => r.gradeGroup === "shs").length;
+  const { elemCount, jhsCount, shsCount } = getGroupCounts(rows);
 
   return (
     <TabularReportDocument
@@ -135,12 +143,7 @@ export function buildDirectorsListXlsx(
   rows: DirectorsListEntry[],
   meta: DirectorsListReportMeta
 ): Promise<Buffer> {
-  // Group counts for summary
-  const elemCount = rows.filter((r) =>
-    ["casa", "lower_elem", "higher_elem"].includes(r.gradeGroup)
-  ).length;
-  const jhsCount = rows.filter((r) => r.gradeGroup === "jhs").length;
-  const shsCount = rows.filter((r) => r.gradeGroup === "shs").length;
+  const { elemCount, jhsCount, shsCount } = getGroupCounts(rows);
 
   return buildReportWorkbook({
     sheetName: SHEET_NAME,
