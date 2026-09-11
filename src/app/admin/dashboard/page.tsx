@@ -6,6 +6,12 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { StatCard } from "@/components/ui/stat-card";
 import { FinanceInsightsSection } from "@/components/dashboard/FinanceInsightsSection";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  TopPerformersCard,
+  TopPerformersCardSkeleton,
+} from "@/features/academics/directors-list/components";
+import { getTopPerformers, getAvailableGradingPeriods } from "@/features/academics/directors-list/directors-list.queries";
+import { GRADING_PERIOD_LABELS, type GradingPeriod } from "@/lib/constants/grading-periods";
 
 // Instant navigation enabled - uses Suspense for streaming
 
@@ -205,6 +211,14 @@ async function AdminDashboardContent() {
         <FinanceInsightsSection schoolYearId={metrics.activeSchoolYear.id} />
       </Suspense>
 
+      {/* Top Performers Section */}
+      <Suspense fallback={<TopPerformersCardSkeleton />}>
+        <TopPerformersSection
+          schoolYearId={metrics.activeSchoolYear.id}
+          schoolYearLabel={metrics.activeSchoolYear.label}
+        />
+      </Suspense>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <section className="rounded-xl border border-border bg-card p-5">
           <h2 className="mb-3 text-sm font-semibold text-foreground">
@@ -233,5 +247,32 @@ async function AdminDashboardContent() {
         </section>
       </div>
     </div>
+  );
+}
+
+/**
+ * Top Performers Section - shows Director's List top 5.
+ */
+async function TopPerformersSection({
+  schoolYearId,
+  schoolYearLabel,
+}: {
+  schoolYearId: string;
+  schoolYearLabel: string;
+}) {
+  // Get available grading periods and default to first one
+  const periods = await getAvailableGradingPeriods(schoolYearId);
+  const currentPeriod = periods[0]?.value || "Q1";
+  const periodLabel = GRADING_PERIOD_LABELS[currentPeriod as GradingPeriod] || currentPeriod;
+
+  // Fetch top performers
+  const topPerformers = await getTopPerformers(schoolYearId, currentPeriod, 5);
+
+  return (
+    <TopPerformersCard
+      performers={topPerformers}
+      schoolYearLabel={schoolYearLabel}
+      gradingPeriodLabel={periodLabel}
+    />
   );
 }

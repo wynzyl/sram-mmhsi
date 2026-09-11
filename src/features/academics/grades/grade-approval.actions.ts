@@ -33,6 +33,7 @@ import {
   isForeignKeyViolationError,
 } from "@/lib/utils/pg-error";
 import { PERMISSION_ERRORS } from "@/lib/constants/error-messages";
+import { invalidateTag, CACHE_TAGS } from "@/lib/cache/cache-tags";
 
 // ─── Error Handling Helpers ─────────────────────────────────────────────────
 
@@ -341,6 +342,9 @@ export async function publishGradesAction(
       targetId: gradeSheetId,
     });
 
+    // Invalidate Director's List cache when grades are published
+    invalidateTag(CACHE_TAGS.DIRECTORS_LIST);
+
     return { success: true, message: "Grades published to student portal." };
   } catch (error) {
     if (error instanceof ConcurrentTransitionError) {
@@ -437,6 +441,9 @@ export async function lockGradesAction(
       targetEntity: "grade_sheets",
       targetId: gradeSheetId,
     });
+
+    // Invalidate Director's List cache when grades are locked
+    invalidateTag(CACHE_TAGS.DIRECTORS_LIST);
 
     return { success: true, message: "Grades locked." };
   } catch (error) {

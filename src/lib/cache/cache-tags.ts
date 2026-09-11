@@ -79,6 +79,9 @@ export const CACHE_TAGS = {
 
   /** Student subject enrollments (student-subject enrollment records) */
   STUDENT_SUBJECT_ENROLLMENTS: "student-subject-enrollments",
+
+  /** Director's List (invalidated when grades are published/locked) */
+  DIRECTORS_LIST: "directors-list",
 } as const;
 
 export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];
