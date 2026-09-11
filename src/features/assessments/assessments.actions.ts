@@ -1312,16 +1312,13 @@ export async function removeSpecialFeeAction(
     throw error;
   }
 
-  // Check for payments allocated to this item
-  // Payment allocations link payments to specific assessment items
-  const allocatedPayments = await db.query.paymentAllocations.findFirst({
-    where: eq(paymentAllocations.assessmentItemId, assessmentItemId),
-  });
-
-  if (allocatedPayments) {
+  // Block removal if any payments exist on this assessment
+  // This prevents fee manipulation after payments have been made (even lump-sum payments
+  // that are not allocated to specific items)
+  if (Number(assessment.totalPaid) > 0) {
     return {
       message:
-        "Cannot remove: payments have already been allocated to this fee. Void the payments first.",
+        "Cannot remove: payments have been made on this assessment. Void all payments first before removing fees.",
     };
   }
 

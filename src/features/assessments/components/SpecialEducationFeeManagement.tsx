@@ -26,8 +26,8 @@ interface SpecialEducationFeeManagementProps {
     id: string;
     amount: string;
   } | null;
-  /** Whether any payments have been allocated to the SPED fee item */
-  hasAllocatedPayments: boolean;
+  /** Whether any payments have been made on this assessment */
+  hasPayments: boolean;
   /** Whether user has permission to modify assessments */
   canModify: boolean;
   /** Whether the assessment is cancelled or fully paid */
@@ -41,7 +41,7 @@ interface SpecialEducationFeeManagementProps {
 export default function SpecialEducationFeeManagement({
   assessmentId,
   existingSpedItem,
-  hasAllocatedPayments,
+  hasPayments,
   canModify,
   isLocked,
   defaultSpedFeeAmount,
@@ -97,8 +97,8 @@ export default function SpecialEducationFeeManagement({
         <DialogTrigger asChild>
           <button
             type="button"
-            disabled={hasAllocatedPayments}
-            title={hasAllocatedPayments ? "Cannot remove: payments have been allocated" : "Remove SPED fee"}
+            disabled={hasPayments}
+            title={hasPayments ? "Cannot remove: payments have been made on this assessment" : "Remove SPED fee"}
             className="inline-flex items-center justify-center gap-[0.45rem] h-[38px] min-w-[140px] px-4 bg-info/10 text-info text-[13px] font-semibold tracking-[0.005em] border border-info/30 rounded-md cursor-pointer transition-colors hover:bg-info/20 active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-info focus-visible:outline-offset-2"
           >
             <span className="inline-flex h-2 w-2 rounded-full bg-info" />

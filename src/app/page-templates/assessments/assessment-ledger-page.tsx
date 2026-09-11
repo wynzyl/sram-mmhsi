@@ -9,7 +9,6 @@ import {
   users,
   feeItemTypes,
   enrollments,
-  paymentAllocations,
 } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { requireStaffSession } from "@/lib/auth/session";
@@ -180,18 +179,14 @@ export async function InternalAssessmentLedgerPage(props: {
   const defaultBookletId = cashierDefaultBookletId;
   const manualSuggestions = suggestions;
 
-  // Find existing SPED fee item and check for allocated payments
+  // Find existing SPED fee item
   const existingSpedItem = spedFeeType
     ? items.find((item) => item.feeItemTypeId === spedFeeType.id)
     : null;
 
-  let hasSpedAllocatedPayments = false;
-  if (existingSpedItem) {
-    const spedAllocation = await db.query.paymentAllocations.findFirst({
-      where: eq(paymentAllocations.assessmentItemId, existingSpedItem.id),
-    });
-    hasSpedAllocatedPayments = !!spedAllocation;
-  }
+  // Check if any payments have been made on this assessment
+  // We block SPED fee removal if any payments exist (not just allocated payments)
+  const hasPayments = Number(assessment.totalPaid) > 0;
 
   // Permission to modify assessments (add/remove SPED fee)
   const canModifyAssessment = hasPermission(session.role, "assessments:update") && !isStudentArchived;
@@ -240,7 +235,7 @@ export async function InternalAssessmentLedgerPage(props: {
                 ? { id: existingSpedItem.id, amount: existingSpedItem.amount }
                 : null
             }
-            hasAllocatedPayments={hasSpedAllocatedPayments}
+            hasPayments={hasPayments}
             canModify={canModifyAssessment}
             isLocked={isAssessmentLocked}
             defaultSpedFeeAmount={defaultSpedFeeAmount}
