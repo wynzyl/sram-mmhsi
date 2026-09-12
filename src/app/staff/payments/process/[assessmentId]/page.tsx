@@ -38,18 +38,21 @@ const dateLabel = (d: Date) =>
   formatDate(d, { year: "numeric", month: "short", day: "numeric" });
 
 /**
- * Static shell - page wrapper renders immediately.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function CashierProcessPaymentPage({ params }: PageProps) {
-  const { assessmentId } = await params;
-
+export default function CashierProcessPaymentPage({ params }: PageProps) {
   return (
     <div className="page-container max-w-7xl">
       <Suspense fallback={<PaymentProcessingSkeleton />}>
-        <PaymentProcessingContent assessmentId={assessmentId} />
+        <PaymentProcessingWrapper params={params} />
       </Suspense>
     </div>
   );
+}
+
+async function PaymentProcessingWrapper({ params }: PageProps) {
+  const { assessmentId } = await params;
+  return <PaymentProcessingContent assessmentId={assessmentId} />;
 }
 
 function PaymentProcessingSkeleton() {

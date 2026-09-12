@@ -30,16 +30,19 @@ interface PageProps {
 }
 
 /**
- * Instant navigation - full grade sheet review skeleton shown while data loads.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function GradeSheetReviewPageWrapper({ params }: PageProps) {
-  const { sheetId } = await params;
-
+export default function GradeSheetReviewPageWrapper({ params }: PageProps) {
   return (
     <Suspense fallback={<GradeSheetReviewSkeleton />}>
-      <GradeSheetReviewContent sheetId={sheetId} />
+      <GradeSheetReviewWrapper params={params} />
     </Suspense>
   );
+}
+
+async function GradeSheetReviewWrapper({ params }: PageProps) {
+  const { sheetId } = await params;
+  return <GradeSheetReviewContent sheetId={sheetId} />;
 }
 
 function GradeSheetReviewSkeleton() {

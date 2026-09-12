@@ -29,11 +29,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 /**
- * Static shell - header renders immediately.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function UserProfilePage({ params }: PageProps) {
-  const { id } = await params;
-
+export default function UserProfilePage({ params }: PageProps) {
   return (
     <div className="page-container space-y-8">
       <div className="page-header">
@@ -42,9 +40,9 @@ export default async function UserProfilePage({ params }: PageProps) {
           <p className="page-subtitle">User Account Details</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/admin/users/${id}/edit`} className="btn-primary">
-            Edit User
-          </Link>
+          <Suspense fallback={<Skeleton className="h-10 w-24" />}>
+            <EditUserLink params={params} />
+          </Suspense>
           <Link href="/admin/users" className="btn-secondary">
             ← Back to Users
           </Link>
@@ -52,10 +50,24 @@ export default async function UserProfilePage({ params }: PageProps) {
       </div>
 
       <Suspense fallback={<UserProfileSkeleton />}>
-        <UserProfileContent id={id} />
+        <UserProfileWrapper params={params} />
       </Suspense>
     </div>
   );
+}
+
+async function EditUserLink({ params }: PageProps) {
+  const { id } = await params;
+  return (
+    <Link href={`/admin/users/${id}/edit`} className="btn-primary">
+      Edit User
+    </Link>
+  );
+}
+
+async function UserProfileWrapper({ params }: PageProps) {
+  const { id } = await params;
+  return <UserProfileContent id={id} />;
 }
 
 function UserProfileSkeleton() {

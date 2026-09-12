@@ -30,11 +30,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 /**
- * Static shell - renders immediately during navigation.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function EditStaffSchoolYearPage({ params }: PageProps) {
-  const { id } = await params;
-
+export default function EditStaffSchoolYearPage({ params }: PageProps) {
   return (
     <div className="page-container">
       <div className="page-header">
@@ -48,10 +46,15 @@ export default async function EditStaffSchoolYearPage({ params }: PageProps) {
       </div>
 
       <Suspense fallback={<EditFormSkeleton />}>
-        <EditSchoolYearContent id={id} />
+        <EditSchoolYearWrapper params={params} />
       </Suspense>
     </div>
   );
+}
+
+async function EditSchoolYearWrapper({ params }: PageProps) {
+  const { id } = await params;
+  return <EditSchoolYearContent id={id} />;
 }
 
 function EditFormSkeleton() {

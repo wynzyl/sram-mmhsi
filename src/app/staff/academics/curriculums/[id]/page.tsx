@@ -24,16 +24,19 @@ interface PageProps {
 }
 
 /**
- * Instant navigation - full curriculum detail skeleton shown while data loads.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function CurriculumDetailPage({ params }: PageProps) {
-  const { id } = await params;
-
+export default function CurriculumDetailPage({ params }: PageProps) {
   return (
     <Suspense fallback={<CurriculumDetailSkeleton />}>
-      <CurriculumDetailContent id={id} />
+      <CurriculumDetailWrapper params={params} />
     </Suspense>
   );
+}
+
+async function CurriculumDetailWrapper({ params }: PageProps) {
+  const { id } = await params;
+  return <CurriculumDetailContent id={id} />;
 }
 
 function CurriculumDetailSkeleton() {

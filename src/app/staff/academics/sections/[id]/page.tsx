@@ -41,18 +41,21 @@ interface SectionDetailPageProps {
 }
 
 /**
- * Instant navigation - full section detail skeleton shown while data loads.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function SectionDetailPageWrapper({
+export default function SectionDetailPageWrapper({
   params,
 }: SectionDetailPageProps) {
-  const { id } = await params;
-
   return (
     <Suspense fallback={<SectionDetailSkeleton />}>
-      <SectionDetailPage id={id} />
+      <SectionDetailContent params={params} />
     </Suspense>
   );
+}
+
+async function SectionDetailContent({ params }: SectionDetailPageProps) {
+  const { id } = await params;
+  return <SectionDetailPage id={id} />;
 }
 
 function SectionDetailSkeleton() {

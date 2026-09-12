@@ -14,19 +14,25 @@ export const metadata: Metadata = {
 };
 
 /**
- * Instant navigation - full page skeleton shown while data loads.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function StaffEnrollmentDetailPage({ params }: PageProps) {
+export default function StaffEnrollmentDetailPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<EnrollmentDetailSkeleton />}>
+      <EnrollmentDetailContent params={params} />
+    </Suspense>
+  );
+}
+
+async function EnrollmentDetailContent({ params }: PageProps) {
   const { id } = await params;
 
   return (
-    <Suspense fallback={<EnrollmentDetailSkeleton />}>
-      <InternalEnrollmentDetailPage
-        enrollmentId={id}
-        deniedRedirect="/staff/dashboard"
-        studentRecordsBasePath="/staff/students"
-      />
-    </Suspense>
+    <InternalEnrollmentDetailPage
+      enrollmentId={id}
+      deniedRedirect="/staff/dashboard"
+      studentRecordsBasePath="/staff/students"
+    />
   );
 }
 

@@ -32,20 +32,23 @@ interface PageProps {
 }
 
 /**
- * Instant navigation - full grade entry page skeleton shown while data loads.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function AdviserGradeEntryPageWrapper({
+export default function AdviserGradeEntryPageWrapper({
   params,
   searchParams,
 }: PageProps) {
-  const { sectionId } = await params;
-  const { period } = await searchParams;
-
   return (
     <Suspense fallback={<GradeEntrySkeleton />}>
-      <AdviserGradeEntryContent sectionId={sectionId} period={period} />
+      <AdviserGradeEntryWrapper params={params} searchParams={searchParams} />
     </Suspense>
   );
+}
+
+async function AdviserGradeEntryWrapper({ params, searchParams }: PageProps) {
+  const { sectionId } = await params;
+  const { period } = await searchParams;
+  return <AdviserGradeEntryContent sectionId={sectionId} period={period} />;
 }
 
 function GradeEntrySkeleton() {

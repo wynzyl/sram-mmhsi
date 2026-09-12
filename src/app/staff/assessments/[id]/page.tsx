@@ -14,19 +14,25 @@ export const metadata: Metadata = {
 };
 
 /**
- * Instant navigation - full page skeleton shown while data loads.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function StaffAssessmentLedgerPage({ params }: PageProps) {
+export default function StaffAssessmentLedgerPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<AssessmentLedgerSkeleton />}>
+      <AssessmentLedgerContent params={params} />
+    </Suspense>
+  );
+}
+
+async function AssessmentLedgerContent({ params }: PageProps) {
   const { id } = await params;
 
   return (
-    <Suspense fallback={<AssessmentLedgerSkeleton />}>
-      <InternalAssessmentLedgerPage
-        assessmentId={id}
-        deniedRedirect="/staff/dashboard"
-        studentRecordsBasePath="/staff/students"
-      />
-    </Suspense>
+    <InternalAssessmentLedgerPage
+      assessmentId={id}
+      deniedRedirect="/staff/dashboard"
+      studentRecordsBasePath="/staff/students"
+    />
   );
 }
 

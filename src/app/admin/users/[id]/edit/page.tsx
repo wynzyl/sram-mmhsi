@@ -27,11 +27,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 /**
- * Static shell - header renders immediately.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function EditUserPage({ params }: PageProps) {
-  const { id } = await params;
-
+export default function EditUserPage({ params }: PageProps) {
   return (
     <div className="page-container">
       <div className="page-header">
@@ -39,16 +37,30 @@ export default async function EditUserPage({ params }: PageProps) {
           <h1 className="page-title">Edit User</h1>
           <p className="page-subtitle">Loading...</p>
         </div>
-        <Link href={`/admin/users/${id}`} className="btn-secondary">
-          ← Back to Profile
-        </Link>
+        <Suspense fallback={<Skeleton className="h-10 w-32" />}>
+          <BackToProfileLink params={params} />
+        </Suspense>
       </div>
 
       <Suspense fallback={<EditFormSkeleton />}>
-        <EditUserContent id={id} />
+        <EditUserWrapper params={params} />
       </Suspense>
     </div>
   );
+}
+
+async function BackToProfileLink({ params }: PageProps) {
+  const { id } = await params;
+  return (
+    <Link href={`/admin/users/${id}`} className="btn-secondary">
+      ← Back to Profile
+    </Link>
+  );
+}
+
+async function EditUserWrapper({ params }: PageProps) {
+  const { id } = await params;
+  return <EditUserContent id={id} />;
 }
 
 function EditFormSkeleton() {

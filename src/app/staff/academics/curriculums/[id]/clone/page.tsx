@@ -19,11 +19,9 @@ interface PageProps {
 }
 
 /**
- * Static shell - breadcrumb and header render immediately.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function CloneCurriculumPage({ params }: PageProps) {
-  const { id } = await params;
-
+export default function CloneCurriculumPage({ params }: PageProps) {
   return (
     <div className="p-6 max-w-2xl mx-auto">
       {/* Breadcrumb */}
@@ -44,10 +42,15 @@ export default async function CloneCurriculumPage({ params }: PageProps) {
       </div>
 
       <Suspense fallback={<CloneFormSkeleton />}>
-        <CloneCurriculumContent id={id} />
+        <CloneCurriculumWrapper params={params} />
       </Suspense>
     </div>
   );
+}
+
+async function CloneCurriculumWrapper({ params }: PageProps) {
+  const { id } = await params;
+  return <CloneCurriculumContent id={id} />;
 }
 
 function CloneFormSkeleton() {

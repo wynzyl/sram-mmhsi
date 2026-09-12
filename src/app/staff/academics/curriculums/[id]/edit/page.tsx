@@ -14,16 +14,19 @@ interface PageProps {
 }
 
 /**
- * Instant navigation - edit form skeleton shown while data loads.
+ * Instant navigation - sync shell with async content inside Suspense.
  */
-export default async function EditCurriculumPage({ params }: PageProps) {
-  const { id } = await params;
-
+export default function EditCurriculumPage({ params }: PageProps) {
   return (
     <Suspense fallback={<EditCurriculumSkeleton />}>
-      <EditCurriculumContent id={id} />
+      <EditCurriculumWrapper params={params} />
     </Suspense>
   );
+}
+
+async function EditCurriculumWrapper({ params }: PageProps) {
+  const { id } = await params;
+  return <EditCurriculumContent id={id} />;
 }
 
 function EditCurriculumSkeleton() {
