@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { formatDate } from "@/lib/utils/date";
 import { useDebounce } from "@/hooks/useDebounce";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { AccountsReceivableRow } from "../accounts-receivable-report.queries";
 
@@ -107,7 +108,7 @@ export function AccountsReceivableView({
         accessorKey: "studentName",
         cell: ({ row }) => (
           <Link
-            href={`/staff/students/${row.original.studentRef}`}
+            href={studentDetailUrl({ referenceNumber: row.original.studentRef })}
             className="text-primary hover:underline font-medium"
           >
             {row.original.studentName}

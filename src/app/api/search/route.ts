@@ -13,6 +13,7 @@ import {
 } from "@/lib/db/schema";
 import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import type { GlobalSearchResponse, SearchResultItem } from "@/lib/validators/search.schema";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 
 const MAX_RESULTS_PER_CATEGORY = 5;
 
@@ -170,7 +171,7 @@ export async function GET(request: NextRequest) {
         id: s.id,
         title: `${s.lastName}, ${s.firstName}`,
         subtitle: s.referenceNumber,
-        href: `${basePath}/students/${s.referenceNumber}`,
+        href: studentDetailUrl(s, basePath as "/staff/students"),
       })),
       enrollments: enrollmentResults.map((e): SearchResultItem => ({
         id: e.id,

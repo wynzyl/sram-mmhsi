@@ -7,6 +7,7 @@ import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatDate } from "@/lib/utils/date";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 import { Badge } from "@/components/ui/badge";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { BfxTransferRow } from "../balance-forward-report.queries";
@@ -48,7 +49,7 @@ export function BfxReportTable({ data }: BfxReportTableProps) {
           <div className="flex flex-col">
             <span className="flex items-center">
               <Link
-                href={`/staff/students/${row.original.studentRef}`}
+                href={studentDetailUrl({ referenceNumber: row.original.studentRef })}
                 className="text-primary hover:underline font-medium"
               >
                 {row.original.studentName}

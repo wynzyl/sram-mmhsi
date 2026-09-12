@@ -22,6 +22,7 @@ import type { CanChangeStrandResult } from "@/features/academics/student-subject
 import { ChangeStrandDialog } from "@/features/academics/student-subject-enrollments";
 import { BulkStrandAssignDialog } from "@/features/academics/student-subject-enrollments/components/BulkStrandAssignDialog";
 import { cn } from "@/lib/utils/cn";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 
 interface SectionStudentsTableProps {
   students: StudentInSection[];
@@ -148,7 +149,7 @@ export default function SectionStudentsTable({
         accessorKey: "studentRef",
         cell: ({ row }) => (
           <Link
-            href={`/staff/students/${row.original.studentRef}`}
+            href={studentDetailUrl({ referenceNumber: row.original.studentRef })}
             className="font-mono text-sm text-primary hover:underline"
           >
             {row.original.studentRef}

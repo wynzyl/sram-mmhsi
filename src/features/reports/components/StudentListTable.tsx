@@ -5,6 +5,7 @@ import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
 import { ReferenceCode } from "@/components/shared/ReferenceCode";
 import { SpedBadge } from "@/components/shared/SpedBadge";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { StudentListRow } from "../student-list-report.queries";
 
@@ -21,7 +22,7 @@ export function StudentListTable({ data }: StudentListTableProps) {
         cell: ({ row }) => (
           <span className="flex items-center">
             <Link
-              href={`/staff/students/${row.original.studentRef}`}
+              href={studentDetailUrl({ referenceNumber: row.original.studentRef })}
               className="text-primary hover:underline font-medium"
             >
               {row.original.studentName}

@@ -27,6 +27,7 @@ import {
   checkDocumentRequestCreationEligibility,
 } from "@/features/documents/document-requests.queries";
 import { ArchivedStudentDocumentRequests } from "./ArchivedStudentDocumentRequests";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 
 // Instant navigation enabled - uses Suspense for streaming
 
@@ -161,7 +162,7 @@ async function ArchivedStudentContent({ params }: PageProps) {
 
   // If student is active, redirect to the regular student page
   if (!isArchivedStatus(student.status)) {
-    redirect(`/staff/students/${student.referenceNumber}`);
+    redirect(studentDetailUrl(student));
   }
 
   // Fetch related data

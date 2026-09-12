@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { formatPhoneInput, stripPhoneFormat } from "@/lib/utils/phone";
 import GuardianForm from "./GuardianForm";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 
 interface StudentData {
   id: string;
@@ -157,7 +158,7 @@ export default function EditStudentForm({
 
   useFormToast(state, {
     successMessage: "Student updated successfully",
-    onSuccess: () => router.push(afterSaveRedirect ?? `/staff/students/${student.referenceNumber}`),
+    onSuccess: () => router.push(afterSaveRedirect ?? studentDetailUrl(student)),
   });
 
   const form = useForm({

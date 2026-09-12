@@ -6,6 +6,7 @@ import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
 import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatDate } from "@/lib/utils/date";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { AccountsReceivableRow } from "../accounts-receivable-report.queries";
 
@@ -39,7 +40,7 @@ export function AccountsReceivableTable({ data }: AccountsReceivableTableProps) 
         cell: ({ row }) => (
           <span className="flex items-center">
             <Link
-              href={`/staff/students/${row.original.studentRef}`}
+              href={studentDetailUrl({ referenceNumber: row.original.studentRef })}
               className="text-primary hover:underline font-medium"
             >
               {row.original.studentName}

@@ -26,6 +26,7 @@ import {
   getPhotoUrl,
 } from "@/lib/utils/image-processor";
 import { MAX_PHOTO_SIZE_BYTES } from "@/features/students/students-photo.schema";
+import { studentDetailUrl, studentEditUrl } from "@/lib/utils/student-routes";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -188,8 +189,8 @@ export async function POST(
     );
 
     // 13. Revalidate paths
-    revalidatePath(`/staff/students/${student.referenceNumber}`);
-    revalidatePath(`/staff/students/${student.referenceNumber}/edit`);
+    revalidatePath(studentDetailUrl(student));
+    revalidatePath(studentEditUrl(student));
 
     return NextResponse.json({
       success: true,
@@ -281,8 +282,8 @@ export async function DELETE(
     );
 
     // 7. Revalidate paths
-    revalidatePath(`/staff/students/${student.referenceNumber}`);
-    revalidatePath(`/staff/students/${student.referenceNumber}/edit`);
+    revalidatePath(studentDetailUrl(student));
+    revalidatePath(studentEditUrl(student));
 
     return NextResponse.json({
       success: true,

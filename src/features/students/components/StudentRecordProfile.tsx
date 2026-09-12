@@ -16,6 +16,7 @@ import {
 } from "@/lib/utils/intake-documents";
 import { formatPhoneNumber } from "@/lib/utils/phone";
 import { formatDate } from "@/lib/utils/date";
+import { studentEditUrl } from "@/lib/utils/student-routes";
 
 export type StudentRecordStudent = {
   id: string;
@@ -717,7 +718,7 @@ export function StudentRecordProfile({
             )}
             {flags.canEditStudent && (
               <Link
-                href={`/staff/students/${student.referenceNumber}/edit`}
+                href={studentEditUrl(student)}
                 className="student-record-btn student-record-btn-secondary"
                 id="edit-student-btn"
               >

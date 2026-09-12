@@ -27,6 +27,7 @@ import {
   type TogglePortalAccountStatusFormState,
   type ChangePortalPasswordFormState,
 } from "./portal-accounts.schema";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 
 // SECURITY (A-6): bcrypt cost factor - matches auth.actions.ts
 const BCRYPT_COST = 12;
@@ -120,7 +121,7 @@ export async function createPortalAccountAction(
       username: student.referenceNumber,
     });
 
-    revalidatePath(`/staff/students/${student.referenceNumber}`);
+    revalidatePath(studentDetailUrl(student));
 
     return {
       success: true,
@@ -205,7 +206,7 @@ export async function resetPortalPasswordAction(
       passwordReset: true,
     });
 
-    revalidatePath(`/staff/students/${account.student.referenceNumber}`);
+    revalidatePath(studentDetailUrl(account.student));
 
     return {
       success: true,
@@ -280,7 +281,7 @@ export async function togglePortalAccountStatusAction(
       isActive,
     });
 
-    revalidatePath(`/staff/students/${account.student.referenceNumber}`);
+    revalidatePath(studentDetailUrl(account.student));
 
     return { success: true };
   } catch (error) {

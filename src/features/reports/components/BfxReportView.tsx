@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDate } from "@/lib/utils/date";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 import { Badge } from "@/components/ui/badge";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -137,7 +138,7 @@ export function BfxReportView({
         cell: ({ row }) => (
           <div className="flex flex-col">
             <Link
-              href={`/staff/students/${row.original.studentRef}`}
+              href={studentDetailUrl({ referenceNumber: row.original.studentRef })}
               className="text-primary hover:underline font-medium"
             >
               {row.original.studentName}

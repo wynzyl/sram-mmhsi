@@ -28,6 +28,7 @@ import {
   getClearanceForValidation,
   clearanceExistsForEnrollment,
 } from "./clearances.queries";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 
 // ─── Generate Clearance Action ────────────────────────────────────────────────
 
@@ -137,7 +138,7 @@ export async function generateClearanceAction(
 
     revalidatePath("/staff/approvals");
     if (student) {
-      revalidatePath(`/staff/students/${student.referenceNumber}/clearances`);
+      revalidatePath(`${studentDetailUrl(student)}/clearances`);
     }
 
     return {

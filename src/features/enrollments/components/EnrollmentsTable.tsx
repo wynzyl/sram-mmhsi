@@ -15,6 +15,7 @@ import {
   createStatusColumn,
   createDateColumn,
 } from "@/components/tables/column-factories";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 
 interface Enrollment {
   id: string;
@@ -118,7 +119,7 @@ const EnrolledActions = memo(function EnrolledActions({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <Link href={`/staff/students/${en.referenceNumber}`} prefetch={false} className="btn-ghost btn-sm">
+        <Link href={studentDetailUrl({ referenceNumber: en.referenceNumber })} prefetch={false} className="btn-ghost btn-sm">
           Student
         </Link>
         <Link href="/staff/assessments?view=ledgers" prefetch={false} className="btn-ghost btn-sm">
@@ -161,7 +162,7 @@ const EnrollmentActionsCell = memo(function EnrollmentActionsCell({
   canOverrideEnrolled,
 }: EnrollmentActionsCellProps) {
   const viewStudent = (
-    <Link href={`/staff/students/${en.referenceNumber}`} prefetch={false} className="btn-ghost btn-sm">
+    <Link href={studentDetailUrl({ referenceNumber: en.referenceNumber })} prefetch={false} className="btn-ghost btn-sm">
       Student
     </Link>
   );

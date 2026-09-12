@@ -10,6 +10,7 @@ import {
 import { getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { buildStudentSearchCondition } from "@/lib/utils/query-conditions";
+import { isValidStudentRef } from "@/lib/utils/student-routes";
 
 export { STUDENT_DIRECTORY_PAGE_SIZE };
 
@@ -23,6 +24,9 @@ export { STUDENT_DIRECTORY_PAGE_SIZE };
  * @returns The student UUID if found, null otherwise
  */
 export async function resolveStudentRef(studentRef: string): Promise<string | null> {
+  // Early validation: reject invalid formats before hitting the database
+  if (!isValidStudentRef(studentRef)) return null;
+
   const result = await db.query.students.findFirst({
     where: and(
       eq(students.referenceNumber, studentRef),
@@ -45,6 +49,9 @@ export async function getStudentByRef(studentRef: string): Promise<{
   firstName: string;
   lastName: string;
 } | null> {
+  // Early validation: reject invalid formats before hitting the database
+  if (!isValidStudentRef(studentRef)) return null;
+
   const result = await db.query.students.findFirst({
     where: and(
       eq(students.referenceNumber, studentRef),

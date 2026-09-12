@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 import { AlertTriangle, FileText } from "lucide-react";
 
 interface StudentClearanceCardProps {
@@ -122,7 +123,7 @@ export default function StudentClearanceCard({
             )}
 
             {/* View All Link */}
-            <Link href={`/staff/students/${studentRef}/clearances`}>
+            <Link href={`${studentDetailUrl({ referenceNumber: studentRef })}/clearances`}>
               <Button variant="secondary" size="sm" className="w-full">
                 View All Clearances
               </Button>

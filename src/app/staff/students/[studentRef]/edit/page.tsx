@@ -6,6 +6,7 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { InternalEditStudentPage } from "@/app/page-templates/students/edit-student-page";
 import { getStudentByRef, resolveStudentRef } from "@/features/students/students.queries";
 import { Skeleton } from "@/components/ui/skeleton";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 
 // Instant navigation enabled - uses Suspense for streaming
 
@@ -117,7 +118,7 @@ async function EditStudentContent({ params }: PageProps) {
   }
 
   if (!hasPermission(session.role, "students:update")) {
-    redirect(`/staff/students/${studentRef}`);
+    redirect(studentDetailUrl({ referenceNumber: studentRef }));
   }
 
   return <InternalEditStudentPage studentId={studentId} studentsBasePrefix="/staff/students" />;

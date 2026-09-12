@@ -8,7 +8,7 @@
  * instead of UUID for human-readable, shareable URLs.
  */
 
-export type StudentRouteBasePath = "/staff/students" | "/admin/students";
+export type StudentRouteBasePath = "/staff/students";
 
 /**
  * Generates the URL for a student's detail page.

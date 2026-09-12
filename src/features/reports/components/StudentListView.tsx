@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDebounce } from "@/hooks/useDebounce";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { StudentListRow } from "../student-list-report.queries";
 
@@ -108,7 +109,7 @@ export function StudentListView({
         accessorKey: "studentName",
         cell: ({ row }) => (
           <Link
-            href={`/staff/students/${row.original.studentRef}`}
+            href={studentDetailUrl({ referenceNumber: row.original.studentRef })}
             className="text-primary hover:underline font-medium"
           >
             {row.original.studentName}

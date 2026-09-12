@@ -36,6 +36,7 @@ import { logger } from "@/lib/observability/logger";
 import { validateGradeProgression } from "@/lib/utils/enrollment-grade";
 import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
 import { parseIntakeDocumentStatus } from "./enrollments.schema";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 import {
   assertStudentMutable,
   StudentArchivedException,
@@ -338,7 +339,7 @@ export async function createEnrollmentAction(
     });
 
     revalidatePath("/staff/enrollments");
-    revalidatePath(`/staff/students/${student.referenceNumber}`);
+    revalidatePath(studentDetailUrl(student));
     invalidateTag(CACHE_TAGS.ENROLLMENTS); // PERFORMANCE: Invalidate enrollment counts cache
     return { success: true, enrollmentId: newEnrollmentId };
   } catch (err) {
@@ -518,7 +519,7 @@ export async function updateEnrollmentStatusAction(
 
     revalidatePath("/staff/enrollments");
     revalidatePath("/staff/assessments");
-    revalidatePath(`/staff/students/${enrollment.student.referenceNumber}`);
+    revalidatePath(studentDetailUrl(enrollment.student));
     invalidateTag(CACHE_TAGS.ENROLLMENTS); // PERFORMANCE: Invalidate enrollment counts cache
 
     return {
@@ -630,7 +631,7 @@ export async function updateIntakeDocumentsAction(
     });
 
     revalidatePath("/staff/enrollments");
-    revalidatePath(`/staff/students/${enrollment.student.referenceNumber}`);
+    revalidatePath(studentDetailUrl(enrollment.student));
 
     return { success: true, message: "Intake documents updated successfully." };
   } catch (err) {

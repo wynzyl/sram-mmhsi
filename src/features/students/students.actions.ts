@@ -28,6 +28,7 @@ import type { CreateStudentFormState, UpdateStudentFormState } from "./students.
 import { generateStudentRef } from "@/lib/utils/reference";
 import { buildCreateStudentFormSnapshot } from "./students.utils";
 import { generatePortalPassword } from "./students-portal.utils";
+import { studentDetailUrl } from "@/lib/utils/student-routes";
 import { collectPgErrorText, isUndefinedColumnError } from "@/lib/utils/pg-error";
 import { logger } from "@/lib/observability/logger";
 import type { GuardianInput } from "./students.schema";
@@ -606,7 +607,7 @@ export async function updateStudentAction(
     });
 
     revalidatePath("/staff/students");
-    revalidatePath(`/staff/students/${existingStudent.referenceNumber}`);
+    revalidatePath(studentDetailUrl(existingStudent));
     return { success: true };
   } catch (err) {
     // Handle archive exception thrown from inside transaction
@@ -746,7 +747,7 @@ export async function updateSpecialEducationStatusAction(
       actorId: session.userId,
     });
 
-    revalidatePath(`/staff/students/${student.referenceNumber}`);
+    revalidatePath(studentDetailUrl(student));
 
     return { success: true };
   } catch (err) {
