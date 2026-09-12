@@ -591,6 +591,59 @@ export default function Page() {
 }
 ```
 
+### Dynamic Routes: params/searchParams Access
+
+**CRITICAL:** Never await `params` or `searchParams` outside a Suspense boundary. This causes the "instant-shell-url-data" error and blocks instant navigation.
+
+```typescript
+// ❌ BAD: params accessed before Suspense — breaks instant navigation
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;  // Error: URL data outside Suspense
+  return (
+    <Suspense fallback={<Skeleton />}>
+      <Content id={id} />
+    </Suspense>
+  );
+}
+
+// ✅ GOOD: params accessed inside Suspense via wrapper component
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<Skeleton />}>
+      <ContentWrapper params={params} />
+    </Suspense>
+  );
+}
+
+async function ContentWrapper({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <Content id={id} />;
+}
+```
+
+The same pattern applies to `searchParams`. For pages with both:
+
+```typescript
+interface PageProps {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ filter?: string }>;
+}
+
+export default function Page({ params, searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<Skeleton />}>
+      <ContentWrapper params={params} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function ContentWrapper({ params, searchParams }: PageProps) {
+  const { id } = await params;
+  const { filter } = await searchParams;
+  return <Content id={id} filter={filter} />;
+}
+```
+
 ## Official Receipt (OR) Workflow
 
 **CRITICAL: Read `SRAMS_OR_WORKFLOW.md` before modifying OR-related code.**
