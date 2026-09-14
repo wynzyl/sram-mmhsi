@@ -102,10 +102,14 @@ export function DirectorsListFilters({
 
   const hasFilters = gradeLevelId !== "" || sectionId !== "";
 
-  // Build export URL with current filters
+  // Build export URL with current filters (use state values, not URL params)
   const buildExportUrl = (format: "pdf" | "xlsx") => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams();
     params.set("format", format);
+    params.set("schoolYearId", schoolYearId);
+    params.set("gradingPeriod", gradingPeriod);
+    if (gradeLevelId) params.set("gradeLevelId", gradeLevelId);
+    if (sectionId) params.set("sectionId", sectionId);
     return `/staff/reports/directors-list/export?${params.toString()}`;
   };
 

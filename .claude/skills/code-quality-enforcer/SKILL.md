@@ -5,6 +5,9 @@ version: 2.0.0
 author: Wenzel
 priority: high
 ---
+Trigger:"Code Quality Enforcer" skill on every commit to review changes for maintainability, modularity, performance, and clean code practices. 
+<!-- On every new commit, run the code quality enforcer skill to review changes for maintainability, modularity, performance, and clean code practices. -->
+
 
 # Code Quality Enforcer
 

@@ -9,7 +9,10 @@ import {
 import { getActiveSchoolYear, getSchoolYears } from "@/lib/queries/schoolYears";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import { getAllSections } from "@/features/academics/sections/sections.queries";
-import { getDirectorsList } from "@/features/academics/directors-list/directors-list.queries";
+import {
+  getDirectorsList,
+  getAvailableGradingPeriods,
+} from "@/features/academics/directors-list/directors-list.queries";
 import {
   DirectorsListPdfDocument,
   buildDirectorsListXlsx,
@@ -52,7 +55,6 @@ export async function GET(request: NextRequest) {
   const format = parseReportFormat(searchParams.get("format"));
   const gradeLevelId = searchParams.get("gradeLevelId") || undefined;
   const sectionId = searchParams.get("sectionId") || undefined;
-  const gradingPeriod = searchParams.get("gradingPeriod") || "Q1";
 
   // Resolve school year (default = active).
   const [schoolYears, gradeLevels, sections, activeYear] = await Promise.all([
@@ -69,6 +71,11 @@ export async function GET(request: NextRequest) {
       { status: 400 }
     );
   }
+
+  // Resolve grading period (default = first period for the school year's system)
+  const availablePeriods = await getAvailableGradingPeriods(schoolYearId);
+  const defaultPeriod = availablePeriods[0]?.value || "Q1";
+  const gradingPeriod = searchParams.get("gradingPeriod") || defaultPeriod;
 
   const schoolYearLabel =
     schoolYears.find((sy) => sy.id === schoolYearId)?.label ?? "—";
