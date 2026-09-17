@@ -388,6 +388,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
           label: "Academics",
           icon: "academics",
           children: [
+            { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
             { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
             { href: "/staff/academics/section-assignments", label: "Assignments", icon: "assignments" },
             { href: "/staff/academics/advisers", label: "Advisers", icon: "users" },
@@ -417,6 +418,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
           label: "Academics",
           icon: "academics",
           children: [
+            { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
             { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
             { href: "/staff/academics/section-assignments", label: "Assignments", icon: "assignments" },
             { href: "/staff/academics/advisers", label: "Advisers", icon: "users" },
