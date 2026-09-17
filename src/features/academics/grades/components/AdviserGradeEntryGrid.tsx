@@ -285,7 +285,7 @@ export function AdviserGradeEntryGrid({
       }
     });
 
-    if (studentGrades.length === 0) return "--";
+    if (studentGrades.length === 0) return "—";
 
     const sum = studentGrades.reduce((acc, g) => acc + g, 0);
     const average = sum / studentGrades.length;
