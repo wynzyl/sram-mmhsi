@@ -121,8 +121,13 @@ function getStatusLabel(status: string): string {
 async function GradeSheetReviewContent({ sheetId }: { sheetId: string }) {
   const session = await requireSession();
 
-  // Only principals can review
-  if (!hasPermission(session.role, "grades:principal_review")) {
+  // Allow access for principal review, publish, or lock permissions
+  const canAccess =
+    hasPermission(session.role, "grades:principal_review") ||
+    hasPermission(session.role, "grades:publish") ||
+    hasPermission(session.role, "grades:lock");
+
+  if (!canAccess) {
     redirect("/staff/grades");
   }
 

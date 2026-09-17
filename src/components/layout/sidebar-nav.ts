@@ -373,7 +373,11 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
     {
       label: "Grades",
       items: [
-        { href: "/staff/grades", label: "My Sections", icon: "grades" },
+        { href: "/staff/grades", label: "Overview", icon: "grades", pathMatch: "exact" },
+        { href: "/staff/grades/publish", label: "Ready to Publish", icon: "grades" },
+        { href: "/staff/grades/published", label: "Published Grades", icon: "grades" },
+        { href: "/staff/grades/locked", label: "Locked Grades", icon: "grades" },
+        { href: "/staff/grades/directors-list", label: "Director's List", icon: "grades" },
       ],
     },
     {
