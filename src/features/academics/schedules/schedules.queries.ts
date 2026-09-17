@@ -899,9 +899,10 @@ export async function getScheduleForTeacher(
     }
   }
 
-  // Sort periods by period number
+  // Sort periods by start time (not period number, since different grade levels
+  // may have different times for the same period number)
   const uniquePeriods = Array.from(periodMap.values()).sort(
-    (a, b) => a.periodNumber - b.periodNumber
+    (a, b) => a.startTime.localeCompare(b.startTime)
   );
 
   // Build grid rows only for periods where teacher has slots
@@ -964,7 +965,7 @@ export async function getTeacherDaySchedule(
         isNull(scheduleSlots.deletedAt)
       )
     )
-    .orderBy(asc(periods.periodNumber));
+    .orderBy(asc(periods.startTime));
 
   return slots.map((slot) => ({
     id: slot.id,
