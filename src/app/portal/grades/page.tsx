@@ -54,6 +54,23 @@ function readGrade(
   return Number.isNaN(value) ? null : value;
 }
 
+/** Calculate the general average for all subjects in a given period. */
+function getPeriodAverage(section: SectionGrades, period: string): string {
+  const grades: number[] = [];
+  section.subjects.forEach((subject) => {
+    const grade = readGrade(section, period, subject.code);
+    if (grade !== null) {
+      grades.push(grade);
+    }
+  });
+
+  if (grades.length === 0) return "—";
+
+  const sum = grades.reduce((acc, g) => acc + g, 0);
+  const average = sum / grades.length;
+  return average.toFixed(2);
+}
+
 /** Shares PORTAL_GRADE_BANDS with the cells above, so the two cannot drift. */
 function GradingScaleLegend() {
   return (
@@ -203,6 +220,12 @@ async function PortalGradesContent({ searchParams }: PageProps) {
                       </abbr>
                     </th>
                   ))}
+                  <th
+                    scope="col"
+                    className="min-w-24 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/80"
+                  >
+                    Gen. Avg.
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -224,6 +247,9 @@ async function PortalGradesContent({ searchParams }: PageProps) {
                         />
                       </td>
                     ))}
+                    <td className="px-3 py-3 text-center text-sm font-bold text-foreground">
+                      {getPeriodAverage(section, period)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -254,6 +280,14 @@ async function PortalGradesContent({ searchParams }: PageProps) {
                       />
                     </li>
                   ))}
+                  <li className="flex items-baseline justify-between gap-3 py-2.5 bg-muted/50 -mx-4 px-4">
+                    <span className="text-sm font-semibold text-foreground">
+                      General Average
+                    </span>
+                    <span className="shrink-0 text-sm font-bold text-foreground">
+                      {getPeriodAverage(section, period)}
+                    </span>
+                  </li>
                 </ul>
               ))}
             </PortalPeriodTabs>

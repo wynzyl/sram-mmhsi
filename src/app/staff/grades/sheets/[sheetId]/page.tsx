@@ -203,6 +203,33 @@ async function GradeSheetReviewContent({ sheetId }: { sheetId: string }) {
     gradeMap.get(entry.studentId)!.set(entry.subjectId, entry.grade);
   });
 
+  // Calculate general average for a student
+  const getStudentAverage = (studentId: string): string => {
+    const studentGrades = gradeMap.get(studentId);
+    if (!studentGrades) return "—";
+
+    const numericGrades: number[] = [];
+    subjects.forEach((subject) => {
+      // Check all subjectIds for this code (handles duplicate subject records)
+      for (const subjectId of subject.allIds) {
+        const grade = studentGrades.get(subjectId);
+        if (grade) {
+          const numGrade = parseInt(grade, 10);
+          if (!isNaN(numGrade)) {
+            numericGrades.push(numGrade);
+            break; // Found a grade for this subject, move to next
+          }
+        }
+      }
+    });
+
+    if (numericGrades.length === 0) return "—";
+
+    const sum = numericGrades.reduce((acc, g) => acc + g, 0);
+    const average = sum / numericGrades.length;
+    return average.toFixed(2);
+  };
+
   const canApprove = gradeSheet.status === "submitted";
   const canPublish = gradeSheet.status === "principal_approved" && hasPermission(session.role, "grades:publish");
   const canLock = gradeSheet.status === "published" && hasPermission(session.role, "grades:lock");
@@ -287,6 +314,12 @@ async function GradeSheetReviewContent({ sheetId }: { sheetId: string }) {
                     {subject.code}
                   </th>
                 ))}
+                <th
+                  scope="col"
+                  className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider min-w-[100px] bg-muted/80"
+                >
+                  Gen. Avg.
+                </th>
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
@@ -322,6 +355,9 @@ async function GradeSheetReviewContent({ sheetId }: { sheetId: string }) {
                       </td>
                     );
                   })}
+                  <td className="px-3 py-3 text-center text-sm font-semibold text-foreground">
+                    {getStudentAverage(student.id)}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -272,6 +272,26 @@ export function AdviserGradeEntryGrid({
     return grades.get(gradeKey(studentId, subjectId)) || "";
   };
 
+  // Calculate general average for a student
+  const getStudentAverage = (studentId: string): string => {
+    const studentGrades: number[] = [];
+    subjects.forEach((subject) => {
+      const grade = grades.get(gradeKey(studentId, subject.id));
+      if (grade) {
+        const numGrade = parseInt(grade, 10);
+        if (!isNaN(numGrade)) {
+          studentGrades.push(numGrade);
+        }
+      }
+    });
+
+    if (studentGrades.length === 0) return "--";
+
+    const sum = studentGrades.reduce((acc, g) => acc + g, 0);
+    const average = sum / studentGrades.length;
+    return average.toFixed(2);
+  };
+
   // Calculate completion status for submit validation
   const totalExpected = students.length * subjects.length;
   const totalEntered = grades.size;
@@ -440,6 +460,12 @@ export function AdviserGradeEntryGrid({
                     {subject.code}
                   </th>
                 ))}
+                <th
+                  scope="col"
+                  className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider min-w-[100px] bg-muted/80"
+                >
+                  Gen. Avg.
+                </th>
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
@@ -467,6 +493,9 @@ export function AdviserGradeEntryGrid({
                       />
                     </td>
                   ))}
+                  <td className="px-2 py-3 text-center text-sm font-semibold text-foreground">
+                    {getStudentAverage(student.id)}
+                  </td>
                 </tr>
               ))}
             </tbody>
