@@ -140,7 +140,16 @@ export type Permission =
   | "fee_schedules:manage"
   | "assignments:manage"
   // System Settings
-  | "system:manage";
+  | "system:manage"
+  // Class Schedules
+  /** View class schedules */
+  | "schedules:read"
+  /** Manage class schedule slots */
+  | "schedules:manage"
+  /** Manage period templates */
+  | "schedules:manage_periods"
+  /** Manage rooms/venues */
+  | "schedules:manage_rooms";
 
 const PERMISSIONS: Record<Role, Permission[]> = {
   super_admin: [
@@ -173,6 +182,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "users:manage", "school_years:manage", "sections:manage", "fee_schedules:manage",
     "assignments:manage", "system:manage",
+    "schedules:read", "schedules:manage", "schedules:manage_periods", "schedules:manage_rooms",
   ],
   admin: [
     "students:read", "students:create", "students:update", "students:delete",
@@ -208,6 +218,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "users:manage",
     "assignments:manage",
     "system:manage",
+    "schedules:read", "schedules:manage", "schedules:manage_periods", "schedules:manage_rooms",
   ],
   registrar: [
     "students:read", "students:create", "students:update",
@@ -227,6 +238,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "subject_offerings:read", "subject_offerings:generate", "subject_offerings:create", "subject_offerings:assign_teacher",
     "student_subject_enrollments:read", "student_subject_enrollments:manage",
     "reports:view", "reports:academic",
+    "schedules:read",
   ],
   finance_officer: [
     "students:read",
@@ -256,6 +268,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "strands:read",
     "subject_offerings:read",
     "student_subject_enrollments:read",
+    "schedules:read",
   ],
   coordinator: [
     "students:read",
@@ -268,6 +281,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "student_subject_enrollments:read",
     "assignments:manage",
     "reports:view", "reports:academic",
+    "schedules:read", "schedules:manage", "schedules:manage_periods", "schedules:manage_rooms",
   ],
   principal: [
     "students:read",
@@ -280,18 +294,21 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "student_subject_enrollments:read",
     "assignments:manage",
     "reports:view", "reports:academic",
+    "schedules:read", "schedules:manage", "schedules:manage_periods", "schedules:manage_rooms",
   ],
   student: [
     "assessments:read",
     "payments:read",
     "invoices:read",
     "grades:read",
+    "schedules:read",
   ],
   parent_guardian: [
     "assessments:read",
     "payments:read",
     "invoices:read",
     "grades:read",
+    "schedules:read",
   ],
 };
 

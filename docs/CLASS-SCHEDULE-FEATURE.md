@@ -10,7 +10,7 @@ Add a class scheduling feature where teachers and students can view schedules by
 - **Days:** Monday to Friday
 - **Pattern:** Same schedule every week (weekly template)
 - **Rooms:** Track room assignments with conflict detection
-- **Managers:** Admin, Registrar, Coordinators (scoped to their grade levels)
+- **Managers:** Admin, Coordinators, Principals (coordinators scoped to their grade levels)
 - **Conflict detection:** Section, Teacher, Room
 - **Views:** Day view (list) + Week grid (timetable)
 - **Viewers:** Teachers (their classes), Students (enrolled classes)
@@ -114,11 +114,11 @@ Add to `src/lib/rbac/permissions.ts`:
 | Permission | Roles |
 |------------|-------|
 | `schedules:read` | All staff + student |
-| `schedules:manage` | admin, registrar, coordinator |
-| `schedules:manage_periods` | admin, coordinator |
-| `schedules:manage_rooms` | admin, coordinator |
+| `schedules:manage` | admin, coordinator, principal |
+| `schedules:manage_periods` | admin, coordinator, principal |
+| `schedules:manage_rooms` | admin, coordinator, principal |
 
-Coordinators scoped to their assigned grade group.
+Coordinators scoped to their assigned grade group. Principals have full schedule management access.
 
 ---
 
