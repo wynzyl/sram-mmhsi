@@ -142,6 +142,11 @@ export const PERMISSION_ERRORS = {
   GRADES_ENCODE: "You do not have permission to encode grades.",
   GRADES_SUBMIT: "You do not have permission to submit grades.",
 
+  // ─── Academics: Schedules ──────────────────────────────────────────────────────
+  SCHEDULES_MANAGE: "You do not have permission to manage schedules.",
+  SCHEDULES_MANAGE_PERIODS: "You do not have permission to manage period templates.",
+  SCHEDULES_MANAGE_ROOMS: "You do not have permission to manage rooms.",
+
   // ─── Generic Fallback ─────────────────────────────────────────────────────────
   GENERIC: "You do not have permission to perform this action.",
 } as const;

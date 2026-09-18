@@ -21,6 +21,7 @@ import { DOCUMENT_REQUEST_TYPES, DOCUMENT_REQUEST_STATUSES } from "@/lib/constan
 import { GRADING_PERIODS, GRADE_SHEET_STATUSES, GRADE_APPROVAL_ACTIONS } from "@/lib/constants/grading-periods";
 import { GRADING_SYSTEM_TYPES } from "@/lib/constants/grading-systems";
 import { GRADE_GROUPS } from "@/lib/constants/grade-groups";
+import { PERIOD_GRADE_GROUPS } from "@/lib/constants/period-grade-groups";
 import { SHS_STRAND_CODES } from "@/lib/constants/strands";
 import { TERM_OFFERINGS } from "@/lib/constants/term-offerings";
 
@@ -95,6 +96,9 @@ export const gradingSystemTypeEnum = pgEnum("grading_system_type", GRADING_SYSTE
 
 /** Grade level groups for coordinator assignment */
 export const gradeGroupEnum = pgEnum("grade_group", GRADE_GROUPS);
+
+/** Grade level groups for period assignment (simplified: casa, elementary, jhs, shs) */
+export const periodGradeGroupEnum = pgEnum("period_grade_group", PERIOD_GRADE_GROUPS);
 
 /**
  * @deprecated SHS strand codes are now stored as TEXT in strands.code for admin-managed tracks.
@@ -214,6 +218,26 @@ export const resolutionTypeEnum = pgEnum("resolution_type", [
   "paid",
   "waived",
   "written_off",
+]);
+
+/** Days of the week for class scheduling (Monday to Friday) */
+export const dayOfWeekEnum = pgEnum("day_of_week", [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+]);
+
+/** Room types for scheduling */
+export const roomTypeEnum = pgEnum("room_type", [
+  "classroom",
+  "laboratory",
+  "computer_lab",
+  "library",
+  "gymnasium",
+  "auditorium",
+  "other",
 ]);
 
 // ─── Users & Sessions ─────────────────────────────────────────────────────────
@@ -1433,6 +1457,154 @@ export const studentSubjectEnrollments = pgTable(
     index("sse_sy_active_idx")
       .on(t.schoolYearId)
       .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+  ]
+);
+
+// ─── Class Scheduling ─────────────────────────────────────────────────────────
+
+/**
+ * Period templates - fixed time slots per school year.
+ * Different grade levels may have different bell schedules.
+ */
+export const periods = pgTable(
+  "periods",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    /** Display name (e.g., "Period 1", "Homeroom", "Lunch") */
+    name: text("name").notNull(),
+    /** Sequence number for ordering (1, 2, 3...) */
+    periodNumber: integer("period_number").notNull(),
+    /** Start time as HH:mm string (e.g., "07:30") */
+    startTime: text("start_time").notNull(),
+    /** End time as HH:mm string (e.g., "08:30") */
+    endTime: text("end_time").notNull(),
+    /** Whether this is a class period (vs. break/lunch) */
+    isClassPeriod: boolean("is_class_period").notNull().default(true),
+    /** Grade group for group-based periods (casa, elementary, jhs, shs). null = check gradeLevelId */
+    gradeGroup: periodGradeGroupEnum("grade_group"),
+    /** Optional grade level for grade-specific schedules (null + null gradeGroup = universal/all grades) */
+    gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // Unique period number per school year + grade group + grade level (soft delete aware)
+    uniqueIndex("periods_sy_num_gg_gl_uidx")
+      .on(t.schoolYearId, t.periodNumber, t.gradeGroup, t.gradeLevelId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("periods_sy_idx").on(t.schoolYearId),
+    index("periods_gg_idx").on(t.gradeGroup),
+    index("periods_gl_idx").on(t.gradeLevelId),
+    index("periods_active_idx")
+      .on(t.schoolYearId)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+    // Ensure end time is after start time
+    check("periods_time_check", sql`${t.endTime} > ${t.startTime}`),
+  ]
+);
+
+/**
+ * Rooms/venues for class scheduling.
+ */
+export const rooms = pgTable(
+  "rooms",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Unique room code (e.g., "RM-101", "LAB-A") */
+    code: text("code").notNull(),
+    /** Display name (e.g., "Room 101", "Science Laboratory A") */
+    name: text("name").notNull(),
+    /** Building name (optional) */
+    building: text("building"),
+    /** Floor number (optional) */
+    floor: text("floor"),
+    /** Room capacity (number of students) */
+    capacity: integer("capacity"),
+    /** Room type for filtering */
+    roomType: roomTypeEnum("room_type").notNull().default("classroom"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // Unique room code (soft delete aware)
+    uniqueIndex("rooms_code_uidx")
+      .on(t.code)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("rooms_type_idx").on(t.roomType),
+    index("rooms_active_idx")
+      .on(t.id)
+      .where(sql`${t.isActive} = true AND ${t.deletedAt} IS NULL`),
+  ]
+);
+
+/**
+ * Schedule slots - links subject offerings to specific day/period/room.
+ * Forms the weekly class schedule template.
+ */
+export const scheduleSlots = pgTable(
+  "schedule_slots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** The subject offering being scheduled */
+    subjectOfferingId: uuid("subject_offering_id").notNull().references(() => subjectOfferings.id),
+    /** Day of the week */
+    dayOfWeek: dayOfWeekEnum("day_of_week").notNull(),
+    /** Period/time slot */
+    periodId: uuid("period_id").notNull().references(() => periods.id),
+    /** Room assignment (optional for homeroom/advisory) */
+    roomId: uuid("room_id").references(() => rooms.id),
+    // Denormalized fields for conflict detection queries (performance)
+    /** Denormalized from subjectOffering for conflict queries */
+    schoolYearId: uuid("school_year_id").notNull().references(() => schoolYears.id),
+    /** Denormalized from subjectOffering for section conflict detection */
+    sectionId: uuid("section_id").notNull().references(() => sections.id),
+    /** Denormalized from subjectOffering for teacher conflict detection */
+    teacherId: uuid("teacher_id").references(() => users.id),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+  },
+  (t) => [
+    // === Conflict Detection Indexes (unique partial indexes) ===
+    // Section conflict: A section can only be in one place at a time
+    uniqueIndex("schedule_slots_section_conflict_uidx")
+      .on(t.sectionId, t.dayOfWeek, t.periodId, t.schoolYearId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    // Teacher conflict: A teacher can only teach one class at a time
+    uniqueIndex("schedule_slots_teacher_conflict_uidx")
+      .on(t.teacherId, t.dayOfWeek, t.periodId, t.schoolYearId)
+      .where(sql`${t.teacherId} IS NOT NULL AND ${t.deletedAt} IS NULL`),
+    // Room conflict: A room can only host one class at a time
+    uniqueIndex("schedule_slots_room_conflict_uidx")
+      .on(t.roomId, t.dayOfWeek, t.periodId, t.schoolYearId)
+      .where(sql`${t.roomId} IS NOT NULL AND ${t.deletedAt} IS NULL`),
+    // === Performance Indexes ===
+    index("schedule_slots_offering_idx").on(t.subjectOfferingId),
+    index("schedule_slots_period_idx").on(t.periodId),
+    index("schedule_slots_room_idx").on(t.roomId),
+    index("schedule_slots_sy_idx").on(t.schoolYearId),
+    // Section's weekly schedule
+    index("schedule_slots_section_sy_idx")
+      .on(t.sectionId, t.schoolYearId)
+      .where(sql`${t.deletedAt} IS NULL`),
+    // Teacher's weekly schedule
+    index("schedule_slots_teacher_sy_idx")
+      .on(t.teacherId, t.schoolYearId)
+      .where(sql`${t.teacherId} IS NOT NULL AND ${t.deletedAt} IS NULL`),
   ]
 );
 
@@ -2680,6 +2852,7 @@ export const subjectOfferingsRelations = relations(subjectOfferings, ({ one, man
     relationName: "offering_creator",
   }),
   studentSubjectEnrollments: many(studentSubjectEnrollments),
+  scheduleSlots: many(scheduleSlots),
 }));
 
 // Student Subject Enrollment Relations
@@ -2711,4 +2884,65 @@ export const studentSubjectEnrollmentsRelations = relations(studentSubjectEnroll
     relationName: "sse_creator",
   }),
   gradeSheetEntries: many(gradeSheetEntries),
+}));
+
+// ─── Class Scheduling Relations ───────────────────────────────────────────────
+
+export const periodsRelations = relations(periods, ({ one, many }) => ({
+  schoolYear: one(schoolYears, {
+    fields: [periods.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  gradeLevel: one(gradeLevels, {
+    fields: [periods.gradeLevelId],
+    references: [gradeLevels.id],
+  }),
+  createdByUser: one(users, {
+    fields: [periods.createdBy],
+    references: [users.id],
+    relationName: "period_creator",
+  }),
+  scheduleSlots: many(scheduleSlots),
+}));
+
+export const roomsRelations = relations(rooms, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [rooms.createdBy],
+    references: [users.id],
+    relationName: "room_creator",
+  }),
+  scheduleSlots: many(scheduleSlots),
+}));
+
+export const scheduleSlotsRelations = relations(scheduleSlots, ({ one }) => ({
+  subjectOffering: one(subjectOfferings, {
+    fields: [scheduleSlots.subjectOfferingId],
+    references: [subjectOfferings.id],
+  }),
+  period: one(periods, {
+    fields: [scheduleSlots.periodId],
+    references: [periods.id],
+  }),
+  room: one(rooms, {
+    fields: [scheduleSlots.roomId],
+    references: [rooms.id],
+  }),
+  schoolYear: one(schoolYears, {
+    fields: [scheduleSlots.schoolYearId],
+    references: [schoolYears.id],
+  }),
+  section: one(sections, {
+    fields: [scheduleSlots.sectionId],
+    references: [sections.id],
+  }),
+  teacher: one(users, {
+    fields: [scheduleSlots.teacherId],
+    references: [users.id],
+    relationName: "slot_teacher",
+  }),
+  createdByUser: one(users, {
+    fields: [scheduleSlots.createdBy],
+    references: [users.id],
+    relationName: "slot_creator",
+  }),
 }));

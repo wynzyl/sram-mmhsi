@@ -32,7 +32,7 @@ import { requiresStrandSelection } from "@/lib/constants/strands";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, BookOpen, Calendar, UserCheck, GraduationCap } from "lucide-react";
+import { ArrowLeft, Users, BookOpen, Calendar, UserCheck, GraduationCap, Clock } from "lucide-react";
 
 // Instant navigation enabled - uses Suspense for streaming
 
@@ -151,6 +151,8 @@ async function SectionDetailPage({ id }: { id: string }) {
   const canDeleteOffering = hasPermission(session.role, "subject_offerings:generate"); // Using same permission for delete
   const canChangeTrack = hasPermission(session.role, "subject_offerings:generate"); // Same permission for track changes
   const canManageStrands = hasPermission(session.role, "sections:manage");
+  const canViewSchedule = hasPermission(session.role, "schedules:read");
+  const canManageSchedule = hasPermission(session.role, "schedules:manage");
 
   // Fetch all data in parallel
   const [students, adviser, offerings, teachers, hasOfferings, availableStrands, curriculumsForPicker, gradingSystemType] = await Promise.all([
@@ -206,6 +208,14 @@ async function SectionDetailPage({ id }: { id: string }) {
             {section.gradeLevelName} &bull; {section.schoolYearLabel}
           </p>
         </div>
+        {canViewSchedule && (
+          <Link href={`/staff/academics/schedules/sections/${id}`}>
+            <Button variant="secondary" size="sm">
+              <Clock className="h-4 w-4 mr-2" />
+              {canManageSchedule ? "Manage Schedule" : "View Schedule"}
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Stats */}

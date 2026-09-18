@@ -8,6 +8,7 @@ export type NavIconName =
   | "curriculums"
   | "sections"
   | "assignments"
+  | "schedules"
   | "fee-schedules"
   | "booklets"
   | "assessments"
@@ -68,6 +69,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
             { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
             { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
             { href: "/staff/academics/section-assignments", label: "Assignments", icon: "assignments" },
+            { href: "/staff/academics/schedules", label: "Schedules", icon: "schedules" },
             { href: "/staff/academics/advisers", label: "Advisers", icon: "users" },
             { href: "/staff/academics/strands", label: "SHS Strands", icon: "strands" },
             { href: "/staff/academics/electives", label: "SHS Electives", icon: "electives" },
@@ -143,6 +145,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
             { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
             { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
             { href: "/staff/academics/section-assignments", label: "Assignments", icon: "assignments" },
+            { href: "/staff/academics/schedules", label: "Schedules", icon: "schedules" },
             { href: "/staff/academics/advisers", label: "Advisers", icon: "users" },
             { href: "/staff/academics/strands", label: "SHS Strands", icon: "strands" },
             { href: "/staff/academics/electives", label: "SHS Electives", icon: "electives" },
@@ -365,7 +368,10 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
   teacher: [
     {
       label: "Academics",
-      items: [{ href: "/staff/grades", label: "My Classes", icon: "grades" }],
+      items: [
+        { href: "/staff/grades", label: "My Classes", icon: "grades" },
+        { href: "/staff/academics/schedules", label: "My Schedule", icon: "schedules" },
+      ],
     },
   ],
 
@@ -391,6 +397,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
             { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
             { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
             { href: "/staff/academics/section-assignments", label: "Assignments", icon: "assignments" },
+            { href: "/staff/academics/schedules", label: "Schedules", icon: "schedules" },
             { href: "/staff/academics/advisers", label: "Advisers", icon: "users" },
           ],
         },
@@ -421,6 +428,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
             { href: "/staff/academics/curriculums", label: "Curriculums", icon: "curriculums" },
             { href: "/staff/academics/sections", label: "Sections", icon: "sections" },
             { href: "/staff/academics/section-assignments", label: "Assignments", icon: "assignments" },
+            { href: "/staff/academics/schedules", label: "Schedules", icon: "schedules" },
             { href: "/staff/academics/advisers", label: "Advisers", icon: "users" },
           ],
         },
@@ -433,6 +441,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "My Account",
       items: [
         { href: "/portal/dashboard", label: "Dashboard", icon: "dashboard" },
+        { href: "/portal/schedule", label: "Schedule", icon: "schedules" },
         { href: "/portal/assessments", label: "Assessments", icon: "assessments" },
         { href: "/portal/payments", label: "Payments", icon: "payments" },
         { href: "/portal/grades", label: "Grades", icon: "grades" },
@@ -445,6 +454,7 @@ export const NAV_CONFIG: Record<Role, NavSection[]> = {
       label: "My Student",
       items: [
         { href: "/portal/dashboard", label: "Dashboard", icon: "dashboard" },
+        { href: "/portal/schedule", label: "Schedule", icon: "schedules" },
         { href: "/portal/assessments", label: "Assessments", icon: "assessments" },
         { href: "/portal/payments", label: "Payments", icon: "payments" },
         { href: "/portal/grades", label: "Grades", icon: "grades" },

@@ -82,6 +82,15 @@ export const CACHE_TAGS = {
 
   /** Director's List (invalidated when grades are published/locked) */
   DIRECTORS_LIST: "directors-list",
+
+  /** Class schedules (periods, rooms, schedule slots) */
+  SCHEDULES: "schedules",
+
+  /** Period templates for school years */
+  PERIODS: "periods",
+
+  /** Room/venue definitions */
+  ROOMS: "rooms",
 } as const;
 
 export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];
