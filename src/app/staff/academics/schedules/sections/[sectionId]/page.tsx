@@ -90,7 +90,7 @@ async function ScheduleContent({ params }: SectionSchedulePageProps) {
   const [scheduleRows, subjectOfferings, periods, rooms] = await Promise.all([
     getScheduleForSection(sectionId, section.schoolYearId),
     getSubjectOfferingsForSection(sectionId, section.schoolYearId),
-    getPeriodsForDropdown(section.schoolYearId),
+    getPeriodsForDropdown(section.schoolYearId, section.gradeLevelId, section.gradeLevelName),
     getRoomsForDropdown(),
   ]);
 

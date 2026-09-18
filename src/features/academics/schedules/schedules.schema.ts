@@ -6,6 +6,11 @@ import {
   optionalTextSchema,
   type BaseFormState,
 } from "@/lib/validators/common-schemas";
+import {
+  PERIOD_GRADE_GROUPS,
+  PERIOD_GRADE_GROUP_LABELS,
+  type PeriodGradeGroup,
+} from "@/lib/constants/period-grade-groups";
 
 // ─── Day of Week ─────────────────────────────────────────────────────────────
 
@@ -73,6 +78,14 @@ export const timeSchema = z
   .string()
   .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:mm format (e.g., 07:30)");
 
+// ─── Period Grade Groups ─────────────────────────────────────────────────────
+
+/** Re-export for convenience */
+export { PERIOD_GRADE_GROUPS, PERIOD_GRADE_GROUP_LABELS, type PeriodGradeGroup };
+
+/** Zod schema for period grade group validation */
+export const periodGradeGroupSchema = z.enum(PERIOD_GRADE_GROUPS);
+
 // ─── Period Schemas ──────────────────────────────────────────────────────────
 
 export const createPeriodSchema = z
@@ -83,13 +96,29 @@ export const createPeriodSchema = z
     startTime: timeSchema,
     endTime: timeSchema,
     isClassPeriod: z.boolean().default(true),
-    /** Optional grade level for grade-specific schedules (null = all grades/universal) */
+    /** Grade group for group-based periods (casa, elementary, jhs, shs). null = check gradeLevelId */
+    gradeGroup: periodGradeGroupSchema.nullable().optional(),
+    /** Optional grade level for grade-specific schedules (null + null gradeGroup = universal/all grades) */
     gradeLevelId: uuidSchema.nullable().optional(),
   })
   .refine((data) => data.endTime > data.startTime, {
     message: "End time must be after start time",
     path: ["endTime"],
-  });
+  })
+  .refine(
+    (data) => {
+      // gradeGroup and gradeLevelId are mutually exclusive
+      // Can't have both set at the same time
+      if (data.gradeGroup && data.gradeLevelId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Cannot specify both grade group and specific grade level",
+      path: ["gradeLevelId"],
+    }
+  );
 
 export type CreatePeriodInput = z.infer<typeof createPeriodSchema>;
 
@@ -197,6 +226,9 @@ export interface PeriodView {
   startTime: string;
   endTime: string;
   isClassPeriod: boolean;
+  /** Grade group for group-based periods (casa, elementary, jhs, shs). null = check gradeLevelId */
+  gradeGroup: PeriodGradeGroup | null;
+  /** Specific grade level ID. null + null gradeGroup = universal/all grades */
   gradeLevelId: string | null;
   gradeLevelName: string | null;
   isActive: boolean;

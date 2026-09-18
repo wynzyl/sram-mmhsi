@@ -21,6 +21,7 @@ import { DOCUMENT_REQUEST_TYPES, DOCUMENT_REQUEST_STATUSES } from "@/lib/constan
 import { GRADING_PERIODS, GRADE_SHEET_STATUSES, GRADE_APPROVAL_ACTIONS } from "@/lib/constants/grading-periods";
 import { GRADING_SYSTEM_TYPES } from "@/lib/constants/grading-systems";
 import { GRADE_GROUPS } from "@/lib/constants/grade-groups";
+import { PERIOD_GRADE_GROUPS } from "@/lib/constants/period-grade-groups";
 import { SHS_STRAND_CODES } from "@/lib/constants/strands";
 import { TERM_OFFERINGS } from "@/lib/constants/term-offerings";
 
@@ -95,6 +96,9 @@ export const gradingSystemTypeEnum = pgEnum("grading_system_type", GRADING_SYSTE
 
 /** Grade level groups for coordinator assignment */
 export const gradeGroupEnum = pgEnum("grade_group", GRADE_GROUPS);
+
+/** Grade level groups for period assignment (simplified: casa, elementary, jhs, shs) */
+export const periodGradeGroupEnum = pgEnum("period_grade_group", PERIOD_GRADE_GROUPS);
 
 /**
  * @deprecated SHS strand codes are now stored as TEXT in strands.code for admin-managed tracks.
@@ -1477,7 +1481,9 @@ export const periods = pgTable(
     endTime: text("end_time").notNull(),
     /** Whether this is a class period (vs. break/lunch) */
     isClassPeriod: boolean("is_class_period").notNull().default(true),
-    /** Optional grade level for grade-specific schedules (null = all grades/universal) */
+    /** Grade group for group-based periods (casa, elementary, jhs, shs). null = check gradeLevelId */
+    gradeGroup: periodGradeGroupEnum("grade_group"),
+    /** Optional grade level for grade-specific schedules (null + null gradeGroup = universal/all grades) */
     gradeLevelId: uuid("grade_level_id").references(() => gradeLevels.id),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -1488,11 +1494,12 @@ export const periods = pgTable(
     deletedBy: uuid("deleted_by").references(() => users.id),
   },
   (t) => [
-    // Unique period number per school year + grade level (soft delete aware)
-    uniqueIndex("periods_sy_num_gl_uidx")
-      .on(t.schoolYearId, t.periodNumber, t.gradeLevelId)
+    // Unique period number per school year + grade group + grade level (soft delete aware)
+    uniqueIndex("periods_sy_num_gg_gl_uidx")
+      .on(t.schoolYearId, t.periodNumber, t.gradeGroup, t.gradeLevelId)
       .where(sql`${t.deletedAt} IS NULL`),
     index("periods_sy_idx").on(t.schoolYearId),
+    index("periods_gg_idx").on(t.gradeGroup),
     index("periods_gl_idx").on(t.gradeLevelId),
     index("periods_active_idx")
       .on(t.schoolYearId)

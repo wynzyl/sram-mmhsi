@@ -6,7 +6,8 @@ import {
   deletePeriodAction,
   togglePeriodActiveAction,
 } from "../actions";
-import type { PeriodView } from "../schedules.schema";
+import type { PeriodView, PeriodGradeGroup } from "../schedules.schema";
+import { PERIOD_GRADE_GROUP_LABELS } from "../schedules.schema";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,52 @@ interface PeriodsTableProps {
   activeSchoolYearId: string;
 }
 
+/** Group key for organizing periods - "all" for universal, group name, or grade level ID */
+type GroupKey = "all" | PeriodGradeGroup | string;
+
+/** Order for group display */
+const GROUP_ORDER: GroupKey[] = ["all", "casa", "elementary", "jhs", "shs"];
+
+/**
+ * Get a display-friendly group key from a period.
+ * - gradeGroup=null + gradeLevelId=null → "all" (universal)
+ * - gradeGroup="elementary" → "elementary"
+ * - gradeGroup=null + gradeLevelId=<uuid> → the gradeLevelId (specific grade)
+ */
+function getGroupKey(period: PeriodView): GroupKey {
+  if (period.gradeGroup) return period.gradeGroup;
+  if (period.gradeLevelId) return period.gradeLevelId;
+  return "all";
+}
+
+/**
+ * Get the sort order for a group key.
+ */
+function getGroupSortOrder(key: GroupKey, gradeLevels: GradeLevelOption[]): number {
+  const baseOrder = GROUP_ORDER.indexOf(key as GroupKey);
+  if (baseOrder !== -1) return baseOrder;
+
+  // For specific grade levels, sort after GROUP_ORDER entries by grade level order
+  const gradeLevel = gradeLevels.find((g) => g.id === key);
+  return GROUP_ORDER.length + (gradeLevel?.order ?? 999);
+}
+
+/**
+ * Get the display name for a group.
+ */
+function getGroupDisplayName(
+  key: GroupKey,
+  gradeLevels: GradeLevelOption[]
+): string {
+  if (key === "all") return "All Grades";
+  if (key in PERIOD_GRADE_GROUP_LABELS) {
+    return PERIOD_GRADE_GROUP_LABELS[key as PeriodGradeGroup];
+  }
+  // It's a specific grade level ID
+  const gradeLevel = gradeLevels.find((g) => g.id === key);
+  return gradeLevel?.name ?? "Unknown Grade";
+}
+
 export function PeriodsTable({
   periods,
   gradeLevels,
@@ -61,24 +108,22 @@ export function PeriodsTable({
     );
   }, [periods, searchQuery]);
 
-  // Group periods by gradeLevelId (null = "All Grades")
+  // Group periods by gradeGroup / gradeLevelId
   const groupedPeriods = useMemo(() => {
-    const groups = new Map<string | null, PeriodView[]>();
+    const groups = new Map<GroupKey, PeriodView[]>();
 
     for (const period of filteredPeriods) {
-      const key = period.gradeLevelId;
+      const key = getGroupKey(period);
       if (!groups.has(key)) {
         groups.set(key, []);
       }
       groups.get(key)!.push(period);
     }
 
-    // Sort groups by grade level order (null/"All Grades" first)
+    // Sort groups by defined order
     return Array.from(groups.entries()).sort((a, b) => {
-      if (a[0] === null) return -1;
-      if (b[0] === null) return 1;
-      const orderA = gradeLevels.find((g) => g.id === a[0])?.order ?? 999;
-      const orderB = gradeLevels.find((g) => g.id === b[0])?.order ?? 999;
+      const orderA = getGroupSortOrder(a[0], gradeLevels);
+      const orderB = getGroupSortOrder(b[0], gradeLevels);
       return orderA - orderB;
     });
   }, [filteredPeriods, gradeLevels]);
@@ -184,18 +229,15 @@ export function PeriodsTable({
                   </td>
                 </tr>
               ) : (
-                groupedPeriods.map(([gradeLevelId, groupPeriods]) => (
-                  <Fragment key={gradeLevelId ?? "all-grades"}>
-                    {/* Grade Level Header Row */}
+                groupedPeriods.map(([groupKey, groupPeriods]) => (
+                  <Fragment key={groupKey}>
+                    {/* Group Header Row */}
                     <tr className="bg-muted/30 border-t border-border">
                       <td
                         colSpan={6}
                         className="px-4 py-2.5 font-semibold text-sm"
                       >
-                        {gradeLevelId
-                          ? gradeLevels.find((g) => g.id === gradeLevelId)
-                              ?.name ?? "Unknown Grade"
-                          : "All Grades"}
+                        {getGroupDisplayName(groupKey, gradeLevels)}
                         <span className="ml-2 text-muted-foreground font-normal">
                           ({groupPeriods.length} period
                           {groupPeriods.length !== 1 ? "s" : ""})

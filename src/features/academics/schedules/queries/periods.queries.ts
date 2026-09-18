@@ -9,37 +9,21 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, isNull, asc, sql } from "drizzle-orm";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
-import type { PeriodView, PeriodOption } from "../schedules.schema";
+import type { PeriodView, PeriodOption, PeriodGradeGroup } from "../schedules.schema";
+import { getPeriodGradeGroup } from "@/lib/constants/period-grade-groups";
 
 // ─── Period Queries ──────────────────────────────────────────────────────────
 
 /**
- * Get all periods for a school year, optionally filtered by grade level.
- * Ordered by period number.
+ * Get all periods for a school year.
+ * Returns all periods ordered by grade group, grade level, and period number.
  */
 export async function getPeriodsForSchoolYear(
-  schoolYearId: string,
-  gradeLevelId?: string | null
+  schoolYearId: string
 ): Promise<PeriodView[]> {
   "use cache";
   cacheTag(CACHE_TAGS.PERIODS);
   cacheLife("hours");
-
-  const conditions = [
-    eq(periods.schoolYearId, schoolYearId),
-    isNull(periods.deletedAt),
-  ];
-
-  // If gradeLevelId is provided, filter by it OR null (universal periods)
-  if (gradeLevelId !== undefined) {
-    if (gradeLevelId === null) {
-      conditions.push(isNull(periods.gradeLevelId));
-    } else {
-      conditions.push(
-        sql`(${periods.gradeLevelId} = ${gradeLevelId} OR ${periods.gradeLevelId} IS NULL)`
-      );
-    }
-  }
 
   const rows = await db
     .select({
@@ -51,6 +35,7 @@ export async function getPeriodsForSchoolYear(
       startTime: periods.startTime,
       endTime: periods.endTime,
       isClassPeriod: periods.isClassPeriod,
+      gradeGroup: periods.gradeGroup,
       gradeLevelId: periods.gradeLevelId,
       gradeLevelName: gradeLevels.name,
       isActive: periods.isActive,
@@ -59,8 +44,8 @@ export async function getPeriodsForSchoolYear(
     .from(periods)
     .innerJoin(schoolYears, eq(periods.schoolYearId, schoolYears.id))
     .leftJoin(gradeLevels, eq(periods.gradeLevelId, gradeLevels.id))
-    .where(and(...conditions))
-    .orderBy(asc(gradeLevels.order), asc(periods.periodNumber));
+    .where(and(eq(periods.schoolYearId, schoolYearId), isNull(periods.deletedAt)))
+    .orderBy(asc(periods.gradeGroup), asc(gradeLevels.order), asc(periods.periodNumber));
 
   return rows;
 }
@@ -81,6 +66,7 @@ export async function getPeriodById(
       startTime: periods.startTime,
       endTime: periods.endTime,
       isClassPeriod: periods.isClassPeriod,
+      gradeGroup: periods.gradeGroup,
       gradeLevelId: periods.gradeLevelId,
       gradeLevelName: gradeLevels.name,
       isActive: periods.isActive,
@@ -97,28 +83,26 @@ export async function getPeriodById(
 
 /**
  * Get periods for dropdown selection.
- * Only returns active class periods.
+ * Only returns active class periods that apply to the given grade level.
+ *
+ * Returns periods where:
+ * - Universal (gradeGroup=null AND gradeLevelId=null) OR
+ * - Grade group matches the grade level's group OR
+ * - Specific grade level matches exactly
  */
 export async function getPeriodsForDropdown(
   schoolYearId: string,
-  gradeLevelId?: string | null
+  gradeLevelId?: string | null,
+  gradeLevelName?: string | null
 ): Promise<PeriodOption[]> {
   "use cache";
   cacheTag(CACHE_TAGS.PERIODS);
   cacheLife("hours");
 
-  const conditions = [
-    eq(periods.schoolYearId, schoolYearId),
-    eq(periods.isActive, true),
-    eq(periods.isClassPeriod, true),
-    isNull(periods.deletedAt),
-  ];
-
-  if (gradeLevelId !== undefined && gradeLevelId !== null) {
-    conditions.push(
-      sql`(${periods.gradeLevelId} = ${gradeLevelId} OR ${periods.gradeLevelId} IS NULL)`
-    );
-  }
+  // Get the period grade group for the specified grade level
+  const gradeGroup: PeriodGradeGroup | undefined = gradeLevelName
+    ? getPeriodGradeGroup(gradeLevelName)
+    : undefined;
 
   const rows = await db
     .select({
@@ -127,12 +111,51 @@ export async function getPeriodsForDropdown(
       startTime: periods.startTime,
       endTime: periods.endTime,
       isClassPeriod: periods.isClassPeriod,
+      gradeGroup: periods.gradeGroup,
+      gradeLevelId: periods.gradeLevelId,
     })
     .from(periods)
-    .where(and(...conditions))
+    .where(
+      and(
+        eq(periods.schoolYearId, schoolYearId),
+        eq(periods.isActive, true),
+        eq(periods.isClassPeriod, true),
+        isNull(periods.deletedAt)
+      )
+    )
     .orderBy(asc(periods.periodNumber));
 
-  return rows.map((row) => ({
+  // Filter periods based on grade level applicability
+  const filteredRows = rows.filter((row) => {
+    // Universal periods (no gradeGroup and no gradeLevelId)
+    if (row.gradeGroup === null && row.gradeLevelId === null) {
+      return true;
+    }
+
+    // Grade group match (if caller provided a grade level name)
+    if (row.gradeGroup !== null && gradeGroup === row.gradeGroup) {
+      return true;
+    }
+
+    // Specific grade level match
+    if (
+      row.gradeLevelId !== null &&
+      gradeLevelId !== undefined &&
+      gradeLevelId !== null &&
+      row.gradeLevelId === gradeLevelId
+    ) {
+      return true;
+    }
+
+    // If no gradeLevelId provided, include universal periods only
+    if (gradeLevelId === undefined || gradeLevelId === null) {
+      return row.gradeGroup === null && row.gradeLevelId === null;
+    }
+
+    return false;
+  });
+
+  return filteredRows.map((row) => ({
     value: row.id,
     label: `${row.name} (${row.startTime} - ${row.endTime})`,
     startTime: row.startTime,

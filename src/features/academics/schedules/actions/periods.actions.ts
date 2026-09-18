@@ -39,10 +39,10 @@ export async function createPeriodAction(
     return { errors: result.errors };
   }
 
-  const { schoolYearId, name, periodNumber, startTime, endTime, isClassPeriod, gradeLevelId } =
+  const { schoolYearId, name, periodNumber, startTime, endTime, isClassPeriod, gradeGroup, gradeLevelId } =
     result.data;
 
-  // Check for duplicate (same school year + period number + grade level)
+  // Check for duplicate (same school year + period number + grade group + grade level)
   const existing = await db
     .select({ id: periods.id })
     .from(periods)
@@ -50,6 +50,9 @@ export async function createPeriodAction(
       and(
         eq(periods.schoolYearId, schoolYearId),
         eq(periods.periodNumber, periodNumber),
+        gradeGroup
+          ? eq(periods.gradeGroup, gradeGroup)
+          : isNull(periods.gradeGroup),
         gradeLevelId
           ? eq(periods.gradeLevelId, gradeLevelId)
           : isNull(periods.gradeLevelId),
@@ -62,7 +65,7 @@ export async function createPeriodAction(
     return {
       errors: {
         periodNumber: [
-          "A period with this number already exists for this school year and grade level.",
+          "A period with this number already exists for this school year and grade assignment.",
         ],
       },
     };
@@ -79,6 +82,7 @@ export async function createPeriodAction(
           startTime,
           endTime,
           isClassPeriod: isClassPeriod ?? true,
+          gradeGroup: gradeGroup ?? null,
           gradeLevelId: gradeLevelId ?? null,
           createdBy: session.userId,
           updatedBy: session.userId,
@@ -93,7 +97,7 @@ export async function createPeriodAction(
           action: "schedules:create_period",
           targetEntity: "periods",
           targetId: newPeriod.id,
-          newState: { name, periodNumber, startTime, endTime, gradeLevelId },
+          newState: { name, periodNumber, startTime, endTime, gradeGroup, gradeLevelId },
         },
         { throwOnFail: true }
       );
@@ -132,7 +136,7 @@ export async function updatePeriodAction(
     return { errors: result.errors };
   }
 
-  const { id, schoolYearId, name, periodNumber, startTime, endTime, isClassPeriod, gradeLevelId } =
+  const { id, schoolYearId, name, periodNumber, startTime, endTime, isClassPeriod, gradeGroup, gradeLevelId } =
     result.data;
 
   // Check for duplicate (excluding self)
@@ -143,6 +147,9 @@ export async function updatePeriodAction(
       and(
         eq(periods.schoolYearId, schoolYearId),
         eq(periods.periodNumber, periodNumber),
+        gradeGroup
+          ? eq(periods.gradeGroup, gradeGroup)
+          : isNull(periods.gradeGroup),
         gradeLevelId
           ? eq(periods.gradeLevelId, gradeLevelId)
           : isNull(periods.gradeLevelId),
@@ -156,7 +163,7 @@ export async function updatePeriodAction(
     return {
       errors: {
         periodNumber: [
-          "A period with this number already exists for this school year and grade level.",
+          "A period with this number already exists for this school year and grade assignment.",
         ],
       },
     };
@@ -172,6 +179,7 @@ export async function updatePeriodAction(
           startTime,
           endTime,
           isClassPeriod: isClassPeriod ?? true,
+          gradeGroup: gradeGroup ?? null,
           gradeLevelId: gradeLevelId ?? null,
           updatedBy: session.userId,
           updatedAt: new Date(),
@@ -190,7 +198,7 @@ export async function updatePeriodAction(
           action: "schedules:update_period",
           targetEntity: "periods",
           targetId: id,
-          newState: { name, periodNumber, startTime, endTime, gradeLevelId },
+          newState: { name, periodNumber, startTime, endTime, gradeGroup, gradeLevelId },
         },
         { throwOnFail: true }
       );
@@ -378,3 +386,4 @@ export async function togglePeriodActiveAction(
     };
   }
 }
+

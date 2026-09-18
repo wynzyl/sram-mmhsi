@@ -9,6 +9,11 @@ import type {
   PeriodView,
   CreatePeriodFormState,
   UpdatePeriodFormState,
+  PeriodGradeGroup,
+} from "../schedules.schema";
+import {
+  PERIOD_GRADE_GROUPS,
+  PERIOD_GRADE_GROUP_LABELS,
 } from "../schedules.schema";
 import {
   Dialog,
@@ -21,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -44,6 +50,19 @@ interface PeriodFormModalProps {
   onSuccess: () => void;
 }
 
+/** Selection type for period grade assignment */
+type GradeSelectionType = "all" | PeriodGradeGroup | "specific";
+
+/**
+ * Get the selection type from a period's gradeGroup and gradeLevelId.
+ */
+function getSelectionType(period?: PeriodView): GradeSelectionType {
+  if (!period) return "all";
+  if (period.gradeGroup) return period.gradeGroup;
+  if (period.gradeLevelId) return "specific";
+  return "all";
+}
+
 export default function PeriodFormModal({
   open,
   onOpenChange,
@@ -64,9 +83,16 @@ export default function PeriodFormModal({
   const [isClassPeriod, setIsClassPeriod] = useState(
     period?.isClassPeriod ?? true
   );
-  const [gradeLevelId, setGradeLevelId] = useState<string>(
+
+  // Grade selection: "all" | "casa" | "elementary" | "jhs" | "shs" | "specific"
+  const [selectionType, setSelectionType] = useState<GradeSelectionType>(
+    getSelectionType(period)
+  );
+  // Only used when selectionType is "specific"
+  const [specificGradeLevelId, setSpecificGradeLevelId] = useState<string>(
     period?.gradeLevelId ?? ""
   );
+
   const schoolYearId = period?.schoolYearId ?? defaultSchoolYearId;
 
   const initialState: CreatePeriodFormState | UpdatePeriodFormState = {};
@@ -89,14 +115,25 @@ export default function PeriodFormModal({
         setStartTime("07:30");
         setEndTime("08:30");
         setIsClassPeriod(true);
-        setGradeLevelId("");
+        setSelectionType("all");
+        setSpecificGradeLevelId("");
       }
     },
   });
 
+  // Derive gradeGroup and gradeLevelId from selectionType
+  const gradeGroup: PeriodGradeGroup | null =
+    selectionType !== "all" && selectionType !== "specific"
+      ? selectionType
+      : null;
+  const gradeLevelId: string | null =
+    selectionType === "specific" && specificGradeLevelId
+      ? specificGradeLevelId
+      : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Period" : "Create Period"}
@@ -106,6 +143,13 @@ export default function PeriodFormModal({
         <form action={action} className="space-y-4">
           {isEditing && <input type="hidden" name="id" value={period.id} />}
           <input type="hidden" name="schoolYearId" value={schoolYearId} />
+          {/* Hidden inputs for gradeGroup and gradeLevelId */}
+          {gradeGroup && (
+            <input type="hidden" name="gradeGroup" value={gradeGroup} />
+          )}
+          {gradeLevelId && (
+            <input type="hidden" name="gradeLevelId" value={gradeLevelId} />
+          )}
 
           {/* Period Number */}
           <div className="space-y-2">
@@ -203,29 +247,85 @@ export default function PeriodFormModal({
             )}
           </div>
 
-          {/* Grade Level */}
-          <div className="space-y-2">
-            <Label htmlFor="gradeLevelId">Grade Level (Optional)</Label>
-            <Select
-              name="gradeLevelId"
-              value={gradeLevelId}
-              onValueChange={setGradeLevelId}
+          {/* Grade Selection */}
+          <div className="space-y-3">
+            <Label>Applies To</Label>
+            <RadioGroup
+              value={selectionType}
+              onValueChange={(value) => setSelectionType(value as GradeSelectionType)}
+              className="space-y-2"
             >
-              <SelectTrigger id="gradeLevelId">
-                <SelectValue placeholder="All Grades (Universal)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Grades (Universal)</SelectItem>
-                {gradeLevels.map((gl) => (
-                  <SelectItem key={gl.id} value={gl.id}>
-                    {gl.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Each grade level can have its own unique bell schedule
-            </p>
+              {/* All Grades (Universal) */}
+              <div className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer">
+                <RadioGroupItem value="all" id="grade-all" />
+                <Label htmlFor="grade-all" className="flex-1 cursor-pointer">
+                  <span className="font-medium">All Grades</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Universal period for all grade levels
+                  </span>
+                </Label>
+              </div>
+
+              {/* Grade Groups */}
+              {PERIOD_GRADE_GROUPS.map((group) => (
+                <div
+                  key={group}
+                  className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer"
+                >
+                  <RadioGroupItem value={group} id={`grade-${group}`} />
+                  <Label htmlFor={`grade-${group}`} className="flex-1 cursor-pointer">
+                    <span className="font-medium capitalize">{group}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {PERIOD_GRADE_GROUP_LABELS[group]}
+                    </span>
+                  </Label>
+                </div>
+              ))}
+
+              {/* Specific Grade Level */}
+              <div className="rounded-lg border p-3 hover:bg-muted/50">
+                <div className="flex items-center space-x-3">
+                  <RadioGroupItem value="specific" id="grade-specific" />
+                  <Label htmlFor="grade-specific" className="flex-1 cursor-pointer">
+                    <span className="font-medium">Specific Grade</span>
+                    <span className="block text-xs text-muted-foreground">
+                      Select a single grade level
+                    </span>
+                  </Label>
+                </div>
+                {selectionType === "specific" && (
+                  <div className="mt-3 ml-6">
+                    <Select
+                      value={specificGradeLevelId}
+                      onValueChange={setSpecificGradeLevelId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select grade level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {gradeLevels.map((gl) => (
+                          <SelectItem key={gl.id} value={gl.id}>
+                            {gl.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </RadioGroup>
+
+            {/* Validation errors */}
+            {state.errors?.gradeGroup && (
+              <p className="text-sm text-destructive">
+                {state.errors.gradeGroup[0]}
+              </p>
+            )}
+            {state.errors?.gradeLevelId && (
+              <p className="text-sm text-destructive">
+                {state.errors.gradeLevelId[0]}
+              </p>
+            )}
           </div>
 
           {/* General Error */}
