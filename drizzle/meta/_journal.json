@@ -274,6 +274,13 @@
       "when": 1789651200000,
       "tag": "0038_periods_grade_level_id",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1789737600000,
+      "tag": "0039_add_period_grade_group",
+      "breakpoints": true
     }
   ]
 }

@@ -19,7 +19,9 @@ import { logDbTarget } from "./lib/db-target";
 
 const isInsideDocker = !existsSync(".env.production");
 if (!isInsideDocker) {
-  expand(config({ path: ".env.production", override: true }));
+  // Prefer .env.local for local development, fall back to .env.production
+  const envFile = existsSync(".env.local") ? ".env.local" : ".env.production";
+  expand(config({ path: envFile, override: true }));
 }
 
 const raw = process.env.DATABASE_URL;
@@ -27,9 +29,10 @@ if (!raw) {
   console.error("[migrate] DATABASE_URL is not set. Check your .env.production file.");
   process.exit(1);
 }
+// Rewrite Docker hostnames to localhost when running on host
 const databaseUrl = isInsideDocker
-  ? raw                                  // Docker: compose injects the correct service hostname (dev: db, prod: srams_db)
-  : raw.replace("@db:", "@localhost:"); // Host: reach the mapped port on localhost
+  ? raw
+  : raw.replace(/@(db|srams_db):/, "@localhost:");
 
 async function main() {
   // Migrations require a single sequential connection.
