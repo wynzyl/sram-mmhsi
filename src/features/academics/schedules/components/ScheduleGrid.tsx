@@ -14,8 +14,8 @@ import {
   DAY_OF_WEEK_LABELS,
   DAY_OF_WEEK_SHORT_LABELS,
 } from "../schedules.schema";
-import type { SubjectOfferingOption } from "../schedules.queries";
-import { deleteScheduleSlotAction } from "../schedules.actions";
+import type { SubjectOfferingOption } from "../queries";
+import { deleteScheduleSlotAction } from "../actions";
 import { ScheduleSlotCard, EmptySlotCard } from "./ScheduleSlotCard";
 import ScheduleSlotForm from "./ScheduleSlotForm";
 import { cn } from "@/lib/utils/cn";

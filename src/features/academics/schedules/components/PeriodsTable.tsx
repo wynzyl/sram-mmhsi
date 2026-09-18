@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   deletePeriodAction,
   togglePeriodActiveAction,
-} from "../schedules.actions";
+} from "../actions";
 import type { PeriodView } from "../schedules.schema";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

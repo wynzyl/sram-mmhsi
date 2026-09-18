@@ -11,7 +11,7 @@ import {
   getSubjectOfferingsForSection,
   getPeriodsForDropdown,
   getRoomsForDropdown,
-} from "@/features/academics/schedules/schedules.queries";
+} from "@/features/academics/schedules/queries";
 import { ScheduleGrid } from "@/features/academics/schedules/components";
 
 interface SectionSchedulePageProps {

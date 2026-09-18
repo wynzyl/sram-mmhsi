@@ -1,3 +1,5 @@
+"use client";
+
 import type { ScheduleConflict, ConflictType } from "../schedules.schema";
 import { DAY_OF_WEEK_LABELS } from "../schedules.schema";
 import { AlertTriangle, Users, User, MapPin } from "lucide-react";

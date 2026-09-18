@@ -5,7 +5,7 @@ import { hasPermission } from "@/lib/rbac/permissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getActiveSchoolYear } from "@/lib/queries/schoolYears";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
-import { getPeriodsForSchoolYear } from "@/features/academics/schedules/schedules.queries";
+import { getPeriodsForSchoolYear } from "@/features/academics/schedules/queries";
 import { PeriodsTable } from "@/features/academics/schedules/components/PeriodsTable";
 
 export const metadata = {

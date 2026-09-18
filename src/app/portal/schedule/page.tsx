@@ -6,12 +6,11 @@ import { PortalPage } from "@/features/portal/components";
 import {
   getScheduleForStudent,
   getStudentTodaySchedule,
-} from "@/features/academics/schedules/schedules.queries";
+} from "@/features/academics/schedules/queries";
 import {
   ScheduleGrid,
   DayScheduleList,
 } from "@/features/academics/schedules/components";
-import { DAY_OF_WEEK_LABELS } from "@/features/academics/schedules/schedules.schema";
 import { Calendar } from "lucide-react";
 
 export const metadata = {

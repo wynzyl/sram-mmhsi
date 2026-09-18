@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import {
   createRoomAction,
   updateRoomAction,
-} from "../schedules.actions";
+} from "../actions";
 import type {
   RoomView,
   CreateRoomFormState,

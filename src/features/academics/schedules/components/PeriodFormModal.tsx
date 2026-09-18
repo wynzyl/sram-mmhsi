@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import {
   createPeriodAction,
   updatePeriodAction,
-} from "../schedules.actions";
+} from "../actions";
 import type {
   PeriodView,
   CreatePeriodFormState,

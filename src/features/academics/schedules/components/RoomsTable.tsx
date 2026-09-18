@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   deleteRoomAction,
   toggleRoomActiveAction,
-} from "../schedules.actions";
+} from "../actions";
 import type { RoomView } from "../schedules.schema";
 import { ROOM_TYPE_LABELS } from "../schedules.schema";
 import { DataTable } from "@/components/shared/DataTable";

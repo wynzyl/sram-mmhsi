@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import {
   createScheduleSlotAction,
   updateScheduleSlotAction,
-} from "../schedules.actions";
+} from "../actions";
 import type {
   ScheduleSlotView,
   CreateScheduleSlotFormState,
@@ -14,7 +14,7 @@ import type {
   RoomOption,
 } from "../schedules.schema";
 import { DAYS_OF_WEEK, DAY_OF_WEEK_LABELS } from "../schedules.schema";
-import type { SubjectOfferingOption } from "../schedules.queries";
+import type { SubjectOfferingOption } from "../queries";
 import { ConflictWarning } from "./ConflictWarning";
 import {
   Dialog,

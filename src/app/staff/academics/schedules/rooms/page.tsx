@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getAllRooms } from "@/features/academics/schedules/schedules.queries";
+import { getAllRooms } from "@/features/academics/schedules/queries";
 import { RoomsTable } from "@/features/academics/schedules/components/RoomsTable";
 
 export const metadata = {

@@ -9,7 +9,7 @@ import {
   getScheduleForTeacher,
   getTeacherDaySchedule,
   getTodayDayOfWeek,
-} from "@/features/academics/schedules/schedules.queries";
+} from "@/features/academics/schedules/queries";
 import {
   ScheduleGrid,
   DayScheduleList,
