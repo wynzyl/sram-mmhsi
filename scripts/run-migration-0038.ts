@@ -16,6 +16,21 @@ if (!DATABASE_URL) {
 console.log("[migration] Connecting to database...");
 const client = postgres(DATABASE_URL, { max: 1 });
 
+/** duplicate_column, duplicate_table, duplicate_object */
+const IDEMPOTENT_ERROR_CODES = new Set(["42701", "42P07", "42710"]);
+
+function getErrorCode(error: unknown): string | undefined {
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const { code } = error;
+    return typeof code === "string" ? code : undefined;
+  }
+  return undefined;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 async function run() {
   const sql = readFileSync("./drizzle/0038_periods_grade_level_id.sql", "utf-8");
 
@@ -40,12 +55,12 @@ async function run() {
     try {
       await client.unsafe(stmt);
       console.log(`    ✓ OK`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Ignore "already exists" errors for idempotency
-      if (err.code === "42701" || err.code === "42P07" || err.code === "42710") {
+      if (IDEMPOTENT_ERROR_CODES.has(getErrorCode(err) ?? "")) {
         console.log(`    ⚠ Already exists, skipping`);
       } else {
-        console.error(`    ✗ Error:`, err.message);
+        console.error(`    ✗ Error:`, getErrorMessage(err));
         throw err;
       }
     }
