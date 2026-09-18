@@ -14,6 +14,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, isNull, asc, or } from "drizzle-orm";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { getPeriodGradeGroup } from "@/lib/constants/period-grade-groups";
 import type {
   ScheduleSlotView,
   ScheduleGridRow,
@@ -35,19 +36,28 @@ export async function getScheduleForSection(
   cacheTag(CACHE_TAGS.SCHEDULES);
   cacheLife("hours");
 
-  // Get the section's grade level ID
+  // Get the section's grade level ID and name
   const sectionInfo = await db
     .select({
       gradeLevelId: sections.gradeLevelId,
+      gradeLevelName: gradeLevels.name,
     })
     .from(sections)
+    .innerJoin(gradeLevels, eq(sections.gradeLevelId, gradeLevels.id))
     .where(eq(sections.id, sectionId))
     .limit(1);
 
   const gradeLevelId = sectionInfo[0]?.gradeLevelId ?? null;
+  const gradeLevelName = sectionInfo[0]?.gradeLevelName ?? null;
 
-  // Get periods for the school year, filtered by grade level
-  // Include periods that match the grade level OR have no grade level (universal periods)
+  // Determine the period grade group for this section's grade level
+  const gradeGroup = gradeLevelName ? getPeriodGradeGroup(gradeLevelName) : undefined;
+
+  // Get periods for the school year, filtered by grade level applicability
+  // Include periods that:
+  // 1. Are universal (gradeGroup=null AND gradeLevelId=null)
+  // 2. Match the section's grade group (e.g., "elementary" for Grade 1-6)
+  // 3. Match the section's specific grade level
   const allPeriods = await db
     .select({
       id: periods.id,
@@ -63,13 +73,15 @@ export async function getScheduleForSection(
         eq(periods.schoolYearId, schoolYearId),
         eq(periods.isActive, true),
         isNull(periods.deletedAt),
-        // Filter by grade level: match grade level OR universal (null)
-        gradeLevelId
-          ? or(
-              eq(periods.gradeLevelId, gradeLevelId),
-              isNull(periods.gradeLevelId)
-            )
-          : isNull(periods.gradeLevelId)
+        // Filter by grade level applicability
+        or(
+          // Universal periods (no gradeGroup and no gradeLevelId)
+          and(isNull(periods.gradeGroup), isNull(periods.gradeLevelId)),
+          // Grade group match (if section has a mapped grade group)
+          ...(gradeGroup ? [eq(periods.gradeGroup, gradeGroup)] : []),
+          // Specific grade level match
+          ...(gradeLevelId ? [eq(periods.gradeLevelId, gradeLevelId)] : [])
+        )
       )
     )
     .orderBy(asc(periods.periodNumber));
@@ -161,6 +173,7 @@ export async function getScheduleForSection(
 export async function getSectionDetails(sectionId: string): Promise<{
   id: string;
   name: string;
+  gradeLevelId: string;
   gradeLevelName: string;
   schoolYearId: string;
   schoolYearLabel: string;
@@ -169,6 +182,7 @@ export async function getSectionDetails(sectionId: string): Promise<{
     .select({
       id: sections.id,
       name: sections.name,
+      gradeLevelId: sections.gradeLevelId,
       gradeLevelName: gradeLevels.name,
       schoolYearId: sections.schoolYearId,
       schoolYearLabel: schoolYears.label,
