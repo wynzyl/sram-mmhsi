@@ -179,6 +179,8 @@ export const createScheduleSlotSchema = z.object({
   dayOfWeek: dayOfWeekSchema,
   periodId: uuidSchema,
   roomId: uuidSchema.nullable().optional(),
+  /** Teacher for this specific slot (can differ from subject offering's default teacher) */
+  teacherId: uuidSchema.nullable().optional(),
 });
 
 export type CreateScheduleSlotInput = z.infer<typeof createScheduleSlotSchema>;
@@ -332,4 +334,9 @@ export interface RoomOption {
   code: string;
   roomType: RoomType;
   capacity: number | null;
+}
+
+export interface TeacherOption {
+  value: string;
+  label: string;
 }

@@ -8,6 +8,7 @@ import type {
   DayOfWeek,
   PeriodOption,
   RoomOption,
+  TeacherOption,
 } from "../schedules.schema";
 import {
   DAYS_OF_WEEK,
@@ -38,6 +39,7 @@ interface ScheduleGridProps {
   subjectOfferings: SubjectOfferingOption[];
   periods: PeriodOption[];
   rooms: RoomOption[];
+  teachers: TeacherOption[];
   canManage: boolean;
 }
 
@@ -50,6 +52,7 @@ export function ScheduleGrid({
   subjectOfferings,
   periods,
   rooms,
+  teachers,
   canManage,
 }: ScheduleGridProps) {
   const router = useRouter();
@@ -221,6 +224,7 @@ export function ScheduleGrid({
           subjectOfferings={subjectOfferings}
           periods={periods}
           rooms={rooms}
+          teachers={teachers}
           onSuccess={handleSuccess}
         />
       )}
@@ -235,6 +239,7 @@ export function ScheduleGrid({
           subjectOfferings={subjectOfferings}
           periods={periods}
           rooms={rooms}
+          teachers={teachers}
           onSuccess={handleSuccess}
         />
       )}

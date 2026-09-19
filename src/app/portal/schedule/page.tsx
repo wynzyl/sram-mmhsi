@@ -133,6 +133,7 @@ async function ScheduleContent() {
               subjectOfferings={[]}
               periods={[]}
               rooms={[]}
+              teachers={[]}
               canManage={false}
             />
           </div>

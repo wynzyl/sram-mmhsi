@@ -20,6 +20,7 @@ export {
   getScheduleSlotById,
   checkScheduleConflicts,
   getSubjectOfferingsForSection,
+  getTeachersForScheduleSlots,
   type SubjectOfferingOption,
 } from "./slots.queries";
 

@@ -12,6 +12,7 @@ import type {
   DayOfWeek,
   PeriodOption,
   RoomOption,
+  TeacherOption,
 } from "../schedules.schema";
 import { DAYS_OF_WEEK, DAY_OF_WEEK_LABELS } from "../schedules.schema";
 import type { SubjectOfferingOption } from "../queries";
@@ -47,6 +48,8 @@ interface ScheduleSlotFormProps {
   periods: PeriodOption[];
   /** Available rooms */
   rooms: RoomOption[];
+  /** Available teachers */
+  teachers: TeacherOption[];
   onSuccess: () => void;
 }
 
@@ -59,6 +62,7 @@ export default function ScheduleSlotForm({
   subjectOfferings,
   periods,
   rooms,
+  teachers,
   onSuccess,
 }: ScheduleSlotFormProps) {
   const isEditing = !!slot;
@@ -74,6 +78,7 @@ export default function ScheduleSlotForm({
     slot?.periodId ?? defaultPeriodId ?? ""
   );
   const [roomId, setRoomId] = useState(slot?.roomId ?? "");
+  const [teacherId, setTeacherId] = useState(slot?.teacherId ?? "");
 
   const initialState: CreateScheduleSlotFormState | UpdateScheduleSlotFormState = {};
 
@@ -90,11 +95,6 @@ export default function ScheduleSlotForm({
       onSuccess();
     },
   });
-
-  // Get selected subject offering for display
-  const selectedOffering = subjectOfferings.find(
-    (o) => o.value === subjectOfferingId
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,11 +128,6 @@ export default function ScheduleSlotForm({
                 ))}
               </SelectContent>
             </Select>
-            {selectedOffering?.teacherName && (
-              <p className="text-xs text-muted-foreground">
-                Teacher: {selectedOffering.teacherName}
-              </p>
-            )}
             {state.errors?.subjectOfferingId && (
               <p className="text-sm text-destructive">
                 {state.errors.subjectOfferingId[0]}
@@ -195,31 +190,49 @@ export default function ScheduleSlotForm({
             </div>
           </div>
 
-          {/* Room (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="roomId">Room (Optional)</Label>
-            <Select
-              name="roomId"
-              value={roomId}
-              onValueChange={setRoomId}
-            >
-              <SelectTrigger id="roomId">
-                <SelectValue placeholder="No room assigned" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">No room assigned</SelectItem>
-                {rooms.map((room) => (
-                  <SelectItem key={room.value} value={room.value}>
-                    {room.label}
-                    {room.capacity && (
-                      <span className="text-muted-foreground ml-1">
-                        (Cap: {room.capacity})
-                      </span>
-                    )}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Room and Teacher */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="roomId">Room (Optional)</Label>
+              <Select
+                name="roomId"
+                value={roomId}
+                onValueChange={setRoomId}
+              >
+                <SelectTrigger id="roomId">
+                  <SelectValue placeholder="No room" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No room assigned</SelectItem>
+                  {rooms.map((room) => (
+                    <SelectItem key={room.value} value={room.value}>
+                      {room.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="teacherId">Teacher (Optional)</Label>
+              <Select
+                name="teacherId"
+                value={teacherId}
+                onValueChange={setTeacherId}
+              >
+                <SelectTrigger id="teacherId">
+                  <SelectValue placeholder="No teacher" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No teacher assigned</SelectItem>
+                  {teachers.map((teacher) => (
+                    <SelectItem key={teacher.value} value={teacher.value}>
+                      {teacher.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Conflict Warning */}

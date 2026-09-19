@@ -38,13 +38,12 @@ export async function createScheduleSlotAction(
     return { errors: result.errors };
   }
 
-  const { subjectOfferingId, dayOfWeek, periodId, roomId } = result.data;
+  const { subjectOfferingId, dayOfWeek, periodId, roomId, teacherId } = result.data;
 
   // Get subject offering details (for denormalized fields)
   const offering = await db
     .select({
       sectionId: subjectOfferings.sectionId,
-      teacherId: subjectOfferings.teacherId,
       schoolYearId: subjectOfferings.schoolYearId,
     })
     .from(subjectOfferings)
@@ -57,7 +56,8 @@ export async function createScheduleSlotAction(
     return { message: "Subject offering not found." };
   }
 
-  const { sectionId, teacherId, schoolYearId } = offering[0];
+  const { sectionId, schoolYearId } = offering[0];
+  // teacherId comes from form input, not from offering (allows different teachers per slot)
 
   // Check for conflicts
   const conflicts = await checkScheduleConflicts({
@@ -65,7 +65,7 @@ export async function createScheduleSlotAction(
     periodId,
     schoolYearId,
     sectionId,
-    teacherId,
+    teacherId: teacherId ?? null,
     roomId: roomId ?? null,
   });
 
@@ -87,7 +87,7 @@ export async function createScheduleSlotAction(
           roomId: roomId ?? null,
           schoolYearId,
           sectionId,
-          teacherId,
+          teacherId: teacherId ?? null,
           createdBy: session.userId,
           updatedBy: session.userId,
           updatedAt: new Date(),
@@ -101,7 +101,7 @@ export async function createScheduleSlotAction(
           action: "schedules:create_slot",
           targetEntity: "schedule_slots",
           targetId: newSlot.id,
-          newState: { subjectOfferingId, dayOfWeek, periodId, roomId, sectionId },
+          newState: { subjectOfferingId, dayOfWeek, periodId, roomId, sectionId, teacherId },
         },
         { throwOnFail: true }
       );
@@ -147,13 +147,12 @@ export async function updateScheduleSlotAction(
     return { errors: result.errors };
   }
 
-  const { id, subjectOfferingId, dayOfWeek, periodId, roomId } = result.data;
+  const { id, subjectOfferingId, dayOfWeek, periodId, roomId, teacherId } = result.data;
 
   // Get subject offering details
   const offering = await db
     .select({
       sectionId: subjectOfferings.sectionId,
-      teacherId: subjectOfferings.teacherId,
       schoolYearId: subjectOfferings.schoolYearId,
     })
     .from(subjectOfferings)
@@ -166,7 +165,8 @@ export async function updateScheduleSlotAction(
     return { message: "Subject offering not found." };
   }
 
-  const { sectionId, teacherId, schoolYearId } = offering[0];
+  const { sectionId, schoolYearId } = offering[0];
+  // teacherId comes from form input, not from offering (allows different teachers per slot)
 
   // Check for conflicts (excluding self)
   const conflicts = await checkScheduleConflicts({
@@ -174,7 +174,7 @@ export async function updateScheduleSlotAction(
     periodId,
     schoolYearId,
     sectionId,
-    teacherId,
+    teacherId: teacherId ?? null,
     roomId: roomId ?? null,
     excludeSlotId: id,
   });
@@ -197,7 +197,7 @@ export async function updateScheduleSlotAction(
           roomId: roomId ?? null,
           schoolYearId,
           sectionId,
-          teacherId,
+          teacherId: teacherId ?? null,
           updatedBy: session.userId,
           updatedAt: new Date(),
         })
@@ -215,7 +215,7 @@ export async function updateScheduleSlotAction(
           action: "schedules:update_slot",
           targetEntity: "schedule_slots",
           targetId: id,
-          newState: { subjectOfferingId, dayOfWeek, periodId, roomId, sectionId },
+          newState: { subjectOfferingId, dayOfWeek, periodId, roomId, sectionId, teacherId },
         },
         { throwOnFail: true }
       );

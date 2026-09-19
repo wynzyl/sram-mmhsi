@@ -11,6 +11,7 @@ import {
   getSubjectOfferingsForSection,
   getPeriodsForDropdown,
   getRoomsForDropdown,
+  getTeachersForScheduleSlots,
 } from "@/features/academics/schedules/queries";
 import { ScheduleGrid } from "@/features/academics/schedules/components";
 
@@ -87,11 +88,12 @@ async function ScheduleContent({ params }: SectionSchedulePageProps) {
   const canManage = hasPermission(session.role, "schedules:manage");
 
   // Fetch all required data in parallel
-  const [scheduleRows, subjectOfferings, periods, rooms] = await Promise.all([
+  const [scheduleRows, subjectOfferings, periods, rooms, teachers] = await Promise.all([
     getScheduleForSection(sectionId, section.schoolYearId),
     getSubjectOfferingsForSection(sectionId, section.schoolYearId),
     getPeriodsForDropdown(section.schoolYearId, section.gradeLevelId, section.gradeLevelName),
     getRoomsForDropdown(),
+    getTeachersForScheduleSlots(),
   ]);
 
   return (
@@ -147,6 +149,7 @@ async function ScheduleContent({ params }: SectionSchedulePageProps) {
             subjectOfferings={subjectOfferings}
             periods={periods}
             rooms={rooms}
+            teachers={teachers}
             canManage={canManage && subjectOfferings.length > 0}
           />
         </div>

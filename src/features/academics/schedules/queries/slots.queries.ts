@@ -10,11 +10,12 @@ import {
   users,
   gradeLevels,
 } from "@/lib/db/schema";
-import { eq, and, isNull, asc, ne } from "drizzle-orm";
+import { eq, and, isNull, asc, ne, inArray } from "drizzle-orm";
 import type {
   ScheduleSlotView,
   ScheduleConflict,
   DayOfWeek,
+  TeacherOption,
 } from "../schedules.schema";
 
 // ─── Schedule Slot Queries ────────────────────────────────────────────────────
@@ -307,5 +308,33 @@ export async function getSubjectOfferingsForSection(
     subjectName: row.subjectName,
     teacherId: row.teacherId,
     teacherName: row.teacherName,
+  }));
+}
+
+// ─── Teacher Queries (for Schedule Slot Form) ─────────────────────────────────
+
+/**
+ * Get all teachers available for schedule slot assignment.
+ * Includes teachers and coordinators who can be assigned to teach slots.
+ */
+export async function getTeachersForScheduleSlots(): Promise<TeacherOption[]> {
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.username,
+    })
+    .from(users)
+    .where(
+      and(
+        inArray(users.role, ["teacher", "coordinator"]),
+        eq(users.isActive, true),
+        isNull(users.deletedAt)
+      )
+    )
+    .orderBy(asc(users.username));
+
+  return rows.map((row) => ({
+    value: row.id,
+    label: row.name,
   }));
 }
