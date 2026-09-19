@@ -7,7 +7,7 @@ import { updateActivityAction } from "@/features/auth/auth.actions";
 // Default values (will be synced with server on first activity update)
 const DEFAULT_IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const DEFAULT_WARNING_BEFORE_MS = 2 * 60 * 1000; // 2 minutes
-const ACTIVITY_DEBOUNCE_MS = 30 * 1000; // Debounce activity updates to server (30 seconds)
+const ACTIVITY_DEBOUNCE_MS = 60 * 1000; // Debounce activity updates to server (60 seconds - reduces request frequency)
 
 // Activity events to track
 const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
@@ -137,9 +137,10 @@ export function useIdleLogout(options: UseIdleLogoutOptions = {}): UseIdleLogout
     // Initialize lastActivityRef on mount (avoids impure render)
     if (!isInitializedRef.current) {
       lastActivityRef.current = Date.now();
+      lastServerUpdateRef.current = Date.now(); // Prevent immediate sync - session was just validated by page load
       isInitializedRef.current = true;
-      // Initial server sync - fire and forget
-      updateServerActivity();
+      // Skip initial sync - session is validated by page load
+      // Server activity will update on first user interaction after debounce period
     }
 
     // Add activity event listeners
