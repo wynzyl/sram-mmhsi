@@ -135,7 +135,7 @@ export async function generateSubjectOfferingsAction(
   // Note: revalidatePath() removed — it's blocking in production Docker.
   // invalidateTags() provides non-blocking cache invalidation.
   // Client should call router.refresh() on success for instant UI update.
-  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS, CACHE_TAGS.SCHEDULES);
 
   return {
     success: true,
@@ -194,7 +194,7 @@ export async function assignTeacherAction(
     newState: { teacherId },
   });
 
-  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS, CACHE_TAGS.SCHEDULES);
 
   return { success: true };
 }
@@ -285,7 +285,7 @@ export async function deleteSubjectOfferingAction(
   });
 
   // Note: revalidatePath() removed — it's blocking in production Docker.
-  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS, CACHE_TAGS.SCHEDULES);
 
   return { success: true };
 }
@@ -402,7 +402,7 @@ export async function deleteAllSubjectOfferingsAction(
   });
 
   // Note: revalidatePath() removed — it's blocking in production Docker.
-  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS, CACHE_TAGS.SCHEDULES);
 
   return {
     success: true,
@@ -560,7 +560,7 @@ export async function addManualSubjectOfferingAction(
       });
 
       // Note: revalidatePath() removed — it's blocking in production Docker.
-      invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+      invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS, CACHE_TAGS.SCHEDULES);
 
       return { success: true };
     } else {
@@ -607,7 +607,7 @@ export async function addManualSubjectOfferingAction(
   });
 
   // 7. Invalidate cache (revalidatePath removed — blocking in production Docker)
-  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS, CACHE_TAGS.SCHEDULES);
 
   return { success: true };
 }
@@ -733,7 +733,7 @@ export async function updateOfferingTrackAction(
   });
 
   // Note: revalidatePath() removed — it's blocking in production Docker.
-  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS, CACHE_TAGS.SCHEDULES);
 
   return { success: true };
 }
@@ -829,7 +829,7 @@ export async function cleanupOrphanedSSEAction(): Promise<{
     },
   });
 
-  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS);
+  invalidateTags(CACHE_TAGS.SUBJECT_OFFERINGS, CACHE_TAGS.SECTIONS, CACHE_TAGS.SCHEDULES);
 
   return {
     success: true,
