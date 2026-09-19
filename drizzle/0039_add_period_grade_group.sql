@@ -20,6 +20,7 @@ CREATE INDEX "periods_gg_idx" ON "periods" ("grade_group");
 DROP INDEX IF EXISTS "periods_sy_num_gl_uidx";
 
 -- Step 5: Create new unique index for school year + period number + grade group + grade level
+DROP INDEX IF EXISTS "periods_sy_num_gg_gl_uidx";
 CREATE UNIQUE INDEX "periods_sy_num_gg_gl_uidx"
   ON "periods" ("school_year_id", "period_number", "grade_group", "grade_level_id")
   WHERE "deleted_at" IS NULL;
