@@ -5,5 +5,6 @@
  */
 
 export * from "./action-result";
+export * from "./dropdown-options";
 export * from "./pagination";
 export * from "./registration-enrollment-context";

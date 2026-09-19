@@ -11,6 +11,7 @@ import {
   PERIOD_GRADE_GROUP_LABELS,
   type PeriodGradeGroup,
 } from "@/lib/constants/period-grade-groups";
+import { type SelectOption } from "@/lib/types";
 
 // ─── Day of Week ─────────────────────────────────────────────────────────────
 
@@ -336,7 +337,5 @@ export interface RoomOption {
   capacity: number | null;
 }
 
-export interface TeacherOption {
-  value: string;
-  label: string;
-}
+/** Teacher option for schedule slot form dropdown */
+export type TeacherOption = SelectOption;
