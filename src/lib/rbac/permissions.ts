@@ -272,7 +272,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   ],
   coordinator: [
     "students:read",
-    "curriculums:read", "curriculums:create", "curriculums:edit", "curriculums:publish", "curriculums:archive", "curriculums:adopt",
+    "curriculums:read", "curriculums:create", "curriculums:edit", "curriculums:publish", "curriculums:archive", "curriculums:adopt", "subjects:manage",
     "grades:read", "grades:encode", "grades:submit", "grades:publish", "grades:lock",
     "advisers:read", "advisers:manage",
     "sections:manage", "sections:assign",
@@ -285,7 +285,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   ],
   principal: [
     "students:read",
-    "curriculums:read", "curriculums:create", "curriculums:edit", "curriculums:publish", "curriculums:archive", "curriculums:adopt",
+    "curriculums:read", "curriculums:create", "curriculums:edit", "curriculums:publish", "curriculums:archive", "curriculums:adopt", "subjects:manage",
     "grades:read", "grades:principal_review", "grades:publish", "grades:lock",
     "advisers:read", "advisers:manage",
     "sections:manage", "sections:assign",
