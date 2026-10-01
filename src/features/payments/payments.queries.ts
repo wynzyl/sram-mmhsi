@@ -29,6 +29,7 @@ import {
   type StudentDiscountForCascade,
 } from "@/features/discounts/utils/cascade-calculations";
 import { formatDate } from "@/lib/utils/date";
+import { buildStudentSearchCondition } from "@/lib/utils/query-conditions";
 
 // ─────────────────────────────────────────────────────────────────
 // Types (re-exported from payments.types.ts)
@@ -98,6 +99,7 @@ function paymentDateIsToday() {
  * Includes pagination to prevent memory issues with large datasets.
  * @param params.page - Page number (1-indexed), defaults to 1
  * @param params.pageSize - Number of items per page, defaults to 50, max 100
+ * @param params.search - Optional search term (filters by student name/reference)
  */
 export async function fetchCashierQueueData(
   params: CashierQueueParams = {}
@@ -105,6 +107,7 @@ export async function fetchCashierQueueData(
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
   const offset = calculateOffset(page, pageSize);
+  const searchCondition = buildStudentSearchCondition(params.search);
   const [
     todayTotalRow,
     totalCollectiblesRow,
@@ -147,21 +150,23 @@ export async function fetchCashierQueueData(
       .where(sql`${assessments.billingStatus} != 'cancelled'`)
       .then((r) => r[0]),
 
-    // Count of outstanding assessments for pagination
+    // Count of outstanding assessments for pagination (filtered by search)
     db
       .select({
         count: sql<number>`COUNT(*)`,
       })
       .from(assessments)
+      .innerJoin(students, eq(assessments.studentId, students.id))
       .where(
         and(
           eq(assessments.billingStatus, "outstanding"),
-          sql`${assessments.balance}::numeric > 0`
+          sql`${assessments.balance}::numeric > 0`,
+          searchCondition
         )
       )
       .then((r) => r[0]),
 
-    // Queue of pending payments (paginated)
+    // Queue of pending payments (paginated, filtered by search)
     db
       .select({
         assessmentId: assessments.id,
@@ -184,7 +189,8 @@ export async function fetchCashierQueueData(
       .where(
         and(
           eq(assessments.billingStatus, "outstanding"),
-          sql`${assessments.balance}::numeric > 0`
+          sql`${assessments.balance}::numeric > 0`,
+          searchCondition
         )
       )
       .orderBy(desc(assessments.updatedAt), desc(assessments.createdAt))

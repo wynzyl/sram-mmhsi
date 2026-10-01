@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
@@ -30,7 +30,7 @@ interface CashierQueueTableProps {
   rows: CashierQueueRow[];
   stats?: CashierQueueStats;
   isFetching?: boolean;
-  /** Total count of all outstanding assessments (from server) */
+  /** Total count of all outstanding assessments (from server, filtered by search) */
   totalCount: number;
   /** Current page number (1-indexed) */
   currentPage: number;
@@ -38,6 +38,10 @@ interface CashierQueueTableProps {
   pageSize: number;
   /** Callback when page changes */
   onPageChange: (page: number) => void;
+  /** Server-side search term (controlled by parent) */
+  search: string;
+  /** Callback when search changes */
+  onSearchChange: (search: string) => void;
 }
 
 export function CashierQueueTable({
@@ -48,51 +52,44 @@ export function CashierQueueTable({
   currentPage,
   pageSize,
   onPageChange,
+  search,
+  onSearchChange,
 }: CashierQueueTableProps) {
   const [filterMode, setFilterMode] = useState<"all" | "newly_assessed" | "with_balance">("newly_assessed");
-  const [searchInput, setSearchInput] = useState("");
+  // Local input state for smooth typing, synced to parent via debounce
+  const [searchInput, setSearchInput] = useState(search);
   const debouncedSearch = useDebounce(searchInput, 300);
 
-  // Client-side filtering on current page's data
+  // Sync debounced search to parent (triggers server-side search)
+  useEffect(() => {
+    if (debouncedSearch !== search) {
+      onSearchChange(debouncedSearch);
+    }
+  }, [debouncedSearch, search, onSearchChange]);
+
+  // Client-side filtering for filter modes ONLY (search is now server-side)
   const filteredRows = useMemo(() => {
-    const normalizedSearch = debouncedSearch.trim().toLowerCase();
-
-    let filtered: CashierQueueRow[];
-
     if (filterMode === "newly_assessed") {
-      filtered = rows.filter(
-        (row) =>
-          row.totalPaid <= 0 &&
-          (`${row.studentName} ${row.referenceNumber}`).toLowerCase().includes(normalizedSearch)
-      );
-      // Keep server order for newly_assessed (by updatedAt)
-      return filtered;
+      // Keep server order (by updatedAt)
+      return rows.filter((row) => row.totalPaid <= 0);
     }
 
     if (filterMode === "with_balance") {
-      filtered = rows.filter(
-        (row) =>
-          row.totalPaid > 0 &&
-          row.balance > 0 &&
-          (`${row.studentName} ${row.referenceNumber}`).toLowerCase().includes(normalizedSearch)
-      );
-    } else {
-      // "all" mode
-      filtered = rows.filter((row) =>
-        (`${row.studentName} ${row.referenceNumber}`).toLowerCase().includes(normalizedSearch)
-      );
+      return rows
+        .filter((row) => row.totalPaid > 0 && row.balance > 0)
+        .sort((a, b) => a.studentName.localeCompare(b.studentName));
     }
 
-    // Sort alphabetically by student name (A-Z) for "all" and "with_balance"
-    return filtered.sort((a, b) => a.studentName.localeCompare(b.studentName));
-  }, [filterMode, rows, debouncedSearch]);
+    // "all" mode - return sorted
+    return [...rows].sort((a, b) => a.studentName.localeCompare(b.studentName));
+  }, [filterMode, rows]);
 
   // Server-side pagination calculations
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  // Check if client-side filtering is active (search or non-default filter)
-  const isClientFiltering = debouncedSearch.trim() !== "" || filterMode !== "all";
-  const showingFiltered = isClientFiltering && filteredRows.length < rows.length;
+  // Check if client-side filter mode is reducing results
+  const isFilterModeActive = filterMode !== "all";
+  const showingFiltered = isFilterModeActive && filteredRows.length < rows.length;
 
   // Filter mode change handler - reset to page 1
   const handleFilterModeChange = (mode: "all" | "newly_assessed" | "with_balance") => {
@@ -238,8 +235,7 @@ export function CashierQueueTable({
       <div className="border-t border-border px-4 py-3">
         {showingFiltered && (
           <p className="mb-2 text-xs text-muted-foreground">
-            Showing {filteredRows.length} filtered result{filteredRows.length !== 1 ? "s" : ""} from current page.
-            Navigate pages to see more.
+            Showing {filteredRows.length} of {rows.length} on this page (filtered by &quot;{filterMode.replace("_", " ")}&quot;).
           </p>
         )}
         <ClientTablePagination

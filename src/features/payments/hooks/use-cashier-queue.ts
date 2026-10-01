@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { z } from "zod";
 import { queryKeys } from "@/lib/query/keys";
 import { LIVE_DATA_STALE_TIME } from "@/lib/query/staleness";
@@ -19,6 +19,7 @@ import type { CashierQueueRow, CashierStats, RecentCollection } from "../payment
 export type CashierQueueParams = {
   page: number;
   pageSize: number;
+  search?: string;
 };
 
 export type CashierQueueResponse = {
@@ -76,6 +77,10 @@ async function fetchCashierQueue(params: CashierQueueParams): Promise<CashierQue
     page: String(params.page),
     pageSize: String(params.pageSize),
   });
+  // Add search param if provided and meets minimum length
+  if (params.search && params.search.trim().length >= 2) {
+    searchParams.set("q", params.search.trim());
+  }
   const res = await fetch(`/api/cashier/queue?${searchParams}`);
 
   if (!res.ok) {
@@ -103,24 +108,29 @@ const DEFAULT_PAGE_SIZE = 50;
  * Fetches the cashier queue with stats and recent collections.
  *
  * Features:
- * - Server-side pagination
+ * - Server-side pagination and search
  * - Auto-refresh every 30 seconds for real-time updates
  * - Instant refetch after posting payments
+ * - Smooth transitions with keepPreviousData
  *
  * @param params.page - Page number (1-indexed), defaults to 1
  * @param params.pageSize - Number of items per page, defaults to 50
+ * @param params.search - Optional search term (min 2 characters)
  */
 export function useCashierQueue(params: Partial<CashierQueueParams> = {}) {
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
+  const search = params.search?.trim() || "";
 
   return useQuery({
-    queryKey: [...queryKeys.payments.queue(), { page, pageSize }],
-    queryFn: () => fetchCashierQueue({ page, pageSize }),
+    queryKey: [...queryKeys.payments.queue(), { page, pageSize, search }],
+    queryFn: () => fetchCashierQueue({ page, pageSize, search }),
     // Auto-refresh every 30 seconds
     refetchInterval: 30 * 1000,
     // Keep stale data visible while refetching
     staleTime: LIVE_DATA_STALE_TIME,
+    // Smooth transitions when search/page changes
+    placeholderData: keepPreviousData,
   });
 }
 

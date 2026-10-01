@@ -48,6 +48,7 @@ export type CashierQueueData = {
 export type CashierQueueParams = {
   page?: number;
   pageSize?: number;
+  search?: string;
 };
 
 // ─────────────────────────────────────────────────────────────────

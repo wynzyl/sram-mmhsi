@@ -13,7 +13,17 @@ const PAGE_SIZE = 50;
 
 export function CashierDashboardView() {
   const [currentPage, setCurrentPage] = useState(1);
-  const query = useCashierQueue({ page: currentPage, pageSize: PAGE_SIZE });
+  const [search, setSearch] = useState("");
+
+  const handleSearchChange = (newSearch: string) => {
+    setSearch(newSearch);
+    // Reset to page 1 when search changes
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  };
+
+  const query = useCashierQueue({ page: currentPage, pageSize: PAGE_SIZE, search });
   const data = query.data;
 
   const stats = data?.stats ?? {
@@ -61,6 +71,8 @@ export function CashierDashboardView() {
             currentPage={currentPage}
             pageSize={PAGE_SIZE}
             onPageChange={setCurrentPage}
+            search={search}
+            onSearchChange={handleSearchChange}
           />
         )}
       </section>
