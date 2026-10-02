@@ -830,6 +830,12 @@ async function processRefundForCancellation(
       ? `REV-CANCEL-${paymentDetails.orNumber}`
       : `REV-CANCEL-${assessmentId.substring(0, 8)}`;
 
+    const paymentDate = new Date();
+    // Defensive: Ensure date is valid before payment insert
+    if (!paymentDate || isNaN(paymentDate.getTime())) {
+      throw new Error("INVALID_PAYMENT_DATE");
+    }
+
     await tx.insert(payments).values({
       studentId: paymentDetails?.studentId ?? "",
       assessmentId,
@@ -839,7 +845,7 @@ async function processRefundForCancellation(
       amount: String(-refundableAmount), // Negative amount for reversal
       paymentMethod: "cancellation_reversal",
       referenceNumber: reversalReferenceNumber,
-      paymentDate: new Date(),
+      paymentDate,
       status: "reversal",
       kind: "reversal",
       reversesPaymentId: latestPayment.id,

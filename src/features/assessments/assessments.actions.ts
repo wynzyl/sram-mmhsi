@@ -412,6 +412,11 @@ export async function createAssessmentFromEnrollmentAction(
         const sourceAssessmentIds = balanceForwardItems.map((bf) => bf.sourceAssessmentId);
         const now = new Date();
 
+        // Defensive: Ensure date is valid before any payment inserts
+        if (!now || isNaN(now.getTime())) {
+          throw new Error("INVALID_PAYMENT_DATE");
+        }
+
         // 1. Batch claim all source assessments. Conditional UPDATE with
         //    transferredAt IS NULL prevents concurrent transfers. We verify ALL
         //    expected assessments were claimed by checking returned count.

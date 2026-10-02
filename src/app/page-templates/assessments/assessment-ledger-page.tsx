@@ -207,7 +207,7 @@ export async function InternalAssessmentLedgerPage(props: {
     orNumber: p.orNumber,
     amount: p.amount,
     paymentMethod: p.paymentMethod,
-    paymentDate: p.paymentDate.toISOString(),
+    paymentDate: p.paymentDate?.toISOString() ?? null,
     status: p.status,
     referenceNumber: p.referenceNumber,
     processedBy: p.processedByUsername ?? null,
