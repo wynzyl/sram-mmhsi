@@ -349,7 +349,7 @@ export function PaymentCollectionReportView({
                 value={orNumber}
                 onChange={(e) => setOrNumber(e.target.value)}
                 placeholder="Search OR #"
-                className="form-control h-9 w-[180px] bg-muted text-foreground text-xs pl-[2.5rem] pr-2"
+                className="form-control h-9 w-[180px] bg-muted text-foreground text-xs !pl-10 pr-2"
                 aria-label="Search by OR number"
               />
             </div>
