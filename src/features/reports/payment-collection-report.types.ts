@@ -46,6 +46,7 @@ export type PaymentCollectionParams = {
   usageMode?: string;
   processedByUserId?: string;
   bookletId?: string;
+  orNumber?: string;
   page?: number;
   pageSize?: number;
 };

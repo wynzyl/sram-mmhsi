@@ -10,7 +10,7 @@ import {
   receiptBooklets,
   studentDiscounts,
 } from "@/lib/db/schema";
-import { eq, and, gte, lte, sql, asc, desc, isNull, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, sql, asc, desc, isNull, inArray, ilike, or } from "drizzle-orm";
 import { calculateOffset } from "@/lib/types/pagination";
 
 // Re-export types and constants from types file for backward compatibility
@@ -60,6 +60,7 @@ export async function getPaymentCollectionReport(
     usageMode,
     processedByUserId,
     bookletId,
+    orNumber,
   } = params;
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
@@ -75,6 +76,7 @@ export async function getPaymentCollectionReport(
     usageMode,
     processedByUserId,
     bookletId,
+    orNumber,
   });
 
   // Alias for cashier user
@@ -176,6 +178,7 @@ export async function getPaymentCollectionSummary(params: {
   usageMode?: string;
   processedByUserId?: string;
   bookletId?: string;
+  orNumber?: string;
 }): Promise<PaymentCollectionSummary> {
   const {
     startDate,
@@ -186,6 +189,7 @@ export async function getPaymentCollectionSummary(params: {
     usageMode,
     processedByUserId,
     bookletId,
+    orNumber,
   } = params;
 
   // Build WHERE conditions (same as report query)
@@ -198,6 +202,7 @@ export async function getPaymentCollectionSummary(params: {
     usageMode,
     processedByUserId,
     bookletId,
+    orNumber,
   });
 
   // Main aggregate query
@@ -258,6 +263,7 @@ export async function getAllPaymentCollectionData(params: {
   usageMode?: string;
   processedByUserId?: string;
   bookletId?: string;
+  orNumber?: string;
 }): Promise<PaymentCollectionRow[]> {
   const MAX_PDF_ROWS = 5000;
 
@@ -270,6 +276,7 @@ export async function getAllPaymentCollectionData(params: {
     usageMode,
     processedByUserId,
     bookletId,
+    orNumber,
   } = params;
 
   const conditions = buildWhereConditions({
@@ -281,6 +288,7 @@ export async function getAllPaymentCollectionData(params: {
     usageMode,
     processedByUserId,
     bookletId,
+    orNumber,
   });
 
   const cashier = users;
@@ -429,6 +437,7 @@ function buildWhereConditions(params: {
   usageMode?: string;
   processedByUserId?: string;
   bookletId?: string;
+  orNumber?: string;
 }) {
   const {
     startDate,
@@ -439,6 +448,7 @@ function buildWhereConditions(params: {
     usageMode,
     processedByUserId,
     bookletId,
+    orNumber,
   } = params;
 
   // Base conditions: include payments and reversals (exclude BFX), within date range
@@ -492,6 +502,16 @@ function buildWhereConditions(params: {
   // Optional: filter by receipt booklet
   if (bookletId) {
     conditions.push(eq(payments.bookletId, bookletId));
+  }
+
+  // Optional: filter by OR number (partial match on orNumber or referenceNumber for reversals)
+  if (orNumber) {
+    conditions.push(
+      or(
+        ilike(payments.orNumber, `%${orNumber}%`),
+        ilike(payments.referenceNumber, `%${orNumber}%`)
+      )!
+    );
   }
 
   return conditions;

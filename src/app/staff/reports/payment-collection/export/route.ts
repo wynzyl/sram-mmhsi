@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
   const paymentStatus = searchParams.get("paymentStatus") || undefined;
   const usageMode = searchParams.get("usageMode") || undefined;
   const bookletId = searchParams.get("bookletId") || undefined;
+  const orNumber = searchParams.get("orNumber") || undefined;
 
   // Role-based filtering: admin roles can view all, non-admin roles see only their own
   const isAdmin = user.role === ROLES.SUPER_ADMIN || user.role === ROLES.ADMIN;
@@ -76,6 +77,7 @@ export async function GET(request: NextRequest) {
     usageMode,
     processedByUserId,
     bookletId,
+    orNumber,
   };
 
   try {

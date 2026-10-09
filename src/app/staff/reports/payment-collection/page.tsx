@@ -27,6 +27,7 @@ interface PageProps {
     usageMode?: string;
     processedBy?: string;
     bookletId?: string;
+    orNumber?: string;
     page?: string;
   }>;
 }
@@ -133,6 +134,7 @@ async function PaymentCollectionContent({
   const paymentStatus = params.paymentStatus || undefined;
   const usageMode = params.usageMode || undefined;
   const bookletId = params.bookletId || undefined;
+  const orNumber = params.orNumber || undefined;
   const page = parseInt(params.page || "1", 10) || 1;
 
   // Role-based filtering: admin roles can view all, non-admin roles see only their own
@@ -154,6 +156,7 @@ async function PaymentCollectionContent({
         usageMode,
         processedByUserId,
         bookletId,
+        orNumber,
         page,
         pageSize: PAGE_SIZE,
       }),
@@ -166,6 +169,7 @@ async function PaymentCollectionContent({
         usageMode,
         processedByUserId,
         bookletId,
+        orNumber,
       }),
       isAdmin ? getUsersWhoProcessedPayments() : Promise.resolve([]),
       getBookletsForPaymentFilter({ startDate, endDate }),
@@ -205,6 +209,7 @@ async function PaymentCollectionContent({
           usageMode: params.usageMode,
           processedBy: params.processedBy,
           bookletId: params.bookletId,
+          orNumber: params.orNumber,
         }}
         isAdmin={isAdmin}
         processedByUsers={processedByUsers}
