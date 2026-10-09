@@ -21,6 +21,7 @@ interface PageProps {
   searchParams: Promise<{
     schoolYearId?: string;
     gradeLevelId?: string;
+    search?: string;
     page?: string;
   }>;
 }
@@ -88,11 +89,12 @@ async function AccountsReceivableContent({ searchParams }: PageProps) {
   // Default to active school year if no filter specified
   const schoolYearId = params.schoolYearId ?? activeSchoolYearId ?? undefined;
   const gradeLevelId = params.gradeLevelId ?? undefined;
+  const search = params.search ?? undefined;
   const page = parseInt(params.page || "1", 10) || 1;
 
   const [reportResult, summary, schoolYears, gradeLevels] = await Promise.all([
-    getAccountsReceivableReport({ schoolYearId, gradeLevelId, page, pageSize: PAGE_SIZE }),
-    getAccountsReceivableSummary({ schoolYearId, gradeLevelId }),
+    getAccountsReceivableReport({ schoolYearId, gradeLevelId, search, page, pageSize: PAGE_SIZE }),
+    getAccountsReceivableSummary({ schoolYearId, gradeLevelId, search }),
     getSchoolYears(),
     getGradeLevels(),
   ]);
@@ -115,6 +117,7 @@ async function AccountsReceivableContent({ searchParams }: PageProps) {
     const urlParams = new URLSearchParams();
     if (schoolYearId) urlParams.set("schoolYearId", schoolYearId);
     if (gradeLevelId) urlParams.set("gradeLevelId", gradeLevelId);
+    if (search) urlParams.set("search", search);
     const queryString = urlParams.toString();
     return queryString ? `?${queryString}` : "";
   };
@@ -145,6 +148,7 @@ async function AccountsReceivableContent({ searchParams }: PageProps) {
           gradeLevels={gradeLevels}
           defaultSchoolYearId={schoolYearId}
           defaultGradeLevelId={gradeLevelId}
+          defaultSearch={search}
           pagination={{
             currentPage: page,
             totalPages,

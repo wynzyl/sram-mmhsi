@@ -8,7 +8,7 @@ import {
   payments,
   gradeLevels,
 } from "@/lib/db/schema";
-import { eq, and, asc, desc, isNull, sql } from "drizzle-orm";
+import { eq, and, asc, desc, isNull, sql, or, ilike } from "drizzle-orm";
 import { calculateOffset } from "@/lib/types/pagination";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -51,6 +51,7 @@ export type AccountsReceivableSummary = {
 export type AccountsReceivableParams = {
   schoolYearId?: string;
   gradeLevelId?: string;
+  search?: string;
   page?: number;
   pageSize?: number;
 };
@@ -69,13 +70,27 @@ export type AccountsReceivableResult = {
  * further restricts to `status = 'enrolled'`. Every query using these
  * conditions must `innerJoin(enrollments)` on `assessments.enrollmentId`.
  */
-function buildConditions(schoolYearId?: string, gradeLevelId?: string) {
+function buildConditions(
+  schoolYearId?: string,
+  gradeLevelId?: string,
+  search?: string,
+) {
+  // Build search condition: match against student reference number or name parts
+  const searchCondition = search?.trim()
+    ? or(
+        ilike(students.referenceNumber, `%${search.trim()}%`),
+        ilike(students.lastName, `%${search.trim()}%`),
+        ilike(students.firstName, `%${search.trim()}%`),
+      )
+    : undefined;
+
   return and(
     eq(assessments.billingStatus, "outstanding"),
     eq(enrollments.status, "enrolled"),
     isNull(students.deletedAt),
     schoolYearId ? eq(assessments.schoolYearId, schoolYearId) : undefined,
     gradeLevelId ? eq(enrollments.gradeLevelId, gradeLevelId) : undefined,
+    searchCondition,
   );
 }
 
@@ -222,12 +237,13 @@ export function groupByGradeLevel(
 export async function getAccountsReceivableReport(
   params: AccountsReceivableParams,
 ): Promise<AccountsReceivableResult> {
-  const { schoolYearId, gradeLevelId } = params;
+  const { schoolYearId, gradeLevelId, search } = params;
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
   const offset = calculateOffset(page, pageSize);
 
   const lastPayment = lastPaymentWithOrSubquery();
+  const conditions = buildConditions(schoolYearId, gradeLevelId, search);
 
   const [results, countResult] = await Promise.all([
     db
@@ -238,7 +254,7 @@ export async function getAccountsReceivableReport(
       .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
       .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
       .leftJoin(lastPayment, eq(lastPayment.assessmentId, assessments.id))
-      .where(buildConditions(schoolYearId, gradeLevelId))
+      .where(conditions)
       .orderBy(...ORDER_BY)
       .limit(pageSize)
       .offset(offset),
@@ -248,7 +264,7 @@ export async function getAccountsReceivableReport(
       .innerJoin(students, eq(assessments.studentId, students.id))
       .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
       .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-      .where(buildConditions(schoolYearId, gradeLevelId))
+      .where(conditions)
       .then((r) => r[0]),
   ]);
 
@@ -265,6 +281,7 @@ export async function getAccountsReceivableReport(
 export async function getAllAccountsReceivableData(params: {
   schoolYearId?: string;
   gradeLevelId?: string;
+  search?: string;
 }): Promise<AccountsReceivableRow[]> {
   const MAX_EXPORT_ROWS = 5000;
   const lastPayment = lastPaymentWithOrSubquery();
@@ -277,7 +294,7 @@ export async function getAllAccountsReceivableData(params: {
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
     .leftJoin(lastPayment, eq(lastPayment.assessmentId, assessments.id))
-    .where(buildConditions(params.schoolYearId, params.gradeLevelId))
+    .where(buildConditions(params.schoolYearId, params.gradeLevelId, params.search))
     .orderBy(...ORDER_BY)
     .limit(MAX_EXPORT_ROWS);
 
@@ -291,6 +308,7 @@ export async function getAllAccountsReceivableData(params: {
 export async function getAccountsReceivableSummary(params: {
   schoolYearId?: string;
   gradeLevelId?: string;
+  search?: string;
 }): Promise<AccountsReceivableSummary> {
   const summaryResult = await db
     .select({
@@ -303,7 +321,7 @@ export async function getAccountsReceivableSummary(params: {
     .innerJoin(students, eq(assessments.studentId, students.id))
     .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
     .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
-    .where(buildConditions(params.schoolYearId, params.gradeLevelId));
+    .where(buildConditions(params.schoolYearId, params.gradeLevelId, params.search));
 
   const summary = summaryResult[0] ?? {
     totalAccounts: 0,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, type ReactNode } from "react";
+import { useState, useMemo, useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -48,6 +48,7 @@ interface AccountsReceivableViewProps {
   gradeLevels: GradeLevelOption[];
   defaultSchoolYearId?: string;
   defaultGradeLevelId?: string;
+  defaultSearch?: string;
   pagination?: PaginationProps;
   /** Header content (title + badges) to render on the left side of card header */
   headerContent?: ReactNode;
@@ -196,66 +197,39 @@ export function AccountsReceivableView({
   gradeLevels,
   defaultSchoolYearId = "",
   defaultGradeLevelId = "",
+  defaultSearch = "",
   pagination,
   headerContent,
 }: AccountsReceivableViewProps) {
-  // Search is client-side only; filter dropdowns navigate on change
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
+  // Search input state - synced with URL param, navigates on change
+  const [search, setSearch] = useState(defaultSearch);
+  const debouncedSearch = useDebounce(search, 500);
 
-  // Filter data client-side based on search
-  const filteredData = useMemo(() => {
-    if (!debouncedSearch.trim()) return data;
-    const term = debouncedSearch.toLowerCase();
-    return data.filter(
-      (row) =>
-        row.studentRef.toLowerCase().includes(term) ||
-        row.studentName.toLowerCase().includes(term),
-    );
-  }, [data, debouncedSearch]);
+  // Track if this is the initial mount to avoid navigating on first render
+  const isInitialMount = useRef(true);
 
-  // Filter grouped data for search
-  const filteredGroupedData = useMemo(() => {
-    if (!debouncedSearch.trim()) return groupedData;
-    const term = debouncedSearch.toLowerCase();
-    return groupedData
-      .map((group) => ({
-        ...group,
-        rows: group.rows.filter(
-          (row) =>
-            row.studentRef.toLowerCase().includes(term) ||
-            row.studentName.toLowerCase().includes(term),
-        ),
-        subtotal: {
-          ...group.subtotal,
-          studentCount: group.rows.filter(
-            (row) =>
-              row.studentRef.toLowerCase().includes(term) ||
-              row.studentName.toLowerCase().includes(term),
-          ).length,
-        },
-      }))
-      .filter((group) => group.rows.length > 0);
-  }, [groupedData, debouncedSearch]);
-
-  // Calculate grand total from filtered data
+  // Calculate grand total from server-filtered data
   const grandTotal = useMemo(() => {
-    const rows = debouncedSearch.trim() ? filteredData : data;
     return {
-      totalAccounts: rows.length,
-      totalAssessed: rows.reduce((sum, r) => sum + r.totalAmount, 0),
-      totalPaid: rows.reduce((sum, r) => sum + r.totalPaid, 0),
-      totalOutstanding: rows.reduce((sum, r) => sum + r.balance, 0),
+      totalAccounts: data.length,
+      totalAssessed: data.reduce((sum, r) => sum + r.totalAmount, 0),
+      totalPaid: data.reduce((sum, r) => sum + r.totalPaid, 0),
+      totalOutstanding: data.reduce((sum, r) => sum + r.balance, 0),
     };
-  }, [data, filteredData, debouncedSearch]);
+  }, [data]);
 
   /**
-   * Navigate with the given filter values. Used by dropdowns for auto-apply.
+   * Navigate with the given filter values. Used by dropdowns and search for auto-apply.
    */
-  const navigateWithFilters = (newSchoolYearId: string, newGradeLevelId: string) => {
+  const navigateWithFilters = (
+    newSchoolYearId: string,
+    newGradeLevelId: string,
+    newSearch: string,
+  ) => {
     const params = new URLSearchParams();
     if (newSchoolYearId) params.set("schoolYearId", newSchoolYearId);
     if (newGradeLevelId) params.set("gradeLevelId", newGradeLevelId);
+    if (newSearch.trim()) params.set("search", newSearch.trim());
     const queryString = params.toString();
     const targetUrl = queryString
       ? `/staff/reports/accounts-receivable?${queryString}`
@@ -263,14 +237,28 @@ export function AccountsReceivableView({
     window.location.href = targetUrl;
   };
 
+  // Navigate when debounced search changes (server-side search)
+  useEffect(() => {
+    // Skip navigation on initial mount - we already have the correct data
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Only navigate if the search actually changed from what's in the URL
+    if (debouncedSearch !== defaultSearch) {
+      navigateWithFilters(defaultSchoolYearId, defaultGradeLevelId, debouncedSearch);
+    }
+  }, [debouncedSearch, defaultSchoolYearId, defaultGradeLevelId, defaultSearch]);
+
   const handleSchoolYearChange = (value: string) => {
     const newSchoolYearId = value === "all" ? "" : value;
-    navigateWithFilters(newSchoolYearId, defaultGradeLevelId);
+    navigateWithFilters(newSchoolYearId, defaultGradeLevelId, search);
   };
 
   const handleGradeLevelChange = (value: string) => {
     const newGradeLevelId = value === "all" ? "" : value;
-    navigateWithFilters(defaultSchoolYearId, newGradeLevelId);
+    navigateWithFilters(defaultSchoolYearId, newGradeLevelId, search);
   };
 
   const handleReset = () => {
@@ -278,7 +266,7 @@ export function AccountsReceivableView({
     window.location.href = "/staff/reports/accounts-receivable";
   };
 
-  const hasFilters = defaultSchoolYearId !== "" || defaultGradeLevelId !== "" || search !== "";
+  const hasFilters = defaultSchoolYearId !== "" || defaultGradeLevelId !== "" || defaultSearch !== "";
 
   // Build export URL with current filters
   const exportBaseUrl = "/staff/reports/accounts-receivable/export";
@@ -526,26 +514,20 @@ export function AccountsReceivableView({
       ) : showGrouped ? (
         /* Grouped view - show grade level headers with subtotals */
         <div className="flex flex-col">
-          {filteredGroupedData.map((group) => (
+          {groupedData.map((group) => (
             <div key={group.gradeLevelId}>
               <GradeLevelHeader name={group.gradeLevelName} count={group.rows.length} />
               <DataTable columns={columns} data={group.rows} enablePagination={false} useFixedLayout />
-              <SubtotalRow subtotal={{
-                ...group.subtotal,
-                studentCount: group.rows.length,
-                totalAmount: group.rows.reduce((sum, r) => sum + r.totalAmount, 0),
-                totalPaid: group.rows.reduce((sum, r) => sum + r.totalPaid, 0),
-                totalBalance: group.rows.reduce((sum, r) => sum + r.balance, 0),
-              }} />
+              <SubtotalRow subtotal={group.subtotal} />
             </div>
           ))}
-          {filteredGroupedData.length > 0 && <GrandTotalRow summary={grandTotal} />}
+          {groupedData.length > 0 && <GrandTotalRow summary={grandTotal} />}
         </div>
       ) : (
         /* Flat view - single grade level selected */
         <>
-          <DataTable columns={columns} data={filteredData} enablePagination={false} useFixedLayout />
-          {filteredData.length > 0 && <GrandTotalRow summary={grandTotal} />}
+          <DataTable columns={columns} data={data} enablePagination={false} useFixedLayout />
+          {data.length > 0 && <GrandTotalRow summary={grandTotal} />}
         </>
       )}
 
