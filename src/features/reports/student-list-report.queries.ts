@@ -100,15 +100,15 @@ function mapRow(row: {
       ? `${row.guardianFirstName ?? ""} ${row.guardianLastName ?? ""}`.trim()
       : "";
 
-  // "LASTNAME, Firstname Middlename" (middle name omitted when absent).
-  const firstAndMiddle = `${row.studentFirstName}${
-    row.studentMiddleName ? ` ${row.studentMiddleName}` : ""
-  }`;
+  // "LASTNAME, Firstname M." (middle initial with period, omit if no middle name)
+  const middleInitial = row.studentMiddleName?.trim()
+    ? ` ${row.studentMiddleName.charAt(0).toUpperCase()}.`
+    : "";
 
   return {
     studentId: row.studentId,
     studentRef: row.referenceNumber,
-    studentName: `${row.studentLastName}, ${firstAndMiddle}`,
+    studentName: `${row.studentLastName}, ${row.studentFirstName}${middleInitial}`,
     isSpecialEducation: row.isSpecialEducation,
     hasEscDiscount: row.hasEscDiscount,
     gradeLevel: row.gradeLevel,

@@ -124,7 +124,16 @@ export function RegistrationDetailView({
     "overview" | "documents" | "history" | "billing" | "invoices" | "discounts"
   >("overview");
 
-  const fullName = [student.firstName, student.middleName, student.lastName, student.suffix]
+  // Format: "Firstname M. SURNAME" (middle initial with period, omit if no middle name)
+  const middleInitial = student.middleName?.trim()
+    ? `${student.middleName.charAt(0).toUpperCase()}.`
+    : "";
+  const fullName = [
+    student.firstName,
+    middleInitial,
+    student.lastName?.toUpperCase(),
+    student.suffix,
+  ]
     .filter(Boolean)
     .join(" ");
 
