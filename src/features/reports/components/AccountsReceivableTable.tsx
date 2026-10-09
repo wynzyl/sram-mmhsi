@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
-import { SpedBadge } from "@/components/shared/SpedBadge";
 import { formatDate } from "@/lib/utils/date";
 import { studentDetailUrl } from "@/lib/utils/student-routes";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -38,15 +37,12 @@ export function AccountsReceivableTable({ data }: AccountsReceivableTableProps) 
         header: "Student Name",
         accessorKey: "studentName",
         cell: ({ row }) => (
-          <span className="flex items-center">
-            <Link
-              href={studentDetailUrl({ referenceNumber: row.original.studentRef })}
-              className="text-primary hover:underline font-medium"
-            >
-              {row.original.studentName}
-            </Link>
-            <SpedBadge isSped={row.original.isSpecialEducation} />
-          </span>
+          <Link
+            href={studentDetailUrl({ referenceNumber: row.original.studentRef })}
+            className="text-primary hover:underline font-medium"
+          >
+            {row.original.studentName}
+          </Link>
         ),
       },
       {
@@ -55,6 +51,30 @@ export function AccountsReceivableTable({ data }: AccountsReceivableTableProps) 
         cell: ({ row }) => (
           <span className="text-sm whitespace-nowrap">
             {row.original.schoolYearLabel}
+          </span>
+        ),
+      },
+      {
+        header: rightHeader("Total Assessed"),
+        accessorKey: "totalAmount",
+        cell: ({ row }) => (
+          <span className="block text-right">
+            <CurrencyDisplay
+              amount={row.original.totalAmount}
+              className="text-sm text-muted-foreground"
+            />
+          </span>
+        ),
+      },
+      {
+        header: rightHeader("Amount Paid"),
+        accessorKey: "totalPaid",
+        cell: ({ row }) => (
+          <span className="block text-right">
+            <CurrencyDisplay
+              amount={row.original.totalPaid}
+              className="text-sm text-muted-foreground"
+            />
           </span>
         ),
       },
@@ -71,22 +91,20 @@ export function AccountsReceivableTable({ data }: AccountsReceivableTableProps) 
         ),
       },
       {
-        header: rightHeader("Last Payment"),
-        accessorKey: "lastPaymentDate",
+        header: "Last OR#",
+        accessorKey: "lastOrNumber",
         cell: ({ row }) => (
-          <span className="block text-right text-sm text-muted-foreground whitespace-nowrap">
-            {row.original.lastPaymentDate
-              ? formatDate(row.original.lastPaymentDate)
-              : "—"}
+          <span className="font-[family-name:var(--font-mono)] text-sm">
+            {row.original.lastOrNumber ?? "—"}
           </span>
         ),
       },
       {
-        header: rightHeader("Aging (Days)"),
-        accessorKey: "agingDays",
+        header: rightHeader("OR Date"),
+        accessorKey: "orDate",
         cell: ({ row }) => (
-          <span className="block text-right text-sm tabular-nums">
-            {row.original.agingDays}
+          <span className="block text-right text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.orDate ? formatDate(row.original.orDate) : "—"}
           </span>
         ),
       },

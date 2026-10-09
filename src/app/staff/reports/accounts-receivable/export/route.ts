@@ -7,13 +7,15 @@ import {
   getReportExportResetSeconds,
 } from "@/lib/security/rateLimit";
 import { getSchoolYears } from "@/lib/queries/schoolYears";
+import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import {
   getAllAccountsReceivableData,
   getAccountsReceivableSummary,
+  groupByGradeLevel,
 } from "@/features/reports/accounts-receivable-report.queries";
 import {
-  AccountsReceivablePdfDocument,
-  buildAccountsReceivableXlsx,
+  AccountsReceivableGroupedPdfDocument,
+  buildAccountsReceivableGroupedXlsx,
   type AccountsReceivableReportMeta,
 } from "@/features/reports/accounts-receivable-report.export";
 import {
@@ -26,9 +28,10 @@ import { logReportExport } from "@/features/reports/shared/audit-report";
 /**
  * Unified Accounts Receivable export.
  *
- *   GET /staff/reports/accounts-receivable/export?format=pdf|xlsx&schoolYearId
+ *   GET /staff/reports/accounts-receivable/export?format=pdf|xlsx&schoolYearId&gradeLevelId
  *
  * Defaults to all school years when schoolYearId is omitted.
+ * Groups data by grade level with subtotals.
  */
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
@@ -44,47 +47,70 @@ export async function GET(request: NextRequest) {
     const resetSeconds = getReportExportResetSeconds(user.id);
     return NextResponse.json(
       { error: `Too many export requests. Try again in ${resetSeconds} seconds.` },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
   const { searchParams } = new URL(request.url);
   const format = parseReportFormat(searchParams.get("format"));
   const schoolYearId = searchParams.get("schoolYearId") || undefined;
+  const gradeLevelId = searchParams.get("gradeLevelId") || undefined;
 
-  const schoolYears = await getSchoolYears();
+  const [schoolYears, gradeLevels] = await Promise.all([
+    getSchoolYears(),
+    getGradeLevels(),
+  ]);
+
   const schoolYearLabel = schoolYearId
     ? schoolYears.find((sy) => sy.id === schoolYearId)?.label ?? "—"
     : "All School Years";
 
-  const meta: AccountsReceivableReportMeta = { schoolYearLabel };
+  const gradeLevelLabel = gradeLevelId
+    ? gradeLevels.find((gl) => gl.id === gradeLevelId)?.name
+    : undefined;
+
+  const meta: AccountsReceivableReportMeta = {
+    schoolYearLabel,
+    gradeLevelLabel,
+  };
 
   try {
     const [rows, summary] = await Promise.all([
-      getAllAccountsReceivableData({ schoolYearId }),
-      getAccountsReceivableSummary({ schoolYearId }),
+      getAllAccountsReceivableData({ schoolYearId, gradeLevelId }),
+      getAccountsReceivableSummary({ schoolYearId, gradeLevelId }),
     ]);
 
-    const filename = `accounts-receivable-${
-      schoolYearId ? sanitize(schoolYearLabel) : "all-years"
-    }`;
+    // Group data by grade level
+    const groups = groupByGradeLevel(rows);
+
+    // Build filename
+    const filenameParts = ["accounts-receivable"];
+    if (schoolYearId) {
+      filenameParts.push(sanitize(schoolYearLabel));
+    } else {
+      filenameParts.push("all-years");
+    }
+    if (gradeLevelLabel) {
+      filenameParts.push(sanitize(gradeLevelLabel));
+    }
+    const filename = filenameParts.join("-");
 
     await logReportExport({
       actor: user,
       report: "accounts-receivable",
       format,
       rowCount: rows.length,
-      filters: { schoolYearId },
+      filters: { schoolYearId, gradeLevelId },
     });
 
     if (format === "xlsx") {
-      const buffer = await buildAccountsReceivableXlsx(rows, summary, meta);
+      const buffer = await buildAccountsReceivableGroupedXlsx(groups, summary, meta);
       return xlsxResponse(buffer, filename);
     }
 
     const buffer = await renderToBuffer(
-      AccountsReceivablePdfDocument({
-        rows,
+      AccountsReceivableGroupedPdfDocument({
+        groups,
         summary,
         meta,
         generatedAt: new Date(),

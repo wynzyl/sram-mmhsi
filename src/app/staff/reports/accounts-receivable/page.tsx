@@ -4,9 +4,11 @@ import { redirect } from "next/navigation";
 import { canAccessFinanceReports } from "@/lib/rbac/permissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSchoolYears, getActiveSchoolYearId } from "@/lib/queries/schoolYears";
+import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import {
   getAccountsReceivableReport,
   getAccountsReceivableSummary,
+  groupByGradeLevel,
 } from "@/features/reports/accounts-receivable-report.queries";
 import { AccountsReceivableView } from "@/features/reports/components/AccountsReceivableView";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -18,6 +20,7 @@ const PAGE_SIZE = 50;
 interface PageProps {
   searchParams: Promise<{
     schoolYearId?: string;
+    gradeLevelId?: string;
     page?: string;
   }>;
 }
@@ -52,16 +55,18 @@ function AccountsReceivableSkeleton() {
           <div className="flex items-center gap-2">
             <Skeleton className="h-9 w-36" />
             <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-28" />
           </div>
         </div>
         <div className="divide-y divide-border">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="flex items-center gap-4 px-4 py-3">
-              <Skeleton className="h-4 w-24" />
               <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-4 w-20" />
               <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-28 ml-auto" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-24 ml-auto" />
             </div>
           ))}
         </div>
@@ -70,36 +75,46 @@ function AccountsReceivableSkeleton() {
   );
 }
 
-async function AccountsReceivableContent({
-  searchParams,
-}: PageProps) {
+async function AccountsReceivableContent({ searchParams }: PageProps) {
   const params = await searchParams;
   const session = await requireSession();
 
   if (!canAccessFinanceReports(session.role)) {
     redirect("/staff/dashboard");
   }
+
   // Fetch active school year ID for default selection
   const activeSchoolYearId = await getActiveSchoolYearId();
   // Default to active school year if no filter specified
   const schoolYearId = params.schoolYearId ?? activeSchoolYearId ?? undefined;
+  const gradeLevelId = params.gradeLevelId ?? undefined;
   const page = parseInt(params.page || "1", 10) || 1;
 
-  const [reportResult, summary, schoolYears] = await Promise.all([
-    getAccountsReceivableReport({ schoolYearId, page, pageSize: PAGE_SIZE }),
-    getAccountsReceivableSummary({ schoolYearId }),
+  const [reportResult, summary, schoolYears, gradeLevels] = await Promise.all([
+    getAccountsReceivableReport({ schoolYearId, gradeLevelId, page, pageSize: PAGE_SIZE }),
+    getAccountsReceivableSummary({ schoolYearId, gradeLevelId }),
     getSchoolYears(),
+    getGradeLevels(),
   ]);
 
   const { rows, totalCount } = reportResult;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Build labels for display
   const schoolYearLabel = schoolYearId
     ? schoolYears.find((sy) => sy.id === schoolYearId)?.label ?? "—"
     : "All School Years";
+  const gradeLevelLabel = gradeLevelId
+    ? gradeLevels.find((gl) => gl.id === gradeLevelId)?.name ?? ""
+    : "";
+
+  // Group data by grade level
+  const groupedData = groupByGradeLevel(rows);
 
   const buildPaginationBaseUrl = () => {
     const urlParams = new URLSearchParams();
     if (schoolYearId) urlParams.set("schoolYearId", schoolYearId);
+    if (gradeLevelId) urlParams.set("gradeLevelId", gradeLevelId);
     const queryString = urlParams.toString();
     return queryString ? `?${queryString}` : "";
   };
@@ -113,6 +128,7 @@ async function AccountsReceivableContent({
         </h1>
         <p className="text-sm text-muted-foreground">
           Outstanding student balances for {schoolYearLabel}
+          {gradeLevelLabel && ` · ${gradeLevelLabel}`}
         </p>
       </div>
 
@@ -124,8 +140,11 @@ async function AccountsReceivableContent({
         {/* Filters + Table + Pagination - Combined View */}
         <AccountsReceivableView
           data={rows}
+          groupedData={groupedData}
           schoolYears={schoolYears}
+          gradeLevels={gradeLevels}
           defaultSchoolYearId={schoolYearId}
+          defaultGradeLevelId={gradeLevelId}
           pagination={{
             currentPage: page,
             totalPages,
@@ -142,7 +161,8 @@ async function AccountsReceivableContent({
                 Outstanding Balances
               </h2>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border">
-                {summary.totalAccounts.toLocaleString()} Account{summary.totalAccounts !== 1 ? "s" : ""}
+                {summary.totalAccounts.toLocaleString()} Account
+                {summary.totalAccounts !== 1 ? "s" : ""}
               </span>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30">
                 <CurrencyDisplay amount={summary.totalOutstanding} />
@@ -153,7 +173,8 @@ async function AccountsReceivableContent({
       </section>
 
       <p className="text-xs text-muted-foreground text-center no-print">
-        Export PDF for an official printable copy, or Export Excel for a spreadsheet you can sort and total.
+        Export PDF for an official printable copy, or Export Excel for a spreadsheet
+        you can sort and total.
       </p>
     </div>
   );

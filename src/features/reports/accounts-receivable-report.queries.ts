@@ -6,7 +6,7 @@ import {
   schoolYears,
   enrollments,
   payments,
-  studentDiscounts,
+  gradeLevels,
 } from "@/lib/db/schema";
 import { eq, and, asc, desc, isNull, sql } from "drizzle-orm";
 import { calculateOffset } from "@/lib/types/pagination";
@@ -16,22 +16,41 @@ import { calculateOffset } from "@/lib/types/pagination";
 export type AccountsReceivableRow = {
   studentId: string;
   studentRef: string; // user-facing 7-digit Student ID
-  studentName: string; // "DELA CRUZ, Juan Miguel" (Lastname, Firstname Middlename)
-  isSpecialEducation: boolean;
-  hasEscDiscount: boolean; // ESC grantee indicator
-  schoolYearLabel: string; // e.g. "2025-2026"
+  studentName: string; // "SURNAME, Firstname Middlename"
+  schoolYearLabel: string; // e.g., "2025-2026"
+  gradeLevelId: string;
+  gradeLevelName: string; // e.g., "Grade 7"
+  gradeLevelOrder: number; // for sorting
+  totalAmount: number; // from assessments.totalAmount
+  totalPaid: number; // from assessments.totalPaid
   balance: number; // outstanding balance (assessments.balance)
-  lastPaymentDate: Date | null; // most recent posted payment, null if none
-  agingDays: number; // today − (lastPaymentDate ?? assessment.createdAt)
+  lastOrNumber: string | null; // most recent OR number
+  orDate: Date | null; // date of last payment
+};
+
+export type AccountsReceivableGrouped = {
+  gradeLevelId: string;
+  gradeLevelName: string;
+  gradeLevelOrder: number;
+  rows: AccountsReceivableRow[];
+  subtotal: {
+    totalAmount: number;
+    totalPaid: number;
+    totalBalance: number;
+    studentCount: number;
+  };
 };
 
 export type AccountsReceivableSummary = {
   totalAccounts: number;
   totalOutstanding: number;
+  totalAssessed: number;
+  totalPaid: number;
 };
 
 export type AccountsReceivableParams = {
   schoolYearId?: string;
+  gradeLevelId?: string;
   page?: number;
   pageSize?: number;
 };
@@ -40,8 +59,6 @@ export type AccountsReceivableResult = {
   rows: AccountsReceivableRow[];
   totalCount: number;
 };
-
-const MS_PER_DAY = 86_400_000;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -52,58 +69,73 @@ const MS_PER_DAY = 86_400_000;
  * further restricts to `status = 'enrolled'`. Every query using these
  * conditions must `innerJoin(enrollments)` on `assessments.enrollmentId`.
  */
-function buildConditions(schoolYearId?: string) {
+function buildConditions(schoolYearId?: string, gradeLevelId?: string) {
   return and(
     eq(assessments.billingStatus, "outstanding"),
     eq(enrollments.status, "enrolled"),
     isNull(students.deletedAt),
     schoolYearId ? eq(assessments.schoolYearId, schoolYearId) : undefined,
+    gradeLevelId ? eq(enrollments.gradeLevelId, gradeLevelId) : undefined,
   );
 }
 
 /**
- * Most recent *posted* payment per assessment. Voided/reversed/BFX rows don't
- * count toward aging. LEFT JOINed so never-paid assessments still appear.
+ * Most recent *posted* payment per assessment with OR number and date.
+ * Uses a subquery to get the latest payment by date.
+ * LEFT JOINed so never-paid assessments still appear.
  */
-function lastPaymentSubquery() {
-  return db
+function lastPaymentWithOrSubquery() {
+  // Subquery to get the max payment date per assessment
+  const maxPaymentDate = db
     .select({
       assessmentId: payments.assessmentId,
-      lastPaymentDate:
-        sql<string | null>`MAX(${payments.paymentDate})`.as("last_payment_date"),
+      maxDate: sql<string>`MAX(${payments.paymentDate})`.as("max_date"),
     })
     .from(payments)
     .where(and(eq(payments.kind, "payment"), eq(payments.status, "posted")))
     .groupBy(payments.assessmentId)
+    .as("max_payment");
+
+  // Join back to get the OR number for that date
+  return db
+    .select({
+      assessmentId: payments.assessmentId,
+      orNumber: payments.orNumber,
+      paymentDate: payments.paymentDate,
+    })
+    .from(payments)
+    .innerJoin(
+      maxPaymentDate,
+      and(
+        eq(payments.assessmentId, maxPaymentDate.assessmentId),
+        eq(payments.paymentDate, sql`${maxPaymentDate.maxDate}::timestamp`),
+      ),
+    )
+    .where(and(eq(payments.kind, "payment"), eq(payments.status, "posted")))
     .as("last_payment");
 }
 
-const SELECT_SHAPE = (lastPayment: ReturnType<typeof lastPaymentSubquery>) => ({
+const SELECT_SHAPE = (lastPayment: ReturnType<typeof lastPaymentWithOrSubquery>) => ({
   studentId: students.id,
   studentRef: students.referenceNumber,
   studentFirstName: students.firstName,
   studentMiddleName: students.middleName,
   studentLastName: students.lastName,
-  isSpecialEducation: students.isSpecialEducation,
-  hasEscDiscount: sql<boolean>`EXISTS(
-    SELECT 1 FROM "discount_requests" dr
-    INNER JOIN "discount_types" dt ON dr.discount_type_id = dt.id
-    INNER JOIN "enrollments" e2 ON dr.enrollment_id = e2.id
-    WHERE e2.student_id = "students".id
-      AND dt.code LIKE 'ESC_%'
-      AND dr.status = 'approved'
-  )`.as("has_esc_discount"),
   schoolYearLabel: schoolYears.label,
+  gradeLevelId: gradeLevels.id,
+  gradeLevelName: gradeLevels.name,
+  gradeLevelOrder: gradeLevels.order,
+  totalAmount: assessments.totalAmount,
+  totalPaid: assessments.totalPaid,
   balance: assessments.balance,
-  assessmentCreatedAt: assessments.createdAt,
-  lastPaymentDate: lastPayment.lastPaymentDate,
+  orNumber: lastPayment.orNumber,
+  paymentDate: lastPayment.paymentDate,
 });
 
 const ORDER_BY = [
-  desc(schoolYears.startDate),
-  desc(assessments.balance),
-  asc(students.lastName),
-  asc(students.firstName),
+  asc(gradeLevels.order), // Primary: grade level
+  asc(students.lastName), // Secondary: surname
+  asc(students.firstName), // Tertiary: first name
 ];
 
 function mapRow(row: {
@@ -112,56 +144,90 @@ function mapRow(row: {
   studentFirstName: string;
   studentMiddleName: string | null;
   studentLastName: string;
-  isSpecialEducation: boolean;
-  hasEscDiscount: boolean;
   schoolYearLabel: string;
+  gradeLevelId: string;
+  gradeLevelName: string;
+  gradeLevelOrder: number;
+  totalAmount: string;
+  totalPaid: string;
   balance: string;
-  assessmentCreatedAt: Date;
-  lastPaymentDate: string | Date | null;
+  orNumber: string | null;
+  paymentDate: Date | null;
 }): AccountsReceivableRow {
   const firstAndMiddle = `${row.studentFirstName}${
     row.studentMiddleName ? ` ${row.studentMiddleName}` : ""
   }`;
 
-  const lastPaymentDate = row.lastPaymentDate
-    ? new Date(row.lastPaymentDate)
-    : null;
-
-  // Age from the last payment, or the assessment date when nothing's been paid.
-  const referenceDate = lastPaymentDate ?? new Date(row.assessmentCreatedAt);
-  const agingDays = Math.max(
-    0,
-    Math.floor((Date.now() - referenceDate.getTime()) / MS_PER_DAY),
-  );
-
   return {
     studentId: row.studentId,
     studentRef: row.studentRef,
     studentName: `${row.studentLastName}, ${firstAndMiddle}`,
-    isSpecialEducation: row.isSpecialEducation,
-    hasEscDiscount: row.hasEscDiscount,
     schoolYearLabel: row.schoolYearLabel,
+    gradeLevelId: row.gradeLevelId,
+    gradeLevelName: row.gradeLevelName,
+    gradeLevelOrder: row.gradeLevelOrder,
+    totalAmount: Number(row.totalAmount),
+    totalPaid: Number(row.totalPaid),
     balance: Number(row.balance),
-    lastPaymentDate,
-    agingDays,
+    lastOrNumber: row.orNumber,
+    orDate: row.paymentDate ? new Date(row.paymentDate) : null,
   };
+}
+
+/**
+ * Groups flat rows by grade level with subtotals.
+ */
+export function groupByGradeLevel(
+  rows: AccountsReceivableRow[],
+): AccountsReceivableGrouped[] {
+  const groupMap = new Map<string, AccountsReceivableGrouped>();
+
+  for (const row of rows) {
+    let group = groupMap.get(row.gradeLevelId);
+    if (!group) {
+      group = {
+        gradeLevelId: row.gradeLevelId,
+        gradeLevelName: row.gradeLevelName,
+        gradeLevelOrder: row.gradeLevelOrder,
+        rows: [],
+        subtotal: {
+          totalAmount: 0,
+          totalPaid: 0,
+          totalBalance: 0,
+          studentCount: 0,
+        },
+      };
+      groupMap.set(row.gradeLevelId, group);
+    }
+    group.rows.push(row);
+    group.subtotal.totalAmount += row.totalAmount;
+    group.subtotal.totalPaid += row.totalPaid;
+    group.subtotal.totalBalance += row.balance;
+    group.subtotal.studentCount += 1;
+  }
+
+  // Sort groups by grade level order
+  return Array.from(groupMap.values()).sort(
+    (a, b) => a.gradeLevelOrder - b.gradeLevelOrder,
+  );
 }
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
 /**
  * Paginated accounts-receivable list for the on-screen preview.
- * Students with an outstanding balance, optionally filtered to one school year.
+ * Students with an outstanding balance, optionally filtered to one school year
+ * and/or grade level.
  */
 export async function getAccountsReceivableReport(
   params: AccountsReceivableParams,
 ): Promise<AccountsReceivableResult> {
-  const { schoolYearId } = params;
+  const { schoolYearId, gradeLevelId } = params;
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 50));
   const offset = calculateOffset(page, pageSize);
 
-  const lastPayment = lastPaymentSubquery();
+  const lastPayment = lastPaymentWithOrSubquery();
 
   const [results, countResult] = await Promise.all([
     db
@@ -169,9 +235,10 @@ export async function getAccountsReceivableReport(
       .from(assessments)
       .innerJoin(students, eq(assessments.studentId, students.id))
       .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
       .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
       .leftJoin(lastPayment, eq(lastPayment.assessmentId, assessments.id))
-      .where(buildConditions(schoolYearId))
+      .where(buildConditions(schoolYearId, gradeLevelId))
       .orderBy(...ORDER_BY)
       .limit(pageSize)
       .offset(offset),
@@ -180,7 +247,8 @@ export async function getAccountsReceivableReport(
       .from(assessments)
       .innerJoin(students, eq(assessments.studentId, students.id))
       .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
-      .where(buildConditions(schoolYearId))
+      .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+      .where(buildConditions(schoolYearId, gradeLevelId))
       .then((r) => r[0]),
   ]);
 
@@ -196,18 +264,20 @@ export async function getAccountsReceivableReport(
  */
 export async function getAllAccountsReceivableData(params: {
   schoolYearId?: string;
+  gradeLevelId?: string;
 }): Promise<AccountsReceivableRow[]> {
   const MAX_EXPORT_ROWS = 5000;
-  const lastPayment = lastPaymentSubquery();
+  const lastPayment = lastPaymentWithOrSubquery();
 
   const results = await db
     .select(SELECT_SHAPE(lastPayment))
     .from(assessments)
     .innerJoin(students, eq(assessments.studentId, students.id))
     .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
+    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
     .innerJoin(schoolYears, eq(assessments.schoolYearId, schoolYears.id))
     .leftJoin(lastPayment, eq(lastPayment.assessmentId, assessments.id))
-    .where(buildConditions(params.schoolYearId))
+    .where(buildConditions(params.schoolYearId, params.gradeLevelId))
     .orderBy(...ORDER_BY)
     .limit(MAX_EXPORT_ROWS);
 
@@ -215,25 +285,37 @@ export async function getAllAccountsReceivableData(params: {
 }
 
 /**
- * Outstanding totals: number of accounts and the summed outstanding balance.
+ * Outstanding totals: number of accounts, summed outstanding balance,
+ * total assessed, and total paid.
  */
 export async function getAccountsReceivableSummary(params: {
   schoolYearId?: string;
+  gradeLevelId?: string;
 }): Promise<AccountsReceivableSummary> {
   const summaryResult = await db
     .select({
       totalAccounts: sql<number>`COUNT(*)::int`,
       totalOutstanding: sql<number>`COALESCE(SUM(${assessments.balance}::numeric), 0)::numeric`,
+      totalAssessed: sql<number>`COALESCE(SUM(${assessments.totalAmount}::numeric), 0)::numeric`,
+      totalPaid: sql<number>`COALESCE(SUM(${assessments.totalPaid}::numeric), 0)::numeric`,
     })
     .from(assessments)
     .innerJoin(students, eq(assessments.studentId, students.id))
     .innerJoin(enrollments, eq(assessments.enrollmentId, enrollments.id))
-    .where(buildConditions(params.schoolYearId));
+    .innerJoin(gradeLevels, eq(enrollments.gradeLevelId, gradeLevels.id))
+    .where(buildConditions(params.schoolYearId, params.gradeLevelId));
 
-  const summary = summaryResult[0] ?? { totalAccounts: 0, totalOutstanding: 0 };
+  const summary = summaryResult[0] ?? {
+    totalAccounts: 0,
+    totalOutstanding: 0,
+    totalAssessed: 0,
+    totalPaid: 0,
+  };
 
   return {
     totalAccounts: summary.totalAccounts,
     totalOutstanding: Number(summary.totalOutstanding),
+    totalAssessed: Number(summary.totalAssessed),
+    totalPaid: Number(summary.totalPaid),
   };
 }

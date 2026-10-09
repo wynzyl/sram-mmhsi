@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DataTable } from "@/components/shared/DataTable";
 import { CurrencyDisplay } from "@/components/shared/CurrencyDisplay";
@@ -17,12 +16,21 @@ import { formatDate } from "@/lib/utils/date";
 import { useDebounce } from "@/hooks/useDebounce";
 import { studentDetailUrl } from "@/lib/utils/student-routes";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { AccountsReceivableRow } from "../accounts-receivable-report.queries";
+import type {
+  AccountsReceivableRow,
+  AccountsReceivableGrouped,
+} from "../accounts-receivable-report.queries";
 
 interface SchoolYearOption {
   id: string;
   label: string;
   isActive: boolean;
+}
+
+interface GradeLevelOption {
+  id: string;
+  name: string;
+  order: number;
 }
 
 interface PaginationProps {
@@ -35,12 +43,30 @@ interface PaginationProps {
 
 interface AccountsReceivableViewProps {
   data: AccountsReceivableRow[];
+  groupedData: AccountsReceivableGrouped[];
   schoolYears: SchoolYearOption[];
+  gradeLevels: GradeLevelOption[];
   defaultSchoolYearId?: string;
+  defaultGradeLevelId?: string;
   pagination?: PaginationProps;
   /** Header content (title + badges) to render on the left side of card header */
   headerContent?: ReactNode;
 }
+
+/**
+ * Column sizes in pixels for consistent widths across data rows and totals.
+ * These must match the column definitions used in the DataTable.
+ */
+const COL_SIZES = {
+  studentId: 100,
+  studentName: 220,
+  schoolYear: 100,
+  totalAssessed: 130,
+  amountPaid: 130,
+  balance: 120,
+  lastOr: 100,
+  orDate: 100,
+};
 
 /** Right-aligned header for numeric columns */
 function rightHeader(label: string) {
@@ -49,15 +75,131 @@ function rightHeader(label: string) {
   return Header;
 }
 
+function GradeLevelHeader({
+  name,
+  count,
+}: {
+  name: string;
+  count: number;
+}) {
+  return (
+    <div className="bg-muted/60 border-y border-border px-4 py-2 flex items-center justify-between">
+      <span className="font-semibold text-sm text-foreground">{name}</span>
+      <span className="text-xs text-muted-foreground">
+        {count} student{count !== 1 ? "s" : ""}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Subtotal row that aligns with the DataTable columns.
+ * Uses fixed table layout with COL_SIZES for consistent column widths.
+ */
+function SubtotalRow({
+  subtotal,
+}: {
+  subtotal: AccountsReceivableGrouped["subtotal"];
+}) {
+  return (
+    <div className="bg-muted/40 border-b border-border">
+      <table className="w-full text-sm table-fixed">
+        <colgroup>
+          <col style={{ width: COL_SIZES.studentId }} />
+          <col style={{ width: COL_SIZES.studentName }} />
+          <col style={{ width: COL_SIZES.schoolYear }} />
+          <col style={{ width: COL_SIZES.totalAssessed }} />
+          <col style={{ width: COL_SIZES.amountPaid }} />
+          <col style={{ width: COL_SIZES.balance }} />
+          <col style={{ width: COL_SIZES.lastOr }} />
+          <col style={{ width: COL_SIZES.orDate }} />
+        </colgroup>
+        <tbody>
+          <tr>
+            <td className="px-5 py-3" />
+            <td className="px-5 py-3 font-medium text-muted-foreground">Subtotal</td>
+            <td className="px-5 py-3" />
+            <td className="px-5 py-3 text-right">
+              <CurrencyDisplay amount={subtotal.totalAmount} className="text-muted-foreground" />
+            </td>
+            <td className="px-5 py-3 text-right">
+              <CurrencyDisplay amount={subtotal.totalPaid} className="text-muted-foreground" />
+            </td>
+            <td className="px-5 py-3 text-right">
+              <CurrencyDisplay amount={subtotal.totalBalance} className="font-semibold text-foreground" />
+            </td>
+            <td className="px-5 py-3" />
+            <td className="px-5 py-3" />
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/**
+ * Grand total row that aligns with the DataTable columns.
+ * Uses fixed table layout with COL_SIZES for consistent column widths.
+ */
+function GrandTotalRow({
+  summary,
+}: {
+  summary: {
+    totalAccounts: number;
+    totalAssessed: number;
+    totalPaid: number;
+    totalOutstanding: number;
+  };
+}) {
+  return (
+    <div className="bg-primary text-primary-foreground rounded-b-lg overflow-hidden">
+      <table className="w-full text-sm table-fixed">
+        <colgroup>
+          <col style={{ width: COL_SIZES.studentId }} />
+          <col style={{ width: COL_SIZES.studentName }} />
+          <col style={{ width: COL_SIZES.schoolYear }} />
+          <col style={{ width: COL_SIZES.totalAssessed }} />
+          <col style={{ width: COL_SIZES.amountPaid }} />
+          <col style={{ width: COL_SIZES.balance }} />
+          <col style={{ width: COL_SIZES.lastOr }} />
+          <col style={{ width: COL_SIZES.orDate }} />
+        </colgroup>
+        <tbody>
+          <tr>
+            <td className="px-5 py-3" />
+            <td className="px-5 py-3 font-semibold">
+              GRAND TOTAL ({summary.totalAccounts} student{summary.totalAccounts !== 1 ? "s" : ""})
+            </td>
+            <td className="px-5 py-3" />
+            <td className="px-5 py-3 text-right font-semibold">
+              <CurrencyDisplay amount={summary.totalAssessed} />
+            </td>
+            <td className="px-5 py-3 text-right font-semibold">
+              <CurrencyDisplay amount={summary.totalPaid} />
+            </td>
+            <td className="px-5 py-3 text-right font-bold">
+              <CurrencyDisplay amount={summary.totalOutstanding} />
+            </td>
+            <td className="px-5 py-3" />
+            <td className="px-5 py-3" />
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function AccountsReceivableView({
   data,
+  groupedData,
   schoolYears,
+  gradeLevels,
   defaultSchoolYearId = "",
+  defaultGradeLevelId = "",
   pagination,
   headerContent,
 }: AccountsReceivableViewProps) {
-  const router = useRouter();
-  const [schoolYearId, setSchoolYearId] = useState(defaultSchoolYearId);
+  // Search is client-side only; filter dropdowns navigate on change
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
@@ -68,35 +210,88 @@ export function AccountsReceivableView({
     return data.filter(
       (row) =>
         row.studentRef.toLowerCase().includes(term) ||
-        row.studentName.toLowerCase().includes(term)
+        row.studentName.toLowerCase().includes(term),
     );
   }, [data, debouncedSearch]);
 
-  const handleApply = () => {
+  // Filter grouped data for search
+  const filteredGroupedData = useMemo(() => {
+    if (!debouncedSearch.trim()) return groupedData;
+    const term = debouncedSearch.toLowerCase();
+    return groupedData
+      .map((group) => ({
+        ...group,
+        rows: group.rows.filter(
+          (row) =>
+            row.studentRef.toLowerCase().includes(term) ||
+            row.studentName.toLowerCase().includes(term),
+        ),
+        subtotal: {
+          ...group.subtotal,
+          studentCount: group.rows.filter(
+            (row) =>
+              row.studentRef.toLowerCase().includes(term) ||
+              row.studentName.toLowerCase().includes(term),
+          ).length,
+        },
+      }))
+      .filter((group) => group.rows.length > 0);
+  }, [groupedData, debouncedSearch]);
+
+  // Calculate grand total from filtered data
+  const grandTotal = useMemo(() => {
+    const rows = debouncedSearch.trim() ? filteredData : data;
+    return {
+      totalAccounts: rows.length,
+      totalAssessed: rows.reduce((sum, r) => sum + r.totalAmount, 0),
+      totalPaid: rows.reduce((sum, r) => sum + r.totalPaid, 0),
+      totalOutstanding: rows.reduce((sum, r) => sum + r.balance, 0),
+    };
+  }, [data, filteredData, debouncedSearch]);
+
+  /**
+   * Navigate with the given filter values. Used by dropdowns for auto-apply.
+   */
+  const navigateWithFilters = (newSchoolYearId: string, newGradeLevelId: string) => {
     const params = new URLSearchParams();
-    if (schoolYearId) params.set("schoolYearId", schoolYearId);
+    if (newSchoolYearId) params.set("schoolYearId", newSchoolYearId);
+    if (newGradeLevelId) params.set("gradeLevelId", newGradeLevelId);
     const queryString = params.toString();
-    router.push(queryString ? `?${queryString}` : "/staff/reports/accounts-receivable");
+    const targetUrl = queryString
+      ? `/staff/reports/accounts-receivable?${queryString}`
+      : "/staff/reports/accounts-receivable";
+    window.location.href = targetUrl;
+  };
+
+  const handleSchoolYearChange = (value: string) => {
+    const newSchoolYearId = value === "all" ? "" : value;
+    navigateWithFilters(newSchoolYearId, defaultGradeLevelId);
+  };
+
+  const handleGradeLevelChange = (value: string) => {
+    const newGradeLevelId = value === "all" ? "" : value;
+    navigateWithFilters(defaultSchoolYearId, newGradeLevelId);
   };
 
   const handleReset = () => {
-    setSchoolYearId("");
     setSearch("");
-    router.push("/staff/reports/accounts-receivable");
+    window.location.href = "/staff/reports/accounts-receivable";
   };
 
-  const hasFilters = schoolYearId !== "" || search !== "";
+  const hasFilters = defaultSchoolYearId !== "" || defaultGradeLevelId !== "" || search !== "";
 
   // Build export URL with current filters
   const exportBaseUrl = "/staff/reports/accounts-receivable/export";
   const exportParams = new URLSearchParams();
   if (defaultSchoolYearId) exportParams.set("schoolYearId", defaultSchoolYearId);
+  if (defaultGradeLevelId) exportParams.set("gradeLevelId", defaultGradeLevelId);
 
   const columns = useMemo<ColumnDef<AccountsReceivableRow>[]>(
     () => [
       {
         header: "Student ID",
         accessorKey: "studentRef",
+        size: COL_SIZES.studentId,
         cell: ({ row }) => (
           <span className="font-[family-name:var(--font-mono)] text-sm">
             {row.original.studentRef}
@@ -106,6 +301,7 @@ export function AccountsReceivableView({
       {
         header: "Student Name",
         accessorKey: "studentName",
+        size: COL_SIZES.studentName,
         cell: ({ row }) => (
           <Link
             href={studentDetailUrl({ referenceNumber: row.original.studentRef })}
@@ -118,6 +314,7 @@ export function AccountsReceivableView({
       {
         header: "School Year",
         accessorKey: "schoolYearLabel",
+        size: COL_SIZES.schoolYear,
         cell: ({ row }) => (
           <span className="text-sm whitespace-nowrap">
             {row.original.schoolYearLabel}
@@ -125,8 +322,35 @@ export function AccountsReceivableView({
         ),
       },
       {
+        header: rightHeader("Total Assessed"),
+        accessorKey: "totalAmount",
+        size: COL_SIZES.totalAssessed,
+        cell: ({ row }) => (
+          <span className="block text-right">
+            <CurrencyDisplay
+              amount={row.original.totalAmount}
+              className="text-sm text-muted-foreground"
+            />
+          </span>
+        ),
+      },
+      {
+        header: rightHeader("Amount Paid"),
+        accessorKey: "totalPaid",
+        size: COL_SIZES.amountPaid,
+        cell: ({ row }) => (
+          <span className="block text-right">
+            <CurrencyDisplay
+              amount={row.original.totalPaid}
+              className="text-sm text-muted-foreground"
+            />
+          </span>
+        ),
+      },
+      {
         header: rightHeader("Balance"),
         accessorKey: "balance",
+        size: COL_SIZES.balance,
         cell: ({ row }) => (
           <span className="block text-right">
             <CurrencyDisplay
@@ -137,28 +361,32 @@ export function AccountsReceivableView({
         ),
       },
       {
-        header: rightHeader("Last Payment"),
-        accessorKey: "lastPaymentDate",
+        header: "Last OR#",
+        accessorKey: "lastOrNumber",
+        size: COL_SIZES.lastOr,
         cell: ({ row }) => (
-          <span className="block text-right text-sm text-muted-foreground whitespace-nowrap">
-            {row.original.lastPaymentDate
-              ? formatDate(row.original.lastPaymentDate)
-              : "—"}
+          <span className="font-[family-name:var(--font-mono)] text-sm">
+            {row.original.lastOrNumber ?? "—"}
           </span>
         ),
       },
       {
-        header: rightHeader("Aging (Days)"),
-        accessorKey: "agingDays",
+        header: rightHeader("OR Date"),
+        accessorKey: "orDate",
+        size: COL_SIZES.orDate,
         cell: ({ row }) => (
-          <span className="block text-right text-sm tabular-nums">
-            {row.original.agingDays}
+          <span className="block text-right text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.orDate ? formatDate(row.original.orDate) : "—"}
           </span>
         ),
       },
     ],
-    []
+    [],
   );
+
+  // Determine if we should show grouped view (no grade level filter)
+  // Show grouped view when no grade level filter is applied
+  const showGrouped = !defaultGradeLevelId;
 
   return (
     <div className="flex flex-col">
@@ -166,9 +394,7 @@ export function AccountsReceivableView({
       <div className="bg-muted flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
         {/* Left: Title + Stats Badges */}
         {headerContent && (
-          <div className="flex items-center gap-3 flex-wrap">
-            {headerContent}
-          </div>
+          <div className="flex items-center gap-3 flex-wrap">{headerContent}</div>
         )}
 
         {/* Right: Filters + Export Buttons */}
@@ -176,7 +402,12 @@ export function AccountsReceivableView({
           {/* Search */}
           <div className="filter-search w-48">
             <span className="filter-search-icon">
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+              <svg
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-4 w-4 shrink-0"
+                aria-hidden
+              >
                 <path
                   fillRule="evenodd"
                   d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
@@ -194,10 +425,10 @@ export function AccountsReceivableView({
             />
           </div>
 
-          {/* School Year Filter */}
+          {/* School Year Filter - auto-applies on change */}
           <Select
-            value={schoolYearId || "all"}
-            onValueChange={(value) => setSchoolYearId(value === "all" ? "" : value)}
+            value={defaultSchoolYearId || "all"}
+            onValueChange={handleSchoolYearChange}
           >
             <SelectTrigger className="w-44 h-10" aria-label="School year">
               <SelectValue placeholder="All Years" />
@@ -213,22 +444,27 @@ export function AccountsReceivableView({
             </SelectContent>
           </Select>
 
-          {/* Apply Button */}
-          <button
-            type="button"
-            onClick={handleApply}
-            className="inline-flex items-center justify-center min-h-10 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+          {/* Grade Level Filter - auto-applies on change */}
+          <Select
+            value={defaultGradeLevelId || "all"}
+            onValueChange={handleGradeLevelChange}
           >
-            Apply
-          </button>
+            <SelectTrigger className="w-40 h-10" aria-label="Grade level">
+              <SelectValue placeholder="All Grades" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Grades</SelectItem>
+              {gradeLevels.map((gl) => (
+                <SelectItem key={gl.id} value={gl.id}>
+                  {gl.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Clear */}
           {hasFilters && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="filter-clear"
-            >
+            <button type="button" onClick={handleReset} className="filter-clear">
               Clear
             </button>
           )}
@@ -241,7 +477,12 @@ export function AccountsReceivableView({
             href={`${exportBaseUrl}?format=pdf&${exportParams.toString()}`}
             className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-3 min-h-10 text-xs font-semibold text-foreground hover:bg-muted/80 whitespace-nowrap"
           >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+            <svg
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-4 w-4 shrink-0"
+              aria-hidden
+            >
               <path
                 fillRule="evenodd"
                 d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
@@ -254,7 +495,12 @@ export function AccountsReceivableView({
             href={`${exportBaseUrl}?format=xlsx&${exportParams.toString()}`}
             className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-3 min-h-10 text-xs font-semibold text-foreground hover:bg-muted/80 whitespace-nowrap"
           >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden>
+            <svg
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-4 w-4 shrink-0"
+              aria-hidden
+            >
               <path
                 fillRule="evenodd"
                 d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
@@ -273,12 +519,30 @@ export function AccountsReceivableView({
             No outstanding balances found for the selected filters.
           </p>
         </div>
+      ) : showGrouped ? (
+        /* Grouped view - show grade level headers with subtotals */
+        <div className="flex flex-col">
+          {filteredGroupedData.map((group) => (
+            <div key={group.gradeLevelId}>
+              <GradeLevelHeader name={group.gradeLevelName} count={group.rows.length} />
+              <DataTable columns={columns} data={group.rows} enablePagination={false} useFixedLayout />
+              <SubtotalRow subtotal={{
+                ...group.subtotal,
+                studentCount: group.rows.length,
+                totalAmount: group.rows.reduce((sum, r) => sum + r.totalAmount, 0),
+                totalPaid: group.rows.reduce((sum, r) => sum + r.totalPaid, 0),
+                totalBalance: group.rows.reduce((sum, r) => sum + r.balance, 0),
+              }} />
+            </div>
+          ))}
+          {filteredGroupedData.length > 0 && <GrandTotalRow summary={grandTotal} />}
+        </div>
       ) : (
-        <DataTable
-          columns={columns}
-          data={filteredData}
-          enablePagination={false}
-        />
+        /* Flat view - single grade level selected */
+        <>
+          <DataTable columns={columns} data={filteredData} enablePagination={false} useFixedLayout />
+          {filteredData.length > 0 && <GrandTotalRow summary={grandTotal} />}
+        </>
       )}
 
       {/* Pagination */}

@@ -42,6 +42,12 @@ interface DataTableProps<TData> {
   onRowSelectionChange?: (selection: RowSelectionState) => void;
   /** Function to get additional class names for a row */
   getRowClassName?: (row: Row<TData>) => string;
+  /**
+   * Use fixed column widths from column definitions (size property).
+   * When true, applies table-fixed layout and colgroup for consistent widths.
+   * Useful when subtotal/total rows need to align with data rows.
+   */
+  useFixedLayout?: boolean;
 }
 
 /**
@@ -64,6 +70,7 @@ export function DataTable<TData>({
   rowSelection,
   onRowSelectionChange,
   getRowClassName,
+  useFixedLayout = false,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [filterInput, setFilterInput] = useState("");
@@ -139,7 +146,21 @@ export function DataTable<TData>({
               : {}
           }
         >
-          <table className="w-full">
+          <table className={cn("w-full", useFixedLayout && "table-fixed")}>
+            {useFixedLayout && (
+              <colgroup>
+                {columns.map((col, idx) => (
+                  <col
+                    key={idx}
+                    style={
+                      (col as { size?: number }).size
+                        ? { width: (col as { size?: number }).size }
+                        : undefined
+                    }
+                  />
+                ))}
+              </colgroup>
+            )}
             <thead className="border-b border-border bg-muted sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
