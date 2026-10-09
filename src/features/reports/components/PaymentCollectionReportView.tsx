@@ -73,16 +73,8 @@ export function PaymentCollectionReportView({
 
   // Sync local state when URL changes externally (back/forward navigation)
   const [syncedFilters, setSyncedFilters] = useState(currentFilters);
-  if (
-    currentFilters.startDate !== syncedFilters.startDate ||
-    currentFilters.endDate !== syncedFilters.endDate ||
-    currentFilters.paymentMethod !== syncedFilters.paymentMethod ||
-    currentFilters.paymentStatus !== syncedFilters.paymentStatus ||
-    currentFilters.usageMode !== syncedFilters.usageMode ||
-    currentFilters.processedBy !== syncedFilters.processedBy ||
-    currentFilters.bookletId !== syncedFilters.bookletId ||
-    currentFilters.orNumber !== syncedFilters.orNumber
-  ) {
+  const filtersChanged = JSON.stringify(currentFilters) !== JSON.stringify(syncedFilters);
+  if (filtersChanged) {
     setSyncedFilters(currentFilters);
     setStartDate(currentFilters.startDate ?? "");
     setEndDate(currentFilters.endDate ?? "");
@@ -229,23 +221,24 @@ export function PaymentCollectionReportView({
       className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
       aria-labelledby="report-heading"
     >
-      {/* Card Header - Two rows */}
-      <div className="bg-muted border-b border-border px-4 py-3 no-print space-y-2">
-        {/* Row 1: Title, Count, Date Filters, Dropdown Filters, Clear */}
-        <div className="flex items-center gap-3">
-          {/* Title + Count Badge */}
-          <h2
-            id="report-heading"
-            className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary shrink-0"
-          >
-            Payment Collection
-          </h2>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border shrink-0">
-            {totalCount} Payment{totalCount !== 1 ? "s" : ""}
-          </span>
+      {/* Card Header - Single grid for consistent column alignment across rows */}
+      <div className="bg-muted border-b border-border px-4 py-3 no-print">
+        <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
+          {/* Row 1, Col 1: Title + Count Badge */}
+          <div className="flex items-center gap-3">
+            <h2
+              id="report-heading"
+              className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary shrink-0"
+            >
+              Payment Collection
+            </h2>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground border border-border shrink-0">
+              {totalCount} Payment{totalCount !== 1 ? "s" : ""}
+            </span>
+          </div>
 
-          {/* Date & Dropdown Filters - no spacer, let items flow naturally */}
-          <div className="flex items-center gap-2 ml-4">
+          {/* Row 1, Col 2: Date & Dropdown Filters */}
+          <div className="flex items-center gap-2">
             {/* Date Range - compact */}
             <input
               type="date"
@@ -343,22 +336,12 @@ export function PaymentCollectionReportView({
             )}
 
           </div>
-        </div>
 
-        {/* Row 2: OR Search + Export Buttons - aligned with row 1 filters */}
-        <div className="flex items-center gap-3">
-          {/* Invisible spacer matching title + badge width */}
-          <div className="shrink-0 invisible flex items-center gap-3" aria-hidden="true">
-            <span className="font-display text-xs font-bold uppercase tracking-[0.14em]">
-              Payment Collection
-            </span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border border-transparent">
-              {totalCount} Payment{totalCount !== 1 ? "s" : ""}
-            </span>
-          </div>
+          {/* Row 2, Col 1: Empty (shares column width with Row 1 Col 1) */}
+          <div />
 
-          {/* OR Number Search - aligned with date input */}
-          <div className="flex items-center gap-2 ml-4">
+          {/* Row 2, Col 2: Search + Export buttons */}
+          <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
               <input
@@ -366,8 +349,7 @@ export function PaymentCollectionReportView({
                 value={orNumber}
                 onChange={(e) => setOrNumber(e.target.value)}
                 placeholder="Search OR #"
-                className="form-control h-9 w-[180px] bg-muted text-foreground text-xs pr-2"
-                style={{ paddingLeft: '2.5rem' }}
+                className="form-control h-9 w-[180px] bg-muted text-foreground text-xs pl-[2.5rem] pr-2"
                 aria-label="Search by OR number"
               />
             </div>
