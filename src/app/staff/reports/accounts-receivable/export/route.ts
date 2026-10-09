@@ -6,7 +6,7 @@ import {
   isReportExportRateLimited,
   getReportExportResetSeconds,
 } from "@/lib/security/rateLimit";
-import { getSchoolYears } from "@/lib/queries/schoolYears";
+import { getSchoolYears, getActiveSchoolYearId } from "@/lib/queries/schoolYears";
 import { getGradeLevels } from "@/lib/queries/gradeLevels";
 import {
   getAllAccountsReceivableData,
@@ -53,8 +53,11 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const format = parseReportFormat(searchParams.get("format"));
-  const schoolYearId = searchParams.get("schoolYearId") || undefined;
   const gradeLevelId = searchParams.get("gradeLevelId") || undefined;
+
+  // Default to active school year if not specified
+  const activeSchoolYearId = await getActiveSchoolYearId();
+  const schoolYearId = searchParams.get("schoolYearId") || activeSchoolYearId || undefined;
 
   const [schoolYears, gradeLevels] = await Promise.all([
     getSchoolYears(),

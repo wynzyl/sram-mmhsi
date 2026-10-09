@@ -282,9 +282,13 @@ export function AccountsReceivableView({
 
   // Build export URL with current filters
   const exportBaseUrl = "/staff/reports/accounts-receivable/export";
-  const exportParams = new URLSearchParams();
-  if (defaultSchoolYearId) exportParams.set("schoolYearId", defaultSchoolYearId);
-  if (defaultGradeLevelId) exportParams.set("gradeLevelId", defaultGradeLevelId);
+  const buildExportUrl = (format: "pdf" | "xlsx") => {
+    const params = new URLSearchParams();
+    params.set("format", format);
+    if (defaultSchoolYearId) params.set("schoolYearId", defaultSchoolYearId);
+    if (defaultGradeLevelId) params.set("gradeLevelId", defaultGradeLevelId);
+    return `${exportBaseUrl}?${params.toString()}`;
+  };
 
   const columns = useMemo<ColumnDef<AccountsReceivableRow>[]>(
     () => [
@@ -474,7 +478,7 @@ export function AccountsReceivableView({
 
           {/* Export Buttons */}
           <Link
-            href={`${exportBaseUrl}?format=pdf&${exportParams.toString()}`}
+            href={buildExportUrl("pdf")}
             className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-3 min-h-10 text-xs font-semibold text-foreground hover:bg-muted/80 whitespace-nowrap"
           >
             <svg
@@ -492,7 +496,7 @@ export function AccountsReceivableView({
             PDF
           </Link>
           <Link
-            href={`${exportBaseUrl}?format=xlsx&${exportParams.toString()}`}
+            href={buildExportUrl("xlsx")}
             className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-3 min-h-10 text-xs font-semibold text-foreground hover:bg-muted/80 whitespace-nowrap"
           >
             <svg
