@@ -169,14 +169,15 @@ function mapRow(row: {
   orNumber: string | null;
   paymentDate: Date | null;
 }): AccountsReceivableRow {
-  const firstAndMiddle = `${row.studentFirstName}${
-    row.studentMiddleName ? ` ${row.studentMiddleName}` : ""
-  }`;
+  // Format: "Surname, Firstname M." (middle initial with period, omit if no middle name)
+  const middleInitial = row.studentMiddleName?.trim()
+    ? ` ${row.studentMiddleName.charAt(0).toUpperCase()}.`
+    : "";
 
   return {
     studentId: row.studentId,
     studentRef: row.studentRef,
-    studentName: `${row.studentLastName}, ${firstAndMiddle}`,
+    studentName: `${row.studentLastName}, ${row.studentFirstName}${middleInitial}`,
     schoolYearLabel: row.schoolYearLabel,
     gradeLevelId: row.gradeLevelId,
     gradeLevelName: row.gradeLevelName,
